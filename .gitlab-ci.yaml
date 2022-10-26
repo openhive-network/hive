@@ -271,6 +271,10 @@ beem_mirrornet_tests:
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   interruptible: true
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+
   before_script:
     - apt-get update -y && apt-get install -y python3 python3-pip python3-dev python3-venv
     - python3 -m venv venv/
@@ -296,9 +300,6 @@ beem_mirrornet_tests:
 cli_wallet_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
@@ -315,9 +316,6 @@ cli_wallet_tests:
 hived_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 21
@@ -334,9 +332,6 @@ hived_tests:
 cli_wallet_extended_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 14
@@ -352,9 +347,6 @@ cli_wallet_extended_tests:
 fork_tests:
   stage: test
   extends: .test_tools_based_with_faketime
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
@@ -370,9 +362,6 @@ fork_tests:
 hf26_tests:
   stage: test
   extends: .test_tools_based_with_faketime
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
@@ -389,9 +378,6 @@ hf26_tests:
 live_sync_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/test_tools/package
@@ -408,9 +394,6 @@ live_sync_tests:
 broadcast_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
@@ -426,9 +409,6 @@ broadcast_tests:
 test_tools_tests:
   stage: test
   extends: .test_tools_based_with_faketime
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
@@ -445,9 +425,6 @@ test_tools_tests:
 rc_direct_delegations_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 12
@@ -463,9 +440,6 @@ rc_direct_delegations_tests:
 message_format_testnet_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 24
@@ -486,9 +460,6 @@ message_format_testnet_tests:
 datagen_api_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
@@ -546,9 +517,6 @@ patterns_tests:
 transaction_serialization_testnet_tests:
   stage: test
   extends: .test_tools_based_with_faketime
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
@@ -646,9 +614,6 @@ message_format_mainnet_64m_tests:
 foundation_layer_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 3
