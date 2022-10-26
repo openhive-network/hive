@@ -794,13 +794,15 @@ namespace graphene { namespace net {
       bool is_hard_fork_block(uint32_t block_number) const;
       uint32_t get_next_known_hard_fork_block_number(uint32_t block_number) const;
 
+      bool node_is_shutting_down() const;
+
    private:
       class activity_tracer final
       {
       public:
         activity_tracer(const char* function, node_impl& node) : _node(node), _notify(false)
         {
-          if (_node._node_is_shutting_down)
+          if (_node.node_is_shutting_down())
             FC_THROW_EXCEPTION(fc::canceled_exception, "${function} canceled because it is shutting down", (function));
 
           ++_node._activeCalls;
@@ -810,7 +812,7 @@ namespace graphene { namespace net {
 
         ~activity_tracer()
         {
-          if (_notify && --_node._activeCalls == 0 && _node._node_is_shutting_down)
+          if (_notify && --_node._activeCalls == 0 && _node.node_is_shutting_down())
             _node._shutdownNotifier->set_value();
         }
       private:
@@ -974,7 +976,7 @@ namespace graphene { namespace net {
 
     void node_impl::p2p_network_connect_loop()
     {
-      while (!_p2p_network_connect_loop_done.canceled() && !_node_is_shutting_down)
+      while (!_p2p_network_connect_loop_done.canceled() && !node_is_shutting_down())
       {
         try
         {
@@ -1031,7 +1033,7 @@ namespace graphene { namespace net {
 
           display_current_connections();
 
-          if(_node_is_shutting_down)
+          if(node_is_shutting_down())
           {
             ilog("Breaking p2p_network_connect_loop loop because node is shutting down");
             break;
@@ -1659,7 +1661,7 @@ namespace graphene { namespace net {
                            offsetof(current_time_request_message, request_sent_time));
       peers_to_send_keep_alive.clear();
 
-      if (!_node_is_shutting_down && !_terminate_inactive_connections_loop_done.canceled())
+      if (!node_is_shutting_down() && !_terminate_inactive_connections_loop_done.canceled())
          _terminate_inactive_connections_loop_done = schedule_task( [this](){ terminate_inactive_connections_loop(); },
                                                                    fc::time_point::now() + fc::seconds(1),
                                                                    "terminate_inactive_connections_loop" );
@@ -1693,7 +1695,7 @@ namespace graphene { namespace net {
       auto begin_iter = _recently_failed_items.get<peer_connection::timestamp_index>().begin();
       _recently_failed_items.get<peer_connection::timestamp_index>().erase(begin_iter, oldest_failed_ids_to_keep_iter);
 
-      if (!_node_is_shutting_down && !_fetch_updated_peer_lists_loop_done.canceled() )
+      if (!node_is_shutting_down() && !_fetch_updated_peer_lists_loop_done.canceled() )
          _fetch_updated_peer_lists_loop_done = schedule_task( [this](){ fetch_updated_peer_lists_loop(); },
                                                              fc::time_point::now() + fc::minutes(GRAPHENE_NET_FETCH_UPDATED_PEER_LISTS_INTERVAL_MINUTES),
                                                              "fetch_updated_peer_lists_loop" );
@@ -1741,7 +1743,7 @@ namespace graphene { namespace net {
       update_bandwidth_data(bytes_read_this_second, bytes_written_this_second);
       _bandwidth_monitor_last_update_time = current_time;
 
-      if (!_node_is_shutting_down && !_bandwidth_monitor_loop_done.canceled())
+      if (!node_is_shutting_down() && !_bandwidth_monitor_loop_done.canceled())
         _bandwidth_monitor_loop_done = schedule_task( [=](){ bandwidth_monitor_loop(); },
                                                      fc::time_point::now() + fc::seconds(GRAPHENE_NET_BANDWIDTH_MONITOR_INTERVAL_SECONDS),
                                                      "bandwidth_monitor_loop" );
@@ -1751,7 +1753,7 @@ namespace graphene { namespace net {
     void node_impl::dump_node_status_task()
     {
       dump_node_status();
-      if (!_node_is_shutting_down && !_dump_node_status_task_done.canceled())
+      if (!node_is_shutting_down() && !_dump_node_status_task_done.canceled())
         _dump_node_status_task_done = schedule_task([=](){ dump_node_status_task(); },
                                                    fc::time_point::now() + fc::minutes(GRAPHENE_NET_DUMP_NODE_STATUS_INTERVAL_MINUTES),
                                                    "dump_node_status_task");
@@ -1795,7 +1797,7 @@ namespace graphene { namespace net {
       }
       dlog("peer scheduled for deletion: ${peer}", ("peer", peer_to_delete->get_remote_endpoint()));
 
-      if (!_node_is_shutting_down &&
+      if (!node_is_shutting_down() &&
           (!_delayed_peer_deletion_task_done.valid() || _delayed_peer_deletion_task_done.ready()))
       {
         dlog("asyncing delayed_peer_deletion_task to delete ${size} peers", ("size", number_of_peers_to_delete));
@@ -1806,7 +1808,7 @@ namespace graphene { namespace net {
 #else
       dlog("scheduling peer for deletion: ${peer} (this will not block)", ("peer", peer_to_delete->get_remote_endpoint()));
       _peers_to_delete.push_back(peer_to_delete);
-      if (!_node_is_shutting_down &&
+      if (!node_is_shutting_down() &&
           (!_delayed_peer_deletion_task_done.valid() || _delayed_peer_deletion_task_done.ready()))
       {
         dlog("asyncing delayed_peer_deletion_task to delete ${size} peers", ("size", _peers_to_delete.size()));
@@ -1821,14 +1823,14 @@ namespace graphene { namespace net {
     bool node_impl::is_accepting_new_connections()
     {
       VERIFY_CORRECT_THREAD();
-      return !_node_is_shutting_down && (!_p2p_network_connect_loop_done.valid() || !_p2p_network_connect_loop_done.canceled()) &&
+      return !node_is_shutting_down() && (!_p2p_network_connect_loop_done.valid() || !_p2p_network_connect_loop_done.canceled()) &&
          get_number_of_connections() <= _node_configuration.maximum_number_of_connections;
     }
 
     bool node_impl::is_wanting_new_connections()
     {
       VERIFY_CORRECT_THREAD();
-      return !_node_is_shutting_down && !_p2p_network_connect_loop_done.canceled() &&
+      return !node_is_shutting_down() && !_p2p_network_connect_loop_done.canceled() &&
          get_number_of_connections() < _node_configuration.desired_number_of_connections;
     }
 
@@ -3464,7 +3466,7 @@ namespace graphene { namespace net {
 
       dlog("Leaving send_sync_block_to_node_delegate");
 
-      if ( !_node_is_shutting_down &&
+      if ( !node_is_shutting_down() &&
           (!_process_backlog_of_sync_blocks_done.valid() || _process_backlog_of_sync_blocks_done.ready()) &&
           get_number_of_handle_message_calls_in_progress() < _node_configuration.maximum_number_of_blocks_to_handle_at_one_time / 2 //DLN add hystersis to reduce number of times we process_backlog_of_sync_blocks
          )
@@ -3547,12 +3549,7 @@ namespace graphene { namespace net {
         block_processed_this_iteration = false;
         for (const peer_connection_ptr& peer : _active_connections)
         {
-
-          if (appbase::app().is_interrupt_request())
-          {
-            ilog("Stopping processing of sync-blocks due to interrupt request");
-            break;
-          }
+          activity_tracer aTracer(__FUNCTION__, *this);
 
           if (!peer->ids_of_items_to_get.empty())
           {
@@ -3664,7 +3661,7 @@ namespace graphene { namespace net {
 
     void node_impl::trigger_process_backlog_of_sync_blocks()
     {
-      if (!_node_is_shutting_down &&
+      if (!node_is_shutting_down() &&
           (!_process_backlog_of_sync_blocks_done.valid() || _process_backlog_of_sync_blocks_done.ready()))
         _process_backlog_of_sync_blocks_done = async_task([=](){ process_backlog_of_sync_blocks(); }, "process_backlog_of_sync_blocks");
     }
@@ -4650,7 +4647,7 @@ namespace graphene { namespace net {
           new_peer->get_socket().set_no_delay(true);
           idump((new_peer->get_socket().get_no_delay()));
           ilog( "accepted inbound connection from ${remote_endpoint}", ("remote_endpoint", new_peer->get_socket().remote_endpoint() ) );
-          if (_node_is_shutting_down)
+          if (node_is_shutting_down())
             return;
           new_peer->connection_initiation_time = fc::time_point::now();
           _handshaking_connections.insert( new_peer );
@@ -5070,7 +5067,7 @@ namespace graphene { namespace net {
       _handshaking_connections.insert(new_peer);
       _rate_limiter.add_tcp_socket(&new_peer->get_socket());
 
-      if (_node_is_shutting_down)
+      if (node_is_shutting_down())
         return;
 
       std::weak_ptr<peer_connection> new_weak_peer(new_peer);
@@ -5766,6 +5763,11 @@ namespace graphene { namespace net {
       auto iter = std::upper_bound(_hard_fork_block_numbers.begin(), _hard_fork_block_numbers.end(),
                                    block_number);
       return iter != _hard_fork_block_numbers.end() ? *iter : 0;
+    }
+
+    bool node_impl::node_is_shutting_down() const
+    {
+      return _node_is_shutting_down || appbase::app().is_interrupt_request();
     }
 
     void node_impl::send_message_timing_to_statsd( peer_connection* originating_peer, const message& received_message, const message_hash_type& message_hash )
