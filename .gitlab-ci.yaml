@@ -24,6 +24,7 @@ variables:
   PYTEST_XDIST_VERSION: "2.5.0"
   PYTEST_TIMEOUT_VERSION: "2.1.0"
   PYTEST_RERUN_FAILURES_VERSION: "10.2"
+  TOX_VERSION: "3.25.1"
 
 include: '/scripts/ci-helpers/prepare_data_image_job.yml'
 
@@ -395,7 +396,7 @@ live_sync_tests:
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/test_tools/package
   script:
-    - apt-get update -y && apt-get install -y tox
+    - pip3 install tox==${TOX_VERSION}
     - cd tests/functional/python_tests/live_sync_tests
     - timeout 11m tox
   artifacts:
@@ -518,8 +519,8 @@ patterns_tests:
 
   before_script:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
-    - pip install tox==3.25.1
-    - pip install -r $CI_PROJECT_DIR/tests/api_tests/comparsion_tests/requirements.txt
+    - pip3 install tox==${TOX_VERSION}
+    - pip3 install -r $CI_PROJECT_DIR/tests/api_tests/comparsion_tests/requirements.txt
 
   script:
     # run pattern tests
