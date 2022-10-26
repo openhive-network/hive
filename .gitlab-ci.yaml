@@ -268,6 +268,7 @@ beem_mirrornet_tests:
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   interruptible: true
+  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   before_script:
     - apt-get update -y && apt-get install -y python3 python3-pip python3-dev python3-venv
     - python3 -m venv venv/
@@ -296,7 +297,7 @@ cli_wallet_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
     PYTEST_NUMBER_OF_PROCESSES: 1
@@ -315,7 +316,7 @@ hived_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 21
     PYTEST_NUMBER_OF_PROCESSES: 1
@@ -334,7 +335,7 @@ cli_wallet_extended_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 14
   script:
@@ -352,7 +353,7 @@ fork_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
   script:
@@ -370,7 +371,7 @@ hf26_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
@@ -389,7 +390,7 @@ live_sync_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTHONPATH: $CI_PROJECT_DIR/tests/test_tools/package
   script:
@@ -408,7 +409,7 @@ broadcast_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
   script:
@@ -426,7 +427,7 @@ test_tools_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
   script:
@@ -445,7 +446,7 @@ rc_direct_delegations_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 12
   script:
@@ -463,7 +464,7 @@ message_format_testnet_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 24
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
@@ -486,7 +487,7 @@ datagen_api_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
@@ -546,7 +547,7 @@ transaction_serialization_testnet_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
   script:
@@ -646,7 +647,7 @@ foundation_layer_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 3
   script:
