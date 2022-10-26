@@ -18,7 +18,7 @@
           jsonrpc: "2.0"
           id: 1
           method: "database_api.get_witness_schedule"
-          params: {"future":false}
+          params: {"include_future":false}
       response:
         status_code: 200
         verify_response_with:

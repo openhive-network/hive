@@ -1,4 +1,5 @@
 {
+  this test definitely is not run on CI
   "account_subsidy_rd": {
     "budget_per_time_unit": 797,
     "decay_params": {

@@ -1,4 +1,5 @@
 [
+  this test definitely is not run on CI
   "rabbit-70",
   "kushed",
   "delegate.lafona",
