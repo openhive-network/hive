@@ -2,7 +2,7 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=:ubuntu20.04-4 
+ARG CI_IMAGE_TAG=:ubuntu20.04-5 
 ARG BLOCK_LOG_SUFFIX
 
 ARG BUILD_IMAGE_TAG
@@ -36,6 +36,9 @@ RUN ./scripts/setup_ubuntu.sh --dev --hived-account="hived"
 
 USER hived
 WORKDIR /home/hived
+
+# Install additionally packages located in user directory
+RUN /usr/local/src/scripts/setup_ubuntu.sh --user
 
 #docker build --target=ci-base-image-5m -t registry.gitlab.syncad.com/hive/hive/ci-base-image-5m:ubuntu20.04-xxx -f Dockerfile .
 FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS ci-base-image-5m
