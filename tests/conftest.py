@@ -23,11 +23,18 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
         api_node.run(replay_from=Path(__file__).parent.joinpath('api_tests/message_format_tests/wallet_bridge_api_tests/block_log/block_log'), wait_for_live=False)
         return api_node
 
+    def __get_requested_node_markers() -> List[str]:
+        requested_node_markers = []
+        for marker in request.node.iter_markers():
+            if marker.name in create_node:
+                requested_node_markers.append(marker.name)
+        return requested_node_markers
+
     def __assert_no_duplicated_requests_of_same_node() -> None:
-        requested_markers: List[str] = [marker.name for marker in request.node.iter_markers() if marker.name != 'parametrize']
-        # jeżeli ilość marków żądanych jest różna z ilością żądanych marków unikatowych
-        if len(requested_markers) != len(set(requested_markers)):
-            raise RuntimeError(f'Duplicated marker. You used two or more times markers: {requested_markers}. Do not use duplicates.')
+        requested_markers = __get_requested_node_markers()
+        for marker in requested_markers:
+            if requested_markers.count(marker) > 1:
+                raise AssertionError(f'Duplicated marker "{marker}". Must be used only once.')
 
     def __assert_no_duplicated_node_in_run_for_params() -> None:
         for marker in request.node.iter_markers():
@@ -36,64 +43,75 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
                 number_of_unique_nodes_given_in_the_run_for_parameters = len(set([marker_obj.values[0][0] for marker_obj in marker.args[1]]))
 
                 if number_of_nodes_specified_in_run_for != number_of_unique_nodes_given_in_the_run_for_parameters:
-                    raise RuntimeError(f"Duplicate requested `nodes` in `@run_for' function parameters."
-                                       f" Use only defined nodes: {', '.join(create_node.keys())}.")
+                    raise AssertionError(f"Duplicate requested `nodes` in `@run_for' function parameters."
+                                         f" Use only defined nodes: {', '.join(create_node.keys())}.")
 
-    def __get_requested_node() -> Optional[str]:
-        requested_nodes: List[str] = [request.node.get_closest_marker(node).name for node in create_node if
-                                      request.node.get_closest_marker(node) is not None]
+    # def __get_requested_node() -> Optional[str]:
+    #     requested_nodes: List[str] = [request.node.get_closest_marker(node).name for node in create_node if
+    #                                   request.node.get_closest_marker(node) is not None]
+    #
+    #     if len(requested_nodes) > 1:
+    #         raise AssertionError(
+    #             f'Incorrect test marking. You cannot mark mixing function `@run_for` with classic mark.\n'
+    #             f'To the mark multiple node test, use decorator:\n'
+    #             f'@run_for({", ".join(requested_nodes)})\n'
+    #             f'def {request.node.originalname}(node):\n'
+    #             f'    <do something>')
+    #
+    #     return requested_nodes[0] if len(requested_nodes) == 1 else None
 
-        if len(requested_nodes) > 1:
-            raise RuntimeError(f'Incorrect test marking. You cannot mark mixing function `@run_for` with classic mark.\n'
-                               f'To the mark multiple node test, use decorator:\n'
-                               f'@run_for({", ".join(requested_nodes)})\n'
-                               f'def {request.node.originalname}(node):\n'
-                               f'    <do something>')
+    def __was_run_for_used() -> bool:
+        return request.node.get_closest_marker('decorated_with_run_for') is not None
 
-        return requested_nodes[0] if len(requested_nodes) == 1 else None
+    def __is_marker_exist(name: str) -> bool:
+        return request.node.get_closest_marker(name) is not None
 
-    def __run_for_was_used() -> bool:
-        marker_names = [marker for marker in request.node.iter_markers()]
-        for marker in marker_names:
-            if marker.name == 'parametrize' and marker.args[0] == 'node':
-                for mark_name in marker.args[1]:
-                    if marker_names.count(mark_name[1][0].mark) == 1:
-                        return True
-        return False
+    def __is_run_for_node() -> bool:
+        requested_nodes: List[str] = [request.node.get_closest_marker(node).name for node in create_node
+                                      if request.node.get_closest_marker(node) is not None]
 
-    def __mark_exist(name: str) -> bool:
-        mark = request.node.get_closest_marker(name)
-        if hasattr(mark, "name"):
-            if mark.name == name:
-                return True
-        return False
+        return True if not requested_nodes == [] else False
 
     create_node = {
-        'testnet': __create_init_node if not __mark_exist('replay_prepared_block_log') else __create_replayed_node,
+        'testnet': __create_init_node if not __is_marker_exist('replay_prepared_block_log') else __create_replayed_node,
         'mainnet_5m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
         'mainnet_64m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
     }
 
+    # __assert_no_duplicated_requests_of_same_node()
+    #
+    # if __was_run_for_used():
+    #     __assert_no_duplicated_node_in_run_for_params()
+    #     requested_node = __get_requested_node()
+    #     return create_node[requested_node]()
+    #
+    # if requested_nodes:
+    #     raise AssertionError(
+    #         f"Incorrect test marking. Use the `@run_for` function to mark the test. Available nodes: {', '.join(create_node.keys())}.\n"
+    #         f"To mark correctly your test use syntax:\n"
+    #         f"@run_for({', '.join(requested_nodes)})\n"
+    #         f"def {request.node.originalname}(node):\n"
+    #         f"    <do something>"
+    #     )
+    # if list(request.node.iter_markers()) == [] or request.node.get_closest_marker('parametrize') is not None:
+    #     return create_node['testnet']()
+
     __assert_no_duplicated_requests_of_same_node()
-    # markery przypisane do testu zgadzające się ze zdefiniowanymi nodami w [create_node]
-    requested_nodes: List[str] = [request.node.get_closest_marker(node).name for node in create_node
-                                  if request.node.get_closest_marker(node) is not None]
-
-    if __run_for_was_used():
-        __assert_no_duplicated_node_in_run_for_params()
-        requested_node = __get_requested_node()
-        return create_node[requested_node]()
-
-    if requested_nodes:
-        raise RuntimeError(
+    if not __was_run_for_used():
+        if not __is_run_for_node():
+            return create_node['testnet']()
+        raise AssertionError(
             f"Incorrect test marking. Use the `@run_for` function to mark the test. Available nodes: {', '.join(create_node.keys())}.\n"
             f"To mark correctly your test use syntax:\n"
-            f"@run_for({', '.join(requested_nodes)})\n"
+            f"@run_for({list(create_node.keys())})\n"
             f"def {request.node.originalname}(node):\n"
             f"    <do something>"
         )
-    if list(request.node.iter_markers()) == [] or request.node.get_closest_marker('parametrize') is not None:
-        return create_node['testnet']()
+    else:
+        __assert_no_duplicated_node_in_run_for_params()
+        # requested_node = __get_requested_node()
+        requested_node = __get_requested_node_markers()[0]
+        return create_node[requested_node]()
 
 
 @pytest.fixture
