@@ -16,6 +16,7 @@ print_help () {
     echo "  --hived-account=NAME      Allows to specify the account name to be used for hived process."
     echo "  --runtime                 Allows to install all packages required to run already built hived binary."
     echo "  --dev                     Allows to install all packages required to build and test hived project (additionally to package set specific to runtime)."
+    echo "  --user                    Allows to install all packages being stored in the user's home directory)."
     echo "  --help                    Display this help screen and exit"
     echo
 }
@@ -23,19 +24,57 @@ print_help () {
 hived_unix_account="hived"
 
 install_all_runtime_packages() {
+  if [ "$EUID" -ne 0 ]
+    then echo "Please run as root"
+    exit 1
+  fi
+
   apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget && apt-get clean && rm -r /var/lib/apt/lists/*
 }
 
 install_all_dev_packages() {
+  if [ "$EUID" -ne 0 ]
+    then echo "Please run as root"
+    exit 1
+  fi
+
   apt-get update && apt-get install -y \
   git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libxml2 python3-distutils python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates \
   autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-all-dev doxygen libncurses5-dev libreadline-dev perl ninja-build \
   xxd \
   \
-  screen python3-pip python3-dateutil tzdata python3-junit.xml python3-venv python3-dateutil && \
-  \
+  screen python3-pip python3-dateutil tzdata python3-junit.xml python3-venv python3-dateutil \
+  python3-dev \
+  && \
   apt-get clean && rm -r /var/lib/apt/lists/* && \
   pip3 install -U secp256k1prp
+}
+
+preconfigure_faketime() {
+  git clone --depth 1 --branch master https://github.com/wolfcw/libfaketime.git
+  pushd libfaketime && make
+
+  sudo make install # install it into default location path.
+
+  popd
+}
+
+install_user_packages() {
+  base_dir=${1}
+  echo "Attempting to install user packages in directory: ${base_dir}"
+
+  mkdir -p "${base_dir}"
+  pushd "${base_dir}"
+
+  preconfigure_faketime
+
+  # update path once it will be invalidated (hopefully not): https://github.com/vi/websocat/releases
+  wget https://github.com/vi/websocat/releases/download/v1.11.0/websocat.x86_64-unknown-linux-musl
+  chmod a+x ./websocat.x86_64-unknown-linux-musl
+
+  sudo cp ./websocat.x86_64-unknown-linux-musl /usr/local/bin/
+
+  popd
 }
 
 while [ $# -gt 0 ]; do
@@ -46,8 +85,22 @@ while [ $# -gt 0 ]; do
     --dev)
         install_all_dev_packages
         ;;
+    --user)
+        install_user_packages "${HOME}/hive_base_config"
+        ;;
     --hived-account=*)
+        if [ "$EUID" -ne 0 ]
+          then echo "Please run as root"
+          exit 1
+        fi
+
         hived_unix_account="${1#*=}"
+
+        if id "$hived_unix_account" &>/dev/null; then
+            echo "Account $hived_unix_account already exists. Creation skipped."
+        else
+            useradd -ms /bin/bash "$hived_unix_account" && echo "$hived_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+        fi
         ;;
     --help)
         print_help
@@ -69,15 +122,5 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ "$EUID" -ne 0 ]
-  then echo "Please run as root"
-  exit 1
-fi
-
-if id "$hived_unix_account" &>/dev/null; then
-    echo "Account $hived_unix_account already exists. Creation skipped."
-else
-    useradd -ms /bin/bash "$hived_unix_account" && echo "$hived_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-fi
 
 
