@@ -791,14 +791,54 @@ struct api_witness_object
   int64_t           available_witness_account_subsidies = 0;
 };
 
+// only filled parts that are different between active and future wso
+struct future_chain_properties
+{
+  future_chain_properties() {}
+
+  bool fill( const chain_properties& active, const chain_properties& future );
+
+  fc::optional<asset>    account_creation_fee;
+  fc::optional<uint32_t> maximum_block_size;
+  fc::optional<uint16_t> hbd_interest_rate;
+  fc::optional<int32_t>  account_subsidy_budget;
+  fc::optional<uint32_t> account_subsidy_decay;
+};
+
+// only filled parts that are different between active and future wso
+struct future_witness_schedule
+{
+  future_witness_schedule() {}
+
+  bool fill( const witness_schedule_object& active, const witness_schedule_object& future );
+
+  fc::optional<uint8_t>                 num_scheduled_witnesses;
+  fc::optional<uint8_t>                 elected_weight;
+  fc::optional<uint8_t>                 timeshare_weight;
+  fc::optional<uint8_t>                 miner_weight;
+  fc::optional<uint8_t>                 witness_pay_normalization_factor;
+  fc::optional<future_chain_properties> median_props;
+  fc::optional<version>                 majority_version;
+
+  fc::optional<uint8_t>                 max_voted_witnesses;
+  fc::optional<uint8_t>                 max_miner_witnesses;
+  fc::optional<uint8_t>                 max_runner_witnesses;
+  fc::optional<uint8_t>                 hardfork_required_witnesses;
+
+  fc::optional<rd_dynamics_params>      account_subsidy_rd;
+  fc::optional<rd_dynamics_params>      account_subsidy_witness_rd;
+  fc::optional<int64_t>                 min_witness_account_subsidy_decay;
+};
+
 struct api_witness_schedule_object
 {
   api_witness_schedule_object() {}
 
-  api_witness_schedule_object( const witness_schedule_object& wso, const database& db ) :
+  api_witness_schedule_object( const witness_schedule_object& wso,
+    const witness_schedule_object& future_wso, bool include_future, const database& db ) :
     id( wso.get_id() ),
-    current_virtual_time( wso.current_virtual_time ),
-    next_shuffle_block_num( wso.next_shuffle_block_num ),
+    current_virtual_time( future_wso.current_virtual_time ),
+    next_shuffle_block_num( future_wso.next_shuffle_block_num ),
     num_scheduled_witnesses( wso.num_scheduled_witnesses ),
     elected_weight( wso.elected_weight ),
     timeshare_weight( wso.timeshare_weight ),
@@ -815,18 +855,30 @@ struct api_witness_schedule_object
     min_witness_account_subsidy_decay( wso.min_witness_account_subsidy_decay )
   {
     size_t n = wso.current_shuffled_witnesses.size();
+    if( include_future )
+      n += future_wso.current_shuffled_witnesses.size();
     current_shuffled_witnesses.reserve( n );
     std::transform(wso.current_shuffled_witnesses.begin(), wso.current_shuffled_witnesses.end(),
               std::back_inserter(current_shuffled_witnesses),
               [](const account_name_type& s) -> std::string { return s; } );
               // ^ fixed_string std::string operator used here.
+    if( include_future )
+    {
+      std::transform( future_wso.current_shuffled_witnesses.begin(), future_wso.current_shuffled_witnesses.end(),
+        std::back_inserter( current_shuffled_witnesses ),
+        []( const account_name_type& s ) -> std::string { return s; } );
+
+      future_changes = future_witness_schedule();
+      if( !future_changes->fill( wso, future_wso ) )
+        future_changes.reset();
+    }
   }
 
-  witness_schedule_id_type   id;
+  witness_schedule_id_type   id; //always from active wso
 
-  fc::uint128                current_virtual_time;
-  uint32_t                   next_shuffle_block_num;
-  vector<string>             current_shuffled_witnesses;   // fc::array<account_name_type,...> -> vector<string>
+  fc::uint128                current_virtual_time; //always from future wso
+  uint32_t                   next_shuffle_block_num; //always from future wso
+  vector<string>             current_shuffled_witnesses; //concatenated lists from active and future wso
   uint8_t                    num_scheduled_witnesses;
   uint8_t                    elected_weight;
   uint8_t                    timeshare_weight;
@@ -843,6 +895,8 @@ struct api_witness_schedule_object
   rd_dynamics_params         account_subsidy_rd;
   rd_dynamics_params         account_subsidy_witness_rd;
   int64_t                    min_witness_account_subsidy_decay = 0;
+
+  fc::optional<future_witness_schedule> future_changes;
 };
 
 struct api_signed_block_object : public signed_block
@@ -1240,6 +1294,31 @@ FC_REFLECT( hive::plugins::database_api::api_witness_object,
           (available_witness_account_subsidies)
         )
 
+FC_REFLECT( hive::plugins::database_api::future_chain_properties,
+          (account_creation_fee)
+          (maximum_block_size)
+          (hbd_interest_rate)
+          (account_subsidy_budget)
+          (account_subsidy_decay)
+        )
+
+FC_REFLECT( hive::plugins::database_api::future_witness_schedule,
+          (num_scheduled_witnesses)
+          (elected_weight)
+          (timeshare_weight)
+          (miner_weight)
+          (witness_pay_normalization_factor)
+          (median_props)
+          (majority_version)
+          (max_voted_witnesses)
+          (max_miner_witnesses)
+          (max_runner_witnesses)
+          (hardfork_required_witnesses)
+          (account_subsidy_rd)
+          (account_subsidy_witness_rd)
+          (min_witness_account_subsidy_decay)
+        )
+
 FC_REFLECT( hive::plugins::database_api::api_witness_schedule_object,
           (id)
           (current_virtual_time)
@@ -1259,6 +1338,7 @@ FC_REFLECT( hive::plugins::database_api::api_witness_schedule_object,
           (account_subsidy_rd)
           (account_subsidy_witness_rd)
           (min_witness_account_subsidy_decay)
+          (future_changes)
         )
 
 FC_REFLECT_DERIVED( hive::plugins::database_api::api_signed_block_object, (hive::protocol::signed_block),

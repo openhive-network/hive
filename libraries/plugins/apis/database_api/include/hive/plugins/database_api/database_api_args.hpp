@@ -99,7 +99,7 @@ typedef api_dynamic_global_property_object   get_dynamic_global_properties_retur
 
 struct get_witness_schedule_args
 {
-  bool future = false;
+  bool include_future = false;
 };
 typedef api_witness_schedule_object get_witness_schedule_return;
 
@@ -160,7 +160,7 @@ struct list_witness_votes_return
 
 struct get_active_witnesses_args
 {
-  bool future = false;
+  bool include_future = false;
 };
 
 struct get_active_witnesses_return
@@ -752,7 +752,7 @@ FC_REFLECT( hive::plugins::database_api::list_accounts_args,
   (start)(limit)(order)(delayed_votes_active) )
 
 FC_REFLECT( hive::plugins::database_api::get_witness_schedule_args,
-  (future) )
+  (include_future) )
 
 FC_REFLECT( hive::plugins::database_api::get_reward_funds_return,
   (funds) )
@@ -767,7 +767,7 @@ FC_REFLECT( hive::plugins::database_api::list_witness_votes_return,
   (votes) )
 
 FC_REFLECT( hive::plugins::database_api::get_active_witnesses_args,
-  (future) )
+  (include_future) )
 
 FC_REFLECT( hive::plugins::database_api::get_active_witnesses_return,
   (witnesses) )

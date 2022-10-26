@@ -280,17 +280,51 @@ DEFINE_API_IMPL( database_api_impl, get_dynamic_global_properties )
   return api_dynamic_global_property_object( _db.get_dynamic_global_properties(), _db );
 }
 
+#define FILL_FIELD(field) if( active.field != future.field ) { filled = true; field = future.field; }
+
+bool future_chain_properties::fill( const chain_properties& active, const chain_properties& future )
+{
+  bool filled = false;
+  FILL_FIELD( account_creation_fee );
+  FILL_FIELD( maximum_block_size );
+  FILL_FIELD( hbd_interest_rate );
+  FILL_FIELD( account_subsidy_budget );
+  FILL_FIELD( account_subsidy_decay );
+  return filled;
+}
+
+bool future_witness_schedule::fill( const witness_schedule_object& active, const witness_schedule_object& future )
+{
+  bool filled = false;
+  FILL_FIELD( num_scheduled_witnesses );
+  FILL_FIELD( elected_weight );
+  FILL_FIELD( timeshare_weight );
+  FILL_FIELD( miner_weight );
+  FILL_FIELD( witness_pay_normalization_factor );
+  median_props = future_chain_properties();
+  if( !median_props->fill( active.median_props, future.median_props ) )
+    median_props.reset();
+  else
+    filled = true;
+  FILL_FIELD( majority_version );
+  FILL_FIELD( max_voted_witnesses );
+  FILL_FIELD( max_miner_witnesses );
+  FILL_FIELD( max_runner_witnesses );
+  FILL_FIELD( hardfork_required_witnesses );
+  FILL_FIELD( account_subsidy_rd );
+  FILL_FIELD( account_subsidy_witness_rd );
+  FILL_FIELD( min_witness_account_subsidy_decay );
+  return filled;
+}
+
+#undef FILL_FIELD
+
 DEFINE_API_IMPL( database_api_impl, get_witness_schedule )
 {
-  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_26 ) || !args.future, "Future witnesses only become available after HF26" );
-  const auto& wso = args.future ? _db.get_future_witness_schedule_object() : _db.get_witness_schedule_object();
-  get_witness_schedule_return result( wso, _db );
-  if( _db.has_hardfork( HIVE_HARDFORK_1_26 ) && !args.future )
-  {
-    const auto& future_wso = _db.get_future_witness_schedule_object();
-    result.current_virtual_time = future_wso.current_virtual_time;
-    result.next_shuffle_block_num = future_wso.next_shuffle_block_num;
-  }
+  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_26 ) || !args.include_future, "Future witnesses only become available after HF26" );
+  const auto& wso = _db.get_witness_schedule_object();
+  const auto& future_wso = _db.has_hardfork( HIVE_HARDFORK_1_26 ) ? _db.get_future_witness_schedule_object() : wso;
+  get_witness_schedule_return result( wso, future_wso, args.include_future, _db );
   return result;
 }
 
@@ -438,10 +472,18 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
 
 DEFINE_API_IMPL( database_api_impl, get_active_witnesses )
 {
-  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_26 ) || !args.future, "Future witnesses only become available after HF26" );
-  const auto& wso = args.future ? _db.get_future_witness_schedule_object() : _db.get_witness_schedule_object();
+  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_26 ) || !args.include_future, "Future witnesses only become available after HF26" );
+  const auto& wso = _db.get_witness_schedule_object();
   get_active_witnesses_return result;
-  result.witnesses.assign(wso.current_shuffled_witnesses.begin(), wso.current_shuffled_witnesses.begin() + wso.num_scheduled_witnesses);
+  result.witnesses.reserve( wso.current_shuffled_witnesses.size() * ( args.include_future ? 2 : 1 ) );
+  for( const auto& witness : wso.current_shuffled_witnesses )
+    result.witnesses.emplace_back( witness );
+  if( args.include_future )
+  {
+    const auto& future_wso = _db.get_future_witness_schedule_object();
+    for( const auto& witness : future_wso.current_shuffled_witnesses )
+      result.witnesses.emplace_back( witness );
+  }
   return result;
 }
 

@@ -217,10 +217,10 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_active_witnesses )
   {
     FC_ASSERT( args.size() <= 1, "Expected at most 1 argument, was ${n}", ( "n", args.size() ) );
-    bool future = false;
+    bool include_future = false;
     if( args.size() > 0 )
-      future = args[0].as< bool >();
-    return _database_api->get_active_witnesses( { future } ).witnesses;
+      include_future = args[0].as< bool >();
+    return _database_api->get_active_witnesses( { include_future } ).witnesses;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_block_header )
@@ -309,10 +309,10 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_witness_schedule )
   {
     FC_ASSERT( args.size() <= 1, "Expected at most 1 argument, was ${n}", ( "n", args.size() ) );
-    bool future = false;
+    bool include_future = false;
     if( args.size() > 0 )
-      future = args[0].as<bool>();
-    return _database_api->get_witness_schedule( { future } );
+      include_future = args[0].as<bool>();
+    return _database_api->get_witness_schedule( { include_future } );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_hardfork_version )

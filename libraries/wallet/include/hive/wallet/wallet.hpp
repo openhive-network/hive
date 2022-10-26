@@ -143,11 +143,11 @@ class wallet_api
       */
     wallet_serializer_wrapper<database_api::api_feed_history_object> get_feed_history()const;
 
-    /** Returns the list of witnesses producing blocks in the current (or next) round (21 Blocks)
+    /** Returns the list of witnesses producing blocks in the current (or also next) round (21 blocks or 42 blocks)
       *
-      * @param future Set to true to return next round of witnesses instead of current one
+      * @param include_future Set to true to return both current and next round of witnesses
       */
-    vector< account_name_type > get_active_witnesses( bool future )const;
+    vector< account_name_type > get_active_witnesses( bool include_future )const;
 
     /** Returns vesting withdraw routes for an account.
       *

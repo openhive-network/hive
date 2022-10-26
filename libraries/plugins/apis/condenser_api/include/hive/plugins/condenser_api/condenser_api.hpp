@@ -430,6 +430,68 @@ struct api_witness_object
   int64_t                 available_witness_account_subsidies = 0;
 };
 
+// only filled parts that are different between active and future wso
+struct api_future_chain_properties
+{
+  api_future_chain_properties() {}
+  api_future_chain_properties( const database_api::future_chain_properties& c ) :
+    maximum_block_size( c.maximum_block_size ),
+    hbd_interest_rate( c.hbd_interest_rate ),
+    account_subsidy_budget( c.account_subsidy_budget ),
+    account_subsidy_decay( c.account_subsidy_decay )
+  {
+    if( c.account_creation_fee.valid() )
+      account_creation_fee = legacy_asset::from_asset( c.account_creation_fee.value() );
+  }
+
+  fc::optional<legacy_asset> account_creation_fee;
+  fc::optional<uint32_t>     maximum_block_size;
+  fc::optional<uint16_t>     hbd_interest_rate;
+  fc::optional<int32_t>      account_subsidy_budget;
+  fc::optional<uint32_t>     account_subsidy_decay;
+};
+
+// only filled parts that are different between active and future wso
+struct api_future_witness_schedule
+{
+  api_future_witness_schedule() {}
+  api_future_witness_schedule( const database_api::future_witness_schedule& w ) :
+    num_scheduled_witnesses( w.num_scheduled_witnesses ),
+    elected_weight( w.elected_weight ),
+    timeshare_weight( w.timeshare_weight ),
+    miner_weight( w.miner_weight ),
+    witness_pay_normalization_factor( w.witness_pay_normalization_factor ),
+    majority_version( w.majority_version ),
+    max_voted_witnesses( w.max_voted_witnesses ),
+    max_miner_witnesses( w.max_miner_witnesses ),
+    max_runner_witnesses( w.max_runner_witnesses ),
+    hardfork_required_witnesses( w.hardfork_required_witnesses ),
+    account_subsidy_rd( w.account_subsidy_rd ),
+    account_subsidy_witness_rd( w.account_subsidy_witness_rd ),
+    min_witness_account_subsidy_decay( w.min_witness_account_subsidy_decay )
+  {
+    if( w.median_props.valid() )
+      median_props = api_future_chain_properties( w.median_props.value() );
+  }
+
+  fc::optional<uint8_t>                     num_scheduled_witnesses;
+  fc::optional<uint8_t>                     elected_weight;
+  fc::optional<uint8_t>                     timeshare_weight;
+  fc::optional<uint8_t>                     miner_weight;
+  fc::optional<uint8_t>                     witness_pay_normalization_factor;
+  fc::optional<api_future_chain_properties> median_props;
+  fc::optional<version>                     majority_version;
+
+  fc::optional<uint8_t>                     max_voted_witnesses;
+  fc::optional<uint8_t>                     max_miner_witnesses;
+  fc::optional<uint8_t>                     max_runner_witnesses;
+  fc::optional<uint8_t>                     hardfork_required_witnesses;
+
+  fc::optional<rd_dynamics_params>          account_subsidy_rd;
+  fc::optional<rd_dynamics_params>          account_subsidy_witness_rd;
+  fc::optional<int64_t>                     min_witness_account_subsidy_decay;
+};
+
 struct api_witness_schedule_object
 {
   api_witness_schedule_object() {}
@@ -453,6 +515,8 @@ struct api_witness_schedule_object
     min_witness_account_subsidy_decay( w.min_witness_account_subsidy_decay )
   {
     current_shuffled_witnesses.insert( current_shuffled_witnesses.begin(), w.current_shuffled_witnesses.begin(), w.current_shuffled_witnesses.end() );
+    if( w.future_changes.valid() )
+      future_changes = api_future_witness_schedule( w.future_changes.value() );
   }
 
   witness_schedule_id_type      id;
@@ -474,6 +538,8 @@ struct api_witness_schedule_object
   rd_dynamics_params            account_subsidy_rd;
   rd_dynamics_params            account_subsidy_witness_rd;
   int64_t                       min_witness_account_subsidy_decay = 0;
+
+  fc::optional<api_future_witness_schedule> future_changes;
 };
 
 struct api_feed_history_object
@@ -1062,6 +1128,32 @@ FC_REFLECT( hive::plugins::condenser_api::api_witness_object,
           (available_witness_account_subsidies)
         )
 
+FC_REFLECT( hive::plugins::condenser_api::api_future_chain_properties,
+          (account_creation_fee)
+          (maximum_block_size)
+          (hbd_interest_rate)
+          (account_subsidy_budget)
+          (account_subsidy_decay)
+        )
+
+FC_REFLECT( hive::plugins::condenser_api::api_future_witness_schedule,
+          (num_scheduled_witnesses)
+          (elected_weight)
+          (timeshare_weight)
+          (miner_weight)
+          (witness_pay_normalization_factor)
+          (median_props)
+          (majority_version)
+          (max_voted_witnesses)
+          (max_miner_witnesses)
+          (max_runner_witnesses)
+          (hardfork_required_witnesses)
+          (account_subsidy_rd)
+          (account_subsidy_witness_rd)
+          (min_witness_account_subsidy_decay)
+        )
+
+
 FC_REFLECT( hive::plugins::condenser_api::api_witness_schedule_object,
           (id)
           (current_virtual_time)
@@ -1081,6 +1173,7 @@ FC_REFLECT( hive::plugins::condenser_api::api_witness_schedule_object,
           (account_subsidy_rd)
           (account_subsidy_witness_rd)
           (min_witness_account_subsidy_decay)
+          (future_changes)
         )
 
 FC_REFLECT( hive::plugins::condenser_api::api_feed_history_object,
