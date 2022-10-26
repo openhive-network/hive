@@ -549,7 +549,7 @@ python_pattern_mainnet_tests:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
     - apt update && apt install -y bash git ca-certificates curl build-essential python3-dev
     - python3 -m ensurepip
-    - pip3 install pytest pytest-xdist pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" pytest-timeout==${PYTEST_TIMEOUT_VERSION}
+    - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
 
   script:
     # run pattern tests
@@ -578,7 +578,7 @@ python_pattern_mainnet_tests:
   script:
     - apt update && apt install -y bash git ca-certificates curl build-essential python3-dev
     - python3 -m ensurepip
-    - pip3 install pytest pytest-xdist pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
+    - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
     - cd tests/api_tests/message_format_tests
     - export PYTEST_ARGS=(-m ${NODE_TYPE} --http-endpoint=${NODE_ADDRESS})
     - *run-pytest
