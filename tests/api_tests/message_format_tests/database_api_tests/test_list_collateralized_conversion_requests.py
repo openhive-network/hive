@@ -4,7 +4,7 @@ from ..local_tools import run_for
 
 
 # This test is not performed on 5 million block log because of lack of accounts with collateralized conversion requests.
-# remote node update. See the readme.md file in this directory for further explanation.
+# See the readme.md file in this directory for further explanation.
 @run_for('testnet', 'mainnet_64m')
 def test_list_collateralized_conversion_requests(prepared_node, should_prepare):
     if should_prepare:
