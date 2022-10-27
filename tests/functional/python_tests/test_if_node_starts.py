@@ -7,7 +7,7 @@ import test_tools as tt
 # RC -- Resource Credits -- paliwko
 
 
-def test_if_node_starts_up_correctly(node):
+def test_if_node_starts_up_correctly():
     node = tt.InitNode()
     node.run()
 
@@ -15,6 +15,8 @@ def test_if_node_starts_up_correctly(node):
     wallet = tt.Wallet(attach_to=node)
 
     wallet.api.create_account("initminer", "alice", "{}")
+    print('@@@ ', wallet.api.info())
+    print('### ', wallet.api.about())
 
     # before transfer
     alice = node.api.condenser.get_accounts(["alice"])
