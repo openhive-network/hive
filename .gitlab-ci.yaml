@@ -285,15 +285,6 @@ beem_mirrornet_tests:
     when: always
     expire_in: 1 week
 
-.test_tools_based_with_faketime:
-  extends: .test_tools_based
-  before_script:
-    - !reference [.test_tools_based, before_script]
-    - git clone --depth 1 --branch master https://github.com/wolfcw/libfaketime.git
-    - cd libfaketime && make
-    - export LIBFAKETIME_PATH=`pwd`/src/libfaketimeMT.so.1
-    - cd ..
-
 cli_wallet_tests:
   stage: test
   extends: .test_tools_based
@@ -343,7 +334,7 @@ cli_wallet_extended_tests:
 
 fork_tests:
   stage: test
-  extends: .test_tools_based_with_faketime
+  extends: .test_tools_based
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
@@ -358,7 +349,7 @@ fork_tests:
 
 hf26_tests:
   stage: test
-  extends: .test_tools_based_with_faketime
+  extends: .test_tools_based
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
@@ -405,7 +396,7 @@ broadcast_tests:
 
 test_tools_tests:
   stage: test
-  extends: .test_tools_based_with_faketime
+  extends: .test_tools_based
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
@@ -513,7 +504,7 @@ patterns_tests:
 
 transaction_serialization_testnet_tests:
   stage: test
-  extends: .test_tools_based_with_faketime
+  extends: .test_tools_based
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
