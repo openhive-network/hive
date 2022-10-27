@@ -293,8 +293,6 @@ int main( int argc, char** argv )
       }
       else
       {
-        // TODO: Handle https and maybe pre-resolve url
-
         auto http_apic = std::make_shared<fc::rpc::http_api_connection>(wdata.server_url);
         _remote_api = http_apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
       }
