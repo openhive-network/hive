@@ -1,16 +1,34 @@
 
 #include <fc/rpc/http_api.hpp>
 
+#include <fc/network/url.hpp>
+
 namespace fc { namespace rpc {
 
 http_api_connection::http_api_connection( const std::string& _url )
 {
+   const auto apply_default_port_if_required = [&]( uint16_t def_port ) -> void {
+      if( !this->_url.port().valid() )
+      {
+         fc::mutable_url port_change = fc::move( this->_url );
+         port_change.set_port( def_port );
+
+         this->_url = fc::move( port_change );
+      }
+   };
+
    this->_url = fc::url{ _url };
 
    if( this->_url.proto() == "http" )
+   {
       this->is_ssl = false;
+      apply_default_port_if_required( 80 );
+   }
    else if( this->_url.proto() == "https" )
+   {
       this->is_ssl = true;
+      apply_default_port_if_required( 443 );
+   }
    else
       FC_ASSERT( false, "Invalid protocol type for the http_api: Expected http or https. Got: ${proto}", ("proto", this->_url.proto())("url", _url) );
 
