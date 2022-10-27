@@ -15,7 +15,7 @@ namespace fc
          void parse( const fc::string& s )
          {
            std::stringstream ss(s);
-           std::string skip,_lpath,_largs,luser,lpass;
+           std::string skip,_lpath,luser,lpass;
            std::getline( ss, _proto, ':' );
            std::getline( ss, skip, '/' );
            std::getline( ss, skip, '/' );
@@ -59,11 +59,6 @@ namespace fc
            // but we really want to make it the absolute path /etc/rc.local
            _path = fc::path( "/" ) / _lpath;
 #endif
-           std::getline( ss, _largs );
-           if( _args.valid() && _args->size() ) 
-           {
-             // TODO: args = fc::move(_args);
-           }
          }
 
          string                    _proto; 
@@ -71,9 +66,36 @@ namespace fc
          ostring                   _user;
          ostring                   _pass;
          opath                     _path;
-         ovariant_object           _args;
          fc::optional<uint16_t>    _port;
     };
+  }
+
+  bool url_eq_impl( const detail::url_impl& __lhs, const detail::url_impl& __rhs )
+  {
+    return __lhs._proto == __rhs._proto
+        && __lhs._host == __rhs._host
+        && __lhs._user == __rhs._user
+        && __lhs._pass == __rhs._pass
+        && __lhs._path == __rhs._path
+        && __lhs._port == __rhs._port;
+  }
+
+  bool url::operator==( const url& cmp )const
+  {
+    return url_eq_impl( *this->my, *cmp.my );
+  }
+  bool url::operator==( const mutable_url& cmp )const
+  {
+    return url_eq_impl( *this->my, *cmp.my );
+  }
+
+  bool mutable_url::operator==( const url& cmp )const
+  {
+    return url_eq_impl( *this->my, *cmp.my );
+  }
+  bool mutable_url::operator==( const mutable_url& cmp )const
+  {
+    return url_eq_impl( *this->my, *cmp.my );
   }
 
   void to_variant( const url& u, fc::variant& v )
@@ -83,6 +105,15 @@ namespace fc
   void from_variant( const fc::variant& v, url& u )
   {
     u  = url( v.as_string() ); 
+  }
+
+  void to_variant( const mutable_url& u, fc::variant& v )
+  {
+    v = fc::string(u);
+  }
+  void from_variant( const fc::variant& v, mutable_url& u )
+  {
+    u  = mutable_url( v.as_string() ); 
   }
 
   url::operator string()const
@@ -99,7 +130,7 @@ namespace fc
       if( my->_host.valid() ) ss<<*my->_host;
       if( my->_port.valid() ) ss<<":"<<*my->_port;
       if( my->_path.valid() ) ss<<my->_path->generic_string();
-    //  if( my->_args ) ss<<"?"<<*my->_args;
+      // TODO: args (if needed)
       return ss.str();
   }
 
@@ -120,7 +151,7 @@ namespace fc
   { }
 
   url::url( const url& u )
-  :my(u.my){}
+  :my(std::make_shared<detail::url_impl>(*u.my)){}
 
   url::url( url&& u )
   :my( fc::move(u.my) )
@@ -135,13 +166,16 @@ namespace fc
   }
   url::url( mutable_url&& mu )
   :my( fc::move( mu.my ) )
-  { }
+  { mu.my = get_null_url(); }
 
   url::~url(){}
 
   url& url::operator=(const url& u )
   {
-     my = u.my;
+     if( this != &u )
+     {
+       my = std::make_shared<detail::url_impl>(*u.my);
+     }
      return *this;
   }
 
@@ -156,12 +190,19 @@ namespace fc
   }
   url& url::operator=(const mutable_url& u )
   {
-     my = std::make_shared<detail::url_impl>(*u.my);
+     if( this != &u )
+     {
+      my = std::make_shared<detail::url_impl>(*u.my);
+     }
      return *this;
   }
   url& url::operator=(mutable_url&& u )
   {
-     my = fc::move(u.my);
+     if( this != &u )
+     {
+        my = fc::move(u.my);
+        u.my= get_null_url();
+     }
      return *this;
   }
 
@@ -185,16 +226,89 @@ namespace fc
   {
     return my->_path;
   }
-  ovariant_object           url::args()const
-  {
-    return my->_args;
-  }
   fc::optional<uint16_t>    url::port()const
   {
     return my->_port;
   }
 
+  mutable_url::mutable_url( const fc::string& u )
+  {
+    url::my = std::make_shared<detail::url_impl>();
 
+    my->parse(u);
+  }
+
+  mutable_url::mutable_url()
+  {
+    url::my = get_null_url();
+  }
+
+  mutable_url::mutable_url( const url& u )
+  {
+     url::my = std::make_shared<detail::url_impl>(*u.my);
+  }
+
+  mutable_url::mutable_url( const mutable_url& u )
+  {
+     url::my = std::make_shared<detail::url_impl>(*u.my);
+  }
+
+  mutable_url::mutable_url( mutable_url&& u )
+  {
+    url::my = fc::move(u.my);
+
+    u.my = get_null_url();
+  }
+
+  mutable_url::~mutable_url(){}
+
+  mutable_url& mutable_url::operator=(mutable_url&& u )
+  {
+     if( this != &u )
+     {
+        my = fc::move(u.my);
+        u.my= get_null_url();
+     }
+     return *this;
+  }
+  mutable_url& mutable_url::operator=(const url& u )
+  {
+     my = std::make_shared<detail::url_impl>(*u.my);
+     return *this;
+  }
+  mutable_url& mutable_url::operator=(const mutable_url& u )
+  {
+     if( this != &u )
+     {
+        my = std::make_shared<detail::url_impl>(*u.my);
+     }
+     return *this;
+  }
+
+  void mutable_url::set_proto( string  p )
+  {
+    this->my->_proto = p;
+  }
+  void mutable_url::set_host( ostring  h )
+  {
+    this->my->_host = h;
+  }
+  void mutable_url::set_user( ostring  u )
+  {
+    this->my->_user = u;
+  }
+  void mutable_url::set_pass( ostring  p )
+  {
+    this->my->_pass = p;
+  }
+  void mutable_url::set_path( opath    p )
+  {
+    this->my->_path = p;
+  }
+  void mutable_url::set_port( fc::optional<uint16_t> p )
+  {
+    this->my->_port = p;
+  }
 
 }
 
