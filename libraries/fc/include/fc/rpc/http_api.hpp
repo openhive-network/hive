@@ -43,6 +43,7 @@ namespace fc { namespace rpc {
          void connect_with( fc::http::connection_base& con );
 
          fc::url            _url;
+         bool               _is_ip_url;
    };
 
 } } // namespace fc::rpc
