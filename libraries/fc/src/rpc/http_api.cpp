@@ -32,6 +32,17 @@ http_api_connection::http_api_connection( const std::string& _url )
    else
       FC_ASSERT( false, "Invalid protocol type for the http_api: Expected http or https. Got: ${proto}", ("proto", this->_url.proto())("url", _url) );
 
+   try
+   {
+      fc::resolve( *this->_url.host(), *this->_url.port() ); // First try to resolve the domain name
+
+      _is_ip_url = false;
+   }
+   catch( const fc::exception& e )
+   {
+      _is_ip_url = true;
+   }
+
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
       // TODO: This logic is duplicated between http_api_connection and websocket_api_connection
@@ -120,17 +131,12 @@ void http_api_connection::connect_with( fc::http::connection_base& con )
 {
    try
    {
-      con.connect_to( fc::resolve( *_url.host(), *_url.port() )[0] ); // First try to resolve the domain name
-   }
-   catch( const fc::exception& e )
-   {
-      ilog("Error resolving host '${url}': ${what}. Trying ip endpoint connection", ("url", _url)("what", e.to_detail_string())("error", e));
-
-      try
-      {
+      if( _is_ip_url )
          con.connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
-      } FC_CAPTURE_AND_RETHROW( (_url) )
+      else
+         con.connect_to( fc::resolve( *_url.host(), *_url.port() )[0] );
    }
+   FC_CAPTURE_AND_RETHROW( (_url) )
 }
 
 fc::variant http_api_connection::do_request(
