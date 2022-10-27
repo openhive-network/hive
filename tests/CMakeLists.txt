@@ -4,7 +4,6 @@ ENABLE_TESTING()
 
 IF ( BUILD_HIVE_TESTNET )
     add_subdirectory(unit)
-    add_subdirectory(functional)
 ELSE ( BUILD_HIVE_TESTNET )
     ADD_API_TEST(${CMAKE_BINARY_DIR}/tests/tests_api ${CMAKE_CURRENT_SOURCE_DIR}/tests_api hived condenser_api broadcast_block [{"previous":"0000000000000000000000000000000000000000","timestamp":"1970-01-01T00:00:00","witness":"","transaction_merkle_root":"0000000000000000000000000000000000000000","extensions":[],"witness_signature":"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","transactions":[]}])
     ADD_API_TEST(${CMAKE_BINARY_DIR}/tests/tests_api ${CMAKE_CURRENT_SOURCE_DIR}/tests_api hived condenser_api broadcast_transaction [{"ref_block_num":1097,"ref_block_prefix":2181793527,"expiration":"2016-03-24T18:00:21","operations":[["vote",{"voter":"steemit","author":"alice","permlink":"a-post-by-alice","weight":10000}]],"extensions":[],"signatures":[]}])
