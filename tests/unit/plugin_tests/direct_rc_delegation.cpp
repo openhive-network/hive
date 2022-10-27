@@ -1559,7 +1559,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     dvso.vesting_shares = asset( 0, VESTS_SYMBOL );
     auto push_01 = [ this, &dvso, &alice_private_key ]{ push_transaction(dvso, alice_private_key); };
     //for `AMD Ryzen 7 5800X 8-Core Processor` ~480ms
-    time_checker( push_01, 800 );
+    time_checker( push_01, 1000 );
 
     for( auto& account : accounts )
     {
