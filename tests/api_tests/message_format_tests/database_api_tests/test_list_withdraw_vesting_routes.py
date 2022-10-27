@@ -10,6 +10,6 @@ def test_list_withdraw_vesting_routes(prepared_node, should_prepare):
         wallet.create_account('alice', vests=tt.Asset.Test(100))
         wallet.api.create_account('alice', 'bob', '{}')
         wallet.api.set_withdraw_vesting_route('alice', 'bob', 15, True)
-    routes = prepared_node.api.database.list_withdraw_vesting_routes(start=['alice', 'bob'], limit=100,
+    routes = prepared_node.api.database.list_withdraw_vesting_routes(start=['', ''], limit=100,
                                                                      order='by_withdraw_route')['routes']
     assert len(routes) != 0

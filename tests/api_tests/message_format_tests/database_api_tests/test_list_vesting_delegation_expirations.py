@@ -13,7 +13,8 @@ def test_list_vesting_delegation_expirations(prepared_node, should_prepare):
         wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
         wallet.api.create_account('alice', 'bob', '{}')
         create_and_cancel_vesting_delegation(wallet, 'alice', 'bob')
-    delegations = prepared_node.api.database.list_vesting_delegation_expirations(start=['alice', date_from_now(weeks=-100), 0],
-                                                                                 limit=100,
-                                                                                 order='by_account_expiration')['delegations']
+    delegations = \
+        prepared_node.api.database.list_vesting_delegation_expirations(start=['', date_from_now(weeks=-100), 0],
+                                                                       limit=100,
+                                                                       order='by_account_expiration')['delegations']
     assert len(delegations) != 0

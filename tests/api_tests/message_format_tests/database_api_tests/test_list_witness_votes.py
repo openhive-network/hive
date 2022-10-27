@@ -15,5 +15,7 @@ def test_list_witness_votes(prepared_node, should_prepare):
                                   {'account_creation_fee': tt.Asset.Test(28), 'maximum_block_size': 131072,
                                   'hbd_interest_rate': 1000})
         wallet.api.vote_for_witness('bob', 'alice', True)
-    votes = prepared_node.api.database.list_witness_votes(start=['alice', 'bob'], limit=100, order='by_witness_account')['votes']
+    votes = prepared_node.api.database.list_witness_votes(start=['', ''],
+                                                          limit=100,
+                                                          order='by_witness_account')['votes']
     assert len(votes) != 0

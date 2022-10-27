@@ -12,6 +12,6 @@ def test_list_proposals(prepared_node, should_prepare):
         wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100),
                               hbds=tt.Asset.Tbd(300))
         create_proposal(wallet, 'alice')
-    proposals = prepared_node.api.database.list_proposals(start=['alice'], limit=100, order='by_creator',
+    proposals = prepared_node.api.database.list_proposals(start=[''], limit=100, order='by_creator',
                                                           order_direction='ascending', status='all')['proposals']
     assert len(proposals) != 0

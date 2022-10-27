@@ -21,7 +21,6 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
     ['find_withdraw_vesting_routes', {'account': 'initminer', 'order': 'by_destination'}],
     ['find_witnesses', {'owners': ['initminer']}],
     ['get_active_witnesses', {}],
-    ['get_active_witnesses', {'include_future':True}],
     ['get_comment_pending_payouts', {'comments': [['initminer', 'test-permlink']]}],
     ['get_config', {}],
     ['get_current_price_feed', {}],
@@ -37,7 +36,6 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
     ['get_transaction_hex', {'trx': {'ref_block_num': 0, 'ref_block_prefix': 0, 'expiration': '2022-04-11T10:29:00',
                                      'operations': [], 'extensions': [], 'signatures': []}}], ['get_version', {}],
     ['get_witness_schedule', {}],
-    ['get_witness_schedule', {'include_future':True}],
     ['is_known_transaction', {'id': '0000000000000000000000000000000000000000'}],
     ['list_account_recovery_requests', {'start': '', 'limit': 100, 'order': 'by_account'}],
     ['list_accounts', {'start': '', 'limit': 100, 'order': 'by_name'}],
@@ -70,4 +68,4 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
 )
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_run_method_with_additional_argument(prepared_node, api_database_method, arguments):
-    getattr(prepared_node.api.database, api_database_method)(**arguments, arg=True)
+    getattr(prepared_node.api.database, api_database_method)(**arguments, additional_argument='Additional value')

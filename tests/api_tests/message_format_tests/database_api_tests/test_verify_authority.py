@@ -12,13 +12,13 @@ def test_verify_authority_in_testnet(prepared_node):
 
 @run_for('mainnet_5m')
 def test_verify_authority_in_mainnet_5m(prepared_node):
-    block = prepared_node.api.wallet_bridge.get_block(4800119)['block']
+    block = prepared_node.api.wallet_bridge.get_block(4_800_119)['block']
     transaction = block['transactions'][1]
-    prepared_node.api.database.verify_authority(trx=transaction, pack='legacy')
+    prepared_node.api.database.verify_authority(trx=transaction)
 
 
 @run_for('mainnet_64m')
 def test_verify_authority_in_mainnet_64m(prepared_node):
-    block = prepared_node.api.wallet_bridge.get_block(48000034)['block']
+    block = prepared_node.api.wallet_bridge.get_block(48_000_034)['block']
     transaction = block['transactions'][17]
-    prepared_node.api.database.verify_authority(trx=transaction, pack='legacy')
+    prepared_node.api.database.verify_authority(trx=transaction)

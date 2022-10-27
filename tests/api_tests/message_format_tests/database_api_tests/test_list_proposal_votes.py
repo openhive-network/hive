@@ -12,6 +12,7 @@ def test_list_proposal_votes(prepared_node, should_prepare):
         wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100), hbds=tt.Asset.Tbd(300))
         create_proposal(wallet, 'alice')
         wallet.api.update_proposal_votes('alice', [0], True)
-    proposal_votes = prepared_node.api.database.list_proposal_votes(start=['alice'], limit=100, order='by_voter_proposal',
-                                                                    order_direction='ascending', status='all')['proposal_votes']
+    proposal_votes = prepared_node.api.database.list_proposal_votes(start=[''], limit=100, order='by_voter_proposal',
+                                                                    order_direction='ascending',
+                                                                    status='all')['proposal_votes']
     assert len(proposal_votes) != 0

@@ -10,5 +10,5 @@ def test_list_escrows(prepared_node, should_prepare):
     if should_prepare:
         wallet = tt.Wallet(attach_to=prepared_node)
         prepare_escrow(wallet, sender='alice')
-    escrows = prepared_node.api.database.list_escrows(start=['alice', 0], limit=5, order='by_from_id')['escrows']
+    escrows = prepared_node.api.database.list_escrows(start=['', 0], limit=5, order='by_from_id')['escrows']
     assert len(escrows) != 0
