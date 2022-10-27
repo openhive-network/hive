@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from typing import List, Literal, Union
 
 import pytest
@@ -16,6 +18,12 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
         init_node = tt.InitNode()
         init_node.run()
         return init_node
+
+    def __create_replayed_node() -> tt.ApiNode:
+        api_node = tt.ApiNode()
+        api_node.run(replay_from=Path(__file__).parent.joinpath(
+            'api_tests/message_format_tests/wallet_bridge_api_tests/block_log/block_log'), wait_for_live=False)
+        return api_node
 
     def __get_requested_node_markers() -> List[Literal['testnet', 'mainnet_5m', 'mainnet_64m']]:
         requested_node_markers = []
@@ -43,13 +51,16 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
     def __was_run_for_used() -> bool:
         return request.node.get_closest_marker('decorated_with_run_for') is not None
 
+    def __is_marker_exist(name: str) -> bool:
+        return request.node.get_closest_marker(name) is not None
+
     def __is_run_for_node() -> bool:
         requested_nodes: List[str] = [request.node.get_closest_marker(node).name for node in create_node
                                       if request.node.get_closest_marker(node) is not None]
         return True if not requested_nodes == [] else False
 
     create_node = {
-        'testnet': __create_init_node,
+        'testnet': __create_init_node if not __is_marker_exist('replay_prepared_block_log') else __create_replayed_node,
         'mainnet_5m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
         'mainnet_64m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
     }
