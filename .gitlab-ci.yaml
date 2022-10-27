@@ -10,12 +10,12 @@ variables:
   GIT_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: recursive
   # pin to specific docker images for build repeatability
-  #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04-3
-  RUNTIME_IMAGE_TAG: "@sha256:58b2ef26ece0463bad9ba61c665ffb9dc4255a4d65b27f56048786e3fae7b2e5"
+  #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04-5
+  RUNTIME_IMAGE_TAG: "@sha256:21ab71b0d7c74b57fb3d378fcf23a708f15592c4b36cdfc31be4b3eb720bce37"
   #points registry.gitlab.syncad.com/hive/hive/builder:ubuntu-20.04-3
   BUILDER_IMAGE_TAG: "@sha256:590750387c74c470ee30910502b4f855122eae9ef9c6e7ad0841985abdc3938c"
-  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu20.04-4
-  TEST_IMAGE_TAG: "@sha256:f0fe7ccc77abb1fd18e0c3176ddf2c29b2125bef7eb8603946199e56450f9de9"
+  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu20.04-5
+  TEST_IMAGE_TAG: "@sha256:f6f8d1a300a7f13c1c5a64088db38cd641fb2ec397f4ac46b4ae8733753a62be"
 
   #points to our clone of python:3.8-slim-bullseye
   PYTHON_BULLSEYE_TAG: "@sha256:c4dc24a9761fe0a7b3f498fe677e8129ab0a62d72a3beae5ea899482f104a962"
