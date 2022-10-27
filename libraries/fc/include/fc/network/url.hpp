@@ -10,7 +10,6 @@ namespace fc {
 
   typedef fc::optional<fc::string>           ostring;
   typedef fc::optional<fc::path>             opath;
-  typedef fc::optional<fc::variant_object>   ovariant_object;
 
   namespace detail { class url_impl; }
 
@@ -38,6 +37,7 @@ namespace fc {
       url& operator=( mutable_url&& c );
       
       bool operator==( const url& cmp )const;
+      bool operator==( const mutable_url& cmp )const;
       
       operator string()const;
       
@@ -47,10 +47,9 @@ namespace fc {
       ostring                   user()const;
       ostring                   pass()const;
       opath                     path()const;
-      ovariant_object           args()const;
       fc::optional<uint16_t>    port()const;
 
-    private:
+    protected:
       friend class mutable_url;
       std::shared_ptr<detail::url_impl> my;
   };
@@ -61,7 +60,7 @@ namespace fc {
   /**
    *  Used to create / manipulate a URL
    */
-  class mutable_url
+  class mutable_url : public url
   {
     public:
       mutable_url();
@@ -78,29 +77,16 @@ namespace fc {
       bool operator==( const mutable_url& cmp )const;
       bool operator==( const url& cmp )const;
       
-      operator string()const;
-      
-      //// file, ssh, tcp, http, ssl, etc...
-      string                    proto()const; 
-      ostring                   host()const;
-      ostring                   user()const;
-      ostring                   pass()const;
-      opath                     path()const;
-      ovariant_object           args()const;
-      fc::optional<uint16_t>    port()const;
-      
-      void set_proto( string        );
-      void set_host( string         );
-      void set_user( string         );
-      void set_pass( string         );
-      void set_path( fc::path p     );
-      void set_args( variant_object );
-      void set_port( uint16_t       );
-
-    private:
-      friend class url;
-      std::unique_ptr<detail::url_impl> my;
+      void set_proto( string  p );
+      void set_host( ostring  h );
+      void set_user( ostring  u );
+      void set_pass( ostring  p );
+      void set_path( opath    p );
+      void set_port( fc::optional<uint16_t> p );
   };
+
+  void to_variant( const mutable_url& u, fc::variant& v );
+  void from_variant( const fc::variant& v, mutable_url& u );
 
 } // namespace fc
 
