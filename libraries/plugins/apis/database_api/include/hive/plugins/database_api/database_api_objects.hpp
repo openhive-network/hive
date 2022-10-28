@@ -855,8 +855,6 @@ struct api_witness_schedule_object
     min_witness_account_subsidy_decay( wso.min_witness_account_subsidy_decay )
   {
     size_t n = wso.current_shuffled_witnesses.size();
-    if( include_future )
-      n += future_wso.current_shuffled_witnesses.size();
     current_shuffled_witnesses.reserve( n );
     std::transform(wso.current_shuffled_witnesses.begin(), wso.current_shuffled_witnesses.end(),
               std::back_inserter(current_shuffled_witnesses),
@@ -864,8 +862,12 @@ struct api_witness_schedule_object
               // ^ fixed_string std::string operator used here.
     if( include_future )
     {
+      n = future_wso.current_shuffled_witnesses.size();
+      future_shuffled_witnesses = vector<string>();
+      future_shuffled_witnesses->reserve( n );
+
       std::transform( future_wso.current_shuffled_witnesses.begin(), future_wso.current_shuffled_witnesses.end(),
-        std::back_inserter( current_shuffled_witnesses ),
+        std::back_inserter( future_shuffled_witnesses.value() ),
         []( const account_name_type& s ) -> std::string { return s; } );
 
       future_changes = future_witness_schedule();
@@ -874,29 +876,30 @@ struct api_witness_schedule_object
     }
   }
 
-  witness_schedule_id_type   id; //always from active wso
+  witness_schedule_id_type              id; //always from active wso
 
-  fc::uint128                current_virtual_time; //always from future wso
-  uint32_t                   next_shuffle_block_num; //always from future wso
-  vector<string>             current_shuffled_witnesses; //concatenated lists from active and future wso
-  uint8_t                    num_scheduled_witnesses;
-  uint8_t                    elected_weight;
-  uint8_t                    timeshare_weight;
-  uint8_t                    miner_weight;
-  uint32_t                   witness_pay_normalization_factor;
-  chain_properties           median_props;
-  version                    majority_version;
+  fc::uint128                           current_virtual_time; //always from future wso
+  uint32_t                              next_shuffle_block_num; //always from future wso
+  vector<string>                        current_shuffled_witnesses; //from active wso
+  fc::optional< vector<string> >        future_shuffled_witnesses; //from future wso (only filled on request)
+  uint8_t                               num_scheduled_witnesses;
+  uint8_t                               elected_weight;
+  uint8_t                               timeshare_weight;
+  uint8_t                               miner_weight;
+  uint32_t                              witness_pay_normalization_factor;
+  chain_properties                      median_props;
+  version                               majority_version;
 
-  uint8_t                    max_voted_witnesses;
-  uint8_t                    max_miner_witnesses;
-  uint8_t                    max_runner_witnesses;
-  uint8_t                    hardfork_required_witnesses;
+  uint8_t                               max_voted_witnesses;
+  uint8_t                               max_miner_witnesses;
+  uint8_t                               max_runner_witnesses;
+  uint8_t                               hardfork_required_witnesses;
 
-  rd_dynamics_params         account_subsidy_rd;
-  rd_dynamics_params         account_subsidy_witness_rd;
-  int64_t                    min_witness_account_subsidy_decay = 0;
+  rd_dynamics_params                    account_subsidy_rd;
+  rd_dynamics_params                    account_subsidy_witness_rd;
+  int64_t                               min_witness_account_subsidy_decay = 0;
 
-  fc::optional<future_witness_schedule> future_changes;
+  fc::optional<future_witness_schedule> future_changes; //only filled on request when there are changes
 };
 
 struct api_signed_block_object : public signed_block
@@ -1324,6 +1327,7 @@ FC_REFLECT( hive::plugins::database_api::api_witness_schedule_object,
           (current_virtual_time)
           (next_shuffle_block_num)
           (current_shuffled_witnesses)
+          (future_shuffled_witnesses)
           (num_scheduled_witnesses)
           (elected_weight)
           (timeshare_weight)

@@ -166,6 +166,7 @@ struct get_active_witnesses_args
 struct get_active_witnesses_return
 {
   vector< account_name_type > witnesses;
+  fc::optional< vector< account_name_type > > future_witnesses;
 };
 
 
@@ -770,7 +771,7 @@ FC_REFLECT( hive::plugins::database_api::get_active_witnesses_args,
   (include_future) )
 
 FC_REFLECT( hive::plugins::database_api::get_active_witnesses_return,
-  (witnesses) )
+  (witnesses)(future_witnesses) )
 
 FC_REFLECT( hive::plugins::database_api::list_accounts_return,
   (accounts) )

@@ -1074,10 +1074,11 @@ vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, 
   return result;
 }
 
-vector< account_name_type > wallet_api::get_active_witnesses( bool include_future )const {
+wallet_bridge_api::get_active_witnesses_return wallet_api::get_active_witnesses( bool include_future )const
+{
   my->require_online();
   vector<variant> args{ include_future };
-  return my->_remote_wallet_bridge_api->get_active_witnesses( args, LOCK ).witnesses;
+  return my->_remote_wallet_bridge_api->get_active_witnesses( args, LOCK );
 }
 
 brain_key_info wallet_api::suggest_brain_key()const

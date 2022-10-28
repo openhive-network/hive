@@ -261,7 +261,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_block )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_chain_properties )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
-  return _database_api->get_witness_schedule( {} ).median_props;
+  return _database_api->get_witness_schedule( { false } ).median_props;
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_witness_schedule )
@@ -317,10 +317,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_active_witnesses )
   const auto arguments = args.get_array()[0];
   verify_args( arguments, 1 );
   bool include_future = arguments.get_array()[0].as<bool>();
-
-  get_active_witnesses_return result;
-  result.witnesses = _database_api->get_active_witnesses( { include_future } ).witnesses;
-  return result;
+  return _database_api->get_active_witnesses( { include_future } );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )

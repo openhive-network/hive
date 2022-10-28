@@ -220,7 +220,18 @@ namespace detail
     bool include_future = false;
     if( args.size() > 0 )
       include_future = args[0].as< bool >();
-    return _database_api->get_active_witnesses( { include_future } ).witnesses;
+    auto db_result = _database_api->get_active_witnesses( { include_future } );
+    get_active_witnesses_return result;
+    result.reserve( db_result.witnesses.size() + ( include_future ? db_result.future_witnesses->size() + 1 : 0 ) );
+    for( const auto& witness : db_result.witnesses )
+      result.emplace_back( witness );
+    if( include_future )
+    {
+      result.emplace_back(); //ABW: yes, it is horrible, use database_api directly
+      for( const auto& witness : db_result.future_witnesses.value() )
+        result.emplace_back( witness );
+    }
+    return result;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_block_header )

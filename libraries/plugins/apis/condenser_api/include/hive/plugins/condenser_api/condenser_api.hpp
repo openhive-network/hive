@@ -515,31 +515,37 @@ struct api_witness_schedule_object
     min_witness_account_subsidy_decay( w.min_witness_account_subsidy_decay )
   {
     current_shuffled_witnesses.insert( current_shuffled_witnesses.begin(), w.current_shuffled_witnesses.begin(), w.current_shuffled_witnesses.end() );
+    if( w.future_shuffled_witnesses.valid() )
+    {
+      future_shuffled_witnesses = vector< account_name_type >();
+      future_shuffled_witnesses->insert( future_shuffled_witnesses->begin(), w.future_shuffled_witnesses->begin(), w.future_shuffled_witnesses->end() );
+    }
     if( w.future_changes.valid() )
       future_changes = api_future_witness_schedule( w.future_changes.value() );
   }
 
-  witness_schedule_id_type      id;
-  fc::uint128_t                 current_virtual_time;
-  uint32_t                      next_shuffle_block_num = 1;
-  vector< account_name_type >   current_shuffled_witnesses;
-  uint8_t                       num_scheduled_witnesses = 1;
-  uint8_t                       elected_weight = 1;
-  uint8_t                       timeshare_weight = 5;
-  uint8_t                       miner_weight = 1;
-  uint32_t                      witness_pay_normalization_factor = 25;
-  api_chain_properties          median_props;
-  version                       majority_version;
-  uint8_t                       max_voted_witnesses           = HIVE_MAX_VOTED_WITNESSES_HF0;
-  uint8_t                       max_miner_witnesses           = HIVE_MAX_MINER_WITNESSES_HF0;
-  uint8_t                       max_runner_witnesses          = HIVE_MAX_RUNNER_WITNESSES_HF0;
-  uint8_t                       hardfork_required_witnesses   = HIVE_HARDFORK_REQUIRED_WITNESSES;
+  witness_schedule_id_type                    id;
+  fc::uint128_t                               current_virtual_time;
+  uint32_t                                    next_shuffle_block_num = 1;
+  vector< account_name_type >                 current_shuffled_witnesses;
+  fc::optional< vector< account_name_type > > future_shuffled_witnesses;
+  uint8_t                                     num_scheduled_witnesses = 1;
+  uint8_t                                     elected_weight = 1;
+  uint8_t                                     timeshare_weight = 5;
+  uint8_t                                     miner_weight = 1;
+  uint32_t                                    witness_pay_normalization_factor = 25;
+  api_chain_properties                        median_props;
+  version                                     majority_version;
+  uint8_t                                     max_voted_witnesses         = HIVE_MAX_VOTED_WITNESSES_HF0;
+  uint8_t                                     max_miner_witnesses         = HIVE_MAX_MINER_WITNESSES_HF0;
+  uint8_t                                     max_runner_witnesses        = HIVE_MAX_RUNNER_WITNESSES_HF0;
+  uint8_t                                     hardfork_required_witnesses = HIVE_HARDFORK_REQUIRED_WITNESSES;
 
-  rd_dynamics_params            account_subsidy_rd;
-  rd_dynamics_params            account_subsidy_witness_rd;
-  int64_t                       min_witness_account_subsidy_decay = 0;
+  rd_dynamics_params                          account_subsidy_rd;
+  rd_dynamics_params                          account_subsidy_witness_rd;
+  int64_t                                     min_witness_account_subsidy_decay = 0;
 
-  fc::optional<api_future_witness_schedule> future_changes;
+  fc::optional<api_future_witness_schedule>   future_changes;
 };
 
 struct api_feed_history_object
@@ -1159,6 +1165,7 @@ FC_REFLECT( hive::plugins::condenser_api::api_witness_schedule_object,
           (current_virtual_time)
           (next_shuffle_block_num)
           (current_shuffled_witnesses)
+          (future_shuffled_witnesses)
           (num_scheduled_witnesses)
           (elected_weight)
           (timeshare_weight)

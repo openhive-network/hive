@@ -475,14 +475,13 @@ DEFINE_API_IMPL( database_api_impl, get_active_witnesses )
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_26 ) || !args.include_future, "Future witnesses only become available after HF26" );
   const auto& wso = _db.get_witness_schedule_object();
   get_active_witnesses_return result;
-  result.witnesses.reserve( wso.current_shuffled_witnesses.size() * ( args.include_future ? 2 : 1 ) );
-  for( const auto& witness : wso.current_shuffled_witnesses )
-    result.witnesses.emplace_back( witness );
+  result.witnesses.assign( wso.current_shuffled_witnesses.begin(),
+    wso.current_shuffled_witnesses.begin() + wso.num_scheduled_witnesses );
   if( args.include_future )
   {
     const auto& future_wso = _db.get_future_witness_schedule_object();
-    for( const auto& witness : future_wso.current_shuffled_witnesses )
-      result.witnesses.emplace_back( witness );
+    result.future_witnesses = vector< account_name_type >( future_wso.current_shuffled_witnesses.begin(),
+      future_wso.current_shuffled_witnesses.begin() + future_wso.num_scheduled_witnesses );
   }
   return result;
 }

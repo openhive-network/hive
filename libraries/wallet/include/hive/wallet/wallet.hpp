@@ -147,7 +147,7 @@ class wallet_api
       *
       * @param include_future Set to true to return both current and next round of witnesses
       */
-    vector< account_name_type > get_active_witnesses( bool include_future )const;
+    wallet_bridge_api::get_active_witnesses_return get_active_witnesses( bool include_future )const;
 
     /** Returns vesting withdraw routes for an account.
       *

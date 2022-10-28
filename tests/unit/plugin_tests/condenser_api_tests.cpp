@@ -35,8 +35,6 @@ struct condenser_api_fixture : database_fixture
       condenser.plugin_startup(); //has to be called because condenser fills its variables then
       condenser_api = condenser.api.get();
       BOOST_REQUIRE( condenser_api );
-
-
     } );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
@@ -123,10 +121,16 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
     BOOST_REQUIRE( active_schedule_1.current_shuffled_witnesses[i] == scheduled_witnesses_1[i] );
   BOOST_REQUIRE_GT( active_schedule_1.next_shuffle_block_num, db->head_block_num() );
   BOOST_REQUIRE_EQUAL( active_schedule_1.next_shuffle_block_num, full_schedule_1.next_shuffle_block_num );
-  BOOST_REQUIRE_EQUAL( full_schedule_1.current_shuffled_witnesses.size(), 2 * HIVE_MAX_WITNESSES );
-  BOOST_REQUIRE_EQUAL( all_scheduled_witnesses_1.size(), 2 * HIVE_MAX_WITNESSES );
-  for( int i = 0; i < 2*HIVE_MAX_WITNESSES; ++i )
+  BOOST_REQUIRE_EQUAL( full_schedule_1.current_shuffled_witnesses.size(), HIVE_MAX_WITNESSES );
+  BOOST_REQUIRE( full_schedule_1.future_shuffled_witnesses.valid() == true );
+  BOOST_REQUIRE_EQUAL( full_schedule_1.future_shuffled_witnesses->size(), HIVE_MAX_WITNESSES );
+  BOOST_REQUIRE_EQUAL( all_scheduled_witnesses_1.size(), 2 * HIVE_MAX_WITNESSES + 1 );
+  for( int i = 0; i < HIVE_MAX_WITNESSES; ++i )
+  {
     BOOST_REQUIRE( full_schedule_1.current_shuffled_witnesses[i] == all_scheduled_witnesses_1[i] );
+    BOOST_REQUIRE( full_schedule_1.future_shuffled_witnesses.value()[i] == all_scheduled_witnesses_1[ HIVE_MAX_WITNESSES + 1 + i ] );
+  }
+  BOOST_REQUIRE( all_scheduled_witnesses_1[ HIVE_MAX_WITNESSES ] == "" );
   BOOST_REQUIRE( full_schedule_1.future_changes.valid() == true );
   BOOST_REQUIRE( full_schedule_1.future_changes->majority_version.valid() == true );
   BOOST_REQUIRE( full_schedule_1.future_changes->majority_version.value() > active_schedule_1.majority_version );
@@ -160,7 +164,7 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
   BOOST_REQUIRE( active_schedule_2.account_subsidy_witness_rd == active_schedule_1.account_subsidy_witness_rd );
   BOOST_REQUIRE_EQUAL( active_schedule_2.min_witness_account_subsidy_decay, active_schedule_1.min_witness_account_subsidy_decay );
   for( int i = 0; i < HIVE_MAX_WITNESSES; ++i )
-    BOOST_REQUIRE( active_schedule_2.current_shuffled_witnesses[i] == full_schedule_1.current_shuffled_witnesses[i+HIVE_MAX_WITNESSES] );
+    BOOST_REQUIRE( active_schedule_2.current_shuffled_witnesses[i] == full_schedule_1.future_shuffled_witnesses.value()[i] );
   BOOST_REQUIRE( full_schedule_2.future_changes.valid() == false ); // no further changes
 
   // since basic mechanisms were tested on naturally filled schedules, we can now test a bit more using
