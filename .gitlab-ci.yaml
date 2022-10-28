@@ -563,8 +563,13 @@ python_pattern_mainnet_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
-  script:
+
+  before_script:
+    - python3 -m venv venv/
+    - . venv/bin/activate
     - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
+
+  script:
     - cd tests/api_tests/message_format_tests
     - export PYTEST_ARGS=(-m ${NODE_TYPE} --http-endpoint=${NODE_ADDRESS})
     - *run-pytest
