@@ -104,8 +104,11 @@ mirrornet_node_build:
 
 mirrornet_replay_test:
   stage: test
-  image: "$CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG"
-  needs: [ "mirrornet_node_build" ]
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  needs: 
+    - job: "mirrornet_node_build"
+      artifacts: true
+
   variables:
     BINARIES_DIR: "$CI_PROJECT_DIR/$CI_JOB_NAME-$CI_COMMIT_REF_NAME/hived-mirrornet-binaries"
     BLOCK_LOG_SOURCE_DIR: "/blockchain"
