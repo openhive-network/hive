@@ -86,7 +86,7 @@ mirrornet_node_build:
     IMAGE_TAG: "$CI_COMMIT_SHA"
     SOURCES_DIR: "."
     REGISTRY_URL: "$CI_REGISTRY_IMAGE"
-    BINARIES_DIR: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
+    BINARIES_DIR: "$CI_PROJECT_DIR/$CI_JOB_NAME-$CI_COMMIT_REF_NAME/hived-mirrornet-binaries"
   script:
     - echo "Building hived in mirrornet mode"
     - ./scripts/ci-helpers/build_instance.sh
@@ -107,7 +107,7 @@ mirrornet_replay_test:
   image: "$CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG"
   needs: [ "mirrornet_node_build" ]
   variables:
-    BINARIES_DIR: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
+    BINARIES_DIR: "$CI_PROJECT_DIR/$CI_JOB_NAME-$CI_COMMIT_REF_NAME/hived-mirrornet-binaries"
     BLOCK_LOG_SOURCE_DIR: "/blockchain"
     NUMBER_OF_BLOCKS: 5000000
     MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
