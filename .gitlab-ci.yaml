@@ -78,15 +78,13 @@ testnet_node_build:
 
 mirrornet_node_build:
   stage: build
-  extends: .prepare_hived_data_5m_image
-  interruptible: true
+  extends: .docker_image_builder_job
+
   variables:
-    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
-    REGISTRY_PASS: "$HIVED_CI_IMGBUILDER_PASSWORD"
     IMAGE_TAG: "$CI_COMMIT_SHA"
     SOURCES_DIR: "."
     REGISTRY_URL: "$CI_REGISTRY_IMAGE"
-    BINARIES_DIR: "$CI_PROJECT_DIR/$CI_JOB_NAME-$CI_COMMIT_REF_NAME/hived-mirrornet-binaries"
+    BINARIES_DIR: "hived-mirrornet-binaries"
   script:
     - echo "Building hived in mirrornet mode"
     - ./scripts/ci-helpers/build_instance.sh
@@ -95,6 +93,7 @@ mirrornet_node_build:
       "$REGISTRY_URL"
       --network-type="mirrornet"
       --export-binaries="$BINARIES_DIR"
+    - chmod -Rc a+rwx "$BINARIES_DIR"
   artifacts:
     paths:
       - "$BINARIES_DIR"
@@ -110,7 +109,7 @@ mirrornet_replay_test:
       artifacts: true
 
   variables:
-    BINARIES_DIR: "$CI_PROJECT_DIR/$CI_JOB_NAME-$CI_COMMIT_REF_NAME/hived-mirrornet-binaries"
+    BINARIES_DIR: "hived-mirrornet-binaries"
     BLOCK_LOG_SOURCE_DIR: "/blockchain"
     NUMBER_OF_BLOCKS: 5000000
     MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
