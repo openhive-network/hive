@@ -480,6 +480,9 @@ patterns_tests:
 
   before_script:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
+    - python3 -m venv venv/
+    - . venv/bin/activate
+    - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
     - pip3 install tox==${TOX_VERSION}
     - pip3 install -r $CI_PROJECT_DIR/tests/api_tests/comparsion_tests/requirements.txt
 
@@ -537,6 +540,8 @@ python_pattern_mainnet_tests:
 
   before_script:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
+    - python3 -m venv venv/
+    - . venv/bin/activate
     - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
 
   script:
