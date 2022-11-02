@@ -374,8 +374,6 @@ struct api_comment_object
     {
       total_vote_weight       = cc->get_total_vote_weight();
       reward_weight           = HIVE_100_PERCENT; // since HF17 reward is not limited if posts are too frequent
-      total_payout_value      = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
-      curator_payout_value    = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
       author_rewards          = 0; // since HF19 it was always 0 or cc did not exist
       net_votes               = cc->get_net_votes();
       last_payout             = time_point_sec::min(); // since HF19 it is the only value possible
@@ -433,8 +431,8 @@ struct api_comment_object
 
   uint16_t          reward_weight = 0;
 
-  asset             total_payout_value;
-  asset             curator_payout_value;
+  asset             total_payout_value = HBD_asset();
+  asset             curator_payout_value = HBD_asset();
 
   share_type        author_rewards;
 
@@ -443,7 +441,7 @@ struct api_comment_object
   account_name_type root_author;
   string            root_permlink;
 
-  asset             max_accepted_payout;
+  asset             max_accepted_payout = HBD_asset();
   uint16_t          percent_hbd = 0;
   bool              allow_replies = false;
   bool              allow_votes = false;
@@ -628,7 +626,7 @@ struct api_account_object
   asset             delegated_vesting_shares;
   asset             received_vesting_shares;
   asset             vesting_withdraw_rate;
-  
+
   asset             post_voting_power;
 
   time_point_sec    next_vesting_withdrawal;
@@ -847,7 +845,7 @@ struct api_witness_schedule_object
 
 struct api_signed_block_object : public signed_block
 {
-  api_signed_block_object(const std::shared_ptr<full_block_type>& full_block) : 
+  api_signed_block_object(const std::shared_ptr<full_block_type>& full_block) :
     signed_block(full_block->get_block()),
     block_id(full_block->get_block_id()),
     signing_key(full_block->get_signing_key())
