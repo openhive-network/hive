@@ -189,9 +189,9 @@ void notify_hived_error(const fc::string& error_message) noexcept
   notify("error", "message", error_message);
 }
 
-utilities::notifications::detail::scope_guarded_timer notify_hived_timer(const fc::string &timer_name) noexcept
+utilities::notifications::detail::scope_guarded_timer notify_hived_timer(const fc::string &timer_name, const fc::optional<fc::time_point> start) noexcept
 {
-  return utilities::notifications::detail::scope_guarded_timer{ timer_name };
+  return utilities::notifications::detail::scope_guarded_timer{ timer_name, (start ? *start : fc::time_point::now()) };
 }
 
 } // hive

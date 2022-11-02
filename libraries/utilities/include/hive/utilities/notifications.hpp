@@ -169,7 +169,7 @@ private:
 struct scope_guarded_timer
 {
   fc::string timer_name;
-  fc::time_point start = fc::time_point::now();
+  fc::time_point start;
 
   void reset();
   ~scope_guarded_timer();
@@ -198,7 +198,10 @@ inline void notify(
 
 void notify_hived_status(const fc::string &current_status) noexcept;
 void notify_hived_error(const fc::string &error_message) noexcept;
-hive::utilities::notifications::detail::scope_guarded_timer notify_hived_timer(const fc::string &timer_name) noexcept;
+hive::utilities::notifications::detail::scope_guarded_timer notify_hived_timer(
+  const fc::string &timer_name,
+  const fc::optional<fc::time_point> start = fc::optional<fc::time_point>{} /* fc::time_point::now() by default */
+) noexcept;
 
 } // hive
 
