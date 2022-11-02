@@ -1923,7 +1923,19 @@ namespace graphene { namespace net {
       activity_tracer aTracer(__FUNCTION__, *this);
 
       message_hash_type message_hash = received_message.id();
-      // send_message_timing_to_statsd( originating_peer, received_message, message_hash ); NOTIF TODO
+
+      // log latency for peer
+      {
+        auto iter = originating_peer->items_requested_from_peer.find( item_id( received_message.msg_type, message_hash ) );
+        if(iter != originating_peer->items_requested_from_peer.end())
+        {
+          auto timer = hive::notify_hived_timer(
+            "p2p/latency/" + fc::variant(core_message_type_enum(received_message.msg_type)).as_string(),
+            iter->second
+          );
+        }
+      }
+
       dlog("handling message ${type} ${hash} size ${size} from peer ${endpoint}",
            ("type", graphene::net::core_message_type_enum(received_message.msg_type))("hash", message_hash)
            ("size", received_message.size)
