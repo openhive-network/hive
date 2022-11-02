@@ -255,7 +255,7 @@ namespace appbase {
 
       void notify_status(const fc::string& current_status) const noexcept;
       void notify_error(const fc::string& error_message) const noexcept;
-      appbase::scope_guarded_timer notify_hived_timer(const fc::string &timer_name) noexcept;
+      appbase::scope_guarded_timer notify_hived_timer(const fc::string &timer_name, fc::optional<fc::time_point_sec> start = fc::optional<fc::time_point_sec>{}) noexcept;
 
       void setup_notifications(const boost::program_options::variables_map &args) const;
 

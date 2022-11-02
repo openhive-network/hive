@@ -1,4 +1,3 @@
-#include "appbase/plugin.hpp"
 #include <appbase/application.hpp>
 
 #include <hive/utilities/logging_config.hpp>
@@ -746,9 +745,11 @@ scope_guarded_timer::~scope_guarded_timer()
   send_notif();
 }
 
-scope_guarded_timer application::notify_hived_timer(const fc::string &timer_name) noexcept
+scope_guarded_timer application::notify_hived_timer(const fc::string &timer_name, fc::optional<fc::time_point_sec> start) noexcept
 {
-  return scope_guarded_timer{ timer_name };
+  if(!start.valid())
+    start = fc::time_point::now();
+  return scope_guarded_timer{ timer_name, *start };
 }
 
 } /// namespace appbase
