@@ -401,7 +401,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 #endif
   );
 
-  if( _enable_rc_stats && _db.is_processing_block() )
+  if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
   {
     _db.modify( _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID ), [&]( rc_stats_object& stats_obj )
     {
