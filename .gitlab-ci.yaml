@@ -22,6 +22,10 @@ variables:
   PYTEST_XDIST_VERSION: "2.5.0"
   PYTEST_TIMEOUT_VERSION: "2.1.0"
   PYTEST_RERUN_FAILURES_VERSION: "10.2"
+
+  PYTHON_JUNIT_XML_VERSION: "1.9"
+  PYTHON_DATEUTIL_VERSION: "2.8.2"
+
   TOX_VERSION: "3.25.1"
 
 include: '/scripts/ci-helpers/prepare_data_image_job.yml'
@@ -219,14 +223,11 @@ plugin_test:
 
 .beem_tests_base:
   stage: test
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
   extends: .test_tools_based
+
   script:
     - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
-    - python3 -m venv venv/
-    - . venv/bin/activate
-    - python3 -m pip install --upgrade pip
-    - pip3 install junit-xml python-dateutil
+    - pip3 install junit-xml==${PYTHON_JUNIT_XML_VERSION} python-dateutil==${PYTHON_DATEUTIL_VERSION}
     - cd beem
     - python3 -m pip install --upgrade -r requirements-test.txt
     - python3 setup.py install
@@ -260,7 +261,7 @@ beem_mirrornet_tests:
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/cli_wallet"
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/get_dev_key"
   before_script:
-    - !reference [.test_tools_based_with_faketime, before_script]
+    - !reference [.beem_tests_base, before_script]
     - export PYTEST_ARGS=(-m mirrornet --chain-id ${MIRRORNET_CHAIN_ID} --skeleton-key "${MIRRORNET_SKELETON_KEY}")
 
 .test_tools_based:
