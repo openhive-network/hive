@@ -1,5 +1,6 @@
 from typing import List, Literal, Union
 
+from _pytest.mark import Mark
 import pytest
 
 from test_tools.__private.scope.scope_fixtures import *  # pylint: disable=wildcard-import, unused-wildcard-import
@@ -12,6 +13,8 @@ def pytest_addoption(parser):
 
 @pytest.fixture
 def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
+    all_marks = request.node.own_markers
+
     def __create_init_node() -> tt.InitNode:
         init_node = tt.InitNode()
         init_node.run()
@@ -19,55 +22,52 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
 
     def __get_requested_node_markers() -> List[Literal['testnet', 'mainnet_5m', 'mainnet_64m']]:
         requested_node_markers = []
-        for marker in request.node.iter_markers():
+        for marker in all_marks:
             if marker.name in create_node:
                 requested_node_markers.append(marker.name)
         return requested_node_markers
 
-    def __assert_no_duplicated_requests_of_same_node() -> None:
+    def __assert_no_duplicated_mark_decorators_of_same_node() -> None:
         requested_markers = __get_requested_node_markers()
         for marker in requested_markers:
             if requested_markers.count(marker) > 1:
-                raise AssertionError(f'Duplicated marker "{marker}". Must be used only once.')
+                raise AssertionError(f'Duplicated marker: `{marker}`\n.'
+                                     f'Must be specified only once in the `@run_for()` decorator.')
 
     def __assert_no_duplicated_node_in_run_for_params() -> None:
-        for marker in request.node.iter_markers():
-            if marker.name == 'parametrize' and marker.args[0] == 'node':
-                number_of_nodes_specified_in_run_for = len(marker.args[1])
-                number_of_unique_nodes_given_in_the_run_for_parameters = len(set([marker_obj.values[0][0] for marker_obj in marker.args[1]]))
+        parametrize_marker = __get_mark_set_by_run_for()
 
-                if number_of_nodes_specified_in_run_for != number_of_unique_nodes_given_in_the_run_for_parameters:
-                    raise AssertionError(f"Duplicate requested `nodes` in `@run_for' function parameters."
-                                         f" Use only defined nodes: {', '.join(create_node.keys())}.")
+        number_of_nodes_specified_in_run_for = len(parametrize_marker.args[1])
+        number_of_unique_nodes_given_in_the_run_for_parameters = len(set([marker_obj.values[0][0] for marker_obj in parametrize_marker.args[1]]))
+
+        if number_of_nodes_specified_in_run_for != number_of_unique_nodes_given_in_the_run_for_parameters:
+            raise AssertionError(f"Unallowed duplication of `@run_for()' decorator arguments.\n"
+                                 f"Use nodes from: {list(create_node)}. Each value can only be used once.\n"
+                                 f"e.g. `@run_for('testnet', 'mainnet_5m')`")
 
     def __was_run_for_used() -> bool:
         return request.node.get_closest_marker('decorated_with_run_for') is not None
 
-    def __is_run_for_node() -> bool:
+    def __is_test_marked_with_supported_nodes() -> bool:
         requested_nodes: List[str] = [request.node.get_closest_marker(node).name for node in create_node
                                       if request.node.get_closest_marker(node) is not None]
         return True if not requested_nodes == [] else False
 
+    def __get_mark_set_by_run_for() -> Mark:
+        return next(filter(lambda marker: marker.name == 'parametrize' and marker.args[0] == 'node', all_marks))
+
     def __check_the_correctness_of_the_marks_used_outside_the_function_run_for() -> None:
-        # wszystkie markery którymi test jest oznaczony
-        markers = request.node.own_markers
+        def __get_marks_from_created_by_run_for_only() -> List[Mark]:
+            parametrize_marker = __get_mark_set_by_run_for()
+            mark_decorators = sum([mark_decorator.marks for mark_decorator in parametrize_marker.args[1]], [])
+            return [mark_decorator.mark for mark_decorator in mark_decorators]
 
-        # paremetrize dodany automatycznie funkcją run_for
-        parametrize_marker = next(filter(lambda marker: marker.name == 'parametrize' and marker.args[0] == 'node', markers))
+        all_supported_marks = list(filter(lambda marker: marker.name in create_node, all_marks))
 
-        # wewnętrzne markery z parametriza dodanego run_forem (mark_decoratory)
-        mark_decorators = sum([mark_decorator.marks for mark_decorator in parametrize_marker.args[1]], [])
-
-        # wewnętrzne markery z parametriza (same marki)
-        inside_run_for_param = [mark_decorator.mark for mark_decorator in mark_decorators]
-
-        # zewnętrzne markery podane do testu zgodne z `dopuszczonymi` nodami
-        required_markers = list(filter(lambda marker: marker.name in create_node, markers))
-
-        # sprawdzenie markerów zewnętrznych z tymi które są podane w (run_for) parametrize
-        for mark in required_markers:
-            if mark not in inside_run_for_param:
-                raise AssertionError(f'Incorrect use marker: "{mark.name}". Use the run_for function to mark test.')
+        for mark in all_supported_marks:
+            if mark not in __get_marks_from_created_by_run_for_only():
+                raise AssertionError(f'Unallowed usage of a mark: "{mark.name}.\n"'
+                                     f'Please use the `@run_for()` decorator to mark test instead.')
 
     create_node = {
         'testnet': __create_init_node,
@@ -75,14 +75,15 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
         'mainnet_64m': lambda: tt.RemoteNode(http_endpoint=request.config.getoption("--http-endpoint")),
     }
 
-    __assert_no_duplicated_requests_of_same_node()
+    __assert_no_duplicated_mark_decorators_of_same_node()
     if not __was_run_for_used():
-        if not __is_run_for_node():
+        if not __is_test_marked_with_supported_nodes():
             return create_node['testnet']()
         raise AssertionError(
-            f"Incorrect test marking. Use the `@run_for` function to mark the test. Available nodes: {', '.join(create_node.keys())}.\n"
-            f"To mark correctly your test use syntax:\n"
-            f"@run_for({list(create_node.keys())})\n"
+            f"Incorrect test marking. Use the `@run_for()` decorator to mark the test\n."
+            f"Available nodes: {list(create_node)}.\n\n"
+            f"To correctly mark your test use the following syntax:\n"
+            f'@run_for({", ".join(map(lambda x: f"{{x}}", create_node))})\n'
             f"def {request.node.originalname}(node):\n"
             f"    <do something>"
         )
