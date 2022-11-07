@@ -70,9 +70,9 @@ namespace fc { namespace http {
 
 
 // used for clients
-void       ssl_connection::connect_to( const fc::ip::endpoint& ep ) {
+void       ssl_connection::connect_to( const fc::ip::endpoint& ep, const std::string& hostname ) {
   my->sock.close();
-  my->sock.connect_to( my->ep = ep );
+  my->sock.connect_to( my->ep = ep, my->hostname = hostname );
 }
 
 http::reply ssl_connection::request( const fc::string& method, 
@@ -82,7 +82,7 @@ http::reply ssl_connection::request( const fc::string& method,
   fc::url parsed_url(url);
   if( !my->sock.is_open() ) {
     wlog( "Re-open socket!" );
-    my->sock.connect_to( my->ep );
+    my->sock.connect_to( my->ep, my->hostname );
   }
   try {
       fc::stringstream req;
