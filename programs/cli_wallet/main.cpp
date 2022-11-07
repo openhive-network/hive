@@ -96,6 +96,7 @@ int main( int argc, char** argv )
       ("help,h", "Print this help message and exit.")
       ("version,v", "Print git revision sha of this cli_wallet build.")
       ("offline,o", "Run the wallet in offline mode.")
+      ("skip-cert-check", "Skip the certificate check when connecting to the node using https protocol")
       ("server-rpc-endpoint,s", bpo::value<string>()->default_value("ws://127.0.0.1:8090"), "Server RPC endpoint (can be http(s) or ws(s))")
       ("cert-authority,a", bpo::value<string>()->default_value("_default"), "Trusted CA bundle file for connecting to wss:// TLS server")
       ("retry-server-connection", "Keep trying to connect to the Server websocket RPC endpoint if the first attempt fails")
@@ -293,7 +294,10 @@ int main( int argc, char** argv )
       }
       else
       {
-        auto http_apic = std::make_shared<fc::rpc::http_api_connection>(wdata.server_url);
+        if( options.count( "skip-cert-check" ) )
+          wlog("Skipping https certificate check!");
+
+        auto http_apic = std::make_shared<fc::rpc::http_api_connection>(wdata.server_url, options.count( "skip-cert-check" ));
         _remote_api = http_apic->get_remote_api< hive::plugins::wallet_bridge_api::wallet_bridge_api >(0, "wallet_bridge_api");
       }
 
