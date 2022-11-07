@@ -67,7 +67,9 @@ namespace fc {
       tcp_ssl_socket();
       virtual ~tcp_ssl_socket();
 
-      void     connect_to( const fc::ip::endpoint& remote_endpoint );
+      void set_verify_peer( bool verify );
+
+      void     connect_to( const fc::ip::endpoint& remote_endpoint, const std::string& hostname );
       void     bind( const fc::ip::endpoint& local_endpoint );
       void     enable_keep_alives(const fc::microseconds& interval);
       void     set_io_hooks(tcp_ssl_socket_io_hooks* new_hooks);

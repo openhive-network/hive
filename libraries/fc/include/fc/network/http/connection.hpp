@@ -53,32 +53,22 @@ namespace fc {
      
      std::vector<header> parse_urlencoded_params( const fc::string& f );
 
-     class connection_base
-     {
-      public:
-
-         virtual void         connect_to( const fc::ip::endpoint& ep ) = 0;
-         virtual http::reply  request( const fc::string& method, const fc::string& url, const fc::string& body = std::string(), const headers& = headers()) = 0;
-
-         virtual http::request    read_request()const = 0;
-     };
-
      /**
       *  Connections have reference semantics, all copies refer to the same
       *  underlying socket.  
       */
-     class connection : public connection_base
+     class connection
      {
       public:
          connection();
          // used for clients
-         virtual void         connect_to( const fc::ip::endpoint& ep );
-         virtual http::reply  request( const fc::string& method, const fc::string& url, const fc::string& body = std::string(), const headers& = headers());
+         void         connect_to( const fc::ip::endpoint& ep );
+         http::reply  request( const fc::string& method, const fc::string& url, const fc::string& body = std::string(), const headers& = headers());
      
          // used for servers
          fc::tcp_socket& get_socket()const;
      
-         virtual http::request    read_request()const;
+         http::request    read_request()const;
 
       private:
         class impl
@@ -98,18 +88,18 @@ namespace fc {
      /**
       *  Connections have reference semantics, all copies refer to the same underlying socket.
       */
-     class ssl_connection : public connection_base
+     class ssl_connection
      {
       public:
          ssl_connection();
          // used for clients
-         virtual void         connect_to( const fc::ip::endpoint& ep );
-         virtual http::reply  request( const fc::string& method, const fc::string& url, const fc::string& body = std::string(), const headers& = headers());
+         void         connect_to( const fc::ip::endpoint& ep, const std::string& hostname );
+         http::reply  request( const fc::string& method, const fc::string& url, const fc::string& body = std::string(), const headers& = headers());
 
          // used for servers
          fc::tcp_ssl_socket& get_socket()const;
 
-         virtual http::request    read_request()const;
+         http::request    read_request()const;
 
       private:
         class impl
@@ -117,6 +107,7 @@ namespace fc {
         public:
           fc::tcp_ssl_socket sock;
           fc::ip::endpoint ep;
+          std::string hostname;
           int read_until( char* buffer, char* end, char c = '\n' );
           fc::http::reply parse_reply();
         };
