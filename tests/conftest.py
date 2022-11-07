@@ -16,6 +16,32 @@ def pytest_addoption(parser):
 
 @pytest.fixture
 def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
+    """
+    This fixture returns a node depending on the arguments passed to the @run_for decorator.
+    Tests marking is described in the @run_for definition (located in `tests/local_tools.py`).
+    * If your test is not decorated with @run_for, but this fixture is used, then `InitNode` is returned.
+    * If you need to use in tests a node fixture other than this, just override node fixture, but @run_for won't work.
+
+    Examples:
+    1) Test is unmarked:
+         def test_unmarked(node: tt.InitNode):
+             node.api.some_api.some_method()
+
+    2) Test is marked with @run_for decorator. User requested the `testnet` node:
+         @run_for("testnet")
+         def test_marked_with_run_for_decorator(node: tt.InitNode)
+             node.api.some_api.some_method()
+
+    3) Test is marked with @run_for decorator. User requested the `mainnet_5m` node:
+         @run_for("mainnet_5m")
+         def test_marked_with_run_for_decorator(node: tt.RemoteNode):
+             node.api.some_api.some_method()
+
+    4) Test is marked with @run_for decorator. User requested the `testnet` and `mainnet_5m` nodes:
+         @run_for("testnet", "mainnet_5m")
+         def test_marked_with_run_for_decorator(node: Union[tt.InitNode, tt.RemoteNode]):
+             node.api.some_api.some_method()
+    """
     def __create_init_node() -> tt.InitNode:
         init_node = tt.InitNode()
         init_node.run()
