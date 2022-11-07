@@ -5,7 +5,8 @@
 
 namespace fc { namespace rpc {
 
-http_api_connection::http_api_connection( const std::string& _url )
+http_api_connection::http_api_connection( const std::string& url, bool skip_cert_check )
+   : _skip_cert_check( skip_cert_check )
 {
    const auto apply_default_port_if_required = [&]( uint16_t def_port ) -> void {
       if( !this->_url.port().valid() )
@@ -17,7 +18,7 @@ http_api_connection::http_api_connection( const std::string& _url )
       }
    };
 
-   this->_url = fc::url{ _url };
+   this->_url = fc::url{ url };
 
    if( this->_url.proto() == "http" )
    {
@@ -30,7 +31,7 @@ http_api_connection::http_api_connection( const std::string& _url )
       apply_default_port_if_required( 443 );
    }
    else
-      FC_ASSERT( false, "Invalid protocol type for the http_api: Expected http or https. Got: ${proto}", ("proto", this->_url.proto())("url", _url) );
+      FC_ASSERT( false, "Invalid protocol type for the http_api: Expected http or https. Got: ${proto}", ("proto", this->_url.proto())(url) );
 
    try
    {
@@ -127,18 +128,6 @@ void http_api_connection::send_notice(
    return;
 }
 
-void http_api_connection::connect_with( fc::http::connection_base& con )
-{
-   try
-   {
-      if( _is_ip_url )
-         con.connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
-      else
-         con.connect_to( fc::resolve( *_url.host(), *_url.port() )[0] );
-   }
-   FC_CAPTURE_AND_RETHROW( (_url) )
-}
-
 fc::variant http_api_connection::do_request(
    const fc::rpc::request& request
 )
@@ -150,13 +139,30 @@ fc::variant http_api_connection::do_request(
    if( is_ssl )
    {
       fc::http::ssl_connection _ssl_connection;
-      connect_with( _ssl_connection );
+      if( _skip_cert_check )
+         _ssl_connection.get_socket().set_verify_peer( false );
+
+      try
+      {
+         if( _is_ip_url )
+            _ssl_connection.connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ), *_url.host() );
+         else
+            _ssl_connection.connect_to( fc::resolve( *_url.host(), *_url.port() )[0], *_url.host() );
+      }
+      FC_CAPTURE_AND_RETHROW( (_url) )
       _body = _ssl_connection.request( "POST", _url, fc::json::to_string(request) ).body;
    }
    else
    {
       fc::http::connection _http_connection;
-      connect_with( _http_connection );
+      try
+      {
+         if( _is_ip_url )
+            _http_connection.connect_to( fc::ip::endpoint( *_url.host(), *_url.port() ) );
+         else
+            _http_connection.connect_to( fc::resolve( *_url.host(), *_url.port() )[0] );
+      }
+      FC_CAPTURE_AND_RETHROW( (_url) )
       _body = _http_connection.request( "POST", _url, fc::json::to_string(request) ).body;
    }
 
