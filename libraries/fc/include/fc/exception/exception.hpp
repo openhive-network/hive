@@ -37,7 +37,8 @@ namespace fc
        aes_error_code                    = 18,
        overflow_code                     = 19,
        underflow_code                    = 20,
-       divide_by_zero_code               = 21
+       divide_by_zero_code               = 21,
+       sigint_exception_code             = 22
    };
 
    /**
@@ -299,6 +300,7 @@ namespace fc
   FC_DECLARE_EXCEPTION( overflow_exception, overflow_code, "Integer Overflow" );
   FC_DECLARE_EXCEPTION( underflow_exception, underflow_code, "Integer Underflow" );
   FC_DECLARE_EXCEPTION( divide_by_zero_exception, divide_by_zero_code, "Integer Divide By Zero" );
+  FC_DECLARE_EXCEPTION( sigint_exception, sigint_exception_code, "SIGINT Exception" );
 
   std::string except_str();
 

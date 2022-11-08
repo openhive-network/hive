@@ -1320,7 +1320,7 @@ void wallet_api::exit()
     lock();
   exit_promise->set_value(SIGTERM);
   if( !is_daemon )
-    FC_THROW_EXCEPTION( fc::eof_exception, "Exit function invoked" ); // needed for the destruction of interactive cli mode
+    FC_THROW_EXCEPTION( fc::sigint_exception, "Exit function invoked" ); // needed for the destruction of interactive cli mode
 }
 
 map<public_key_type, string> wallet_api::list_keys()
