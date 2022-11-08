@@ -6,7 +6,7 @@ import test_tools as tt
 
 def test_help_option():
     only_args_to_be_founded = [
-        '--help', '--version', '--offline', '--server-rpc-endpoint',
+        '--help', '--version', '--offline', '--skip-cert-check', '--server-rpc-endpoint',
         '--cert-authority', '--retry-server-connection', '--rpc-endpoint', '--rpc-tls-endpoint',
         '--rpc-tls-certificate', '--rpc-http-endpoint', '--unlock', '--daemon',
         '--rpc-http-allowip', '--wallet-file', '--chain-id', '--output-formatter', '--transaction-serialization', '--store-transaction'
