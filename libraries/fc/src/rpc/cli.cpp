@@ -90,7 +90,7 @@ void cli::start()
    rl_clear_signals();
    rl_event_hook = [](){
       if ( last_signal )
-        FC_THROW_EXCEPTION( fc::eof_exception, "Signal termination: ${sigcode}", ("sigcode",last_signal) );
+        FC_THROW_EXCEPTION( fc::sigint_exception, "Signal termination: ${sigcode}", ("sigcode",last_signal) );
       return 0;
    };
 #else
@@ -155,7 +155,7 @@ void cli::run()
          else
             std::cout << itr->second( result, args ) << "\n";
       }
-      catch ( const fc::eof_exception& e )
+      catch ( const fc::sigint_exception& e )
       {
          _termination_hdl( SIGINT );
 #ifdef HAVE_READLINE
@@ -242,7 +242,7 @@ void cli::getline( const fc::string& prompt, fc::string& line)
       std::cout.flush(); //readline doesn't use cin, so we must manually flush _out
       line_read = readline(prompt.c_str());
       if( line_read == nullptr )
-         FC_THROW_EXCEPTION( fc::eof_exception, "EOT" );
+         FC_THROW_EXCEPTION( fc::sigint_exception, "EOT" );
       if( *line_read )
          add_history(line_read);
       rl_bind_key( '\t', rl_complete );
@@ -258,7 +258,7 @@ void cli::getline( const fc::string& prompt, fc::string& line)
       std::getline( std::cin, line );
       if ( last_signal || std::cin.fail() || std::cin.eof() ) {
          std::cin.clear(); // reset cin state
-         FC_THROW_EXCEPTION( fc::eof_exception, "EOT" );
+         FC_THROW_EXCEPTION( fc::sigint_exception, "EOT" );
       }
 
       return;
