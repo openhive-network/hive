@@ -1,15 +1,20 @@
 .docker_image_builder_job:
   variables:
-    DOCKER_BUILDKIT: 1
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: "/certs"
-  image: docker:20.10.10
+    FF_NETWORK_PER_BUILD: "true"
+
+    # uses registry.gitlab.syncad.com/hive/hive/custom_docker:20.10.10
+    DOCKER_IMAGE_TAG: "@sha256:1962f1ef35c1f1620269306cd735923993ad8546566cad86f133abccf314cc56"
+
+  image: "registry.gitlab.syncad.com/hive/hive/custom_docker${DOCKER_IMAGE_TAG}"
   interruptible: true
   services:
-    - docker:20.10.10-dind
-
-  before_script:
-    - apk update && apk add bash git ca-certificates curl
+    - name: "registry.gitlab.syncad.com/hive/hive/custom_dind:20.10.10-dind-1"
+      alias: "docker"
+      pull_policy: [always, if-not-present]
+      variables:
+        DOCKER_BUILDKIT: 1
+        DOCKER_DRIVER: "overlay2"
+        DOCKER_TLS_CERTDIR: "/certs"
 
 .docker_image_cleanup_job:
   image: alpine:3.16
