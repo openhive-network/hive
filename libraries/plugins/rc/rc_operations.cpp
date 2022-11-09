@@ -32,7 +32,11 @@ void delegate_rc_operation::validate()const
 
 void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 {
-  if( !_db.has_hardfork( HIVE_HARDFORK_1_26 ) ) return;
+  if( !_db.has_hardfork( HIVE_HARDFORK_1_26 ) )
+  {
+    dlog( "Ineffective RC delegation @${b} ${op}", ( "b", _db.head_block_num() )( op ) );
+    return;
+  }
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   uint32_t now = gpo.time.sec_since_epoch();
