@@ -270,7 +270,7 @@ void use_account_rcs(
   auto max_mana = get_maximum_rc( account, rc_account );
   mbparams.max_mana = max_mana;
   tx_info.max = max_mana;
-  tx_info.rc = rc_account.rc_manabar.current_mana;
+  tx_info.rc = rc_account.rc_manabar.current_mana; // initialize before regen in case of exception
   mbparams.regen_time = HIVE_RC_REGEN_TIME;
 
   try{
@@ -278,7 +278,7 @@ void use_account_rcs(
   db.modify( rc_account, [&]( rc_account_object& rca )
   {
     rca.rc_manabar.regenerate_mana< true >( mbparams, gpo.time.sec_since_epoch() );
-
+    tx_info.rc = rc_account.rc_manabar.current_mana; // update after regeneration
     bool has_mana = rca.rc_manabar.has_mana( rc );
 
     if( !skip.skip_reject_not_enough_rc )
