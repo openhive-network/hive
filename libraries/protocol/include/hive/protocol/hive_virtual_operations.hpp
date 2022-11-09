@@ -844,7 +844,7 @@ FC_REFLECT( hive::protocol::fill_collateralized_convert_request_operation, (owne
 FC_REFLECT( hive::protocol::system_warning_operation, (message) )
 FC_REFLECT( hive::protocol::fill_recurrent_transfer_operation, (from)(to)(amount)(memo)(remaining_executions) )
 FC_REFLECT( hive::protocol::failed_recurrent_transfer_operation, (from)(to)(amount)(memo)(consecutive_failures)(remaining_executions)(deleted) )
-FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(amount_back) )
+FC_REFLECT( hive::protocol::limit_order_cancelled_operation, (seller)(orderid)(amount_back) )
 FC_REFLECT( hive::protocol::producer_missed_operation, (producer) )
 FC_REFLECT( hive::protocol::proposal_fee_operation, (creator)(treasury)(proposal_id)(fee) )
 FC_REFLECT( hive::protocol::collateralized_convert_immediate_conversion_operation, (owner)(requestid)(hbd_out) )
