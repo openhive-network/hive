@@ -105,10 +105,6 @@ class rc_plugin_impl
 
     std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > > _custom_operation_interpreter;
 
-#ifdef IS_TEST_NET
-    std::set< account_name_type > _whitelist;
-#endif
-
     boost::signals2::connection   _pre_reindex_conn;
     boost::signals2::connection   _post_reindex_conn;
     boost::signals2::connection   _pre_apply_block_conn;
@@ -239,12 +235,7 @@ void use_account_rcs(
   const dynamic_global_property_object& gpo,
   rc_info& tx_info,
   int64_t rc,
-  rc_plugin_skip_flags skip
-#ifdef IS_TEST_NET
-  ,
-  const set< account_name_type >& whitelist
-#endif
-  )
+  rc_plugin_skip_flags skip )
 {
   const account_name_type& account_name = tx_info.payer;
   if( account_name == account_name_type() )
@@ -257,10 +248,6 @@ void use_account_rcs(
     }
     return;
   }
-
-#ifdef IS_TEST_NET
-  if( whitelist.count( account_name ) ) return;
-#endif
 
   // ilog( "use_account_rcs( ${n}, ${rc} )", ("n", account_name)("rc", rc) );
   const account_object& account = db.get< account_object, by_name >( account_name );
@@ -394,12 +381,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // Who pays the cost?
   tx_info.payer = get_resource_user( note.transaction );
-  use_account_rcs( _db, gpo, tx_info, total_cost, _skip
-#ifdef IS_TEST_NET
-  ,
-  _whitelist
-#endif
-  );
+  use_account_rcs( _db, gpo, tx_info, total_cost, _skip );
 
   if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
   {
@@ -1268,12 +1250,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // Who pays the cost?
   opt_action_info.payer = get_resource_user( note.action );
-  use_account_rcs( _db, gpo, opt_action_info, total_cost, _skip
-#ifdef IS_TEST_NET
-  ,
-  _whitelist
-#endif
-  );
+  use_account_rcs( _db, gpo, opt_action_info, total_cost, _skip );
 
   if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
   {
@@ -1401,19 +1378,11 @@ void rc_plugin::set_program_options( options_description& cli, options_descripti
 {
   cfg.add_options()
     ("rc-skip-reject-not-enough-rc", bpo::value<bool>()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
-#ifdef IS_TEST_NET
-    ("rc-start-at-block", bpo::value<uint32_t>()->default_value(0), "Start calculating RCs at a specific block" )
-    ("rc-account-whitelist", bpo::value< vector<string> >()->composing(), "Ignore RC calculations for the whitelist" )
-#endif
     ("rc-stats-report-type", bpo::value<string>()->default_value("REGULAR"), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
     ("rc-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY. Default ILOG." )
     ;
   cli.add_options()
     ("rc-skip-reject-not-enough-rc", bpo::bool_switch()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
-#ifdef IS_TEST_NET
-    ("rc-start-at-block", bpo::value<uint32_t>()->default_value(0), "Start calculating RCs at a specific block" )
-    ("rc-account-whitelist", bpo::value< vector<string> >()->composing(), "Ignore RC calculations for the whitelist" )
-#endif
     ;
 }
 
@@ -1471,28 +1440,8 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
     my->_skip.skip_reject_not_enough_rc = options.at( "rc-skip-reject-not-enough-rc" ).as< bool >();
 #ifndef IS_TEST_NET
-    my->_enable_at_block = HIVE_HF20_BLOCK_NUM;
+    my->_enable_at_block = HIVE_HF20_BLOCK_NUM; // testnet starts RC at 1
     my->_enable_rc_stats = true; // testnet rarely has enough useful RC data to collect and report
-#else
-    uint32_t start_block = options.at( "rc-start-at-block" ).as<uint32_t>();
-    if( start_block > 0 )
-    {
-      my->_enable_at_block = start_block; //starts at the end of given block
-    }
-
-    if( options.count( "rc-account-whitelist" ) > 0 )
-    {
-      auto accounts = options.at( "rc-account-whitelist" ).as< vector< string > > ();
-      for( auto& arg : accounts )
-      {
-        vector< string > names;
-        boost::split( names, arg, boost::is_any_of( " \t" ) );
-        for( const std::string& name : names )
-          my->_whitelist.insert( account_name_type( name ) );
-      }
-
-      ilog( "Ignoring RC's for accounts: ${w}", ("w", my->_whitelist) );
-    }
 #endif
 
     appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
