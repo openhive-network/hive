@@ -390,10 +390,24 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
     custom_op.json = json;
     ilog( "${json}", (json) );
 
-    // Delegating more rc than alice has should fail, but it does not, because of how interpreter
-    // works - only the first pair in outer array is processed when it is formatted this way
-    // see https://hiveblocks.com/tx/65b4772d915dfda66a254e5105c74b5c7667991a
-    // it also means that even "delegating" to nonexistent account will pass since it is ignored
+    // The following used to be true and is still true if operation is already in block:
+    //   Delegating more rc than alice has should fail, but it does not, because of how interpreter
+    //   works - only the first pair in outer array is processed when it is formatted this way
+    //   see https://hiveblocks.com/tx/65b4772d915dfda66a254e5105c74b5c7667991a
+    //   it also means that even "delegating" to nonexistent account will pass since it is ignored
+    // Now interpreter is more strict when node is_in_control()
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_private_key ), "!db.is_in_control()" );
+    // Let's put just the correct part into transaction so we don't have to change rest of the test
+    json = "[";
+    op.delegatees = { "bob" };
+    op.max_rc = alice_vests;
+    json += "\"delegate_rc\",";
+    json += fc::json::to_string( op );
+    json += "]";
+
+    custom_op.json = json;
+    ilog( "${json}", (json) );
+
     push_transaction( custom_op, alice_private_key );
 
     generate_block();
