@@ -34,7 +34,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 {
   if( !_db.has_hardfork( HIVE_HARDFORK_1_26 ) )
   {
-    dlog( "Ineffective RC delegation @${b} ${op}", ( "b", _db.head_block_num() )( op ) );
+    dlog( "Ineffective RC delegation @${b} ${op}", ( "b", _db.head_block_num() + 1 )( op ) );
     return;
   }
 

@@ -95,10 +95,10 @@ void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, co
       FC_ASSERT( !db.is_in_control(), "Expected pair of values: [ operation_name_or_id, operation ]" );
       if( ar.size() < 2 )
       {
-        dlog( "Incomplete custom operation ignored @${b} ${var}", ( "b", db.head_block_num() )( var ) );
+        dlog( "Incomplete custom operation ignored @${b} ${var}", ( "b", db.head_block_num() + 1 )( var ) );
         return;
       }
-      dlog( "Dangling elements of custom operation ignored @${b} ${var}", ( "b", db.head_block_num() )( var ) );
+      dlog( "Dangling elements of custom operation ignored @${b} ${var}", ( "b", db.head_block_num() + 1 )( var ) );
     }
     if( ar[0].is_uint64() )
     {
@@ -122,7 +122,7 @@ void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, co
     if( v_object.size() != 2 )
     {
       FC_ASSERT( !db.is_in_control(), "Expected pair of values: { \"type\":operation_name_or_id, \"value\":operation }" );
-      dlog( "Dangling elements of custom operation ignored @${b} ${var}", ( "b", db.head_block_num() )( var ) );
+      dlog( "Dangling elements of custom operation ignored @${b} ${var}", ( "b", db.head_block_num() + 1 )( var ) );
     }
 
     int64_t which = -1;
