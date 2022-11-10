@@ -32,7 +32,7 @@ def node_client(node, worker_id) -> NodeClientMaker:
         for account in accounts:
             keys.append(account["private_key"])
 
-        node_url = f"http://{node.http_endpoint}"
+        node_url = node.get_http_endpoint()
         return Hive(node=node_url, no_broadcast=False, keys=keys, profile=worker_id, num_retries=-1)
 
     return _node_client
