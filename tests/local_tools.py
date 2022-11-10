@@ -12,6 +12,12 @@ def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
 
     Allows to perform optional, additional preparations. See `should_prepare` fixture for details.
     """
+    def __assert_node_is_specified():
+        if not node_names:
+            raise AssertionError("The @run_for decorator requires at least one argument. "
+                                 "Use at least one of the supported nodes, to mark test.")
+
+    __assert_node_is_specified()
     return pytest.mark.parametrize(
         'prepared_node',
         [pytest.param((name,), marks=getattr(pytest.mark, name)) for name in node_names],
