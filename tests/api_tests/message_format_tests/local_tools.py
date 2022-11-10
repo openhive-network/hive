@@ -1,5 +1,6 @@
+import json
 import pytest
-from typing import Literal
+from typing import Iterable, Literal
 
 import test_tools as tt
 
@@ -65,3 +66,21 @@ def prepare_escrow(wallet, *, sender: str) -> None:
 def transfer_and_withdraw_from_savings(wallet, account_name):
     wallet.api.transfer_to_savings(account_name, account_name, tt.Asset.Test(50), 'test transfer to savings')
     wallet.api.transfer_from_savings(account_name, 124, account_name, tt.Asset.Test(5), 'test transfer from savings')
+
+
+def as_string(value):
+    if isinstance(value, str):
+        return value
+
+    if isinstance(value, Iterable):
+        return [as_string(item) for item in value]
+
+    return json.dumps(value)
+
+
+def test_as_string():
+    assert as_string(10) == '10'
+    assert as_string(True) == 'true'
+    assert as_string('string') == 'string'
+    assert as_string([12, True, 'string']) == ['12', 'true', 'string']
+    assert as_string([10, True, 'str', ['str', [False, 12]]]) == ['10', 'true', 'str', ['str', ['false', '12']]]

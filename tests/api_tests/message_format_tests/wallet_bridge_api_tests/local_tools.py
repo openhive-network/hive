@@ -1,28 +1,6 @@
-import json
-from typing import Iterable
-
 import test_tools as tt
 
-
-from ..local_tools import date_from_now, run_for
-
-
-def as_string(value):
-    if isinstance(value, str):
-        return value
-
-    if isinstance(value, Iterable):
-        return [as_string(item) for item in value]
-
-    return json.dumps(value)
-
-
-def test_as_string():
-    assert as_string(10) == '10'
-    assert as_string(True) == 'true'
-    assert as_string('string') == 'string'
-    assert as_string([12, True, 'string']) == ['12', 'true', 'string']
-    assert as_string([10, True, 'str', ['str', [False, 12]]]) == ['10', 'true', 'str', ['str', ['false', '12']]]
+from ..local_tools import date_from_now
 
 
 def create_account_and_create_order(wallet, account_name):
