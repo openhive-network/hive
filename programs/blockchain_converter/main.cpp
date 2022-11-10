@@ -71,8 +71,9 @@ int main( int argc, char** argv )
     bc_converter_app.set_version_string( version_string() );
     bc_converter_app.set_app_name( "blockchain_converter" );
 
-    if( !bc_converter_app.initialize( argc, argv ) )
-      return -1;
+    auto initResult = bc_converter_app.initialize( argc, argv );
+    if( !initResult.should_start_loop() )
+      return initResult.get_result_code();
 
     bc_converter_app.startup();
     bc_converter_app.exec();

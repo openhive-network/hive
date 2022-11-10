@@ -18,6 +18,38 @@ namespace appbase {
 
   class application;
 
+  class initialization_result 
+  {
+    public:
+      enum result {
+        ok,
+        unrecognised_option,
+        error_with_option,
+        validation_error,
+        unknown_command_line_error
+      };
+
+      initialization_result(result result, bool start_loop)
+      : init_result(result)
+      , start_loop_flag(start_loop)
+      {
+      }
+
+      int get_result_code() const
+      {
+        return init_result;
+      }
+
+      bool should_start_loop() const
+      {
+        return start_loop_flag;
+      }
+
+    private:
+      result init_result;
+      bool start_loop_flag;
+  };
+
   class io_handler
   {
     public:
@@ -72,7 +104,7 @@ namespace appbase {
         * @return true if the application and plugins were initialized, false or exception on error
         */
       template< typename... Plugin >
-      bool initialize( int argc, char** argv )
+      initialization_result initialize( int argc, char** argv )
       {
         return initialize_impl( argc, argv, { find_plugin( Plugin::name() )... } );
       }
@@ -151,7 +183,7 @@ namespace appbase {
       template< typename Impl >
       friend class plugin;
 
-      bool initialize_impl( int argc, char** argv, vector< abstract_plugin* > autostart_plugins );
+      initialization_result initialize_impl( int argc, char** argv, vector< abstract_plugin* > autostart_plugins );
 
       abstract_plugin* find_plugin( const string& name )const;
       abstract_plugin& get_plugin( const string& name )const;
