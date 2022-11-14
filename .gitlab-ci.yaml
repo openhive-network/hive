@@ -236,6 +236,7 @@ plugin_test:
     - cd tests/functional/python_tests/beem_tests
     - *run-pytest
   artifacts:
+    when: always
     reports:
       junit: tests/functional/python_tests/dhf_tests/report.xml
   tags:
