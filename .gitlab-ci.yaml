@@ -493,7 +493,6 @@ patterns_tests:
     - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
   artifacts:
-    when: always
     reports:
       junit: tests/api_tests/pattern_tests/results.xml
     paths:
