@@ -47,7 +47,6 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load():
     second_node = tt.ApiNode()
     connect_nodes(first_node, second_node)
     second_node.run(load_snapshot_from=snapshot, wait_for_live=False)
-    first_node.wait_number_of_blocks(1)  # wait the block to update the head block time
 
     create_proposal(wallet)  # to allocate next proposal ids on each node
 
