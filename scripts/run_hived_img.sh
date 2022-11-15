@@ -56,7 +56,7 @@ while [ $# -gt 0 ]; do
         ;;
     --webserver-ws-endpoint=*)
         WS_ENDPOINT="${1#*=}"
-        add_docker_arg "--publish=${WS_ENDPOINT}:8090"
+        add_docker_arg "--publish=${WS_ENDPOINT}:8091"
         ;;
     --p2p-endpoint=*)
         P2_ENDPOINT="${1#*=}"
