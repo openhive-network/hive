@@ -7,7 +7,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import verify_json_patterns, verify_text_patterns
+from ..local_tools import verify_json_patterns, verify_text_patterns
 from . import block_log
 
 TOTAL_BALANCES = {

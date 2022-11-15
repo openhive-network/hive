@@ -4,7 +4,8 @@ from typing import Dict
 
 import test_tools as tt
 
-from .local_tools import are_close, create_buy_order, create_sell_order, verify_json_patterns, verify_text_patterns
+from .local_tools import are_close, create_buy_order, create_sell_order
+from ..local_tools import verify_json_patterns, verify_text_patterns
 
 __PATTERNS_DIRECTORY = Path(__file__).with_name('response_patterns')
 
