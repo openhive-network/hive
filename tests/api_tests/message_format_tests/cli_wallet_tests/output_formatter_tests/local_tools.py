@@ -11,14 +11,14 @@ from ....local_tools import read_from_json_pattern, write_to_json_pattern
 __PATTERNS_DIRECTORY = Path(__file__).with_name('response_patterns')
 
 
-def __read_from_text_pattern(method_name: str) -> str:
-    with open(f'{__PATTERNS_DIRECTORY}/{method_name}.pat.txt', 'r') as text_file:
+def __read_from_text_pattern(directory: Path, method_name: str) -> str:
+    with open(f'{directory}/{method_name}.pat.txt', 'r') as text_file:
         return text_file.read()
 
 
-def __write_to_text_pattern(method_name: str, text: str) -> None:
-    __PATTERNS_DIRECTORY.mkdir(parents=True, exist_ok=True)
-    with open(f'{__PATTERNS_DIRECTORY}/{method_name}.pat.txt', 'w') as text_file:
+def __write_to_text_pattern(directory: Path, method_name: str, text: str) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    with open(f'{directory}/{method_name}.pat.txt', 'w') as text_file:
         text_file.write(text)
 
 
@@ -42,10 +42,10 @@ def verify_text_patterns(method_name, method_output):
     """
     generate_patterns = strtobool(os.environ.get('GENERATE_PATTERNS', 'OFF'))
     if not generate_patterns:
-        pattern = __read_from_text_pattern(method_name)
+        pattern = __read_from_text_pattern(__PATTERNS_DIRECTORY, method_name)
         assert pattern == method_output
 
-    __write_to_text_pattern(method_name, method_output)
+    __write_to_text_pattern(__PATTERNS_DIRECTORY, method_name, method_output)
 
 
 def are_close(first: float, second: float) -> bool:
