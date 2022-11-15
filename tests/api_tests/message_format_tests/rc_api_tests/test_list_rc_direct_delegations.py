@@ -92,6 +92,7 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(ready_node,
         ready_node.api.rc.list_rc_direct_delegations(start=[from_, to], limit=limit)
 
 
+@pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/422")
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
 def test_list_rc_direct_delegations_with_missing_argument(ready_node):
     with pytest.raises(tt.exceptions.CommunicationError):

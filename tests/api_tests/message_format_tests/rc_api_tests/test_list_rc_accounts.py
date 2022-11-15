@@ -76,6 +76,7 @@ def test_list_rc_account_with_additional_argument(ready_node):
     ready_node.api.rc.list_rc_accounts(start=ACCOUNT, limit=100, additional_argument="additional_argument")
 
 
+@pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/422")
 @run_for("testnet", "mainnet_5m", "mainnet_64m")
 def test_list_rc_account_with_missing_argument(ready_node):
     with pytest.raises(tt.exceptions.CommunicationError):
