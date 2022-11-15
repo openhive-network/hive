@@ -1,4 +1,4 @@
-from .local_tools import wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block
+from .local_tools import wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block, wait_for_specific_witnesses
 import test_tools as tt
 import time
 
@@ -33,16 +33,11 @@ def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
     _a1 = logs[2].collector
     _w1 = logs[3].collector
 
-    tt.logger.info(f'Before an exception')
-
-    last_block_before_exception = 121
-    blocks_after_exception      = 5
+    blocks_after_exception      = 10
     delay_seconds               = 5
 
-    while True:
-        wait(1, logs, witness_node_0)
-        if witness_node_0.get_last_block_number() >= last_block_before_exception:
-            break
+    tt.logger.info(f'Before an exception - waiting for specific witnesses')
+    wait_for_specific_witnesses(witness_node_0, logs, [['witness-0']])
 
     last_lib_01 = get_last_irreversible_block_num(_a0)
 

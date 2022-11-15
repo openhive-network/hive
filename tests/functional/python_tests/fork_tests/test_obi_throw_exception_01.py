@@ -1,4 +1,4 @@
-from .local_tools import wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from .local_tools import wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_specific_witnesses
 import test_tools as tt
 import time
 
@@ -55,18 +55,13 @@ def test_obi_throw_exception_01(prepare_obi_throw_exception_01):
     logs.append(fork_log("a1", tt.Wallet(attach_to = api_node_1)))
     logs.append(fork_log("w1", tt.Wallet(attach_to = witness_node_1)))
 
-    last_block_before_exception = 121
     blocks_after_exception      = 20
     delay_seconds               = 5
 
     _a0 = logs[0].collector
 
-    tt.logger.info(f'Before an exception')
-
-    while True:
-        wait(1, logs, witness_node_0)
-        if witness_node_0.get_last_block_number() >= last_block_before_exception:
-            break
+    tt.logger.info(f'Before an exception - waiting for specific witnesses')
+    wait_for_specific_witnesses(witness_node_0, logs, [['witness-0'], ['witness-1', 'initminer'], ['witness-1', 'initminer']])
 
     tt.logger.info(f'Artificial exception is thrown during {delay_seconds} seconds')
     witness_node_0.api.debug_node.debug_throw_exception(throw_exception = True)

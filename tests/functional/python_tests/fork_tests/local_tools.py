@@ -1,3 +1,4 @@
+import re
 import test_tools as tt
 from typing import List
 
@@ -94,10 +95,11 @@ def get_part_of_witness_details(witness_details : list, start, length : int):
     return new_witness_details
 
 def info(msg : str, wallet : tt.Wallet):
-    info    = wallet.api.info()
-    hb      = info['head_block_number']
-    lib     = info['last_irreversible_block_num']
-    tt.logger.info(f'network: \'{msg}\' head: {hb} lib: {lib}')
+    info            = wallet.api.info()
+    hb              = info['head_block_number']
+    lib             = info['last_irreversible_block_num']
+    current_witness = info['current_witness']
+    tt.logger.info(f'network: \'{msg}\' head: {hb} lib: {lib} current witness: {current_witness}')
     return hb, lib
 
 class fork_log:
@@ -154,3 +156,49 @@ def wait_for_final_block(witness_node, logs, data : list, allow_lib = True, lib_
         if allow_last_head:
             if final_block_the_same(get_last_head_block_number, data):
                 return False
+
+def calculate_transformed_witnesses(wallet, node):
+    witnesses       = wallet.api.get_active_witnesses(False)['witnesses']
+    current_witness = node.get_current_witness()
+    tt.logger.info(f'current witness: {current_witness} active witnesses: {witnesses}')
+
+    transformed_witnesses = []
+    start = False
+    pos = 0
+    for witness in witnesses:
+        if witness == current_witness:
+            start = True
+            continue
+        if start:
+            transformed_witnesses.insert(pos, witness)
+            pos += 1
+        else:
+            transformed_witnesses.append(witness)
+
+    tt.logger.info(f'transformed witnesses: {transformed_witnesses}')
+    return transformed_witnesses
+
+def is_witness_in_given_patterns(witness, witness_name_patterns):
+    return any([re.match(pattern, witness) is not None for pattern in witness_name_patterns])
+
+def are_witnesses_match_patterns(witnesses, witness_name_patterns):
+    return all([is_witness_in_given_patterns(witness, pattern) for pattern, witness in zip(witness_name_patterns, witnesses)])
+
+def wait_for_specific_witnesses(node, logs, witness_name_patterns):
+    wallet = tt.Wallet(attach_to=node)
+    witnesses_interval = 21
+    while True:
+        wait(1, logs, node)
+
+        witnesses = calculate_transformed_witnesses(wallet, node)
+
+        if are_witnesses_match_patterns(witnesses, witness_name_patterns):
+            last_block_number   = node.get_last_block_number()
+            val_1               = last_block_number % witnesses_interval
+            val_2               = (last_block_number + len(witness_name_patterns)) % witnesses_interval
+            tt.logger.info(f'schedule-status now: {val_1} schedule-status after: {val_2}')
+            if val_1 < val_2:
+                tt.logger.info("Witnesses patterns will be processed in the same schedule")
+                return
+            else:
+                tt.logger.info("Witnesses patterns can't be processed in the same schedule. Still waiting...")

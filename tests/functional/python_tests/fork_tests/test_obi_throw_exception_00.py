@@ -1,4 +1,4 @@
-from .local_tools import wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block
+from .local_tools import wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block, wait_for_specific_witnesses
 import test_tools as tt
 import time
 
@@ -26,12 +26,11 @@ def test_obi_throw_exception_00(prepare_obi_throw_exception_00):
     logs.append(fork_log("a1", tt.Wallet(attach_to = api_node_1)))
     logs.append(fork_log("w1", tt.Wallet(attach_to = witness_node_1)))
 
-    blocks_before_exception = 13
     blocks_after_exception  = 5
     blocks_wait             = 1
 
-    tt.logger.info(f'Before an exception')
-    wait(blocks_before_exception, logs, witness_node_0)
+    tt.logger.info(f'Before an exception - waiting for specific witnesses')
+    wait_for_specific_witnesses(witness_node_0, logs, [['witness-1', 'initminer']])
 
     _a0 = logs[0].collector
     last_lib_01                                 = get_last_irreversible_block_num(_a0)
