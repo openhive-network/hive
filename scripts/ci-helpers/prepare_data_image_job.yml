@@ -31,10 +31,14 @@
     IMAGE_TAG: ""
 
     SCRIPTS_PATH: "$CI_PROJECT_DIR/scripts"
+    DATA_CACHE: ""
 
   script:
+    - set -x
     - echo "Attempting to cleanup an image $IMAGE_PATH using tag $IMAGE_TAG from $REGISTRY"
     - "$SCRIPTS_PATH/ci-helpers/delete-image.sh"
+    - du -h -d 1 /cache
+    - rm $DATA_CACHE -rf
 
   when: always
 
@@ -43,18 +47,44 @@
 
   variables:
     SUBMODULE_DIR: "$CI_PROJECT_DIR"
-    REGISTRY_USER: "$CI_IMG_BUILDER_USER"
-    REGISTRY_PASS: $CI_IMG_BUILDER_PASSWORD
+    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
+    REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
+    BINARY_CACHE_PATH: "hived-mainnet-binaries"
+    HIVE_NETWORK_TYPE: mainnet
 
     SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
+    DATA_CACHE: ""
+    BLOCK_LOG_SOURCE_DIR: ""
+    CONFIG_INI_SOURCE: ""
+    FAKETIME_TIMESTAMP: ""
   script:
-    - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS" "hived-mainnet-binaries"
-    - ls -la ./hived-mainnet-binaries/*
+    - echo "CI_CONCURRENT_ID $CI_CONCURRENT_ID"
+    - set -x
+    - git --version || true
+    - A=$( git ls-files -s libraries programs | git hash-object --stdin )
+    - mkdir -p $DATA_CACHE
+    - echo $A || true
+    #- $SCRIPTS_PATH/ci-helpers/prepare_data_and_shm_dir.sh --data-and-shm-dir="$DATA_CACHE" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --faketime-timestamp="$FAKETIME_TIMESTAMP" --config-ini="$CONFIG_INI_FILE"
+    - $SCRIPTS_PATH/ci-helpers/get_image4submodule2.sh
+        "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS"
+        --export-binaries="$BINARY_CACHE_PATH" --network-type="$HIVE_NETWORK_TYPE"
+        --data-base-dir="$DATA_CACHE" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --faketime-timestamp="$FAKETIME_TIMESTAMP" --config-ini-source="$CONFIG_INI_SOURCE"
+    - ls -la ./$BINARY_CACHE_PATH/*
+    - du -h -d 1 $CI_PROJECT_DIR
+  after_script:
+    - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
+    - ls /cache -lath
+    - stat /cache -f
+    - stat /cache
+    - stat /cache/hive
+    - cp $DATA_CACHE/datadir/hived.log $CI_PROJECT_DIR/hived.log
 
   artifacts:
     reports:
       dotenv: docker_image_name.env
     paths:
-      - ./hived-mainnet-binaries/*
+      - ./$BINARY_CACHE_PATH/*
+      - hived.log
+      - docker_logs.log
     expire_in: 6 hours
 

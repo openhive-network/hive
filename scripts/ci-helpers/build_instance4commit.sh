@@ -1,5 +1,7 @@
 #! /bin/bash
 
+set -xeuo pipefail
+
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTPATH/.."
 SRCROOTDIR="$SCRIPTSDIR/.."
@@ -14,6 +16,8 @@ REGISTRY=""
 BRANCH="master"
 
 NETWORK_TYPE_ARG=""
+
+EXPORT_BINARIES_ARG=""
 
 print_help () {
     echo "Usage: $0 <commit> <registry_url> [OPTION[=VALUE]]..."
@@ -30,6 +34,12 @@ while [ $# -gt 0 ]; do
     --network-type=*)
         type="${1#*=}"
         NETWORK_TYPE_ARG="--network-type=${type}"
+        echo "Using NETWORK_TYPE_ARG $NETWORK_TYPE_ARG"
+        ;;
+    --export-binaries=*)
+        export_path="${1#*=}"
+        EXPORT_BINARIES_ARG="--export-binaries=${export_path}"
+        echo "Using EXPORT_BINARIES_ARG $EXPORT_BINARIES_ARG"
         ;;
     -*)
         echo "ERROR: '$1' is not a valid option"
@@ -60,6 +70,6 @@ BUILD_IMAGE_TAG=$COMMIT
 
 do_clone "$BRANCH" "./hive-${COMMIT}" https://gitlab.syncad.com/hive/hive.git "$COMMIT"
 
-"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "./hive-${COMMIT}" "${REGISTRY}" ${NETWORK_TYPE_ARG}
+"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "./hive-${COMMIT}" "${REGISTRY}" ${EXPORT_BINARIES_ARG} ${NETWORK_TYPE_ARG}
 
 

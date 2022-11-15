@@ -18,5 +18,5 @@ BUILD_IMAGE_TAG=$COMMIT
 
 do_clone "$BRANCH" "./hive-${COMMIT}" https://gitlab.syncad.com/hive/hive.git "$COMMIT"
 
-"$SCRIPTSDIR/ci-helpers/build_data.sh" "$BUILD_IMAGE_TAG" "./hive-${COMMIT}" "$REGISTRY" "$@"
+"$SCRIPTSDIR/ci-helpers/build_data2.sh" "$BUILD_IMAGE_TAG" "./hive-${COMMIT}" "$REGISTRY" "$@"
 

@@ -1,6 +1,9 @@
 #! /bin/bash
 
-set -euo pipefail 
+set -xeuo pipefail
+
+# this is only for demonstration purposes and is waiting for unpacking cache when using cache keys
+sleep 360
 
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTDIR/scripts"
@@ -32,13 +35,38 @@ then
   sudo -n mkdir -p /home/hived/datadir
 fi
 
+if [ -z ${DATADIR-} ]
+then
+  DATADIR=/home/hived/datadir
+fi
+
+if [ -z ${SHM_DIR-} ]
+then
+  SHM_DIR=/home/hived/shm_dir
+fi
+
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+if [ ! -d "$DATADIR" ];
+then
+    echo "${RED}Data directory (DATADIR) '$DATADIR' does not exist. Exiting.${NC}"
+    exit 1
+fi
+
+if [ ! -d "$SHM_DIR" ];
+then
+    echo "${RED}Shared memory file directory (SHM_DIR) '$SHM_DIR' does not exist. Exiting.${NC}"
+    exit 1
+fi
+
+
 sudo -n chown -Rc hived:hived /home/hived/datadir
 
 # Be sure this directory exists
 mkdir --mode=777 -p /home/hived/datadir/blockchain
 sudo -n chown -Rc hived:hived /home/hived/shm_dir
 
-cd /home/hived/datadir
+cd $DATADIR
 
 HIVED_ARGS=()
 HIVED_ARGS+=("$@")
@@ -46,14 +74,15 @@ export HIVED_ARGS
 
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[@]}"
 
-echo $BASH_SOURCE
+export FAKETIME_TIMESTAMP_FILE=$DATADIR/faketime.rc
 
 {
 sudo -Enu hived /bin/bash << EOF
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[@]}"
 
+LD_PRELOAD=/home/hived/hive_base_config/libfaketime/src/libfaketimeMT.so.1 \
 /home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
-  --data-dir=/home/hived/datadir --shared-file-dir=/home/hived/shm_dir \
+  --data-dir=${DATADIR} --shared-file-dir=${SHM_DIR} \
   ${HIVED_ARGS[@]} 2>&1 | tee -i hived.log
 echo "$? Hived process finished execution."
 EOF
