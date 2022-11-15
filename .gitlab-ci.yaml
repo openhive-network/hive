@@ -566,7 +566,7 @@ virtual_operation_pagination_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
     TEST_DIRECTORY: $CI_PROJECT_DIR/tests/functional/python_tests/hived/
-    PYTEST_ARGS: (--test hived-instance:8090 test_vop_pagination.py)
+    PYTEST_ARGS: (--test hived-instance:8090 -k test_vop_pagination_by)
 
   services:
     - name: $HIVED_IMAGE_NAME
