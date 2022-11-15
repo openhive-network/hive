@@ -1,11 +1,26 @@
 #! /bin/bash
 
-set -euo pipefail 
+set -xeuo pipefail
 
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTDIR/scripts"
 
-LOG_FILE=docker_entrypoint.log
+: "${DATADIR:=/home/hived/datadir}"
+: "${SHM_DIR:=/home/hived/shm_dir}"
+
+if [ ! -d "$DATADIR" ];
+then
+    echo "Data directory (DATADIR) $DATADIR does not exist. Exiting."
+    exit 1
+fi
+
+if [ ! -d "$SHM_DIR" ];
+then
+    echo "Shared memory file directory (SHM_DIR) $SHM_DIR does not exist. Exiting."
+    exit 1
+fi
+
+LOG_FILE=${DATADIR}/docker_entrypoint.log
 source "$SCRIPTSDIR/common.sh"
 
 cleanup () {
@@ -38,7 +53,7 @@ sudo -n chown -Rc hived:hived /home/hived/datadir
 mkdir --mode=777 -p /home/hived/datadir/blockchain
 sudo -n chown -Rc hived:hived /home/hived/shm_dir
 
-cd /home/hived/datadir
+cd $DATADIR
 
 HIVED_ARGS=()
 HIVED_ARGS+=("$@")
@@ -46,14 +61,12 @@ export HIVED_ARGS
 
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[@]}"
 
-echo $BASH_SOURCE
-
 {
 sudo -Enu hived /bin/bash << EOF
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[@]}"
 
 /home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
-  --data-dir=/home/hived/datadir --shared-file-dir=/home/hived/shm_dir \
+  --data-dir=${DATADIR} --shared-file-dir=${SHM_DIR} \
   ${HIVED_ARGS[@]} 2>&1 | tee -i hived.log
 echo "$? Hived process finished execution."
 EOF

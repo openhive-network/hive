@@ -1,4 +1,5 @@
 #! /bin/bash
+set -xeuo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTPATH/.."
@@ -42,7 +43,7 @@ while [ $# -gt 0 ]; do
           "mirrornet"*)
             BUILD_HIVE_TESTNET=OFF
             HIVE_CONVERTER_BUILD=ON
-            IMAGE_TAG_PREFIX=mirror-
+            IMAGE_TAG_PREFIX=mirrornet-
             ;;
           "mainnet"*)
             BUILD_HIVE_TESTNET=OFF
@@ -109,13 +110,13 @@ docker build --target=instance \
   --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}instance:instance-${BUILD_IMAGE_TAG} -f Dockerfile .
+  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}instance:${IMAGE_TAG_PREFIX}instance-${BUILD_IMAGE_TAG} -f Dockerfile .
 
 
 popd
 
 if [ ! -z "${EXPORT_PATH}" ];
 then
-  "$SCRIPTPATH/export-binaries.sh" ${REGISTRY}${IMAGE_TAG_PREFIX}instance:instance-${BUILD_IMAGE_TAG} "${EXPORT_PATH}"
+  "$SCRIPTPATH/export-binaries.sh" ${REGISTRY}${IMAGE_TAG_PREFIX}instance:${IMAGE_TAG_PREFIX}instance-${BUILD_IMAGE_TAG} "${EXPORT_PATH}"
 fi
 

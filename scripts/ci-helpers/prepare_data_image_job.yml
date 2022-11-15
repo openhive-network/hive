@@ -58,3 +58,42 @@
       - ./hived-mainnet-binaries/*
     expire_in: 6 hours
 
+.prepare_hived_image:
+  extends: .docker_image_builder_job
+
+  variables:
+    SUBMODULE_DIR: "$CI_PROJECT_DIR"
+    SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
+    REGISTRY_USER: "$CI_IMG_BUILDER_USER"
+    REGISTRY_PASS: $CI_IMG_BUILDER_PASSWORD
+    BINARY_CACHE_PATH: "hived-mainnet-binaries"
+    HIVE_NETWORK_TYPE: mainnet
+  script:
+    - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
+    - $SCRIPTS_PATH/ci-helpers/get_image4submodule2.sh
+        "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS"
+        --export-binaries="$BINARY_CACHE_PATH" --network-type="$HIVE_NETWORK_TYPE"
+    - ls -la ./$BINARY_CACHE_PATH/*
+    - du -h -d 1 /cache
+
+  artifacts:
+    reports:
+      dotenv: docker_image_name.env
+    paths:
+      - ./$BINARY_CACHE_PATH/*
+    expire_in: 6 hours
+
+.prepare_hived_data:
+  extends: .docker_image_builder_job
+
+  variables:
+    SUBMODULE_DIR: "$CI_PROJECT_DIR"
+    SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
+    DATA_CACHE: ""
+    BLOCK_LOG_SOURCE_DIR: ""
+    CONFIG_INI_SOURCE: ""
+  script:
+    - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
+    - $SCRIPTS_PATH/ci-helpers/build_data2.sh
+        --data-base-dir="$DATA_CACHE" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
+    - du -h -d 1 /cache
