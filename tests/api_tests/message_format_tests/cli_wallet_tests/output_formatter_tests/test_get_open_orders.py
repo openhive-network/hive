@@ -1,9 +1,12 @@
+from pathlib import Path
 import re
 from typing import Dict
 
 import test_tools as tt
 
 from .local_tools import are_close, create_buy_order, create_sell_order, verify_json_patterns, verify_text_patterns
+
+__PATTERNS_DIRECTORY = Path(__file__).with_name('response_patterns')
 
 
 def test_get_open_orders_json_format(node, wallet_with_json_formatter):
@@ -35,7 +38,7 @@ def test_json_format_pattern(node, wallet_with_json_formatter):
 
     open_orders = wallet_with_json_formatter.api.get_open_orders('initminer')
 
-    verify_json_patterns('get_open_orders', open_orders)
+    verify_json_patterns(__PATTERNS_DIRECTORY, 'get_open_orders', open_orders)
 
 
 def test_text_format_pattern(node, wallet_with_text_formatter):
@@ -43,7 +46,7 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
 
     open_orders = wallet_with_text_formatter.api.get_open_orders('initminer')
 
-    verify_text_patterns('get_open_orders', open_orders)
+    verify_text_patterns(__PATTERNS_DIRECTORY, 'get_open_orders', open_orders)
 
 
 def prepare_orders(wallet):

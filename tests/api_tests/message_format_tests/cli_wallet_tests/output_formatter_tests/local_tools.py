@@ -8,8 +8,6 @@ import test_tools as tt
 
 from ....local_tools import read_from_json_pattern, write_to_json_pattern
 
-__PATTERNS_DIRECTORY = Path(__file__).with_name('response_patterns')
-
 
 def __read_from_text_pattern(directory: Path, method_name: str) -> str:
     with open(f'{directory}/{method_name}.pat.txt', 'r') as text_file:
@@ -22,30 +20,30 @@ def __write_to_text_pattern(directory: Path, method_name: str, text: str) -> Non
         text_file.write(text)
 
 
-def verify_json_patterns(method_name, method_output):
+def verify_json_patterns(directory: Path, method_name, method_output):
     """
     Asserts that `method_output` is same as corresponding pattern. Optionally updates (overrides)
     existing patterns with actual method output, if `GENERATE_PATTERNS` environment variable is set.
     """
     generate_patterns = strtobool(os.environ.get('GENERATE_PATTERNS', 'OFF'))
     if not generate_patterns:
-        pattern = read_from_json_pattern(__PATTERNS_DIRECTORY, method_name)
+        pattern = read_from_json_pattern(directory, method_name)
         assert pattern == method_output
 
-    write_to_json_pattern(__PATTERNS_DIRECTORY, method_name, method_output)
+    write_to_json_pattern(directory, method_name, method_output)
 
 
-def verify_text_patterns(method_name, method_output):
+def verify_text_patterns(directory: Path, method_name, method_output):
     """
     Asserts that `method_output` is same as corresponding pattern. Optionally updates (overrides)
     existing patterns with actual method output, if `GENERATE_PATTERNS` environment variable is set.
     """
     generate_patterns = strtobool(os.environ.get('GENERATE_PATTERNS', 'OFF'))
     if not generate_patterns:
-        pattern = __read_from_text_pattern(__PATTERNS_DIRECTORY, method_name)
+        pattern = __read_from_text_pattern(directory, method_name)
         assert pattern == method_output
 
-    __write_to_text_pattern(__PATTERNS_DIRECTORY, method_name, method_output)
+    __write_to_text_pattern(directory, method_name, method_output)
 
 
 def are_close(first: float, second: float) -> bool:

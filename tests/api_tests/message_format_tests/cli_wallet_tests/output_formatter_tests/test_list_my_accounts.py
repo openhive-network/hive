@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import re
 from typing import Dict, List
 
@@ -12,6 +14,8 @@ TOTAL_BALANCES = {
     'hives': sum((balance['hives'] for balance in block_log.ACCOUNTS_BALANCES), start=tt.Asset.Test(0)),
     'hbds': sum((balance['hbds'] for balance in block_log.ACCOUNTS_BALANCES), start=tt.Asset.Tbd(0))
 }
+
+__PATTERNS_DIRECTORY = Path(__file__).with_name('response_patterns')
 
 
 @pytest.mark.replayed_node
@@ -48,7 +52,7 @@ def test_list_my_accounts_json_format_pattern_comparison(wallet_with_json_format
     import_private_keys_for_accounts(wallet_with_json_formatter, block_log.CREATED_ACCOUNTS)
     accounts_summary = wallet_with_json_formatter.api.list_my_accounts()
 
-    verify_json_patterns('list_my_accounts', accounts_summary)
+    verify_json_patterns(__PATTERNS_DIRECTORY, 'list_my_accounts', accounts_summary)
 
 
 @pytest.mark.replayed_node
@@ -56,7 +60,7 @@ def test_list_my_accounts_text_format_pattern_comparison(wallet_with_text_format
     import_private_keys_for_accounts(wallet_with_text_formatter, block_log.CREATED_ACCOUNTS)
     accounts_summary = wallet_with_text_formatter.api.list_my_accounts()
 
-    verify_text_patterns('list_my_accounts', accounts_summary)
+    verify_text_patterns(__PATTERNS_DIRECTORY, 'list_my_accounts', accounts_summary)
 
 
 def parse_text_response(text):
