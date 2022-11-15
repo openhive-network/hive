@@ -89,7 +89,7 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(prepared_no
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
 
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
+        prepared_node.api.condenser.list_rc_direct_delegations([from_, to], limit)
 
 
 @run_for('testnet')
