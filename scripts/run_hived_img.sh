@@ -56,7 +56,7 @@ while [ $# -gt 0 ]; do
         ;;
     --webserver-ws-endpoint=*)
         WS_ENDPOINT="${1#*=}"
-        add_docker_arg "--publish=${WS_ENDPOINT}:8090"
+        add_docker_arg "--publish=${WS_ENDPOINT}:8091"
         ;;
     --p2p-endpoint=*)
         P2_ENDPOINT="${1#*=}"
@@ -121,6 +121,6 @@ fi
 #echo "Additional hived args: ${CMD_ARGS[@]}"
 
 docker container rm -f -v "$CONTAINER_NAME" 2>/dev/null || true
-docker run --rm -itd -e UID=$(id -u) -e GID=$(id -g) --name "$CONTAINER_NAME" --stop-timeout=180 ${DOCKER_ARGS[@]} "${IMAGE_NAME}" "${CMD_ARGS[@]}"
+docker run -itd -e UID=$(id -u) -e GID=$(id -g) --name "$CONTAINER_NAME" --stop-timeout=180 ${DOCKER_ARGS[@]} "${IMAGE_NAME}" "${CMD_ARGS[@]}"
 
 

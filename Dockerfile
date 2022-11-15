@@ -83,7 +83,7 @@ ENV BUILD_IMAGE_TAG=${BUILD_IMAGE_TAG}
 ARG P2P_PORT=2001
 ENV P2P_PORT=${P2P_PORT}
 
-ARG WS_PORT=8090
+ARG WS_PORT=8091
 ENV WS_PORT=${WS_PORT}
 
 ARG HTTP_PORT=8090
@@ -120,10 +120,13 @@ STOPSIGNAL SIGINT
 
 ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
 
+# default command line to be passed for this version (which should be stopped at 5M)
+CMD ["--replay-blockchain", "--stop-replay-at-block=5000000"]
+
 FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-${BUILD_IMAGE_TAG} as instance
 
-#p2p service
-EXPOSE ${P2P_PORT}
+# p2p service is not always enabled and this is workaround for gitlab healthcheck bug
+# EXPOSE ${P2P_PORT}
 # websocket service
 EXPOSE ${WS_PORT}
 # JSON rpc service
@@ -135,7 +138,7 @@ FROM ${CI_REGISTRY_IMAGE}ci-base-image-5m$CI_IMAGE_TAG AS block_log_5m_source
 
 FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-$BUILD_IMAGE_TAG as data
 
-COPY --from=block_log_5m_source /home/hived/datadir /home/hived/datadir 
+COPY --from=block_log_5m_source /home/hived/datadir /home/hived/datadir
 ADD --chown=hived:hived ./docker/config_5M.ini /home/hived/datadir/config.ini
 
 RUN "/home/hived/docker_entrypoint.sh" --force-replay --stop-replay-at-block=5000000 --exit-before-sync
