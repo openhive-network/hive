@@ -383,7 +383,7 @@ void webserver_plugin_impl::handle_ws_message( websocket_server_type* server, co
         LOG_DELAY(arrival_time, fc::seconds(4), "Excessive delay to get ws payload");
 
         auto response =  api->call( body );
-        LOG_DELAY(arrival_time, fc::seconds(10), "Excessive delay to process ws API call");
+        LOG_DELAY_EX(arrival_time, fc::seconds(10), "Excessive delay to process ws API call: ${body}", (body));
 
         con->send( response );
       }
@@ -465,7 +465,7 @@ void webserver_plugin_impl::handle_http_message( websocket_server_type* server, 
       }
     }
 
-    LOG_DELAY(arrival_time, fc::seconds(10), "Excessive delay to process API call");
+    LOG_DELAY_EX(arrival_time, fc::seconds(10), "Excessive delay to process API call ${body}",(body));
     con->send_http_response();
   });
 }
