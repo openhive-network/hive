@@ -1,28 +1,16 @@
 from pathlib import Path
-
-import pytest
+import re
 
 import test_tools as tt
 
 
-@pytest.fixture
-def node() -> tt.InitNode:
-    node = tt.InitNode()
-    node.run()
-    return node
-
-
-@pytest.fixture
-def wallet(node) -> tt.Wallet:
-    return tt.Wallet(attach_to=node)
-
-
 __PATTERNS_DIRECTORY = Path(__file__).with_name('gethelp_response_patterns')
 
-def test_help_and_gethelp(wallet: tt.Wallet):
-    help_content = wallet.api.help()
-    # saparate names of functions from "help"
-    help_functions = [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]
+__HELP_CONTENT_DIRECTORY = Path(__file__).with_name('help_response_patterns')
+
+
+def test_gethelp(wallet: tt.Wallet):
+    help_functions = __read_and_parse_help_content()
     failed_functions = []
     for function in help_functions:
         try:
@@ -49,3 +37,10 @@ def test_gethelp_with_create_account_argument(wallet):
 def __read_from_text_pattern(method_name: str) -> str:
     with open(f'{__PATTERNS_DIRECTORY}/{method_name}.pat.txt', 'r') as text_file:
         return text_file.read()
+
+
+def __read_and_parse_help_content() -> list:
+    with open(f'{__HELP_CONTENT_DIRECTORY}/help.pat.txt', 'r') as text_file:
+        help_content = text_file.read()
+        # saparate names of functions from "help"
+        return [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]
