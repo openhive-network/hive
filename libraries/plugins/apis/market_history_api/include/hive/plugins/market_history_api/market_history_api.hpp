@@ -86,7 +86,7 @@ typedef get_trade_history_return get_recent_trades_return;
 
 struct get_market_history_args
 {
-  uint32_t       bucket_seconds;
+  uint32_t       bucket_seconds = 0;
   time_point_sec start;
   time_point_sec end;
 };
