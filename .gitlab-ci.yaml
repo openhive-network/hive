@@ -221,6 +221,30 @@ plugin_test:
      - additional arguments: ${PYTEST_ARGS[@]}"
   - timeout $((($PYTEST_TIMEOUT_MINUTES + 2) * 60)) pytest --timeout=$(($PYTEST_TIMEOUT_MINUTES * 60)) --junitxml="./report.xml" "${PROCESSES}" "${DURATIONS}" "${PYTEST_ARGS[@]}"
 
+  .test_tools_based:
+  variables:
+    HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
+    CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
+    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
+    TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
+  interruptible: true
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+
+  before_script:
+    - python3 -m venv venv/
+    - . venv/bin/activate
+    - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    paths:
+    - "**/generated_during_*"
+    - "**/generated_by_package_fixtures"
+    when: always
+    expire_in: 1 week
+
 .beem_tests_base:
   stage: test
   extends: .test_tools_based
@@ -264,30 +288,6 @@ beem_mirrornet_tests:
   before_script:
     - !reference [.beem_tests_base, before_script]
     - export PYTEST_ARGS=(-m mirrornet --chain-id ${MIRRORNET_CHAIN_ID} --skeleton-key "${MIRRORNET_SKELETON_KEY}")
-
-.test_tools_based:
-  variables:
-    HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
-    CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
-    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
-    TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
-  interruptible: true
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-
-  before_script:
-    - python3 -m venv venv/
-    - . venv/bin/activate
-    - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
-    paths:
-    - "**/generated_during_*"
-    - "**/generated_by_package_fixtures"
-    when: always
-    expire_in: 1 week
 
 cli_wallet_tests:
   stage: test
