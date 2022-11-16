@@ -132,20 +132,6 @@ def test_get_private_key_related_to_public_key(configured_wallet: tt.Wallet):
     assert configured_wallet.api.get_private_key(public_key) == private_key
 
 
-def test_help_and_gethelp(configured_wallet: tt.Wallet):
-    help_content = configured_wallet.api.help()
-    # saparate names of functions from "help"
-    help_functions = [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]
-    failed_functions = []
-    for function in help_functions:
-        try:
-            configured_wallet.api.gethelp(function)
-        except tt.exceptions.CommunicationError:
-            failed_functions.append(function)
-    if len(failed_functions) > 0:
-        assert False, f'Error occurred when gethelp was called for following functions: {failed_functions}'
-
-
 def test_suggest_brain_key(configured_wallet: tt.Wallet):
     result = configured_wallet.api.suggest_brain_key()
     brain_priv_key = result['brain_priv_key'].split(' ')

@@ -19,6 +19,18 @@ def wallet(node) -> tt.Wallet:
 
 __PATTERNS_DIRECTORY = Path(__file__).with_name('gethelp_response_patterns')
 
+def test_help_and_gethelp(wallet: tt.Wallet):
+    help_content = wallet.api.help()
+    # saparate names of functions from "help"
+    help_functions = [re.match(r'.* ([\w_]+)\(.*', line)[1] for line in help_content.split('\n')[:-1]]
+    failed_functions = []
+    for function in help_functions:
+        try:
+            wallet.api.gethelp(function)
+        except tt.exceptions.CommunicationError:
+            failed_functions.append(function)
+    if len(failed_functions) > 0:
+        assert False, f'Error occurred when gethelp was called for following functions: {failed_functions}'
 
 def test_gethelp_with_get_order_book_argument(wallet):
     response = wallet.api.gethelp('get_order_book')
