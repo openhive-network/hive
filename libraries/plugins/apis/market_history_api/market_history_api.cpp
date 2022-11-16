@@ -80,7 +80,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_volume )
 
 DEFINE_API_IMPL( market_history_api_impl, get_order_book )
 {
-  FC_ASSERT( args.limit <= 500 );
+  FC_ASSERT( 0 < args.limit && args.limit <= 500 );
 
   const auto& order_idx = _db.get_index< chain::limit_order_index, chain::by_price >();
   auto itr = order_idx.lower_bound( price::max( HBD_SYMBOL, HIVE_SYMBOL ) );
@@ -118,7 +118,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
 
 DEFINE_API_IMPL( market_history_api_impl, get_trade_history )
 {
-  FC_ASSERT( args.limit <= 1000 );
+  FC_ASSERT( 0 < args.limit && args.limit <= 1000 );
   const auto& bucket_idx = _db.get_index< order_history_index, by_time >();
   auto itr = bucket_idx.lower_bound( args.start );
 
@@ -139,7 +139,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_trade_history )
 
 DEFINE_API_IMPL( market_history_api_impl, get_recent_trades )
 {
-  FC_ASSERT( args.limit <= 1000 );
+  FC_ASSERT( 0 < args.limit && args.limit <= 1000 );
   const auto& order_idx = _db.get_index< order_history_index, by_time >();
   auto itr = order_idx.rbegin();
 
