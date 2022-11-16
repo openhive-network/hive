@@ -1,0 +1,12 @@
+
+Update witness properties for the given account.
+
+Parameters:
+    witness_name: The name of the witness account. (type: const string &)
+    url: A URL containing some information about the witness. The empty
+	string makes it remain the same. (type: const string &)
+    block_signing_key: The new block signing public key. The empty string
+	disables block production. (type: public_key_type)
+    props: The chain properties the witness is voting on. (type: const
+	wallet_serializer_wrapper<legacy_chain_properties> &)
+    broadcast: true if you wish to broadcast the transaction. (type: bool)

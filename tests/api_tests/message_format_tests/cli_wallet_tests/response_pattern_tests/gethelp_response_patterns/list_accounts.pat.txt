@@ -1,0 +1,14 @@
+
+Lists all accounts registered in the blockchain.
+
+Use the 'lowerbound' and limit parameters to page through the list. To
+retrieve all accounts, start by setting 'lowerbound' to the empty string
+'""', and then each iteration, pass the last account name returned as the
+'lowerbound' for the next 'list_accounts()' call.
+
+Parameters:
+    lowerbound: the name of the first account to return. If the named
+	account does not exist, the list will start at the account that
+	comes after 'lowerbound' (type: const string &)
+    limit: the maximum number of accounts to return (max: 1000) (type:
+	uint32_t)

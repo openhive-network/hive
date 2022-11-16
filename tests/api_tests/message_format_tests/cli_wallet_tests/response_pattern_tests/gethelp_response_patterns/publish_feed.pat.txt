@@ -1,0 +1,9 @@
+
+A witness can public a price feed for the HIVE:HBD market. The median price
+feed is used to process conversion requests between HBD and HIVE.
+
+Parameters:
+    witness: The witness publishing the price feed (type: const string &)
+    exchange_rate: The desired exchange rate (type: const
+	wallet_serializer_wrapper<price> &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

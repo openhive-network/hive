@@ -1,0 +1,9 @@
+
+Delegate Rc
+
+Parameters:
+    from: The source account (type: const account_name_type &)
+    delegatees: The destination accounts (type: const
+	flat_set<account_name_type> &)
+    max_rc: The amount to delegate (type: int64_t)
+    broadcast: To broadcast this transaction or not (type: bool)

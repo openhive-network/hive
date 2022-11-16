@@ -1,0 +1,8 @@
+
+Returns a list of all commands supported by the wallet API.
+
+This lists each command, along with its arguments and return types. For
+more detailed help on a single command, use 'get_help()'
+
+Returns
+    a multi-line string suitable for displaying on a terminal

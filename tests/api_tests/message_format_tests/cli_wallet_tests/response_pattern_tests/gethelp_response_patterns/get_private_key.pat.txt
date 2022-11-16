@@ -1,0 +1,6 @@
+
+Get the WIF private key corresponding to a public key. The private key must
+already be in the wallet.
+
+Parameters:
+    pubkey: public key (type: public_key_type)

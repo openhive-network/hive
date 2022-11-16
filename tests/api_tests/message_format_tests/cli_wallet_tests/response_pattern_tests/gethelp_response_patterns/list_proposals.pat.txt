@@ -1,0 +1,12 @@
+
+List proposals
+
+Parameters:
+    start: - starting value for querying results, (type: fc::variant)
+    limit: - query limit, (type: uint32_t)
+    order_by: - name a field for sorting operation, (type:
+	database_api::sort_order_type)
+    order_type: - set print order (ascending, descending) (type:
+	database_api::order_direction_type)
+    status: - list only results with given status (all, inactive, active,
+	expired, votable), (type: database_api::proposal_status)

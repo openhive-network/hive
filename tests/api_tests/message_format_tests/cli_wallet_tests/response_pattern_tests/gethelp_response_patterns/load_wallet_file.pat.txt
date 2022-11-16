@@ -1,0 +1,9 @@
+
+Loads a specified Graphene wallet.
+
+The current wallet is closed before the new wallet is loaded.
+
+Parameters:
+    wallet_filename: the filename of the wallet JSON file to load. If
+	'wallet_filename' is empty, it reloads the existing wallet file
+	(type: string)

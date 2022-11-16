@@ -1,0 +1,17 @@
+
+This method is used by faucets to create new accounts for other users which
+must provide their desired keys. The resulting account may not be
+controllable by this wallet. There is a fee associated with account
+creation that is paid by the creator. The current account creation fee can
+be found with the 'info' wallet command.
+
+Parameters:
+    creator: The account creating the new account (type: const string &)
+    newname: The name of the new account (type: const string &)
+    json_meta: JSON Metadata associated with the new account (type: const
+	string &)
+    owner: public owner key of the new account (type: public_key_type)
+    active: public active key of the new account (type: public_key_type)
+    posting: public posting key of the new account (type: public_key_type)
+    memo: public memo key of the new account (type: public_key_type)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

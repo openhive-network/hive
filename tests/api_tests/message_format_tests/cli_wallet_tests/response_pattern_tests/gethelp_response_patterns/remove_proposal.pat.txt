@@ -1,0 +1,7 @@
+
+Remove given proposal
+
+Parameters:
+    deleter: - authorized account, (type: const account_name_type &)
+    ids: - proposal ids to be removed. (type: const flat_set<int64_t> &)
+    broadcast: - true if you wish to broadcast the transaction (type: bool)

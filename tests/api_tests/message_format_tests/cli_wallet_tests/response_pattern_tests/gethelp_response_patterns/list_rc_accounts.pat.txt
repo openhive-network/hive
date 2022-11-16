@@ -1,0 +1,6 @@
+
+List RC accounts.
+
+Parameters:
+    account: The starting account (type: const string &)
+    limit: The limit of returned results (type: uint32_t)

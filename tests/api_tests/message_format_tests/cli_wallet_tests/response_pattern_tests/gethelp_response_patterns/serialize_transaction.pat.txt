@@ -1,0 +1,8 @@
+
+Converts a signed_transaction in JSON form to its binary representation.
+
+TODO: I don't see a broadcast_transaction() function, do we need one?
+
+Parameters:
+    tx: the transaction to serialize (type: const
+	wallet_serializer_wrapper<signed_transaction> &)

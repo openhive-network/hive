@@ -1,0 +1,11 @@
+
+Signs a transaction.
+
+Given a fully-formed transaction that is only lacking signatures, this
+signs the transaction with the necessary keys and optionally broadcasts the
+transaction
+
+Parameters:
+    tx: the unsigned transaction (type: const
+	wallet_serializer_wrapper<annotated_signed_transaction> &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

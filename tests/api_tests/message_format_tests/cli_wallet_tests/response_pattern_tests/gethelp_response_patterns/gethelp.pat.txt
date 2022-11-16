@@ -1,0 +1,6 @@
+
+Returns detailed help on a single API command.
+
+Parameters:
+    method: the name of the API command you want help with (type: const
+	string &)

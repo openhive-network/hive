@@ -1,0 +1,11 @@
+
+Imports multiple WIF Private Keys into the wallet to be used to sign
+transactions by an account.
+
+example: import_keys
+["5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3","5JNHfZYKGaomSFvd4NU
+dQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"]
+
+Parameters:
+    wif_keys: the WIF Private Keys array to import (type: const
+	vector<string> &)

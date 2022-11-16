@@ -1,0 +1,5 @@
+
+Retrieve RC information for the given accounts.
+
+Parameters:
+    accounts: The vector of accounts (type: fc::variant)

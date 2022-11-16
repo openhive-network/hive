@@ -1,0 +1,23 @@
+
+Transfer funds from one account to another using escrow. HIVE and HBD can
+be transferred.
+
+Parameters:
+    from: The account the funds are coming from (type: const string &)
+    to: The account the funds are going to (type: const string &)
+    agent: The account acting as the agent in case of dispute (type: const
+	string &)
+    escrow_id: A unique id for the escrow transfer. (from, escrow_id) must
+	be a unique pair (type: uint32_t)
+    hbd_amount: The amount of HBD to transfer (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    hive_amount: The amount of HIVE to transfer (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    fee: The fee paid to the agent (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    ratification_deadline: The deadline for 'to' and 'agent' to approve the
+	escrow transfer (type: const time_point_sec &)
+    escrow_expiration: The expiration of the escrow transfer, after which
+	either party can claim the funds (type: const time_point_sec &)
+    json_meta: JSON encoded meta data (type: const string &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

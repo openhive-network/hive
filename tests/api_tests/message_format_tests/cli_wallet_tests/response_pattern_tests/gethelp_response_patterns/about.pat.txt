@@ -1,0 +1,6 @@
+
+Returns info such as client version, git version of graphene/fc, version of
+boost, openssl.
+
+Returns
+    compile time info and client and dependencies versions

@@ -1,0 +1,5 @@
+
+Returns info about the current state of the blockchain
+
+Returns
+    dynamic global properties, etc.

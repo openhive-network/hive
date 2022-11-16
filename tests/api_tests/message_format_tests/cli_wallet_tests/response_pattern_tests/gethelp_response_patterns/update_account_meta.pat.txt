@@ -1,0 +1,9 @@
+
+This method updates the account JSON metadata
+
+Parameters:
+    account_name: The name of the account you wish to update (type: const
+	string &)
+    json_meta: The new JSON metadata for the account. This overrides
+	existing metadata (type: const string &)
+    broadcast: ture if you wish to broadcast the transaction (type: bool)

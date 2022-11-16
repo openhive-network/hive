@@ -1,0 +1,10 @@
+
+Transforms a brain key to reduce the chance of errors when re-entering the
+key from memory.
+
+This takes a user-supplied brain key and normalizes it into the form used
+for generating private keys. In particular, this upper-cases all ASCII
+characters and collapses multiple spaces into one.
+
+Parameters:
+    s: the brain key as supplied by the user (type: string)

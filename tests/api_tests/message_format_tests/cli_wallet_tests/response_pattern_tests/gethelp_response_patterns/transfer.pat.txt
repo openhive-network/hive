@@ -1,0 +1,15 @@
+
+Transfer funds from one account to another. HIVE and HBD can be
+transferred.
+
+Memo for the transaction can be encrypted if message is started with '#'.
+Private Memo Key must already be in the wallet for encrypted memo to work.
+
+Parameters:
+    from: The account the funds are coming from (type: const string &)
+    to: The account the funds are going to (type: const string &)
+    amount: The funds being transferred. i.e. "100.000 HIVE" (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    memo: A memo for the transaction, can by encrypted if started with '#'
+	(type: const string &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

@@ -1,0 +1,8 @@
+
+Update existing worker proposal(s)
+
+Parameters:
+    voter: - the account that votes, (type: const account_name_type &)
+    proposals: - array with proposal ids, (type: const flat_set<int64_t> &)
+    approve: - set if proposal(s) should be approved or not. (type: bool)
+    broadcast: - true if you wish to broadcast the transaction (type: bool)

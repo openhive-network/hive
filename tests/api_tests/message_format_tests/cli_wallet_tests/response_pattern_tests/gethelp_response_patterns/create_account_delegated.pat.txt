@@ -1,0 +1,18 @@
+
+This method will genrate new owner, active, posting and memo keys for the
+new account which will be controlable by this wallet. There is a fee
+associated with account creation that is paid by the creator. The current
+account creation fee can be found with the 'info' wallet command.
+
+These accounts are created with combination of HIVE and delegated HP
+
+Parameters:
+    creator: The account creating the new account (type: const string &)
+    hive_fee: The amount of the fee to be paid with HIVE (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    delegated_vests: The amount of the fee to be paid with delegation
+	(type: const wallet_serializer_wrapper<hive::protocol::asset> &)
+    new_account_name: The name of the new account (type: const string &)
+    json_meta: JSON Metadata associated with the new account (type: const
+	string &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

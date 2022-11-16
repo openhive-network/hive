@@ -1,0 +1,6 @@
+
+Return the current price feed history
+
+Returns
+    'current_median_history' 'market_median_history' 'current_min_history'
+	'current_max_history' and 'price_history'

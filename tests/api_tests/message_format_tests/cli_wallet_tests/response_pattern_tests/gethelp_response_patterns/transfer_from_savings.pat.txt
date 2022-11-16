@@ -1,0 +1,14 @@
+
+
+
+Parameters:
+    from: - the account that initiated the transfer (type: const string &)
+    request_id: - an unique ID assigned by from account, the id is used to
+	cancel the operation and can be reused after the transfer completes
+	(type: uint32_t)
+    to: - the account getting the transfer (type: const string &)
+    amount: - the amount of assets to be transfered (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    memo: A memo for the transaction, encrypted with the to account's
+	public memo key (type: const string &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)
