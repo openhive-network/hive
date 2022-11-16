@@ -32,7 +32,8 @@ class market_history_plugin_impl
 
     chain::database&     _db;
     flat_set<uint32_t>            _tracked_buckets = flat_set<uint32_t>  { 15, 60, 300, 3600, 86400 };
-    int32_t                       _maximum_history_per_bucket_size = 1000;
+    int32_t                       _maximum_history_per_bucket_size = 86400 / 15; // smallest buckets should
+      // cover at least 24 hours, otherwise get_ticker/get_volume api calls won't work properly
     boost::signals2::connection   _post_apply_operation_conn;
 };
 
