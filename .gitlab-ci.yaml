@@ -17,13 +17,21 @@ variables:
   # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu20.04-7
   TEST_IMAGE_TAG: "@sha256:034b706db277c62e36f07c7d8d8729f55b6be9d4cbc3eddd3a63d38c9a77ead6"
 
+  # Variables required bu Common CI jobs
+  DOCKER_BUILDER_TAG: "b1af58191e62b310dcc57514332c3b7fbcfef323"
+  DOCKER_DIND_TAG: "b1af58191e62b310dcc57514332c3b7fbcfef323"
+  IMAGE_REMOVER_TAG: "b1af58191e62b310dcc57514332c3b7fbcfef323"
+
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
   PYTHON_DATEUTIL_VERSION: "2.8.2"
 
   TOX_VERSION: "3.25.1"
 
-include: '/scripts/ci-helpers/prepare_data_image_job.yml'
+include:
+  - project: 'hive/common-ci-configuration'
+    ref: kbotor/custom-docker-containers-containing-required-bash-scripts
+    file: '/templates/data_image_jobs.gitlab-ci.yml'
 
 prepare_hived_data_image:
   extends: .prepare_hived_data_5m_image
@@ -43,8 +51,6 @@ cleanup_hived_data_image:
     - prepare_hived_data_image
 
   variables:
-    REGISTRY: $CI_REGISTRY_IMAGE
-    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_REGISTRY_CLEANUP_TOKEN
     IMAGE_PATH: $HIVED_IMAGE_NAME_REGISTRY_PATH
     IMAGE_TAG: $HIVED_IMAGE_NAME_REGISTRY_TAG
