@@ -18,9 +18,10 @@ variables:
   TEST_IMAGE_TAG: "@sha256:034b706db277c62e36f07c7d8d8729f55b6be9d4cbc3eddd3a63d38c9a77ead6"
 
   # Variables required bu Common CI jobs
-  DOCKER_BUILDER_TAG: "b1af58191e62b310dcc57514332c3b7fbcfef323"
-  DOCKER_DIND_TAG: "b1af58191e62b310dcc57514332c3b7fbcfef323"
-  IMAGE_REMOVER_TAG: "b1af58191e62b310dcc57514332c3b7fbcfef323"
+  CI_COMMON_JOB_VERSION: "03ffbc88c25fc78994fa8ea6b878e8b73d680ed9"
+  DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
+  DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
+  IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
 
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
@@ -30,7 +31,7 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: kbotor/custom-docker-containers-containing-required-bash-scripts
+    ref: 03ffbc88c25fc78994fa8ea6b878e8b73d680ed9
     file: '/templates/data_image_jobs.gitlab-ci.yml'
 
 prepare_hived_data_image:
