@@ -2,8 +2,6 @@ import pytest
 
 import test_tools as tt
 
-from .....local_tools import date_from_now
-
 
 @pytest.mark.testnet
 def test_hbd_amount_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serialization):

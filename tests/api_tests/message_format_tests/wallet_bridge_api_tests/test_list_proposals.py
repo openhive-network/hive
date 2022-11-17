@@ -3,7 +3,7 @@ import pytest
 import test_tools as tt
 
 from .local_tools import create_accounts_with_vests_and_tbd, prepare_proposals
-from ..local_tools import date_from_now, as_string
+from ..local_tools import as_string
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
 

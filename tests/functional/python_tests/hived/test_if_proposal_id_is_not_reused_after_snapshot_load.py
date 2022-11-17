@@ -4,8 +4,6 @@ import pytest
 
 import test_tools as tt
 
-from ....local_tools import date_from_now
-
 
 @pytest.mark.testnet
 def test_if_proposal_id_is_not_reused_after_snapshot_load():

@@ -2,7 +2,6 @@ import pytest
 
 import test_tools as tt
 
-from ....local_tools import date_from_now
 
 PROPOSAL_START_DATE = date_from_now(weeks=16)
 PROPOSAL_END_DATE = date_from_now(weeks=20)

@@ -1,7 +1,5 @@
 import test_tools as tt
 
-from ..local_tools import date_from_now
-
 
 def create_account_and_create_order(wallet, account_name):
     wallet.api.create_account('initminer', account_name, '{}')

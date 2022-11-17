@@ -4,8 +4,6 @@ from typing import Iterable, Literal
 
 import test_tools as tt
 
-from ...local_tools import date_from_now
-
 
 def create_and_cancel_vesting_delegation(wallet, delegator, delegatee):
     wallet.api.delegate_vesting_shares(delegator, delegatee, tt.Asset.Vest(5))
