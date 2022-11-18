@@ -33,41 +33,25 @@ struct full_transaction_type
   private:
     mutable std::mutex results_mutex; // single mutex used to guard writes to any data
 
-    mutable std::atomic<bool> has_merkle_digest = { false };
     mutable hive::protocol::digest_type merkle_digest; // transaction hash used for calculating block's merkle root
-
-    mutable std::atomic<bool> has_legacy_transaction_message_hash = { false };
-    mutable fc::ripemd160 legacy_transaction_message_hash; // hash of p2p transaction message generated from this transaction
-
-    mutable std::atomic<bool> has_digest_and_transaction_id = { false };
     mutable hive::protocol::digest_type digest; // hash used for generating transaction id
-    mutable hive::protocol::transaction_id_type transaction_id; // transaction id itself (truncated digest)
 
-    mutable std::atomic<bool> validation_attempted = { false }; // true if validate() has been called & cached
     mutable fc::exception_ptr validation_exception; // if validate() threw, this is what it threw 
     mutable fc::microseconds validation_computation_time;
-    mutable std::atomic<bool> validation_accessed = false;
-
-    mutable std::atomic<bool> has_is_packed_in_legacy_format = { false };
-    mutable bool is_packed_in_legacy_format = false;
 
     struct signature_info_type
     {
       hive::protocol::digest_type sig_digest;
       flat_set<hive::protocol::public_key_type> signature_keys;
-      std::shared_ptr<fc::exception> signature_keys_exception;
+      fc::exception_ptr signature_keys_exception;
       fc::microseconds computation_time;
     };
-    mutable std::atomic<bool> has_signature_info = { false };
     mutable signature_info_type signature_info; // if we've computed the public keys that signed the transaction, it's stored here
-    mutable std::atomic<bool> signature_keys_accessed = { false };
 
-    mutable std::atomic<bool> has_required_authorities = { false };
     mutable hive::protocol::required_authorities_type required_authorities; // if we've figured out who is supposed to sign this tranaction, it's here
     mutable std::chrono::nanoseconds required_authorities_computation_time;
-    mutable std::atomic<bool> required_authorities_accessed;
 
-    /// all data below here isn't accessed across multiple threads, it's set at construction time and left alone
+    /// immutable data below here isn't accessed across multiple threads, it's set at construction time and left alone
     
     // if this full_transaction was created while deserializing a block, we store
     // containing_block_info, and our signed_transaction and serialized data point
@@ -89,7 +73,23 @@ struct full_transaction_type
     storage_type storage;
 
     serialized_transaction_data serialized_transaction; // pointers to the beginning, middle, and end of the transaction in the storage
+
+    mutable fc::ripemd160 legacy_transaction_message_hash; // hash of p2p transaction message generated from this transaction
+    mutable hive::protocol::transaction_id_type transaction_id; // transaction id itself (truncated digest)
+
+    mutable bool is_packed_in_legacy_format = false;
     mutable bool is_in_cache = false; // true if this is tracked in the global transaction cache; if so, we need to remove ourselves upon garbage collection
+
+    mutable std::atomic<bool> has_merkle_digest = { false };
+    mutable std::atomic<bool> has_legacy_transaction_message_hash = { false };
+    mutable std::atomic<bool> has_digest_and_transaction_id = { false };
+    mutable std::atomic<bool> validation_attempted = { false }; // true if validate() has been called & cached
+    mutable std::atomic<bool> validation_accessed = false;
+    mutable std::atomic<bool> has_is_packed_in_legacy_format = { false };
+    mutable std::atomic<bool> has_signature_info = { false };
+    mutable std::atomic<bool> signature_keys_accessed = { false };
+    mutable std::atomic<bool> has_required_authorities = { false };
+    mutable std::atomic<bool> required_authorities_accessed = { false };
 
 
     static std::atomic<uint32_t> number_of_instances_created;
