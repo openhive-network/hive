@@ -43,11 +43,12 @@ struct full_transaction_type
     {
       hive::protocol::digest_type sig_digest;
       flat_set<hive::protocol::public_key_type> signature_keys;
-      fc::exception_ptr signature_keys_exception;
+      fc::exception_ptr signature_keys_exception; // ABW: do we need separate exception? - it should be merged with validation_exception
       fc::microseconds computation_time;
     };
     mutable signature_info_type signature_info; // if we've computed the public keys that signed the transaction, it's stored here
 
+    // ABW: it takes 128 bytes of space (plus actual account names) for 1us CPU time on average
     mutable hive::protocol::required_authorities_type required_authorities; // if we've figured out who is supposed to sign this tranaction, it's here
     mutable std::chrono::nanoseconds required_authorities_computation_time;
 
