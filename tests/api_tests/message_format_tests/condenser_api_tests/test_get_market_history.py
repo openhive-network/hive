@@ -10,4 +10,4 @@ def test_get_market_history(prepared_node, should_prepare):
         wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
         wallet.api.create_order('alice', 0, tt.Asset.Test(50), tt.Asset.Tbd(5), False, 3600)
         wallet.api.create_order('initminer', 1, tt.Asset.Tbd(50), tt.Asset.Test(100), False, 3600)
-    prepared_node.api.condenser.get_market_history(3600, date_from_now(weeks=-100), date_from_now(weeks=1))
+    prepared_node.api.condenser.get_market_history(3600, tt.Time.from_now(weeks=-100), tt.Time.from_now(weeks=1))

@@ -10,4 +10,4 @@ def test_get_expiring_vesting_delegations(prepared_node, should_prepare):
         wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
         wallet.api.create_account('initminer', 'bob', '{}')
         create_and_cancel_vesting_delegation(wallet, 'alice', 'bob')
-    prepared_node.api.condenser.get_expiring_vesting_delegations('alice', date_from_now(weeks=0))
+    prepared_node.api.condenser.get_expiring_vesting_delegations('alice', tt.Time.now())

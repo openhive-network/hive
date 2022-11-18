@@ -237,15 +237,20 @@ def test_list_owner_histories(node, wallet):
     wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
     # update_account_auth_key with owner parameter is called to change owner authority history
     wallet.api.update_account_auth_key('alice', 'owner', tt.Account('some key').public_key, 1)
-    owner_auths = node.api.database.list_owner_histories(start=['alice', date_from_now(weeks=-1)], limit=100)['owner_auths']
+    owner_auths = node.api.database.list_owner_histories(
+        start=['alice', tt.Time.from_now(weeks=-1)],
+        limit=100
+    )['owner_auths']
     assert len(owner_auths) != 0
 
 
 def test_list_savings_withdrawals(node, wallet):
     wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
     transfer_and_withdraw_from_savings(wallet, 'alice')
-    withdrawals = node.api.database.list_savings_withdrawals(start=[date_from_now(weeks=-1), "alice", 0], limit=100,
-                                                             order='by_complete_from_id')['withdrawals']
+    withdrawals = node.api.database.list_savings_withdrawals(
+        start=[tt.Time.from_now(weeks=-1), "alice", 0],
+        limit=100,
+        order='by_complete_from_id')['withdrawals']
     assert len(withdrawals) != 0
 
 
@@ -253,8 +258,10 @@ def test_list_vesting_delegation_expirations(node, wallet):
     wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
     wallet.api.create_account('alice', 'bob', '{}')
     create_and_cancel_vesting_delegation(wallet, 'alice', 'bob')
-    delegations = node.api.database.list_vesting_delegation_expirations(start=['alice', date_from_now(weeks=-1), 0],
-                                                                        limit=100, order='by_account_expiration')['delegations']
+    delegations = node.api.database.list_vesting_delegation_expirations(
+        start=['alice', tt.Time.from_now(weeks=-1), 0],
+        limit=100,
+        order='by_account_expiration')['delegations']
     assert len(delegations) != 0
 
 

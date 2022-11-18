@@ -3,9 +3,9 @@ import pytest
 import test_tools as tt
 
 
-PROPOSAL_START_DATE = date_from_now(weeks=16)
-PROPOSAL_END_DATE = date_from_now(weeks=20)
-PROPOSAL_END_DATE_AFTER_UPDATE = date_from_now(weeks=19)
+PROPOSAL_START_DATE = tt.Time.from_now(weeks=16)
+PROPOSAL_END_DATE = tt.Time.from_now(weeks=20)
+PROPOSAL_END_DATE_AFTER_UPDATE = tt.Time.from_now(weeks=19)
 
 
 @pytest.mark.parametrize(

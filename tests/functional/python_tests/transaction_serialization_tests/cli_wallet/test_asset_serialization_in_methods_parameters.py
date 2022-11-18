@@ -45,7 +45,10 @@ def test_escrow_transfer(prepared_wallet, escrow_tbd_amount, escrow_tests_amount
         prepared_wallet.api.create_account('initminer', 'bob', '{}')
 
     prepared_wallet.api.escrow_transfer('initminer', 'alice', 'bob', 99, escrow_tbd_amount, escrow_tests_amount,
-                                        escrow_tbd_amount, date_from_now(weeks=16), date_from_now(weeks=20), '{}')
+                                        escrow_tbd_amount,
+                                        tt.Time.from_now(weeks=16),
+                                        tt.Time.from_now(weeks=20),
+                                        '{}')
 
 
 @pytest.mark.testnet
@@ -56,7 +59,10 @@ def test_escrow_release(prepared_wallet, escrow_tbd_amount, escrow_tests_amount)
     prepared_wallet.create_account('bob', vests=tt.Asset.Test(50))
 
     prepared_wallet.api.escrow_transfer('initminer', 'alice', 'bob', 99, tt.Asset.Tbd(1), tt.Asset.Test(2),
-                                        tt.Asset.Tbd(1), date_from_now(weeks=16), date_from_now(weeks=20), '{}')
+                                        tt.Asset.Tbd(1),
+                                        tt.Time.from_now(weeks=16),
+                                        tt.Time.from_now(weeks=20),
+                                        '{}')
 
     prepared_wallet.api.escrow_approve('initminer', 'alice', 'bob', 'bob', 99, True)
 
@@ -233,7 +239,7 @@ def test_create_proposal(prepared_wallet, create_proposal_tbds_amount):
 
     prepared_wallet.api.post_comment('alice', 'permlink', '', 'parent-permlink', 'title', 'body', '{}')
 
-    prepared_wallet.api.create_proposal('alice', 'alice', date_from_now(weeks=16), date_from_now(weeks=20),
+    prepared_wallet.api.create_proposal('alice', 'alice', tt.Time.from_now(weeks=16), tt.Time.from_now(weeks=20),
                                         create_proposal_tbds_amount, 'subject-1', 'permlink')
 
 
@@ -244,11 +250,11 @@ def test_update_proposal(prepared_wallet, update_proposal_tbd_amount):
 
     prepared_wallet.api.post_comment('alice', 'permlink', '', 'parent-permlink', 'title', 'body', '{}')
 
-    prepared_wallet.api.create_proposal('alice', 'alice', date_from_now(weeks=16), date_from_now(weeks=20),
+    prepared_wallet.api.create_proposal('alice', 'alice', tt.Time.from_now(weeks=16), tt.Time.from_now(weeks=20),
                                         tt.Asset.Tbd(1000000), 'subject-1', 'permlink')
 
     prepared_wallet.api.update_proposal(0, 'alice', update_proposal_tbd_amount, 'subject-1', 'permlink',
-                                        date_from_now(weeks=19))
+                                        tt.Time.from_now(weeks=19))
 
 
 @pytest.mark.testnet

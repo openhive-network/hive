@@ -74,8 +74,8 @@ def create_proposal(wallet) -> None:
     wallet.api.create_proposal(
         "alice",
         "alice",
-        date_from_now(weeks=1 * 10),
-        date_from_now(weeks=1 * 10 + 5),
+        tt.Time.from_now(weeks=10),
+        tt.Time.from_now(weeks=15),
         tt.Asset.Tbd(1 * 100),
         "subject",
         "permlink",

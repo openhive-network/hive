@@ -34,8 +34,8 @@ def prepare_proposals(wallet, accounts):
         for account_number in range(len(accounts)):
             wallet.api.create_proposal(accounts[account_number],
                                        accounts[account_number],
-                                       date_from_now(weeks=account_number * 10),
-                                       date_from_now(weeks=account_number * 10 + 5),
+                                       tt.Time.from_now(weeks=10),
+                                       tt.Time.from_now(weeks=15),
                                        tt.Asset.Tbd(account_number * 100),
                                        f'subject-{account_number}',
                                        'permlink')

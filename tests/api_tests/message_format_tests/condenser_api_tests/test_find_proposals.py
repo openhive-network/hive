@@ -10,6 +10,6 @@ def test_find_proposals(prepared_node, should_prepare):
         wallet.api.create_account('initminer', 'alice', '{}')
 
         wallet.api.post_comment('initminer', 'test-permlink', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
-        wallet.api.create_proposal('initminer', 'initminer', date_from_now(weeks=2), date_from_now(weeks=50),
+        wallet.api.create_proposal('initminer', 'initminer', tt.Time.from_now(weeks=2), tt.Time.from_now(weeks=50),
                                    tt.Asset.Tbd(5), 'test subject', 'test-permlink')
     prepared_node.api.condenser.find_proposals([0])

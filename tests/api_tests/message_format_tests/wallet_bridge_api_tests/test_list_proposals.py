@@ -50,12 +50,12 @@ CORRECT_VALUES = [
             # by start date
         ([], 100, ORDER_BY['by_start_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
-        ([date_from_now(weeks=20)], 100, ORDER_BY['by_start_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([tt.Time.from_now(weeks=20)], 100, ORDER_BY['by_start_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
             # by end date
         ([], 100, ORDER_BY['by_end_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
-        ([date_from_now(weeks=20)], 100, ORDER_BY['by_end_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([tt.Time.from_now(weeks=20)], 100, ORDER_BY['by_end_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
             # by total votes
         ([10], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
@@ -117,7 +117,7 @@ def test_list_proposals_with_correct_values(node, wallet, start, limit, order_by
             # by total votes
         (['invalid-account-name'], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([ACCOUNTS[1]], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
-        ([date_from_now(weeks=20)], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([tt.Time.from_now(weeks=20)], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
         (['true'], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # LIMIT
