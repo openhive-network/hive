@@ -534,6 +534,7 @@ full_transaction_ptr full_transaction_cache::add_to_cache(const full_transaction
   if (existing_transaction)
     return existing_transaction;
   result.first->second = transaction;
+  transaction->set_is_in_cache();
   return transaction;
 }
 
