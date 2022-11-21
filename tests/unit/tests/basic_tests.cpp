@@ -562,7 +562,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //pending_optional_action_object
   //pending_required_action_object
 
-  BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 448 ); //not a chain object but potentially very numerous
+  BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 456 ); //not a chain object but potentially very numerous
 }
 #endif
 

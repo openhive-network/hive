@@ -74,6 +74,7 @@ struct full_transaction_type
     storage_type storage;
 
     serialized_transaction_data serialized_transaction; // pointers to the beginning, middle, and end of the transaction in the storage
+    mutable int64_t rc_cost = -1; // RC cost of transaction - set when transaction is processed first, can be overwritten when it becomes part of block
 
     mutable fc::ripemd160 legacy_transaction_message_hash; // hash of p2p transaction message generated from this transaction
     mutable hive::protocol::transaction_id_type transaction_id; // transaction id itself (truncated digest)
@@ -119,9 +120,11 @@ struct full_transaction_type
     bool is_legacy_pack() const;
     void precompute_validation(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
     void validate(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
+    void set_rc_cost( int64_t cost ) const { rc_cost = cost; } // can only be called under main lock of write thread
 
     const serialized_transaction_data& get_serialized_transaction() const;
     size_t get_transaction_size() const;
+    int64_t get_rc_cost() const { return rc_cost; }
 
     template <class DataStream>
     void dump_serialized_transaction(DataStream& datastream) const
