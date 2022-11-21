@@ -11,7 +11,7 @@ from test_tools.__private.user_handles.get_implementation import get_implementat
 
 from test_tools.__private.wait_for import wait_for_event
 
-from ..local_tools import init_network
+from .complex_networks import init_network
 
 def count_ops_by_type(node, op_type: str, start: int, limit: int = 50):
     """
@@ -352,3 +352,4 @@ def allow_generate_block_log():
 
 def create_block_log_directory_name(name : str):
     return str(Path(__file__).parent.absolute()) + '/' + name
+

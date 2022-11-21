@@ -6,10 +6,13 @@ import test_tools as tt
 from .complex_networks_helper_functions import connect_sub_networks
 
 
-def get_time_offset_from_file(file: Path):
-    with open(file, "r", encoding="UTF-8") as file_handle:
-        timestamp = file_handle.read()
-    return tt.Time.parse(timestamp.strip())
+def get_relative_time_offset_from_file(file: Path):
+    with open(file, "r", encoding="UTF-8") as file:
+        timestamp = file.read().strip()
+
+    delta = tt.Time.now() - tt.Time.parse(timestamp)
+    delta += tt.Time.seconds(5)  # Node starting and entering live mode takes some time to complete
+    return f'-{delta.total_seconds():.3f}s'
 
 
 def init_network(init_node, all_witness_names: List[str], key: str = None, block_log_directory_name: str = None):
@@ -87,8 +90,8 @@ def init_network(init_node, all_witness_names: List[str], key: str = None, block
 
 def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path):
     if blocklog_directory is not None:
-        time_offset = get_time_offset_from_file(blocklog_directory / "timestamp")
-        block_log = tt.BlockLog(None, blocklog_directory / "block_log", include_index=False)
+        time_offset = get_relative_time_offset_from_file(blocklog_directory / "timestamp")
+        block_log = tt.BlockLog(blocklog_directory / "block_log")
         tt.logger.info(f"block_log directory: {blocklog_directory}")
 
     tt.logger.info("Running nodes...")
