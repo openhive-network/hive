@@ -196,10 +196,11 @@ void wallet_bridge_api_impl::on_post_apply_block( const chain::block_notificatio
     for( const auto& trx : note.full_block->get_full_transactions() )
     {
       const auto& id = trx->get_transaction_id();
+      int64_t cost = trx->get_rc_cost();
       auto itr = _callbacks.find( id );
       if( itr != _callbacks.end() )
       {
-        itr->second( broadcast_transaction_synchronous_return( { id, block_num, int32_t( trx_num ), false } ) );
+        itr->second( broadcast_transaction_synchronous_return( { id, block_num, int32_t( trx_num ), cost, false } ) );
         _callbacks.erase( itr );
       }
       ++trx_num;
@@ -224,7 +225,7 @@ void wallet_bridge_api_impl::on_post_apply_block( const chain::block_notificatio
 
       confirmation_callback callback = cb_it->second;
       protocol::transaction_id_type txid_byval = txid;    // can't pass in by reference as it's going to be deleted
-      callback( broadcast_transaction_synchronous_return( {txid_byval, block_num, -1, true }) );
+      callback( broadcast_transaction_synchronous_return( { txid_byval, block_num, -1, fc::optional<int64_t>(), true }) );
 
       _callbacks.erase( cb_it );
     }

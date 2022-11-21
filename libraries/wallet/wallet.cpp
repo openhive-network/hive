@@ -892,7 +892,7 @@ public:
         if( blocking )
         {
           auto result = _remote_wallet_bridge_api->broadcast_transaction_synchronous( vector<variant>{{variant(new_tx->get_transaction())}}, LOCK );
-          annotated_signed_transaction rtrx(new_tx->get_transaction(), new_tx->get_transaction_id(), result.block_num, result.trx_num);
+          annotated_signed_transaction rtrx(new_tx->get_transaction(), new_tx->get_transaction_id(), result.block_num, result.trx_num, result.rc_cost);
           return rtrx;
         }
         else
