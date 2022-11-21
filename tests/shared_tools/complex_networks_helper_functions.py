@@ -1,10 +1,6 @@
-<<<<<<< HEAD:tests/functional/python_tests/fork_tests/local_tools.py
 import re
-=======
-from datetime import datetime, timezone
 from typing import List
 
->>>>>>> 6da082f75... Redundant methods are removed:tests/shared_tools/complex_networks_helper_functions.py
 import test_tools as tt
 
 
@@ -108,7 +104,7 @@ def get_part_of_witness_details(witness_details: list, start, length: int):
         new_witness_details.append(witness_details[i])
     return new_witness_details
 
-<<<<<<< HEAD:tests/functional/python_tests/fork_tests/local_tools.py
+
 def info(msg : str, wallet : tt.Wallet):
     info            = wallet.api.info()
     hb              = info['head_block_number']
@@ -116,15 +112,6 @@ def info(msg : str, wallet : tt.Wallet):
     current_witness = info['current_witness']
     tt.logger.info(f'network: \'{msg}\' head: {hb} lib: {lib} current witness: {current_witness}')
     return hb, lib
-=======
->>>>>>> 6da082f75... Redundant methods are removed:tests/shared_tools/complex_networks_helper_functions.py
-
-def info(msg: str, wallet: tt.Wallet):
-    info = wallet.api.info()
-    head_block_number = info["head_block_number"]
-    lib = info["last_irreversible_block_num"]
-    tt.logger.info(f'network: "{msg}" head: {head_block_number} lib: {lib}')
-    return head_block_number, lib
 
 
 class NodeLog:
