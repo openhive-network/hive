@@ -1,10 +1,6 @@
 import datetime
 
-import pytest
-
 import test_tools as tt
-
-from ....shared_tools.complex_networks import parse_datetime
 
 
 def test_transaction(wallet):
@@ -39,7 +35,7 @@ def test_transaction(wallet):
 
     _expiration = response['expiration']
 
-    parsed_t = parse_datetime(_expiration)
+    parsed_t = tt.Time.parse(_expiration)
     t_in_seconds = parsed_t.timestamp()
     tt.logger.info('_time: {} seconds:{}...'.format(_expiration, t_in_seconds))
 
@@ -56,7 +52,7 @@ def test_transaction(wallet):
 
     _expiration = response['expiration']
 
-    parsed_t = parse_datetime(_expiration)
+    parsed_t = tt.Time.parse(_expiration)
     t_in_seconds = parsed_t.timestamp()
     tt.logger.info('_time: {} seconds:{}...'.format(_expiration, t_in_seconds))
 
