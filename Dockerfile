@@ -2,7 +2,7 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=:ubuntu20.04-5 
+ARG CI_IMAGE_TAG=:ubuntu20.04-6
 ARG BUILD_IMAGE_TAG
 
 FROM phusion/baseimage:focal-1.0.0 AS runtime
@@ -132,6 +132,23 @@ EXPOSE ${HTTP_PORT}
 EXPOSE ${CLI_WALLET_PORT}
 
 FROM ${CI_REGISTRY_IMAGE}ci-base-image-5m$CI_IMAGE_TAG AS block_log_5m_source
+
+FROM ${CI_REGISTRY_IMAGE}ci-base-image-5m$CI_IMAGE_TAG AS convert_block_log
+
+COPY --from=build \
+  /home/hived/build/programs/blockchain_converter/blockchain_converter \
+  /home/hived/bin/
+
+RUN mkdir /home/hived/converted_blockchain
+
+RUN /home/hived/bin/blockchain_converter --plugin block_log_conversion \
+  --input /home/hived/datadir/blockchain/block_log \
+  --output /home/hived/converted_blockchain/block_log \
+  --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key --jobs 2
+
+FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS block_log_mirrornet_5m_source
+
+COPY --from=convert_block_log /home/hived/converted_blockchain/block_log /home/hived/datadir/blockchain/block_log
 
 FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-$BUILD_IMAGE_TAG as data
 
