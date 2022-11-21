@@ -1,14 +1,9 @@
-from datetime import datetime
 import os
 from pathlib import Path
 from typing import Dict, Iterable, List
 
 import test_tools as tt
 from .complex_networks_helper_functions import connect_sub_networks
-
-
-def parse_datetime(datetime_: str) -> datetime:
-    return datetime.strptime(datetime_, "%Y-%m-%dT%H:%M:%S")
 
 
 def get_time_offset_from_file(file: Path):
