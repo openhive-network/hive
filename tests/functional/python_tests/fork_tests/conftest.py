@@ -3,8 +3,10 @@ from typing import Dict
 
 import pytest
 
-from ....shared_tools.complex_networks import \
-    prepare_network_with_many_witnesses, prepare_sub_networks, allow_generate_block_log
+from shared_tools.complex_networks import (allow_generate_block_log,
+                                           prepare_network_with_many_witnesses,
+                                           prepare_sub_networks)
+
 
 def create_block_log_directory_name(name : str):
     return str(Path(__file__).parent.absolute()) + '/' + name

@@ -1,6 +1,6 @@
 import test_tools as tt
 
-from ....shared_tools.complex_networks_helper_functions import (
+from shared_tools.complex_networks_helper_functions import (
     wait,
     get_last_head_block_number,
     get_last_irreversible_block_num,

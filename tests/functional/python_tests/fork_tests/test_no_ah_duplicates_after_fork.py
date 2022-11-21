@@ -1,6 +1,4 @@
-import test_tools as tt
-
-from ....shared_tools.complex_networks_helper_functions import *
+from shared_tools.complex_networks_helper_functions import *
 
 
 def test_no_duplicates_in_account_history_plugin_after_fork(prepare_basic_networks):
