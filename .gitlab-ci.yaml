@@ -372,13 +372,11 @@ live_sync_tests:
   extends: .test_tools_based
 
   variables:
-    PYTHONPATH: $CI_PROJECT_DIR/tests/test_tools/package
-    JUNIT_REPORT: tests/functional/python_tests/live_sync_tests/report.xml
+    PYTEST_TIMEOUT_MINUTES: 10
 
   script:
-    - pip3 install tox==${TOX_VERSION}
     - cd tests/functional/python_tests/live_sync_tests
-    - timeout 11m tox
+    - *run-pytest
   tags:
     - public-runner-docker
 
