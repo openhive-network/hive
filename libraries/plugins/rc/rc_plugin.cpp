@@ -373,6 +373,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // How many RC does this transaction cost?
   int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, tx_info );
+  note.full_transaction->set_rc_cost( total_cost );
 
   _db.modify( pending_data, [&]( rc_pending_data& data )
   {
