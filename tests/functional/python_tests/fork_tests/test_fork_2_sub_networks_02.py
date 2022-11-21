@@ -1,4 +1,4 @@
-from ....shared_tools.complex_networks_helper_functions import *
+from shared_tools.complex_networks_helper_functions import *
 import test_tools as tt
 
 def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
