@@ -20,7 +20,7 @@ def get_relative_time_offset_from_file(file: Path) -> str:
     with open(file, 'r') as f:
         timestamp = f.read().strip()
 
-    delta = tt.Time.now() - tt.Time.parse(timestamp)
+    delta = tt.Time.now(serialize=False) - tt.Time.parse(timestamp)
     delta += tt.Time.seconds(5)  # Node starting and entering live mode takes some time to complete
     return f'-{delta.total_seconds():.3f}s'
 
