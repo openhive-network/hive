@@ -47,7 +47,7 @@ vector<database_api::api_owner_authority_history_object> get_owner_history(fc::v
                                   string get_private_key(public_key_type pubkey)
            pair<public_key_type, string> get_private_key_from_password(const string & account, const string & role, const string & password)
     wallet_serializer_wrapper<operation> get_prototype_operation(const string & operation_type)
-wallet_serializer_wrapper<annotated_signed_transaction> get_transaction(fc::variant trx_id)
+wallet_serializer_wrapper<hive::plugins::account_history::annotated_signed_transaction> get_transaction(fc::variant trx_id)
                                  variant get_withdraw_routes(const string & account, database_api::withdraw_route_type type)
 optional<wallet_serializer_wrapper<database_api::api_witness_object>> get_witness(const string & owner_account)
                                  variant gethelp(const string & method)
