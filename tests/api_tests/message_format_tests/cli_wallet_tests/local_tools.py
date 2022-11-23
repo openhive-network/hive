@@ -24,7 +24,7 @@ def verify_json_patterns(directory: Path, method_name, method_output):
     generate_patterns = strtobool(os.environ.get('GENERATE_PATTERNS', 'OFF'))
     if not generate_patterns:
         pattern = read_from_json_pattern(directory, method_name)
-        assert pattern == method_output
+        assert pattern == method_output, f'Wrong method output: {method_output}'
 
     write_to_json_pattern(directory, method_name, method_output)
 
@@ -37,6 +37,6 @@ def verify_text_patterns(directory: Path, method_name, method_output):
     generate_patterns = strtobool(os.environ.get('GENERATE_PATTERNS', 'OFF'))
     if not generate_patterns:
         pattern = __read_from_text_pattern(directory, method_name)
-        assert pattern == method_output
+        assert pattern == method_output, f'Wrong method output: {method_output}'
 
     __write_to_text_pattern(directory, method_name, method_output)

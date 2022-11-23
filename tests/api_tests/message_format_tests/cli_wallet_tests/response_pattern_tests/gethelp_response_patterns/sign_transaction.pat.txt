@@ -7,5 +7,5 @@ transaction
 
 Parameters:
     tx: the unsigned transaction (type: const
-	wallet_serializer_wrapper<annotated_signed_transaction> &)
+	wallet_serializer_wrapper<annotated_signed_transaction_ex> &)
     broadcast: true if you wish to broadcast the transaction (type: bool)
