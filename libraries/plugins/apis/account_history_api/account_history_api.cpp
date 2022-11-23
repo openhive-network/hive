@@ -133,7 +133,8 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
     FC_ASSERT(full_txs.size() > txInBlock);
     const auto& full_tx = full_txs[txInBlock];
 
-    get_transaction_return result(full_tx->get_transaction(), full_tx->get_transaction_id(), blockNo, txInBlock, full_tx->get_rc_cost());
+    // until AH is required to keep rc_cost we are not guaranteed to have that info, so the API won't be returning it (full_tx->get_rc_cost() would be -1)
+    get_transaction_return result(full_tx->get_transaction(), full_tx->get_transaction_id(), blockNo, txInBlock);
 
     return result;
   }

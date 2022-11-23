@@ -13,8 +13,6 @@
 
 namespace hive { namespace wallet {
 
-using hive::plugins::account_history::annotated_signed_transaction;
-
 using namespace std;
 
 using namespace hive::utilities;
@@ -27,7 +25,23 @@ using hive::wallet::wallet_serializer_wrapper;
 
 typedef uint16_t transaction_handle_type;
 
-struct memo_data {
+struct annotated_signed_transaction_ex : hive::plugins::account_history::annotated_signed_transaction
+{
+  annotated_signed_transaction_ex() = default;
+  annotated_signed_transaction_ex( const signed_transaction& trx, const transaction_id_type& tx_id )
+    : annotated_signed_transaction( trx, tx_id ) {}
+  annotated_signed_transaction_ex( const signed_transaction& trx, transaction_id_type tx_id, uint32_t block, uint32_t tx_in_block, fc::optional<int64_t> cost )
+    : annotated_signed_transaction( trx, tx_id, block, tx_in_block )
+  {
+    if( cost.valid() && *cost >= 0 )
+      rc_cost = cost;
+  }
+
+  fc::optional< int64_t > rc_cost;
+};
+
+struct memo_data
+{
 
   static optional<memo_data> from_string( string str ) {
     try {
@@ -227,7 +241,7 @@ class wallet_api
       *
       * @return transaction as a JSON object literal
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> get_transaction( fc::variant trx_id )const;
+    wallet_serializer_wrapper<hive::plugins::account_history::annotated_signed_transaction> get_transaction( fc::variant trx_id )const;
 
     /** Explicitly specify account authorities to use for signing transactions.
       *
@@ -410,7 +424,7 @@ class wallet_api
       * @param fee The fee to pay for claiming the account (either 0 hive for a discounted account, or the full account fee)
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> claim_account_creation( const string& creator,
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> claim_account_creation( const string& creator,
                                                                      const wallet_serializer_wrapper<hive::protocol::asset>& fee,
                                                                      bool broadcast )const; 
     /** This method will claim a subsidized account creation without waiting for the transaction to confirm.
@@ -419,7 +433,7 @@ class wallet_api
       * @param fee The fee to pay for claiming the account (either "0.000 HIVE" for a discounted account, or the full account fee)
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> claim_account_creation_nonblocking( const string& creator,
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> claim_account_creation_nonblocking( const string& creator,
                                                                                  const wallet_serializer_wrapper<hive::protocol::asset>& fee,
                                                                                  bool broadcast )const;
        
@@ -433,7 +447,7 @@ class wallet_api
       * @param json_meta JSON Metadata associated with the new account
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> create_account( const string& creator, const string& new_account_name, const string& json_meta, bool broadcast );
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> create_account( const string& creator, const string& new_account_name, const string& json_meta, bool broadcast );
 
     /** This method is used by faucets to create new accounts for other users which must
       * provide their desired keys. The resulting account may not be controllable by this
@@ -449,7 +463,7 @@ class wallet_api
       * @param memo public memo key of the new account
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> create_account_with_keys(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> create_account_with_keys(
       const string& creator,
       const string& newname,
       const string& json_meta,
@@ -477,7 +491,7 @@ class wallet_api
       * @param memo_key public memo key of the new account
       * @param broadcast true if you wish to broadcast the transaction
       */
-  wallet_serializer_wrapper<annotated_signed_transaction> create_funded_account_with_keys( const string& creator,
+  wallet_serializer_wrapper<annotated_signed_transaction_ex> create_funded_account_with_keys( const string& creator,
                                                                               const string& new_account_name,
                                                                               const wallet_serializer_wrapper<hive::protocol::asset>& initial_amount,
                                                                               const string& memo,
@@ -502,7 +516,7 @@ class wallet_api
       * @param json_meta JSON Metadata associated with the new account
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> create_account_delegated(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> create_account_delegated(
       const string& creator,
       const wallet_serializer_wrapper<hive::protocol::asset>& hive_fee,
       const wallet_serializer_wrapper<hive::protocol::asset>& delegated_vests,
@@ -528,7 +542,7 @@ class wallet_api
       * @param memo public memo key of the new account
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> create_account_with_keys_delegated(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> create_account_with_keys_delegated(
       const string& creator,
       const wallet_serializer_wrapper<hive::protocol::asset>& hive_fee,
       const wallet_serializer_wrapper<hive::protocol::asset>& delegated_vests,
@@ -550,7 +564,7 @@ class wallet_api
       * @param memo New public memo key for the account
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> update_account(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> update_account(
       const string& accountname,
       const string& json_meta,
       public_key_type owner,
@@ -571,7 +585,7 @@ class wallet_api
       * @param weight The weight the key should have in the authority. A weight of 0 indicates the removal of the key.
       * @param broadcast true if you wish to broadcast the transaction.
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> update_account_auth_key(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> update_account_auth_key(
       const string& account_name,
       authority_type type,
       public_key_type key,
@@ -590,7 +604,7 @@ class wallet_api
       * @param weight The weight the account should have in the authority. A weight of 0 indicates the removal of the account.
       * @param broadcast true if you wish to broadcast the transaction.
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> update_account_auth_account(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> update_account_auth_account(
       const string& account_name,
       authority_type type,
       const string& auth_account,
@@ -609,7 +623,7 @@ class wallet_api
       * @param threshold The weight threshold required for the authority to be met
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> update_account_auth_threshold(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> update_account_auth_threshold(
       const string& account_name,
       authority_type type,
       uint32_t threshold,
@@ -621,7 +635,7 @@ class wallet_api
       * @param json_meta The new JSON metadata for the account. This overrides existing metadata
       * @param broadcast ture if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> update_account_meta(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> update_account_meta(
       const string& account_name,
       const string& json_meta,
       bool broadcast );
@@ -632,7 +646,7 @@ class wallet_api
       * @param key The new memo public key
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> update_account_memo_key(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> update_account_memo_key(
       const string& account_name,
       public_key_type key,
       bool broadcast );
@@ -644,7 +658,7 @@ class wallet_api
       * @param vesting_shares The amount of VESTS to delegate
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> delegate_vesting_shares(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> delegate_vesting_shares(
       const string& delegator,
       const string& delegatee,
       const wallet_serializer_wrapper<hive::protocol::asset>& vesting_shares,
@@ -657,7 +671,7 @@ class wallet_api
       * @param vesting_shares The amount of VESTS to delegate
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> delegate_vesting_shares_nonblocking(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> delegate_vesting_shares_nonblocking(
       const string& delegator,
       const string& delegatee,
       const wallet_serializer_wrapper<hive::protocol::asset>& vesting_shares,
@@ -674,7 +688,7 @@ class wallet_api
       * @param transfer_memo Message associated with HIVE transfer
       * @param broadcast true if you wish to broadcast the transaction
       */
-  wallet_serializer_wrapper<annotated_signed_transaction> delegate_vesting_shares_and_transfer(
+  wallet_serializer_wrapper<annotated_signed_transaction_ex> delegate_vesting_shares_and_transfer(
       const string& delegator,
       const string& delegatee,
       const wallet_serializer_wrapper<hive::protocol::asset>& vesting_shares,
@@ -693,7 +707,7 @@ class wallet_api
       * @param transfer_memo Message associated with HIVE transfer
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> delegate_vesting_shares_and_transfer_nonblocking(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> delegate_vesting_shares_and_transfer_nonblocking(
       const string& delegator,
       const string& delegatee,
       const wallet_serializer_wrapper<hive::protocol::asset>& vesting_shares,
@@ -702,7 +716,7 @@ class wallet_api
       bool broadcast );
 
     // helper function
-    wallet_serializer_wrapper<annotated_signed_transaction> delegate_vesting_shares_and_transfer_and_broadcast(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> delegate_vesting_shares_and_transfer_and_broadcast(
       const string& delegator, const string& delegatee, const hive::protocol::asset& vesting_shares,
       optional<hive::protocol::asset> transfer_amount, optional<string> transfer_memo,
       bool broadcast, bool blocking );
@@ -756,7 +770,7 @@ class wallet_api
       * @param props The chain properties the witness is voting on.
       * @param broadcast true if you wish to broadcast the transaction.
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> update_witness(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> update_witness(
       const string& witness_name,
       const string& url,
       public_key_type block_signing_key,
@@ -778,7 +792,7 @@ class wallet_api
       * @param proxy the name of account that should proxy to, or empty string to have no proxy
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> set_voting_proxy(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> set_voting_proxy(
       const string& account_to_modify,
       const string& proxy,
       bool broadcast = false);
@@ -797,7 +811,7 @@ class wallet_api
       * @param approve true if you wish to vote for a given witness, false if you no longer want to
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> vote_for_witness(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> vote_for_witness(
       const string& account_to_vote_with,
       const string& witness_to_vote_for,
       bool approve = true,
@@ -814,7 +828,7 @@ class wallet_api
       * @param memo A memo for the transaction, can by encrypted if started with '#'
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> transfer(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> transfer(
       const string& from,
       const string& to,
       const wallet_serializer_wrapper<hive::protocol::asset>& amount,
@@ -835,7 +849,7 @@ class wallet_api
       * @param json_meta JSON encoded meta data
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> escrow_transfer(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> escrow_transfer(
       const string& from,
       const string& to,
       const string& agent,
@@ -860,7 +874,7 @@ class wallet_api
       * @param approve true to approve the escrow transfer, otherwise cancels it and refunds 'from'
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> escrow_approve(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> escrow_approve(
       const string& from,
       const string& to,
       const string& agent,
@@ -879,7 +893,7 @@ class wallet_api
       * @param escrow_id A unique id for the escrow transfer
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> escrow_dispute(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> escrow_dispute(
       const string& from,
       const string& to,
       const string& agent,
@@ -900,7 +914,7 @@ class wallet_api
       * @param hive_amount The amount of HIVE that will be released
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> escrow_release(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> escrow_release(
       const string& from,
       const string& to,
       const string& agent,
@@ -922,7 +936,7 @@ class wallet_api
       * @param amount The amount of HIVE to vest i.e. "100.00 HIVE"
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> transfer_to_vesting(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> transfer_to_vesting(
       const string& from,
       const string& to,
       const wallet_serializer_wrapper<hive::protocol::asset>& amount,
@@ -938,11 +952,11 @@ class wallet_api
      * @param memo A memo for the transactionm, encrypted with the to account's public memo key
      * @param broadcast true if you wish to broadcast the transaction
      */
-    wallet_serializer_wrapper<annotated_signed_transaction> transfer_nonblocking(const string& from, const string& to,
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> transfer_nonblocking(const string& from, const string& to,
       const wallet_serializer_wrapper<hive::protocol::asset>& amount, const string& memo, bool broadcast = false);
 
     // helper function
-    wallet_serializer_wrapper<annotated_signed_transaction> transfer_and_broadcast(const string& from, const string& to,
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> transfer_and_broadcast(const string& from, const string& to,
       const hive::protocol::asset& amount, const string& memo, bool broadcast, bool blocking );
     /*
      * Transfer STEEM into a vesting fund represented by vesting shares (VESTS) without waiting for a confirmation.
@@ -955,18 +969,18 @@ class wallet_api
      * @param amount The amount of STEEM to vest i.e. "100.00 STEEM"
      * @param broadcast true if you wish to broadcast the transaction
      */
-    wallet_serializer_wrapper<annotated_signed_transaction> transfer_to_vesting_nonblocking(const string& from, const string& to,
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> transfer_to_vesting_nonblocking(const string& from, const string& to,
       const wallet_serializer_wrapper<hive::protocol::asset>& amount, bool broadcast = false);
 
     // helper function
-    wallet_serializer_wrapper<annotated_signed_transaction> transfer_to_vesting_and_broadcast(const string& from, const string& to,
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> transfer_to_vesting_and_broadcast(const string& from, const string& to,
       const hive::protocol::asset& amount, bool broadcast, bool blocking );
 
 
     /**
       *  Transfers into savings happen immediately, transfers from savings take 72 hours
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> transfer_to_savings(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> transfer_to_savings(
       const string& from,
       const string& to,
       const wallet_serializer_wrapper<hive::protocol::asset>& amount,
@@ -981,7 +995,7 @@ class wallet_api
       *  @param memo A memo for the transaction, encrypted with the to account's public memo key
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> transfer_from_savings(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> transfer_from_savings(
       const string& from,
       uint32_t request_id,
       const string& to,
@@ -994,7 +1008,7 @@ class wallet_api
       *  @param request_id the id used in transfer_from_savings
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> cancel_transfer_from_savings(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> cancel_transfer_from_savings(
       const string& from,
       uint32_t request_id,
       bool broadcast = false );
@@ -1007,7 +1021,7 @@ class wallet_api
       *    withdrawn and deposited back as HIVE. i.e. "10.000000 VESTS"
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> withdraw_vesting(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> withdraw_vesting(
       const string& from,
       const wallet_serializer_wrapper<hive::protocol::asset>& vesting_shares,
       bool broadcast = false );
@@ -1024,7 +1038,7 @@ class wallet_api
       *    them as HIVE.
       * @param broadcast true if you wish to broadcast the transaction.
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> set_withdraw_vesting_route(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> set_withdraw_vesting_route(
       const string& from,
       const string& to,
       uint16_t percent,
@@ -1039,7 +1053,7 @@ class wallet_api
       *  @param amount The amount of HBD to convert
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> convert_hbd(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> convert_hbd(
       const string& from,
       const wallet_serializer_wrapper<hive::protocol::asset>& amount,
       bool broadcast = false );
@@ -1055,7 +1069,7 @@ class wallet_api
       *  @param collateral_amount The amount of HIVE collateral
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> convert_hive_with_collateral(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> convert_hive_with_collateral(
       const string& from,
       const wallet_serializer_wrapper<hive::protocol::asset>& collateral_amount,
       bool broadcast = false );
@@ -1075,7 +1089,7 @@ class wallet_api
       * @param exchange_rate The desired exchange rate
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> publish_feed(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> publish_feed(
       const string& witness,
       const wallet_serializer_wrapper<price>& exchange_rate,
       bool broadcast );
@@ -1088,8 +1102,8 @@ class wallet_api
       * @param broadcast true if you wish to broadcast the transaction
       * @return the signed version of the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> sign_transaction(
-      const wallet_serializer_wrapper<annotated_signed_transaction>& tx,
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> sign_transaction(
+      const wallet_serializer_wrapper<annotated_signed_transaction_ex>& tx,
       bool broadcast = false);
 
     /** Returns an uninitialized object representing a given blockchain operation.
@@ -1129,7 +1143,7 @@ class wallet_api
       *  @param expiration the time the order should expire if it has not been filled
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> create_order(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> create_order(
       const string& owner,
       uint32_t order_id,
       const wallet_serializer_wrapper<hive::protocol::asset>& amount_to_sell,
@@ -1145,7 +1159,7 @@ class wallet_api
       * @param orderid The unique identifier assigned to the order by its creator
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> cancel_order(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> cancel_order(
       const string& owner,
       uint32_t orderid,
       bool broadcast );
@@ -1162,7 +1176,7 @@ class wallet_api
       *  @param json the json metadata of the comment
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> post_comment(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> post_comment(
       const string& author,
       const string& permlink,
       const string& parent_author,
@@ -1181,7 +1195,7 @@ class wallet_api
       * @param weight The weight [-100,100] of the vote
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> vote(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> vote(
       const string& voter,
       const string& author,
       const string& permlink,
@@ -1204,7 +1218,7 @@ class wallet_api
       * @param new_authority The new owner authority for the recovered account. This should be given to you by the holder of the compromised or lost account.
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> request_account_recovery(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> request_account_recovery(
       const string& recovery_account,
       const string& account_to_recover,
       authority new_authority,
@@ -1221,7 +1235,7 @@ class wallet_api
       * @param new_authority The new authority that your recovery account used in the account recover request.
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> recover_account(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> recover_account(
       const string& account_to_recover,
       authority recent_authority,
       authority new_authority,
@@ -1234,7 +1248,7 @@ class wallet_api
       * @param new_recovery_account The name of the recovery account you wish to have
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> change_recovery_account(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> change_recovery_account(
       const string& owner,
       const string& new_recovery_account,
       bool broadcast );
@@ -1261,7 +1275,7 @@ class wallet_api
       *  @param what - a set of things to follow: posts, comments, votes, ignore
       *  @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> follow( const string& follower, const string& following, set<string> what, bool broadcast );
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> follow( const string& follower, const string& following, set<string> what, bool broadcast );
 
     /**
       * Checks memos against private keys on account and imported in wallet
@@ -1281,9 +1295,9 @@ class wallet_api
       */
     string decrypt_memo( string memo );
 
-    wallet_serializer_wrapper<annotated_signed_transaction> decline_voting_rights( const string& account, bool decline, bool broadcast );
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> decline_voting_rights( const string& account, bool decline, bool broadcast );
 
-    wallet_serializer_wrapper<annotated_signed_transaction> claim_reward_balance(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> claim_reward_balance(
       const string& account,
       const wallet_serializer_wrapper<hive::protocol::asset>& reward_hive,
       const wallet_serializer_wrapper<hive::protocol::asset>& reward_hbd,
@@ -1301,7 +1315,7 @@ class wallet_api
       * @param permlink   - permlink of the post for the proposal.
       * @param broadcast  - true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> create_proposal( const account_name_type& creator,
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> create_proposal( const account_name_type& creator,
                   const account_name_type& receiver,
                   time_point_sec start_date,
                   time_point_sec end_date,
@@ -1319,7 +1333,7 @@ class wallet_api
       * @param end_date    - new end_date of the proposal.
       * @param broadcast   - true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> update_proposal(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> update_proposal(
                   int64_t proposal_id,
                   const account_name_type& creator,
                   const wallet_serializer_wrapper<hive::protocol::asset>& daily_pay,
@@ -1334,7 +1348,7 @@ class wallet_api
       * @param approve   - set if proposal(s) should be approved or not.
       * @param broadcast - true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> update_proposal_votes(const account_name_type& voter,
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> update_proposal_votes(const account_name_type& voter,
                                               const flat_set< int64_t >& proposals,
                                               bool approve,
                                               bool broadcast );
@@ -1378,7 +1392,7 @@ class wallet_api
       * @param ids       - proposal ids to be removed.
       * @param broadcast - true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> remove_proposal( const account_name_type& deleter,
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> remove_proposal( const account_name_type& deleter,
                                             const flat_set< int64_t >& ids,
                                             bool broadcast );
 
@@ -1393,7 +1407,7 @@ class wallet_api
       * @param executions how many times should the recurrent transfer be executed
       * @param broadcast true if you wish to broadcast the transaction
       */
-    wallet_serializer_wrapper<annotated_signed_transaction> recurrent_transfer(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> recurrent_transfer(
             const account_name_type& from,
             const account_name_type& to,
             const wallet_serializer_wrapper<hive::protocol::asset>& amount,
@@ -1418,7 +1432,7 @@ class wallet_api
     *  @param max_rc The amount to delegate
     *  @param broadcast To broadcast this transaction or not
     */
-    wallet_serializer_wrapper<annotated_signed_transaction> delegate_rc(
+    wallet_serializer_wrapper<annotated_signed_transaction_ex> delegate_rc(
           const account_name_type& from,
           const flat_set<account_name_type>& delegatees,
           int64_t max_rc,
@@ -1603,5 +1617,7 @@ FC_API( hive::wallet::wallet_api,
       (list_rc_accounts)
       (list_rc_direct_delegations)
     )
+
+FC_REFLECT_DERIVED( hive::wallet::annotated_signed_transaction_ex, (hive::plugins::account_history::annotated_signed_transaction), (rc_cost) );
 
 FC_REFLECT( hive::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )
