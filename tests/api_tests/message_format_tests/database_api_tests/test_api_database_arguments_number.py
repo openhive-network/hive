@@ -1,6 +1,6 @@
 import pytest
 
-from ..local_tools import run_for
+from hive_local_tools import run_for
 
 METHODS_WITH_CORRECT_ARGUMENTS = [
     ['find_account_recovery_requests', {'accounts': ['hive.fund', 'initminer', 'miners', 'null', 'steem.dao', 'temp']}],
@@ -66,6 +66,6 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
     'api_database_method, arguments',
     METHODS_WITH_CORRECT_ARGUMENTS
 )
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_run_method_with_additional_argument(prepared_node, api_database_method, arguments):
-    getattr(prepared_node.api.database, api_database_method)(**arguments, additional_argument='Additional value')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
+def test_run_method_with_additional_argument(node, api_database_method, arguments):
+    getattr(node.api.database, api_database_method)(**arguments, additional_argument='Additional value')
