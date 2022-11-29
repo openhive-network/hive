@@ -33,7 +33,8 @@ def perform_test_preparation(node, wallet):
     wallet.api.vote('bob', 'alice', 'permlink', 90)
 
     # Waiting to become post and vote transactions irreversible
-    node.wait_number_of_blocks(21)
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=21, skip=0,
+                                              miss_blocks=0, edit_if_needed=True)
 
     # Offset 1 hour allow to skip time necessary to receive reward balances.
     wallet.close()

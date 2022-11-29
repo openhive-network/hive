@@ -42,14 +42,16 @@ def init_network( init_node, all_witness_names : List[str], key : str = None, bl
             )
 
     tt.logger.info('Wait 21 blocks to schedule newly created witnesses into future slate')
-    init_node.wait_number_of_blocks(21)
+    init_node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=21, skip=0,
+                                                   miss_blocks=0, edit_if_needed=True)
 
     future_witnesses = init_node.api.database.get_active_witnesses(include_future=True)["future_witnesses"]
     tt.logger.info(f"Future witnesses after voting: {future_witnesses}")
     assert len(future_witnesses) == 21
 
     tt.logger.info('Wait 21 blocks for future slate to become active slate')
-    init_node.wait_number_of_blocks(21)
+    init_node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=21, skip=0,
+                                                   miss_blocks=0, edit_if_needed=True)
 
     active_witnesses = init_node.api.database.get_active_witnesses()["witnesses"]
     tt.logger.info(f"Witness state after voting: {active_witnesses}")
@@ -57,7 +59,8 @@ def init_network( init_node, all_witness_names : List[str], key : str = None, bl
 
     # Reason of this wait is to enable moving forward of irreversible block
     tt.logger.info('Wait 21 blocks (when every witness sign at least one block)')
-    init_node.wait_number_of_blocks(21)
+    init_node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=21, skip=0,
+                                              miss_blocks=0, edit_if_needed=True)
 
     result = wallet.api.info()
     head_block_num = result['head_block_number']

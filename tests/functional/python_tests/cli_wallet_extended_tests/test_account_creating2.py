@@ -7,7 +7,8 @@ def test_account_creation_in_different_ways(node, wallet):
     old_accounts_number = len(wallet.api.list_accounts('a', 100))
 
     tt.logger.info('Waiting...')
-    node.wait_number_of_blocks(18)
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=18, skip=0,
+                                              miss_blocks=0, edit_if_needed=True)
     
     wallet.api.claim_account_creation('initminer', tt.Asset.Test(0))
 

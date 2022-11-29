@@ -8,7 +8,8 @@ def test_get_transaction_in_testnet(node, wallet):
     transaction = wallet.api.create_account('initminer', 'alice', '{}')
 
     # Wait until block containing above transaction will become irreversible.
-    node.wait_number_of_blocks(22)
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=22, skip=0,
+                                                       miss_blocks=0, edit_if_needed=True)
     node.api.condenser.get_transaction(transaction['transaction_id'])
 
 

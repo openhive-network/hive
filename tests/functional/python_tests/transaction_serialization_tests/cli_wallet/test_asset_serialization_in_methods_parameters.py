@@ -77,14 +77,16 @@ def test_escrow_release(prepared_wallet, escrow_tbd_amount, escrow_tests_amount)
 @run_for('testnet')
 @run_for_all_cases(claim_test_amount=tt.Asset.Test(0))
 def test_claim_account_creation(node, prepared_wallet, claim_test_amount):
-    node.wait_number_of_blocks(18)
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=18, skip=0,
+                                              miss_blocks=0, edit_if_needed=True)
     prepared_wallet.api.claim_account_creation('initminer', claim_test_amount)
 
 
 @run_for('testnet')
 @run_for_all_cases(claim_test_amount=tt.Asset.Test(0))
 def test_claim_account_creation_nonblocking(node, prepared_wallet, claim_test_amount):
-    node.wait_number_of_blocks(18)
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=18, skip=0,
+                                              miss_blocks=0, edit_if_needed=True)
     prepared_wallet.api.claim_account_creation_nonblocking('initminer', claim_test_amount)
 
 

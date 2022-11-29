@@ -1,5 +1,6 @@
 import time
 
+import test_tools as tt
 
 def test_find_existing_transaction(node, wallet):
     wallet.api.set_transaction_expiration(90)
@@ -13,7 +14,8 @@ def test_find_existing_transaction(node, wallet):
     assert node.api.database.is_known_transaction(id=transaction_id)['is_known'] is True
     assert node.api.transaction_status.find_transaction(transaction_id=transaction_id)['status'] == 'within_reversible_block'
 
-    node.wait_number_of_blocks(22)
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=22, skip=0,
+                                              miss_blocks=0, edit_if_needed=True)
     assert node.api.transaction_status.find_transaction(transaction_id=transaction_id)['status'] == 'within_irreversible_block'
 
     time.sleep(90)

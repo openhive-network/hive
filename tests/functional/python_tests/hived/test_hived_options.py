@@ -56,7 +56,8 @@ def test_stop_after_replay(way_to_stop, block_log: Path, block_log_length: int):
     # Generate new blocks, which are not present in source block log,
     # to check if other node will try to download them (synchronize).
     node_with_new_blocks.run(replay_from=block_log, wait_for_live=True)
-    node_with_new_blocks.wait_number_of_blocks(6)
+    node_with_new_blocks.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=6,
+                                                              skip=0, miss_blocks=0, edit_if_needed=True)
 
     node_which_should_not_synchronize.run(replay_from=block_log, **way_to_stop)
     assert not node_which_should_not_synchronize.is_running()

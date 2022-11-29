@@ -31,7 +31,8 @@ def prepare_block_log_with_transactions():
     prepare_accounts_for_list_my_accounts_test(wallet)
 
     # Wait to appear transactions in block log
-    node.wait_number_of_blocks(21)
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=21, skip=0,
+                                              miss_blocks=0, edit_if_needed=True)
 
     node.close()
 

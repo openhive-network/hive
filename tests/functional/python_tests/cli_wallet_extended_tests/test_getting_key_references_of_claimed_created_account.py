@@ -6,7 +6,8 @@ import test_tools as tt
 
 def test_getting_key_references_of_claimed_created_account(node, wallet):
     tt.logger.info('Waiting until initminer will be able to create account...')
-    node.wait_number_of_blocks(30)
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=30, skip=0,
+                                              miss_blocks=0, edit_if_needed=True)
 
     account = tt.Account('alice')
     key = account.public_key

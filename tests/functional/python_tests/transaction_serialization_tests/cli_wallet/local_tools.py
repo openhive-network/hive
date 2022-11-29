@@ -73,7 +73,8 @@ def create_alice_and_bob_accounts_with_received_rewards(node, wallet):
     wallet.api.vote('bob', 'alice', 'permlink', 100)
 
     # Waiting to become post and vote transactions irreversible
-    node.wait_number_of_blocks(21)
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=21, skip=0,
+                                              miss_blocks=0, edit_if_needed=True)
 
     # Rerun node with time offset allow to change time in 'node' one hour forward and stimulate node to block producing.
     wallet.close()

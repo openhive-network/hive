@@ -37,7 +37,8 @@ def test_getters(node, wallet):
     block_number = _response['ref_block_num'] + 1
 
     tt.logger.info('Waiting...')
-    node.wait_number_of_blocks(22)
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=22, skip=0,
+                                              miss_blocks=0, edit_if_needed=True)
 
     _result = wallet.api.get_ops_in_block( block_number, False )
 
