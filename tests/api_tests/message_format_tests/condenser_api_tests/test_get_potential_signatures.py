@@ -8,7 +8,7 @@ def test_get_potential_signatures_in_testnet(node, wallet):
     assert len(keys) != 0
 
 
-@run_for('mainnet_5m', 'mainnet_64m')
+@run_for('mainnet_5m', 'live_mainnet')
 def test_get_potential_signatures_in_mainnet(node):
     block = node.api.condenser.get_block(4450001)
     transaction = block['transactions'][0]
