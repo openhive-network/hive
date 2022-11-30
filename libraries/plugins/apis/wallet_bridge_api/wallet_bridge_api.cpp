@@ -249,11 +249,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_block )
 {
   FC_ASSERT(_block_api , "block_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_block needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_block needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const uint32_t block_num = arguments.get_array()[0].as<uint32_t>();
+  const uint32_t block_num = arguments.get_array().at(0).as<uint32_t>();
   get_block_return result;
   result.block = _block_api->get_block({block_num}).block;
   return result;
@@ -269,10 +269,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_witness_schedule )
 {
   FC_ASSERT(_database_api , "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_witness_schedule needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_witness_schedule needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
-  bool include_future = arguments.get_array()[0].as<bool>();
+  bool include_future = arguments.get_array().at(0).as<bool>();
   return _database_api->get_witness_schedule( { include_future } );
 }
 
@@ -292,12 +292,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_ops_in_block )
 {
   FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_ops_in_block needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_ops_in_block needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 2 );
 
-  const uint32_t block_num = arguments.get_array()[0].as<uint32_t>();
-  const bool only_virtual = arguments.get_array()[1].as_bool();
+  const uint32_t block_num = arguments.get_array().at(0).as<uint32_t>();
+  const bool only_virtual = arguments.get_array().at(1).as_bool();
 
   get_ops_in_block_return result;
   result.ops = _account_history_api->get_ops_in_block( { block_num, only_virtual } ).ops;
@@ -314,10 +314,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_active_witnesses )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_active_witnesses needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_active_witnesses needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
-  bool include_future = arguments.get_array()[0].as<bool>();
+  bool include_future = arguments.get_array().at(0).as<bool>();
   return _database_api->get_active_witnesses( { include_future } );
 }
 
@@ -325,12 +325,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_withdraw_routes )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_withdraw_routes needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_withdraw_routes needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 2 );
 
-  const protocol::account_name_type account = arguments.get_array()[0].as<protocol::account_name_type>();
-  const auto route = arguments.get_array()[1].as<database_api::withdraw_route_type>();
+  const protocol::account_name_type account = arguments.get_array().at(0).as<protocol::account_name_type>();
+  const auto route = arguments.get_array().at(1).as<database_api::withdraw_route_type>();
 
   database_api::find_withdraw_vesting_routes_return _result;
 
@@ -350,12 +350,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
 {
   FC_ASSERT( _account_by_key_api, "account_by_key_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "list_my_accounts needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "list_my_accounts needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
   FC_ASSERT( arguments.is_array(), "array of data is required" );
-  FC_ASSERT( arguments.get_array()[0].is_array(), "Array of keys is required as first argument" );
-  const auto arg_keys = arguments.get_array()[0].get_array();
+  FC_ASSERT( arguments.get_array().at(0).is_array(), "Array of keys is required as first argument" );
+  const auto arg_keys = arguments.get_array().at(0).get_array();
 
   vector<protocol::public_key_type> keys;
   keys.reserve(arg_keys.size());
@@ -383,11 +383,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_my_accounts )
 DEFINE_API_IMPL( wallet_bridge_api_impl, list_accounts )
 {
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "list_accounts needs at least one argument");
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT(args.get_array().at(0).is_array(), "list_accounts needs at least one argument");
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 2 );
-  const protocol::account_name_type lowerbound = arguments.get_array()[0].as<protocol::account_name_type>();
-  uint32_t limit = arguments.get_array()[1].as<uint32_t>();
+  const protocol::account_name_type lowerbound = arguments.get_array().at(0).as<protocol::account_name_type>();
+  uint32_t limit = arguments.get_array().at(1).as<uint32_t>();
   FC_ASSERT( limit <= 1000 );
   const auto& accounts_by_name = _db.get_index< chain::account_index, chain::by_name >();
   list_accounts_return result;
@@ -407,11 +407,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_dynamic_global_properties )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_account )
 {
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_account needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_account needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  chain::account_name_type acc_name = arguments.get_array()[0].as<protocol::account_name_type>();
+  chain::account_name_type acc_name = arguments.get_array().at(0).as<protocol::account_name_type>();
   const chain::account_object* account = _db.find_account(acc_name);
   get_account_return result;
   if (account)
@@ -424,11 +424,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_accounts )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_accounts needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_accounts needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const auto _names = arguments.get_array()[0];
+  const auto _names = arguments.get_array().at(0);
   FC_ASSERT( _names.is_array(), "Array of account names is required as first argument" );
 
   get_accounts_return result;
@@ -453,11 +453,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_transaction )
 {
   FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_transaction needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_transaction needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const string id = arguments.get_array()[0].as<string>();
+  const string id = arguments.get_array().at(0).as<string>();
   return _account_history_api->get_transaction( {id} );
 }
 
@@ -465,11 +465,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_witnesses )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "list_witnesses needs at least one argument");
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT(args.get_array().at(0).is_array(), "list_witnesses needs at least one argument");
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 2 );
-  const string lowerbound = arguments.get_array()[0].as<protocol::account_name_type>();
-  const uint32_t limit = arguments.get_array()[1].as<uint32_t>();
+  const string lowerbound = arguments.get_array().at(0).as<protocol::account_name_type>();
+  const uint32_t limit = arguments.get_array().at(1).as<uint32_t>();
   return _database_api->list_witnesses({lowerbound, limit, database_api::by_name});
 }
 
@@ -477,10 +477,10 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_witness )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "get_witness needs at least one argument");
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT(args.get_array().at(0).is_array(), "get_witness needs at least one argument");
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
-  const string witness_name = arguments.get_array()[0].as<protocol::account_name_type>();
+  const string witness_name = arguments.get_array().at(0).as<protocol::account_name_type>();
   const auto& witnesses = _database_api->find_witnesses({{witness_name}}).witnesses;
   get_witness_return result;
   if (!witnesses.empty())
@@ -493,11 +493,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_conversion_requests )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_conversion_requests needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_conversion_requests needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const protocol::account_name_type account = arguments.get_array()[0].as<protocol::account_name_type>();
+  const protocol::account_name_type account = arguments.get_array().at(0).as<protocol::account_name_type>();
   return _database_api->find_hbd_conversion_requests({account}).requests;
 }
 
@@ -505,21 +505,21 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_collateralized_conversion_requests 
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_collateralized_conversion_requests needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_collateralized_conversion_requests needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const protocol::account_name_type account = arguments.get_array()[0].as<protocol::account_name_type>();
+  const protocol::account_name_type account = arguments.get_array().at(0).as<protocol::account_name_type>();
   return _database_api->find_collateralized_conversion_requests({account}).requests;
 }
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_order_book )
 {
   FC_ASSERT( _market_history_api, "market_history_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "get_order_book needs at least one argument");
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT(args.get_array().at(0).is_array(), "get_order_book needs at least one argument");
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
-  const uint32_t limit = arguments.get_array()[0].as<uint32_t>();
+  const uint32_t limit = arguments.get_array().at(0).as<uint32_t>();
 
   return _market_history_api->get_order_book({limit});
 }
@@ -527,11 +527,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_order_book )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_open_orders )
 {
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "get_open_orders needs at least one argument");
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT(args.get_array().at(0).is_array(), "get_open_orders needs at least one argument");
+  const auto arguments = args.get_array().at(0);
   FC_ASSERT(arguments.is_array(), "get_open_orders needs at least one argument");
   verify_args( arguments, 1 );
-  const protocol::account_name_type account = arguments.get_array()[0].as<protocol::account_name_type>();
+  const protocol::account_name_type account = arguments.get_array().at(0).as<protocol::account_name_type>();
 
   vector< database_api::api_limit_order_object > _result;
   const auto& idx = _db.get_index< chain::limit_order_index, chain::by_account >();
@@ -550,11 +550,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_owner_history )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_owner_history needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_owner_history needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const protocol::account_name_type acc_name = arguments.get_array()[0].as<protocol::account_name_type>();
+  const protocol::account_name_type acc_name = arguments.get_array().at(0).as<protocol::account_name_type>();
   return _database_api->find_owner_histories({acc_name});
 }
 
@@ -562,12 +562,12 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account_history )
 {
   FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "get_account_history needs at least one argument");
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT(args.get_array().at(0).is_array(), "get_account_history needs at least one argument");
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 3 );
-  const protocol::account_name_type account = arguments.get_array()[0].as<protocol::account_name_type>();
-  const uint64_t from = arguments.get_array()[1].as<uint64_t>();
-  const uint32_t limit = arguments.get_array()[2].as<uint32_t>();
+  const protocol::account_name_type account = arguments.get_array().at(0).as<protocol::account_name_type>();
+  const uint64_t from = arguments.get_array().at(1).as<uint64_t>();
+  const uint32_t limit = arguments.get_array().at(2).as<uint32_t>();
 
   return _account_history_api->get_account_history({account, from, limit}).history;
 }
@@ -576,16 +576,16 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposals )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "get_account_history needs at least one argument");
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT(args.get_array().at(0).is_array(), "get_account_history needs at least one argument");
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 5 );
 
   database_api::list_proposals_args api_lp_args;
-  api_lp_args.start = arguments.get_array()[0];
-  api_lp_args.limit = arguments.get_array()[1].as<uint32_t>();
-  api_lp_args.order = arguments.get_array()[2].as<database_api::sort_order_type>();
-  api_lp_args.order_direction = arguments.get_array()[3].as<database_api::order_direction_type>();
-  api_lp_args.status = arguments.get_array()[4].as<database_api::proposal_status>();
+  api_lp_args.start = arguments.get_array().at(0);
+  api_lp_args.limit = arguments.get_array().at(1).as<uint32_t>();
+  api_lp_args.order = arguments.get_array().at(2).as<database_api::sort_order_type>();
+  api_lp_args.order_direction = arguments.get_array().at(3).as<database_api::order_direction_type>();
+  api_lp_args.status = arguments.get_array().at(4).as<database_api::proposal_status>();
   return _database_api->list_proposals(api_lp_args);
 }
 
@@ -593,11 +593,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_proposals )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "find_proposals needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "find_proposals needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const auto _ids = arguments.get_array()[0];
+  const auto _ids = arguments.get_array().at(0);
   FC_ASSERT( _ids.is_array(), "Array of proposal ids is required as first argument" );
   auto __ids = _ids.get_array();
 
@@ -614,11 +614,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, is_known_transaction )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "is_known_transaction needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "is_known_transaction needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const protocol::transaction_id_type id = arguments.get_array()[0].as<protocol::transaction_id_type>();
+  const protocol::transaction_id_type id = arguments.get_array().at(0).as<protocol::transaction_id_type>();
   return _database_api->is_known_transaction({id}).is_known;
 }
 
@@ -626,16 +626,16 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposal_votes )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "list_proposal_votes needs at least one argument");
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT(args.get_array().at(0).is_array(), "list_proposal_votes needs at least one argument");
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 5 );
 
   database_api::list_proposal_votes_args api_lpv_args;
-  api_lpv_args.start = arguments.get_array()[0];
-  api_lpv_args.limit = arguments.get_array()[1].as<uint32_t>();
-  api_lpv_args.order = arguments.get_array()[2].as<database_api::sort_order_type>();
-  api_lpv_args.order_direction = arguments.get_array()[3].as<database_api::order_direction_type>();
-  api_lpv_args.status = arguments.get_array()[4].as<database_api::proposal_status>();
+  api_lpv_args.start = arguments.get_array().at(0);
+  api_lpv_args.limit = arguments.get_array().at(1).as<uint32_t>();
+  api_lpv_args.order = arguments.get_array().at(2).as<database_api::sort_order_type>();
+  api_lpv_args.order_direction = arguments.get_array().at(3).as<database_api::order_direction_type>();
+  api_lpv_args.status = arguments.get_array().at(4).as<database_api::proposal_status>();
 
   return _database_api->list_proposal_votes(api_lpv_args);
 }
@@ -643,11 +643,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_proposal_votes )
 DEFINE_API_IMPL( wallet_bridge_api_impl, get_reward_fund )
 {
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "get_reward_fund needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "get_reward_fund needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const string reward_fund_name = arguments.get_array()[0].as<protocol::account_name_type>();
+  const string reward_fund_name = arguments.get_array().at(0).as<protocol::account_name_type>();
   auto fund = _db.find< chain::reward_fund_object, chain::by_name >( reward_fund_name );
   FC_ASSERT( fund != nullptr, "Invalid reward fund name" );
   return database_api::api_reward_fund_object( *fund, _db );
@@ -659,16 +659,16 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_reward_fund )
 */
 protocol::signed_transaction wallet_bridge_api_impl::get_trx( const variant& args )
 {
-  FC_ASSERT( args.get_array()[0].is_object(), "Signed transaction is required as first argument" );
+  FC_ASSERT( args.get_array().at(0).is_object(), "Signed transaction is required as first argument" );
   try
   {
-    return args.get_array()[0].as<protocol::signed_transaction>();
+    return args.get_array().at(0).as<protocol::signed_transaction>();
   }
   catch( fc::bad_cast_exception& e )
   {
     mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
     ilog("Change of serialization( `wallet_bridge_api_impl::get_trx' ) - a legacy format is enabled now" );
-    return args.get_array()[0].as<protocol::signed_transaction>();
+    return args.get_array().at(0).as<protocol::signed_transaction>();
   }
 }
 
@@ -677,8 +677,8 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
   FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
   FC_ASSERT( _p2p, "p2p_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "broadcast_transaction_synchronous needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "broadcast_transaction_synchronous needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
   /* this method is from condenser_api -> broadcast_transaction_synchronous. */
@@ -746,8 +746,8 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
 {
   FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "broadcast_transaction needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "broadcast_transaction needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
   return _network_broadcast_api->broadcast_transaction( { get_trx( arguments ) } );
@@ -757,11 +757,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
 {
   FC_ASSERT( _database_api, "database_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "find_recurrent_transfers needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "find_recurrent_transfers needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const string acc_name = arguments.get_array()[0].as<protocol::account_name_type>();
+  const string acc_name = arguments.get_array().at(0).as<protocol::account_name_type>();
   return _database_api->find_recurrent_transfers( { acc_name } ).recurrent_transfers;
 }
 
@@ -769,11 +769,11 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, find_rc_accounts )
 {
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT( args.get_array()[0].is_array(), "find_rc_accounts needs at least one argument" );
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT( args.get_array().at(0).is_array(), "find_rc_accounts needs at least one argument" );
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  const auto _names = arguments.get_array()[0];
+  const auto _names = arguments.get_array().at(0);
   FC_ASSERT( _names.is_array(), "Array of account names is required as first argument" );
   auto __names = _names.get_array();
 
@@ -789,13 +789,13 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_accounts )
 {
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_accounts needs at least one arguments");
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT(args.get_array().at(0).is_array(), "list_rc_accounts needs at least one arguments");
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 2 );
 
   rc::list_rc_accounts_args api_lra_args;
-  api_lra_args.start = arguments.get_array()[0].as<protocol::account_name_type>();
-  api_lra_args.limit = arguments.get_array()[1].as<uint32_t>();
+  api_lra_args.start = arguments.get_array().at(0).as<protocol::account_name_type>();
+  api_lra_args.limit = arguments.get_array().at(1).as<uint32_t>();
 
   return _rc_api->list_rc_accounts(api_lra_args).rc_accounts;
 }
@@ -804,13 +804,13 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
 {
   FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array()[0].is_array(), "list_rc_direct_delegations needs at least one arguments");
-  const auto arguments = args.get_array()[0];
+  FC_ASSERT(args.get_array().at(0).is_array(), "list_rc_direct_delegations needs at least one arguments");
+  const auto arguments = args.get_array().at(0);
   verify_args( arguments, 2 );
 
   rc::list_rc_direct_delegations_args api_lrdd_args;
-  api_lrdd_args.start = arguments.get_array()[0];
-  api_lrdd_args.limit = arguments.get_array()[1].as<uint32_t>();
+  api_lrdd_args.start = arguments.get_array().at(0);
+  api_lrdd_args.limit = arguments.get_array().at(1).as<uint32_t>();
 
   return _rc_api->list_rc_direct_delegations(api_lrdd_args).rc_direct_delegations;
 }
