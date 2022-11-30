@@ -37,7 +37,7 @@ def ready_node(node, should_prepare):
         (ACCOUNT, True),  # bool is treated like numeric (0:1)
     ]
 )
-@run_for("testnet", "mainnet_5m", "mainnet_64m")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_accounts_with_correct_values(ready_node, rc_account, limit):
     ready_node.api.rc.list_rc_accounts(start=rc_account, limit=limit)
 
@@ -49,7 +49,7 @@ def test_list_rc_accounts_with_correct_values(ready_node, rc_account, limit):
         (ACCOUNT, 1001),
     ]
 )
-@run_for("testnet", "mainnet_5m", "mainnet_64m")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_accounts_with_incorrect_values(ready_node, rc_account, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         ready_node.api.rc.list_rc_accounts(start=rc_account, limit=limit)
@@ -66,19 +66,19 @@ def test_list_rc_accounts_with_incorrect_values(ready_node, rc_account, limit):
         (ACCOUNT, "true"),
     ]
 )
-@run_for("testnet", "mainnet_5m", "mainnet_64m")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_accounts_with_incorrect_type_of_arguments(ready_node, rc_account, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         ready_node.api.rc.list_rc_accounts(start=rc_account, limit=limit)
 
 
-@run_for("testnet", "mainnet_5m", "mainnet_64m")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_account_with_additional_argument(ready_node):
     ready_node.api.rc.list_rc_accounts(start=ACCOUNT, limit=100, additional_argument="additional_argument")
 
 
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/422")
-@run_for("testnet", "mainnet_5m", "mainnet_64m")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_account_with_missing_argument(ready_node):
     with pytest.raises(tt.exceptions.CommunicationError):
         ready_node.api.rc.list_rc_accounts(start=ACCOUNT)
