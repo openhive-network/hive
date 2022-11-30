@@ -1,0 +1,7 @@
+
+Checks whether the wallet is locked (is unable to use its private keys).
+
+This state can be changed by calling 'lock()' or 'unlock()'.
+
+Returns
+    true if the wallet is locked

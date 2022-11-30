@@ -50,11 +50,11 @@ struct artifact_file_header
 
     format_major_version = FORMAT_MAJOR; /// version info of storage format (to allow potential upgrades in the future)
     format_minor_version = FORMAT_MINOR;
-    head_block_num = 0; /// number of newest (head) block the file holds informations for
+    head_block_num = 0; /// number of newest (head) block the file holds information for
     dirty_close = 0;
   }
 
-  uint32_t head_block_num; /// number of newest (head) block the file holds informations for
+  uint32_t head_block_num; /// number of newest (head) block the file holds information for
   char git_version[41]; /// version of a tool which constructed given file
   uint8_t format_major_version; /// version info of storage format (to allow potential upgrades in the future)
   uint8_t format_minor_version;
@@ -214,6 +214,8 @@ public:
     ilog("Block log artifact file closed.");
   }
 
+  void truncate_file(uint32_t last_block);
+
 private:
   bool load_header();
   void flush_header() const;
@@ -221,8 +223,6 @@ private:
   /// Returns true if generation has been completed, false otherwise
   void generate_file(const block_log& source_block_provider, uint32_t first_block, uint32_t last_block);
   
-  void truncate_file(uint32_t last_block);
-
   void write_data(const std::vector<char>& buffer, off_t offset, const std::string& description) const
   {
     hive::utilities::perform_write(_storage_fd, buffer.data(), buffer.size(), offset, description);
@@ -324,10 +324,6 @@ void block_log_artifacts::impl::try_to_open(const fc::path& block_log_file_path,
 
         /// Artifact file is too big. Let's try to truncate it
         truncate_file(head_block_num);
-
-        /// head_block_num must be updated
-        _header.head_block_num = head_block_num;
-        flush_header();
       }
       else if (head_block_num > _header.head_block_num)
       {
@@ -508,7 +504,7 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
     }
   });
 
-  source_block_provider.for_each_block([&](uint32_t block_num, const std::shared_ptr<full_block_type>& full_block, uint64_t block_pos, block_attributes_t attributes) {
+  source_block_provider.for_each_block_reverse([&](uint32_t block_num, const std::shared_ptr<full_block_type>& full_block, uint64_t block_pos, block_attributes_t attributes) {
     if (block_num < first_block)
       return false;
 
@@ -571,6 +567,10 @@ void block_log_artifacts::impl::truncate_file(uint32_t last_block)
 
   if (ftruncate(_storage_fd, truncate_position) == -1)
     FC_THROW("Error truncating block artifact file: ${error}", ("error", strerror(errno)));
+
+  /// head_block_num must be updated
+  update_head_block(last_block);
+  flush_header();
 }
 
 void block_log_artifacts::impl::process_block_artifacts(uint32_t block_num, uint32_t count, artifact_file_chunk_processor_t processor) const
@@ -687,10 +687,16 @@ block_log_artifacts::read_block_artifacts(uint32_t start_block_num, uint32_t blo
 }
 
 void block_log_artifacts::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
-  const block_id_t& block_id)
+                                                const block_id_t& block_id)
 {
   _impl->store_block_artifacts(block_num, block_log_file_pos, block_attributes, block_id);
   _impl->update_head_block(block_num);
+}
+
+void block_log_artifacts::truncate(uint32_t new_head_block_num)
+{
+  dlog("truncating block log to ${new_head_block_num} blocks", (new_head_block_num));
+  _impl->truncate_file(new_head_block_num);
 }
 
 }}

@@ -43,13 +43,15 @@ DEFINE_API_IMPL( transaction_status_api_impl, find_transaction )
       if ( tso->block_num <= last_irreversible_block_num )
         return {
           .status = transaction_status::within_irreversible_block,
-          .block_num = tso->block_num
+          .block_num = tso->block_num,
+          .rc_cost = tso->rc_cost
         };
       // We're in a reversible block
       else
         return {
           .status = transaction_status::within_reversible_block,
-          .block_num = tso->block_num
+          .block_num = tso->block_num,
+          .rc_cost = tso->rc_cost
         };
     }
 

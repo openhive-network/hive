@@ -1,0 +1,5 @@
+
+Returns collateralized conversion requests by an account
+
+Parameters:
+    owner: name of the account owning the requests (type: fc::variant)

@@ -1,0 +1,6 @@
+
+Returns information about the given account.
+
+Parameters:
+    account_name: the name of the account to provide information about
+	(type: const string &)

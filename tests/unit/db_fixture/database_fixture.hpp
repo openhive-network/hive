@@ -607,7 +607,8 @@ struct json_rpc_database_fixture : public database_fixture
     hive::plugins::json_rpc::json_rpc_plugin* rpc_plugin;
 
     fc::variant get_answer( std::string& request );
-    void review_answer( fc::variant& answer, int64_t code, bool is_warning, bool is_fail, fc::optional< fc::variant > id );
+    void review_answer( fc::variant& answer, int64_t code, bool is_warning, bool is_fail, fc::optional< fc::variant > id,
+      const char* message = nullptr );
 
   public:
 
@@ -615,7 +616,8 @@ struct json_rpc_database_fixture : public database_fixture
     virtual ~json_rpc_database_fixture();
 
     void make_array_request( std::string& request, int64_t code = 0, bool is_warning = false, bool is_fail = true );
-    fc::variant make_request( std::string& request, int64_t code = 0, bool is_warning = false, bool is_fail = true );
+    fc::variant make_request( std::string& request, int64_t code = 0, bool is_warning = false, bool is_fail = true,
+      const char* message = nullptr );
     void make_positive_request( std::string& request );
 };
 
@@ -627,6 +629,20 @@ namespace test
   bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
   void _push_transaction( database& db, const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key(), uint32_t skip_flags = 0,
     hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
+}
+
+namespace performance
+{
+  struct initial_data
+  {
+    std::string account;
+
+    fc::ecc::private_key key;
+
+    initial_data( database_fixture* db, const std::string& _account );
+  };
+
+  std::vector< initial_data > generate_accounts( database_fixture* db, int32_t number_accounts );
 }
 
 } }

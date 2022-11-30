@@ -4367,51 +4367,13 @@ int32_t get_time( database& db, const std::string& name )
   return benchmark_time;
 }
 
-struct initial_data
-{
-  std::string account;
-
-  fc::ecc::private_key key;
-
-  initial_data( database_fixture* db, const std::string& _account ): account( _account )
-  {
-    key = db->generate_private_key( account );
-
-    db->account_create( account, key.get_public_key(), db->generate_private_key( account + "_post" ).get_public_key() );
-  }
-};
-
-std::vector< initial_data > generate_accounts( database_fixture* db, int32_t number_accounts )
-{
-  const std::string basic_name = "tester";
-
-  std::vector< initial_data > res;
-
-  for( int32_t i = 0; i< number_accounts; ++i  )
-  {
-    std::string name = basic_name + std::to_string( i );
-    res.push_back( initial_data( db, name ) );
-
-    if( ( i + 1 ) % 100 == 0 )
-      db->generate_block();
-
-    if( ( i + 1 ) % 1000 == 0 )
-      ilog( "Created: ${accs} accounts",( "accs", i+1 ) );
-  }
-
-  db->validate_database();
-  db->generate_block();
-
-  return res;
-}
-
 BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
 {
   try
   {
     BOOST_TEST_MESSAGE( "Testing: removing of all proposals/votes in one block using threshold = -1" );
 
-    std::vector< initial_data > inits = generate_accounts( this, 200 );
+    std::vector< performance::initial_data > inits = performance::generate_accounts( this, 200 );
 
     generate_block();
 
@@ -4523,7 +4485,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
   {
     BOOST_TEST_MESSAGE( "Testing: generating payments for a lot of accounts" );
 
-    std::vector< initial_data > inits = generate_accounts( this, 30000 );
+    std::vector< performance::initial_data > inits = performance::generate_accounts( this, 30000 );
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();

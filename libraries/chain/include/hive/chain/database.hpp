@@ -116,12 +116,12 @@ namespace chain {
         TX_STATUS_UNVERIFIED = 0x01, //new transaction from API or P2P
         TX_STATUS_PENDING    = 0x02, //transaction that was verified by the node and is now pending (or popped)
         TX_STATUS_BLOCK      = 0x08, //during block processing
-        TX_STATUS_INC_BLOCK  = TX_STATUS_BLOCK | TX_STATUS_UNVERIFIED, //while processing new block from API or P2P
-        TX_STATUS_GEN_BLOCK  = TX_STATUS_BLOCK | TX_STATUS_PENDING //while producing new block
+        TX_STATUS_P2P_BLOCK  = TX_STATUS_BLOCK | TX_STATUS_UNVERIFIED, //while processing block from P2P
+        TX_STATUS_GEN_BLOCK  = TX_STATUS_BLOCK | TX_STATUS_PENDING //while generating new block
       };
 
-      // block coming from API or P2P is validated for the first time, also newly produced or even reapplied but after switching fork
-      bool is_validating_block() const { return _current_tx_status == TX_STATUS_INC_BLOCK; }
+      // block coming from P2P is validated for the first time, also newly generated or even reapplied but after switching fork
+      bool is_validating_block() const { return _current_tx_status == TX_STATUS_P2P_BLOCK; }
       // this node is a block producer and it creates new block out of pending transactions
       // (note that new block is not actually a block, that is, there are no pre/post block notifications)
       bool is_producing_block() const { return _current_tx_status == TX_STATUS_GEN_BLOCK; }

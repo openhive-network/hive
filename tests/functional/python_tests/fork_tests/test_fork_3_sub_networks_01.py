@@ -1,5 +1,9 @@
-from .local_tools import connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from .local_tools import connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, \
+                        wait_for_final_block, lib_custom_condition
+
 import test_tools as tt
+
+from functools import partial
 
 def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01):
     # start - A network consists of a 'minority_7a' network(7 witnesses), a 'minority_7b' network(7 witnesses), a 'minority_7c' network(7 witnesses).
@@ -31,7 +35,14 @@ def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01):
     blocks_after_disconnect     = 10
 
     tt.logger.info(f'Before disconnecting')
-    wait(blocks_before_disconnect, logs, minority_api_node_7a)
+    cnt = 0 
+    while True:
+        wait(1, logs, minority_api_node_7a)
+
+        cnt += 1
+        if cnt > blocks_before_disconnect:
+            if get_last_irreversible_block_num(_m7a) == get_last_irreversible_block_num(_m7b) and get_last_irreversible_block_num(_m7a) == get_last_irreversible_block_num(_m7c):
+                break
 
     assert get_last_head_block_number(_m7a)      == get_last_head_block_number(_m7b)
     assert get_last_head_block_number(_m7a)      == get_last_head_block_number(_m7c)
@@ -56,9 +67,4 @@ def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01):
     sub_networks[0].connect_with(sub_networks[1])
     sub_networks[0].connect_with(sub_networks[2])
 
-    while True:
-        wait(1, logs, minority_api_node_7a)
-
-        if get_last_irreversible_block_num(_m7a) > last_lib_a:
-            if get_last_irreversible_block_num(_m7a) == get_last_irreversible_block_num(_m7b) and get_last_irreversible_block_num(_m7a) == get_last_irreversible_block_num(_m7c):
-                break
+    wait_for_final_block(minority_api_node_7a, logs, [_m7a, _m7b, _m7c], True, partial(lib_custom_condition, _m7a, last_lib_a), False)

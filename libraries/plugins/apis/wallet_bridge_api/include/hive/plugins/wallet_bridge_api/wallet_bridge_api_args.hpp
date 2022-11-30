@@ -190,6 +190,7 @@ struct broadcast_transaction_synchronous_return
   protocol::transaction_id_type   id;
   int32_t                         block_num = 0;
   int32_t                         trx_num = 0;
+  fc::optional< int64_t >         rc_cost;
   bool                            expired = false;
 };
 
@@ -215,7 +216,7 @@ typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_del
 
 } } } // hive::plugins::wallet_bridge_api
 
-FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(expired))
+FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(rc_cost)(expired))
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::find_withdraw_vesting_json_route, (from)(to)(percent)(auto_vest))
 

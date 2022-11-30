@@ -46,7 +46,7 @@ class market_history_plugin : public plugin< market_history_plugin >
 
     static const std::string& name() { static std::string name = HIVE_MARKET_HISTORY_PLUGIN_NAME; return name; }
 
-    flat_set< uint32_t > get_tracked_buckets() const;
+    const flat_set< uint32_t >& get_tracked_buckets() const;
     uint32_t get_max_history_per_bucket() const;
 
     virtual void set_program_options(

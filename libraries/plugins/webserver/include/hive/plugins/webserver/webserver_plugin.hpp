@@ -12,7 +12,7 @@
 
 namespace hive { namespace plugins { namespace webserver {
 
-namespace detail { class webserver_plugin_impl; }
+namespace detail { class webserver_base; }
 
 using namespace appbase;
 
@@ -48,7 +48,7 @@ class webserver_plugin : public appbase::plugin< webserver_plugin >
     virtual void plugin_shutdown() override;
 
   private:
-    std::unique_ptr< detail::webserver_plugin_impl > my;
+    std::unique_ptr< detail::webserver_base > my;
 };
 
 } } } // hive::plugins::webserver

@@ -46,8 +46,19 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 
     void set_rc_plugin_skip_flags( rc_plugin_skip_flags skip );
     const rc_plugin_skip_flags& get_rc_plugin_skip_flags() const;
+    void set_enable_rc_stats( bool enable = true );
+    bool is_rc_stats_enabled() const;
 
     void validate_database();
+
+    enum class report_type
+    {
+      NONE, //no report
+      MINIMAL, //just basic stats - no operation or payer stats
+      REGULAR, //no detailed operation stats
+      FULL //everything
+    };
+    fc::variant_object get_report( report_type rt, bool pending = false ) const;
 
   private:
     std::unique_ptr< detail::rc_plugin_impl > my;

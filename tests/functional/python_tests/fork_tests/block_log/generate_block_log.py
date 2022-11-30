@@ -59,6 +59,11 @@ def prepare_blocklog():
 
     tt.logger.info('Wait 21 blocks to schedule newly created witnesses into future slate')
     init_node.wait_number_of_blocks(21)
+
+    future_witnesses = init_node.api.database.get_active_witnesses(include_future=True)["future_witnesses"]
+    tt.logger.info(f"Future witnesses after voting: {future_witnesses}")
+    assert len(future_witnesses) == 21
+
     tt.logger.info('Wait 21 blocks for future slate to become active slate')
     init_node.wait_number_of_blocks(21)
 
@@ -78,7 +83,7 @@ def prepare_blocklog():
     Path('block_log').unlink(missing_ok=True)
 
     init_node.close()
-    init_node.get_block_log(include_index=False).copy_to(Path(__file__).parent.absolute())
+    init_node.block_log.copy_to(Path(__file__).parent.absolute())
 
     with open('timestamp', 'w') as f:
         f.write(f'{timestamp}')

@@ -1,0 +1,6 @@
+
+Try to automatically pick required authorities, basing on imported private
+keys.
+
+This is default behaviour at wallet startup. Used to come back to default
+behaviour after command use_authority.

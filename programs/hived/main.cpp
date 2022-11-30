@@ -38,10 +38,7 @@ string version_string()
 {
   fc::mutable_variant_object version_storage;
   hive::utilities::build_version_info(&version_storage);
-
-  string v_str ="  \"version\":" + fc::json::to_string(version_storage);
-
-  return v_str;
+  return fc::json::to_string(fc::mutable_variant_object("version", version_storage));
 }
 
 void info(const hive::protocol::chain_id_type& chainId)
@@ -114,13 +111,14 @@ int main( int argc, char** argv )
 
 
     // These plugins are loaded regardless of the config
-    bool initialized = theApp.initialize<
+    auto initializationResult = theApp.initialize<
         hive::plugins::chain::chain_plugin,
         hive::plugins::p2p::p2p_plugin,
         hive::plugins::webserver::webserver_plugin >
         ( argc, argv );
 
-    if( !initialized ) return 0;
+    if( !initializationResult.should_start_loop() ) 
+      return initializationResult.get_result_code();
     else hive::notify_hived_status("starting");
 
     const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
@@ -149,7 +147,8 @@ int main( int argc, char** argv )
     theApp.startup();
     theApp.exec();
     std::cout << "exited cleanly\n";
-    return 0;
+    
+    return initializationResult.get_result_code();
   }
   catch ( const boost::exception& e )
   {

@@ -1,0 +1,17 @@
+
+Create an account recovery request as a recover account. The syntax for
+this command contains a serialized authority object so there is an example
+below on how to pass in the authority.
+
+request_account_recovery "your_account" "account_to_recover"
+{"weight_threshold": 1,"account_auths": [], "key_auths":
+[["new_public_key",1]]} true
+
+Parameters:
+    recovery_account: The name of your account (type: const string &)
+    account_to_recover: The name of the account you are trying to recover
+	(type: const string &)
+    new_authority: The new owner authority for the recovered account. This
+	should be given to you by the holder of the compromised or lost
+	account. (type: authority)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

@@ -1,0 +1,24 @@
+
+This method is used by faucets to create new accounts for other users which
+must provide their desired keys. The resulting account may not be
+controllable by this wallet. There is a fee associated with account
+creation that is paid by the creator. The current account creation fee can
+be found with the 'info' wallet command. This method is identical to
+'create_account_with_keys' except that it also adds a 'transfer' operation
+to the transaction after the create.
+
+Parameters:
+    creator: The account creating the new account (type: const string &)
+    new_account_name: The name of the new account (type: const string &)
+    initial_amount: The amount transferred to the account (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    memo: A memo to send with the transfer (type: const string &)
+    json_meta: JSON Metadata associated with the new account (type: const
+	string &)
+    owner_key: public owner key of the new account (type: public_key_type)
+    active_key: public active key of the new account (type:
+	public_key_type)
+    posting_key: public posting key of the new account (type:
+	public_key_type)
+    memo_key: public memo key of the new account (type: public_key_type)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

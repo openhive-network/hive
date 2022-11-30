@@ -48,7 +48,7 @@ WALLET_API_METHODS = [
     ('get_account_history', ('gtg', -1, 10)),
     ('get_order_book', (100,)),
     ('get_prototype_operation', ('account_create_operation',)),
-    ('get_active_witnesses', ()),
+    ('get_active_witnesses', (False,)),
     ('get_transaction', ('82d2c772db5312024f572c9dfbe926e45391f8e9',)),
     ('list_my_accounts', ()),  # work but return nothing ( there no acccount created with this wallet)
     ('get_conversion_requests', ('gtg',)),  # work but return nothing

@@ -1,0 +1,12 @@
+
+This method updates the keys of an existing account.
+
+Parameters:
+    accountname: The name of the account (type: const string &)
+    json_meta: New JSON Metadata to be associated with the account (type:
+	const string &)
+    owner: New public owner key for the account (type: public_key_type)
+    active: New public active key for the account (type: public_key_type)
+    posting: New public posting key for the account (type: public_key_type)
+    memo: New public memo key for the account (type: public_key_type)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

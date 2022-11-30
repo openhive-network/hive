@@ -11,12 +11,10 @@ namespace fc
     public:
       enum_type( EnumType t )
       :value(t){}
-      
-      enum_type( IntType t )
+
+      enum_type( IntType t = 0 ) // 0 is better than uninitialized (and fits most enums)
       :value( (EnumType)t ){}
-      
-      enum_type(){}
-      
+
       explicit operator IntType()const     { return static_cast<IntType>(value);    }
       operator EnumType()const    { return value;                          }
       operator std::string()const { return fc::reflector<EnumType>::to_string(value); }

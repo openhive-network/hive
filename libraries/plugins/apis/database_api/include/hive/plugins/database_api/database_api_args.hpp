@@ -7,6 +7,9 @@
 
 #include <hive/plugins/json_rpc/utility.hpp>
 
+#define DATABASE_API_DEFAULT_QUERY_LIMIT 0
+#define DATABASE_API_SINGLE_QUERY_LIMIT 1000
+
 namespace hive { namespace plugins { namespace database_api {
 
 using protocol::account_name_type;
@@ -61,6 +64,8 @@ enum sort_order_type
   by_proposal_voter,
   by_contributor,
   by_symbol_id,
+  not_set //< keep it as last (it would be better if it was first == 0, however people are using enums
+    //not just with names, but with values as well and those would change if not_set was made first
 };
 
 enum order_direction_type
@@ -71,9 +76,9 @@ enum order_direction_type
 
 struct list_object_args_type
 {
-  fc::variant       start;
-  uint32_t          limit;
-  sort_order_type   order;
+  fc::variant                         start;
+  uint32_t                            limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
+  fc::enum_type<int, sort_order_type> order = not_set;
 };
 
 /* get_config */
@@ -97,7 +102,10 @@ typedef api_dynamic_global_property_object   get_dynamic_global_properties_retur
 
 /* get_witness_schedule */
 
-typedef void_type                   get_witness_schedule_args;
+struct get_witness_schedule_args
+{
+  bool include_future = false;
+};
 typedef api_witness_schedule_object get_witness_schedule_return;
 
 
@@ -155,11 +163,15 @@ struct list_witness_votes_return
 };
 
 
-typedef void_type get_active_witnesses_args;
+struct get_active_witnesses_args
+{
+  bool include_future = false;
+};
 
 struct get_active_witnesses_return
 {
   vector< account_name_type > witnesses;
+  fc::optional< vector< account_name_type > > future_witnesses;
 };
 
 
@@ -167,10 +179,10 @@ struct get_active_witnesses_return
 
 struct list_accounts_args
 {
-  fc::variant       start;
-  uint32_t          limit;
-  sort_order_type   order;
-  bool              delayed_votes_active = true;
+  fc::variant                         start;
+  uint32_t                            limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
+  fc::enum_type<int, sort_order_type> order = not_set;
+  bool                                delayed_votes_active = true;
 };
 
 struct list_accounts_return
@@ -193,7 +205,7 @@ typedef list_accounts_return find_accounts_return;
 struct list_owner_histories_args
 {
   fc::variant       start;
-  uint32_t          limit;
+  uint32_t          limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
 };
 
 struct list_owner_histories_return
@@ -276,8 +288,8 @@ struct list_withdraw_vesting_routes_return
 
 struct find_withdraw_vesting_routes_args
 {
-  account_name_type account;
-  sort_order_type   order;
+  account_name_type                   account;
+  fc::enum_type<int, sort_order_type> order = not_set;
 };
 
 typedef list_withdraw_vesting_routes_return find_withdraw_vesting_routes_return;
@@ -467,7 +479,7 @@ typedef list_limit_orders_return find_limit_orders_return;
 
 struct get_order_book_args
 {
-  uint32_t          limit;
+  uint32_t limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
 };
 
 typedef order_book get_order_book_return;
@@ -481,18 +493,18 @@ struct list_proposals_args
   fc::variant start;
 
   // query limit
-  uint32_t limit = 0;
+  uint32_t limit = DATABASE_API_DEFAULT_QUERY_LIMIT;
 
   // name of the field by which results will be sorted.
-  sort_order_type order;
+  fc::enum_type<int, sort_order_type> order = not_set;
 
   // sorting order (ascending or descending) of the result vector. Default is ascending
-  order_direction_type order_direction;
+  fc::enum_type<int, order_direction_type> order_direction;
 
   // result will contain only data with status flag set to this value. Default is all
-  proposal_status status;
+  fc::enum_type<int, proposal_status> status;
 
-    // result will contain only data from given index, start value will be ignored
+  // result will contain only data from given index, start value will be ignored
   fc::optional<uint64_t> last_id = fc::optional<uint64_t>();
 };
 
@@ -733,7 +745,8 @@ FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
   (by_voter_proposal)
   (by_proposal_voter)
   (by_contributor)
-  (by_symbol_id) )
+  (by_symbol_id)
+  (not_set) )
 
 FC_REFLECT_ENUM( hive::plugins::database_api::order_direction_type,
   (ascending)
@@ -744,6 +757,9 @@ FC_REFLECT( hive::plugins::database_api::list_object_args_type,
 
 FC_REFLECT( hive::plugins::database_api::list_accounts_args,
   (start)(limit)(order)(delayed_votes_active) )
+
+FC_REFLECT( hive::plugins::database_api::get_witness_schedule_args,
+  (include_future) )
 
 FC_REFLECT( hive::plugins::database_api::get_reward_funds_return,
   (funds) )
@@ -757,8 +773,11 @@ FC_REFLECT( hive::plugins::database_api::find_witnesses_args,
 FC_REFLECT( hive::plugins::database_api::list_witness_votes_return,
   (votes) )
 
+FC_REFLECT( hive::plugins::database_api::get_active_witnesses_args,
+  (include_future) )
+
 FC_REFLECT( hive::plugins::database_api::get_active_witnesses_return,
-  (witnesses) )
+  (witnesses)(future_witnesses) )
 
 FC_REFLECT( hive::plugins::database_api::list_accounts_return,
   (accounts) )
@@ -884,10 +903,10 @@ FC_REFLECT( hive::plugins::database_api::list_proposal_votes_return,
   (proposal_votes) )
 
 FC_REFLECT( hive::plugins::database_api::find_recurrent_transfers_return,
-            (recurrent_transfers) )
+  (recurrent_transfers) )
 
 FC_REFLECT( hive::plugins::database_api::find_recurrent_transfers_args,
-            (from) )
+  (from) )
 
 FC_REFLECT( hive::plugins::database_api::get_transaction_hex_args,
   (trx) )
@@ -953,7 +972,7 @@ FC_REFLECT( hive::plugins::database_api::find_smt_token_emissions_args,
 #endif
 
 FC_REFLECT( hive::plugins::database_api::is_known_transaction_args,
-   (id) )
+  (id) )
 
 FC_REFLECT( hive::plugins::database_api::is_known_transaction_return,
-   (is_known) )
+  (is_known) )

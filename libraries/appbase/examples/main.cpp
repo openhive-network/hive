@@ -91,8 +91,11 @@ class plugin_b : public appbase::plugin<plugin_b>
 int main( int argc, char** argv ) {
   try {
     appbase::app().register_plugin<plugin_b>();
-    if( !appbase::app().initialize( argc, argv ) )
-      return -1;
+
+    auto initResult = appbase::app().initialize( argc, argv );
+    if( !initResult.should_start_loop() )
+      return initResult.get_result_code();
+    
     appbase::app().startup();
     appbase::app().exec();
   } catch ( const boost::exception& e ) {

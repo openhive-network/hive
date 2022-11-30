@@ -6,13 +6,6 @@ from .shared_utilites import prepared_proposal_data_with_id, funded_account_info
 
 
 @pytest.fixture
-def node() -> tt.InitNode:
-    node = tt.InitNode()
-    node.run()
-    return node
-
-
-@pytest.fixture
 def wallet(node) -> tt.Wallet:
     return tt.Wallet(attach_to=node)
 

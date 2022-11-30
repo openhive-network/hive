@@ -1,0 +1,18 @@
+
+Release funds in escrow
+
+Parameters:
+    from: The account that funded the escrow (type: const string &)
+    to: The account the funds are originally going to (type: const string
+	&)
+    agent: The account acting as the agent in case of dispute (type: const
+	string &)
+    who: The account authorizing the release (type: const string &)
+    receiver: The account that will receive funds being released (type:
+	const string &)
+    escrow_id: A unique id for the escrow transfer (type: uint32_t)
+    hbd_amount: The amount of HBD that will be released (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    hive_amount: The amount of HIVE that will be released (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

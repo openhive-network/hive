@@ -1338,6 +1338,11 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     _db.clear_witness_votes( account );
 
     _db.modify( account, [&]( account_object& a ) {
+      if( account.has_proxy() )
+      {
+        _db.push_virtual_operation( proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name()) );
+      }
+
       a.set_proxy( new_proxy );
     });
 
@@ -1349,6 +1354,9 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
     FC_ASSERT( account.has_proxy(), "Proxy must change." );
+
+    _db.push_virtual_operation( proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name()) );
+
     _db.modify( account, [&]( account_object& a ) {
       a.clear_proxy();
     });
@@ -2023,7 +2031,7 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
   {
     if( _db.is_in_control() )
       throw;
-    //note: it is up to evaluator to unconditionally (regardless of is_producing, working even during
+    //note: it is up to evaluator to unconditionally (regardless of is_in_control, working even during
     //replay) undo changes made during custom operation in case of exception;
     //generic_custom_operation_interpreter::apply_operations provides such protection (see issue #256)
   }

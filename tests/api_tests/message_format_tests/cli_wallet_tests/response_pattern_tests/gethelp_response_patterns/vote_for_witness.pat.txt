@@ -1,0 +1,18 @@
+
+Vote for a witness
+
+You can vote for up to 30 witnesses where strength of each vote is
+determined by the accounts vesting shares (delegations doesn't count) Vote
+will remain until cancelled ('approve' set to 'false'), overridden by
+'set_voting_proxy' or expired if voting account will not execute any
+governance actions for at least 365 days (such as voting for witnesses or
+proposals)
+
+Parameters:
+    account_to_vote_with: The account voting for a witness (type: const
+	string &)
+    witness_to_vote_for: The witness that is being voted for (type: const
+	string &)
+    approve: true if you wish to vote for a given witness, false if you no
+	longer want to (type: bool)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

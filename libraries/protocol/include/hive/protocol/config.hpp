@@ -89,7 +89,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 ///                               LIVE HIVE NETWORK (MainNet)                                   ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 27, 0) )
+#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 27, 2) )
 
 #ifndef HIVE_INIT_PUBLIC_KEY_STR
 # define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
@@ -402,6 +402,12 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_COMMENT_TITLE_LIMIT              (256)
 
 #define HIVE_ONE_DAY_SECONDS                  (60*60*24) // One day in seconds
+
+// How close to current time the block has to be to be considered for fast-confirm transactions,
+// automatic generation of block-stat reports and application of pending transactions
+#define HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM  (fc::seconds(60))
+#define HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS   (fc::seconds(20))
+#define HIVE_UP_TO_DATE_MARGIN__PENDING_TXS   (fc::seconds(20))
 
 /**
  *  Reserved Account IDs with special meaning

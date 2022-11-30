@@ -1,0 +1,12 @@
+
+This method delegates VESTS from one account to another without waiting for
+the transaction to confirm.
+
+Parameters:
+    delegator: The name of the account delegating VESTS (type: const string
+	&)
+    delegatee: The name of the account receiving VESTS (type: const string
+	&)
+    vesting_shares: The amount of VESTS to delegate (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

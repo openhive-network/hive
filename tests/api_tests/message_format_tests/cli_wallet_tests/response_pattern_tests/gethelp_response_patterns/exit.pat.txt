@@ -1,0 +1,2 @@
+
+Locks (if unlocked) and saves the wallet. Then exits.

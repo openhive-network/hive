@@ -1,0 +1,10 @@
+
+Suggests a safe brain key to use for creating your account.
+
+'create_account_with_brain_key' requires you to specify a 'brain key', a
+long passphrase that provides enough entropy to generate cyrptographic
+keys. This function will suggest a suitably random string that should be
+easy to write down (and, with effort, memorize).
+
+Returns
+    a suggested brain_key

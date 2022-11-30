@@ -1,0 +1,16 @@
+
+This method updates the weight threshold of an authority for an account.
+
+Warning: You can create impossible authorities using this method as well as
+implicitly met authorities. The method will fail if you create an
+implicitly true authority and if you create an impossible owner authoroty,
+but will allow impossible active and posting authorities.
+
+Parameters:
+    account_name: The name of the account whose authority you wish to
+	update (type: const string &)
+    type: The authority type. e.g. owner, active, or posting (type:
+	authority_type)
+    threshold: The weight threshold required for the authority to be met
+	(type: uint32_t)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

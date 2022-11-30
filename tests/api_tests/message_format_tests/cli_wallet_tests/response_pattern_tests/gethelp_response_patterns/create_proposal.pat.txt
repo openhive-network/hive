@@ -1,0 +1,16 @@
+
+Create worker proposal
+
+Parameters:
+    creator: - the account that creates the proposal, (type: const
+	account_name_type &)
+    receiver: - the account that will be funded, (type: const
+	account_name_type &)
+    start_date: - start date of proposal, (type: time_point_sec)
+    end_date: - end date of proposal, (type: time_point_sec)
+    daily_pay: - the amount of HBD that is being requested to be paid out
+	daily, (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    subject: - briefly description of proposal of its title, (type: string)
+    permlink: - permlink of the post for the proposal. (type: string)
+    broadcast: - true if you wish to broadcast the transaction (type: bool)

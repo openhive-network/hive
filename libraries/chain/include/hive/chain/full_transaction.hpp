@@ -33,38 +33,26 @@ struct full_transaction_type
   private:
     mutable std::mutex results_mutex; // single mutex used to guard writes to any data
 
-    mutable std::atomic<bool> has_merkle_digest = { false };
     mutable hive::protocol::digest_type merkle_digest; // transaction hash used for calculating block's merkle root
-
-    mutable std::atomic<bool> has_legacy_transaction_message_hash = { false };
-    mutable fc::ripemd160 legacy_transaction_message_hash; // hash of p2p transaction message generated from this transaction
-
-    mutable std::atomic<bool> has_digest_and_transaction_id = { false };
     mutable hive::protocol::digest_type digest; // hash used for generating transaction id
-    mutable hive::protocol::transaction_id_type transaction_id; // transaction id itself (truncated digest)
 
-    mutable std::atomic<bool> validation_attempted = { false }; // true if validate() has been called & cached
     mutable fc::exception_ptr validation_exception; // if validate() threw, this is what it threw 
     mutable fc::microseconds validation_computation_time;
-
-    mutable std::atomic<bool> has_is_packed_in_legacy_format = { false };
-    mutable bool is_packed_in_legacy_format = false;
 
     struct signature_info_type
     {
       hive::protocol::digest_type sig_digest;
       flat_set<hive::protocol::public_key_type> signature_keys;
-      std::shared_ptr<fc::exception> signature_keys_exception;
+      fc::exception_ptr signature_keys_exception; // ABW: do we need separate exception? - it should be merged with validation_exception
       fc::microseconds computation_time;
     };
-    mutable std::atomic<bool> has_signature_info = { false };
     mutable signature_info_type signature_info; // if we've computed the public keys that signed the transaction, it's stored here
 
-    mutable std::atomic<bool> has_required_authorities = { false };
+    // ABW: it takes 128 bytes of space (plus actual account names) for 1us CPU time on average
     mutable hive::protocol::required_authorities_type required_authorities; // if we've figured out who is supposed to sign this tranaction, it's here
     mutable std::chrono::nanoseconds required_authorities_computation_time;
 
-    /// all data below here isn't accessed across multiple threads, it's set at construction time and left alone
+    /// immutable data below here isn't accessed across multiple threads, it's set at construction time and left alone
     
     // if this full_transaction was created while deserializing a block, we store
     // containing_block_info, and our signed_transaction and serialized data point
@@ -86,7 +74,24 @@ struct full_transaction_type
     storage_type storage;
 
     serialized_transaction_data serialized_transaction; // pointers to the beginning, middle, and end of the transaction in the storage
+    mutable int64_t rc_cost = -1; // RC cost of transaction - set when transaction is processed first, can be overwritten when it becomes part of block
+
+    mutable fc::ripemd160 legacy_transaction_message_hash; // hash of p2p transaction message generated from this transaction
+    mutable hive::protocol::transaction_id_type transaction_id; // transaction id itself (truncated digest)
+
+    mutable bool is_packed_in_legacy_format = false;
     mutable bool is_in_cache = false; // true if this is tracked in the global transaction cache; if so, we need to remove ourselves upon garbage collection
+
+    mutable std::atomic<bool> has_merkle_digest = { false };
+    mutable std::atomic<bool> has_legacy_transaction_message_hash = { false };
+    mutable std::atomic<bool> has_digest_and_transaction_id = { false };
+    mutable std::atomic<bool> validation_attempted = { false }; // true if validate() has been called & cached
+    mutable std::atomic<bool> validation_accessed = false;
+    mutable std::atomic<bool> has_is_packed_in_legacy_format = { false };
+    mutable std::atomic<bool> has_signature_info = { false };
+    mutable std::atomic<bool> signature_keys_accessed = { false };
+    mutable std::atomic<bool> has_required_authorities = { false };
+    mutable std::atomic<bool> required_authorities_accessed = { false };
 
 
     static std::atomic<uint32_t> number_of_instances_created;
@@ -108,13 +113,18 @@ struct full_transaction_type
     hive::protocol::digest_type compute_sig_digest(const hive::protocol::chain_id_type& chain_id) const;
     const fc::ripemd160& get_legacy_transaction_message_hash() const;
     const hive::protocol::transaction_id_type& get_transaction_id() const;
+    void compute_signature_keys() const;
     const flat_set<hive::protocol::public_key_type>& get_signature_keys() const;
+    void compute_required_authorities() const;
     const hive::protocol::required_authorities_type& get_required_authorities() const;
     bool is_legacy_pack() const;
+    void precompute_validation(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
     void validate(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
+    void set_rc_cost( int64_t cost ) const { rc_cost = cost; } // can only be called under main lock of write thread
 
     const serialized_transaction_data& get_serialized_transaction() const;
     size_t get_transaction_size() const;
+    int64_t get_rc_cost() const { return rc_cost; }
 
     template <class DataStream>
     void dump_serialized_transaction(DataStream& datastream) const

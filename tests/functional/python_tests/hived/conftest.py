@@ -19,12 +19,12 @@ def block_log_helper() -> Tuple[tt.BlockLog, int]:
 
     node.close()
     tt.logger.info(f'prepared block log with {block_log_length} blocks')
-    yield node.get_block_log(), block_log_length
+    yield node.block_log, block_log_length
 
 
 @fixture(scope='package')
 def block_log(block_log_helper) -> Path:
-    return block_log_helper[0].get_path()
+    return block_log_helper[0].path
 
 
 @fixture(scope='package')

@@ -1,0 +1,11 @@
+
+Set up a vesting withdraw request. The request is fulfilled once a week
+over the next 13 weeks.
+
+Parameters:
+    from: The account the VESTS are withdrawn from (type: const string &)
+    vesting_shares: The amount of VESTS to withdraw over the next 13 weeks.
+	Each week (amount/13) shares are withdrawn and deposited back as
+	HIVE. i.e. "10.000000 VESTS" (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

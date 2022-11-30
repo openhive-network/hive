@@ -53,9 +53,12 @@ class net_plugin : public appbase::plugin<net_plugin>
 
 int main( int argc, char** argv ) {
    try {
-      appbase::app().register_plugin<net_plugin>(); // implict registration of chain_plugin dependency
-      if( !appbase::app().initialize( argc, argv ) )
-         return -1;
+      appbase::app().register_plugin<net_plugin>(); // implicit registration of chain_plugin dependency
+
+      auto initResult = appbase::app().initialize( argc, argv );
+      if( !initResult.should_start_loop() )
+        return initResult.get_result_code();
+      
       appbase::app().startup();
       appbase::app().exec();
    } catch ( const boost::exception& e ) {

@@ -185,7 +185,11 @@ namespace fc { namespace http {
                _server.set_reuse_addr(true);
                _server.set_open_handler( [&]( connection_hdl hdl ){
                     _server_thread.async( [&](){
-                       auto new_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
+                       auto conn = _server.get_con_from_hdl(hdl);
+                       boost::asio::ip::tcp::no_delay option(true);
+                       conn->get_raw_socket().set_option(option);
+
+                       auto new_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( conn );
                        _on_connection( _connections[hdl] = new_con );
                     }).wait();
                });
@@ -203,11 +207,6 @@ namespace fc { namespace http {
                          f.wait();
                     }).wait();
                });
-
-               _server.set_socket_init_handler( [&](websocketpp::connection_hdl hdl, boost::asio::ip::tcp::socket& s ) {
-                      boost::asio::ip::tcp::no_delay option(true);
-                      s.lowest_layer().set_option(option);
-               } );
 
                _server.set_http_handler( [&]( connection_hdl hdl ){
                     _server_thread.async( [&](){

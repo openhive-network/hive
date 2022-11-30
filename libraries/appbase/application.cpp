@@ -243,7 +243,7 @@ void application::set_program_options()
   }
 }
 
-bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*> autostart_plugins)
+initialization_result application::initialize_impl(int argc, char** argv, vector<abstract_plugin*> autostart_plugins)
 {
   try
   {
@@ -252,13 +252,13 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
 
     if( my->_args.count( "help" ) ) {
       cout << my->_app_options << "\n";
-      return false;
+      return { initialization_result::ok, false };
     }
 
     if( my->_args.count( "version" ) )
     {
       cout << version_info << "\n";
-      return false;
+      return { initialization_result::ok, false };
     }
 
     bfs::path data_dir;
@@ -307,7 +307,7 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
     if(my->_args.count("generate-completions") > 0)
     {
       generate_completions();
-      return false;
+      return { initialization_result::ok, false };
     }
 #endif
 
@@ -320,7 +320,7 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
       std::cout << "\t" << quoted("data-dir") << ": " << quoted(my->_data_dir.string().c_str()) << ",\n";
       std::cout << "\t" << quoted("config") << ": " << quoted(config_file_name.string().c_str()) << "\n";
       std::cout << "}\n";
-      return false;
+      return { initialization_result::ok, false };
     }
 
     if(my->_args.count("list-plugins") > 0)
@@ -330,7 +330,7 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
         std::cout << plugin.first << "\n";
       }
 
-      return false;
+      return { initialization_result::ok, false };
     }
 
     if(my->_args.count("plugin") > 0)
@@ -350,12 +350,27 @@ bool application::initialize_impl(int argc, char** argv, vector<abstract_plugin*
 
     bpo::notify(my->_args);
 
-    return true;
+    return { initialization_result::ok, true };
+  }
+  catch (const boost::program_options::validation_error& e)
+  {
+    std::cerr << "Error parsing command line: " << e.what() << "\n";
+    return { initialization_result::validation_error, false };
+  }
+  catch (const boost::program_options::unknown_option& e)
+  {
+    std::cerr << "Error parsing command line: " << e.what() << "\n";
+    return { initialization_result::unrecognised_option, false };
+  }
+  catch (const boost::program_options::error_with_option_name& e)
+  {
+    std::cerr << "Error parsing command line: " << e.what() << "\n";
+    return { initialization_result::error_with_option, false };
   }
   catch (const boost::program_options::error& e)
   {
     std::cerr << "Error parsing command line: " << e.what() << "\n";
-    return false;
+    return { initialization_result::unknown_command_line_error, false };
   }
 }
 

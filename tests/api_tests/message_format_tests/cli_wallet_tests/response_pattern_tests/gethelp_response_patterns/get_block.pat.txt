@@ -1,0 +1,5 @@
+
+Returns the information about a block including its content
+
+Parameters:
+    num: Block number (type: uint32_t)

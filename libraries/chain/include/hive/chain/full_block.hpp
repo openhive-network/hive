@@ -82,7 +82,9 @@ class full_block_type
 
     mutable std::mutex block_signing_key_merkle_root_mutex;
     mutable std::optional<fc::ecc::public_key> block_signing_key;
+    mutable bool block_signing_key_accessed = false;
     mutable std::optional<checksum_type> merkle_root;
+    mutable bool merkle_key_accessed = false;
     mutable fc::microseconds compute_merkle_root_time;
     mutable fc::microseconds compute_block_signing_key_time;
 

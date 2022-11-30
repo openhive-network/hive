@@ -57,7 +57,7 @@ struct get_custom_operation_name
 };
 
 template< typename CustomOperationType >
-void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo )
+void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, const database& db )
 {
   static std::map<string,int64_t> to_legacy_tag = []()
   {
@@ -90,9 +90,20 @@ void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo )
   if( var.is_array() ) // legacy serialization
   {
     auto ar = var.get_array();
-    if( ar.size() < 2 ) return;
+    if( ar.size() != 2 )
+    {
+      FC_ASSERT( !db.is_in_control(), "Expected pair of values: [ operation_name_or_id, operation ]" );
+      if( ar.size() < 2 )
+      {
+        dlog( "Incomplete custom operation ignored @${b} ${var}", ( "b", db.head_block_num() + 1 )( var ) );
+        return;
+      }
+      dlog( "Dangling elements of custom operation ignored @${b} ${var}", ( "b", db.head_block_num() + 1 )( var ) );
+    }
     if( ar[0].is_uint64() )
+    {
       vo.set_which( ar[0].as_uint64() );
+    }
     else
     {
       auto itr = to_legacy_tag.find(ar[0].as_string());
@@ -108,6 +119,11 @@ void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo )
 
     FC_ASSERT( v_object.contains( "type" ), "Type field doesn't exist." );
     FC_ASSERT( v_object.contains( "value" ), "Value field doesn't exist." );
+    if( v_object.size() != 2 )
+    {
+      FC_ASSERT( !db.is_in_control(), "Expected pair of values: { \"type\":operation_name_or_id, \"value\":operation }" );
+      dlog( "Dangling elements of custom operation ignored @${b} ${var}", ( "b", db.head_block_num() + 1 )( var ) );
+    }
 
     int64_t which = -1;
 
@@ -213,7 +229,6 @@ class generic_custom_operation_interpreter
     {
       try
       {
-        FC_TODO( "Should we hardfork out old serialization?" )
         fc::variant v = fc::json::from_string( outer_o.json );
 
         std::vector< CustomOperationType > custom_operations;
@@ -223,13 +238,13 @@ class generic_custom_operation_interpreter
           for( auto& o : v.get_array() )
           {
             custom_operations.emplace_back();
-            custom_op_from_variant( o, custom_operations.back() );
+            custom_op_from_variant( o, custom_operations.back(), this->_db );
           }
         }
         else
         {
           custom_operations.emplace_back();
-          custom_op_from_variant( v, custom_operations[0] );
+          custom_op_from_variant( v, custom_operations[0], this->_db );
         }
 
         apply_operations( custom_operations, operation( outer_o ) );

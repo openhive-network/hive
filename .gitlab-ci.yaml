@@ -5,22 +5,28 @@ stages:
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
+  MIRRORNET_CHAIN_ID: 42
+  MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
   GIT_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: recursive
   # pin to specific docker images for build repeatability
-  #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04-3
-  RUNTIME_IMAGE_TAG: "@sha256:58b2ef26ece0463bad9ba61c665ffb9dc4255a4d65b27f56048786e3fae7b2e5"
+  #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04-5
+  RUNTIME_IMAGE_TAG: "@sha256:598fadc96705d1be39c742e94836ae48009acd47f96a4ac087b835df7f7960d7"
   #points registry.gitlab.syncad.com/hive/hive/builder:ubuntu-20.04-3
   BUILDER_IMAGE_TAG: "@sha256:590750387c74c470ee30910502b4f855122eae9ef9c6e7ad0841985abdc3938c"
-  #points registry.gitlab.syncad.com/hive/hive/test:ubuntu-20.04-3
-  TEST_IMAGE_TAG: "@sha256:991f5c225ea66dccabd43ae18ebe9cc4c90dc2b14d80625202f96e041c832ac6"
-  #points to our clone of python:3.8-slim-bullseye
-  PYTHON_BULLSEYE_TAG: "@sha256:c4dc24a9761fe0a7b3f498fe677e8129ab0a62d72a3beae5ea899482f104a962"
+  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu20.04-5
+  TEST_IMAGE_TAG: "@sha256:f6f8d1a300a7f13c1c5a64088db38cd641fb2ec397f4ac46b4ae8733753a62be"
+
   # Versions of Python packages
   PYTEST_VERSION: "7.1.2"
   PYTEST_XDIST_VERSION: "2.5.0"
   PYTEST_TIMEOUT_VERSION: "2.1.0"
   PYTEST_RERUN_FAILURES_VERSION: "10.2"
+
+  PYTHON_JUNIT_XML_VERSION: "1.9"
+  PYTHON_DATEUTIL_VERSION: "2.8.2"
+
+  TOX_VERSION: "3.25.1"
 
 include: '/scripts/ci-helpers/prepare_data_image_job.yml'
 
@@ -76,15 +82,13 @@ testnet_node_build:
 
 mirrornet_node_build:
   stage: build
-  extends: .prepare_hived_data_5m_image
-  interruptible: true
+  extends: .docker_image_builder_job
+
   variables:
-    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
-    REGISTRY_PASS: "$HIVED_CI_IMGBUILDER_PASSWORD"
     IMAGE_TAG: "$CI_COMMIT_SHA"
     SOURCES_DIR: "."
     REGISTRY_URL: "$CI_REGISTRY_IMAGE"
-    BINARIES_DIR: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
+    BINARIES_DIR: "hived-mirrornet-binaries"
   script:
     - echo "Building hived in mirrornet mode"
     - ./scripts/ci-helpers/build_instance.sh
@@ -93,6 +97,7 @@ mirrornet_node_build:
       "$REGISTRY_URL"
       --network-type="mirrornet"
       --export-binaries="$BINARIES_DIR"
+    - chmod -Rc a+rwx "$BINARIES_DIR"
   artifacts:
     paths:
       - "$BINARIES_DIR"
@@ -102,14 +107,15 @@ mirrornet_node_build:
 
 mirrornet_replay_test:
   stage: test
-  image: "$CI_REGISTRY_IMAGE/runtime$RUNTIME_IMAGE_TAG"
-  needs: [ "mirrornet_node_build" ]
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  needs: 
+    - job: "mirrornet_node_build"
+      artifacts: true
+
   variables:
-    BINARIES_DIR: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
+    BINARIES_DIR: "hived-mirrornet-binaries"
     BLOCK_LOG_SOURCE_DIR: "/blockchain"
     NUMBER_OF_BLOCKS: 5000000
-    CHAIN_ID: 42
-    SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
     MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
     MAINNET_TRUNCATED_DIR: "$CI_PROJECT_DIR/mainnet"
   interruptible: true
@@ -132,15 +138,15 @@ mirrornet_replay_test:
       --plugin block_log_conversion
       -i "$MAINNET_TRUNCATED_DIR/block_log"
       -o "$MIRRORNET_WORKING_DIR/blockchain/block_log"
-      --chain-id $CHAIN_ID
-      --private-key "$SKELETON_KEY"
+      --chain-id $MIRRORNET_CHAIN_ID
+      --private-key "$MIRRORNET_SKELETON_KEY"
       --use-same-key
       --jobs $NUMBER_OF_PROCESSES
     - echo "Starting hived replay"
     - ./hived
       -d "$MIRRORNET_WORKING_DIR"
-      --chain-id $CHAIN_ID
-      --skeleton-key "$SKELETON_KEY"
+      --chain-id $MIRRORNET_CHAIN_ID
+      --skeleton-key "$MIRRORNET_SKELETON_KEY"
       --set-benchmark-interval 100000
       --force-replay
       --stop-replay-at-block $NUMBER_OF_BLOCKS
@@ -215,97 +221,101 @@ plugin_test:
      - additional arguments: ${PYTEST_ARGS[@]}"
   - timeout $((($PYTEST_TIMEOUT_MINUTES + 2) * 60)) pytest --timeout=$(($PYTEST_TIMEOUT_MINUTES * 60)) --junitxml="./report.xml" "${PROCESSES}" "${DURATIONS}" "${PYTEST_ARGS[@]}"
 
-.beem_setup : &beem_setup
-  - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
-  - python3 -m venv venv/
-  - . venv/bin/activate
-  - python3 -m pip install --upgrade pip
-  - pip3 install junit-xml python-dateutil
-  - cd beem
-  - python3 -m pip install --upgrade -r requirements-test.txt
-  - python3 setup.py install
-  - cd ..
-  - mkdir -p build/tests/hive-node-data
+.pytest_based:
+    variables:
+      JUNIT_REPORT: "report.xml" # should be ovverided by derived jobs
 
-beem_tests:
-  stage: test
-  extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 18
-    PYTHONPATH: $CI_PROJECT_DIR/tests/functional
-  script:
-    - *beem_setup
-    - cd tests/functional/python_tests/dhf_tests
-    - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/dhf_tests/report.xml
-  tags:
-    - public-runner-docker
+    interruptible: true
+    image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+
+    before_script:
+      - python3 -m venv venv/
+      - . venv/bin/activate
+      - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
+    artifacts:
+      reports:
+        junit: $JUNIT_REPORT
+
+      name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+      paths:
+      - "**/generated_during_*"
+      - "**/generated_by_package_fixtures"
+      when: always
+      expire_in: 1 week
 
 .test_tools_based:
+  extends: .pytest_based
   variables:
     HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
-  interruptible: true
-  before_script:
-    - apt-get update -y && apt-get install -y python3 python3-pip python3-dev python3-venv
-    - python3 -m venv venv/
-    - . venv/bin/activate
-    - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
-    paths:
-    - "**/generated_during_*"
-    - "**/generated_by_package_fixtures"
-    when: always
-    expire_in: 1 week
+  needs:
+    - job: testnet_node_build
+      artifacts: true
 
-.test_tools_based_with_faketime:
+.beem_tests_base:
+  stage: test
   extends: .test_tools_based
-  before_script:
-    - !reference [.test_tools_based, before_script]
-    - git clone --depth 1 --branch master https://github.com/wolfcw/libfaketime.git
-    - cd libfaketime && make
-    - export LIBFAKETIME_PATH=`pwd`/src/libfaketimeMT.so.1
+  script:
+    - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
+    - pip3 install junit-xml==${PYTHON_JUNIT_XML_VERSION} python-dateutil==${PYTHON_DATEUTIL_VERSION}
+    - cd beem
+    - python3 -m pip install --upgrade -r requirements-test.txt
+    - python3 setup.py install
     - cd ..
+    - mkdir -p build/tests/hive-node-data
+    - cd tests/functional/python_tests/beem_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+
+beem_testnet_tests:
+  extends: .beem_tests_base
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 18
+    PYTEST_ARGS: "-m not mirrornet"
+    JUNIT_REPORT: tests/functional/python_tests/beem_tests/report.xml
+
+beem_mirrornet_tests:
+  extends: .beem_tests_base
+  needs:
+    - job: mirrornet_node_build
+      artifacts: true
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 4
+    HIVED_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/hived"
+    CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/cli_wallet"
+    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/get_dev_key"
+    JUNIT_REPORT: tests/functional/python_tests/beem_tests/report.xml
+
+  before_script:
+    - !reference [.beem_tests_base, before_script]
+    - export PYTEST_ARGS=(-m mirrornet --chain-id ${MIRRORNET_CHAIN_ID} --skeleton-key "${MIRRORNET_SKELETON_KEY}")
 
 cli_wallet_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
+    JUNIT_REPORT: tests/functional/python_tests/cli_wallet/report.xml
     PYTEST_TIMEOUT_MINUTES: 30
     PYTEST_NUMBER_OF_PROCESSES: 1
   script:
     - cd tests/functional/python_tests/cli_wallet
     - *run-pytest
-    # RUN TESTS ON HF25. REMOVE AFTER HARDFORK26!!!
-    - export HIVE_HF26_TIME=1906530101  # Distant future (1 June 2030), to make sure that node is in HF25.
-    - *run-pytest
   tags:
     - public-runner-docker
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/cli_wallet/report.xml
 
 hived_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
+    JUNIT_REPORT: tests/functional/python_tests/hived/report.xml
     PYTEST_TIMEOUT_MINUTES: 21
     PYTEST_NUMBER_OF_PROCESSES: 1
   script:
@@ -313,187 +323,143 @@ hived_tests:
     - *run-pytest
   tags:
     - public-runner-docker
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/hived/report.xml
 
 cli_wallet_extended_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 14
+    JUNIT_REPORT: tests/functional/python_tests/cli_wallet_extended_tests/report.xml
+
   script:
     - cd tests/functional/python_tests/cli_wallet_extended_tests
     - *run-pytest
-    # RUN TESTS ON HF25. REMOVE AFTER HARDFORK26!!!
-    - export HIVE_HF26_TIME=1906530101  # Distant future (1 June 2030), to make sure that node is in HF25.
-    - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/cli_wallet_extended_tests/report.xml
   tags:
     - public-runner-docker
 
 fork_tests:
   stage: test
-  extends: .test_tools_based_with_faketime
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  extends: .test_tools_based
+
   variables:
-    PYTEST_TIMEOUT_MINUTES: 8
+    PYTEST_TIMEOUT_MINUTES: 15
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
   script:
     - cd tests/functional/python_tests/fork_tests
     - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/fork_tests/report.xml
   tags:
     - public-runner-docker
 
 hf26_tests:
   stage: test
-  extends: .test_tools_based_with_faketime
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  extends: .test_tools_based
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
+    JUNIT_REPORT: tests/functional/python_tests/hf26_tests/report.xml
+
   script:
     - cd tests/functional/python_tests/hf26_tests
     - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/hf26_tests/report.xml
   tags:
     - public-runner-docker
 
 live_sync_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
-    PYTHONPATH: $CI_PROJECT_DIR/tests/test_tools/package
+    PYTEST_TIMEOUT_MINUTES: 10
+
   script:
-    - apt-get update -y && apt-get install -y tox
     - cd tests/functional/python_tests/live_sync_tests
-    - timeout 11m tox
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/live_sync_tests/report.xml
+    - *run-pytest
   tags:
     - public-runner-docker
 
 broadcast_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
+    JUNIT_REPORT: tests/functional/python_tests/broadcast_tests/report.xml
+
   script:
     - cd tests/functional/python_tests/broadcast_tests
     - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/broadcast_tests/report.xml
   tags:
     - public-runner-docker
 
 test_tools_tests:
   stage: test
-  extends: .test_tools_based_with_faketime
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  extends: .test_tools_based
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
+    JUNIT_REPORT: tests/test_tools/tests/report.xml
+
   script:
     - cd tests/test_tools/tests
     - pip install local-tools/
     - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/test_tools/tests/report.xml
   tags:
     - public-runner-docker
 
 rc_direct_delegations_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 12
+    JUNIT_REPORT: tests/functional/python_tests/direct_rc_delegations_tests/report.xml
+
   script:
     - cd tests/functional/python_tests/direct_rc_delegations_tests
     - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/direct_rc_delegations_tests/report.xml
   tags:
     - public-runner-docker
 
 message_format_testnet_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 24
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
     NODE_TYPE: "testnet"
+    JUNIT_REPORT: tests/api_tests/message_format_tests/report.xml
+
   script:
     - cd tests/api_tests/message_format_tests
     - pip3 install "$CI_PROJECT_DIR/tests/schemas"
     - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not mainnet_64m)")
     - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/api_tests/message_format_tests/report.xml
   tags:
     - public-runner-docker
 
 datagen_api_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
+    JUNIT_REPORT: tests/functional/python_tests/datagen_tests/api_tests/report.xml
+
   script:
     - cd tests/functional/python_tests/datagen_tests/api_tests/
     - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/datagen_tests/api_tests/report.xml
   tags:
     - public-runner-docker
 
 patterns_tests:
   stage: test
-  image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   variables:
     FF_NETWORK_PER_BUILD: 1
     PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
@@ -508,8 +474,11 @@ patterns_tests:
 
   before_script:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
-    - pip install tox==3.25.1
-    - pip install -r $CI_PROJECT_DIR/tests/api_tests/comparsion_tests/requirements.txt
+    - python3 -m venv venv/
+    - . venv/bin/activate
+    - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
+    - pip3 install tox==${TOX_VERSION}
+    - pip3 install -r $CI_PROJECT_DIR/tests/api_tests/comparsion_tests/requirements.txt
 
   script:
     # run pattern tests
@@ -517,7 +486,6 @@ patterns_tests:
     - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
   artifacts:
-    when: always
     reports:
       junit: tests/api_tests/pattern_tests/results.xml
     paths:
@@ -534,26 +502,22 @@ patterns_tests:
 
 transaction_serialization_testnet_tests:
   stage: test
-  extends: .test_tools_based_with_faketime
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+  extends: .test_tools_based
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
+    JUNIT_REPORT: tests/functional/python_tests/transaction_serialization_tests/report.xml
+
   script:
     - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests
     - export PYTEST_ARGS=(-m testnet)
     - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/transaction_serialization_tests/report.xml
   tags:
     - public-runner-docker
 
 python_pattern_mainnet_tests:
   stage: test
-  image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   interruptible: true
   variables:
     PYTEST_TIMEOUT_MINUTES: 27
@@ -568,9 +532,9 @@ python_pattern_mainnet_tests:
 
   before_script:
     - echo "HIVED image name $HIVED_IMAGE_NAME"
-    - apt update && apt install -y bash git ca-certificates curl build-essential python3-dev
-    - python3 -m ensurepip
-    - pip3 install pytest pytest-xdist pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" pytest-timeout==${PYTEST_TIMEOUT_VERSION}
+    - python3 -m venv venv/
+    - . venv/bin/activate
+    - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
 
   script:
     # run pattern tests
@@ -592,20 +556,17 @@ python_pattern_mainnet_tests:
     - hived-for-tests
 
 .message_format_tests:
-  image: "$CI_REGISTRY_IMAGE/python$PYTHON_BULLSEYE_TAG"
+  stage: test
+  extends: .pytest_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
+    JUNIT_REPORT: tests/api_tests/message_format_tests/report.xml
+
   script:
-    - apt update && apt install -y bash git ca-certificates curl build-essential python3-dev
-    - python3 -m ensurepip
-    - pip3 install pytest pytest-xdist pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
     - cd tests/api_tests/message_format_tests
     - export PYTEST_ARGS=(-m ${NODE_TYPE} --http-endpoint=${NODE_ADDRESS})
     - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/api_tests/message_format_tests/report.xml
   tags:
     - public-runner-docker
     - hived-for-tests
@@ -635,18 +596,14 @@ message_format_mainnet_64m_tests:
 foundation_layer_tests:
   stage: test
   extends: .test_tools_based
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/test$TEST_IMAGE_TAG"
+
   variables:
     PYTEST_TIMEOUT_MINUTES: 3
+    JUNIT_REPORT: tests/functional/python_tests/foundation_layer_tests/report.xml
+
   script:
     - pip install pytest-rerunfailures==${PYTEST_RERUN_FAILURES_VERSION}
     - cd tests/functional/python_tests/foundation_layer_tests
     - *run-pytest
-  artifacts:
-    reports:
-      junit: tests/functional/python_tests/foundation_layer_tests/report.xml
   tags:
     - public-runner-docker

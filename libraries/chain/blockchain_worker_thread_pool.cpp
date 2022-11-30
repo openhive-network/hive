@@ -25,7 +25,12 @@ struct blockchain_worker_thread_pool::impl
 {
   struct work_request_type
   {
-    std::variant<std::weak_ptr<full_block_type>, std::weak_ptr<full_transaction_type>> block_or_transaction;
+    struct transaction_work_request_type
+    {
+      std::weak_ptr<full_transaction_type> full_transaction;
+      std::optional<uint32_t> block_number; // if this transaction was received in a block, it's number
+    };
+    std::variant<std::weak_ptr<full_block_type>, transaction_work_request_type> block_or_transaction;
     blockchain_worker_thread_pool::data_source_type data_source;
   };
   typedef boost::lockfree::queue<work_request_type*> queue_type;
@@ -42,6 +47,9 @@ struct blockchain_worker_thread_pool::impl
   std::vector<std::thread> threads;
 
   bool p2p_force_validate = false;
+  bool validate_during_replay = false;
+  bool is_block_producer = false;
+  std::optional<uint32_t> last_checkpoint;
 
   bool allow_enqueue_work() const;
   bool is_running() const;
@@ -49,7 +57,7 @@ struct blockchain_worker_thread_pool::impl
   bool dequeue_work(work_request_type*& work_request_ptr);
 
   void perform_work(const std::weak_ptr<full_block_type>& full_block, data_source_type data_source);
-  void perform_work(const std::weak_ptr<full_transaction_type>& full_transaction, data_source_type data_source);
+  void perform_work(const work_request_type::transaction_work_request_type& transaction_work_request, data_source_type data_source);
   void thread_function();
 };
 
@@ -130,7 +138,8 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
 
         // now we have the full_transactions, get started working on them
         blockchain_worker_thread_pool::get_instance().enqueue_work(full_block->get_full_transactions(), 
-                                                                   blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p);
+                                                                   blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p,
+                                                                   full_block->get_block_num());
         // precompute some stuff we'll need for validating the block
         full_block->compute_signing_key();
         full_block->compute_merkle_root();
@@ -170,6 +179,23 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       case blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation:
         full_block->decode_block_header();
         break;
+      case blockchain_worker_thread_pool::data_source_type::block_log_for_replay:
+        // fully decompress (if necessary) the block and unpack it
+        full_block->decode_block();
+
+        // precompute some stuff we'll need for validating the block
+        if (validate_during_replay)
+        {
+          // now we have the full_transactions, get started working on them
+          blockchain_worker_thread_pool::get_instance().enqueue_work(full_block->get_full_transactions(), 
+                                                                     blockchain_worker_thread_pool::data_source_type::transaction_inside_block_for_replay,
+                                                                     full_block->get_block_num());
+          full_block->compute_signing_key();
+          full_block->compute_merkle_root();
+        }
+      case blockchain_worker_thread_pool::data_source_type::block_log_for_decompressing:
+        full_block->decompress_block();
+        break;
       default:
         elog("Error: full block added to worker thread with an unrecognized data source");
     }
@@ -194,8 +220,10 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
   // ilog("perform_work on the block took ${duration}μs", (duration));
 }
 
-void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_transaction_type>& full_transaction_weak_ptr, data_source_type data_source)
+void blockchain_worker_thread_pool::impl::perform_work(const work_request_type::transaction_work_request_type& transaction_work_request, data_source_type data_source)
 {
+  const std::weak_ptr<full_transaction_type>& full_transaction_weak_ptr = transaction_work_request.full_transaction;
+
   std::shared_ptr<full_transaction_type> full_transaction = full_transaction_weak_ptr.lock();
   if (!full_transaction)
     return; // the transaction was garbage collected before we could do any work on it
@@ -203,11 +231,12 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
   switch (data_source)
   {
     case blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p:
-      // this should depends a bit on what the current validation settings are
+      // this depends a bit on what the current validation settings are
       try
       {
-        // validate is always called during reindex and normal block processing
-        full_transaction->validate();
+        // validate is always called during normal block processing, unless there's a checkpoint in the future
+        if (!last_checkpoint || transaction_work_request.block_number > *last_checkpoint)
+          full_transaction->precompute_validation();
       }
       catch (...)
       {
@@ -218,11 +247,13 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       }
 
       // but by default, signature validation isn't done unless you specify --p2p-force-validate
-      if (p2p_force_validate)
+      // or you're a witness
+      if ((p2p_force_validate || is_block_producer) && // if we're doing full validation
+          (!last_checkpoint || transaction_work_request.block_number > *last_checkpoint)) // and we've passed the last checkpoint
       {
         try
         {
-          (void)full_transaction->get_signature_keys();
+          full_transaction->compute_signature_keys();
         }
         catch (...)
         {
@@ -230,7 +261,44 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
 
         try
         {
-          (void)full_transaction->get_required_authorities();
+          full_transaction->compute_required_authorities();
+        }
+        catch (...)
+        {
+        }
+      }
+      break;
+    case blockchain_worker_thread_pool::data_source_type::transaction_inside_block_for_replay:
+      // by default very little checking is done during replay, unless you specify --validate_during_replay
+      // NOTE: currently, transactions aren't enqueued unless validate_during_replay is true, so this
+      // check is redundant.  But if you do add some work that needs to happen when validate_during_replay
+      // is false, you'll need to change the block's perform_work to enqueue transactions
+      if (validate_during_replay)
+      {
+        try
+        {
+          // validate is always called during reindex and normal block processing
+          full_transaction->precompute_validation();
+        }
+        catch (...)
+        {
+          // we ignore exceptions for all calls, we're just trying to make the full_transaction precompute the
+          // result (or, if there's an error, precompute the exception).  Just like with a normal result, the
+          // full_transaction will cache any exceptions thrown now and rethrow them when and if the blockchain
+          // makes the corresponding call during the course of apply_transaction.
+        }
+
+        try
+        {
+          full_transaction->compute_signature_keys();
+        }
+        catch (...)
+        {
+        }
+
+        try
+        {
+          full_transaction->compute_required_authorities();
         }
         catch (...)
         {
@@ -242,7 +310,7 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
       // check this, but I think all standalone transactions will need full validation
       try
       {
-        full_transaction->validate();
+        full_transaction->precompute_validation();
       }
       catch (...)
       {
@@ -250,14 +318,14 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
 
       try
       {
-        (void)full_transaction->get_signature_keys();
+        full_transaction->compute_signature_keys();
       }
       catch (...)
       {
       }
       try
       {
-        (void)full_transaction->get_required_authorities();
+        full_transaction->compute_required_authorities();
       }
       catch (...)
       {
@@ -284,6 +352,10 @@ namespace
         return blockchain_worker_thread_pool::impl::priority_type::low;
       case blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation:
         return blockchain_worker_thread_pool::impl::priority_type::high; // nothing else will be running, priority doesn't matter
+      case blockchain_worker_thread_pool::data_source_type::block_log_for_replay:
+        return blockchain_worker_thread_pool::impl::priority_type::medium;
+      case blockchain_worker_thread_pool::data_source_type::block_log_for_decompressing:
+        return blockchain_worker_thread_pool::impl::priority_type::high; // nothing else will be running, priority doesn't matter
       default:
         elog("invalid data source type for block");
         return blockchain_worker_thread_pool::impl::priority_type::low;
@@ -295,6 +367,7 @@ namespace
     switch (data_source)
     {
       case blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p:
+      case blockchain_worker_thread_pool::data_source_type::transaction_inside_block_for_replay:
         return blockchain_worker_thread_pool::impl::priority_type::high;
       case blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_p2p:
       case blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api:
@@ -326,7 +399,7 @@ void blockchain_worker_thread_pool::enqueue_work(const std::shared_ptr<full_tran
 {
   if (!my->allow_enqueue_work())
     return;
-  std::unique_ptr<impl::work_request_type> work_request(new impl::work_request_type{full_transaction, data_source});
+  std::unique_ptr<impl::work_request_type> work_request(new impl::work_request_type{impl::work_request_type::transaction_work_request_type{full_transaction, std::optional<uint32_t>()}, data_source});
   impl::priority_type priority = get_priority_for_transaction(data_source);
   {
     std::unique_lock<std::mutex> lock(my->work_queue_mutex);
@@ -337,7 +410,8 @@ void blockchain_worker_thread_pool::enqueue_work(const std::shared_ptr<full_tran
   my->work_queue_condition_variable.notify_one();
 }
 
-void blockchain_worker_thread_pool::enqueue_work(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source)
+void blockchain_worker_thread_pool::enqueue_work(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source,
+                                                 std::optional<uint32_t> block_number)
 {
   if (!my->allow_enqueue_work())
     return;
@@ -347,7 +421,7 @@ void blockchain_worker_thread_pool::enqueue_work(const std::vector<std::shared_p
   std::transform(full_transactions.begin(), full_transactions.end(),
                  std::back_inserter(work_requests),
                  [&](const std::shared_ptr<full_transaction_type>& full_transaction) { 
-    return std::unique_ptr<impl::work_request_type>(new impl::work_request_type{full_transaction, data_source});
+    return std::unique_ptr<impl::work_request_type>(new impl::work_request_type{impl::work_request_type::transaction_work_request_type{full_transaction, std::optional<uint32_t>()}, data_source});
   });
   impl::priority_type priority = get_priority_for_transaction(data_source);
 
@@ -365,6 +439,21 @@ void blockchain_worker_thread_pool::enqueue_work(const std::vector<std::shared_p
 void blockchain_worker_thread_pool::set_p2p_force_validate()
 {
   my->p2p_force_validate = true;
+}
+
+void blockchain_worker_thread_pool::set_validate_during_replay()
+{
+  my->validate_during_replay = true;
+}
+
+void blockchain_worker_thread_pool::set_is_block_producer()
+{
+  my->is_block_producer = true;
+}
+
+void blockchain_worker_thread_pool::set_last_checkpoint(uint32_t last_checkpoint)
+{
+  my->last_checkpoint = last_checkpoint;
 }
 
 void blockchain_worker_thread_pool::shutdown()

@@ -1,0 +1,10 @@
+
+Explicitly specify account authorities to use for signing transactions.
+
+example: use_authority active tst-bob
+
+Parameters:
+    type: The authority type. e.g. owner, active, or posting (type:
+	authority_type)
+    account_name: The name of the account whose authority you wish to use
+	(type: const account_name_type &)

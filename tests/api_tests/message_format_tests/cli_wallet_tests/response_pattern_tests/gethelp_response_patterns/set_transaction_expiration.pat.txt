@@ -1,0 +1,2 @@
+
+Sets the amount of time in the future until a transaction expires.

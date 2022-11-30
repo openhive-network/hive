@@ -1,0 +1,16 @@
+
+Post or update a comment.
+
+Parameters:
+    author: the name of the account authoring the comment (type: const
+	string &)
+    permlink: the accountwide unique permlink for the comment (type: const
+	string &)
+    parent_author: can be null if this is a top level comment (type: const
+	string &)
+    parent_permlink: becomes category if parent_author is "" (type: const
+	string &)
+    title: the title of the comment (type: const string &)
+    body: the body of the comment (type: const string &)
+    json: the json metadata of the comment (type: const string &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

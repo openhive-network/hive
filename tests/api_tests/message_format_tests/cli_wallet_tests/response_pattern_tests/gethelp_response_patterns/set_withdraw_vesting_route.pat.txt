@@ -1,0 +1,13 @@
+
+Set up a vesting withdraw route. When vesting shares are withdrawn, they
+will be routed to these accounts based on the specified weights.
+
+Parameters:
+    from: The account the VESTS are withdrawn from. (type: const string &)
+    to: The account receiving either VESTS or HIVE. (type: const string &)
+    percent: The percent of the withdraw to go to the 'to' account. This is
+	denoted in hundreths of a percent. i.e. 100 is 1% and 10000 is
+	100%. This value must be between 1 and 100000 (type: uint16_t)
+    auto_vest: Set to true if the from account should receive the VESTS as
+	VESTS, or false if it should receive them as HIVE. (type: bool)
+    broadcast: true if you wish to broadcast the transaction. (type: bool)

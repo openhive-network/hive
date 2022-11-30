@@ -1,0 +1,14 @@
+
+Update worker proposal
+
+Parameters:
+    proposal_id: - the id of the proposal to update, (type: int64_t)
+    creator: - the account that created the proposal, (type: const
+	account_name_type &)
+    daily_pay: - new amount of HBD to be requested to be paid out daily,
+	(type: const wallet_serializer_wrapper<hive::protocol::asset> &)
+    subject: - new description of the proposal, (type: string)
+    permlink: - new permlink of the post for the proposal. (type: string)
+    end_date: - new end_date of the proposal. (type:
+	optional<time_point_sec>)
+    broadcast: - true if you wish to broadcast the transaction (type: bool)

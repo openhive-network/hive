@@ -43,8 +43,64 @@ struct debug_pop_block_return
   fc::optional< protocol::signed_block > block;
 };
 
+struct api_witness_schedule_object
+{
+  api_witness_schedule_object() {}
+  api_witness_schedule_object( const hive::chain::witness_schedule_object& wso ) :
+    id( wso.get_id() ),
+    current_virtual_time( wso.current_virtual_time ),
+    next_shuffle_block_num( wso.next_shuffle_block_num ),
+    num_scheduled_witnesses( wso.num_scheduled_witnesses ),
+    elected_weight( wso.elected_weight ),
+    timeshare_weight( wso.timeshare_weight ),
+    miner_weight( wso.miner_weight ),
+    witness_pay_normalization_factor( wso.witness_pay_normalization_factor ),
+    median_props( wso.median_props ),
+    majority_version( wso.majority_version ),
+    max_voted_witnesses( wso.max_voted_witnesses ),
+    max_miner_witnesses( wso.max_miner_witnesses ),
+    max_runner_witnesses( wso.max_runner_witnesses ),
+    hardfork_required_witnesses( wso.hardfork_required_witnesses ),
+    account_subsidy_rd( wso.account_subsidy_rd ),
+    account_subsidy_witness_rd( wso.account_subsidy_witness_rd ),
+    min_witness_account_subsidy_decay( wso.min_witness_account_subsidy_decay )
+  {
+    size_t n = wso.current_shuffled_witnesses.size();
+    current_shuffled_witnesses.reserve( n );
+    std::transform( wso.current_shuffled_witnesses.begin(), wso.current_shuffled_witnesses.end(),
+      std::back_inserter( current_shuffled_witnesses ),
+      []( const hive::protocol::account_name_type& s ) -> std::string { return s; } );
+    // ^ fixed_string std::string operator used here.
+  }
+
+  hive::chain::witness_schedule_id_type id;
+
+  fc::uint128                           current_virtual_time;
+  uint32_t                              next_shuffle_block_num;
+  vector<string>                        current_shuffled_witnesses;
+  uint8_t                               num_scheduled_witnesses;
+  uint8_t                               elected_weight;
+  uint8_t                               timeshare_weight;
+  uint8_t                               miner_weight;
+  uint32_t                              witness_pay_normalization_factor;
+  hive::chain::chain_properties         median_props;
+  hive::protocol::version               majority_version;
+
+  uint8_t                               max_voted_witnesses;
+  uint8_t                               max_miner_witnesses;
+  uint8_t                               max_runner_witnesses;
+  uint8_t                               hardfork_required_witnesses;
+
+  hive::chain::util::rd_dynamics_params account_subsidy_rd;
+  hive::chain::util::rd_dynamics_params account_subsidy_witness_rd;
+  int64_t                               min_witness_account_subsidy_decay = 0;
+};
+
 typedef void_type debug_get_witness_schedule_args;
-typedef database_api::api_witness_schedule_object debug_get_witness_schedule_return;
+typedef api_witness_schedule_object debug_get_witness_schedule_return;
+
+typedef void_type debug_get_future_witness_schedule_args;
+typedef api_witness_schedule_object debug_get_future_witness_schedule_return;
 
 typedef void_type debug_get_hardfork_property_object_args;
 typedef database_api::api_hardfork_property_object debug_get_hardfork_property_object_return;
@@ -104,6 +160,7 @@ class debug_node_api
       */
       (debug_pop_block)
       (debug_get_witness_schedule)
+      (debug_get_future_witness_schedule)
       (debug_get_hardfork_property_object)
 
       (debug_set_hardfork)
@@ -129,6 +186,26 @@ FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_until_args,
 
 FC_REFLECT( hive::plugins::debug_node::debug_pop_block_return,
         (block) )
+
+FC_REFLECT( hive::plugins::debug_node::api_witness_schedule_object,
+        (id)
+        (current_virtual_time)
+        (next_shuffle_block_num)
+        (current_shuffled_witnesses)
+        (num_scheduled_witnesses)
+        (elected_weight)
+        (timeshare_weight)
+        (miner_weight)
+        (witness_pay_normalization_factor)
+        (median_props)
+        (majority_version)
+        (max_voted_witnesses)
+        (max_miner_witnesses)
+        (max_runner_witnesses)
+        (hardfork_required_witnesses)
+        (account_subsidy_rd)
+        (account_subsidy_witness_rd)
+        (min_witness_account_subsidy_decay) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_set_hardfork_args,
         (hardfork_id) )

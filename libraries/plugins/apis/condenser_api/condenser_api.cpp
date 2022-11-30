@@ -216,8 +216,22 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_active_witnesses )
   {
-    CHECK_ARG_SIZE( 0 )
-    return _database_api->get_active_witnesses( {} ).witnesses;
+    FC_ASSERT( args.size() <= 1, "Expected at most 1 argument, was ${n}", ( "n", args.size() ) );
+    bool include_future = false;
+    if( args.size() > 0 )
+      include_future = args.at(0).as< bool >();
+    auto db_result = _database_api->get_active_witnesses( { include_future } );
+    get_active_witnesses_return result;
+    result.reserve( db_result.witnesses.size() + ( include_future ? db_result.future_witnesses->size() + 1 : 0 ) );
+    for( const auto& witness : db_result.witnesses )
+      result.emplace_back( witness );
+    if( include_future )
+    {
+      result.emplace_back(); //ABW: yes, it is horrible, use database_api directly
+      for( const auto& witness : db_result.future_witnesses.value() )
+        result.emplace_back( witness );
+    }
+    return result;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_block_header )
@@ -225,7 +239,7 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _block_api, "block_api_plugin not enabled." );
     get_block_header_return result;
-    auto _header = _block_api->get_block_header( { args[0].as< uint32_t >() } ).header;
+    auto _header = _block_api->get_block_header( { args.at(0).as< uint32_t >() } ).header;
 
     if( _header )
       result = hive::protocol::serializer_wrapper<block_header>{ *_header, transaction_serialization_type::legacy };
@@ -238,7 +252,7 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _block_api, "block_api_plugin not enabled." );
     get_block_return result;
-    auto b = _block_api->get_block( { args[0].as< uint32_t >() } ).block;
+    auto b = _block_api->get_block( { args.at(0).as< uint32_t >() } ).block;
 
     if( b )
       result = hive::protocol::serializer_wrapper<legacy_signed_block>{ legacy_signed_block( *b ), transaction_serialization_type::legacy };
@@ -253,8 +267,8 @@ namespace detail
 
     bool only_virtual = false;
     if( args.size() == 2 )
-      only_virtual = args[1].as< bool >();
-    auto ops = _account_history_api->get_ops_in_block( { args[0].as< uint32_t >(), only_virtual } ).ops;
+      only_virtual = args.at(1).as< bool >();
+    auto ops = _account_history_api->get_ops_in_block( { args.at(0).as< uint32_t >(), only_virtual } ).ops;
     get_ops_in_block_return result;
 
     for( auto& op_obj : ops )
@@ -308,8 +322,11 @@ namespace detail
 
   DEFINE_API_IMPL( condenser_api_impl, get_witness_schedule )
   {
-    CHECK_ARG_SIZE( 0 )
-    return _database_api->get_witness_schedule( {} );
+    FC_ASSERT( args.size() <= 1, "Expected at most 1 argument, was ${n}", ( "n", args.size() ) );
+    bool include_future = false;
+    if( args.size() > 0 )
+      include_future = args.at(0).as<bool>();
+    return _database_api->get_witness_schedule( { include_future } );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_hardfork_version )
@@ -331,7 +348,7 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_reward_fund )
   {
     CHECK_ARG_SIZE( 1 )
-    string name = args[0].as< string >();
+    string name = args.at(0).as< string >();
 
     auto fund = _db.find< reward_fund_object, by_name >( name );
     FC_ASSERT( fund != nullptr, "Invalid reward fund name" );
@@ -344,17 +361,17 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _account_by_key_api, "account_by_key_api_plugin not enabled." );
 
-    return _account_by_key_api->get_key_references( { args[0].as< vector< public_key_type > >() } ).accounts;
+    return _account_by_key_api->get_key_references( { args.at(0).as< vector< public_key_type > >() } ).accounts;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_accounts )
   {
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
-    vector< account_name_type > names = args[0].as< vector< account_name_type > >();
+    vector< account_name_type > names = args.at(0).as< vector< account_name_type > >();
 
     bool delayed_votes_active = true;
     if( args.size() == 2 )
-      delayed_votes_active = args[1].as< bool >();
+      delayed_votes_active = args.at(1).as< bool >();
 
     const auto& idx  = _db.get_index< account_index >().indices().get< by_name >();
     const auto& vidx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
@@ -370,7 +387,7 @@ namespace detail
 
         if(_reputation_api)
         {
-          results.back().reputation = _reputation_api->get_account_reputations({ itr->name, 1 }).reputations[0].reputation;
+          results.back().reputation = _reputation_api->get_account_reputations({ itr->name, 1 }).reputations.at(0).reputation;
         }
 
         auto vitr = vidx.lower_bound( boost::make_tuple( itr->name, account_name_type() ) );
@@ -392,11 +409,11 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, lookup_account_names )
   {
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
-    vector< account_name_type > account_names = args[0].as< vector< account_name_type > >();
+    vector< account_name_type > account_names = args.at(0).as< vector< account_name_type > >();
 
     bool delayed_votes_active = true;
     if( args.size() == 2 )
-      delayed_votes_active = args[1].as< bool >();
+      delayed_votes_active = args.at(1).as< bool >();
 
     vector< optional< api_account_object > > result;
     result.reserve( account_names.size() );
@@ -421,8 +438,8 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, lookup_accounts )
   {
     CHECK_ARG_SIZE( 2 )
-    account_name_type lower_bound_name = args[0].as< account_name_type >();
-    uint32_t limit = args[1].as< uint32_t >();
+    account_name_type lower_bound_name = args.at(0).as< account_name_type >();
+    uint32_t limit = args.at(1).as< uint32_t >();
 
     FC_ASSERT( limit <= 1000 );
     const auto& accounts_by_name = _db.get_index< account_index, by_name >();
@@ -447,7 +464,7 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_owner_history )
   {
     CHECK_ARG_SIZE( 1 )
-    return _database_api->find_owner_histories( { args[0].as< string >() } ).owner_auths;
+    return _database_api->find_owner_histories( { args.at(0).as< string >() } ).owner_auths;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_recovery_request )
@@ -455,10 +472,10 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     get_recovery_request_return result;
 
-    auto requests = _database_api->find_account_recovery_requests( { { args[0].as< account_name_type >() } } ).requests;
+    auto requests = _database_api->find_account_recovery_requests( { { args.at(0).as< account_name_type >() } } ).requests;
 
     if( requests.size() )
-      result = requests[0];
+      result = requests.at(0);
 
     return result;
   }
@@ -471,10 +488,10 @@ namespace detail
     auto escrows = _database_api->list_escrows( { { args }, 1, database_api::by_from_id } ).escrows;
 
     if( escrows.size()
-      && escrows[0].from == args[0].as< account_name_type >()
-      && escrows[0].escrow_id == args[1].as< uint32_t >() )
+      && escrows.at(0).from == args.at(0).as< account_name_type >()
+      && escrows.at(0).escrow_id == args.at(1).as< uint32_t >() )
     {
-      result = escrows[0];
+      result = escrows.at(0);
     }
 
     return result;
@@ -484,8 +501,8 @@ namespace detail
   {
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
 
-    auto account = args[0].as< string >();
-    auto destination = args.size() == 2 ? args[1].as< database_api::withdraw_route_type >() : database_api::withdraw_route_type::outgoing;
+    auto account = args.at(0).as< string >();
+    auto destination = args.size() == 2 ? args.at(1).as< database_api::withdraw_route_type >() : database_api::withdraw_route_type::outgoing;
 
     get_withdraw_routes_return result;
 
@@ -512,7 +529,7 @@ namespace detail
 
     auto withdrawals = _database_api->find_savings_withdrawals(
       {
-        args[0].as< string >()
+        args.at(0).as< string >()
       }).withdrawals;
 
     get_savings_withdraw_from_return result;
@@ -528,7 +545,7 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_savings_withdraw_to )
   {
     CHECK_ARG_SIZE( 1 )
-    account_name_type account = args[0].as< account_name_type >();
+    account_name_type account = args.at(0).as< account_name_type >();
 
     get_savings_withdraw_to_return result;
 
@@ -548,9 +565,9 @@ namespace detail
     FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2-3 arguments, was ${n}", ("n", args.size()) );
 
     database_api::list_vesting_delegations_args a;
-    account_name_type account = args[0].as< account_name_type >();
-    a.start = fc::variant( (vector< variant >){ args[0], args[1] } );
-    a.limit = args.size() == 3 ? args[2].as< uint32_t >() : 100;
+    account_name_type account = args.at(0).as< account_name_type >();
+    a.start = fc::variant( (vector< variant >){ args.at(0), args.at(1) } );
+    a.limit = args.size() == 3 ? args.at(2).as< uint32_t >() : 100;
     a.order = database_api::by_delegation;
 
     auto delegations = _database_api->list_vesting_delegations( a ).delegations;
@@ -569,9 +586,9 @@ namespace detail
     FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2-3 arguments, was ${n}", ("n", args.size()) );
 
     database_api::list_vesting_delegation_expirations_args a;
-    account_name_type account = args[0].as< account_name_type >();
-    a.start = fc::variant( (vector< variant >){ args[0], args[1], fc::variant( vesting_delegation_expiration_id_type() ) } );
-    a.limit = args.size() == 3 ? args[2].as< uint32_t >() : 100;
+    account_name_type account = args.at(0).as< account_name_type >();
+    a.start = fc::variant( (vector< variant >){ args.at(0), args.at(1), fc::variant( vesting_delegation_expiration_id_type() ) } );
+    a.limit = args.size() == 3 ? args.at(2).as< uint32_t >() : 100;
     a.order = database_api::by_account_expiration;
 
     auto delegations = _database_api->list_vesting_delegation_expirations( a ).delegations;
@@ -588,7 +605,7 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_witnesses )
   {
     CHECK_ARG_SIZE( 1 )
-    vector< witness_id_type > witness_ids = args[0].as< vector< witness_id_type > >();
+    vector< witness_id_type > witness_ids = args.at(0).as< vector< witness_id_type > >();
 
     get_witnesses_return result;
     result.reserve( witness_ids.size() );
@@ -612,7 +629,7 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     auto requests = _database_api->find_hbd_conversion_requests(
       {
-        args[0].as< account_name_type >()
+        args.at(0).as< account_name_type >()
       }).requests;
 
     get_conversion_requests_return result;
@@ -630,7 +647,7 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     auto requests = _database_api->find_collateralized_conversion_requests(
       {
-        args[0].as< account_name_type >()
+        args.at(0).as< account_name_type >()
       }).requests;
 
     get_collateralized_conversion_requests_return result;
@@ -648,13 +665,13 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     auto witnesses = _database_api->find_witnesses(
       {
-        { args[0].as< account_name_type >() }
+        { args.at(0).as< account_name_type >() }
       }).witnesses;
 
     get_witness_by_account_return result;
 
     if( witnesses.size() )
-      result = api_witness_object( witnesses[0] );
+      result = api_witness_object( witnesses.at(0) );
 
     return result;
   }
@@ -662,7 +679,7 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_witnesses_by_vote )
   {
     CHECK_ARG_SIZE( 2 )
-    account_name_type start_name = args[0].as< account_name_type >();
+    account_name_type start_name = args.at(0).as< account_name_type >();
     vector< fc::variant > start_key;
 
     if( start_name == account_name_type() )
@@ -672,16 +689,16 @@ namespace detail
     }
     else
     {
-      auto start = _database_api->list_witnesses( { args[0], 1, database_api::by_name } );
+      auto start = _database_api->list_witnesses( { args.at(0), 1, database_api::by_name } );
 
       if( start.witnesses.size() == 0 )
         return get_witnesses_by_vote_return();
 
-      start_key.push_back( fc::variant( start.witnesses[0].votes ) );
-      start_key.push_back( fc::variant( start.witnesses[0].owner ) );
+      start_key.push_back( fc::variant( start.witnesses.at(0).votes ) );
+      start_key.push_back( fc::variant( start.witnesses.at(0).owner ) );
     }
 
-    auto limit = args[1].as< uint32_t >();
+    auto limit = args.at(1).as< uint32_t >();
     auto witnesses = _database_api->list_witnesses( { fc::variant( start_key ), limit, database_api::by_vote_name } ).witnesses;
 
     get_witnesses_by_vote_return result;
@@ -697,11 +714,11 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, lookup_witness_accounts )
   {
     CHECK_ARG_SIZE( 2 )
-    auto limit = args[1].as< uint32_t >();
+    auto limit = args.at(1).as< uint32_t >();
 
     lookup_witness_accounts_return result;
 
-    auto witnesses = _database_api->list_witnesses( { args[0], limit, database_api::by_name } ).witnesses;
+    auto witnesses = _database_api->list_witnesses( { args.at(0), limit, database_api::by_name } ).witnesses;
 
     for( auto& w : witnesses )
     {
@@ -719,7 +736,7 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_open_orders )
   {
     CHECK_ARG_SIZE( 1 )
-    account_name_type owner = args[0].as< account_name_type >();
+    account_name_type owner = args.at(0).as< account_name_type >();
 
     vector< api_limit_order_object > result;
     const auto& idx = _db.get_index< limit_order_index, by_account >();
@@ -744,7 +761,7 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     return _database_api->get_transaction_hex(
     {
-      signed_transaction( args[0].as< legacy_signed_transaction >() )
+      signed_transaction( args.at(0).as< legacy_signed_transaction >() )
     }).hex;
   }
 
@@ -753,33 +770,33 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
 
-    return hive::protocol::serializer_wrapper<annotated_signed_transaction>{ _account_history_api->get_transaction( { args[0].as< string >() } ), transaction_serialization_type::legacy };
+    return hive::protocol::serializer_wrapper<annotated_signed_transaction>{ _account_history_api->get_transaction( { args.at(0).as< string >() } ), transaction_serialization_type::legacy };
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_required_signatures )
   {
     CHECK_ARG_SIZE( 2 )
     return _database_api->get_required_signatures( {
-      signed_transaction( args[0].as< legacy_signed_transaction >() ),
-      args[1].as< flat_set< public_key_type > >() } ).keys;
+      signed_transaction( args.at(0).as< legacy_signed_transaction >() ),
+      args.at(1).as< flat_set< public_key_type > >() } ).keys;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_potential_signatures )
   {
     CHECK_ARG_SIZE( 1 )
-    return _database_api->get_potential_signatures( { signed_transaction( args[0].as< legacy_signed_transaction >() ) } ).keys;
+    return _database_api->get_potential_signatures( { signed_transaction( args.at(0).as< legacy_signed_transaction >() ) } ).keys;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, verify_authority )
   {
     CHECK_ARG_SIZE( 1 )
-    return _database_api->verify_authority( { signed_transaction( args[0].as< legacy_signed_transaction >() ) } ).valid;
+    return _database_api->verify_authority( { signed_transaction( args.at(0).as< legacy_signed_transaction >() ) } ).valid;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, verify_account_authority )
   {
     CHECK_ARG_SIZE( 2 )
-    return _database_api->verify_account_authority( { args[0].as< account_name_type >(), args[1].as< flat_set< public_key_type > >() } ).valid;
+    return _database_api->verify_account_authority( { args.at(0).as< account_name_type >(), args.at(1).as< flat_set< public_key_type > >() } ).valid;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_active_votes )
@@ -787,7 +804,7 @@ namespace detail
     CHECK_ARG_SIZE( 2 )
 
     vector< vote_state > votes;
-    const auto& comment = _db.get_comment( args[0].as< account_name_type >(), args[1].as< string >() );
+    const auto& comment = _db.get_comment( args.at(0).as< account_name_type >(), args.at(1).as< string >() );
     const auto& idx = _db.get_index< chain::comment_vote_index, chain::by_comment_voter >();
     chain::comment_id_type cid( comment.get_id() );
     auto itr = idx.lower_bound( cid );
@@ -912,12 +929,12 @@ namespace detail
     fc::optional<bool> include_reversible; /// TODO probably this shall be also included in args above
     fc::optional<uint64_t> operation_filter_low;
     if(args.size() >= 4)
-      operation_filter_low = args[3].as<uint64_t>();
+      operation_filter_low = args.at(3).as<uint64_t>();
     fc::optional<uint64_t> operation_filter_high;
     if(args.size() >= 5)
-      operation_filter_high = args[4].as<uint64_t>();
+      operation_filter_high = args.at(4).as<uint64_t>();
 
-    auto history = _account_history_api->get_account_history({ args[0].as< account_name_type >(), args[1].as< uint64_t >(), args[2].as< uint32_t >(),
+    auto history = _account_history_api->get_account_history({ args.at(0).as< account_name_type >(), args.at(1).as< uint64_t >(), args.at(2).as< uint32_t >(),
       include_reversible, operation_filter_low, operation_filter_high } ).history;
     get_account_history_return result;
 
@@ -935,7 +952,7 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
-    return _network_broadcast_api->broadcast_transaction( { signed_transaction( args[0].as< legacy_signed_transaction >() ) } );
+    return _network_broadcast_api->broadcast_transaction( { signed_transaction( args.at(0).as< legacy_signed_transaction >() ) } );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, broadcast_transaction_synchronous )
@@ -945,7 +962,7 @@ namespace detail
     FC_ASSERT( _p2p != nullptr, "p2p_plugin not enabled." );
 
     fc::time_point api_start_time = fc::time_point::now();
-    signed_transaction trx = args[0].as< legacy_signed_transaction >();
+    signed_transaction trx = args.at(0).as< legacy_signed_transaction >();
     boost::promise< broadcast_transaction_synchronous_return > p;
     fc::time_point callback_setup_time;
     full_transaction_ptr full_transaction;
@@ -1051,7 +1068,7 @@ namespace detail
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
     FC_ASSERT( _reputation_api, "reputation_api_plugin not enabled." );
 
-    return _reputation_api->get_account_reputations( { args[0].as< account_name_type >(), args.size() == 2 ? args[1].as< uint32_t >() : 1000 } ).reputations;
+    return _reputation_api->get_account_reputations( { args.at(0).as< account_name_type >(), args.size() == 2 ? args.at(1).as< uint32_t >() : 1000 } ).reputations;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_reblogged_by )
@@ -1085,7 +1102,7 @@ namespace detail
     FC_ASSERT( args.size() == 0 || args.size() == 1, "Expected 0-1 arguments, was ${n}", ("n", args.size()) );
     FC_ASSERT( _market_history_api, "market_history_api_plugin not enabled." );
 
-    return get_order_book_return( _market_history_api->get_order_book( { args.size() == 1 ? args[0].as< uint32_t >() : 500 } ) );
+    return get_order_book_return( _market_history_api->get_order_book( { args.size() == 1 ? args.at(0).as< uint32_t >() : 500 } ) );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_trade_history )
@@ -1093,7 +1110,7 @@ namespace detail
     FC_ASSERT( args.size() == 2 || args.size() == 3, "Expected 2-3 arguments, was ${n}", ("n", args.size()) );
     FC_ASSERT( _market_history_api, "market_history_api_plugin not enabled." );
 
-    const auto& trades = _market_history_api->get_trade_history( { args[0].as< time_point_sec >(), args[1].as< time_point_sec >(), args.size() == 3 ? args[2].as< uint32_t >() : 1000 } ).trades;
+    const auto& trades = _market_history_api->get_trade_history( { args.at(0).as< time_point_sec >(), args.at(1).as< time_point_sec >(), args.size() == 3 ? args.at(2).as< uint32_t >() : 1000 } ).trades;
     get_trade_history_return result;
 
     for( const auto& t : trades ) result.push_back( market_trade( t ) );
@@ -1106,7 +1123,7 @@ namespace detail
     FC_ASSERT( args.size() == 0 || args.size() == 1, "Expected 0-1 arguments, was ${n}", ("n", args.size()) );
     FC_ASSERT( _market_history_api, "market_history_api_plugin not enabled." );
 
-    const auto& trades = _market_history_api->get_recent_trades( { args.size() == 1 ? args[0].as< uint32_t >() : 1000 } ).trades;
+    const auto& trades = _market_history_api->get_recent_trades( { args.size() == 1 ? args.at(0).as< uint32_t >() : 1000 } ).trades;
     get_trade_history_return result;
 
     for( const auto& t : trades ) result.push_back( market_trade( t ) );
@@ -1119,7 +1136,7 @@ namespace detail
     CHECK_ARG_SIZE( 3 )
     FC_ASSERT( _market_history_api, "market_history_api_plugin not enabled." );
 
-    return _market_history_api->get_market_history( { args[0].as< uint32_t >(), args[1].as< time_point_sec >(), args[2].as< time_point_sec >() } ).buckets;
+    return _market_history_api->get_market_history( { args.at(0).as< uint32_t >(), args.at(1).as< time_point_sec >(), args.at(2).as< time_point_sec >() } ).buckets;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_market_history_buckets )
@@ -1134,7 +1151,7 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
 
-    return _database_api->is_known_transaction( { args[0].as<transaction_id_type>() } ).is_known;
+    return _database_api->is_known_transaction( { args.at(0).as<transaction_id_type>() } ).is_known;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, list_proposals )
@@ -1142,15 +1159,15 @@ namespace detail
     FC_ASSERT( args.size() >= 3 && args.size() <= 6, "Expected 3-6 argument, was ${n}", ("n", args.size()) );
 
     hive::plugins::database_api::list_proposals_args list_args;
-    list_args.start           = args[0];
-    list_args.limit           = args[1].as< uint32_t >();
-    list_args.order           = args[2].as< hive::plugins::database_api::sort_order_type >();
+    list_args.start           = args.at(0);
+    list_args.limit           = args.at(1).as< uint32_t >();
+    list_args.order           = args.at(2).as< hive::plugins::database_api::sort_order_type >();
     list_args.order_direction = args.size() > 3 ?
-      args[3].as< hive::plugins::database_api::order_direction_type >() : database_api::ascending;
+      args.at(3).as< hive::plugins::database_api::order_direction_type >() : database_api::ascending;
     list_args.status          = args.size() > 4 ?
-      args[4].as< hive::plugins::database_api::proposal_status >() : database_api::all;
+      args.at(4).as< hive::plugins::database_api::proposal_status >() : database_api::all;
     list_args.last_id         = args.size() > 5 ?
-      fc::optional<uint64_t>( args[5].as< uint64_t >() ) : fc::optional<uint64_t>();
+      fc::optional<uint64_t>( args.at(5).as< uint64_t >() ) : fc::optional<uint64_t>();
 
     const auto& proposals = _database_api->list_proposals( list_args ).proposals;
     list_proposals_return result;
@@ -1164,7 +1181,7 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
 
-    const auto& proposals = _database_api->find_proposals( { args[0].as< vector< int64_t > >() } ).proposals;
+    const auto& proposals = _database_api->find_proposals( { args.at(0).as< vector< int64_t > >() } ).proposals;
     find_proposals_return result;
 
     for( const auto& p : proposals ) result.emplace_back( api_proposal_object( p ) );
@@ -1177,13 +1194,13 @@ namespace detail
     FC_ASSERT( args.size() >= 3 && args.size() <= 5, "Expected 3-5 argument, was ${n}", ("n", args.size()) );
 
     hive::plugins::database_api::list_proposals_args list_args;
-    list_args.start           = args[0];
-    list_args.limit           = args[1].as< uint32_t >();
-    list_args.order           = args[2].as< hive::plugins::database_api::sort_order_type >();
+    list_args.start           = args.at(0);
+    list_args.limit           = args.at(1).as< uint32_t >();
+    list_args.order           = args.at(2).as< hive::plugins::database_api::sort_order_type >();
     list_args.order_direction = args.size() > 3 ?
-      args[3].as< hive::plugins::database_api::order_direction_type >() : database_api::ascending;
+      args.at(3).as< hive::plugins::database_api::order_direction_type >() : database_api::ascending;
     list_args.status          = args.size() > 4 ?
-      args[4].as< hive::plugins::database_api::proposal_status >() : database_api::all;
+      args.at(4).as< hive::plugins::database_api::proposal_status >() : database_api::all;
 
     auto _proposal_votes = _database_api->list_proposal_votes( list_args ).proposal_votes;
     list_proposal_votes_return _result;
@@ -1199,7 +1216,7 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
 
-    auto _recurrent_transfers = _database_api->find_recurrent_transfers( { args[0].as< account_name_type >() } ).recurrent_transfers;
+    auto _recurrent_transfers = _database_api->find_recurrent_transfers( { args.at(0).as< account_name_type >() } ).recurrent_transfers;
     find_recurrent_transfers_return _result;
 
     for( auto& recurrent_transfer : _recurrent_transfers )
@@ -1218,10 +1235,11 @@ namespace detail
       for( const auto& trx : note.full_block->get_full_transactions() )
       {
         const auto& id = trx->get_transaction_id();
+        int64_t cost = trx->get_rc_cost();
         auto itr = _callbacks.find( id );
         if( itr != _callbacks.end() )
         {
-          itr->second( broadcast_transaction_synchronous_return( id, block_num, int32_t( trx_num ), false ) );
+          itr->second( broadcast_transaction_synchronous_return( id, block_num, int32_t( trx_num ), cost, false ) );
           _callbacks.erase( itr );
         }
         ++trx_num;
@@ -1246,7 +1264,7 @@ namespace detail
 
         confirmation_callback callback = cb_it->second;
         transaction_id_type txid_byval = txid;    // can't pass in by reference as it's going to be deleted
-        callback( broadcast_transaction_synchronous_return( txid_byval, block_num, -1, true ) );
+        callback( broadcast_transaction_synchronous_return( txid_byval, block_num, -1, -1, true ) );
 
         _callbacks.erase( cb_it );
       }
@@ -1258,26 +1276,26 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
-    return _rc_api->find_rc_accounts( { args[0].as< vector< account_name_type > >() } ).rc_accounts;
+    return _rc_api->find_rc_accounts( { args.at(0).as< vector< account_name_type > >() } ).rc_accounts;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, list_rc_accounts )
   {
-    FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
+    CHECK_ARG_SIZE( 2 )
     FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
     rc::list_rc_accounts_args a;
-    a.start = args[0].as< account_name_type >();
-    a.limit = args[1].as< uint32_t >();
+    a.start = args.at(0).as< account_name_type >();
+    a.limit = args.at(1).as< uint32_t >();
     return _rc_api->list_rc_accounts( a ).rc_accounts;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, list_rc_direct_delegations )
   {
-    FC_ASSERT( args.size() == 3, "Expected 3 arguments, was ${n}", ("n", args.size()) );
+    CHECK_ARG_SIZE( 2 )
     FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
     rc::list_rc_direct_delegations_args a;
-    a.start = args[0].as< vector< fc::variant > >();
-    a.limit = args[1].as< uint32_t >();
+    a.start = args.at(0).as< vector< fc::variant > >();
+    a.limit = args.at(1).as< uint32_t >();
     return _rc_api->list_rc_direct_delegations( a ).rc_direct_delegations;
   }
 
@@ -1310,7 +1328,7 @@ uint16_t api_account_object::_compute_voting_power( const database_api::api_acco
   uint64_t vp_t2u = vp_t2.to_uint64();
   if( vp_t2u >= HIVE_100_PERCENT )
   {
-    wlog( "Truncated vp_t2u to HIVE_100_PERCENT for account ${a}", ("a", a.name) );
+    dlog( "Truncated vp_t2u to HIVE_100_PERCENT for account ${a}", ("a", a.name) );
     vp_t2u = HIVE_100_PERCENT;
   }
   uint16_t vp_t1 = uint16_t( vp_t2u ) - uint16_t( std::min( vp_t2u, vp_dt ) );

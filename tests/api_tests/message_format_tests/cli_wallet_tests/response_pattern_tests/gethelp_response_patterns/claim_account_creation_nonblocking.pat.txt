@@ -1,0 +1,11 @@
+
+This method will claim a subsidized account creation without waiting for
+the transaction to confirm.
+
+Parameters:
+    creator: The account to receive the account creation credit (type:
+	const string &)
+    fee: The fee to pay for claiming the account (either "0.000 HIVE" for a
+	discounted account, or the full account fee) (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

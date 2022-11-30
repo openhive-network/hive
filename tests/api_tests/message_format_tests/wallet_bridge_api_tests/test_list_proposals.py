@@ -2,9 +2,8 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string, create_accounts_with_vests_and_tbd, prepare_proposals
-from ..local_tools import date_from_now
-
+from .local_tools import create_accounts_with_vests_and_tbd, prepare_proposals
+from ..local_tools import as_string
 
 ACCOUNTS = [f'account-{i}' for i in range(5)]
 
@@ -51,12 +50,12 @@ CORRECT_VALUES = [
             # by start date
         ([], 100, ORDER_BY['by_start_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
-        ([date_from_now(weeks=20)], 100, ORDER_BY['by_start_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([tt.Time.from_now(weeks=20)], 100, ORDER_BY['by_start_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
             # by end date
         ([], 100, ORDER_BY['by_end_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
-        ([date_from_now(weeks=20)], 100, ORDER_BY['by_end_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([tt.Time.from_now(weeks=20)], 100, ORDER_BY['by_end_date'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
             # by total votes
         ([10], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
@@ -64,7 +63,7 @@ CORRECT_VALUES = [
         ([-10], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # LIMIT
-        ([''], 0, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 1, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 1000, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # ORDER BY
@@ -118,11 +117,11 @@ def test_list_proposals_with_correct_values(node, wallet, start, limit, order_by
             # by total votes
         (['invalid-account-name'], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([ACCOUNTS[1]], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
-        ([date_from_now(weeks=20)], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([tt.Time.from_now(weeks=20)], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
         (['true'], 100, ORDER_BY['by_total_votes'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         # LIMIT
-        ([''], -1, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        ([''], 0, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 1001, ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
         ([''], 'true', ORDER_BY['by_creator'], ORDER_DIRECTION['ascending'], STATUS['all']),
 

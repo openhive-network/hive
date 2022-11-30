@@ -24,7 +24,6 @@ class config:
 		self.market_history_buckets_per_size = '5760'
 		self.p2p_seed_node = '127.0.0.1:2001'
 		self.rc_skip_reject_not_enough_rc = '0'
-		self.rc_compute_historical_rc = '0'
 		self.statsd_batchsize = '1'
 		self.tags_start_promoted = '0'
 		self.tags_skip_startup_update = '0'

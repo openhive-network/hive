@@ -107,10 +107,10 @@ sub formatDocComment
 
   for (my $i = 0; $i < @{$doc}; ++$i)
   {
-    if ($doc->[$i] eq 'params')
+    if ($doc->[$i]->{params})
     {
       $paramDocs .= "Parameters:\n";
-      @parametersList = @{$doc->[$i + 1]};
+      @parametersList = @{$doc->[$i]->{params}};
       for my $parameter (@parametersList)
       {
         my $declname = $parameter->{parameters}->[0]->{name};

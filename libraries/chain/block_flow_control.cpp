@@ -79,7 +79,7 @@ fc::variant_object block_flow_control::get_report( report_type rt ) const
     return fc::variant_object();
 
   const char* type = "";
-  if( !finished() )
+  if( !finished() || except )
     type = "broken";
   else if( forked() )
     type = "forked";
@@ -94,7 +94,7 @@ fc::variant_object block_flow_control::get_report( report_type rt ) const
   fc::variant_object_builder report;
   report
     ( "num", full_block->get_block_num() )
-    ("lib", stats.get_last_irreversible_block_num())
+    ( "lib", stats.get_last_irreversible_block_num() )
     ( "type", type );
   if( rt != report_type::MINIMAL )
   {
@@ -180,16 +180,29 @@ void p2p_block_flow_control::on_failure( const fc::exception& e ) const
   trigger_promise();
 }
 
+fc::time_point_sec p2p_block_flow_control::get_block_timestamp() const
+{
+  return full_block->get_block_header().timestamp;
+}
+
 void sync_block_flow_control::on_worker_done() const
 {
   //do not generate report: many stats make no practical sense for sync blocks
   //and the excess logging seems to be slowing down sync
+  //...with exception to last couple blocks of syncing
+  if( ( fc::time_point::now() - get_block_timestamp() ) < HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS )
+    block_flow_control::on_worker_done();
 }
 
 void existing_block_flow_control::on_end_of_apply_block() const
 {
   block_flow_control::on_end_of_apply_block();
   stats.on_end_work();
+}
+
+fc::time_point_sec existing_block_flow_control::get_block_timestamp() const
+{
+  return full_block->get_block_header().timestamp;
 }
 
 } } // hive::chain

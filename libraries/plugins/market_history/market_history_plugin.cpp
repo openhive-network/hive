@@ -32,7 +32,8 @@ class market_history_plugin_impl
 
     chain::database&     _db;
     flat_set<uint32_t>            _tracked_buckets = flat_set<uint32_t>  { 15, 60, 300, 3600, 86400 };
-    int32_t                       _maximum_history_per_bucket_size = 1000;
+    int32_t                       _maximum_history_per_bucket_size = 86400 / 15; // smallest buckets should
+      // cover at least 24 hours, otherwise get_ticker/get_volume api calls won't work properly
     boost::signals2::connection   _post_apply_operation_conn;
 };
 
@@ -44,6 +45,7 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
 
     const auto& bucket_idx = _db.get_index< bucket_index >().indices().get< by_bucket >();
 
+    // ABW: keeping whole history in state is not very nice, especially that it is basically filtered AH
     _db.create< order_history_object >( [&]( order_history_object& ho )
     {
       ho.time = _db.head_block_time();
@@ -80,6 +82,8 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
         _db.modify( *itr, [&]( bucket_object& b )
         {
 #ifdef HIVE_ENABLE_SMT
+          // ABW: overwriting symbol in the bucket? the symbol should be one of bucket selection elements
+          // so we have separate buckets for each SMT
           b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
 #endif
           if( op.open_pays.symbol == HIVE_SYMBOL )
@@ -202,7 +206,7 @@ void market_history_plugin::plugin_shutdown()
   chain::util::disconnect_signal( my->_post_apply_operation_conn );
 }
 
-flat_set< uint32_t > market_history_plugin::get_tracked_buckets() const
+const flat_set< uint32_t >& market_history_plugin::get_tracked_buckets() const
 {
   return my->_tracked_buckets;
 }
