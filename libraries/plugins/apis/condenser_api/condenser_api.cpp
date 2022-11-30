@@ -265,7 +265,10 @@ namespace detail
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
     FC_ASSERT( _account_history_api, "account_history_api_plugin not enabled." );
 
-    auto ops = _account_history_api->get_ops_in_block( { args[0].as< uint32_t >(), args[1].as< bool >() } ).ops;
+    bool only_virtual = false;
+    if( args.size() == 2 )
+      only_virtual = args[1].as< bool >();
+    auto ops = _account_history_api->get_ops_in_block( { args[0].as< uint32_t >(), only_virtual } ).ops;
     get_ops_in_block_return result;
 
     for( auto& op_obj : ops )
