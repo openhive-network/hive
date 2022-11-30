@@ -1,0 +1,6 @@
+
+Returns sequence of operations included/generated in a specified block
+
+Parameters:
+    block_num: Block height of specified block (type: uint32_t)
+    only_virtual: Whether to only return virtual operations (type: bool)

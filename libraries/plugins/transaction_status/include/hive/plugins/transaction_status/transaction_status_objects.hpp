@@ -34,6 +34,7 @@ public:
   CHAINBASE_DEFAULT_CONSTRUCTOR( transaction_status_object )
 
   transaction_id_type         transaction_id;
+  int64_t                     rc_cost = -1;
   uint32_t                    block_num = 0;
 };
 
@@ -74,5 +75,5 @@ FC_REFLECT_ENUM( hive::plugins::transaction_status::transaction_status,
             (expired_irreversible)
             (too_old) )
 
-FC_REFLECT( hive::plugins::transaction_status::transaction_status_object, (id)(transaction_id)(block_num) )
+FC_REFLECT( hive::plugins::transaction_status::transaction_status_object, (id)(transaction_id)(rc_cost)(block_num) )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::transaction_status::transaction_status_object, hive::plugins::transaction_status::transaction_status_index )

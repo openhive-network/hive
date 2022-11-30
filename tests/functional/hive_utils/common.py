@@ -174,6 +174,15 @@ def debug_get_witness_schedule(target_node : str) -> dict:
   }
   return send_rpc_query(target_node, payload)
 
+def debug_get_future_witness_schedule(target_node : str) -> dict:
+  payload = {
+    "jsonrpc": "2.0",
+    "id" : get_random_id(),
+    "method": "debug_node_api.debug_get_future_witness_schedule",
+    "params": {}
+  }
+  return send_rpc_query(target_node, payload)
+
 def debug_get_hardfork_property_object(target_node : str) -> dict:
   payload = {
     "jsonrpc": "2.0",

@@ -1,0 +1,19 @@
+
+Set the governance voting proxy for an account.
+
+If a user does not wish to take an active part in governance voting, they
+can choose to allow another account to vote their stake.
+
+Setting a vote proxy does not remove your previous votes from the
+blockchain, they remain there but are ignored. If you later null out your
+vote proxy, your previous votes will take effect again (ABW: definitely not
+true with regard to witness votes).
+
+This setting can be changed at any time.
+
+Parameters:
+    account_to_modify: the name or id of the account to update (type: const
+	string &)
+    proxy: the name of account that should proxy to, or empty string to
+	have no proxy (type: const string &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

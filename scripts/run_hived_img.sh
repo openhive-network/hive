@@ -31,6 +31,8 @@ HIVED_ARGS=()
 
 CONTAINER_NAME=instance
 IMAGE_NAME=
+HIVED_DATADIR=
+HIVED_SHM_FILE_DIR=
 
 add_docker_arg() {
   local arg="$1"
@@ -66,8 +68,6 @@ while [ $# -gt 0 ]; do
         ;;
     --shared-file-dir=*)
         HIVED_SHM_FILE_DIR="${1#*=}"
-        # do not pass this arg to the hived directly - it has already passed path: /home/hived/shm_dir inside docker_entrypoint.sh
-        add_docker_arg "-v ${HIVED_SHM_FILE_DIR}:/home/hived/shm_dir"
         ;;
      --name=*)
         CONTAINER_NAME="${1#*=}"
@@ -103,6 +103,19 @@ if [ -z "$IMAGE_NAME" ]; then
 fi
 
 CMD_ARGS+=("${HIVED_ARGS[@]}")
+
+if [ ! -z "$HIVED_DATADIR" ]; then
+
+  if [ -z "$HIVED_SHM_FILE_DIR" ]; then
+    # if datadir has been specified, but shm mapping not, let's use a implicit blockchain subdirectory, to always save shm file outside container.
+    HIVED_SHM_FILE_DIR="${HIVED_DATADIR}/blockchain"
+  fi
+fi
+
+if [ ! -z "$HIVED_SHM_FILE_DIR" ]; then
+  # do not pass this arg to the hived directly - it has already passed path: /home/hived/shm_dir inside docker_entrypoint.sh
+  add_docker_arg "-v ${HIVED_SHM_FILE_DIR}:/home/hived/shm_dir"
+fi
 
 #echo "Using docker image: $IMAGE_NAME"
 #echo "Additional hived args: ${CMD_ARGS[@]}"

@@ -1,0 +1,7 @@
+
+
+
+Parameters:
+    from: the account that initiated the transfer (type: const string &)
+    request_id: the id used in transfer_from_savings (type: uint32_t)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

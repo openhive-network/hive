@@ -1,0 +1,6 @@
+
+Returns information about the given accounts.
+
+Parameters:
+    account_names: the names of the accounts to provide information about
+	(type: fc::variant)

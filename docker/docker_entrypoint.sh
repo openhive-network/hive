@@ -33,6 +33,9 @@ then
 fi
 
 sudo -n chown -Rc hived:hived /home/hived/datadir
+
+# Be sure this directory exists
+mkdir --mode=777 -p /home/hived/datadir/blockchain
 sudo -n chown -Rc hived:hived /home/hived/shm_dir
 
 cd /home/hived/datadir

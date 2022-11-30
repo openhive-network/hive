@@ -22,6 +22,7 @@
 #include <hive/jsonball/jsonball.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <cmath>
 
 #ifndef IS_TEST_NET
 #define HIVE_HF20_BLOCK_NUM 26256743
@@ -46,6 +47,16 @@ using hive::chain::util::manabar_params;
 class rc_plugin_impl
 {
   public:
+    typedef rc_plugin::report_type report_type;
+    enum class report_output { DLOG, ILOG, NOTIFY };
+
+    static void set_auto_report( const std::string& _option_type, const std::string& _option_output );
+    static void set_auto_report( report_type _type, report_output _output )
+    {
+      auto_report_type = _type;
+      auto_report_output = _output;
+    }
+
     rc_plugin_impl( rc_plugin& _plugin ) :
       _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin )
@@ -82,18 +93,17 @@ class rc_plugin_impl
 
     int64_t calculate_cost_of_resources( int64_t total_vests, rc_info& usage_info );
 
+    fc::variant_object get_report( report_type rt, const rc_stats_object& stats ) const;
+
     database&                     _db;
     rc_plugin&                    _self;
 
     rc_plugin_skip_flags          _skip;
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
+    bool                          _enable_rc_stats = false; //needs to be false by default
 
     std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > > _custom_operation_interpreter;
-
-#ifdef IS_TEST_NET
-    std::set< account_name_type > _whitelist;
-#endif
 
     boost::signals2::connection   _pre_reindex_conn;
     boost::signals2::connection   _post_reindex_conn;
@@ -107,7 +117,36 @@ class rc_plugin_impl
     boost::signals2::connection   _post_apply_optional_action_conn;
     boost::signals2::connection   _pre_apply_custom_operation_conn;
     boost::signals2::connection   _post_apply_custom_operation_conn;
+
+    static report_type auto_report_type; //type of automatic daily rc stats reports
+    static report_output auto_report_output; //output of automatic daily rc stat reports
 };
+
+rc_plugin_impl::report_type rc_plugin_impl::auto_report_type = rc_plugin_impl::report_type::REGULAR;
+rc_plugin_impl::report_output rc_plugin_impl::auto_report_output = rc_plugin_impl::report_output::ILOG;
+
+void rc_plugin_impl::set_auto_report( const std::string& _option_type, const std::string& _option_output )
+{
+  if( _option_type == "NONE" )
+    auto_report_type = report_type::NONE;
+  else if( _option_type == "MINIMAL" )
+    auto_report_type = report_type::MINIMAL;
+  else if( _option_type == "REGULAR" )
+    auto_report_type = report_type::REGULAR;
+  else if( _option_type == "FULL" )
+    auto_report_type = report_type::FULL;
+  else
+    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report type" );
+
+  if( _option_output == "NOTIFY" )
+    auto_report_output = report_output::NOTIFY;
+  else if( _option_output == "ILOG" )
+    auto_report_output = report_output::ILOG;
+  else if( _option_output == "DLOG" )
+    auto_report_output = report_output::DLOG;
+  else
+    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report output" );
+}
 
 int64_t get_next_vesting_withdrawal( const account_object& account )
 {
@@ -191,19 +230,14 @@ std::vector< std::pair< int64_t, account_name_type > > dump_all_rc_accounts( con
   return result;
 }
 
-int64_t use_account_rcs(
+void use_account_rcs(
   database& db,
   const dynamic_global_property_object& gpo,
-  const account_name_type& account_name,
+  rc_info& tx_info,
   int64_t rc,
-  rc_plugin_skip_flags skip
-#ifdef IS_TEST_NET
-  ,
-  const set< account_name_type >& whitelist
-#endif
-  )
+  rc_plugin_skip_flags skip )
 {
-
+  const account_name_type& account_name = tx_info.payer;
   if( account_name == account_name_type() )
   {
     if( db.is_in_control() )
@@ -212,12 +246,8 @@ int64_t use_account_rcs(
         "Tried to execute transaction with no resource user",
         );
     }
-    return 0;
+    return;
   }
-
-#ifdef IS_TEST_NET
-  if( whitelist.count( account_name ) ) return 0;
-#endif
 
   // ilog( "use_account_rcs( ${n}, ${rc} )", ("n", account_name)("rc", rc) );
   const account_object& account = db.get< account_object, by_name >( account_name );
@@ -226,6 +256,8 @@ int64_t use_account_rcs(
   manabar_params mbparams;
   auto max_mana = get_maximum_rc( account, rc_account );
   mbparams.max_mana = max_mana;
+  tx_info.max = max_mana;
+  tx_info.rc = rc_account.rc_manabar.current_mana; // initialize before regen in case of exception
   mbparams.regen_time = HIVE_RC_REGEN_TIME;
 
   try{
@@ -233,7 +265,7 @@ int64_t use_account_rcs(
   db.modify( rc_account, [&]( rc_account_object& rca )
   {
     rca.rc_manabar.regenerate_mana< true >( mbparams, gpo.time.sec_since_epoch() );
-
+    tx_info.rc = rc_account.rc_manabar.current_mana; // update after regeneration
     bool has_mana = rca.rc_manabar.has_mana( rc );
 
     if( !skip.skip_reject_not_enough_rc )
@@ -244,7 +276,7 @@ int64_t use_account_rcs(
           "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
           ("account", account_name)
           ("rc_needed", rc)
-          ("rc_current", rca.rc_manabar.current_mana)
+          ("rc_current", tx_info.rc)
           );
       }
       else
@@ -263,7 +295,7 @@ int64_t use_account_rcs(
           ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
             ("account", account_name)
             ("rc_needed", rc)
-            ("rc_current", rca.rc_manabar.current_mana)
+            ("rc_current", tx_info.rc)
             ("b", gpo.head_block_number)
             ("w", gpo.current_witness)
             );
@@ -275,10 +307,9 @@ int64_t use_account_rcs(
     min_mana *= HIVE_RC_MAX_NEGATIVE_PERCENT;
     min_mana /= HIVE_100_PERCENT;
     rca.rc_manabar.use_mana( rc, -min_mana.to_int64() );
+    tx_info.rc = rca.rc_manabar.current_mana;
   } );
-  }FC_CAPTURE_AND_RETHROW( (account)(rc_account)(mbparams.max_mana) )
-
-  return max_mana;
+  }FC_CAPTURE_AND_RETHROW( (tx_info) )
 }
 
 int64_t rc_plugin_impl::calculate_cost_of_resources( int64_t total_vests, rc_info& usage_info )
@@ -342,6 +373,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // How many RC does this transaction cost?
   int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, tx_info );
+  note.full_transaction->set_rc_cost( total_cost );
 
   _db.modify( pending_data, [&]( rc_pending_data& data )
   {
@@ -350,27 +382,20 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // Who pays the cost?
   tx_info.payer = get_resource_user( note.transaction );
-  tx_info.max = use_account_rcs( _db, gpo, tx_info.payer, total_cost, _skip
-#ifdef IS_TEST_NET
-  ,
-  _whitelist
-#endif
-  );
+  use_account_rcs( _db, gpo, tx_info, total_cost, _skip );
+
+  if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
+  {
+    _db.modify( _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID ), [&]( rc_stats_object& stats_obj )
+    {
+      stats_obj.add_stats( tx_info );
+    } );
+  }
 
   std::shared_ptr< exp_rc_data > export_data =
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
-  {
     export_data->add_tx_info( tx_info );
-  }
-  else if( ( ( gpo.head_block_number + 1 ) % HIVE_BLOCKS_PER_DAY ) == 0 )
-  {
-    //correction for head block number is to counter the fact that transactions are handled before block switches to
-    //new one and therefore it is different for transactions and for block they are processed in (the effect was that
-    //similar condition for automatic actions/block was triggering debug print for different block than here; now
-    //both places print in the same moment, so you can see connection between data from here and there)
-    dlog( "${b} : ${i}", ("b", gpo.head_block_number+1)("i", tx_info) );
-  }
 } FC_CAPTURE_AND_RETHROW( (note.transaction) ) }
 
 void rc_plugin_impl::on_pre_apply_block( const block_notification& note )
@@ -428,8 +453,8 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
   if( reset_bucket )
     active_bucket = &( *bucket_idx.begin() );
 
-  bool debug_print = ( ( gpo.head_block_number % HIVE_BLOCKS_PER_DAY ) == 0 );
-  _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_id_type() ), [&]( rc_pool_object& pool_obj )
+  const auto& rc_pool = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
+  _db.modify( rc_pool, [&]( rc_pool_object& pool_obj )
   {
     bool budget_adjustment = false;
     for( size_t i=0; i<HIVE_RC_NUM_RESOURCE_TYPES; i++ )
@@ -471,6 +496,35 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       block_info.budget = pool_obj.get_last_known_budget();
   } );
 
+  if( _enable_rc_stats && ( note.block_num % HIVE_BLOCKS_PER_DAY ) == 0 )
+  {
+    const auto& new_stats_obj = _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID );
+    if( auto_report_type != report_type::NONE && new_stats_obj.get_starting_block() )
+    {
+      fc::variant_object report = get_report( auto_report_type, new_stats_obj );
+      switch( auto_report_output )
+      {
+      case report_output::NOTIFY:
+        hive::notify( "RC stats", "rc_stats", report );
+        break;
+      case report_output::ILOG:
+        ilog( "RC stats:${report}", ( report ) );
+        break;
+      default:
+        dlog( "RC stats:${report}", ( report ) );
+        break;
+      };
+    }
+    const auto& old_stats_obj = _db.get< rc_stats_object, by_id >( RC_ARCHIVE_STATS_ID );
+    _db.modify( old_stats_obj, [&]( rc_stats_object& old_stats )
+    {
+      _db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
+      {
+        new_stats.archive_and_reset_stats( old_stats, rc_pool, note.block_num, block_info.regen );
+      } );
+    } );
+  }
+
   _db.modify( *active_bucket, [&]( rc_usage_bucket_object& bucket )
   {
     if( reset_bucket )
@@ -483,8 +537,6 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
     export_data->block = block_info;
-  else if( debug_print )
-    dlog( "${b} : ${i}", ( "b", gpo.head_block_number )( "i", block_info ) );
 } FC_CAPTURE_AND_RETHROW( (note.full_block->get_block()) ) }
 
 void rc_plugin_impl::on_first_block()
@@ -530,7 +582,9 @@ void rc_plugin_impl::on_first_block()
   }
 
   const auto& pool_obj = _db.create< rc_pool_object >( params_obj, resource_count_type() );
-  ilog( "Genesis pool_obj is ${o}", ("o", pool_obj) );
+  ilog( "Genesis pool is ${o}", ( "o", pool_obj.get_pool() ) );
+  _db.create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
+  _db.create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
   _db.create< rc_pending_data >();
 
   const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
@@ -1186,7 +1240,6 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // How many resources do the optional actions use?
   count_resources( note.action, fc::raw::pack_size( note.action ), opt_action_info.usage, _db.head_block_time() );
-  opt_action_info.op = note.action.which();
 
   // How many RC do these actions cost?
   int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, opt_action_info );
@@ -1198,23 +1251,20 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // Who pays the cost?
   opt_action_info.payer = get_resource_user( note.action );
-  opt_action_info.max = use_account_rcs( _db, gpo, opt_action_info.payer, total_cost, _skip
-#ifdef IS_TEST_NET
-  ,
-  _whitelist
-#endif
-  );
+  use_account_rcs( _db, gpo, opt_action_info, total_cost, _skip );
+
+  if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
+  {
+    _db.modify( _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID ), [&]( rc_stats_object& stats_obj )
+    {
+      stats_obj.add_stats( opt_action_info );
+    } );
+  }
 
   std::shared_ptr< exp_rc_data > export_data =
     hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
   if( export_data )
-  {
     export_data->add_opt_action_info( opt_action_info );
-  }
-  else if( (gpo.head_block_number % HIVE_BLOCKS_PER_DAY) == 0 )
-  {
-    dlog( "${b} : ${i}", ("b", gpo.head_block_number)("i", opt_action_info) );
-  }
 }
 
 void rc_plugin_impl::validate_database()
@@ -1233,6 +1283,93 @@ void rc_plugin_impl::validate_database()
   }
 }
 
+fc::variant_object rc_plugin_impl::get_report( report_type rt, const rc_stats_object& stats ) const
+{
+  if( rt == report_type::NONE )
+    return fc::variant_object();
+
+  fc::variant_object_builder report;
+  report
+    ( "block", stats.get_starting_block() )
+    ( "regen", stats.get_global_regen() )
+    ( "budget", stats.get_budget() )
+    ( "pool", stats.get_pool() )
+    ( "share", stats.get_share() )
+    // note: these are average costs from the start of current set of blocks (so from
+    // previous set); they might be different from costs calculated for current set
+    ( "vote", stats.get_archive_average_cost(0) )
+    ( "comment", stats.get_archive_average_cost(1) )
+    ( "transfer", stats.get_archive_average_cost(2) );
+  if( rt != report_type::MINIMAL )
+  {
+    fc::variant_object_builder ops;
+    for( int i = 0; i <= HIVE_RC_NUM_OPERATIONS; ++i )
+    {
+      const auto& op_stats = stats.get_op_stats(i);
+      if( op_stats.count == 0 )
+        continue;
+      fc::variant_object_builder op;
+      op( "count", op_stats.count );
+      if( rt != report_type::FULL )
+      {
+        op( "avg_cost", op_stats.average_cost() );
+      }
+      else
+      {
+        op
+          ( "cost", op_stats.cost )
+          ( "usage", op_stats.usage );
+      }
+      if( i == HIVE_RC_NUM_OPERATIONS )
+      {
+        ops( "multiop", op.get() );
+      }
+      else
+      {
+        hive::protocol::operation _op;
+        _op.set_which(i);
+        std::string op_name = _op.get_stored_type_name( true );
+        ops( op_name, op.get() );
+      }
+    }
+    report( "ops", ops.get() );
+
+    fc::variants payers;
+    for( int i = 0; i < HIVE_RC_NUM_PAYER_RANKS; ++i )
+    {
+      const auto& payer_stats = stats.get_payer_stats(i);
+      fc::variant_object_builder payer;
+      payer
+        ( "rank", i )
+        ( "count", payer_stats.count );
+      if( rt == report_type::FULL )
+      {
+        payer
+          ( "cost", payer_stats.cost )
+          ( "usage", payer_stats.usage );
+      }
+      if( payer_stats.less_than_5_percent )
+        payer( "lt5", payer_stats.less_than_5_percent );
+      if( payer_stats.less_than_10_percent )
+        payer( "lt10", payer_stats.less_than_10_percent );
+      if( payer_stats.less_than_20_percent )
+        payer( "lt20", payer_stats.less_than_20_percent );
+      if( payer_stats.was_dry() )
+      {
+        fc::variant_object_builder dry;
+        dry
+          ( "vote", payer_stats.cant_afford[0] )
+          ( "comment", payer_stats.cant_afford[1] )
+          ( "transfer", payer_stats.cant_afford[2] );
+        payer( "cant_afford", dry.get() );
+      }
+      payers.emplace_back( payer.get() );
+    }
+    report( "payers", payers );
+  }
+  return report.get();
+}
+
 } // detail
 
 rc_plugin::rc_plugin() {}
@@ -1242,17 +1379,11 @@ void rc_plugin::set_program_options( options_description& cli, options_descripti
 {
   cfg.add_options()
     ("rc-skip-reject-not-enough-rc", bpo::value<bool>()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
-#ifdef IS_TEST_NET
-    ("rc-start-at-block", bpo::value<uint32_t>()->default_value(0), "Start calculating RCs at a specific block" )
-    ("rc-account-whitelist", bpo::value< vector<string> >()->composing(), "Ignore RC calculations for the whitelist" )
-#endif
+    ("rc-stats-report-type", bpo::value<string>()->default_value("REGULAR"), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
+    ("rc-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY. Default ILOG." )
     ;
   cli.add_options()
     ("rc-skip-reject-not-enough-rc", bpo::bool_switch()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
-#ifdef IS_TEST_NET
-    ("rc-start-at-block", bpo::value<uint32_t>()->default_value(0), "Start calculating RCs at a specific block" )
-    ("rc-account-whitelist", bpo::value< vector<string> >()->composing(), "Ignore RC calculations for the whitelist" )
-#endif
     ;
 }
 
@@ -1300,6 +1431,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
     HIVE_ADD_PLUGIN_INDEX(db, rc_resource_param_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_stats_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pending_data_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_account_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_index);
@@ -1309,27 +1441,8 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
     my->_skip.skip_reject_not_enough_rc = options.at( "rc-skip-reject-not-enough-rc" ).as< bool >();
 #ifndef IS_TEST_NET
-    my->_enable_at_block = HIVE_HF20_BLOCK_NUM;
-#else
-    uint32_t start_block = options.at( "rc-start-at-block" ).as<uint32_t>();
-    if( start_block > 0 )
-    {
-      my->_enable_at_block = start_block; //starts at the end of given block
-    }
-
-    if( options.count( "rc-account-whitelist" ) > 0 )
-    {
-      auto accounts = options.at( "rc-account-whitelist" ).as< vector< string > > ();
-      for( auto& arg : accounts )
-      {
-        vector< string > names;
-        boost::split( names, arg, boost::is_any_of( " \t" ) );
-        for( const std::string& name : names )
-          my->_whitelist.insert( account_name_type( name ) );
-      }
-
-      ilog( "Ignoring RC's for accounts: ${w}", ("w", my->_whitelist) );
-    }
+    my->_enable_at_block = HIVE_HF20_BLOCK_NUM; // testnet starts RC at 1
+    my->_enable_rc_stats = true; // testnet rarely has enough useful RC data to collect and report
 #endif
 
     appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
@@ -1343,6 +1456,8 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     // Add the registry to the database so the database can delegate custom ops to the plugin
     my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
 
+    my->set_auto_report( options.at( "rc-stats-report-type" ).as<std::string>(),
+      options.at( "rc-stats-report-output" ).as<std::string>() );
 
     ilog( "RC's will be computed starting at block ${b}", ("b", my->_enable_at_block) );
   }
@@ -1377,9 +1492,25 @@ const rc_plugin_skip_flags& rc_plugin::get_rc_plugin_skip_flags() const
   return my->_skip;
 }
 
+void rc_plugin::set_enable_rc_stats( bool enable )
+{
+  my->_enable_rc_stats = enable;
+}
+
+bool rc_plugin::is_rc_stats_enabled() const
+{
+  return my->_enable_rc_stats;
+}
+
 void rc_plugin::validate_database()
 {
   my->validate_database();
+}
+
+fc::variant_object rc_plugin::get_report( report_type rt, bool pending ) const
+{
+  const rc_stats_object& stats = my->_db.get< rc_stats_object >( pending ? RC_PENDING_STATS_ID : RC_ARCHIVE_STATS_ID );
+  return my->get_report( rt, stats );
 }
 
 exp_rc_data::exp_rc_data() {}
@@ -1388,6 +1519,76 @@ exp_rc_data::~exp_rc_data() {}
 void exp_rc_data::to_variant( fc::variant& v )const
 {
   fc::to_variant( *this, v );
+}
+
+void rc_stats_object::archive_and_reset_stats( rc_stats_object& archive, const rc_pool_object& pool_obj,
+  uint32_t _block_num, int64_t _regen )
+{
+  //copy all data to archive (but not the id)
+  {
+    auto _id = archive.id;
+    archive = copy_chain_object();
+    archive.id = _id;
+  }
+
+  block_num = _block_num;
+  regen = _regen;
+  budget = pool_obj.get_last_known_budget();
+  pool = pool_obj.get_pool();
+  for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+    share[i] = pool_obj.count_share(i);
+  for( int i = 0; i < 3; ++i )
+    if( op_stats[i].count > 0 ) //leave old value if there is no new data
+      average_cost[i] = op_stats[i].average_cost();
+
+  op_stats = {};
+  payer_stats = {};
+}
+
+void rc_stats_object::add_stats( const rc_info& tx_info )
+{
+  int _op_idx = op_stats.size() - 1; //multiop transaction by default
+  if( tx_info.op.valid() )
+    _op_idx = tx_info.op.value();
+  rc_op_stats& _op_stats = op_stats[ _op_idx ];
+
+  _op_stats.count += 1;
+  for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+  {
+    _op_stats.cost[i] += tx_info.cost[i];
+    _op_stats.usage[i] += tx_info.usage[i];
+  }
+
+  if( tx_info.max > 0 )
+  {
+    int _payer_rank = log10( tx_info.max ) - 9;
+    if( _payer_rank < 0 )
+      _payer_rank = 0;
+    if( _payer_rank >= HIVE_RC_NUM_PAYER_RANKS )
+      _payer_rank = HIVE_RC_NUM_PAYER_RANKS - 1;
+    rc_payer_stats& _payer_stats = payer_stats[ _payer_rank ];
+
+    _payer_stats.count += 1;
+    for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+    {
+      _payer_stats.cost[i] += tx_info.cost[i];
+      _payer_stats.usage[i] += tx_info.usage[i];
+    }
+    // since it is just statistics we can do rough calculations:
+    int64_t low_rc = tx_info.max / 20; // 5%
+    if( tx_info.rc < low_rc )
+      _payer_stats.less_than_5_percent += 1;
+    low_rc <<= 1; // 10%
+    if( tx_info.rc < low_rc )
+      _payer_stats.less_than_10_percent += 1;
+    low_rc <<= 1; // 20%
+    if( tx_info.rc < low_rc )
+      _payer_stats.less_than_20_percent += 1;
+
+    for( int i = 0; i < 3; ++i )
+      if( tx_info.rc < average_cost[i] )
+        _payer_stats.cant_afford[i] += 1;
+  }
 }
 
 int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account, bool only_delegable_rc )

@@ -38,19 +38,26 @@ public:
   {
     block_received_from_p2p,
     transaction_inside_block_received_from_p2p,
+    transaction_inside_block_for_replay,
     standalone_transaction_received_from_p2p,
     standalone_transaction_received_from_api,
     locally_produced_block,
     block_log_destined_for_p2p_compressed,
     block_log_destined_for_p2p_uncompressed,
     block_log_destined_for_p2p_alternate_compressed,
+    block_log_for_replay,
+    block_log_for_decompressing,
     block_log_for_artifact_generation
   };
   void enqueue_work(const std::shared_ptr<full_block_type>& full_block, data_source_type data_source);
   void enqueue_work(const std::shared_ptr<full_transaction_type>& full_transaction, data_source_type data_source);
-  void enqueue_work(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source);
+  void enqueue_work(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source,
+                    std::optional<uint32_t> block_number);
 
   void set_p2p_force_validate();
+  void set_validate_during_replay();
+  void set_is_block_producer();
+  void set_last_checkpoint(uint32_t last_checkpoint);
 
   void shutdown();
   static void set_thread_pool_size(uint32_t thread_pool_size);

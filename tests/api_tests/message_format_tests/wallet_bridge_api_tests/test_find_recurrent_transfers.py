@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string
+from ..local_tools import as_string
 
 
 @pytest.mark.parametrize(

@@ -916,6 +916,10 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   uint32_t blockchain_thread_pool_size = options.at("blockchain-thread-pool-size").as<uint32_t>();
   blockchain_worker_thread_pool::set_thread_pool_size(blockchain_thread_pool_size);
 
+  if (my->validate_during_replay)
+    blockchain_worker_thread_pool::get_instance().set_validate_during_replay();
+
+
   block_flow_control::set_auto_report(options.at("block-stats-report-type").as<std::string>(),
                                       options.at("block-stats-report-output").as<std::string>());
 

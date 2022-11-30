@@ -1836,11 +1836,11 @@ BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
       for(const auto& msg : saved_log)
       {
         fc::variant_object data = msg.get_data();
-        if(data.contains("rc_account"))
+        if(data.contains("tx_info"))
         {
           expected_exception_found =  true;
-          const fc::variant_object& rc_account_data = data["rc_account"].get_object();
-          BOOST_REQUIRE_EQUAL(rc_account_data["account"].as_string(), "dave");
+          const fc::variant_object& tx_info_data = data["tx_info"].get_object();
+          BOOST_REQUIRE_EQUAL( tx_info_data[ "payer" ].as_string(), "dave" );
           break;
         }
       }

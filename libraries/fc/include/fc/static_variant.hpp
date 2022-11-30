@@ -237,16 +237,18 @@ class static_variant {
     template<typename StaticVariant>
     friend struct impl::move_construct;
 
-    std::string get_stored_type_name() const
+public:
+    std::string get_stored_type_name( bool strip_namespace = false ) const
     {
       std::string type_name("Uninitialized static_variant");
       impl::type_name_printer printer(type_name);
       visit(printer);
 
-      return type_name;
+      if( strip_namespace )
+        return type_name.c_str() + type_name.find_last_of( ":" ) + 1;
+      else
+        return type_name;
     }
-
-public:
 
     /// Expose it outside for further processing of specified Types.
     using type_infos = impl::type_info<Types...>;

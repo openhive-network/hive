@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(blind_test)
       //FC_ASSERT( fc::ecc::verify_sum( {InC1,InC2}, {OutC1}, -60 ) );
 
 
-      BOOST_CHECK( fc::ecc::verify_sum( {InC1,InC2}, {OutC1,OutC2}, 0 ) );
+      BOOST_CHECK( fc::ecc::verify_sum( {InC1,InC2}, {OutC1,OutC2} ) );
       auto nonce = fc::sha256::hash("nonce");
 
       auto proof = fc::ecc::range_proof_sign( 0, OutC1, OutB1, nonce, 0, 0, 40 );
@@ -60,10 +60,10 @@ BOOST_AUTO_TEST_CASE(blind_test)
       auto B2m1 = fc::ecc::blind_sum( {B2,B1}, 1 );
       /*auto C2m1 = */fc::ecc::blind( B2m1, 1 );
 
-      BOOST_CHECK( fc::ecc::verify_sum( {C1,C2}, {C3}, 0 ) );
-      BOOST_CHECK( fc::ecc::verify_sum( {C1,C2}, {C3}, 0 ) );
-      BOOST_CHECK( fc::ecc::verify_sum( {C3}, {C1,C2}, 0 ) );
-      BOOST_CHECK( fc::ecc::verify_sum( {C3}, {C1,C2}, 0 ) );
+      BOOST_CHECK( fc::ecc::verify_sum( {C1,C2}, {C3} ) );
+      BOOST_CHECK( fc::ecc::verify_sum( {C1,C2}, {C3} ) );
+      BOOST_CHECK( fc::ecc::verify_sum( {C3}, {C1,C2} ) );
+      BOOST_CHECK( fc::ecc::verify_sum( {C3}, {C1,C2} ) );
 
 
       {
@@ -80,13 +80,13 @@ BOOST_AUTO_TEST_CASE(blind_test)
          auto C3 = fc::ecc::blind( B1, 1 );
          /*auto C4 = */fc::ecc::blind( B1, 2 );
 
-         BOOST_CHECK( fc::ecc::verify_sum( {C2}, {C3}, -1 ) );
-         BOOST_CHECK( fc::ecc::verify_sum( {C1}, {C1}, 0 ) );
-         BOOST_CHECK( fc::ecc::verify_sum( {C2}, {C2}, 0 ) );
-         BOOST_CHECK( fc::ecc::verify_sum( {C3}, {C2}, 1 ) );
-         BOOST_CHECK( fc::ecc::verify_sum( {C1}, {C2}, INT64_MAX ) );
-         BOOST_CHECK( fc::ecc::verify_sum( {C1}, {C2}, INT64_MAX ) );
-         BOOST_CHECK( fc::ecc::verify_sum( {C2}, {C1}, -INT64_MAX ) );
+         BOOST_CHECK( !fc::ecc::verify_sum( {C2}, {C3} ) ); // -1
+         BOOST_CHECK( fc::ecc::verify_sum( {C1}, {C1} ) );
+         BOOST_CHECK( fc::ecc::verify_sum( {C2}, {C2} ) );
+         BOOST_CHECK( !fc::ecc::verify_sum( {C3}, {C2} ) ); // 1
+         BOOST_CHECK( !fc::ecc::verify_sum( {C1}, {C2} ) ); // INT64_MAX
+         BOOST_CHECK( !fc::ecc::verify_sum( {C1}, {C2} ) ); // INT64_MAX
+         BOOST_CHECK( !fc::ecc::verify_sum( {C2}, {C1} ) ); // -INT64_MAX
       }
 
 
@@ -99,8 +99,8 @@ BOOST_AUTO_TEST_CASE(blind_test)
          auto InC  = fc::ecc::blind( InBlind, 1000 );
          auto In0  = fc::ecc::blind( InBlind, 0 );
 
-         BOOST_CHECK( fc::ecc::verify_sum( {InC}, {OutC1,OutC2}, 0 ) );
-         BOOST_CHECK( fc::ecc::verify_sum( {InC}, {In0}, 1000 ) );
+         BOOST_CHECK( fc::ecc::verify_sum( {InC}, {OutC1,OutC2} ) );
+         BOOST_CHECK( !fc::ecc::verify_sum( {InC}, {In0} ) ); // 1000
 
       }
    }

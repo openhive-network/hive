@@ -1,0 +1,8 @@
+
+Dumps all private keys owned by the wallet.
+
+The keys are printed in WIF format. You can import these keys into another
+wallet using 'import_key()'
+
+Returns
+    a map containing the private keys, indexed by their public key

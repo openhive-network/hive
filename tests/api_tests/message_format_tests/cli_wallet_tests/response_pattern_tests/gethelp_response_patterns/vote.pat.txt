@@ -1,0 +1,10 @@
+
+Vote on a comment to be paid HIVE
+
+Parameters:
+    voter: The account voting (type: const string &)
+    author: The author of the comment to be voted on (type: const string &)
+    permlink: The permlink of the comment to be voted on. (author,
+	permlink) is a unique pair (type: const string &)
+    weight: The weight [-100,100] of the vote (type: int16_t)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

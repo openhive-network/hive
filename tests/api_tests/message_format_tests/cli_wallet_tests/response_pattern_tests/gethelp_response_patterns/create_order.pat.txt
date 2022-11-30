@@ -1,0 +1,19 @@
+
+Creates a limit order at the price amount_to_sell / min_to_receive and will
+deduct amount_to_sell from account
+
+Parameters:
+    owner: The name of the account creating the order (type: const string
+	&)
+    order_id: is a unique identifier assigned by the creator of the order,
+	it can be reused after the order has been filled (type: uint32_t)
+    amount_to_sell: The amount of either HBD or HIVE you wish to sell
+	(type: const wallet_serializer_wrapper<hive::protocol::asset> &)
+    min_to_receive: The amount of the other asset you will receive at a
+	minimum (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    fill_or_kill: true if you want the order to be killed if it cannot
+	immediately be filled (type: bool)
+    expiration: the time the order should expire if it has not been filled
+	(type: uint32_t)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

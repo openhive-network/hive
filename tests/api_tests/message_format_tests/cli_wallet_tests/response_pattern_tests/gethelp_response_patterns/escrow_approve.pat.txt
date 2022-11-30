@@ -1,0 +1,15 @@
+
+Approve a proposed escrow transfer. Funds cannot be released until after
+approval. This is in lieu of requiring multi-sig on escrow_transfer
+
+Parameters:
+    from: The account that funded the escrow (type: const string &)
+    to: The destination of the escrow (type: const string &)
+    agent: The account acting as the agent in case of dispute (type: const
+	string &)
+    who: The account approving the escrow transfer (either 'to' or 'agent)
+	(type: const string &)
+    escrow_id: A unique id for the escrow transfer (type: uint32_t)
+    approve: true to approve the escrow transfer, otherwise cancels it and
+	refunds 'from' (type: bool)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

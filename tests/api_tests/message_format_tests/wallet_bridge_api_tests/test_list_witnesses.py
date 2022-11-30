@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import as_string
+from ..local_tools import as_string
 
 from .block_log.generate_block_log import WITNESSES_NAMES
 
@@ -19,7 +19,7 @@ CORRECT_VALUES = [
         ('100', 100),
 
         # LIMIT
-        (WITNESSES_NAMES[0], 0),
+        (WITNESSES_NAMES[0], 1),
         (WITNESSES_NAMES[0], 1000),
 ]
 
@@ -38,7 +38,7 @@ def test_list_witnesses_with_correct_value(witness_account, limit, replayed_node
 @pytest.mark.parametrize(
     'witness_account, limit', [
         # LIMIT
-        (WITNESSES_NAMES[0], -1),
+        (WITNESSES_NAMES[0], 0),
         (WITNESSES_NAMES[0], 1001),
     ]
 )

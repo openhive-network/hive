@@ -1,0 +1,7 @@
+
+Returns vesting withdraw routes for an account.
+
+Parameters:
+    account: Account to query routes (type: const string &)
+    type: Withdraw type type [incoming, outgoing, all] (type:
+	database_api::withdraw_route_type)

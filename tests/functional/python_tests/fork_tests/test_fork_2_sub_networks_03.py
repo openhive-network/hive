@@ -1,4 +1,5 @@
-from .local_tools import enable_witnesses, disable_witnesses, get_part_of_witness_details, assert_no_duplicates, connect_sub_networks, disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num
+from .local_tools import enable_witnesses, disable_witnesses, get_part_of_witness_details, assert_no_duplicates, connect_sub_networks, \
+                    disconnect_sub_networks, wait, fork_log, get_last_head_block_number, get_last_irreversible_block_num, wait_for_final_block, lib_true_condition
 import test_tools as tt
 from time import sleep
 
@@ -45,14 +46,19 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     _M = logs[0].collector
     _m = logs[1].collector
 
-    blocks_before_disconnect        = 5
+    blocks_before_disconnect        = 10
     blocks_after_disconnect         = 2
     blocks_after_disable_witness    = 10
-    blocks_after_enable_witness   = 20
 
     tt.logger.info(f'Before disconnecting')
+    cnt = 0 
+    while True:
+        wait(1, logs, majority_api_node)
 
-    wait(blocks_before_disconnect, logs, majority_api_node)
+        cnt += 1
+        if cnt > blocks_before_disconnect:
+            if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m):
+                break
 
     tt.logger.info(f'Disconnect sub networks')
     disconnect_sub_networks(sub_networks)
@@ -77,4 +83,7 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     tt.logger.info(f'Enable {len(witness_details_part)} witnesses')
     enable_witnesses(majority_witness_wallet, witness_details_part)
 
-    wait(blocks_after_enable_witness, logs, majority_api_node)
+
+    wait_for_final_block(minority_api_node, logs, [_m, _M], True, lib_true_condition, False)
+
+    assert_no_duplicates(minority_api_node, majority_api_node)

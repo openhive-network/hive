@@ -24,6 +24,7 @@
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/shared_db_merkle.hpp>
 #include <hive/chain/witness_schedule.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 #include <hive/chain/util/asset.hpp>
 #include <hive/chain/util/reward.hpp>
@@ -122,6 +123,7 @@ class database_impl
     evaluator_registry< required_automated_action > _req_action_evaluator_registry;
     evaluator_registry< optional_automated_action > _opt_action_evaluator_registry;
     std::map<account_name_type, block_id_type>      _last_fast_approved_block_by_witness;
+    bool                                            _last_pushed_block_was_before_checkpoint = false; // just used for logging
 };
 
 database_impl::database_impl( database& self )
@@ -235,7 +237,9 @@ void database::load_state_initial_data(const open_args& args)
   {
     std::shared_ptr<full_block_type> head_block = _block_log.read_block_by_num(head_block_num());
     // This assertion should be caught and a reindex should occur
-    FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain.");
+    FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
+    "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
+    ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
 
     _fork_db.start_block(head_block);
   }
@@ -279,7 +283,9 @@ void database::load_state_initial_data(const open_args& args)
 uint32_t database::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
 {
   uint64_t skip_flags = skip_validate_invariants | skip_block_log;
-  if( !args.validate_during_replay )
+  if (args.validate_during_replay)
+    ulog("Doing full validation during replay at user request");
+  else
   {
     skip_flags |= skip_witness_signature |
       skip_transaction_signatures |
@@ -303,44 +309,40 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
   BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
   set_tx_status( TX_STATUS_BLOCK );
 
-  std::shared_ptr<full_block_type> block = start_block;
-  while( !appbase::app().is_interrupt_request() && block->get_block_num() != last_block_num )
-  {
-    uint32_t cur_block_num = block->get_block_num();
+  std::shared_ptr<full_block_type> last_applied_block;
+  const auto process_block = [&](const std::shared_ptr<full_block_type>& full_block) {
+    const uint32_t current_block_num = full_block->get_block_num();
 
-    if (cur_block_num % 100000 == 0)
+    if (current_block_num % 100000 == 0)
     {
       std::ostringstream percent_complete_stream;
-      percent_complete_stream << std::fixed << std::setprecision(2) << double(cur_block_num) * 100 / last_block_num;
-      ulog("   ${cur_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shared memory free)",
+      percent_complete_stream << std::fixed << std::setprecision(2) << double(current_block_num) * 100 / last_block_num;
+      ulog("   ${current_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shared memory free)",
            ("percent_complete", percent_complete_stream.str())
-           (cur_block_num)(last_block_num)
+           (current_block_num)(last_block_num)
            ("free_memory_megabytes", get_free_memory() >> 20));
     }
 
-    apply_block( block, skip_flags );
+    apply_block(full_block, skip_flags);
+    last_applied_block = full_block;
 
-    if( !appbase::app().is_interrupt_request() )
-    {
-      block = _block_log.read_block_by_num(cur_block_num + 1);
-      FC_ASSERT(block, "Unable to read block ${block_num} from the block log during reindexing, but it should be in the log",
-                ("block_num", cur_block_num + 1));
-    }
-  }
+    return !appbase::app().is_interrupt_request();
+  };
+
+  const uint32_t start_block_number = start_block->get_block_num();
+  process_block(start_block);
+
+  if (start_block_number < last_block_num)
+    _block_log.for_each_block(start_block_number + 1, last_block_num, process_block, block_log::for_each_purpose::replay);
+
+  if (appbase::app().is_interrupt_request())
+    ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})", 
+         ("n", last_applied_block->get_block_num())("id", last_applied_block->get_block_id()));
 
   fc::enable_record_assert_trip = rat; //restore flag
   fc::enable_assert_stacktrace = as;
 
-  if( appbase::app().is_interrupt_request() )
-  {
-    ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})", ("n", block->get_block_num())("id", block->get_block_id()));
-  }
-  else
-  {
-    apply_block( block, skip_flags );
-  }
-
-  return block->get_block_num();
+  return last_applied_block->get_block_num();
 }
 
 bool database::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64_t* head_block_num_in_db ) const
@@ -974,6 +976,8 @@ void database::add_checkpoints( const flat_map< uint32_t, block_id_type >& check
 {
   for( const auto& i : checkpts )
     _checkpoints[i.first] = i.second;
+  if (!_checkpoints.empty())
+    blockchain_worker_thread_pool::get_instance().set_last_checkpoint(_checkpoints.rbegin()->first);
 }
 
 bool database::before_last_checkpoint()const
@@ -1000,6 +1004,7 @@ bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
       FC_ASSERT(full_block->get_block_id() == itr->second, "Block did not match checkpoint", ("checkpoint", *itr)("block_id", full_block->get_block_id()));
 
     if( _checkpoints.rbegin()->first >= block_num )
+    {
       skip = skip_witness_signature
           | skip_transaction_signatures
           | skip_transaction_dupe_check
@@ -1013,6 +1018,19 @@ bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
           | skip_validate
           | skip_validate_invariants
           ;
+      if (!_my->_last_pushed_block_was_before_checkpoint)
+      {
+        // log something to let the node operator know that checkpoints are in force
+        ilog("checkpoints enabled, doing reduced validation until final checkpoint, block ${block_num}, id ${block_id}",
+             ("block_num", _checkpoints.rbegin()->first)("block_id", _checkpoints.rbegin()->second));
+        _my->_last_pushed_block_was_before_checkpoint = true;
+      }
+    }
+    else if (_my->_last_pushed_block_was_before_checkpoint)
+    {
+      ilog("final checkpoint reached, resuming normal block validation");
+      _my->_last_pushed_block_was_before_checkpoint = false;
+    }
   }
 
   bool result;
@@ -1106,7 +1124,7 @@ void database::switch_forks(const item_ptr new_head)
     {
       BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
       // we have to treat blocks from fork as not validated
-      set_tx_status(database::TX_STATUS_INC_BLOCK);
+      set_tx_status(database::TX_STATUS_P2P_BLOCK);
       _fork_db.set_head(*ritr);
       auto session = start_undo_session();
       apply_block((*ritr)->full_block, skip);
@@ -1158,7 +1176,7 @@ void database::switch_forks(const item_ptr new_head)
             // even though those blocks were already processed before, it is safer to treat them as completely new,
             // especially since alternative would be to treat them as replayed blocks, but that would be misleading
             // since replayed blocks are already irreversible, while these are clearly reversible
-            set_tx_status(database::TX_STATUS_INC_BLOCK);
+            set_tx_status(database::TX_STATUS_P2P_BLOCK);
             _fork_db.set_head(*ritr);
             auto session = start_undo_session();
             apply_block((*ritr)->full_block, skip);
@@ -1224,7 +1242,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
     try
     {
       BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END;
-      set_tx_status(database::TX_STATUS_INC_BLOCK);
+      set_tx_status(database::TX_STATUS_P2P_BLOCK);
 
       // if we've linked in a chain of multiple blocks, we need to keep the fork_db's head block in sync
       // with what we're applying.  If we're only appending a single block, the forkdb's head block
@@ -3753,6 +3771,9 @@ void database::process_decline_voting_rights()
     nullify_proxied_witness_votes( account );
     clear_witness_votes( account );
 
+    if( account.has_proxy() )
+      push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
+
     modify( account, [&]( account_object& a )
     {
       a.can_vote = false;
@@ -4293,6 +4314,13 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
     {
       ilog( "Processing ${n} genesis hardforks", ("n", n) );
       set_hardfork( n, true );
+#ifdef IS_TEST_NET
+      if( n < HIVE_NUM_HARDFORKS )
+      {
+        ilog( "Next hardfork scheduled for ${t} (current block timestamp ${c})",
+          ( "t", _hardfork_versions.times[ n + 1 ] )( "c", block.timestamp ) );
+      }
+#endif
 
       const hardfork_property_object& hardfork_state = get_hardfork_property_object();
       FC_ASSERT( hardfork_state.current_hardfork_version == _hardfork_versions.versions[n], "Unexpected genesis hardfork state" );
@@ -5588,7 +5616,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
 
     try
     {
-      detail::without_pending_transactions(*this, existing_block_flow_control(nullptr), std::move(_pending_tx), [&]() {
+      detail::without_pending_transactions(*this, existing_block_flow_control(new_head_block->full_block), std::move(_pending_tx), [&]() {
         try
         {
           dlog("calling switch_forks() from update_last_irreversible_block()");
@@ -7334,6 +7362,10 @@ void database::remove_expired_governance_votes()
     {
       nullify_proxied_witness_votes( account );
       clear_witness_votes( account );
+
+      if( account.has_proxy() )
+        push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
+
       modify( account, [&]( account_object& a )
       {
         a.clear_proxy();

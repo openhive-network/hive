@@ -43,6 +43,11 @@ def init_network( init_node, all_witness_names : List[str], key : str = None, bl
 
     tt.logger.info('Wait 21 blocks to schedule newly created witnesses into future slate')
     init_node.wait_number_of_blocks(21)
+
+    future_witnesses = init_node.api.database.get_active_witnesses(include_future=True)["future_witnesses"]
+    tt.logger.info(f"Future witnesses after voting: {future_witnesses}")
+    assert len(future_witnesses) == 21
+
     tt.logger.info('Wait 21 blocks for future slate to become active slate')
     init_node.wait_number_of_blocks(21)
 
@@ -66,7 +71,7 @@ def init_network( init_node, all_witness_names : List[str], key : str = None, bl
             os.mkdir(block_log_directory_name)
 
         init_node.close()
-        init_node.get_block_log(include_index=False).copy_to(block_log_directory_name)
+        init_node.block_log.copy_to(block_log_directory_name)
 
         with open(block_log_directory_name + '/timestamp', 'w') as f:
             f.write(f'{timestamp}')

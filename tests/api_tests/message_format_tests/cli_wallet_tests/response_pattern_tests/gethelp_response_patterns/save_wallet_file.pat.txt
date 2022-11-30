@@ -1,0 +1,7 @@
+
+Saves the current wallet to the given filename.
+
+Parameters:
+    wallet_filename: the filename of the new wallet JSON file to create or
+	overwrite. If 'wallet_filename' is empty, save to the current
+	filename. (type: string)

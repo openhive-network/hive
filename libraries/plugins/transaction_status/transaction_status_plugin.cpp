@@ -74,6 +74,8 @@ void transaction_status_impl::on_post_apply_transaction( const transaction_notif
     _db.create< transaction_status_object >( [&]( transaction_status_object& obj )
     {
       obj.transaction_id = note.transaction_id;
+      // don't assign rc_cost because currently we can't be sure the RC signal is going to be handled prior to tx status signal
+      // (ABW: can be changed once RC is moved to consensus code, even if it remains non-consensus)
     } );
 }
 
@@ -89,6 +91,7 @@ void transaction_status_impl::on_post_apply_block( const block_notification& not
       _db.modify( tx_status_obj, [&] ( transaction_status_object& obj )
       {
         obj.block_num = note.block_num;
+        obj.rc_cost = e->get_rc_cost();
       } );
     }
 
@@ -211,6 +214,7 @@ void transaction_status_impl::rebuild_state()
       {
         obj.transaction_id = transaction->get_transaction_id();
         obj.block_num = block_num;
+        obj.rc_cost = transaction->get_rc_cost();
       } );
   }
 }

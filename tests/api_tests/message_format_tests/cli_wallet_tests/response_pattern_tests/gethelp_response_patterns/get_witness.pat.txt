@@ -1,0 +1,6 @@
+
+Returns information about the given witness.
+
+Parameters:
+    owner_account: the name or id of the witness account owner (type: const
+	string &)

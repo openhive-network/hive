@@ -1,0 +1,5 @@
+
+Returns transaction of a given ID.
+
+Parameters:
+    trx_id: transaction ID (type: fc::variant)

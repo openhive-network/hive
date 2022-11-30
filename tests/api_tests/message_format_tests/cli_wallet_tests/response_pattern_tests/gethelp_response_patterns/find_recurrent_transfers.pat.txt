@@ -1,0 +1,6 @@
+
+Finds a recurrent transfer
+
+Parameters:
+    from: The account from which the funds are coming from (type:
+	fc::variant)

@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from ..local_tools import run_for
+from ....local_tools import run_for
 
 ACCOUNT = 'initminer'
 
@@ -22,8 +22,8 @@ ACCOUNT = 'initminer'
     ]
 )
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_get_account_history_with_correct_values(prepared_node, start, limit):
-    prepared_node.api.account_history.get_account_history(
+def test_get_account_history_with_correct_values(node, start, limit):
+    node.api.account_history.get_account_history(
         account='initminer',
         start=start,
         limit=limit,
@@ -59,9 +59,9 @@ def test_get_account_history_with_correct_values(prepared_node, start, limit):
     ]
 )
 @run_for('testnet', 'mainnet_5m', 'mainnet_64m')
-def test_get_account_history_with_incorrect_values(prepared_node, account_name, start, limit):
+def test_get_account_history_with_incorrect_values(node, account_name, start, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
-        prepared_node.api.account_history.get_account_history(
+        node.api.account_history.get_account_history(
             account=account_name,
             start=start,
             limit=limit,

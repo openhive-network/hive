@@ -19,7 +19,8 @@ struct rc_info
   account_name_type         payer;
   resource_count_type       usage;
   resource_cost_type        cost;
-  int64_t                   max; //max rc of payer (can be zero when payer is unknown)
+  int64_t                   max = 0; //max rc of payer (can be zero when payer is unknown)
+  int64_t                   rc = 0; //current rc mana of payer (can be zero when payer is unknown)
   optional< uint8_t >       op; //only filled when there is just one operation in tx
 };
 
@@ -68,11 +69,12 @@ struct exp_rc_data
 
 } } } // hive::plugins::rc
 
-FC_REFLECT( hive::plugins::rc::rc_transaction_info,
+FC_REFLECT( hive::plugins::rc::rc_info,
   (payer)
   (usage)
   (cost)
   (max)
+  (rc)
   (op)
 )
 

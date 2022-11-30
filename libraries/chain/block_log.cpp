@@ -4,9 +4,12 @@
 #include <hive/chain/block_compression_dictionaries.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/detail/block_attributes.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
+#include <queue>
 #include <fstream>
 #include <fc/io/raw.hpp>
+#include <fc/thread/thread.hpp>
 
 #include <appbase/application.hpp>
 
@@ -474,17 +477,11 @@ namespace hive { namespace chain {
     std::tie(head_block_offset, attributes) = detail::split_block_start_pos_with_flags(head_block_offset_with_flags);
     size_t raw_data_size = block_log_size - head_block_offset - sizeof(head_block_offset);
 
-    FC_ASSERT(
-      raw_data_size <= HIVE_MAX_BLOCK_SIZE,
-      "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes",
-      (raw_data_size)
-    );
+    FC_ASSERT(raw_data_size <= HIVE_MAX_BLOCK_SIZE, "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes", (raw_data_size));
 
-    FC_ASSERT(
-      (size_t)(block_log_size) > (head_block_offset - sizeof(head_block_offset)),
-      "block log file is corrupted, head block offset is greater than file size; block_log_size=${block_log_size}, head_block_offset=${head_block_offset}",
-      (block_log_size)(head_block_offset)
-    );
+    FC_ASSERT((size_t)(block_log_size) > (head_block_offset - sizeof(head_block_offset)),
+              "block log file is corrupted, head block offset is greater than file size; block_log_size=${block_log_size}, head_block_offset=${head_block_offset}",
+              (block_log_size)(head_block_offset));
 
     std::unique_ptr<char[]> raw_data(new char[raw_data_size]);
     auto total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, raw_data.get(), raw_data_size, head_block_offset);
@@ -715,7 +712,7 @@ namespace hive { namespace chain {
   }
 
   // calls your callback with every block, in reverse order
-  void block_log::for_each_block(block_processor_t processor) const
+  void block_log::for_each_block_reverse(reverse_block_processor_t processor) const
   {
     FC_ASSERT(is_open(), "Open block log first!");
 
@@ -779,6 +776,97 @@ namespace hive { namespace chain {
     fc::microseconds iteration_duration = iteration_end - iteration_begin;
 
     ilog("Block log walk finished in time: ${iteration_duration} s.", ("iteration_duration", iteration_duration.count() / 1000000));
+  }
+
+  void block_log::for_each_block(uint32_t starting_block_number, uint32_t ending_block_number,
+                                 block_processor_t processor,
+                                 block_log::for_each_purpose purpose) const
+  {
+    constexpr uint32_t max_blocks_to_prefetch = 1000;
+
+    std::queue<std::shared_ptr<full_block_type>> block_queue;
+    bool stop_requested = false;
+    std::mutex block_queue_mutex;
+    std::condition_variable block_queue_condition;
+
+    hive::chain::blockchain_worker_thread_pool::data_source_type worker_thread_processing;
+    switch (purpose)
+    {
+      case for_each_purpose::replay:
+        worker_thread_processing = hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_for_replay;
+        break;
+      case for_each_purpose::decompressing:
+        worker_thread_processing = hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_for_decompressing;
+        break;
+      default:
+        FC_THROW("unknown purpose");
+    }
+
+    std::thread queue_filler_thread([&]() {
+      fc::set_thread_name("for_each_io"); // tells the OS the thread's name
+      fc::thread::current().set_name("for_each_io"); // tells fc the thread's name for logging
+      for (uint32_t block_number = starting_block_number; block_number <= ending_block_number; ++block_number)
+      {
+        std::shared_ptr<full_block_type> full_block = read_block_by_num(block_number);
+        {
+          std::unique_lock<std::mutex> lock(block_queue_mutex);
+          while (block_queue.size() >= max_blocks_to_prefetch && !stop_requested)
+            block_queue_condition.wait(lock);
+          if (stop_requested)
+            return;
+          block_queue.push(full_block);
+        }
+        block_queue_condition.notify_one();
+        hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, worker_thread_processing);
+      }
+    });
+
+    for (uint32_t block_number = starting_block_number; block_number <= ending_block_number; ++block_number)
+    {
+      std::shared_ptr<full_block_type> full_block;
+      {
+        std::unique_lock<std::mutex> lock(block_queue_mutex);
+        while (block_queue.empty())
+          block_queue_condition.wait(lock);
+        full_block = block_queue.front();
+        block_queue.pop();
+      }
+      block_queue_condition.notify_one();
+
+      if (!processor(full_block))
+      {
+        {
+          std::unique_lock<std::mutex> lock(block_queue_mutex);
+          stop_requested = true;
+        }
+        block_queue_condition.notify_one();
+        break;
+      }
+    }
+    queue_filler_thread.join();
+  }
+
+  void block_log::truncate(uint32_t new_head_block_num)
+  {
+    dlog("truncating block log to ${new_head_block_num} blocks", (new_head_block_num));
+    std::shared_ptr<full_block_type> head_block = my->head;
+    const uint32_t current_head_block_num = head_block ? head_block->get_block_num() : 0;
+
+    if (new_head_block_num > current_head_block_num)
+      FC_THROW("Unable to truncate block log to ${new_head_block_num}, it only has ${current_head_block_num} blocks in it", 
+               (new_head_block_num)(current_head_block_num));
+    if (current_head_block_num == new_head_block_num)
+      return; // nothing to do
+
+    // else, we're really being asked to shorten the block log
+    block_log_artifacts::artifacts_t new_head_block_artifacts = my->_artifacts->read_block_artifacts(new_head_block_num);
+    dlog("new head block starts at offset ${offset} and is ${bytes} bytes long", 
+         ("offset", new_head_block_artifacts.block_log_file_pos)("bytes", new_head_block_artifacts.block_serialized_data_size));
+    off_t final_block_log_size = new_head_block_artifacts.block_log_file_pos + new_head_block_artifacts.block_serialized_data_size + sizeof(uint64_t);;
+    FC_ASSERT(ftruncate(my->block_log_fd, final_block_log_size) == 0, 
+              "failed to truncate block log, ${error}", ("error", strerror(errno)));
+    my->_artifacts->truncate(new_head_block_num);
+    std::atomic_store(&my->head, read_head());
   }
 
 } } // hive::chain

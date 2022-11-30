@@ -31,12 +31,12 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
 
   BOOST_CHECK_EQUAL( sizeof( market_history::bucket_object ), 96u //temporary, regulated amount, ~13k
 #ifdef HIVE_ENABLE_SMT
-    + 8
+    + 8u
 #endif
   );
   BOOST_CHECK_EQUAL( sizeof( market_history::bucket_index::MULTIINDEX_NODE_TYPE ), 160u
 #ifdef HIVE_ENABLE_SMT
-    + 8
+    + 8u
 #endif
   );
   BOOST_CHECK_EQUAL( sizeof( market_history::order_history_object ), 88u ); //permanent, growing with executed limit_order_object, 2.5M atm
@@ -46,6 +46,16 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
   BOOST_CHECK_EQUAL( sizeof( rc::rc_resource_param_index::MULTIINDEX_NODE_TYPE ), 400u );
   BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 176u ); //singleton
   BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_index::MULTIINDEX_NODE_TYPE ), 208u );
+  BOOST_CHECK_EQUAL( sizeof( rc::rc_stats_object ), 5520u //two objects
+#ifdef HIVE_ENABLE_SMT
+    + 616u
+#endif
+  );
+  BOOST_CHECK_EQUAL( sizeof( rc::rc_stats_index::MULTIINDEX_NODE_TYPE ), 5552u
+#ifdef HIVE_ENABLE_SMT
+    + 616u
+#endif
+  );
   BOOST_CHECK_EQUAL( sizeof( rc::rc_pending_data ), 128u ); //singleton
   BOOST_CHECK_EQUAL( sizeof( rc::rc_pending_data_index::MULTIINDEX_NODE_TYPE ), 160u );
   BOOST_CHECK_EQUAL( sizeof( rc::rc_account_object ), 80u ); //permanent, as many as account_object, 1.3M atm
@@ -58,8 +68,8 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
   BOOST_CHECK_EQUAL( sizeof( reputation::reputation_object ), 32u ); //lasting, as many as account_object, 1.3M atm
   BOOST_CHECK_EQUAL( sizeof( reputation::reputation_index::MULTIINDEX_NODE_TYPE ), 96u );
 
-  BOOST_CHECK_EQUAL( sizeof( transaction_status::transaction_status_object ), 28u ); //temporary, depends on tracking flag, cuts out data from too old blocks
-  BOOST_CHECK_EQUAL( sizeof( transaction_status::transaction_status_index::MULTIINDEX_NODE_TYPE ), 128u );
+  BOOST_CHECK_EQUAL( sizeof( transaction_status::transaction_status_object ), 40u ); //temporary, depends on tracking flag, cuts out data from too old blocks
+  BOOST_CHECK_EQUAL( sizeof( transaction_status::transaction_status_index::MULTIINDEX_NODE_TYPE ), 136u );
     
   BOOST_CHECK_EQUAL( sizeof( witness::witness_custom_op_object ), 32u ); //temporary, at most as many as account_object affected by custom ops in single block
   BOOST_CHECK_EQUAL( sizeof( witness::witness_custom_op_index::MULTIINDEX_NODE_TYPE ), 96u );

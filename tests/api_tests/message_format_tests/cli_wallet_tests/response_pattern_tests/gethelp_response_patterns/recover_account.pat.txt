@@ -1,0 +1,16 @@
+
+Recover your account using a recovery request created by your recovery
+account. The syntax for this commain contains a serialized authority
+object, so there is an example below on how to pass in the authority.
+
+recover_account "your_account" {"weight_threshold": 1,"account_auths": [],
+"key_auths": [["old_public_key",1]]} {"weight_threshold":
+1,"account_auths": [], "key_auths": [["new_public_key",1]]} true
+
+Parameters:
+    account_to_recover: The name of your account (type: const string &)
+    recent_authority: A recent owner authority on your account (type:
+	authority)
+    new_authority: The new authority that your recovery account used in the
+	account recover request. (type: authority)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

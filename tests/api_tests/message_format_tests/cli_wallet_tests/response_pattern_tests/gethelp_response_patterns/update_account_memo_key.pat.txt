@@ -1,0 +1,8 @@
+
+This method updates the memo key of an account
+
+Parameters:
+    account_name: The name of the account you wish to update (type: const
+	string &)
+    key: The new memo public key (type: public_key_type)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

@@ -1,0 +1,11 @@
+
+This method will convert HBD to HIVE at the current_median_history price
+HIVE_CONVERSION_DELAY (3.5 days) from the time it is executed. This method
+depends upon there being a valid price feed.
+
+Parameters:
+    from: The account requesting conversion of its HBD i.e. "1.000 HBD"
+	(type: const string &)
+    amount: The amount of HBD to convert (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

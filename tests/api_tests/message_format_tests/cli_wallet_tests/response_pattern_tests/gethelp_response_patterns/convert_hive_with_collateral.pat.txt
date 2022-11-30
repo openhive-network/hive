@@ -1,0 +1,17 @@
+
+This method will convert HIVE to HBD at the market_median_history price
+plus HIVE_COLLATERALIZED_CONVERSION_FEE (5%) after
+HIVE_COLLATERALIZED_CONVERSION_DELAY (3.5 days) from the time it is
+executed. The caller gets HBD immediately calculated at current_min_history
+corrected with fee (as if conversion took place immediately, but only HIVE
+amount sliced by HIVE_CONVERSION_COLLATERAL_RATIO is calculated - that is,
+half the amount) and remainder from collateral amount is returned after
+actual conversion takes place. This method depends upon there being a valid
+price feed.
+
+Parameters:
+    from: The account requesting conversion of its HIVE i.e. "2.000 HIVE"
+	(type: const string &)
+    collateral_amount: The amount of HIVE collateral (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

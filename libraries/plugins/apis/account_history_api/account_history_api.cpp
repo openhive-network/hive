@@ -133,6 +133,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
     FC_ASSERT(full_txs.size() > txInBlock);
     const auto& full_tx = full_txs[txInBlock];
 
+    // until AH is required to keep rc_cost we are not guaranteed to have that info, so the API won't be returning it (full_tx->get_rc_cost() would be -1)
     get_transaction_return result(full_tx->get_transaction(), full_tx->get_transaction_id(), blockNo, txInBlock);
 
     return result;
@@ -178,7 +179,7 @@ struct filtering_visitor
   (account_created_operation)(fill_collateralized_convert_request_operation)(system_warning_operation)
   (fill_recurrent_transfer_operation)(failed_recurrent_transfer_operation)(limit_order_cancelled_operation)
   (producer_missed_operation)(proposal_fee_operation)(collateralized_convert_immediate_conversion_operation)
-  (escrow_approved_operation)(escrow_rejected_operation) )
+  (escrow_approved_operation)(escrow_rejected_operation)(proxy_cleared_operation) )
 
 private:
   uint64_t _filter = 0;

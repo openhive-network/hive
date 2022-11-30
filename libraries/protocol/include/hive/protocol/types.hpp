@@ -61,9 +61,6 @@ namespace hive {
   using                               fc::flat_map;
   using                               fc::flat_set;
   using                               fc::static_variant;
-  using                               fc::ecc::range_proof_type;
-  using                               fc::ecc::range_proof_info;
-  using                               fc::ecc::commitment_type;
   struct void_t{};
 
   namespace protocol {

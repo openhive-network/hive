@@ -1,0 +1,16 @@
+
+This method updates the key of an authority for an exisiting account.
+
+Warning: You can create impossible authorities using this method. The
+method will fail if you create an impossible owner authority, but will
+allow impossible active and posting authorities.
+
+Parameters:
+    account_name: The name of the account whose authority you wish to
+	update (type: const string &)
+    type: The authority type. e.g. owner, active, or posting (type:
+	authority_type)
+    key: The public key to add to the authority (type: public_key_type)
+    weight: The weight the key should have in the authority. A weight of 0
+	indicates the removal of the key. (type: weight_type)
+    broadcast: true if you wish to broadcast the transaction. (type: bool)

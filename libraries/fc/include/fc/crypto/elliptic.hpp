@@ -47,6 +47,7 @@ namespace fc {
            ~public_key();
 //           bool verify( const fc::sha256& digest, const signature& sig );
            public_key_data serialize()const;
+
            public_key_point_data serialize_ecc_point()const;
 
            operator public_key_data()const { return serialize(); }
@@ -235,8 +236,9 @@ namespace fc {
 
      commitment_type   blind( const blind_factor_type& blind, uint64_t value );
      blind_factor_type blind_sum( const std::vector<blind_factor_type>& blinds, uint32_t non_neg );
-     /**  verifies taht commnits + neg_commits + excess == 0 */
-     bool            verify_sum( const std::vector<commitment_type>& commits, const std::vector<commitment_type>& neg_commits, int64_t excess );
+     /**  verifies that commnits + neg_commits == 0 */
+     /* note: verify_sum used to take an `excess` parameter, but the underlying implementation removed it, and in practice it was always set to `0` */
+     bool            verify_sum( const std::vector<commitment_type>& commits, const std::vector<commitment_type>& neg_commits );
      bool            verify_range( uint64_t& min_val, uint64_t& max_val, const commitment_type& commit, const range_proof_type& proof );
 
      range_proof_type range_proof_sign( uint64_t min_value,
@@ -257,7 +259,6 @@ namespace fc {
                                           commitment_type commit,
                                           const range_proof_type& proof );
      range_proof_info range_get_info( const range_proof_type& proof );
-
 
 
   } // namespace ecc

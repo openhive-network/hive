@@ -19,9 +19,10 @@ struct find_transaction_return
 {
   transaction_status::transaction_status status;
   fc::optional< uint32_t > block_num;
+  fc::optional< int64_t > rc_cost;
 };
 
 } } } // hive::transaction_status_api
 
 FC_REFLECT( hive::plugins::transaction_status_api::find_transaction_args, (transaction_id)(expiration) )
-FC_REFLECT( hive::plugins::transaction_status_api::find_transaction_return, (status)(block_num) )
+FC_REFLECT( hive::plugins::transaction_status_api::find_transaction_return, (status)(block_num)(rc_cost) )

@@ -1,0 +1,10 @@
+
+Marks one account as following another account. Requires the posting
+authority of the follower.
+
+Parameters:
+    follower: (type: const string &)
+    following: (type: const string &)
+    what: - a set of things to follow: posts, comments, votes, ignore
+	(type: set<string>)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

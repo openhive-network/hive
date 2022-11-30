@@ -1,0 +1,6 @@
+
+Calculates amount of HIVE collateral to be passed to
+convert_hive_with_collateral in order to immediately get given
+hbd_amount_to_get in HBD. Note that there is no guarantee to get given HBD
+- when actual transaction takes place price might be different than during
+estimation.

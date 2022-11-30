@@ -324,7 +324,7 @@ namespace detail {
     if (_db.has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION) && 
         note.block_num > _last_fast_confirmation_block_number &&
         _production_enabled && _is_p2p_enabled &&
-        fc::time_point::now() - note.get_block_timestamp() < fc::minutes(1))
+        fc::time_point::now() - note.get_block_timestamp() < HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM)
     {
       std::set<account_name_type> scheduled_witnesses;
       const witness_schedule_object& wso_for_irreversibility = _db.get_witness_schedule_object_for_irreversibility();

@@ -40,6 +40,13 @@ void build_version_info(fc::mutable_variant_object* storage)
   storage->set("blockchain_version", std::string(HIVE_BLOCKCHAIN_VERSION));
   storage->set("hive_revision", git_revision_sha);
   storage->set("fc_revision", fc::git_revision_sha);
+  #if defined(USE_ALTERNATE_CHAIN_ID) && !defined(IS_TEST_NET)
+    storage->set("node_type", "mirrornet");
+  #elif defined(IS_TEST_NET)
+    storage->set("node_type", "testnet");
+  #else
+    storage->set("node_type", "mainnet");
+  #endif // IS_TEST_NET
 }
 
 } } // end namespace hive::utilities

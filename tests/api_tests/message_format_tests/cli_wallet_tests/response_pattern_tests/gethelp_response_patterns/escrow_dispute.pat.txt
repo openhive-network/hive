@@ -1,0 +1,12 @@
+
+Raise a dispute on the escrow transfer before it expires
+
+Parameters:
+    from: The account that funded the escrow (type: const string &)
+    to: The destination of the escrow (type: const string &)
+    agent: The account acting as the agent in case of dispute (type: const
+	string &)
+    who: The account raising the dispute (either 'from' or 'to') (type:
+	const string &)
+    escrow_id: A unique id for the escrow transfer (type: uint32_t)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

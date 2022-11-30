@@ -1,7 +1,9 @@
 #! /bin/bash
 
 REGISTRY=${1:-registry.gitlab.syncad.com/hive/hive/}
-CI_IMAGE_TAG=:ubuntu20.04-4
+CI_IMAGE_TAG=:ubuntu20.04-5
+
+export DOCKER_BUILDKIT=1
 
 docker build --target=runtime \
   --build-arg CI_REGISTRY_IMAGE=$REGISTRY --build-arg CI_IMAGE_TAG=$CI_IMAGE_TAG \

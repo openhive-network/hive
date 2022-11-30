@@ -1,0 +1,2 @@
+
+Locks the wallet immediately.

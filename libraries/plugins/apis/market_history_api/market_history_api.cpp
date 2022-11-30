@@ -33,15 +33,24 @@ DEFINE_API_IMPL( market_history_api_impl, get_ticker )
 {
   get_ticker_return result;
 
-  const auto& bucket_idx = _db.get_index< bucket_index, by_bucket >();
-  auto itr = bucket_idx.lower_bound( boost::make_tuple( 0, _db.head_block_time() - 86400 ) );
-
-  if( itr != bucket_idx.end() )
+  const auto& bucket_sizes = appbase::app().get_plugin< hive::plugins::market_history::market_history_plugin >().get_tracked_buckets();
+  if( !bucket_sizes.empty() )
   {
-    auto open = ASSET_TO_REAL( asset( itr->non_hive.open, HBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->hive.open, HIVE_SYMBOL ) );
-    itr = bucket_idx.lower_bound( boost::make_tuple( 0, _db.head_block_time() ) );
-    result.latest = ASSET_TO_REAL( asset( itr->non_hive.close, HBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->hive.close, HIVE_SYMBOL ) );
-    result.percent_change = ( (result.latest - open ) / open ) * 100;
+    // compare opening and closing price using smallest buckets, spanning at most last 24 hours in case we
+    // configured plugin to have more than 24 hours worth of smallest buckets (in reality we will have a lot
+    // less, so time will also be much shorter)
+    auto smallest = *bucket_sizes.begin();
+    const auto& bucket_idx = _db.get_index< bucket_index, by_bucket >();
+    auto itr = bucket_idx.lower_bound( boost::make_tuple( smallest, _db.head_block_time() - 86400 ) );
+
+    if( itr != bucket_idx.end() )
+    {
+      auto open = ASSET_TO_REAL( asset( itr->non_hive.open, HBD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->hive.open, HIVE_SYMBOL ) );
+      // actually we can get closing price from bucket of any size (they have it all set to the same value)
+      auto ritr = bucket_idx.rbegin();
+      result.latest = ASSET_TO_REAL( asset( ritr->non_hive.close, HBD_SYMBOL ) ) / ASSET_TO_REAL( asset( ritr->hive.close, HIVE_SYMBOL ) );
+      result.percent_change = ( ( result.latest - open ) / open ) * 100;
+    }
   }
 
   auto orders = get_order_book( get_order_book_args{ 1 } );
@@ -59,28 +68,28 @@ DEFINE_API_IMPL( market_history_api_impl, get_ticker )
 
 DEFINE_API_IMPL( market_history_api_impl, get_volume )
 {
-  const auto& bucket_idx = _db.get_index< bucket_index, by_bucket >();
-  auto itr = bucket_idx.lower_bound( boost::make_tuple( 0, _db.head_block_time() - 86400 ) );
   get_volume_return result;
 
-  if( itr == bucket_idx.end() )
-    return result;
-
-  uint32_t bucket_size = itr->seconds;
-  do
+  const auto& bucket_sizes = appbase::app().get_plugin< hive::plugins::market_history::market_history_plugin >().get_tracked_buckets();
+  if( !bucket_sizes.empty() )
   {
-    result.hive_volume.amount += itr->hive.volume;
-    result.hbd_volume.amount += itr->non_hive.volume;
-
-    ++itr;
-  } while( itr != bucket_idx.end() && itr->seconds == bucket_size );
+    // see get_ticker
+    auto smallest = *bucket_sizes.begin();
+    const auto& bucket_idx = _db.get_index< bucket_index, by_bucket >();
+    for( auto itr = bucket_idx.lower_bound( boost::make_tuple( smallest, _db.head_block_time() - 86400 ) );
+         itr != bucket_idx.end() && itr->seconds == smallest; ++itr )
+    {
+      result.hive_volume.amount += itr->hive.volume;
+      result.hbd_volume.amount += itr->non_hive.volume;
+    }
+  }
 
   return result;
 }
 
 DEFINE_API_IMPL( market_history_api_impl, get_order_book )
 {
-  FC_ASSERT( args.limit <= 500 );
+  FC_ASSERT( 0 < args.limit && args.limit <= 500 );
 
   const auto& order_idx = _db.get_index< chain::limit_order_index, chain::by_price >();
   auto itr = order_idx.lower_bound( price::max( HBD_SYMBOL, HIVE_SYMBOL ) );
@@ -118,7 +127,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
 
 DEFINE_API_IMPL( market_history_api_impl, get_trade_history )
 {
-  FC_ASSERT( args.limit <= 1000 );
+  FC_ASSERT( 0 < args.limit && args.limit <= 1000 );
   const auto& bucket_idx = _db.get_index< order_history_index, by_time >();
   auto itr = bucket_idx.lower_bound( args.start );
 
@@ -139,7 +148,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_trade_history )
 
 DEFINE_API_IMPL( market_history_api_impl, get_recent_trades )
 {
-  FC_ASSERT( args.limit <= 1000 );
+  FC_ASSERT( 0 < args.limit && args.limit <= 1000 );
   const auto& order_idx = _db.get_index< order_history_index, by_time >();
   auto itr = order_idx.rbegin();
 

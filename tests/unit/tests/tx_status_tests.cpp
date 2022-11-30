@@ -33,12 +33,12 @@ struct expectation
   bool _is_in_control = false;
   database::transaction_status _tx_status = database::TX_STATUS_NONE;
 
-  static expectation inc_transaction( notification_type type )
+  static expectation new_transaction( notification_type type )
   { return { type, false, false, false, false, true, true, false, false, true, database::TX_STATUS_UNVERIFIED }; }
   static expectation pending_transaction( notification_type type )
   { return { type, false, false, false, false, false, false, true, true, false, database::TX_STATUS_PENDING }; }
-  static expectation inc_block( notification_type type )
-  { return { type, true, false, false, true, true, false, false, false, false, database::TX_STATUS_INC_BLOCK }; }
+  static expectation p2p_block( notification_type type )
+  { return { type, true, false, false, true, true, false, false, false, false, database::TX_STATUS_P2P_BLOCK }; }
   static expectation gen_block( notification_type type )
   { return { type, false, true, false, true, false, false, true, false, true, database::TX_STATUS_GEN_BLOCK }; }
   static expectation old_block( notification_type type )
@@ -172,14 +172,14 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
     comment.permlink = "test";
     comment.title = "no title";
     comment.body = "empty";
-    check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
-    check.expect( expectation::inc_transaction( expectation::POST_TX ) );
+    check.expect( expectation::new_transaction( expectation::PRE_TX ) );
+    check.expect( expectation::new_transaction( expectation::POST_TX ) );
     push_transaction( comment, alice_private_key );
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Failed transaction" );
     comment.parent_author = "alice";
-    check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
+    check.expect( expectation::new_transaction( expectation::PRE_TX ) );
     HIVE_REQUIRE_CHAINBASE_ASSERT( push_transaction( comment, alice_private_key ), "unknown key" );
     check.check_empty();
 
@@ -188,10 +188,10 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
     check.expect( expectation::gen_block( expectation::PRE_TX ) );
     check.expect( expectation::gen_block( expectation::POST_TX ) );
     //block is reapplied right after it is produced
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     generate_block();
     check.check_empty();
 
@@ -205,28 +205,28 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
     comment.body.reserve( BODY_ELEMENT.size() * BODY_ELEMENTS );
     for( int i = 0; i < BODY_ELEMENTS; ++i )
       comment.body += BODY_ELEMENT;
-    check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
-    check.expect( expectation::inc_transaction( expectation::POST_TX ) );
+    check.expect( expectation::new_transaction( expectation::PRE_TX ) );
+    check.expect( expectation::new_transaction( expectation::POST_TX ) );
     push_transaction( comment, bob_private_key );
     check.check_empty();
     comment.author = "carol";
-    check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
-    check.expect( expectation::inc_transaction( expectation::POST_TX ) );
+    check.expect( expectation::new_transaction( expectation::PRE_TX ) );
+    check.expect( expectation::new_transaction( expectation::POST_TX ) );
     push_transaction( comment, carol_private_key );
     check.check_empty();
     comment.author = "dan";
-    check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
-    check.expect( expectation::inc_transaction( expectation::POST_TX ) );
+    check.expect( expectation::new_transaction( expectation::PRE_TX ) );
+    check.expect( expectation::new_transaction( expectation::POST_TX ) );
     push_transaction( comment, dan_private_key );
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Generating block with 1 of 3 large transactions" );
     check.expect( expectation::gen_block( expectation::PRE_TX ) );
     check.expect( expectation::gen_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     //remaining transactions are reapplied as pending
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     check.expect( expectation::pending_transaction( expectation::POST_TX ) );
@@ -238,10 +238,10 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
     BOOST_TEST_MESSAGE( "Generating block with 2 of 3 large transactions" );
     check.expect( expectation::gen_block( expectation::PRE_TX ) );
     check.expect( expectation::gen_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     //remaining transaction is reapplied as pending
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     check.expect( expectation::pending_transaction( expectation::POST_TX ) );
@@ -251,10 +251,10 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
     BOOST_TEST_MESSAGE( "Generating block with last of large transactions" );
     check.expect( expectation::gen_block( expectation::PRE_TX ) );
     check.expect( expectation::gen_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     generate_block();
     check.check_empty();
 
@@ -283,20 +283,20 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     transfer.from = "alice";
     transfer.to = "bob";
     transfer.amount = ASSET( "10.000 TESTS" );
-    check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
-    check.expect( expectation::inc_transaction( expectation::POST_TX ) );
+    check.expect( expectation::new_transaction( expectation::PRE_TX ) );
+    check.expect( expectation::new_transaction( expectation::POST_TX ) );
     push_transaction( transfer, alice_private_key );
     check.check_empty();
     transfer.from = "bob";
     transfer.to = "carol";
-    check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
-    check.expect( expectation::inc_transaction( expectation::POST_TX ) );
+    check.expect( expectation::new_transaction( expectation::PRE_TX ) );
+    check.expect( expectation::new_transaction( expectation::POST_TX ) );
     push_transaction( transfer, bob_private_key );
     check.check_empty();
     transfer.from = "carol";
     transfer.to = "alice";
-    check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
-    check.expect( expectation::inc_transaction( expectation::POST_TX ) );
+    check.expect( expectation::new_transaction( expectation::PRE_TX ) );
+    check.expect( expectation::new_transaction( expectation::POST_TX ) );
     push_transaction( transfer, carol_private_key );
     check.check_empty();
 
@@ -307,14 +307,14 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     check.expect( expectation::gen_block( expectation::POST_TX ) );
     check.expect( expectation::gen_block( expectation::PRE_TX ) );
     check.expect( expectation::gen_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     generate_block();
     check.check_empty();
 
@@ -322,8 +322,8 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     db->pop_block();
 
     BOOST_TEST_MESSAGE( "Generating empty block and converting popped transactions to pending" );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     check.expect( expectation::pending_transaction( expectation::POST_TX ) );
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
@@ -340,14 +340,14 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     check.expect( expectation::gen_block( expectation::POST_TX ) );
     check.expect( expectation::gen_block( expectation::PRE_TX ) );
     check.expect( expectation::gen_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     generate_block();
     check.check_empty();
 
@@ -358,17 +358,17 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     transfer.from = "alice";
     transfer.to = "bob";
     transfer.amount = ASSET( "0.010 TESTS" );
-    check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
-    check.expect( expectation::inc_transaction( expectation::POST_TX ) );
+    check.expect( expectation::new_transaction( expectation::PRE_TX ) );
+    check.expect( expectation::new_transaction( expectation::POST_TX ) );
     push_transaction( transfer, alice_private_key );
     check.check_empty();
 
     check.expect( expectation::gen_block( expectation::PRE_TX ) );
     check.expect( expectation::gen_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) ); //that tx (alice->bob transfer) fails
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
     check.expect( expectation::pending_transaction( expectation::POST_TX ) );
@@ -385,12 +385,12 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     check.expect( expectation::gen_block( expectation::POST_TX ) );
     check.expect( expectation::gen_block( expectation::PRE_TX ) );
     check.expect( expectation::gen_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     generate_block();
     check.check_empty();
 
@@ -400,19 +400,19 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     db->pop_block();
 
     BOOST_TEST_MESSAGE( "Pushing block as if it came from P2P/API" );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     //popped transactions are dropped silently as duplicates of those that came with block
     PUSH_BLOCK( *db, block );
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Generating empty block - no popped/pending transactions remain" );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     generate_block();
     check.check_empty();
 
@@ -509,17 +509,17 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
       transfer.from = "initminer";
       transfer.to = "null";
       transfer.memo = "time travel fee";
-      check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
-      check.expect( expectation::inc_transaction( expectation::POST_TX ) );
+      check.expect( expectation::new_transaction( expectation::PRE_TX ) );
+      check.expect( expectation::new_transaction( expectation::POST_TX ) );
       push( transfer, init_account_priv_key );
       check.check_empty();
 
       check.expect( expectation::gen_block( expectation::PRE_TX ) );
       check.expect( expectation::gen_block( expectation::POST_TX ) );
-      check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-      check.expect( expectation::inc_block( expectation::PRE_TX ) );
-      check.expect( expectation::inc_block( expectation::POST_TX ) );
-      check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+      check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+      check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+      check.expect( expectation::p2p_block( expectation::POST_TX ) );
+      check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
       //transactions popped from block 1/2/3/6/7 all fail on tapos check (which happens prior to notification)
       generate_block(); //0'
       check.check_empty();
@@ -566,36 +566,36 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
       PUSH_BLOCK( *db, block );
     }
     //then all blocks from fork are applied one by one
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //0
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //1
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //2
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //3
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //4
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //5
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //6
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //7
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //8
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //9
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //0
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //1
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //2
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //3
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //4
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //5
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //6
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //7
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //8
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //9
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     //transactions from second reality got popped and fail on tapos during reapplication
     //all except initminer paying for time travel
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
@@ -609,10 +609,10 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
     //time travel fee transaction became pending above, now it is included in block
     check.expect( expectation::gen_block( expectation::PRE_TX ) );
     check.expect( expectation::gen_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     generate_block();
     check.check_empty();
 
@@ -667,17 +667,17 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     transfer.from = "alice";
     transfer.to = "bob";
     transfer.amount = ASSET( "0.001 TESTS" );
-    check.expect( expectation::inc_transaction( expectation::PRE_TX ) );
-    check.expect( expectation::inc_transaction( expectation::POST_TX ) );
+    check.expect( expectation::new_transaction( expectation::PRE_TX ) );
+    check.expect( expectation::new_transaction( expectation::POST_TX ) );
     push_transaction( transfer, alice_private_key );
     check.check_empty();
 
     check.expect( expectation::gen_block( expectation::PRE_TX ) );
     check.expect( expectation::gen_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     //previously popped transactions will try to be reapplied, but fail due to not enough balance,
     //since new reality contains small transfer from alice, making further transfers too big
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
@@ -693,15 +693,15 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
       push_block( block );
     }
     //fork will be switched now - let's force failure during reapplication of block 1
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //0
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) ); //1
-    check.expect( expectation::inc_block( expectation::PRE_TX ) );
-    check.expect( expectation::inc_block( expectation::POST_TX ) );
-    check.expect( expectation::inc_block( expectation::EXECUTE_HARD_FAIL ) );
-    check.expect( expectation::inc_block( expectation::FAIL_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //0
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) ); //1
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::EXECUTE_HARD_FAIL ) );
+    check.expect( expectation::p2p_block( expectation::FAIL_BLOCK ) );
     //reapplying block 1 failed, but we'll stay on block 0 because it was at least as long as the 0' fork
     //...and then try to reapply popped transaction from 0' which will fail on insufficient balance
     check.expect( expectation::pending_transaction( expectation::PRE_TX ) );
@@ -720,8 +720,8 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     }
 
     //generate one more block to verify that we have no pending transactions
-    check.expect( expectation::inc_block( expectation::PRE_BLOCK ) );
-    check.expect( expectation::inc_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
     generate_block();
     check.check_empty();
 

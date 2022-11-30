@@ -13,6 +13,8 @@
 
 #include "../db_fixture/database_fixture.hpp"
 
+#include <chrono>
+
 using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins::rc;
@@ -351,6 +353,139 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_REQUIRE( dave_rc_account_deleted.received_delegated_rc == 0 );
     BOOST_REQUIRE( dan_rc_account_deleted.delegated_rc == 0 );
     BOOST_REQUIRE( dan_rc_account_deleted.received_delegated_rc == 0 );
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many_different to many accounts" );
+    ACTORS( (alice)(bob)(dave)(dan)(carol) )
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
+    uint64_t alice_vests = alice.vesting_shares.amount.value;
+
+    std::string json = "[";
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob" };
+    op.max_rc = alice_vests;
+    json += "\"delegate_rc\",";
+    json += fc::json::to_string( op );
+    op.delegatees = { "dave" };
+    op.max_rc = alice_vests - 1; //just to be different than that for bob
+    json += ",\"delegate_rc\",";
+    json += fc::json::to_string( op );
+    op.delegatees = { "nonexistent" };
+    op.max_rc = 0;
+    json += ",\"delegate_rc\",";
+    json += fc::json::to_string( op );
+    json += "]";
+
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_PLUGIN_NAME;
+    custom_op.json = json;
+    ilog( "${json}", (json) );
+
+    // The following used to be true and is still true if operation is already in block:
+    //   Delegating more rc than alice has should fail, but it does not, because of how interpreter
+    //   works - only the first pair in outer array is processed when it is formatted this way
+    //   see https://hiveblocks.com/tx/65b4772d915dfda66a254e5105c74b5c7667991a
+    //   it also means that even "delegating" to nonexistent account will pass since it is ignored
+    // Now interpreter is more strict when node is_in_control()
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_private_key ), "!db.is_in_control()" );
+    // Let's put just the correct part into transaction so we don't have to change rest of the test
+    json = "[";
+    op.delegatees = { "bob" };
+    op.max_rc = alice_vests;
+    json += "\"delegate_rc\",";
+    json += fc::json::to_string( op );
+    json += "]";
+
+    custom_op.json = json;
+    ilog( "${json}", (json) );
+
+    push_transaction( custom_op, alice_private_key );
+
+    generate_block();
+
+    const rc_direct_delegation_object* delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
+    BOOST_REQUIRE( delegation->from == alice_id );
+    BOOST_REQUIRE( delegation->to == bob_id );
+    BOOST_REQUIRE( delegation->delegated_rc == alice_vests );
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, dave_id ) );
+    BOOST_REQUIRE( delegation == nullptr ); // second part of ill-formed json was ignored so there is no delegation
+
+    op.delegatees = { "bob" };
+    op.max_rc = 0;
+    json = "[\"delegate_rc\"," + fc::json::to_string( op ) + "]";
+    custom_op.json = json; // use proper legacy format to remove delegation
+    ilog( "${json}", (json) );
+
+    push_transaction( custom_op, alice_private_key );
+
+    generate_blocks( db->head_block_time() + fc::seconds( HIVE_RC_REGEN_TIME ) ); //regenerate mana
+    generate_block();
+
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
+    BOOST_REQUIRE( delegation == nullptr ); // delegation should be removed properly
+
+    op.max_rc = alice_vests / 3;
+    std::string delegate_rc_type = fc::json::to_string( rc_plugin_operation( op ).which() );
+    json = "[" + delegate_rc_type + "," + fc::json::to_string( op ) + "]";
+    custom_op.json = json; // use alternative (even smaller) legacy format to add delegation
+    ilog( "${json}", (json) );
+
+    push_transaction( custom_op, alice_private_key );
+
+    generate_block();
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
+    BOOST_REQUIRE( delegation->from == alice_id );
+    BOOST_REQUIRE( delegation->to == bob_id );
+    BOOST_REQUIRE( delegation->delegated_rc == alice_vests / 3 );
+
+    // now delegate to three accounts using the most compact form (alternative legacy in array)
+    // (actually the extension that is constantly added could be dropped since empty is default)
+    json = "[";
+    op.delegatees = { "bob" };
+    op.max_rc = 0;
+    json += "[" + delegate_rc_type + "," + fc::json::to_string(op) + "]";
+    op.delegatees = { "dave" };
+    op.max_rc = alice_vests / 4;
+    json += ",[" + delegate_rc_type + "," + fc::json::to_string( op ) + "]";
+    op.delegatees = { "dan", "carol" };
+    op.max_rc = alice_vests / 5;
+    json += ",[" + delegate_rc_type + "," + fc::json::to_string( op ) + "]";
+    json += "]";
+    // double array is important because it tells the interpreter to think of it as array
+    // and not as tuple; note that each part is in fact separate operation (executed in order),
+    // therefore it would not be ok if alice could not afford delegation without undelegating of bob
+    // since she only gets back regen power, not the RC itself (operations don't balance out when
+    // they are not part of single delegation)
+    custom_op.json = json;
+    ilog( "${json}", (json) );
+
+    push_transaction( custom_op, alice_private_key );
+
+    generate_block();
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
+    BOOST_REQUIRE( delegation == nullptr );
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, dave_id ) );
+    BOOST_REQUIRE( delegation->from == alice_id );
+    BOOST_REQUIRE( delegation->to == dave_id );
+    BOOST_REQUIRE( delegation->delegated_rc == alice_vests / 4 );
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, dan_id ) );
+    BOOST_REQUIRE( delegation->from == alice_id );
+    BOOST_REQUIRE( delegation->to == dan_id );
+    BOOST_REQUIRE( delegation->delegated_rc == alice_vests / 5 );
+    delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, carol_id ) );
+    BOOST_REQUIRE( delegation->from == alice_id );
+    BOOST_REQUIRE( delegation->to == carol_id );
+    BOOST_REQUIRE( delegation->delegated_rc == alice_vests / 5 );
+
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -1353,6 +1488,98 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     BOOST_REQUIRE( dave_rc_account_after.rc_manabar.current_mana == creation_rc );
     BOOST_REQUIRE( dave_rc_account_after.last_max_rc == creation_rc );
     BOOST_REQUIRE( dave_rc_account_after.received_delegated_rc == 0 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing:  erformance is taken into consideration, when `rc_direct_delegation_object` are removed" );
+    generate_block();
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+      {
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+      });
+    });
+    generate_block();
+
+    ACTORS_DEFAULT_FEE( (alice)(bob) )
+    generate_block();
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1000.000 TESTS" ) );
+    generate_block();
+
+    const uint32_t nr_accounts = 100'000;
+
+    const account_object& alice_account_initial = db->get_account( "alice" );
+
+    std::vector< performance::initial_data > accounts = performance::generate_accounts( this, nr_accounts );
+
+    // We delegate all our vesting shares to bob
+    delegate_vesting_shares_operation dvso;
+    dvso.vesting_shares = alice_account_initial.get_vesting();
+    dvso.delegator = "alice";
+    dvso.delegatee = {"bob"};
+    push_transaction(dvso, alice_private_key);
+
+    auto time_checker = []( std::function<void()> callable, uint32_t value = 0 )
+    {
+      auto _start = std::chrono::high_resolution_clock::now();
+      callable();
+      auto _end = std::chrono::high_resolution_clock::now();
+      double elapsed_time_ms = std::chrono::duration<double, std::milli>( _end - _start ).count();
+      BOOST_TEST_MESSAGE( "time: " + std::to_string( elapsed_time_ms ) );
+      if( value )
+        BOOST_REQUIRE_GT( value, elapsed_time_ms );
+    };
+
+    delegate_rc_operation op;
+    op.from = "bob";
+    op.max_rc = 5;
+
+    size_t cnt = 0;
+    while( cnt < accounts.size() )
+    {
+      for( size_t i = cnt; i < cnt + HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP; ++i )
+        op.delegatees.insert( accounts[i].account );
+
+      cnt += op.delegatees.size();
+
+      custom_json_operation custom_op;
+      custom_op.required_posting_auths.insert( "bob" );
+      custom_op.id = HIVE_RC_PLUGIN_NAME;
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+
+      BOOST_TEST_MESSAGE( "create delegations" );
+      auto push_00 = [ this, &custom_op, &bob_private_key ]{ push_transaction(custom_op, bob_private_key); };
+      time_checker( push_00, 0 );
+      generate_block();
+
+      op.delegatees.clear();
+    }
+
+    for( auto& account : accounts )
+    {
+      const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
+      BOOST_REQUIRE( _account.received_delegated_rc == 5 );
+    }
+
+    BOOST_TEST_MESSAGE( "remove delegations" );
+    dvso.vesting_shares = asset( 0, VESTS_SYMBOL );
+    auto push_01 = [ this, &dvso, &alice_private_key ]{ push_transaction(dvso, alice_private_key); };
+    //for `AMD Ryzen 7 5800X 8-Core Processor` ~480ms
+    time_checker( push_01, 1000 );
+
+    for( auto& account : accounts )
+    {
+      const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
+      BOOST_REQUIRE( _account.received_delegated_rc == 0 );
+    }
 
     validate_database();
   }

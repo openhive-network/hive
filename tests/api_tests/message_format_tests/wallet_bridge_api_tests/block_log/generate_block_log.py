@@ -16,7 +16,7 @@ def prepare_block_log_with_witnesses():
 
     node.close()
 
-    node.get_block_log(include_index=True).copy_to(Path(__file__).parent.absolute())
+    node.block_log.copy_to(Path(__file__).parent.absolute())
 
 
 def prepare_node_with_witnesses(witnesses_names):

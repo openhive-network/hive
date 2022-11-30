@@ -1,0 +1,8 @@
+
+Change your recovery account after a 30 day delay.
+
+Parameters:
+    owner: The name of your account (type: const string &)
+    new_recovery_account: The name of the recovery account you wish to have
+	(type: const string &)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

@@ -6,7 +6,6 @@ import pytest
 import test_tools as tt
 
 from ..local_tools import init_network, parse_datetime
-from ....local_tools import date_from_now
 
 
 def run_with_faketime(node, time):

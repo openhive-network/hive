@@ -1,0 +1,8 @@
+
+Unlocks the wallet.
+
+The wallet remain unlocked until the 'lock' is called or the program exits.
+
+Parameters:
+    password: the wallet password previously set with 'set_password()'
+	(type: const string &)

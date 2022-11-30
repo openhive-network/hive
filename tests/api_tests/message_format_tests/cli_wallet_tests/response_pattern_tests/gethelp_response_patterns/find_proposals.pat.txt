@@ -1,0 +1,6 @@
+
+Find proposal with given id
+
+Parameters:
+    proposal_ids: - array with ids of wanted proposals to be founded.
+	(type: fc::variant)

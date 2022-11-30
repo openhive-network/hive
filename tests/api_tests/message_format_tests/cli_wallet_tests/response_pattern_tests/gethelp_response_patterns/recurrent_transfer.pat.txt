@@ -1,0 +1,18 @@
+
+Creates a recurrent transfer of funds from one account to another. HIVE and
+HBD can be transferred.
+
+Parameters:
+    from: The account the funds are coming from (type: const
+	account_name_type &)
+    to: The account from which the funds are going to (type: const
+	account_name_type &)
+    amount: The funds being transferred. i.e. "100.000 HIVE" (type: const
+	wallet_serializer_wrapper<hive::protocol::asset> &)
+    memo: A memo for the transaction, encrypted with the to account's
+	public memo key (type: const string &)
+    recurrence: how often the transfer should be executed in hours. eg: 24
+	(type: uint16_t)
+    executions: how many times should the recurrent transfer be executed
+	(type: uint16_t)
+    broadcast: true if you wish to broadcast the transaction (type: bool)

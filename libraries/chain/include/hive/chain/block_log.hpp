@@ -105,10 +105,21 @@ namespace hive { namespace chain {
       void for_each_block_position(block_info_processor_t processor) const;
 
       /// return true to continue processing, false to stop iteration.
-      typedef std::function<bool(uint32_t, const std::shared_ptr<full_block_type>&, uint64_t, block_attributes_t)> block_processor_t;
-      /// processes blocks in REVERSE order
-      void for_each_block(block_processor_t processor) const;
+      typedef std::function<bool(uint32_t, const std::shared_ptr<full_block_type>&, uint64_t, block_attributes_t)> reverse_block_processor_t;
+      /// processes blocks in REVERSE order.  This only reads the block_log file, and can be used for rebuilding the artifacts/index file
+      void for_each_block_reverse(reverse_block_processor_t processor) const;
 
+      /// return true to continue processing, false to stop iteration.
+      typedef std::function<bool(const std::shared_ptr<full_block_type>&)> block_processor_t;
+      // determines what processing for_each_block() asks the blockchain worker threads to perform
+      enum class for_each_purpose { replay, decompressing };
+      // process blocks in forward order, [starting_block_number, ending_block_number]
+      void for_each_block(uint32_t starting_block_number, uint32_t ending_block_number,
+                          block_processor_t processor,
+                          for_each_purpose purpose) const;
+
+      // shorten the block log & artifacts file
+      void truncate(uint32_t new_head_block_num);
     private:
       std::unique_ptr<detail::block_log_impl> my;
   };

@@ -1,0 +1,6 @@
+
+Gets the current order book for HIVE:HBD
+
+Parameters:
+    limit: Maximum number of orders to return for bids and asks. Max is
+	1000. (type: uint32_t)

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+from pathlib import Path
 import re
 from typing import Dict, List, Literal, Union
 
 import test_tools as tt
 
-from .local_tools import are_close, create_buy_order, create_sell_order, verify_json_patterns, verify_text_patterns
+from .local_tools import are_close, create_buy_order, create_sell_order
+from ..local_tools import verify_json_patterns, verify_text_patterns
+
+__PATTERNS_DIRECTORY = Path(__file__).with_name('response_patterns')
 
 
 def test_get_order_book_json_format(node, wallet_with_json_formatter):
@@ -37,7 +41,7 @@ def test_json_format_pattern(node, wallet_with_json_formatter):
 
     order_book = wallet_with_json_formatter.api.get_order_book(len(initial_orders))
 
-    verify_json_patterns('get_order_book', order_book)
+    verify_json_patterns(__PATTERNS_DIRECTORY, 'get_order_book', order_book)
 
 
 def test_text_format_pattern(node, wallet_with_text_formatter):
@@ -45,7 +49,7 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
 
     order_book = wallet_with_text_formatter.api.get_order_book(len(initial_orders))
 
-    verify_text_patterns('get_order_book', order_book)
+    verify_text_patterns(__PATTERNS_DIRECTORY, 'get_order_book', order_book)
 
 
 def parse_text_response(text):

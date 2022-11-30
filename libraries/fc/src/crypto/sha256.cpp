@@ -1,6 +1,7 @@
 #include <fc/crypto/hex.hpp>
 #include <fc/crypto/hmac.hpp>
 #include <fc/fwd_impl.hpp>
+#include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <string.h>
 #include <cmath>
@@ -32,13 +33,28 @@ namespace fc {
 
 
     struct sha256::encoder::impl {
-       SHA256_CTX ctx;
+       struct evp_md_deleter {
+         void operator()(EVP_MD_CTX* mdctx) {
+           EVP_MD_CTX_free(mdctx);
+         }
+       };
+       std::unique_ptr<EVP_MD_CTX, evp_md_deleter> mdctx;
     };
 
     sha256::encoder::~encoder() {}
-    sha256::encoder::encoder() {
+    sha256::encoder::encoder() :
+      my(std::make_unique<impl>())
+    {
       reset();
     }
+    sha256::encoder::encoder(const sha256::encoder& other) :
+      my(std::make_unique<impl>())
+    {
+      // openssl 3 has EVP_MD_CTX_dup, but for compaitibility:
+      my->mdctx.reset(EVP_MD_CTX_new());
+      EVP_MD_CTX_copy_ex(my->mdctx.get(), other.my->mdctx.get());
+    }
+
 
     sha256 sha256::hash( const char* d, uint32_t dlen ) {
       encoder e;
@@ -56,15 +72,16 @@ namespace fc {
     }
 
     void sha256::encoder::write( const char* d, uint32_t dlen ) {
-      SHA256_Update( &my->ctx, d, dlen);
+      EVP_DigestUpdate(my->mdctx.get(), d, dlen);
     }
     sha256 sha256::encoder::result() {
       sha256 h;
-      SHA256_Final((uint8_t*)h.data(), &my->ctx );
+      EVP_DigestFinal_ex(my->mdctx.get(), (unsigned char*)h.data(), NULL);
       return h;
     }
     void sha256::encoder::reset() {
-      SHA256_Init( &my->ctx);
+      my->mdctx.reset(EVP_MD_CTX_new());
+      EVP_DigestInit_ex(my->mdctx.get(), EVP_sha256(), NULL);
     }
 
     sha256 operator << ( const sha256& h1, uint32_t i ) {

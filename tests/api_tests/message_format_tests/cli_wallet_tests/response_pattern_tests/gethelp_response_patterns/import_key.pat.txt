@@ -1,0 +1,8 @@
+
+Imports a WIF Private Key into the wallet to be used to sign transactions
+by an account.
+
+example: import_key 5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
+
+Parameters:
+    wif_key: the WIF Private Key to import (type: const string &)

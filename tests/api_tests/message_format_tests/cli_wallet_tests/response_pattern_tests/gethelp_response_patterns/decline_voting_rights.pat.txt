@@ -1,0 +1,2 @@
+
+No help defined for method decline_voting_rights
