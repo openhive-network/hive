@@ -3,8 +3,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 INCORRECT_OPERATION_NAME = 'nonexistent_operation'
-NEGATIVE_OPERATION_INDEX = -1
-INCORRECT_POSITIVE_OPERATION_INDEX = 51
+INCORRECT_OPERATION_INDEXES = [-1, 51]
 LIST_OF_OPERATIONS = [
     ('vote_operation', 0),
     ('comment_operation', 1),
@@ -83,7 +82,7 @@ def test_get_rc_operation_stats_with_nonexistent_operation_name(node):
 
 
 @pytest.mark.parametrize(
-    'invalid_operation_index', [NEGATIVE_OPERATION_INDEX, INCORRECT_POSITIVE_OPERATION_INDEX]
+    'invalid_operation_index', [INCORRECT_OPERATION_INDEXES[0], INCORRECT_OPERATION_INDEXES[1]]
 )
 @run_for('live_mainnet')
 def test_get_rc_operation_stats_with_nonexistent_operation_index(node, invalid_operation_index):
