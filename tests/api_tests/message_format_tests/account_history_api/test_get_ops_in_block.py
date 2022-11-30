@@ -32,7 +32,7 @@ from ....local_tools import run_for
         (1, True, 1),
     ]
 )
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_ops_in_block_with_correct_values(node, block_num, virtual_operation, include_reversible):
     node.api.account_history.get_ops_in_block(
         block_num=block_num,
@@ -63,7 +63,7 @@ def test_get_ops_in_block_with_correct_values(node, block_num, virtual_operation
         (1, True, {}),
     ]
 )
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_ops_in_block_with_incorrect_type_of_arguments(node, block_num, virtual_operation, include_reversible):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.get_ops_in_block(

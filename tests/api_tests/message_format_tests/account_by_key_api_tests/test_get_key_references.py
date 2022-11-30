@@ -5,7 +5,7 @@ from ....local_tools import run_for
 ACCOUNT_NAME = 'gtg'
 
 
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_key_references(node, should_prepare):
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)

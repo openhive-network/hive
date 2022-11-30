@@ -6,7 +6,7 @@ from ....local_tools import run_for
 
 # This test is not performed on 5 million blocklog because proposals feature was introduced after block with number
 # 5000000. See the readme.md file in this directory for further explanation.
-@run_for('testnet', 'mainnet_64m')
+@run_for('testnet', 'live_mainnet')
 def test_list_proposals(node, should_prepare):
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)

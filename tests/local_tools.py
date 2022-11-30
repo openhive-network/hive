@@ -3,7 +3,7 @@ from typing import Literal
 import pytest
 
 
-def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'mainnet_64m']):
+def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'live_mainnet']):
     """
     Runs decorated test for each node specified as parameter.
 

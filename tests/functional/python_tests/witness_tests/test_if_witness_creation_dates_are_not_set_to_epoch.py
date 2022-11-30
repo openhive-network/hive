@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from ....local_tools import run_for
 
 
-@run_for('mainnet_5m', 'mainnet_64m')
+@run_for('mainnet_5m', 'live_mainnet')
 def test_if_witness_creation_dates_are_not_set_to_epoch(node):
     def get_witnesses(first_witness_index: int, amount: int = 1000) -> List[Optional[Dict]]:
         witness_ids = list(range(first_witness_index, first_witness_index + amount))

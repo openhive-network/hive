@@ -27,7 +27,7 @@ UINT64_MAX = 2 ** 64 - 1
         (1, 2),
     ]
 )
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_ops_in_block(node, should_prepare, block_num, only_virtual):
     if should_prepare:
         # Wait until block containing above transaction will become irreversible.
@@ -52,24 +52,24 @@ def test_get_ops_in_block(node, should_prepare, block_num, only_virtual):
         (1, "1"),
     ]
 )
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_ops_in_block_with_incorrect_types_of_argument(node, block_num, only_virtual):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.condenser.get_ops_in_block(block_num, only_virtual)
 
 
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_ops_in_block_with_additional_argument(node):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.condenser.get_ops_in_block(0, False, "additional_argument")
 
 
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_ops_in_block_without_arguments(node):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.condenser.get_ops_in_block()
 
 
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_ops_in_block_with_default_second_argument(node):
     node.api.condenser.get_ops_in_block(1)
