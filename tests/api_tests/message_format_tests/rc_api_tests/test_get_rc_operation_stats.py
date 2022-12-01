@@ -82,7 +82,7 @@ def test_get_rc_operation_stats_with_nonexistent_operation_name(node):
 
 
 @pytest.mark.parametrize(
-    'invalid_operation_index', [INCORRECT_OPERATION_INDEXES[0], INCORRECT_OPERATION_INDEXES[1]]
+    'invalid_operation_index', [*INCORRECT_OPERATION_INDEXES]
 )
 @run_for('live_mainnet')
 def test_get_rc_operation_stats_with_nonexistent_operation_index(node, invalid_operation_index):
