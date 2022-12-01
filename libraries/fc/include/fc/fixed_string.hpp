@@ -4,6 +4,15 @@
 
 namespace fc {
 
+  class verifier_switch
+  {
+    private:
+      thread_local static bool verify;
+
+    public:
+      static void set_verify( bool val ){ verify = val; }
+      static bool is_verifying_enabled() { return verify; };
+  };
 
    /**
     *  This class is designed to offer in-place memory allocation of a string up to Length equal to
@@ -91,7 +100,8 @@ namespace fc {
       private:
         void verify_max_length(const char* in, size_t in_len) const
         {
-          FC_ASSERT(in_len <= sizeof(data), "Input too large: ${is} for fixed size string: ${fs}", ("is", in_len)("fs", sizeof(data)));
+            if( verifier_switch::is_verifying_enabled() )
+               FC_ASSERT(in_len <= sizeof(data), "Input too large: `${in}' (${is}) for fixed size string: ${fs}", (in)("is", in_len)("fs", sizeof(data)));
         }
 
         void verify_max_length(const std::string& in) const
