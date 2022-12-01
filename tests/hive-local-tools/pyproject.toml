@@ -1,0 +1,17 @@
+[build-system]
+requires = ["poetry-core==1.1.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry]
+name = "hive_local_tools"
+version = "0.0.0"
+description = "A collective library containing all the tools required by hive python tests."
+authors = ["Mateusz Żebrak <mzebrak@syncad.com>"]
+packages = [
+    { include = "hive_local_tools" },
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
