@@ -2,6 +2,7 @@
 
 #include <fc/uint128.hpp>
 #include <fc/io/raw_fwd.hpp>
+#include <fc/fixed_string.hpp>
 
 #include <boost/endian/conversion.hpp>
 #include <boost/utility/identity_type.hpp>
@@ -134,7 +135,8 @@ class fixed_string_impl
   private:
     void verify_max_length(const char* in, size_t in_len) const
     {
-      FC_ASSERT(in_len <= sizeof(data), "Input too large: `${in}' (${is}) for fixed size string: ${fs}", (in)("is", in_len)("fs", sizeof(data)));
+      if( fc::verifier_switch::is_verifying_enabled() )
+        FC_ASSERT(in_len <= sizeof(data), "Input too large: `${in}' (${is}) for fixed size string: ${fs}", (in)("is", in_len)("fs", sizeof(data)));
     }
 
     void verify_max_length(const std::string& in) const
