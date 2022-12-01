@@ -78,7 +78,7 @@ def test_get_rc_operation_stats_with_nonexistent_operation_name(remote_node):
 
 
 @pytest.mark.parametrize(
-    'invalid_operation_index', [INCORRECT_OPERATION_INDEXES[0], INCORRECT_OPERATION_INDEXES[1]]
+    'invalid_operation_index', [*INCORRECT_OPERATION_INDEXES]
 )
 def test_get_rc_operation_stats_with_nonexistent_operation_index(remote_node, invalid_operation_index):
     with pytest.raises(tt.exceptions.CommunicationError):
