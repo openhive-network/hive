@@ -132,22 +132,22 @@ namespace fc
     {
       if(*this == 0) { return "0"; }
 
-      // at worst it will be size digits (base 2) so make our buffer
-      // that plus room for null terminator
-      char sz [128 + 1];
-       sz[sizeof(sz) - 1] = '\0';
+      // max number is 2^^128 - 1 (~3.40×10^^38), so max digits number is 39
+      constexpr auto max_digits = 39;
+      // + room for null terminator
+      char sz [max_digits + 1];
+      char* s = sz + max_digits;
+      *s = '\0';
+      uint128 i(*this);
 
-      uint128 ii(*this);
-      int i = 128 - 1;
-
-      while (ii != 0 && i) {
-
-      uint128 remainder;
-      divide(ii, uint128(10), ii, remainder);
-          sz [--i] = "0123456789abcdefghijklmnopqrstuvwxyz"[remainder.to_integer()];
+      while (i != 0)
+      {
+        uint128 remainder;
+        divide(i, uint128(10), i, remainder);
+        *(--s) = static_cast<char>(remainder.to_integer()) + '0';
       }
 
-      return &sz[i];
+      return s;
     }
 
 
