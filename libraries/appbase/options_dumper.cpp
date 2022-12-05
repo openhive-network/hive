@@ -19,7 +19,8 @@
 
 namespace boost {
   template<>
-  std::string lexical_cast<std::string, bool>(const bool& b) {
+  std::string lexical_cast<std::string, bool>(const bool& b) 
+  {
     std::ostringstream ss;
     ss << std::boolalpha << b;
     return ss.str();
@@ -55,7 +56,8 @@ inline static bool try_handle_type_impl(options_dumper::value_info& info,
   auto* typed_option = dynamic_cast<const boost::program_options::typed_value<T>*>(option);
   constexpr bool is_vector = is_std_vector<T>::value;
 
-  if (!typed_option) {
+  if (!typed_option) 
+  {
     if constexpr (sizeof...(T1) > 0)
       return try_handle_type_impl<T1...>(info, option, type_name);
     else
@@ -66,20 +68,24 @@ inline static bool try_handle_type_impl(options_dumper::value_info& info,
   typed_option->apply_default(def_value_any);
 
   fc::variant def_value;
-  if (!def_value_any.empty()) {
-    if constexpr (is_vector) {
+  if (!def_value_any.empty()) 
+  {
+    if constexpr (is_vector) 
+    {
       std::vector<std::string> def_value_vec;
 
-      for (const auto& v : boost::any_cast<T>(def_value_any)) {
-        def_value_vec.push_back(boost::lexical_cast<std::string>(v));
+      for (const auto& v : boost::any_cast<T>(def_value_any)) 
+      {
+        def_value_vec.emplace_back(boost::lexical_cast<std::string>(v));
       }
 
       def_value = std::move(def_value_vec);
     }
-    else {
+    else
       def_value = boost::lexical_cast<std::string>(boost::any_cast<T>(def_value_any));
-    }
-  } else {
+  } 
+  else 
+  {
     if constexpr (is_vector)
       def_value = std::vector<std::string>();
     else
@@ -91,9 +97,8 @@ inline static bool try_handle_type_impl(options_dumper::value_info& info,
   info.value_type = type_name;
   info.default_value = def_value;
 
-  if constexpr (is_vector) {
+  if constexpr (is_vector)
     info.value_type += "_array";
-  }
 
   return true;
 }
@@ -106,8 +111,7 @@ static bool try_handle_type(options_dumper::value_info& info,
   if (multitoken)
     return try_handle_type_impl<std::vector<T>...>(info, option, type_name);
   
-  return try_handle_type_impl<T...>(info, option, type_name)
-    || try_handle_type_impl<std::vector<T>...>(info, option, type_name);
+  return try_handle_type_impl<T...>(info, option, type_name);
 }
 
 };
@@ -135,7 +139,8 @@ std::string options_dumper::dump_to_string() const
   {
     std::vector<option_entry> entries;
 
-    for (const auto& option : group.second.get().options()) {
+    for (const auto& option : group.second.get().options()) 
+    {
       entries.emplace_back(serialize_option(*option));
     }
 
@@ -153,7 +158,7 @@ const boost::program_options::value_semantic* semantic) -> std::optional<value_i
     return std::nullopt;
 
   value_info info;
-  bool multitoken = detail::is_multitoken(semantic);
+  bool multitoken = detail::is_multitoken(semantic) || semantic->is_composing();
 
   bool success = detail::any_of(
     detail::try_handle_type<bool>(info, semantic, "bool", multitoken),
