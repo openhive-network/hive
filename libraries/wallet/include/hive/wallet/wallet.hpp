@@ -1105,7 +1105,7 @@ class wallet_api
       * @return the signed version of the transaction
       */
     wallet_signed_transaction sign_transaction(
-      const wallet_serializer_wrapper<annotated_signed_transaction_ex>& tx,
+      const wallet_serializer_wrapper<transaction>& tx,
       bool broadcast = false);
 
     /** Returns an uninitialized object representing a given blockchain operation.

@@ -1208,7 +1208,7 @@ wallet_signed_transaction wallet_api::set_voting_proxy(const string& account_to_
 void wallet_api::set_wallet_filename(string wallet_filename) { my->_wallet_filename = std::move(wallet_filename); }
 
 wallet_signed_transaction wallet_api::sign_transaction(
-  const wallet_serializer_wrapper<annotated_signed_transaction_ex>& tx, bool broadcast /* = false */)
+  const wallet_serializer_wrapper<transaction>& tx, bool broadcast /* = false */)
 { try {
   signed_transaction appbase_tx( tx.value );
   annotated_signed_transaction_ex result = my->sign_transaction( appbase_tx, broadcast);
