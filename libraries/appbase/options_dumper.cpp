@@ -2,6 +2,7 @@
 
 #include <boost/any.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 #include <fc/io/json.hpp>
 #include <fc/reflect/variant.hpp>
 #include <fc/variant.hpp>
@@ -10,12 +11,20 @@
 #include <algorithm>
 #include <initializer_list>
 #include <optional>
-#include <sstream>
 #include <type_traits>
 #include <unordered_map>
 #include <variant>
 #include <vector>
 
+
+namespace boost {
+  template<>
+  std::string lexical_cast<std::string, bool>(const bool& b) {
+    std::ostringstream ss;
+    ss << std::boolalpha << b;
+    return ss.str();
+  }
+};
 
 namespace appbase {
 
@@ -27,9 +36,20 @@ struct is_std_vector : std::false_type {};
 template<typename T, typename A>
 struct is_std_vector<std::vector<T,A>> : std::true_type {};
 
+template <typename... Arg>
+inline bool any_of(Arg... arg)
+{
+  return (arg || ...);
+}
+
+inline bool is_multitoken(const boost::program_options::value_semantic* semantic)
+{
+  return semantic->max_tokens() > 1;
+}
+
 template <typename T, typename... T1>
-static bool try_handle_type_impl(options_dumper::value_info& info, 
-  const boost::program_options::typed_value_base* option, 
+inline static bool try_handle_type_impl(options_dumper::value_info& info, 
+  const boost::program_options::value_semantic* option, 
   const char* type_name)
 {
   auto* typed_option = dynamic_cast<const boost::program_options::typed_value<T>*>(option);
@@ -47,25 +67,17 @@ static bool try_handle_type_impl(options_dumper::value_info& info,
 
   fc::variant def_value;
   if (!def_value_any.empty()) {
-    if constexpr (is_std_vector<T>::value) {
+    if constexpr (is_vector) {
       std::vector<std::string> def_value_vec;
 
       for (const auto& v : boost::any_cast<T>(def_value_any)) {
-        std::ostringstream oss;
-        oss.setf(std::ios::boolalpha);
-        oss << v;
-
-        def_value_vec.push_back(oss.str());
+        def_value_vec.push_back(boost::lexical_cast<std::string>(v));
       }
 
       def_value = std::move(def_value_vec);
     }
     else {
-      std::ostringstream oss;
-      oss.setf(std::ios::boolalpha);
-      oss << boost::any_cast<T>(def_value_any);
-
-      def_value = oss.str();
+      def_value = boost::lexical_cast<std::string>(boost::any_cast<T>(def_value_any));
     }
   } else {
     if constexpr (is_vector)
@@ -88,7 +100,7 @@ static bool try_handle_type_impl(options_dumper::value_info& info,
 
 template <typename... T>
 static bool try_handle_type(options_dumper::value_info& info, 
-  const boost::program_options::typed_value_base* option, 
+  const boost::program_options::value_semantic* option, 
   const char* type_name, bool multitoken)
 {
   if (multitoken)
@@ -141,30 +153,26 @@ const boost::program_options::value_semantic* semantic) -> std::optional<value_i
     return std::nullopt;
 
   value_info info;
-  bool multitoken = semantic->max_tokens() > 1;
+  bool multitoken = detail::is_multitoken(semantic);
 
-  if (detail::try_handle_type<bool>(info, typed, "bool", multitoken))
-    return info;
-  if (detail::try_handle_type<int16_t>(info, typed, "short", multitoken))
-    return info;
-  if (detail::try_handle_type<int32_t>(info, typed, "int", multitoken))
-    return info;
-  if (detail::try_handle_type<int64_t>(info, typed, "long", multitoken))
-    return info;
-  if (detail::try_handle_type<uint16_t>(info, typed, "ushort", multitoken))
-    return info;
-  if (detail::try_handle_type<uint32_t>(info, typed, "uint", multitoken))
-    return info;
-  if (detail::try_handle_type<uint64_t>(info, typed, "ulong", multitoken))
-    return info;
-  if (detail::try_handle_type<std::string, fc::string>(info, typed, "string", multitoken))
-    return info;
-  if (detail::try_handle_type<boost::filesystem::path>(info, typed, "path", multitoken))
+  bool success = detail::any_of(
+    detail::try_handle_type<bool>(info, semantic, "bool", multitoken),
+    detail::try_handle_type<int16_t>(info, semantic, "short", multitoken),
+    detail::try_handle_type<int32_t>(info, semantic, "int", multitoken),
+    detail::try_handle_type<int64_t>(info, semantic, "long", multitoken),
+    detail::try_handle_type<uint16_t>(info, semantic, "ushort", multitoken),
+    detail::try_handle_type<uint32_t>(info, semantic, "uint", multitoken),
+    detail::try_handle_type<uint64_t>(info, semantic, "ulong", multitoken),
+    detail::try_handle_type<std::string, fc::string>(info, semantic, "string", multitoken),
+    detail::try_handle_type<boost::filesystem::path>(info, semantic, "path", multitoken)
+  );
+
+  if (success)
     return info;
 
-  info.composed = false;
+  info.composed = semantic->is_composing();
   info.default_value = std::string("");
-  info.multiple_allowed = false;
+  info.multiple_allowed = multitoken;
   info.value_type = "unknown";
   return info;
 }
@@ -183,3 +191,6 @@ const boost::program_options::option_description& option) -> option_entry
 }
 
 };
+
+FC_REFLECT(appbase::options_dumper::value_info, (multiple_allowed)(composed)(value_type)(default_value));
+FC_REFLECT(appbase::options_dumper::option_entry, (name)(description)(required)(value));

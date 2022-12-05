@@ -45,6 +45,3 @@ namespace appbase {
   };
 
 };
-
-FC_REFLECT(appbase::options_dumper::value_info, (multiple_allowed)(composed)(value_type)(default_value));
-FC_REFLECT(appbase::options_dumper::option_entry, (name)(description)(required)(value));
