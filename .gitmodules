@@ -2,16 +2,16 @@
 	path = libraries/fc/vendor/secp256k1-zkp
 	url = https://github.com/ElementsProject/secp256k1-zkp.git
 [submodule "tests_api"]
-	path = tests/tests_api
+	path = tests/hive-local-tools/tests_api
 	url = ../tests_api.git
 [submodule "test_tools"]
-	path = tests/test-tools
+	path = tests/hive-local-tools/test-tools
 	url = ../test-tools.git
 [submodule "websocketpp"]
 	path = libraries/fc/vendor/websocketpp
 	url = https://github.com/zaphoyd/websocketpp.git
 [submodule "schemas"]
-	path = tests/schemas
+	path = tests/hive-local-tools/schemas
 	url = ../schemas.git
 [submodule "libraries/vendor/zstd"]
 	path = libraries/vendor/zstd
