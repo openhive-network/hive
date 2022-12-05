@@ -8,6 +8,25 @@
 
 namespace fc 
 {
+    std::string to_string(const __uint128_t& i)
+    {
+      // based on idea from https://stackoverflow.com/questions/11656241/how-to-print-uint128-t-number-using-gcc/11660651#11660651
+      constexpr auto p10 = 10000000000000000000ULL; /* 19 zeroes */
+      constexpr auto e10 = 19; // max_digits-1 for uint64_t
+
+      if (i > std::numeric_limits<uint64_t>::max())
+      {
+        __uint128_t hi = i / p10;
+        uint64_t lo = i % p10;
+        std::string lo_str = std::to_string(lo);
+        return to_string(hi) + std::string(e10 - lo_str.size(), '0') + lo_str;
+      }
+      else
+      {
+        return std::to_string(static_cast<uint64_t>(i));
+      }
+    }
+
     typedef boost::multiprecision::uint128_t  m128;
 
     template <typename T>
@@ -132,22 +151,9 @@ namespace fc
     {
       if(*this == 0) { return "0"; }
 
-      // max number is 2^^128 - 1 (~3.40×10^^38), so max digits number is 39
-      constexpr auto max_digits = 39;
-      // + room for null terminator
-      char sz [max_digits + 1];
-      char* s = sz + max_digits;
-      *s = '\0';
-      uint128 i(*this);
+      __uint128_t i = (static_cast<__uint128_t>(hi) << 64) | lo;
 
-      while (i != 0)
-      {
-        uint128 remainder;
-        divide(i, uint128(10), i, remainder);
-        *(--s) = static_cast<char>(remainder.to_integer()) + '0';
-      }
-
-      return s;
+      return to_string(i);
     }
 
 
