@@ -618,12 +618,14 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
   {
     BOOST_TEST_MESSAGE( "Testing:  update_outdel_overflow with many actors" );
     generate_block();
+    const int removal_limit = 200; //current mainnet value - if we increase it (we should, but it requires HF) we need to change it here as well
     db_plugin->debug_update( [=]( database& db )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
       });
+      db.set_remove_threshold( removal_limit );
     });
     generate_block();
     #define NUM_ACTORS 250
@@ -736,6 +738,13 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     BOOST_REQUIRE( alice_rc_end.received_delegated_rc == 0 );
     BOOST_REQUIRE( alice_rc_end.last_max_rc == creation_rc );
 
+    // we might wait couple of blocks due to limit on delegation removal
+    int i = NUM_ACTORS - removal_limit;
+    while( i > 0 )
+    {
+      generate_block();
+      i -= removal_limit;
+    }
     // We check that every delegation got deleted
     for (int i = 0; i < NUM_ACTORS; i++) {
       const rc_account_object& actor_rc_account = db->get< rc_account_object, by_name >( "actor" + std::to_string(i) );
@@ -745,7 +754,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     }
 
     // Remove vests delegation and check that we don't get the rc back immediately
-    dvso.vesting_shares = ASSET( "0.000000 VESTS");;
+    dvso.vesting_shares = ASSET( "0.000000 VESTS");
     dvso.delegator = "alice";
     dvso.delegatee = "bob";
     push_transaction(dvso, alice_private_key);
@@ -1498,88 +1507,186 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing:  erformance is taken into consideration, when `rc_direct_delegation_object` are removed" );
+    BOOST_TEST_MESSAGE( "Testing: performance is taken into consideration, when `rc_direct_delegation_object` are removed" );
     generate_block();
+    const int removal_limit = 200; //current mainnet value - if we increase it (we should, but it requires HF) we need to change it here as well
     db_plugin->debug_update( [=]( database& db )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
       });
+      db.set_remove_threshold( removal_limit );
     });
     generate_block();
 
-    ACTORS_DEFAULT_FEE( (alice)(bob) )
+    ACTORS_DEFAULT_FEE( (alice)(bob)(carol) )
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1000.000 TESTS" ) );
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "2000.000 TESTS" ) );
     generate_block();
 
-    const uint32_t nr_accounts = 100'000;
+    const uint32_t nr_accounts = removal_limit * 4;
 
     const account_object& alice_account_initial = db->get_account( "alice" );
 
     std::vector< performance::initial_data > accounts = performance::generate_accounts( this, nr_accounts );
 
-    // We delegate all our vesting shares to bob
-    delegate_vesting_shares_operation dvso;
-    dvso.vesting_shares = alice_account_initial.get_vesting();
-    dvso.delegator = "alice";
-    dvso.delegatee = {"bob"};
-    push_transaction(dvso, alice_private_key);
-
-    auto time_checker = []( std::function<void()> callable, uint32_t value = 0 )
+    auto time_checker = []( std::function<void()> callable, uint32_t value )
     {
       auto _start = std::chrono::high_resolution_clock::now();
       callable();
       auto _end = std::chrono::high_resolution_clock::now();
       double elapsed_time_ms = std::chrono::duration<double, std::milli>( _end - _start ).count();
       BOOST_TEST_MESSAGE( "time: " + std::to_string( elapsed_time_ms ) );
-      if( value )
-        BOOST_REQUIRE_GT( value, elapsed_time_ms );
+#ifdef NDEBUG
+      BOOST_REQUIRE_GT( value, elapsed_time_ms );
+#endif
     };
 
+    // We delegate all our vesting shares to bob and carol
+    delegate_vesting_shares_operation dvso;
+    dvso.vesting_shares = alice_account_initial.get_vesting();
+    dvso.vesting_shares.amount.value /= 2;
+    dvso.delegator = "alice";
+    dvso.delegatee = "bob";
+    push_transaction( dvso, alice_private_key );
+    dvso.delegatee = "carol";
+    push_transaction( dvso, alice_private_key );
+    generate_block();
+
     delegate_rc_operation op;
-    op.from = "bob";
     op.max_rc = 5;
+    custom_json_operation custom_op;
+    custom_op.id = HIVE_RC_PLUGIN_NAME;
 
     size_t cnt = 0;
     while( cnt < accounts.size() )
     {
+      op.delegatees.clear();
       for( size_t i = cnt; i < cnt + HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP; ++i )
         op.delegatees.insert( accounts[i].account );
 
       cnt += op.delegatees.size();
 
-      custom_json_operation custom_op;
-      custom_op.required_posting_auths.insert( "bob" );
-      custom_op.id = HIVE_RC_PLUGIN_NAME;
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-
       BOOST_TEST_MESSAGE( "create delegations" );
-      auto push_00 = [ this, &custom_op, &bob_private_key ]{ push_transaction(custom_op, bob_private_key); };
-      time_checker( push_00, 0 );
-      generate_block();
 
-      op.delegatees.clear();
+      custom_op.required_posting_auths.clear();
+      custom_op.required_posting_auths.insert( "bob" );
+      op.from = "bob";
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      push_transaction( custom_op, bob_private_key );
+
+      custom_op.required_posting_auths.clear();
+      custom_op.required_posting_auths.insert( "carol" );
+      op.from = "carol";
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      push_transaction( custom_op, carol_private_key );
+
+      generate_block();
     }
 
     for( auto& account : accounts )
     {
       const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
-      BOOST_REQUIRE( _account.received_delegated_rc == 5 );
+      BOOST_REQUIRE( _account.received_delegated_rc == 10 );
     }
 
     BOOST_TEST_MESSAGE( "remove delegations" );
     dvso.vesting_shares = asset( 0, VESTS_SYMBOL );
-    auto push_01 = [ this, &dvso, &alice_private_key ]{ push_transaction(dvso, alice_private_key); };
-    //for `AMD Ryzen 7 5800X 8-Core Processor` ~480ms
-    time_checker( push_01, 1000 );
+    dvso.delegatee = "bob";
+    auto push_10 = [this, &dvso, &alice_private_key] { push_transaction( dvso, alice_private_key ); };
+    time_checker( push_10, 100 ); // <- removes `removal_limit` delegations from bob, rest (3 limits) postponed
+    // leave a bit at carol - we will test supplementation of delegation removal object
+    dvso.vesting_shares = asset( op.max_rc * removal_limit * 2, VESTS_SYMBOL );
+    dvso.delegatee = "carol";
+    auto push_11 = [this, &dvso, &alice_private_key] { push_transaction( dvso, alice_private_key ); };
+    time_checker( push_11, 100 ); // <- removes `removal_limit` delegations from carol, rest (1 limit) postponed
 
+    const auto& rc_del_idx = db->get_index<rc_direct_delegation_index, by_id>();
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 2 * removal_limit );
+
+    int i = 0;
     for( auto& account : accounts )
     {
       const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
-      BOOST_REQUIRE( _account.received_delegated_rc == 0 );
+      BOOST_REQUIRE( _account.received_delegated_rc == ( i >= removal_limit ? 10 : 0 ) );
+      ++i;
     }
+    generate_block();
+    // since automatic expired delegation removal happens on end of block, now there should be twice as many removed,
+    // however only the delegations from bob are processed this way (limit on automatic removal is common for all delegations)
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 3 * removal_limit );
+
+    i = 0;
+    for( auto& account : accounts )
+    {
+      const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
+      BOOST_REQUIRE( _account.received_delegated_rc == ( i >= removal_limit * 2 ? 10 : i >= removal_limit ? 5 : 0 ) );
+      ++i;
+    }
+
+    // not possible to create new delegation while previous are still being removed
+    op.delegatees.clear();
+    op.delegatees.insert( accounts[0].account );
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "bob" );
+    op.from = "bob";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "carol" );
+    op.from = "carol";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+
+    // but we can test that dedelegation while previous one did not end just adds to the object
+    // (note that execution of dedelegation will in itself stop at removal limit and only excess
+    // will be added to the expired delegation object)
+    dvso.vesting_shares = asset( 0, VESTS_SYMBOL );
+    dvso.delegatee = "carol";
+    auto push_12 = [this, &dvso, &alice_private_key] { push_transaction( dvso, alice_private_key ); };
+    time_checker( push_12, 100 ); // <- removes `removal_limit` delegations from carol, rest (1 limit) added postponed
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 4 * removal_limit );
+
+    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "1000.000 TESTS" ) );
+    vest( HIVE_INIT_MINER_NAME, "carol", ASSET( "1000.000 TESTS" ) );
+    // even though delegators have new vests that could cover not-yet-removed delegations
+    // we still continue to remove them (we could make it differently but that complicates
+    // implementation - the mechanism is an safety trigger, so it should be simple)
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "bob" );
+    op.from = "bob";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "carol" );
+    op.from = "carol";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+
+    generate_block();
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 5 * removal_limit );
+    generate_block();
+
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 6 * removal_limit );
+    // bob is free to delegate again, since he was first in queue so his delegations were handled first
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "bob" );
+    op.from = "bob";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    push_transaction( custom_op, bob_private_key );
+    // carol is still 2 blocks behind with delegation removal
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "carol" );
+    op.from = "carol";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+
+    generate_block();
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 7 * removal_limit + 1 );
+    generate_block();
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 1 );
+    push_transaction( custom_op, carol_private_key );
 
     validate_database();
   }
