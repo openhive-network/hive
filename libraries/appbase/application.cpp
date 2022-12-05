@@ -344,8 +344,7 @@ initialization_result application::initialize_impl(int argc, char** argv, vector
 
       std::cout << dumper.dump_to_string() << "\n";
 
-      return false; // After merging !711, this should be changed to 
-                    // return initialization_result::ok_do_not_start_loop;
+      return { initialization_result::ok, false };
     }
 
     if(my->_args.count("plugin") > 0)
