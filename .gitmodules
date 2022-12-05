@@ -5,7 +5,7 @@
 	path = tests/tests_api
 	url = ../tests_api.git
 [submodule "test_tools"]
-	path = tests/test_tools
+	path = tests/test-tools
 	url = ../test-tools.git
 [submodule "websocketpp"]
 	path = libraries/fc/vendor/websocketpp
