@@ -18,11 +18,6 @@ variables:
   TEST_IMAGE_TAG: "@sha256:f6f8d1a300a7f13c1c5a64088db38cd641fb2ec397f4ac46b4ae8733753a62be"
 
   # Versions of Python packages
-  PYTEST_VERSION: "7.1.2"
-  PYTEST_XDIST_VERSION: "2.5.0"
-  PYTEST_TIMEOUT_VERSION: "2.1.0"
-  PYTEST_RERUN_FAILURES_VERSION: "10.2"
-
   PYTHON_JUNIT_XML_VERSION: "1.9"
   PYTHON_DATEUTIL_VERSION: "2.8.2"
 
@@ -231,15 +226,15 @@ plugin_test:
     before_script:
       - python3 -m venv venv/
       - . venv/bin/activate
-      - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas" "$CI_PROJECT_DIR/tests/shared_tools"
+      - (cd $CI_PROJECT_DIR/tests/hive-local-tools && poetry install -E test-tools)
     artifacts:
       reports:
         junit: $JUNIT_REPORT
 
       name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
       paths:
-      - "**/generated_during_*"
-      - "**/generated_by_package_fixtures"
+        - "**/generated_during_*"
+        - "**/generated_by_package_fixtures"
       when: always
       expire_in: 1 week
 
@@ -400,10 +395,10 @@ test_tools_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
-    JUNIT_REPORT: tests/test_tools/tests/report.xml
+    JUNIT_REPORT: tests/hive-local-tools/test-tools/tests/report.xml
 
   script:
-    - cd tests/test_tools/tests
+    - cd tests/hive-local-tools/test-tools/tests
     - pip install local-tools/
     - *run-pytest
   tags:
@@ -436,7 +431,6 @@ message_format_testnet_tests:
 
   script:
     - cd tests/api_tests/message_format_tests
-    - pip3 install "$CI_PROJECT_DIR/tests/schemas"
     - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
     - *run-pytest
   tags:
@@ -460,9 +454,10 @@ datagen_api_tests:
 patterns_tests:
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  extends: .pytest_based
   variables:
     FF_NETWORK_PER_BUILD: 1
-    PYTHONPATH: "$CI_PROJECT_DIR/tests/test_tools/package"
+    PYTHONPATH: "$CI_PROJECT_DIR/tests/hive-local-tools/test-tools/package"
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
   needs:
     - job: prepare_hived_data_image
@@ -473,12 +468,8 @@ patterns_tests:
       alias: hived-instance
 
   before_script:
-    - echo "HIVED image name $HIVED_IMAGE_NAME"
-    - python3 -m venv venv/
-    - . venv/bin/activate
-    - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
+    - !reference [.test_tools_based, before_script]
     - pip3 install tox==${TOX_VERSION}
-    - pip3 install -r $CI_PROJECT_DIR/tests/api_tests/comparsion_tests/requirements.txt
 
   script:
     # run pattern tests
@@ -493,7 +484,7 @@ patterns_tests:
     - "**/from_node.log"
     - "**/ah.log"
     - "**/*.out.json"
-    - "$CI_PROJECT_DIR/tests/tests_api/hived/workdir_*"
+    - "$CI_PROJECT_DIR/tests/hive-local-tools/tests-api/hived/workdir_*"
     when: always
     expire_in: 6 hours
   tags:
@@ -518,10 +509,12 @@ transaction_serialization_testnet_tests:
 python_pattern_mainnet_tests:
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  extends: .test_tools_based
   interruptible: true
   variables:
     PYTEST_TIMEOUT_MINUTES: 27
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
+    JUNIT_REPORT: tests/api_tests/python_patterns_tests/report.xml
   needs:
     - job: prepare_hived_data_image
       artifacts: true
@@ -530,34 +523,19 @@ python_pattern_mainnet_tests:
     - name: $HIVED_IMAGE_NAME
       alias: hived-instance
 
-  before_script:
-    - echo "HIVED image name $HIVED_IMAGE_NAME"
-    - python3 -m venv venv/
-    - . venv/bin/activate
-    - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools"
-
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/api_tests/python_patterns_tests
     - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8090 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/hived-mainnet-binaries/cli_wallet)
     - *run-pytest
 
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
-    reports:
-      junit: $CI_PROJECT_DIR/tests/api_tests/python_patterns_tests/report.xml
-    paths:
-    - "**/generated_during_*"
-    - "**/generated_by_package_fixtures"
-    when: always
-    expire_in: 1 week
   tags:
     - public-runner-docker
     - hived-for-tests
 
 .message_format_tests:
   stage: test
-  extends: .pytest_based
+  extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
@@ -602,7 +580,6 @@ foundation_layer_tests:
     JUNIT_REPORT: tests/functional/python_tests/foundation_layer_tests/report.xml
 
   script:
-    - pip install pytest-rerunfailures==${PYTEST_RERUN_FAILURES_VERSION}
     - cd tests/functional/python_tests/foundation_layer_tests
     - *run-pytest
   tags:
