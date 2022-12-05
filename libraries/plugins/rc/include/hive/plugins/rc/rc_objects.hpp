@@ -8,6 +8,7 @@
 #include <hive/plugins/rc/resource_count.hpp>
 #include <hive/chain/database.hpp>
 
+#include <hive/chain/account_object.hpp>
 #include <hive/chain/hive_object_types.hpp>
 
 #include <fc/int_array.hpp>
@@ -287,14 +288,15 @@ class rc_direct_delegation_object : public object< rc_direct_delegation_object_t
   public:
     template< typename Allocator >
     rc_direct_delegation_object( allocator< Allocator > a, uint64_t _id,
-      const account_id_type& _from, const account_id_type& _to, const uint64_t& _delegated_rc)
-    : id( _id ), from(_from), to(_to), delegated_rc(_delegated_rc) {}
+      const account_object& _from, const account_object& _to, uint64_t _delegated_rc )
+    : id( _id ), from( _from.get_id() ), to( _to.get_id() ), delegated_rc( _delegated_rc ) {}
 
     account_id_type from;
     account_id_type to;
     uint64_t        delegated_rc = 0;
   CHAINBASE_UNPACK_CONSTRUCTOR(rc_direct_delegation_object);
 };
+typedef oid_ref< rc_direct_delegation_object > rc_direct_delegtion_id_type;
 
 int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account, bool only_delegable_rc = false );
 void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object& account, uint32_t now, int64_t delta, bool regenerate_mana = false );

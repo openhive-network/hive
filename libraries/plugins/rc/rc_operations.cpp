@@ -70,7 +70,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 
     if (!delegation) {
       // delegation is being created
-      _db.create<rc_direct_delegation_object>(from_account.get_id(), to_account->get_id(), op.max_rc);
+      _db.create<rc_direct_delegation_object>(from_account, *to_account, op.max_rc);
     } else {
       // delegation is being increased, decreased or deleted
       if (op.max_rc == 0) {
