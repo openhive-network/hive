@@ -5,20 +5,16 @@
 #include <boost/lexical_cast.hpp>
 #include <fc/io/json.hpp>
 #include <fc/reflect/variant.hpp>
-#include <fc/variant.hpp>
 #include <fc/variant_object.hpp>
 
 #include <algorithm>
-#include <initializer_list>
-#include <optional>
 #include <type_traits>
-#include <unordered_map>
 #include <variant>
 #include <vector>
 
 
 namespace boost {
-  template<>
+  template <>
   std::string lexical_cast<std::string, bool>(const bool& b) 
   {
     std::ostringstream ss;
@@ -93,7 +89,7 @@ inline static bool try_handle_type_impl(options_dumper::value_info& info,
   }
 
   info.composed = typed_option->is_composing();
-  info.multiple_allowed = typed_option->max_tokens() > 1;
+  info.multiple_allowed = detail::is_multitoken(option);
   info.value_type = type_name;
   info.default_value = def_value;
 
@@ -162,9 +158,11 @@ const boost::program_options::value_semantic* semantic) -> std::optional<value_i
 
   bool success = detail::any_of(
     detail::try_handle_type<bool>(info, semantic, "bool", multitoken),
+    detail::try_handle_type<int8_t>(info, semantic, "byte", multitoken),
     detail::try_handle_type<int16_t>(info, semantic, "short", multitoken),
     detail::try_handle_type<int32_t>(info, semantic, "int", multitoken),
     detail::try_handle_type<int64_t>(info, semantic, "long", multitoken),
+    detail::try_handle_type<uint8_t>(info, semantic, "ubyte", multitoken),
     detail::try_handle_type<uint16_t>(info, semantic, "ushort", multitoken),
     detail::try_handle_type<uint32_t>(info, semantic, "uint", multitoken),
     detail::try_handle_type<uint64_t>(info, semantic, "ulong", multitoken),
@@ -176,8 +174,8 @@ const boost::program_options::value_semantic* semantic) -> std::optional<value_i
     return info;
 
   info.composed = semantic->is_composing();
-  info.default_value = std::string("");
-  info.multiple_allowed = multitoken;
+  info.default_value = std::string();
+  info.multiple_allowed = detail::is_multitoken(semantic);
   info.value_type = "unknown";
   return info;
 }
