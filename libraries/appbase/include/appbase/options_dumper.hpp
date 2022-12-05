@@ -1,12 +1,10 @@
 #pragma once
 #include <boost/program_options.hpp>
-#include <fc/io/json.hpp>
+#include <fc/variant.hpp>
 
-#include <algorithm>
 #include <initializer_list>
-#include <sstream>
+#include <optional>
 #include <unordered_map>
-#include <vector>
 
 namespace appbase {
 
@@ -17,70 +15,36 @@ namespace appbase {
     using entry_t = std::pair<const std::string, option_group_t>;
 
     public:
+      struct value_info {
+        bool multiple_allowed;
+        bool composed;
+        std::string value_type;
+        fc::variant default_value;
+      };
 
       struct option_entry {
         std::string name;
         std::string description;
         bool required;
+        std::optional<value_info> value;
       };
 
-      options_dumper() {}
-      options_dumper(std::initializer_list<entry_t> entries) 
-        : _option_groups(std::move(entries)) {}
+      options_dumper();
+      options_dumper(std::initializer_list<entry_t> entries);
 
-      void add_options_group(const std::string& name, const bpo& group)
-      {
-        _option_groups.emplace(name, group);
-      }
-
-      void clear()
-      {
-        _option_groups.clear();
-      }
-
-      std::string dump_to_string() const
-      {
-        std::ostringstream ss;
-        ss << '{';
-        ss << '\n';
-
-        bool comma = false;
-        for (const auto& group : _option_groups)
-        {
-          if (comma)
-            ss << ',' << '\n';
-
-          std::vector<option_entry> entries;
-
-          for (const auto& option : group.second.get().options()) {
-            entries.emplace_back(serialize_option(*option));
-          }
-
-          ss << '"' << group.first << '"' << ": ";
-          ss << fc::json::to_pretty_string(entries);
-
-          comma = true;
-        }
-
-        ss << '}';
-
-        return ss.str();
-      }
+      void add_options_group(const std::string& name, const bpo& group);
+      void clear();
+      std::string dump_to_string() const;
 
     private:
       std::unordered_map<std::string, option_group_t> _option_groups;
+      
+      static std::optional<value_info> get_value_info(const boost::program_options::value_semantic* semantic);
+      static option_entry serialize_option(const boost::program_options::option_description& option);
 
-      option_entry serialize_option(const boost::program_options::option_description& option) const
-      {
-        
-        return {
-          option.long_name(),
-          option.description(),
-          option.semantic()->is_required(),
-        };
-      }
   };
 
 };
 
-FC_REFLECT(appbase::options_dumper::option_entry, (name)(description)(required));
+FC_REFLECT(appbase::options_dumper::value_info, (multiple_allowed)(composed)(value_type)(default_value));
+FC_REFLECT(appbase::options_dumper::option_entry, (name)(description)(required)(value));
