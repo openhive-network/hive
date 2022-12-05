@@ -348,6 +348,7 @@ namespace detail
 
                 if( _db.has_hardfork( HIVE_HARDFORK_1_26 ) )
                 {
+                  bool _change_of_serialization_is_allowed = false;
                   try
                   {
                     response.result = (*call)( func_args );
@@ -358,9 +359,7 @@ namespace detail
                         method_name == "database_api.verify_authority"
                       )
                     {
-                      mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
-                      ilog("Change of serialization( `${method_name}' ) - a legacy format is enabled now",("method_name", method_name) );
-                      response.result = (*call)( func_args );
+                      _change_of_serialization_is_allowed = true;
                     }
                     else
                     {
@@ -371,6 +370,21 @@ namespace detail
                   {
                     auto eptr = std::current_exception();
                     std::rethrow_exception( eptr );
+                  }
+
+                  if( _change_of_serialization_is_allowed )
+                  {
+                    try
+                    {
+                      mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
+                      ilog("Change of serialization( `${method_name}' ) - a legacy format is enabled now",("method_name", method_name) );
+                      response.result = (*call)( func_args );
+                    }
+                    catch(...)
+                    {
+                      auto eptr = std::current_exception();
+                      std::rethrow_exception( eptr );
+                    }
                   }
                 }
                 else
