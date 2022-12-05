@@ -41,6 +41,7 @@ endif()
 
 add_library( appbase
              application.cpp
+             options_dumper.cpp
              ${HEADERS}
            )
 

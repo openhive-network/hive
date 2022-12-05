@@ -111,7 +111,6 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path,
     assert node.get_last_block_number() == final_block  # Node should not produce any block since stop.
     assert node.is_running()  # Make sure, that node didn't crash.
 
-
 def test_hived_get_version():
     node = tt.RawNode()
     version_json = node.get_version()
@@ -122,3 +121,10 @@ def test_hived_get_version():
     assert version_json["version"].keys() == expected_keys
 
     assert version_json["version"]["node_type"] == "testnet"
+
+def test_dump_options_does_not_contain_unknown_types():
+    node = tt.RawNode()
+
+    for option in node.config_options + node.cli_options:
+        if option.value is not None:
+            assert option.value.value_type != 'unknown'
