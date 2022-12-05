@@ -51,7 +51,11 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
         http_endpoint = request.config.getoption("--http-endpoint")
         if not http_endpoint:
             raise ValueError("Please specify the http_endpoint of remote node!")
-        return tt.RemoteNode(http_endpoint=http_endpoint)
+        return (
+            tt.RemoteNode(http_endpoint="http://hive-3.pl.syncad.com:18092")
+            if request.param[0] == "mainnet_5m"
+            else tt.RemoteNode(http_endpoint="http://api.fqdn.pl:8092")
+        )
 
     def __get_all_supported_marks() -> list[Mark]:
         return list(filter(lambda mark: mark.name in create_node, all_marks))
