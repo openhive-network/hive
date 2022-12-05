@@ -43,6 +43,10 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   const rc_account_object& from_rc_account = _db.get< rc_account_object, by_name >( op.from );
   FC_ASSERT( from_rc_account.rc_manabar.last_update_time == now );
   const account_object &from_account = _db.get<account_object, by_name>(op.from);
+  FC_ASSERT( !_db.is_in_control() || !has_expired_delegation( _db, from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
+    // above is not strictly needed - we can handle new delegations during delayed undelegating just fine, however we want to discourage users
+    // from using the scheme to temporarily "pump" amount of RC, also if it is not intentional they might be confused about fresh delegations
+    // disappearing right after being formed (which might happen if we allow fresh delegations while previous were not yet cleared)
   int64_t delta_total = 0; // total amount of rc gained/delegated over the accounts
 
   for (const account_name_type& to:op.delegatees) {

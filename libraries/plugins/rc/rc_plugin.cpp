@@ -19,6 +19,8 @@
 #include <hive/chain/generic_custom_operation_interpreter.hpp>
 #include <hive/chain/index.hpp>
 
+#include <hive/chain/util/remove_guard.hpp>
+
 #include <hive/jsonball/jsonball.hpp>
 
 #include <boost/algorithm/string.hpp>
@@ -94,6 +96,9 @@ class rc_plugin_impl
     int64_t calculate_cost_of_resources( int64_t total_vests, rc_info& usage_info );
 
     fc::variant_object get_report( report_type rt, const rc_stats_object& stats ) const;
+
+    bool has_expired_delegation() const;
+    void handle_expired_delegations();
 
     database&                     _db;
     rc_plugin&                    _self;
@@ -416,6 +421,14 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
     if( note.block_num >= _enable_at_block )
       on_first_block(); //all state will be ready for full processing cycle in next block
     return;
+  }
+
+  if( _db.has_hardfork( HIVE_HARDFORK_1_26 ) )
+  {
+    // delegations were introduced in HF26, so there is no point in checking them earlier;
+    // also we are doing it in post apply block and not in pre, because otherwise transactions run
+    // during block production would have different environment than when the block was applied
+    handle_expired_delegations();
   }
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
@@ -849,51 +862,39 @@ struct post_apply_operation_visitor
     if( from_rc_account.delegated_rc <= 0 )
       return; //quick exit for all the times before RC delegations are activated (HF26)
 
-    int64_t delegation_overflow = - get_maximum_rc( from_account, from_rc_account, true );
-
-    int64_t returned_rcs = 0;
+    int64_t delegation_overflow = -get_maximum_rc( from_account, from_rc_account, true );
+    int64_t initial_overflow = delegation_overflow;
 
     if( delegation_overflow > 0 )
     {
-      const auto& rc_del_idx = _db.get_index<rc_direct_delegation_index, by_from_to>();
-      // Maybe add a new index to sort by from / amount delegated so it's always the bigger delegations that is modified first instead of the id order ?
-      // start_id just means we iterate over all the rc delegations
-      auto rc_del_itr = rc_del_idx.lower_bound( boost::make_tuple( from_account.get_id(), account_id_type::start_id() ) );
+      int16_t remove_limit = _db.get_remove_threshold();
+      remove_guard obj_perf( remove_limit );
+      remove_delegations( _db, delegation_overflow, from_account.get_id(), _current_time, obj_perf );
 
-      while( delegation_overflow > 0 && rc_del_itr != rc_del_idx.end() && rc_del_itr->from == from_account.get_id() )
+      if( delegation_overflow > 0 )
       {
-        const auto& rc_delegation = *rc_del_itr;
-        ++rc_del_itr;
-
-        int64_t delta_rc = std::min( delegation_overflow, int64_t( rc_delegation.delegated_rc ) );
-        returned_rcs += delta_rc;
-        delegation_overflow -= delta_rc;
-
-        const auto& to_account = _db.get<account_object, by_id>( rc_delegation.to );
-        const auto& to_rc_account = _db.get<rc_account_object, by_name>( to_account.get_name() );
-        //since to_account was not originally expected to be affected by operation that is being
-        //processed, we need to regenerate its mana before rc delegation is modified
-        update_rc_account_after_delegation( _db, to_rc_account, to_account, _current_time, -delta_rc, true );
-
-        // If the needed RC allow us to leave the delegation untouched, we just change the delegation to take it into account
-        if( rc_delegation.delegated_rc > (uint64_t) delta_rc )
+        // there are still active delegations that need to be cleared, but we've already exhausted the object removal limit;
+        // set an object to continue removals in following blocks while blocking explicit changes in RC delegations on account
+        auto* expired = _db.find< rc_expired_delegation_object, by_account >( from_account.get_id() );
+        if( expired != nullptr )
         {
-          _db.modify( rc_delegation, [&]( rc_direct_delegation_object& rc_del )
+          // supplement existing object from still unfinished previous delegation removal...
+          _db.modify( *expired, [&]( rc_expired_delegation_object& e )
           {
-            rc_del.delegated_rc -= delta_rc;
+            e.expired_delegation += delegation_overflow;
           } );
         }
         else
         {
-          // Otherwise, we remove it
-          _db.remove( rc_delegation );
+          // ...or create new one
+          _db.create< rc_expired_delegation_object >( from_account, delegation_overflow );
         }
       }
 
       // We don't update last_max_rc and the manabars because update_modified_accounts will do it
       _db.modify( from_rc_account, [&]( rc_account_object& rca )
       {
-        rca.delegated_rc -= returned_rcs;
+        rca.delegated_rc -= initial_overflow;
       } );
     }
   }
@@ -1370,6 +1371,44 @@ fc::variant_object rc_plugin_impl::get_report( report_type rt, const rc_stats_ob
   return report.get();
 }
 
+void rc_plugin_impl::handle_expired_delegations()
+{
+  // clear as many delegations as possible within limit starting from oldest ones (smallest id)
+  const auto& expired_idx = _db.get_index<rc_expired_delegation_index, by_id>();
+  auto expired_it = expired_idx.begin();
+  if( expired_it == expired_idx.end() )
+    return;
+
+  uint32_t now = _db.head_block_time().sec_since_epoch();
+  int16_t remove_limit = _db.get_remove_threshold();
+  remove_guard obj_perf( remove_limit );
+
+  do
+  {
+    const auto& expired = *expired_it;
+    int64_t delegation_overflow = expired.expired_delegation;
+    remove_delegations( _db, delegation_overflow, expired.from, now, obj_perf );
+
+    if( delegation_overflow > 0 )
+    {
+      // still some delegations remain for next block cycle
+      _db.modify( expired, [&]( rc_expired_delegation_object& e )
+      {
+        e.expired_delegation = delegation_overflow;
+      } );
+      break;
+    }
+    else
+    {
+      // no more delegations to clear for user related to this particular delegation overflow
+      _db.remove( expired ); //remove even if we've hit the removal limit - that overflow is empty already
+    }
+
+    expired_it = expired_idx.begin();
+  }
+  while( !obj_perf.done() && expired_it != expired_idx.end() );
+}
+
 } // detail
 
 rc_plugin::rc_plugin() {}
@@ -1436,6 +1475,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     HIVE_ADD_PLUGIN_INDEX(db, rc_account_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_usage_bucket_index);
+    HIVE_ADD_PLUGIN_INDEX(db, rc_expired_delegation_index);
 
     fc::mutable_variant_object state_opts;
 
@@ -1629,6 +1669,52 @@ void update_rc_account_after_delegation( database& _db, const rc_account_object&
     rca.last_max_rc = max_rc + delta;
     rca.received_delegated_rc += delta;
   } );
+}
+
+bool has_expired_delegation( const database& _db, const account_object& account )
+{
+  auto* expired = _db.find< rc_expired_delegation_object, by_account >( account.get_id() );
+  return expired != nullptr;
+}
+
+void remove_delegations( database& _db, int64_t& delegation_overflow, account_id_type delegator_id, uint32_t now, remove_guard& obj_perf )
+{
+  const auto& rc_del_idx = _db.get_index<rc_direct_delegation_index, by_from_to>();
+  // Maybe add a new index to sort by from / amount delegated so it's always the bigger delegations that is modified first instead of the id order ?
+  // start_id just means we iterate over all the rc delegations
+  auto rc_del_itr = rc_del_idx.lower_bound( boost::make_tuple( delegator_id, account_id_type::start_id() ) );
+
+  while( delegation_overflow > 0 && rc_del_itr != rc_del_idx.end() && rc_del_itr->from == delegator_id )
+  {
+    const auto& rc_delegation = *rc_del_itr;
+    ++rc_del_itr;
+
+    int64_t delta_rc = std::min( delegation_overflow, int64_t( rc_delegation.delegated_rc ) );
+    account_id_type to_id = rc_delegation.to;
+
+    // If the needed RC allow us to leave the delegation untouched, we just change the delegation to take it into account
+    if( rc_delegation.delegated_rc > ( uint64_t ) delta_rc )
+    {
+      _db.modify( rc_delegation, [&]( rc_direct_delegation_object& rc_del )
+      {
+        rc_del.delegated_rc -= delta_rc;
+      } );
+    }
+    else
+    {
+      // Otherwise, we remove it
+      if( !obj_perf.remove( _db, rc_delegation ) )
+        break;
+    }
+
+    const auto& to_account = _db.get<account_object, by_id>( to_id );
+    const auto& to_rc_account = _db.get<rc_account_object, by_name>( to_account.get_name() );
+    //since to_account was not originally expected to be affected by operation that is being
+    //processed, we need to regenerate its mana before rc delegation is modified
+    update_rc_account_after_delegation( _db, to_rc_account, to_account, now, -delta_rc, true );
+
+    delegation_overflow -= delta_rc;
+  }
 }
 
 } } } // hive::plugins::rc
