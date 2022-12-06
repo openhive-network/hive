@@ -20,6 +20,9 @@
 #include <hive/chain/util/uint256.hpp>
 
 #include <fc/git_revision.hpp>
+#include <fc/fixed_string.hpp>
+
+#include <boost/scope_exit.hpp>
 
 #include <boost/range/iterator_range.hpp>
 #include <boost/algorithm/string.hpp>
@@ -952,6 +955,10 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
+  
+    BOOST_SCOPE_EXIT(void) { fc::verifier_switch::set_verify( false ); } BOOST_SCOPE_EXIT_END
+    fc::verifier_switch::set_verify( true );
+
     return _network_broadcast_api->broadcast_transaction( { signed_transaction( args.at(0).as< legacy_signed_transaction >() ) } );
   }
 
@@ -960,6 +967,9 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
     FC_ASSERT( _p2p != nullptr, "p2p_plugin not enabled." );
+
+    BOOST_SCOPE_EXIT(void) { fc::verifier_switch::set_verify( false ); } BOOST_SCOPE_EXIT_END
+    fc::verifier_switch::set_verify( true );
 
     fc::time_point api_start_time = fc::time_point::now();
     signed_transaction trx = args.at(0).as< legacy_signed_transaction >();
