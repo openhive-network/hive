@@ -29,3 +29,14 @@ def test_create_account_operation_hf26_serialization(wallet_with_hf26_serializat
     accounts = wallet_with_hf26_serialization.api.list_accounts(0, 100)
 
     assert 'alice' in accounts
+
+
+def test_correctness_of_operations_storage(wallet_with_legacy_serialization, wallet_with_hf26_serialization):
+    legacy_transaction = wallet_with_legacy_serialization.api.create_account('initminer', 'alice', '{}', broadcast=False)
+    hf26_transaction = wallet_with_hf26_serialization.api.create_account('initminer', 'alice', '{}', broadcast=False)
+
+    assert isinstance(legacy_transaction['operations'][0], list)
+    assert isinstance(hf26_transaction['operations'][0], dict)
+
+    assert isinstance(legacy_transaction['operations'][0][1]['fee'], str)
+    assert isinstance(hf26_transaction['operations'][0]['value']['fee'], dict)
