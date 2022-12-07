@@ -44,17 +44,20 @@ def test_proposal_status_filter_on_list_proposal_votes(node, api, status):
 
 
 def wait_for_proposal_expiration(node: tt.InitNode) -> None:
-    start = tt.Time.now(serialize=False)
-    while True:
-        assert tt.Time.now(serialize=False) - start < tt.Time.minutes(1), "Proposal didn't expire within indicated time"
-        expiration_proposal = node.api.database.list_proposals(start=[""],
-                                                               limit=100,
-                                                               order='by_creator',
-                                                               order_direction='ascending',
-                                                               status='expired'
-                                                               )['proposals']
-        if len(expiration_proposal) > 0:
-            break
+    def is_proposal_expired() -> bool:
+        return bool(
+            node.api.database.list_proposals(
+                start=[""],
+                limit=100,
+                order="by_creator",
+                order_direction="ascending",
+                status="expired",
+            )["proposals"]
+        )
+
+    error_message = "Proposal didn't expired within indicated time."
+    tt.Time.wait_for(is_proposal_expired, timeout=tt.Time.minutes(1), timeout_error_message=error_message)
+
 
 def approve_all_created_proposals(node: tt.InitNode, wallet: tt.Wallet) -> None:
     voters = get_account_names(wallet.create_accounts(VOTERS_AMOUNT))
