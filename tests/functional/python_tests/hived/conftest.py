@@ -1,12 +1,12 @@
 from pathlib import Path
 from typing import Tuple
 
-from pytest import fixture
+import pytest
 
 import test_tools as tt
 
 
-@fixture(scope='package')
+@pytest.fixture(scope='package')
 def block_log_helper() -> Tuple[tt.BlockLog, int]:
     BLOCK_COUNT = 30
 
@@ -22,17 +22,17 @@ def block_log_helper() -> Tuple[tt.BlockLog, int]:
     yield node.block_log, block_log_length
 
 
-@fixture(scope='package')
+@pytest.fixture(scope='package')
 def block_log(block_log_helper) -> Path:
     return block_log_helper[0].path
 
 
-@fixture(scope='package')
+@pytest.fixture(scope='package')
 def block_log_length(block_log_helper) -> int:
     return block_log_helper[1]
 
 
-@fixture
+@pytest.fixture
 def node_with_20k_proposal_votes():
     block_log_directory = Path(__file__).parent / 'block_log'
     block_log_path = block_log_directory / "block_log"
