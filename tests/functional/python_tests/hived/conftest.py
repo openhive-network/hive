@@ -6,7 +6,7 @@ import pytest
 import test_tools as tt
 
 
-@pytest.fixture(scope='package')
+@pytest.fixture
 def block_log_helper() -> Tuple[tt.BlockLog, int]:
     BLOCK_COUNT = 30
 
@@ -22,12 +22,12 @@ def block_log_helper() -> Tuple[tt.BlockLog, int]:
     yield node.block_log, block_log_length
 
 
-@pytest.fixture(scope='package')
+@pytest.fixture
 def block_log(block_log_helper) -> Path:
     return block_log_helper[0].path
 
 
-@pytest.fixture(scope='package')
+@pytest.fixture
 def block_log_length(block_log_helper) -> int:
     return block_log_helper[1]
 
