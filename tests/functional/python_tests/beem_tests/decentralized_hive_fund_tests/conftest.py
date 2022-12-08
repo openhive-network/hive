@@ -15,12 +15,12 @@ TREASURY: Final[str] = "hive.fund"
 def node() -> tt.InitNode:
     """
     Some tests in decentralized_hive_fund_tests produces around 90k blocks which results in a large size of
-    `p2p.log` logs that weighs excessively around 500mb compressed. This fixture overrides the default `node` fixture
-    to reduce the size of the logs, by setting the problematic `chainlock` logger to a higher log level.
+    `p2p.log` and 'stderr.txt' logs that weighs excessively around 500mb compressed. This fixture overrides the default
+    `node` fixture to reduce the size of the logs, by setting the problematic loggers to a higher log level.
     """
     node = tt.InitNode()
     node.config.log_logger = (
-        '{"name":"default","level":"debug","appender":"stderr"} '
+        '{"name":"default","level":"error","appender":"stderr"} '
         '{"name":"user","level":"debug","appender":"stderr"} '
         '{"name":"chainlock","level":"error","appender":"p2p"} '
         '{"name":"sync","level":"debug","appender":"p2p"} '
