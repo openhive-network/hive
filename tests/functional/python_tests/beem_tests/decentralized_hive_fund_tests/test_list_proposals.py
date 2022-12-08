@@ -5,7 +5,7 @@ from beem.account import Account
 from beembase.operations import Create_proposal
 import test_tools as tt
 
-from .conftest import CREATOR,  TREASURY
+from .local_tools import CREATOR,  TREASURY
 from ..conftest import NodeClientMaker
 from .... import hive_utils
 

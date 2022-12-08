@@ -7,7 +7,7 @@ from requests import post
 import test_tools as tt
 
 from . import test_utils
-from .conftest import create_proposals, CREATOR, TREASURY
+from .local_tools import create_proposals, CREATOR, TREASURY
 from ..conftest import NodeClientMaker
 from .... import hive_utils
 

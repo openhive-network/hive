@@ -8,7 +8,7 @@ from beembase.operations import Update_proposal_votes
 import dateutil.parser
 import test_tools as tt
 
-from .conftest import CREATOR
+from .local_tools import CREATOR
 from .test_utils import get_permlink
 from ..conftest import NodeClientMaker
 from .... import hive_utils
