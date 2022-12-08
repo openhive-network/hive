@@ -1287,22 +1287,23 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
 
       for(const auto& op : reversibleOps)
       {
-        if(limit.valid() && (cntLimit >= *limit) && op.block != lastFoundBlock)
-        {
-          /** There is no available any stable identifier to be next stored inside persistent storage.
-          *   Such identifier would be required for case when paging will be supported here and
-          *   block have been converted into irreversible between calls.
-          *   So for simplicity, just all ops will be returned up to processed next block.
-          */
-          nextElementAfterLimit = 0;
-          lastFoundBlock = op.block;
-          break;
-        }
 
         /// Accept only virtual operations
         if (op.is_virtual)
-          if(processor(op, op.id, false))
+        {
+          if(limit.valid() && (cntLimit >= *limit))
+          {
+            /** There is no available any stable identifier to be next stored inside persistent storage.
+            *   Such identifier would be required for case when paging will be supported here and
+            *   block have been converted into irreversible between calls.
+            *   So for simplicity, just all ops will be returned up to processed next block.
+            */
+            nextElementAfterLimit = (op.block != lastFoundBlock ? 0 : decltype(nextElementAfterLimit){});
+            lastFoundBlock = op.block;
+            break;
+          }else if(processor(op, op.id, false))
             ++cntLimit;
+        }
 
         lastFoundBlock = op.block;
       }
