@@ -7,7 +7,7 @@ import pytest
 import test_tools as tt
 
 from .local_tools import CREATOR
-from ..conftest import NodeClientMaker
+from ..local_tools import NodeClientMaker
 from .... import hive_utils
 
 

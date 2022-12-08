@@ -6,7 +6,7 @@ from beembase.operations import Update_proposal_votes
 
 from .. import test_utils
 from ..local_tools import CREATOR,  TREASURY
-from ...conftest import NodeClientMaker
+from ...local_tools import NodeClientMaker
 from ..... import hive_utils
 
 

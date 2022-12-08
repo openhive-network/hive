@@ -6,7 +6,7 @@ import test_tools as tt
 
 from .. import test_utils
 from ..local_tools import create_proposals, CREATOR, TREASURY
-from ...conftest import NodeClientMaker
+from ...local_tools import NodeClientMaker
 from ..... import hive_utils
 
 

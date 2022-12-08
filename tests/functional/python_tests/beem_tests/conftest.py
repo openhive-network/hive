@@ -1,8 +1,10 @@
-from typing import List, Protocol
+from typing import List
 
 import pytest
 
 from beem import Hive
+
+from .local_tools import NodeClientMaker
 
 
 def pytest_addoption(parser):
@@ -18,11 +20,6 @@ def chain_id(request):
 @pytest.fixture
 def skeleton_key(request):
     return request.config.getoption("--skeleton-key") or "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
-
-
-class NodeClientMaker(Protocol):
-    def __call__(self, accounts: List[dict] = None) -> Hive:
-        pass
 
 
 @pytest.fixture

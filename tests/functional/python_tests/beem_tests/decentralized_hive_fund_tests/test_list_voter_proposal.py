@@ -10,7 +10,7 @@ import test_tools as tt
 
 from .local_tools import CREATOR
 from .test_utils import get_permlink
-from ..conftest import NodeClientMaker
+from ..local_tools import NodeClientMaker
 from .... import hive_utils
 
 
