@@ -4,7 +4,7 @@ from beem import Hive
 from beembase.operations import Account_witness_proxy
 import test_tools as tt
 
-from .conftest import vote_proposals
+from .local_tools import vote_proposals
 from .. import test_utils
 from ..conftest import CREATOR, TREASURY
 from ...conftest import NodeClientMaker

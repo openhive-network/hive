@@ -3,7 +3,7 @@ import datetime
 from beem import Hive
 import test_tools as tt
 
-from .conftest import vote_proposals
+from .local_tools import vote_proposals
 from .. import test_utils
 from ..conftest import CREATOR,  TREASURY
 from ...conftest import NodeClientMaker
