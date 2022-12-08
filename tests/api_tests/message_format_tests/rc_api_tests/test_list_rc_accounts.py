@@ -17,7 +17,7 @@ CORRECT_VALUES = [
         (True, 100),
 
         # LIMIT
-        (ACCOUNT, 0),
+        (ACCOUNT, 1),
         (ACCOUNT, 1000),
 ]
 
@@ -46,6 +46,7 @@ def test_list_rc_accounts_with_correct_values(ready_node, rc_account, limit):
     "rc_account, limit", [
         # LIMIT
         (ACCOUNT, -1),
+        (ACCOUNT, 0),
         (ACCOUNT, 1001),
     ]
 )
@@ -77,7 +78,6 @@ def test_list_rc_account_with_additional_argument(ready_node):
     ready_node.api.rc.list_rc_accounts(start=ACCOUNT, limit=100, additional_argument="additional_argument")
 
 
-@pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/422")
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_account_with_missing_argument(ready_node):
     with pytest.raises(tt.exceptions.CommunicationError):

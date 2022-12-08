@@ -14,7 +14,7 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], '', 100),
 
         # LIMIT
-        (ACCOUNTS[0], ACCOUNTS[1], 0),
+        (ACCOUNTS[0], ACCOUNTS[1], 1),
         (ACCOUNTS[0], ACCOUNTS[1], 1000),
 ]
 
@@ -50,6 +50,7 @@ def test_list_rc_direct_delegations_with_correct_value(ready_node, from_, to, li
 
         # LIMIT
         (ACCOUNTS[0], ACCOUNTS[1], -1),
+        (ACCOUNTS[0], ACCOUNTS[1], 0),
         (ACCOUNTS[0], '', 1001),
     ]
 )
@@ -93,7 +94,6 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(ready_node,
         ready_node.api.rc.list_rc_direct_delegations(start=[from_, to], limit=limit)
 
 
-@pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/422")
 @run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_list_rc_direct_delegations_with_missing_argument(ready_node):
     with pytest.raises(tt.exceptions.CommunicationError):

@@ -104,7 +104,7 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
 
 DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
 {
-  FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= RC_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
 
   list_rc_accounts_return result;
   result.rc_accounts.reserve( args.limit );
@@ -127,7 +127,7 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
 
 DEFINE_API_IMPL( rc_api_impl, list_rc_direct_delegations )
 {
-  FC_ASSERT( args.limit <= RC_API_SINGLE_QUERY_LIMIT );
+  FC_ASSERT( 0 < args.limit && args.limit <= RC_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
   list_rc_direct_delegations_return result;
   result.rc_direct_delegations.reserve( args.limit );
 

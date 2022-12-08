@@ -17,7 +17,7 @@ CORRECT_VALUES = [
         (True, 100),
 
         # LIMIT
-        (ACCOUNTS[0], 0),
+        (ACCOUNTS[0], 1),
         (ACCOUNTS[0], 1000),
 ]
 
@@ -38,6 +38,7 @@ def test_list_rc_accounts_with_correct_values(node, wallet, rc_account, limit):
     'rc_account, limit', [
         # LIMIT
         (ACCOUNTS[0], -1),
+        (ACCOUNTS[0], 0),
         (ACCOUNTS[0], 1001),
     ]
 )

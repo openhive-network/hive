@@ -12,7 +12,7 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], '', 100),
 
         # LIMIT
-        (ACCOUNTS[0], ACCOUNTS[1], 0),
+        (ACCOUNTS[0], ACCOUNTS[1], 1),
         (ACCOUNTS[0], ACCOUNTS[1], 1000),
 ]
 
@@ -43,6 +43,7 @@ def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, 
 
         # LIMIT
         (ACCOUNTS[0], ACCOUNTS[1], -1),
+        (ACCOUNTS[0], ACCOUNTS[1], 0),
         (ACCOUNTS[0], '', 1001),
     ]
 )
