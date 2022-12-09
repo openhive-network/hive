@@ -1,5 +1,9 @@
 #pragma once
-#include <fc/uint128.hpp>   
+#include <fc/uint128.hpp>
+
+#include <cstdint>
+#include <string>
+
 
 #define FC_REAL128_PRECISION (uint64_t(1000000) * uint64_t(1000000) * uint64_t(1000000))
 
