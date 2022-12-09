@@ -1,157 +1,100 @@
 #pragma once
-#include <limits>
-#include <stdint.h>
-#include <string>
 
-#include <fc/exception/exception.hpp>
-#include <fc/crypto/city.hpp>
+#if !defined(__SIZEOF_INT128__)
+#pragma error("Missing __uint128_t support!")
+#endif
 
 #ifdef _MSC_VER
   #pragma warning (push)
   #pragma warning (disable : 4244)
 #endif //// _MSC_VER
 
+#include <fc/exception/exception.hpp>
+
+#include <string>
+
 namespace fc
 {
-  class bigint;
-  /**
-   *  @brief an implementation of 128 bit unsigned integer
-   *
-   */
-  class uint128
-  {
-    public:
-      uint128():hi(0),lo(0){}
-      uint128( uint32_t l ):hi(0),lo(l){}
-      uint128( int32_t l ):hi( -(l<0) ),lo(l){}
-      uint128( int64_t l ):hi( -(l<0) ),lo(l){}
-      uint128( uint64_t l ):hi(0),lo(l){}
-      uint128( const std::string& s );
-      uint128( uint64_t _h, uint64_t _l )
-      :hi(_h),lo(_l){}
-      uint128( const fc::bigint& bi );
+class bigint;
 
-      operator std::string()const;
-      operator fc::bigint()const;
+size_t city_hash_size_t(const char *buf, size_t len);
 
-      bool     operator == ( const uint128& o )const{ return hi == o.hi && lo == o.lo;             }
-      bool     operator != ( const uint128& o )const{ return hi != o.hi || lo != o.lo;             }
-      bool     operator < ( const uint128& o )const { return (hi == o.hi) ? lo < o.lo : hi < o.hi; }
-      bool     operator < ( const int64_t& o )const { return *this < uint128(o);                   }
-      bool     operator !()const                    { return !(hi !=0 || lo != 0);                 }
-      uint128  operator -()const                    { return ++uint128( ~hi, ~lo );                }
-      uint128  operator ~()const                    { return uint128( ~hi, ~lo );                  }
+using uint128_t = __uint128_t;
+using uint128 = uint128_t;
 
-      uint128& operator++()    {  hi += (++lo == 0); return *this; }
-      uint128& operator--()    {  hi -= (lo-- == 0); return *this; }
-      uint128  operator++(int) { auto tmp = *this; ++(*this); return tmp; }
-      uint128  operator--(int) { auto tmp = *this; --(*this); return tmp; }
+inline uint128_t to_uint128( const uint64_t& hi, const uint64_t& lo ) { return (static_cast<uint128_t>(hi) << 64) | lo; }
 
-      uint128& operator |= ( const uint128& u ) { hi |= u.hi; lo |= u.lo; return *this; }
-      uint128& operator &= ( const uint128& u ) { hi &= u.hi; lo &= u.lo; return *this; }
-      uint128& operator ^= ( const uint128& u ) { hi ^= u.hi; lo ^= u.lo; return *this; }
-      uint128& operator <<= ( const uint128& u );
-      uint128& operator >>= ( const uint128& u );
+uint128_t bigint_to_uint128( const fc::bigint& bi );
 
-      uint128& operator += ( const uint128& u ) { const uint64_t old = lo; lo += u.lo;  hi += u.hi + (lo < old); return *this; }
-      uint128& operator -= ( const uint128& u ) { return *this += -u; }
-      uint128& operator *= ( const uint128& u );
-      uint128& operator /= ( const uint128& u );
-      uint128& operator %= ( const uint128& u );
+uint128_t string_to_uint128( const std::string& s );
 
+fc::bigint uint128_to_bigint( const uint128_t& u );
 
-      friend uint128 operator + ( const uint128& l, const uint128& r )   { return uint128(l)+=r;   }
-      friend uint128 operator - ( const uint128& l, const uint128& r )   { return uint128(l)-=r;   }
-      friend uint128 operator * ( const uint128& l, const uint128& r )   { return uint128(l)*=r;   }
-      friend uint128 operator / ( const uint128& l, const uint128& r )   { return uint128(l)/=r;   }
-      friend uint128 operator % ( const uint128& l, const uint128& r )   { return uint128(l)%=r;   }
-      friend uint128 operator | ( const uint128& l, const uint128& r )   { return uint128(l)=(r);  }
-      friend uint128 operator & ( const uint128& l, const uint128& r )   { return uint128(l)&=r;   }
-      friend uint128 operator ^ ( const uint128& l, const uint128& r )   { return uint128(l)^=r;   }
-      friend uint128 operator << ( const uint128& l, const uint128& r )  { return uint128(l)<<=r;  }
-      friend uint128 operator >> ( const uint128& l, const uint128& r )  { return uint128(l)>>=r;  }
-      friend bool    operator >  ( const uint128& l, const uint128& r )  { return r < l;           }
-      friend bool    operator >  ( const uint128& l, const int64_t& r )  { return uint128(r) < l;  }
-      friend bool    operator >  ( const int64_t& l, const uint128& r )  { return r < uint128(l);  }
+inline std::size_t uint128_hash_value( const uint128_t& v ) { return city_hash_size_t((const char*)&v, sizeof(v)); }
 
-      friend bool    operator >=  ( const uint128& l, const uint128& r ) { return l == r || l > r; }
-      friend bool    operator >=  ( const uint128& l, const int64_t& r ) { return l >= uint128(r); }
-      friend bool    operator >=  ( const int64_t& l, const uint128& r ) { return uint128(l) >= r; }
-      friend bool    operator <=  ( const uint128& l, const uint128& r ) { return l == r || l < r; }
-      friend bool    operator <=  ( const uint128& l, const int64_t& r ) { return l <= uint128(r); }
-      friend bool    operator <=  ( const int64_t& l, const uint128& r ) { return uint128(l) <= r; }
+inline uint32_t uint128_to_integer( const uint128_t& u )
+{
+  FC_ASSERT( u <= std::numeric_limits<uint32_t>::max() );
+  return static_cast<uint32_t>(u);
+}
 
-      friend std::size_t hash_value( const uint128& v ) { return city_hash_size_t((const char*)&v, sizeof(v)); }
+inline uint64_t uint128_to_uint64( const uint128_t& u )
+{
+  FC_ASSERT( u <= std::numeric_limits<uint64_t>::max() );
+  return static_cast<uint64_t>(u);
+}
 
-      uint32_t to_integer()const
-      {
-        FC_ASSERT( hi == 0 );
-        uint32_t lo32 = (uint32_t) lo;
-        FC_ASSERT( lo == lo32 );
-        return lo32;
-      }
-      uint64_t to_uint64()const
-      {
-        FC_ASSERT( hi == 0 );
-        return lo;
-      }
-      uint32_t low_32_bits()const { return (uint32_t) lo; }
-      uint64_t low_bits()const  { return lo; }
-      uint64_t high_bits()const { return hi; }
-      int64_t to_int64()const
-      {
-        FC_ASSERT( hi == 0 );
-        FC_ASSERT( lo <= uint64_t( std::numeric_limits<int64_t>::max() ) );
-        return int64_t(lo);
-      }
+inline uint32_t uint128_low_32_bits( const uint128_t& u ) { return static_cast<uint32_t>(u); }
+inline uint64_t uint128_low_bits( const uint128_t& u ) { return static_cast<uint64_t>(u); }
+inline uint64_t uint128_high_bits( const uint128_t& u ) { return static_cast<uint64_t>(u >> 64); }
 
-      static uint128 max_value()
-      {
-        const uint64_t max64 = std::numeric_limits<uint64_t>::max();
-        return uint128( max64, max64 );
-      }
+inline int64_t uint128_to_int64( const uint128_t& u )
+{
+  FC_ASSERT( u <= std::numeric_limits<int64_t>::max() );
+  return static_cast<int64_t>(u);
+}
 
-      static void full_product( const uint128& a, const uint128& b, uint128& result_hi, uint128& result_lo );
+inline uint128_t uint128_max_value()
+{
+  constexpr uint64_t max64 = std::numeric_limits<uint64_t>::max();
+  return (static_cast<uint128_t>(max64) << 64) | max64;
+}
 
-      uint8_t popcount() const;
+void uint128_full_product( const uint128_t& a, const uint128_t& b, uint128_t& result_hi, uint128_t& result_lo );
 
-      // fields must be public for serialization
-      uint64_t hi;
-      uint64_t lo;
-  };
-  static_assert( sizeof(uint128) == 2*sizeof(uint64_t), "validate packing assumptions" );
+uint8_t uint128_popcount( const uint128_t& u );
 
-  typedef uint128 uint128_t;
+class variant;
 
-  class variant;
+void to_variant( const uint128_t& var,  variant& vo );
+void from_variant( const variant& var,  uint128_t& vo );
 
-  void to_variant( const uint128& var,  variant& vo );
-  void from_variant( const variant& var,  uint128& vo );
+namespace raw
+{
+  template<typename Stream>
+  inline void pack( Stream& s, const uint128_t& u ) { s.write( (char*)&u, sizeof(u) ); }
+  template<typename Stream>
+  inline void unpack( Stream& s, uint128_t& u, uint32_t ) { s.read( (char*)&u, sizeof(u) ); }
+}
 
-  namespace raw
-  {
-    template<typename Stream>
-    inline void pack( Stream& s, const uint128& u ) { s.write( (char*)&u, sizeof(u) ); }
-    template<typename Stream>
-    inline void unpack( Stream& s, uint128& u, uint32_t ) { s.read( (char*)&u, sizeof(u) ); }
-  }
+template<> struct get_typename<uint128_t> { static const char* name() { return "uint128_t"; } };
 
-  size_t city_hash_size_t(const char *buf, size_t len);
 } // namespace fc
 
 namespace std
 {
   template<>
-  struct hash<fc::uint128>
+  struct hash<fc::uint128_t>
   {
-    size_t operator()( const fc::uint128& s )const
+    size_t operator()( const fc::uint128_t& s )const
     {
       return fc::city_hash_size_t((char*)&s, sizeof(s));
     }
   };
+
+  string to_string( const fc::uint128_t& u );
 }
 
-FC_REFLECT( fc::uint128_t, (hi)(lo) )
 
 #ifdef _MSC_VER
   #pragma warning (pop)
