@@ -6,394 +6,194 @@
 #include <stdexcept>
 #include "byteswap.hpp"
 
-namespace fc 
+namespace fc
 {
-    typedef boost::multiprecision::uint128_t  m128;
 
-    template <typename T>
-    static void divide(const T &numerator, const T &denominator, T &quotient, T &remainder) 
-    {
-      static const int bits = sizeof(T) * 8;//CHAR_BIT;
+uint128_t bigint_to_uint128( const bigint& bi )
+{
+  return string_to_uint128( std::string(bi) ); // TODO: optimize this...
+}
 
-      if(denominator == 0) {
-        throw std::domain_error("divide by zero");
-      } else {
-        T n      = numerator;
-        T d      = denominator;
-        T x      = 1;
-        T answer = 0;
+uint128_t string_to_uint128( const std::string& s )
+{
+  uint128_t result = 0;
 
+  if (s.empty())
+    return 0;
 
-        while((n >= d) && (((d >> (bits - 1)) & 1) == 0)) {
-          x <<= 1;
-          d <<= 1;
-        }
+  // make some reasonable assumptions
+  int radix = 10;
+  bool minus = false;
 
-        while(x != 0) {
-          if(n >= d) {
-            n -= d;
-            answer |= x;
-          }
+  std::string::const_iterator i = s.begin();
 
-          x >>= 1;
-          d >>= 1;
-        }
+  // check for minus sign, i suppose technically this should only apply
+  // to base 10, but who says that -0x1 should be invalid?
+  if(*i == '-') {
+    ++i;
+    minus = true;
+  }
 
-        quotient = answer;
-        remainder = n;
-      }
-    }
-
-    uint128::uint128(const std::string &sz) 
-    :hi(0), lo(0) 
-    {
-      // do we have at least one character?
-      if(!sz.empty()) {
-        // make some reasonable assumptions
-        int radix = 10;
-        bool minus = false;
-
-        std::string::const_iterator i = sz.begin();
-
-        // check for minus sign, i suppose technically this should only apply
-        // to base 10, but who says that -0x1 should be invalid?
-        if(*i == '-') {
+  // check if there is radix changing prefix (0 or 0x)
+  if(i != s.end()) {
+    if(*i == '0') {
+      radix = 8;
+      ++i;
+      if(i != s.end()) {
+        if(*i == 'x') {
+          radix = 16;
           ++i;
-          minus = true;
-        }
-
-        // check if there is radix changing prefix (0 or 0x)
-        if(i != sz.end()) {
-          if(*i == '0') {
-            radix = 8;
-            ++i;
-            if(i != sz.end()) {
-              if(*i == 'x') {
-                radix = 16;
-                ++i;
-              }
-            }
-          }
-
-          while(i != sz.end()) {
-            unsigned int n = 0;
-            const char ch = *i;
-
-            if(ch >= 'A' && ch <= 'Z') {
-              if(((ch - 'A') + 10) < radix) {
-                n = (ch - 'A') + 10;
-              } else {
-                break;
-              }
-            } else if(ch >= 'a' && ch <= 'z') {
-              if(((ch - 'a') + 10) < radix) {
-                n = (ch - 'a') + 10;
-              } else {
-                break;
-              }
-            } else if(ch >= '0' && ch <= '9') {
-              if((ch - '0') < radix) {
-                n = (ch - '0');
-              } else {
-                break;
-              }
-            } else {
-              /* completely invalid character */
-              break;
-            }
-
-            (*this) *= radix;
-            (*this) += n;
-
-            ++i;
-          }
-        }
-
-        // if this was a negative number, do that two's compliment madness :-P
-        if(minus) {
-          *this = -*this;
         }
       }
     }
 
+    while(i != s.end()) {
+      unsigned int n = 0;
+      const char ch = *i;
 
-    uint128::operator bigint()const
-    {
-       auto tmp  = uint128( bswap_64( hi ), bswap_64( lo ) );
-       bigint bi( (char*)&tmp, sizeof(tmp) );
-       return bi;
-    }
-    uint128::uint128( const fc::bigint& bi )
-    {
-       *this = uint128( std::string(bi) ); // TODO: optimize this...
-    }
-
-    uint128::operator std::string ()const
-    {
-      if(*this == 0) { return "0"; }
-
-      // max number is 2^^128 - 1 (~3.40×10^^38), so max digits number is 39
-      constexpr auto max_digits = 39;
-      // + room for null terminator
-      char sz [max_digits + 1];
-      char* s = sz + max_digits;
-      *s = '\0';
-      uint128 i(*this);
-
-      while (i != 0)
-      {
-        uint128 remainder;
-        divide(i, uint128(10), i, remainder);
-        *(--s) = static_cast<char>(remainder.to_integer()) + '0';
-      }
-
-      return s;
-    }
-
-
-    uint128& uint128::operator<<=(const uint128& rhs) 
-    {
-        if(rhs >= 128) 
-        {
-          hi = 0;
-          lo = 0;
-        } 
-        else 
-        {
-          unsigned int n = rhs.to_integer();
-          const unsigned int halfsize = 128 / 2;
-        
-            if(n >= halfsize){
-                n -= halfsize;
-                hi = lo;
-                lo = 0;
-            }
-        
-            if(n != 0) {
-            // shift high half
-                hi <<= n;
-        
-            const uint64_t mask(~(uint64_t(-1) >> n));
-        
-            // and add them to high half
-                hi |= (lo & mask) >> (halfsize - n);
-        
-            // and finally shift also low half
-                lo <<= n;
-            }
-       }
-
-       return *this;
-    }
-
-    uint128 & uint128::operator>>=(const uint128& rhs) 
-    {
-       if(rhs >= 128)
-       {
-         hi = 0;
-         lo = 0;
-       }
-       else
-       {
-         unsigned int n = rhs.to_integer();
-         const unsigned int halfsize = 128 / 2;
-       
-           if(n >= halfsize) {
-               n -= halfsize;
-               lo = hi;
-               hi = 0;
-           }
-       
-           if(n != 0) {
-           // shift low half
-               lo >>= n;
-       
-           // get lower N bits of high half
-           const uint64_t mask(~(uint64_t(-1) << n));
-       
-           // and add them to low qword
-               lo |= (hi & mask) << (halfsize - n);
-       
-           // and finally shift also high half
-               hi >>= n;
-           }
-      }
-      return *this;
-   }
-
-    uint128& uint128::operator/=(const uint128 &b) 
-    {
-        auto self = (m128(hi) << 64) + m128(lo);
-        auto other = (m128(b.hi) << 64) + m128(b.lo);
-        self /= other;
-        hi = static_cast<uint64_t>(self >> 64);
-        lo = static_cast<uint64_t>((self << 64 ) >> 64);
-
-        /*
-        uint128 remainder;
-        divide(*this, b, *this, remainder ); //, *this);
-        if( tmp.hi != hi || tmp.lo != lo ) {
-           std::cerr << tmp.hi << "  " << hi <<"\n";
-           std::cerr << tmp.lo << "  " << lo << "\n";
-           exit(1);
+      if(ch >= 'A' && ch <= 'Z') {
+        if(((ch - 'A') + 10) < radix) {
+          n = (ch - 'A') + 10;
+        } else {
+          break;
         }
-        */
-       
-        /*
-        const auto&  b128 = std::reinterpret_cast<const m128&>(b);
-        auto&     this128 = std::reinterpret_cast<m128&>(*this);
-        this128 /= b128;
-        */
-        return *this;
-    }
-
-    uint128& uint128::operator%=(const uint128 &b) 
-    {
-        uint128 quotient;
-        divide(*this, b, quotient, *this);
-        return *this;
-    }
-
-    uint128& uint128::operator*=(const uint128 &b) 
-    {
-        uint64_t a0 = (uint32_t) (this->lo        );
-        uint64_t a1 = (uint32_t) (this->lo >> 0x20);
-        uint64_t a2 = (uint32_t) (this->hi        );
-        uint64_t a3 = (uint32_t) (this->hi >> 0x20);
-
-        uint64_t b0 = (uint32_t) (b.lo        );
-        uint64_t b1 = (uint32_t) (b.lo >> 0x20);
-        uint64_t b2 = (uint32_t) (b.hi        );
-        uint64_t b3 = (uint32_t) (b.hi >> 0x20);
-
-        // (a0 + (a1 << 0x20) + (a2 << 0x40) + (a3 << 0x60)) *
-        // (b0 + (b1 << 0x20) + (b2 << 0x40) + (b3 << 0x60)) =
-        //  a0 * b0
-        //
-        // (a1 * b0 + a0 * b1) << 0x20
-        // (a2 * b0 + a1 * b1 + a0 * b2) << 0x40
-        // (a3 * b0 + a2 * b1 + a1 * b2 + a0 * b3) << 0x60
-        //
-        // all other cross terms are << 0x80 or higher, thus do not appear in result
-        
-        this->hi = 0;
-        this->lo = a3*b0;
-        (*this) += a2*b1;
-        (*this) += a1*b2;
-        (*this) += a0*b3;
-        (*this) <<= 0x20;
-        (*this) += a2*b0;
-        (*this) += a1*b1;
-        (*this) += a0*b2;
-        (*this) <<= 0x20;
-        (*this) += a1*b0;
-        (*this) += a0*b1;
-        (*this) <<= 0x20;
-        (*this) += a0*b0;
-
-        return *this;
-   }
-   
-   void uint128::full_product( const uint128& a, const uint128& b, uint128& result_hi, uint128& result_lo )
-   {
-       //   (ah * 2**64 + al) * (bh * 2**64 + bl)
-       // = (ah * bh * 2**128 + al * bh * 2**64 + ah * bl * 2**64 + al * bl
-       // =  P * 2**128 + (Q + R) * 2**64 + S
-       // = Ph * 2**192 + Pl * 2**128
-       // + Qh * 2**128 + Ql * 2**64
-       // + Rh * 2**128 + Rl * 2**64
-       // + Sh * 2**64  + Sl
-       //
-       
-       uint64_t ah = a.hi;
-       uint64_t al = a.lo;
-       uint64_t bh = b.hi;
-       uint64_t bl = b.lo;
-
-       uint128 s = al;
-       s *= bl;
-       uint128 r = ah;
-       r *= bl;
-       uint128 q = al;
-       q *= bh;
-       uint128 p = ah;
-       p *= bh;
-       
-       uint64_t sl = s.lo;
-       uint64_t sh = s.hi;
-       uint64_t rl = r.lo;
-       uint64_t rh = r.hi;
-       uint64_t ql = q.lo;
-       uint64_t qh = q.hi;
-       uint64_t pl = p.lo;
-       uint64_t ph = p.hi;
-
-       uint64_t y[4];    // final result
-       y[0] = sl;
-       
-       uint128_t acc = sh;
-       acc += ql;
-       acc += rl;
-       y[1] = acc.lo;
-       acc = acc.hi;
-       acc += qh;
-       acc += rh;
-       acc += pl;
-       y[2] = acc.lo;
-       y[3] = acc.hi + ph;
-       
-       result_hi = uint128( y[3], y[2] );
-       result_lo = uint128( y[1], y[0] );
-       
-       return;
-   }
-
-   static uint8_t _popcount_64( uint64_t x )
-   {
-      static const uint64_t m[] = {
-         0x5555555555555555ULL,
-         0x3333333333333333ULL,
-         0x0F0F0F0F0F0F0F0FULL,
-         0x00FF00FF00FF00FFULL,
-         0x0000FFFF0000FFFFULL,
-         0x00000000FFFFFFFFULL
-      };
-      // TODO future optimization:  replace slow, portable version
-      // with fast, non-portable __builtin_popcountll intrinsic
-      // (when available)
-
-      for( int i=0, w=1; i<6; i++, w+=w )
-      {
-         x = (x & m[i]) + ((x >> w) & m[i]);
+      } else if(ch >= 'a' && ch <= 'z') {
+        if(((ch - 'a') + 10) < radix) {
+          n = (ch - 'a') + 10;
+        } else {
+          break;
+        }
+      } else if(ch >= '0' && ch <= '9') {
+        if((ch - '0') < radix) {
+          n = (ch - '0');
+        } else {
+          break;
+        }
+      } else {
+        /* completely invalid character */
+        break;
       }
-      return uint8_t(x);
-   }
 
-   uint8_t uint128::popcount()const
-   {
-      return _popcount_64( lo ) + _popcount_64( hi );
-   }
+      result *= radix;
+      result += n;
 
-   void to_variant( const uint128& var,  variant& vo )  { vo = std::string(var);         }
-   void from_variant( const variant& var,  uint128& vo ){ vo = uint128(var.as_string()); }
+      ++i;
+    }
+  }
+
+  return minus ? -result : result;
+}
+
+bigint uint128_to_bigint( const uint128_t& u )
+{
+  const auto tmp  = to_uint128( bswap_64( uint128_high_bits(u) ), bswap_64( uint128_low_bits(u) ) );
+  bigint bi( (char*)&tmp, sizeof(tmp) );
+  return bi;
+}
+
+void uint128_full_product( const uint128_t& a, const uint128_t& b, uint128_t& result_hi, uint128_t& result_lo )
+{
+  //   (ah * 2**64 + al) * (bh * 2**64 + bl)
+  // = (ah * bh * 2**128 + al * bh * 2**64 + ah * bl * 2**64 + al * bl
+  // =  P * 2**128 + (Q + R) * 2**64 + S
+  // = Ph * 2**192 + Pl * 2**128
+  // + Qh * 2**128 + Ql * 2**64
+  // + Rh * 2**128 + Rl * 2**64
+  // + Sh * 2**64  + Sl
+  //
+       
+  uint64_t ah = uint128_high_bits(a);
+  uint64_t al = uint128_low_bits(a);
+  uint64_t bh = uint128_high_bits(b);
+  uint64_t bl = uint128_low_bits(b);
+
+  uint128 s = al;
+  s *= bl;
+  uint128 r = ah;
+  r *= bl;
+  uint128 q = al;
+  q *= bh;
+  uint128 p = ah;
+  p *= bh;
+       
+  uint64_t sl = uint128_low_bits(s);
+  uint64_t sh = uint128_high_bits(s);
+  uint64_t rl = uint128_low_bits(r);
+  uint64_t rh = uint128_high_bits(r);
+  uint64_t ql = uint128_low_bits(q);
+  uint64_t qh = uint128_high_bits(q);
+  uint64_t pl = uint128_low_bits(p);
+  uint64_t ph = uint128_high_bits(p);
+
+  uint64_t y[4];    // final result
+  y[0] = sl;
+       
+  uint128_t acc = sh;
+  acc += ql;
+  acc += rl;
+  y[1] = uint128_low_bits(acc);
+  acc = uint128_high_bits(acc);
+  acc += qh;
+  acc += rh;
+  acc += pl;
+  y[2] = uint128_low_bits(acc);
+  y[3] = uint128_high_bits(acc) + ph;
+       
+  result_hi = to_uint128( y[3], y[2] );
+  result_lo = to_uint128( y[1], y[0] );
+       
+  return;
+}
+
+static uint8_t _popcount_64( uint64_t x )
+{
+  static const uint64_t m[] = {
+      0x5555555555555555ULL,
+      0x3333333333333333ULL,
+      0x0F0F0F0F0F0F0F0FULL,
+      0x00FF00FF00FF00FFULL,
+      0x0000FFFF0000FFFFULL,
+      0x00000000FFFFFFFFULL
+  };
+  // TODO future optimization:  replace slow, portable version
+  // with fast, non-portable __builtin_popcountll intrinsic
+  // (when available)
+
+  for( int i=0, w=1; i<6; i++, w+=w )
+  {
+      x = (x & m[i]) + ((x >> w) & m[i]);
+  }
+  return uint8_t(x);
+}
+
+uint8_t uint128_popcount( const uint128_t& u )
+{
+  return _popcount_64( uint128_low_bits(u) ) + _popcount_64( uint128_high_bits(u) );
+}
+
+void to_variant( const uint128_t& var,  variant& vo )  { vo = std::to_string(var);                }
+void from_variant( const variant& var,  uint128_t& vo ){ vo = string_to_uint128(var.as_string()); }
 
 } // namespace fc
 
+namespace std
+{
+  string to_string( const fc::uint128_t& u )
+  {
+    // based on idea from https://stackoverflow.com/questions/11656241/how-to-print-uint128-t-number-using-gcc/11660651#11660651
+    constexpr auto p10 = 10000000000000000000ULL; /* 19 zeroes */
+    constexpr auto e10 = 19; // max_digits-1 for uint64_t
 
-/*
- * Portions of the above code were adapted from the work of Evan Teran.
- *
- * Copyright (c) 2008
- * Evan Teran
- *
- * Permission to use, copy, modify, and distribute this software and its
- * documentation for any purpose and without fee is hereby granted, provided
- * that the above copyright notice appears in all copies and that both the
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the same name not be used in advertising or
- * publicity pertaining to distribution of the software without specific,
- * written prior permission. We make no representations about the
- * suitability this software for any purpose. It is provided "as is"
- * without express or implied warranty.
- */
-
+    if (u > numeric_limits<uint64_t>::max())
+    {
+      __uint128_t hi = u / p10;
+      uint64_t lo = u % p10;
+      string lo_str = to_string(lo);
+      return to_string(hi) + string(e10 - lo_str.size(), '0') + lo_str;
+    }
+    else
+    {
+      return to_string(static_cast<uint64_t>(u));
+    }
+  }
+} // namespace std
