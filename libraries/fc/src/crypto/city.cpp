@@ -47,8 +47,8 @@ namespace fc {
 using namespace std;
 
 
-inline uint64_t Uint128Low64(const uint128& x) { return x.low_bits(); }
-inline uint64_t Uint128High64(const uint128& x) { return x.high_bits(); }
+inline uint64_t Uint128Low64(const uint128& x) { return uint128_low_bits(x); }
+inline uint64_t Uint128High64(const uint128& x) { return uint128_high_bits(x); }
 
 // Hash 128 input bits down to 64 bits of output.
 // This is intended to be a reasonably good hash function.
@@ -295,7 +295,7 @@ static uint64_t ShiftMix(uint64_t val) {
 }
 
 static uint64_t HashLen16(uint64_t u, uint64_t v) {
-  return Hash128to64(uint128(u, v));
+  return Hash128to64(to_uint128(u, v));
 }
 
 static uint64_t HashLen16(uint64_t u, uint64_t v, uint64_t mul) {
@@ -467,7 +467,7 @@ static uint128 CityMurmur(const char *s, size_t len, uint128 seed) {
   }
   a = HashLen16(a, c);
   b = HashLen16(d, b);
-  return uint128(a ^ b, HashLen16(b, a));
+  return to_uint128(a ^ b, HashLen16(b, a));
 }
 
 uint128 CityHash128WithSeed(const char *s, size_t len, uint128 seed) {
@@ -529,15 +529,15 @@ uint128 CityHash128WithSeed(const char *s, size_t len, uint128 seed) {
   // different 56-byte-to-8-byte hashes to get a 16-byte final result.
   x = HashLen16(x, v.first);
   y = HashLen16(y + z, w.first);
-  return uint128(HashLen16(x + v.second, w.second) + y,
-                 HashLen16(x + w.second, y + v.second));
+  return to_uint128(HashLen16(x + v.second, w.second) + y,
+                    HashLen16(x + w.second, y + v.second));
 }
 
 uint128 city_hash128(const char *s, size_t len) {
   return len >= 16 ?
       CityHash128WithSeed(s + 16, len - 16,
-                          uint128(Fetch64(s), Fetch64(s + 8) + k0)) :
-      CityHash128WithSeed(s, len, uint128(k0, k1));
+                          to_uint128(Fetch64(s), Fetch64(s + 8) + k0)) :
+      CityHash128WithSeed(s, len, to_uint128(k0, k1));
 }
 
 //#ifdef __SSE4_2__
@@ -663,8 +663,8 @@ uint128 CityHashCrc128WithSeed(const char *s, size_t len, uint128 seed) {
     CityHashCrc256(s, len, result);
     uint64_t u = Uint128High64(seed) + result[0];
     uint64_t v = Uint128Low64(seed) + result[1];
-    return uint128(HashLen16(u, v + result[2]),
-                   HashLen16(Rotate(v, 32), u * k0 + result[3]));
+    return to_uint128(HashLen16(u, v + result[2]),
+                      HashLen16(Rotate(v, 32), u * k0 + result[3]));
   }
 }
 
@@ -674,7 +674,7 @@ uint128 city_hash_crc_128(const char *s, size_t len) {
   } else {
     uint64_t result[4];
     CityHashCrc256(s, len, result);
-    return uint128(result[2], result[3]);
+    return to_uint128(result[2], result[3]);
   }
 }
 
