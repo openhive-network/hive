@@ -53,11 +53,6 @@ using namespace hive::protocol;
 
 namespace std
 {
-string to_string(const fc::uint128& i)
-{
-  return static_cast<string>(i);
-}
-
 string to_string(const __uint128_t& i)
 {
   // based on idea from https://stackoverflow.com/questions/11656241/how-to-print-uint128-t-number-using-gcc/11660651#11660651
