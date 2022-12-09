@@ -8,7 +8,7 @@ namespace fc
 {
    uint64_t real128::to_uint64()const
    { 
-      return (fixed/ FC_REAL128_PRECISION).to_uint64(); 
+      return uint128_to_uint64(fixed/ FC_REAL128_PRECISION); 
    }
 
    real128::real128( uint64_t integer )
@@ -34,7 +34,7 @@ namespace fc
       fc::bigint other(o.fixed);
       self *= FC_REAL128_PRECISION;
       self /= other;
-      fixed = self;
+      fixed = bigint_to_uint128(self);
 
       return *this;
    } FC_CAPTURE_AND_RETHROW( (*this)(o) ) }
@@ -45,7 +45,7 @@ namespace fc
       fc::bigint other(o.fixed);
       self *= other;
       self /= FC_REAL128_PRECISION;
-      fixed = self;
+      fixed = bigint_to_uint128(self);
       return *this;
    } FC_CAPTURE_AND_RETHROW( (*this)(o) ) }
 
@@ -100,10 +100,10 @@ namespace fc
    real128::operator std::string()const
    {
       std::stringstream ss;
-      ss << std::string(fixed / FC_REAL128_PRECISION);
+      ss << std::to_string(fixed / FC_REAL128_PRECISION);
       ss << '.';
       auto frac = (fixed % FC_REAL128_PRECISION) + FC_REAL128_PRECISION;
-      ss << std::string( frac ).substr(1);
+      ss << std::to_string( frac ).substr(1);
 
       auto number = ss.str();
       while(  number.back() == '0' ) number.pop_back();
