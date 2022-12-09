@@ -41,15 +41,17 @@
 // doesn't hold for any hash functions in this file.
 #pragma once
 
+#include <fc/uint128.hpp>
+
 #include <stdlib.h>  // for size_t.
 #include <stdint.h>
 #include <utility>
+
 
 namespace fc {
 
 template<typename T, size_t N>
 class array;
-class uint128;
 
 // Hash function for a byte array.
 uint64_t city_hash64(const char *buf, size_t len);
