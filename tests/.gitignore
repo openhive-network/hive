@@ -1,5 +1,6 @@
-**/generated_during_*
-**/generated_by_package_fixtures
+**/generated/
+**/generated_by_*/
+**/generated_during_*/
 report.xml
 .tox
 .hived
