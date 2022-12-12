@@ -5,7 +5,7 @@ import pytest
 
 import test_tools as tt
 
-from ....local_tools import run_for
+from hive_local_tools import run_for
 
 VOTERS_AMOUNT: Final[int] = 100
 CALL_LIST_PROPOSAL_VOTES_TEMPLATE: Final[dict] = {

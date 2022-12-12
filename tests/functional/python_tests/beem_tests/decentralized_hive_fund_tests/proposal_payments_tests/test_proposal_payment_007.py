@@ -1,13 +1,12 @@
 import datetime
 
-from beem import Hive
-import test_tools as tt
 from beembase.operations import Update_proposal_votes
 
 from .. import test_utils
-from ..local_tools import CREATOR,  TREASURY
-from ...local_tools import NodeClientMaker
 from ..... import hive_utils
+import test_tools as tt
+from hive_local_tools.functional.python.beem import NodeClientMaker
+from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR, TREASURY
 
 
 def unvote_proposals(node, accounts, wif):

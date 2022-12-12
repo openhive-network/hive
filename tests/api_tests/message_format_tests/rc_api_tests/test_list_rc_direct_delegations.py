@@ -2,8 +2,8 @@ import pytest
 
 import test_tools as tt
 
-from ..local_tools import as_string
-from ....local_tools import run_for
+from hive_local_tools import run_for
+from hive_local_tools.api.message_format import as_string
 
 
 ACCOUNTS = ['initminer', 'alice']

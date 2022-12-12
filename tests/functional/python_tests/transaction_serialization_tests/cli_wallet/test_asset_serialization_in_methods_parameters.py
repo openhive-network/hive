@@ -1,8 +1,7 @@
 import test_tools as tt
 
-from .local_tools import run_for_all_cases, create_alice_and_bob_accounts_with_received_rewards
-from .....local_tools import run_for
-
+from hive_local_tools import run_for
+from hive_local_tools.functional.python.transaction_serialization.cli_wallet import run_for_all_cases, create_alice_and_bob_accounts_with_received_rewards
 
 
 @run_for('testnet')

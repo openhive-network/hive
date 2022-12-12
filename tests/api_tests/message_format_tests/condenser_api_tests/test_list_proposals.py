@@ -1,7 +1,7 @@
 import test_tools as tt
 
-from ..local_tools import create_proposal
-from ....local_tools import run_for
+from hive_local_tools import run_for
+from hive_local_tools.api.message_format import create_proposal
 
 
 # This test is not performed on 5 million blocklog because proposals feature was introduced after block with number

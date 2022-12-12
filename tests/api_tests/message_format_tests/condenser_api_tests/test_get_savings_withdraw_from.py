@@ -1,7 +1,7 @@
 import test_tools as tt
 
-from ..local_tools import transfer_and_withdraw_from_savings
-from ....local_tools import run_for
+from hive_local_tools import run_for
+from hive_local_tools.api.message_format import transfer_and_withdraw_from_savings
 
 
 # This test is not performed on 5 million and current block logs because they don't contain any savings withdrawals.

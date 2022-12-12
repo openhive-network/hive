@@ -1,4 +1,4 @@
-from ....local_tools import run_for
+from hive_local_tools import run_for
 
 
 # This test is not performed on 5 million block log because reward fund feature was introduced after block with number

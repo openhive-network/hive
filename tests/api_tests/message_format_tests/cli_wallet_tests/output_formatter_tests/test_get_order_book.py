@@ -6,8 +6,8 @@ from typing import Dict, List, Literal, Union
 
 import test_tools as tt
 
-from .local_tools import are_close, create_buy_order, create_sell_order
-from ..local_tools import verify_json_patterns, verify_text_patterns
+from hive_local_tools.api.message_format.cli_wallet import verify_json_patterns, verify_text_patterns
+from hive_local_tools.api.message_format.cli_wallet.output_formater import are_close, create_buy_order, create_sell_order
 
 __PATTERNS_DIRECTORY = Path(__file__).with_name('response_patterns')
 

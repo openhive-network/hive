@@ -1,7 +1,7 @@
 import test_tools as tt
 
-from ..local_tools import create_and_cancel_vesting_delegation
-from ....local_tools import run_for
+from hive_local_tools.api.message_format import create_and_cancel_vesting_delegation
+from hive_local_tools import run_for
 
 
 @run_for('testnet', 'mainnet_5m', 'live_mainnet')

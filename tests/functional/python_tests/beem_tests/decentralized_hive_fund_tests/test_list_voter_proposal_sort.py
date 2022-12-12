@@ -4,12 +4,12 @@ from json import dumps
 from beem import Hive
 import dateutil.parser
 from requests import post
-import test_tools as tt
 
 from . import test_utils
-from .local_tools import create_proposals, CREATOR, TREASURY
-from ..local_tools import NodeClientMaker
 from .... import hive_utils
+import test_tools as tt
+from hive_local_tools.functional.python.beem import NodeClientMaker
+from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR, TREASURY
 
 
 def list_proposal_votes(node, start: list, limit: int, order: str, direction: str) -> list:

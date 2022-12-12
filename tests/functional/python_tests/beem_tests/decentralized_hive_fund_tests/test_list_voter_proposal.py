@@ -6,12 +6,12 @@ from beem.account import Account
 from beembase.operations import Create_proposal
 from beembase.operations import Update_proposal_votes
 import dateutil.parser
-import test_tools as tt
 
-from .local_tools import CREATOR
-from .test_utils import get_permlink
-from ..local_tools import NodeClientMaker
 from .... import hive_utils
+from test_utils import get_permlink
+import test_tools as tt
+from hive_local_tools.functional.python.beem import NodeClientMaker
+from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR
 
 
 def create_accounts(node, creator, account):

@@ -4,11 +4,11 @@ from beem.transactionbuilder import TransactionBuilder
 import beemapi
 from beembase import operations
 import pytest
-import test_tools as tt
 
-from .local_tools import CREATOR
-from ..local_tools import NodeClientMaker
 from .... import hive_utils
+import test_tools as tt
+from hive_local_tools.functional.python.beem import NodeClientMaker
+from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR
 
 
 def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif=None):

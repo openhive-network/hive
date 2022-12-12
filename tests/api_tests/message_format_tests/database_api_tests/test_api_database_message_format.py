@@ -3,9 +3,9 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import generate_sig_digest
-from ..local_tools import create_and_cancel_vesting_delegation, create_proposal, transfer_and_withdraw_from_savings, \
+from hive_local_tools.api.message_format import create_and_cancel_vesting_delegation, create_proposal, transfer_and_withdraw_from_savings, \
     prepare_escrow, request_account_recovery
+from hive_local_tools.api.message_format.database_api import generate_sig_digest
 
 
 

@@ -7,8 +7,8 @@ import pytest
 
 import test_tools as tt
 
-from ..local_tools import verify_json_patterns, verify_text_patterns
 from . import block_log
+from hive_local_tools.api.message_format.cli_wallet import verify_json_patterns, verify_text_patterns
 
 TOTAL_BALANCES = {
     'hives': sum((balance['hives'] for balance in block_log.ACCOUNTS_BALANCES), start=tt.Asset.Test(0)),
