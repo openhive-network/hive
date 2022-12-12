@@ -10,8 +10,23 @@ description = "A collective library containing all the tools required by hive py
 authors = ["Mateusz Żebrak <mzebrak@syncad.com>"]
 packages = [
     { include = "hive_local_tools" },
+    { include = "tests_api" },
+    { include = "hive_utils" },
 ]
 
 
 [tool.poetry.dependencies]
 python = "^3.8"
+pytest = "7.1.2"
+pytest-xdist = "2.5.0"
+pytest-rerunfailures = "10.2"
+pytest-timeout = "2.1.0"
+shared-tools = { path = "shared-tools" }
+
+# Extras
+test-tools = { path = "test-tools", optional = true }
+schemas = { path = "schemas", optional = true }
+
+
+[tool.poetry.extras]
+test-tools = ["test-tools", "schemas"]
