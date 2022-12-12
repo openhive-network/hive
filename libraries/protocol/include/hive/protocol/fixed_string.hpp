@@ -76,11 +76,9 @@ class fixed_string_impl
     fixed_string_impl( const char* str ) : fixed_string_impl( std::string( str ) ) {}
     fixed_string_impl( const std::string& str )
     {
-      verify_max_length(str);
-
       Storage d;
 
-      memcpy( (char*)&d, str.c_str(), str.size() );
+      assign(d, str);
 
       data = boost::endian::big_to_native( d );
     }
@@ -133,15 +131,25 @@ class fixed_string_impl
     Storage data;
 
   private:
-    void verify_max_length(const char* in, size_t in_len) const
+    void assign(Storage& storage, const char* in, size_t in_len) const
     {
       if( fc::verifier_switch::is_verifying_enabled() )
+      {
         FC_ASSERT(in_len <= sizeof(data), "Input too large: `${in}' (${is}) for fixed size string: ${fs}", (in)("is", in_len)("fs", sizeof(data)));
+        memcpy( (char*)&storage, in, in_len );
+      }
+      else
+      {
+        if( in_len <= sizeof(storage) )
+          memcpy( (char*)&storage, in, in_len );
+        else
+          memcpy( (char*)&storage, in, sizeof(storage) );
+      }
     }
 
-    void verify_max_length(const std::string& in) const
+    void assign(Storage& storage, const std::string& in) const
     {
-      verify_max_length(in.c_str(), in.size());
+      assign(storage, in.c_str(), in.size());
     }
 };
 
