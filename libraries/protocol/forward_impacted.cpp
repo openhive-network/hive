@@ -461,9 +461,9 @@ void operation_get_impacted_accounts( const operation& op, flat_set<account_name
 
 namespace /// anonymous
 {
-  struct get_account_from_accounts_visitor
+  struct get_creator_from_account_create_operations_visitor
   {
-    get_account_from_accounts_visitor(){}
+    get_creator_from_account_create_operations_visitor(){}
 
     typedef account_name_type result_type;
 
@@ -495,9 +495,9 @@ namespace /// anonymous
   };
 }
 
-account_name_type get_account_from_accounts_operations( const operation& op )
+account_name_type get_creator_from_account_create_operations( const operation& op )
 {
-  return op.visit( get_account_from_accounts_visitor{} );
+  return op.visit( get_creator_from_account_create_operations_visitor{} );
 }
 
 namespace /// anonymous
