@@ -85,6 +85,7 @@ struct state_object_size_info
   
   // recurrent transfer
   const int64_t recurrent_transfer_base_size; //multiply by actual lifetime
+  const int64_t recurrent_transfer_memo_char_size; //multiply by actual lifetime
 
   // direct rc delegation
   const int64_t delegate_rc_base_size; //multiply by number of delegatees
@@ -196,6 +197,7 @@ FC_REFLECT( hive::plugins::rc::state_object_size_info,
   ( create_proposal_subject_permlink_char_size )
   ( update_proposal_votes_member_size )
   ( recurrent_transfer_base_size )
+  ( recurrent_transfer_memo_char_size )
   ( delegate_rc_base_size )
   )
 

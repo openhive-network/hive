@@ -156,6 +156,8 @@ state_object_size_info::state_object_size_info()
   // recurrent transfer
   recurrent_transfer_base_size(
     SIZE( recurrent_transfer_index::MULTIINDEX_NODE_TYPE, 200 ) * TEMPORARY_STATE_BYTE ), //multiply by actual lifetime
+  recurrent_transfer_memo_char_size(
+    TEMPORARY_STATE_BYTE ), //multiply by actual lifetime
 
   // direct rc delegation
   delegate_rc_base_size(
