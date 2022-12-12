@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 
-from ....local_tools import run_for
+from hive_local_tools import run_for
 
 
 @run_for('mainnet_5m', 'live_mainnet')

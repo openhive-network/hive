@@ -1,5 +1,5 @@
-from ..local_tools import request_account_recovery
-from ....local_tools import run_for
+from hive_local_tools import run_for
+from hive_local_tools.api.message_format import request_account_recovery
 
 
 # This test is not performed on 5 million block log because of lack of accounts with recovery requests within it. In

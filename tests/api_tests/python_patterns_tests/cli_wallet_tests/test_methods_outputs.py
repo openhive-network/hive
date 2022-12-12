@@ -4,7 +4,7 @@ import pytest
 
 import test_tools as tt
 
-from ...local_tools import read_from_json_pattern, write_to_json_pattern
+from hive_local_tools.api import read_from_json_pattern, write_to_json_pattern
 
 STORE_PATTERNS = False
 

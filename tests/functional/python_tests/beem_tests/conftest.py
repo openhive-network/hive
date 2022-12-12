@@ -4,7 +4,7 @@ import pytest
 
 from beem import Hive
 
-from .local_tools import NodeClientMaker
+from hive_local_tools.functional.python.beem import NodeClientMaker
 
 
 def pytest_addoption(parser):

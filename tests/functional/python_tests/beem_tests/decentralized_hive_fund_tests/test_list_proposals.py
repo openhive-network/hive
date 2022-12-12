@@ -3,11 +3,11 @@ import datetime
 from beem import Hive
 from beem.account import Account
 from beembase.operations import Create_proposal
-import test_tools as tt
 
-from .local_tools import CREATOR,  TREASURY
-from ..local_tools import NodeClientMaker
 from .... import hive_utils
+import test_tools as tt
+from hive_local_tools.functional.python.beem import NodeClientMaker
+from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR,  TREASURY
 
 START_END_SUBJECTS = [
     [1, 3, "Subject001"],

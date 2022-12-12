@@ -1,4 +1,4 @@
-from ....local_tools import run_for
+from hive_local_tools import run_for
 
 
 @run_for('testnet')

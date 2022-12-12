@@ -2,7 +2,7 @@ from distutils.util import strtobool
 import os
 from pathlib import Path
 
-from ...local_tools import read_from_json_pattern, write_to_json_pattern
+from hive_local_tools.api import read_from_json_pattern, write_to_json_pattern
 
 
 def __read_from_text_pattern(directory: Path, method_name: str) -> str:

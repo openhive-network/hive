@@ -10,7 +10,7 @@ import pytest
 import test_tools as tt
 
 if TYPE_CHECKING:
-    from .local_tools import NodeClientMaker
+    from hive_local_tools.functional.python.beem import NodeClientMaker
 
 
 @pytest.fixture

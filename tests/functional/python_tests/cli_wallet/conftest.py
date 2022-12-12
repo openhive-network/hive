@@ -2,9 +2,8 @@ import pytest
 
 import test_tools as tt
 
-from .shared_utilites import prepared_proposal_data_with_id, funded_account_info, prepare_proposal
-
-from .local_tools import create_funded_account
+from hive_local_tools.functional.python.cli_wallet import (create_funded_account, prepared_proposal_data_with_id,
+                                                           funded_account_info, prepare_proposal)
 
 @pytest.fixture
 def wallet(node) -> tt.Wallet:

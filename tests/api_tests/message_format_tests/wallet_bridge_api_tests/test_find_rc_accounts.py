@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from ..local_tools import as_string
+from hive_local_tools.api.message_format import as_string
 
 ACCOUNTS = [f'account-{i}' for i in range(3)]
 

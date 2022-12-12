@@ -2,7 +2,7 @@ import pytest
 
 import test_tools as tt
 
-from .local_tools import verify_generated_transaction_with_json_pattern, \
+from hive_local_tools.functional.python.transaction_serialization.cli_wallet.transaction_pattern import verify_generated_transaction_with_json_pattern, \
     verify_generated_transaction_with_binary_pattern
 
 WAYS_OF_PATTERN_VERIFICATION = [
