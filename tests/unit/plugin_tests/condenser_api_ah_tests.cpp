@@ -10,6 +10,7 @@
 
 using namespace hive::chain;
 using namespace hive::protocol;
+using namespace hive::plugins::condenser_api;
 
 struct condenser_api_ah_fixture : database_fixture
 {
@@ -63,14 +64,57 @@ struct condenser_api_ah_fixture : database_fixture
 
 BOOST_FIXTURE_TEST_SUITE( condenser_api_ah_tests, condenser_api_ah_fixture );
 
-BOOST_AUTO_TEST_CASE( test_stub )
+// account history API -> where it's used in condenser API implementation
+//  get_ops_in_block -> get_ops_in_block
+//  get_transaction -> ditto get_transaction
+//  get_account_history -> ditto get_account_history
+//  enum_virtual_ops -> not used
+
+BOOST_AUTO_TEST_CASE( single_transaction_test )
 { try {
 
-  BOOST_TEST_MESSAGE( "test stub" );
+  ACTORS((alice)(bob));
 
-  // Put test scenario here.
+  fund( "alice", 500000000 );
+  vest( "alice", 200000000 );
 
-  validate_database();
+  generate_blocks(30);
+
+  transfer_operation op;
+  op.from = "alice";
+  op.to = "bob";
+  op.amount = asset(1000,HIVE_SYMBOL);
+  signed_transaction tx;
+  tx.operations.push_back( op );
+
+  tx.ref_block_num = 0;
+  tx.ref_block_prefix = 0;
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+  push_transaction( tx, alice_private_key );
+  auto transaction_block_number = db->head_block_num();
+
+  // Let's make sure that current head block is irreversible.
+  BOOST_REQUIRE( transaction_block_number == db->get_last_irreversible_block_num() );
+  
+  // Check condenser variant, which accepts 2 args and calls ah's variant with default value of include_reversieble = false.
+  auto block_ops = condenser_api->get_ops_in_block({transaction_block_number /*block_num*/, false /*only_virtual*/});
+  BOOST_REQUIRE( block_ops.size() == 1 ); // <- one irreversible operation (virtal/producer_reward_operation)
+  // Check account history variant using include_reversible = true.
+  auto ah_block_ops = account_history_api->get_ops_in_block({transaction_block_number, false, true /*include_reversible*/});
+  BOOST_REQUIRE( ah_block_ops.ops.size() == 3 ); // <- additional two reversible operations.
+  // Problem #1 - The variants return different number of operations, though the block is supposedly irreversible.
+
+  generate_blocks(60);
+  // Later blocks should be irreversible now.
+  BOOST_REQUIRE( transaction_block_number < db->get_last_irreversible_block_num() );
+
+  // Let's check the block again, sixty blocks later.
+  block_ops = condenser_api->get_ops_in_block({transaction_block_number /*block_num*/, false /*only_virtual*/});
+  BOOST_REQUIRE( block_ops.size() == 1 );  // <- no change here
+  ah_block_ops = account_history_api->get_ops_in_block({transaction_block_number, false, true /*include_reversible*/});
+  BOOST_REQUIRE( ah_block_ops.ops.size() == 2 ); // <- one operation has been reversed
+  // Problem #2 - An operation disappeared from irreversible block.
 
 } FC_LOG_AND_RETHROW() }
 
