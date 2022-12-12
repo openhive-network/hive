@@ -29,13 +29,10 @@ namespace fc {
          fixed_string( const fixed_string& c ):data(c.data){}
 
          fixed_string( const std::string& str ) {
-           verify_max_length(str);
-           memcpy( (char*)&data, str.c_str(), str.size() );
+           assign(str);
          }
          fixed_string( const char* str ) {
-            auto l = strlen(str);
-            verify_max_length(str, l);
-            memcpy( (char*)&data, str, l );
+            assign(str, strlen(str));
          }
 
          operator std::string()const {
@@ -59,15 +56,11 @@ namespace fc {
          }
 
          fixed_string& operator=( const std::string& str ) {
-            verify_max_length(str);
-
-            if( str.size() <= sizeof(data) ) {
+            if( str.size() <= sizeof(data) )
                data = Storage();
-               memcpy( (char*)&data, str.c_str(), str.size() );
-            }
-            else {
-               memcpy( (char*)&data, str.c_str(), sizeof(data) );
-            }
+
+            assign(str);
+
             return *this;
          }
 
@@ -98,15 +91,25 @@ namespace fc {
          }
 
       private:
-        void verify_max_length(const char* in, size_t in_len) const
+        void assign(const char* in, size_t in_len) const
         {
             if( verifier_switch::is_verifying_enabled() )
+            {
                FC_ASSERT(in_len <= sizeof(data), "Input too large: `${in}' (${is}) for fixed size string: ${fs}", (in)("is", in_len)("fs", sizeof(data)));
+               memcpy( (char*)&data, in, in_len );
+            }
+            else
+            {
+               if( in_len <= sizeof(data) )
+                  memcpy( (char*)&data, in, in_len );
+               else
+                  memcpy( (char*)&data, in, sizeof(data) );
+            }
         }
 
-        void verify_max_length(const std::string& in) const
+        void assign(const std::string& in) const
         {
-          verify_max_length(in.c_str(), in.size());
+          assign(in.c_str(), in.size());
         }
 
       //private:
