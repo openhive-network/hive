@@ -18,6 +18,8 @@
 #include <fc/utf8.hpp>
 #include <fc/fixed_string.hpp>
 
+#include <boost/scope_exit.hpp>
+
 #include <limits>
 
 namespace hive { namespace chain {
@@ -2026,17 +2028,16 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 
   try
   {
+    auto _old_verify_status = fc::verifier_switch::is_verifying_enabled();
+    BOOST_SCOPE_EXIT(&_old_verify_status) { fc::verifier_switch::set_verify( _old_verify_status ); } BOOST_SCOPE_EXIT_END
+
     if( _db.is_in_control() )
       fc::verifier_switch::set_verify( true );
 
     eval->apply( o );
-
-    fc::verifier_switch::set_verify( false );
   }
   catch( const fc::exception& e )
   {
-    fc::verifier_switch::set_verify( false );
-
     if( _db.is_in_control() )
       throw;
     //note: it is up to evaluator to unconditionally (regardless of is_in_control, working even during
@@ -2045,7 +2046,6 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
   }
   catch(...)
   {
-    fc::verifier_switch::set_verify( false );
     elog( "Unexpected exception applying custom json evaluator." );
   }
 }
