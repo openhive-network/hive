@@ -1,4 +1,4 @@
-from shared_tools.complex_networks_helper_functions import *
+import shared_tools.complex_networks_helper_functions as sh
 import test_tools as tt
 
 def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
@@ -20,8 +20,8 @@ def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
 
     logs = []
 
-    logs.append(NodeLog("M", tt.Wallet(attach_to = majority_api_node)))
-    logs.append(NodeLog("m", tt.Wallet(attach_to = minority_api_node)))
+    logs.append(sh.NodeLog("M", tt.Wallet(attach_to = majority_api_node)))
+    logs.append(sh.NodeLog("m", tt.Wallet(attach_to = minority_api_node)))
 
     _M = logs[0].collector
     _m = logs[1].collector
@@ -31,28 +31,28 @@ def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
     tt.logger.info(f'Before disconnecting')
     cnt = 0
     while True:
-        wait(1, logs, majority_api_node)
+        sh.wait(1, logs, majority_api_node)
 
         cnt += 1
         if cnt > blocks_before_disconnect:
-            if get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m):
+            if sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m):
                 break
 
-    assert get_last_head_block_number(_M)      == get_last_head_block_number(_m)
-    assert get_last_irreversible_block_num(_M) == get_last_irreversible_block_num(_m)
+    assert sh.get_last_head_block_number(_M)      == sh.get_last_head_block_number(_m)
+    assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
 
     tt.logger.info(f'Disconnect sub networks - start')
-    disconnect_sub_networks(sub_networks)
+    sh.disconnect_sub_networks(sub_networks)
 
-    wait(10, logs, majority_api_node)
+    sh.wait(10, logs, majority_api_node)
 
-    assert get_last_head_block_number(_M)      > get_last_head_block_number(_m)
-    assert get_last_irreversible_block_num(_M) > get_last_irreversible_block_num(_m)
+    assert sh.get_last_head_block_number(_M)      > sh.get_last_head_block_number(_m)
+    assert sh.get_last_irreversible_block_num(_M) > sh.get_last_irreversible_block_num(_m)
 
-    old_majority_last_lib = get_last_irreversible_block_num(_M)
+    old_majority_last_lib = sh.get_last_irreversible_block_num(_M)
     tt.logger.info(f'Reconnect sub networks - start')
-    connect_sub_networks(sub_networks)
+    sh.connect_sub_networks(sub_networks)
 
-    wait_for_final_block(majority_api_node, logs, [_m, _M], True, lib_true_condition, False)
+    sh.wait_for_final_block(majority_api_node, logs, [_m, _M], True, sh.lib_true_condition, False)
 
-    assert_no_duplicates(minority_api_node, majority_api_node)
+    sh.assert_no_duplicates(minority_api_node, majority_api_node)
