@@ -48,7 +48,7 @@ int64_t compute_rc_cost_of_resource(
   // Add 1 to avoid 0 result in case of various rounding issues,
   // err on the side of rounding not in the user's favor
   // ilog( "result: ${r}", ("r", num_denom.to_uint64()+1) );
-  return num_denom.to_uint64()+1;
+  return fc::uint128_to_uint64(num_denom)+1;
 }
 
 } } }

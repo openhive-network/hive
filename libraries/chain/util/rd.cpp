@@ -32,7 +32,7 @@ int64_t rd_compute_pool_decay(
   fc::uint128_t decay_amount = uint64_t( decay_params.decay_per_time_unit ) * uint64_t( dt );
   decay_amount *= uint64_t( current_pool );
   decay_amount >>= decay_params.decay_per_time_unit_denom_shift;
-  uint64_t result = decay_amount.to_uint64();
+  uint64_t result = fc::uint128_to_uint64(decay_amount);
   return (
         (result > uint64_t( current_pool ))
         ? current_pool
@@ -95,7 +95,7 @@ void rd_setup_dynamics_params(
   temp <<= system_params.decay_per_time_unit_denom_shift;
   temp += (user_params.decay_per_time_unit-1);
   temp /= user_params.decay_per_time_unit;
-  dparams_out.pool_eq = temp.to_uint64();
+  dparams_out.pool_eq = fc::uint128_to_uint64(temp);
   dparams_out.max_pool_size = dparams_out.pool_eq;
 
   // Debug code:  Check that the above reasoning is correct and we've set pool_eq

@@ -290,13 +290,13 @@ asset operator * ( const asset& a, const price& b )
   if( a.symbol == b.base.symbol )
   {
     result = ( result * b.quote.amount.value ) / b.base.amount.value;
-    return asset( is_negative ? -result.to_uint64() : result.to_uint64(), b.quote.symbol );
+    return asset( is_negative ? -fc::uint128_to_uint64(result) : fc::uint128_to_uint64(result), b.quote.symbol );
   }
   else
   {
     FC_ASSERT( a.symbol == b.quote.symbol, "invalid ${asset} * ${price}", ( "asset", a )( "price", b ) );
     result = ( result * b.base.amount.value ) / b.quote.amount.value;
-    return asset( is_negative ? -result.to_uint64() : result.to_uint64(), b.base.symbol );
+    return asset( is_negative ? -fc::uint128_to_uint64(result) : fc::uint128_to_uint64(result), b.base.symbol );
   }
 }
 
@@ -337,13 +337,13 @@ asset multiply_with_fee( const asset& a, const price& p, uint16_t fee, asset_sym
   if( a.symbol == p.base.symbol )
   {
     result = ( result * p.quote.amount.value * scale_q ) / ( uint128_t( p.base.amount.value ) * scale_b );
-    return asset( is_negative ? -result.to_uint64() : result.to_uint64(), p.quote.symbol );
+    return asset( is_negative ? -fc::uint128_to_uint64(result) : fc::uint128_to_uint64(result), p.quote.symbol );
   }
   else 
   {
     FC_ASSERT( a.symbol == p.quote.symbol, "invalid ${asset} * ${price}", ( "asset", a )( "price", p ) );
     result = ( result * p.base.amount.value * scale_b ) / ( uint128_t ( p.quote.amount.value ) * scale_q );
-    return asset( is_negative ? -result.to_uint64() : result.to_uint64(), p.base.symbol );
+    return asset( is_negative ? -fc::uint128_to_uint64(result) : fc::uint128_to_uint64(result), p.base.symbol );
   }
 }
 

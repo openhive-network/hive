@@ -84,7 +84,7 @@ void generate_rc_curve_params(
   FC_ASSERT( shift >= resource_dynamics_params.decay_params.decay_per_time_unit_denom_shift );
   u128_A <<= shift;
   u128_A /= A_denom;
-  price_curve_params.coeff_a = u128_A.to_uint64();
+  price_curve_params.coeff_a = fc::uint128_to_uint64(u128_A);
 
   // We left N out of the numerator, we can effectively multiply it by subtracting it from the number of bits to shift right
   price_curve_params.shift = uint8_t( shift - resource_dynamics_params.decay_params.decay_per_time_unit_denom_shift );
@@ -94,7 +94,7 @@ void generate_rc_curve_params(
   fc::uint128_t u128_B = resource_dynamics_params.pool_eq;
   u128_B *= curve_gen_params.inelasticity_threshold_num;
   u128_B /= curve_gen_params.inelasticity_threshold_denom;
-  price_curve_params.coeff_b = u128_B.to_uint64();
+  price_curve_params.coeff_b = fc::uint128_to_uint64(u128_B);
 }
 
 } } } //hive::plugins::rc

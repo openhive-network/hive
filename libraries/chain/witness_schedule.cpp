@@ -120,7 +120,7 @@ void update_median_witness_props(database& db, const witness_schedule_object& ws
 
     int64_t median_decay = rd_compute_pool_decay( _wso.account_subsidy_witness_rd.decay_params, median_available_witness_account_subsidies, 1 );
     median_decay = std::max( median_decay, int64_t(0) );
-    int64_t min_decay = (fc::uint128( median_decay ) * HIVE_DECAY_BACKSTOP_PERCENT / HIVE_100_PERCENT).to_int64();
+    int64_t min_decay = fc::uint128_to_int64(fc::uint128( median_decay ) * HIVE_DECAY_BACKSTOP_PERCENT / HIVE_100_PERCENT);
     _wso.account_subsidy_witness_rd.min_decay = min_decay;
   } );
 
@@ -442,7 +442,7 @@ void update_witness_schedule(database& db)
         /// don't consider the top 19 for the purpose of virtual time scheduling
         db.modify( *itr, [&]( witness_object& wo )
         {
-          wo.virtual_scheduled_time = fc::uint128::max_value();
+          wo.virtual_scheduled_time = fc::uint128_max_value();
         } );
       }
 
@@ -464,7 +464,7 @@ void update_witness_schedule(database& db)
           /// extra cautious sanity check... we should never end up here if witnesses are
           /// properly voted on. TODO: remove this line if it is not triggered and therefore
           /// the code path is unreachable.
-          if( new_virtual_time == fc::uint128::max_value() )
+          if( new_virtual_time == fc::uint128_max_value() )
               new_virtual_time = fc::uint128();
 
           /// this witness will produce again here
