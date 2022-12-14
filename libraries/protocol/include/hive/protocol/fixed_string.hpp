@@ -135,7 +135,7 @@ class fixed_string_impl
     {
       if( fc::verifier_switch::is_verifying_enabled() )
       {
-        FC_ASSERT(in_len <= sizeof(data), "Input too large: `${in}' (${is}) for fixed size string: ${fs}", (in)("is", in_len)("fs", sizeof(data)));
+        FC_ASSERT(in_len <= sizeof(data), "Input too large: `${in}` (${is}) for fixed size string: (${fs})", (in)("is", in_len)("fs", sizeof(data)));
         memcpy( (char*)&storage, in, in_len );
       }
       else
