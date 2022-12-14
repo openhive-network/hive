@@ -213,8 +213,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_CONTENT_REWARD_PERCENT_HF21      (65*HIVE_1_PERCENT)
 #define HIVE_PROPOSAL_FUND_PERCENT_HF21       (10*HIVE_1_PERCENT)
 
-#define HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS (fc::uint128_t(0,503600561838938636ull))
-#define HIVE_CONTENT_CONSTANT_HF21            (fc::uint128_t(0,2000000000000ull))
+#define HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS (fc::to_uint128(0,503600561838938636ull))
+#define HIVE_CONTENT_CONSTANT_HF21            (fc::to_uint128(0,2000000000000ull))
 
 #define HIVE_MINER_PAY_PERCENT                (HIVE_1_PERCENT) // 1%
 #define HIVE_MAX_RATION_DECAY_RATE            (1000000)
@@ -254,7 +254,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_COMMENT_REWARD_FUND_NAME         ("comment")
 #define HIVE_RECENT_RSHARES_DECAY_TIME_HF17   (fc::days(30))
 #define HIVE_RECENT_RSHARES_DECAY_TIME_HF19   (fc::days(15))
-#define HIVE_CONTENT_CONSTANT_HF0             (uint128_t(uint64_t(2000000000000ll)))
+#define HIVE_CONTENT_CONSTANT_HF0             (uint128_t(2000000000000ll))
 // note, if redefining these constants make sure calculate_claims doesn't overflow
 
 // 5ccc e802 de5f
@@ -354,8 +354,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_IRREVERSIBLE_THRESHOLD           (75 * HIVE_1_PERCENT)
 
-#define HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH      ( fc::uint128(uint64_t(-1)) )
-#define HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2     ( fc::uint128::max_value() )
+#define HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH      ( fc::uint128(-1) )
+#define HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2     ( fc::uint128_max_value() )
 
 #define HIVE_INITIAL_VOTE_POWER_RATE          (40)
 #define HIVE_REDUCED_VOTE_POWER_RATE          (10)
