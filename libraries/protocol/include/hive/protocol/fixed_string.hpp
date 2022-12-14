@@ -47,7 +47,7 @@ namespace fc
   {  return boost::endian::endian_reverse(x);  }
 
   inline uint128 endian_reverse( const uint128& u )
-  {  return uint128( boost::endian::endian_reverse( u.hi ), boost::endian::endian_reverse( u.lo ) );  }
+  {  return to_uint128( boost::endian::endian_reverse( uint128_high_bits(u) ), boost::endian::endian_reverse( uint128_low_bits(u) ) ); }
 
   template<typename A, typename B>
   erpair< A, B > endian_reverse( const erpair< A, B >& p )
@@ -178,7 +178,7 @@ struct fixed_string_size_for_impl< STORAGE_TYPE >                  \
   static const size_t size = SIZE;                                \
 };
 
-HIVE_DEFINE_FIXED_STRING_IMPL( 16, BOOST_IDENTITY_TYPE((fc::uint128_t)) )
+HIVE_DEFINE_FIXED_STRING_IMPL( 16, BOOST_IDENTITY_TYPE((fc::erpair< uint64_t, uint64_t >)) )
 HIVE_DEFINE_FIXED_STRING_IMPL( 24, BOOST_IDENTITY_TYPE((fc::erpair< fc::uint128_t, uint64_t >)) )
 HIVE_DEFINE_FIXED_STRING_IMPL( 32, BOOST_IDENTITY_TYPE((fc::erpair< fc::uint128_t, fc::uint128_t >)) )
 
