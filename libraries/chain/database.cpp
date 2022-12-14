@@ -969,7 +969,7 @@ FC_TODO( "Update the code below when delegation is modified to support SMTs." )
 uint32_t database::witness_participation_rate()const
 {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-  return uint64_t(HIVE_100_PERCENT) * dpo.recent_slots_filled.popcount() / 128;
+  return uint64_t(HIVE_100_PERCENT) * fc::uint128_popcount(dpo.recent_slots_filled) / 128;
 }
 
 void database::add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts )
@@ -1929,7 +1929,7 @@ void database::adjust_witness_vote( const witness_object& witness, share_type de
     if( has_hardfork( HIVE_HARDFORK_0_4 ) )
     {
       if( w.virtual_scheduled_time < wso.current_virtual_time )
-        w.virtual_scheduled_time = fc::uint128::max_value();
+        w.virtual_scheduled_time = fc::uint128_max_value();
     }
   } );
 }
@@ -2336,8 +2336,8 @@ void database::clear_account( const account_object& account )
           a.voting_manabar.current_mana = 0;
 
         a.downvote_manabar.use_mana(
-          ((uint128_t(delegation.get_vesting().amount.value) * cprops.downvote_pool_percent) /
-          HIVE_100_PERCENT).to_int64());
+          fc::uint128_to_int64((uint128_t(delegation.get_vesting().amount.value) * cprops.downvote_pool_percent) /
+          HIVE_100_PERCENT));
         if( a.downvote_manabar.current_mana < 0 )
           a.downvote_manabar.current_mana = 0;
       } );
@@ -2743,7 +2743,7 @@ void database::process_vesting_withdrawals()
       {
         if( !( auto_vest_mode ^ itr->auto_vest ) )
         {
-          share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / HIVE_100_PERCENT ).to_uint64();
+          share_type to_deposit = fc::uint128_to_uint64( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / HIVE_100_PERCENT );
           vests_deposited += to_deposit;
 
           if( to_deposit > 0 )
@@ -2910,7 +2910,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
       for( auto& item : proxy_set )
       { try {
         uint128_t weight( item->get_weight() );
-        auto claim = ( ( max_rewards.value * weight ) / total_weight ).to_uint64();
+        auto claim = fc::uint128_to_uint64( ( max_rewards.value * weight ) / total_weight );
         if( claim > 0 ) // min_amt is non-zero satoshis
         {
           unclaimed_rewards -= claim;
@@ -2967,8 +2967,8 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
       if( reward_tokens > 0 )
       {
-        curation_tokens = ( ( reward_tokens * get_curation_rewards_percent() ) / HIVE_100_PERCENT ).to_uint64();
-        author_tokens = reward_tokens.to_uint64() - curation_tokens;
+        curation_tokens = fc::uint128_to_uint64( ( reward_tokens * get_curation_rewards_percent() ) / HIVE_100_PERCENT );
+        author_tokens = fc::uint128_to_uint64(reward_tokens) - curation_tokens;
 
         share_type curation_remainder = pay_curators( comment, comment_cashout, curation_tokens );
 
@@ -4243,9 +4243,9 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
   uint64_t free_mem = get_free_memory();
   uint64_t max_mem = get_max_memory();
 
-  if( BOOST_UNLIKELY( _shared_file_full_threshold != 0 && _shared_file_scale_rate != 0 && free_mem < ( ( uint128_t( HIVE_100_PERCENT - _shared_file_full_threshold ) * max_mem ) / HIVE_100_PERCENT ).to_uint64() ) )
+  if( BOOST_UNLIKELY( _shared_file_full_threshold != 0 && _shared_file_scale_rate != 0 && free_mem < fc::uint128_to_uint64( ( uint128_t( HIVE_100_PERCENT - _shared_file_full_threshold ) * max_mem ) / HIVE_100_PERCENT ) ) )
   {
-    uint64_t new_max = ( uint128_t( max_mem * _shared_file_scale_rate ) / HIVE_100_PERCENT ).to_uint64() + max_mem;
+    uint64_t new_max = fc::uint128_to_uint64( uint128_t( max_mem * _shared_file_scale_rate ) / HIVE_100_PERCENT ) + max_mem;
 
     wlog( "Memory is almost full, increasing to ${mem}M", ("mem", new_max / (1024*1024)) );
 
@@ -5307,7 +5307,7 @@ FC_TODO( "#ifndef not needed after HF 20 is live" );
     // This is constant time assuming 100% participation. It is O(B) otherwise (B = Num blocks between update)
     for( uint32_t i = 0; i < missed_blocks + 1; i++ )
     {
-      dgp.participation_count -= dgp.recent_slots_filled.hi & 0x8000000000000000ULL ? 1 : 0;
+      dgp.participation_count -= fc::uint128_high_bits(dgp.recent_slots_filled) & 0x8000000000000000ULL ? 1 : 0;
       dgp.recent_slots_filled = ( dgp.recent_slots_filled << 1 ) + ( i == 0 ? 1 : 0 );
       dgp.participation_count += ( i == 0 ? 1 : 0 );
     }
@@ -5352,7 +5352,7 @@ uint16_t database::calculate_HBD_percent()
   hbd_as_hive *= HIVE_100_PERCENT;
   if( has_hardfork( HIVE_HARDFORK_0_21 ) )
     hbd_as_hive += virtual_supply.amount.value / 2; // added rounding
-  return uint16_t( ( hbd_as_hive / virtual_supply.amount.value ).to_uint64() );
+  return uint16_t( fc::uint128_to_uint64( hbd_as_hive / virtual_supply.amount.value ) );
 }
 
 void database::update_virtual_supply()
@@ -6054,7 +6054,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
             auto interest = acnt.hbd_seconds / HIVE_SECONDS_PER_YEAR;
             interest *= get_dynamic_global_properties().get_hbd_interest_rate();
             interest /= HIVE_100_PERCENT;
-            asset interest_paid(interest.to_uint64(), HBD_SYMBOL);
+            asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
             acnt.hbd_balance += interest_paid;
             acnt.hbd_seconds = 0;
             acnt.hbd_last_interest_payment = head_block_time();
@@ -6201,7 +6201,7 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
             auto interest = acnt.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
             interest *= get_dynamic_global_properties().get_hbd_interest_rate();
             interest /= HIVE_100_PERCENT;
-            asset interest_paid(interest.to_uint64(), HBD_SYMBOL);
+            asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
             acnt.savings_hbd_balance += interest_paid;
             acnt.savings_hbd_seconds = 0;
             acnt.savings_hbd_last_interest_payment = head_block_time();
