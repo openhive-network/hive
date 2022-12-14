@@ -907,7 +907,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       tx.operations.push_back( op );
       push_transaction( tx, alice_private_key );
 
-      int64_t new_rshares = ( ( fc::uint128_t( get_vesting( "alice" ).amount.value ) * used_power ) / HIVE_100_PERCENT ).to_uint64() - HIVE_VOTE_DUST_THRESHOLD;
+      int64_t new_rshares = fc::uint128_to_uint64( ( fc::uint128_t( get_vesting( "alice" ).amount.value ) * used_power ) / HIVE_100_PERCENT ) - HIVE_VOTE_DUST_THRESHOLD;
 
       {
         auto* alice_cashout = db->find_comment_cashout( db->get_comment( "alice", string( "foo" ) ) );
@@ -1991,7 +1991,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     BOOST_REQUIRE( alice_witness.votes.value == 0 );
     BOOST_REQUIRE( alice_witness.virtual_last_update == 0 );
     BOOST_REQUIRE( alice_witness.virtual_position == 0 );
-    BOOST_REQUIRE( alice_witness.virtual_scheduled_time == fc::uint128_t::max_value() );
+    BOOST_REQUIRE( alice_witness.virtual_scheduled_time == fc::uint128_max_value() );
     BOOST_REQUIRE( alice.get_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value ); // No fee
     validate_database();
 
@@ -2016,7 +2016,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     BOOST_REQUIRE( alice_witness.votes.value == 0 );
     BOOST_REQUIRE( alice_witness.virtual_last_update == 0 );
     BOOST_REQUIRE( alice_witness.virtual_position == 0 );
-    BOOST_REQUIRE( alice_witness.virtual_scheduled_time == fc::uint128_t::max_value() );
+    BOOST_REQUIRE( alice_witness.virtual_scheduled_time == fc::uint128_max_value() );
     BOOST_REQUIRE( alice.get_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value );
     validate_database();
 
@@ -3577,7 +3577,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       fc::uint128_t amount( dgpo.get_current_supply().amount.value );
       uint16_t limit2 = 2 * dgpo.hbd_stop_percent + HIVE_1_BASIS_POINT; //there is rounding when percent is calculated, hence some strange correction
       amount = ( amount * limit2 ) / ( 2 * HIVE_100_PERCENT - limit2 );
-      auto new_hbd = asset( amount.to_uint64(), HIVE_SYMBOL ) * feed.current_median_history;
+      auto new_hbd = asset( fc::uint128_to_uint64(amount), HIVE_SYMBOL ) * feed.current_median_history;
       new_hbd -= dgpo.get_current_hbd_supply() - db->get_treasury().get_hbd_balance();
       fund( "alice", new_hbd, false );
       uint16_t percent = db->calculate_HBD_percent();
