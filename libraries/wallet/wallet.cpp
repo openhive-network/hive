@@ -324,7 +324,7 @@ public:
     result["head_block_num"]            = dynamic_props.value.head_block_number;
     result["head_block_id"]             = dynamic_props.value.head_block_id;
     result["head_block_age"]            = fc::get_approximate_relative_time_string(dynamic_props.value.time, time_point_sec(time_point::now()), " old");
-    result["participation"]             = (100*dynamic_props.value.recent_slots_filled.popcount()) / 128.0;
+    result["participation"]             = (100*fc::uint128_popcount(dynamic_props.value.recent_slots_filled)) / 128.0;
     result["median_hbd_price"]          = wallet_serializer_wrapper<protocol::price>{ _remote_wallet_bridge_api->get_current_median_history_price({}, LOCK) };
     result["account_creation_fee"]      = wallet_serializer_wrapper<hive::protocol::asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee };
 
@@ -2464,7 +2464,7 @@ wallet_serializer_wrapper<hive::protocol::asset> wallet_api::estimate_hive_colla
   auto needed_hive = multiply_with_fee( hbd_amount_to_get.value, fhistory.current_min_history,
     HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
   uint128_t _amount = ( uint128_t( needed_hive.amount.value ) * HIVE_CONVERSION_COLLATERAL_RATIO ) / HIVE_100_PERCENT;
-  asset required_collateral = asset( _amount.to_uint64(), HIVE_SYMBOL );
+  asset required_collateral = asset( fc::uint128_to_uint64(_amount), HIVE_SYMBOL );
 
   return { required_collateral };
 }
