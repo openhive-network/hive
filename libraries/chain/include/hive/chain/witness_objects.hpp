@@ -1,4 +1,6 @@
 #pragma once
+#include <fc/uint128.hpp>
+
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/authority.hpp>
@@ -141,7 +143,7 @@ namespace hive { namespace chain {
       ///@{
       fc::uint128       virtual_last_update;
       fc::uint128       virtual_position;
-      fc::uint128       virtual_scheduled_time = fc::uint128::max_value();
+      fc::uint128       virtual_scheduled_time = fc::uint128_max_value();
       ///@}
 
       digest_type       last_work;
