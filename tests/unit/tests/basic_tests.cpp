@@ -80,6 +80,64 @@ string to_string(const __uint128_t& i)
 
 BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 
+BOOST_AUTO_TEST_CASE( fixed_string_verification )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: fixed_string verification" );
+
+    {
+      fc::verifier_switch::set_verify( false );
+
+      transfer_operation op;
+      op.from = "abcde-0123456789";
+      op.to = "bob";
+      op.memo = "Memo";
+      op.amount = asset( 100, HIVE_SYMBOL );
+      op.validate();
+    }
+
+    {
+      fc::verifier_switch::set_verify( false );
+
+      transfer_operation op;
+      op.from = "abcde-0123456789xxx";
+      op.to = "bob";
+      op.memo = "Memo";
+      op.amount = asset( 100, HIVE_SYMBOL );
+      op.validate();
+    }
+
+    {
+      fc::verifier_switch::set_verify( true );
+
+      transfer_operation op;
+      op.from = "abcde-0123456789";
+      op.to = "bob";
+      op.memo = "Memo";
+      op.amount = asset( 100, HIVE_SYMBOL );
+
+      op.validate();
+    }
+
+    {
+      fc::verifier_switch::set_verify( true );
+
+      transfer_operation op;
+
+      auto _assign = [&op]()
+      {
+        op.from = "abcde-0123456789xxx";
+      };
+      HIVE_REQUIRE_ASSERT( _assign(), "in_len <= sizeof(data)" );
+
+      fc::verifier_switch::set_verify( false );
+    }
+
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( parse_size_test )
 {
   BOOST_CHECK_THROW( fc::parse_size( "" ), fc::parse_error_exception );
