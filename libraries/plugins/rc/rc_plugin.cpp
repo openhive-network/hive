@@ -311,7 +311,7 @@ void use_account_rcs(
     fc::uint128_t min_mana( mbparams.max_mana );
     min_mana *= HIVE_RC_MAX_NEGATIVE_PERCENT;
     min_mana /= HIVE_100_PERCENT;
-    rca.rc_manabar.use_mana( rc, -min_mana.to_int64() );
+    rca.rc_manabar.use_mana( rc, -fc::uint128_to_uint64(min_mana) );
     tx_info.rc = rca.rc_manabar.current_mana;
   } );
   }FC_CAPTURE_AND_RETHROW( (tx_info) )
@@ -336,7 +336,7 @@ int64_t rc_plugin_impl::calculate_cost_of_resources( int64_t total_vests, rc_inf
       int64_t pool = pool_obj.get_pool(i);
 
       usage_info.usage[i] *= int64_t( params.resource_dynamics_params.resource_unit );
-      int64_t pool_regen_share = ( ( uint128_t( rc_regen ) * pool_obj.get_weight(i) ) / pool_obj.get_weight_divisor() ).to_int64();
+      int64_t pool_regen_share = fc::uint128_to_int64( ( uint128_t( rc_regen ) * pool_obj.get_weight(i) ) / pool_obj.get_weight_divisor() );
       if( pool_regen_share > 0 )
       {
         usage_info.cost[i] = compute_rc_cost_of_resource( params.price_curve_params, pool, usage_info.usage[i], pool_regen_share );
