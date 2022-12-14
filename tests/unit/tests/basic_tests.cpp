@@ -51,28 +51,6 @@ using namespace hive;
 using namespace hive::chain;
 using namespace hive::protocol;
 
-namespace std
-{
-string to_string(const __uint128_t& i)
-{
-  // based on idea from https://stackoverflow.com/questions/11656241/how-to-print-uint128-t-number-using-gcc/11660651#11660651
-  constexpr auto p10 = 10000000000000000000ULL; /* 19 zeroes */
-  constexpr auto e10 = 19; // max_digits-1 for uint64_t
-
-  if (i > numeric_limits<uint64_t>::max())
-  {
-    __uint128_t hi = i / p10;
-    uint64_t lo = i % p10;
-    string lo_str = to_string(lo);
-    return to_string(hi) + string(e10 - lo_str.size(), '0') + lo_str;
-  }
-  else
-  {
-    return to_string(static_cast<uint64_t>(i));
-  }
-}
-} // namespace std
-
 BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 
 BOOST_AUTO_TEST_CASE( fixed_string_verification )
@@ -453,15 +431,15 @@ uint8_t find_msb( const uint128_t& u )
 {
   uint64_t x;
   uint8_t places;
-  x      = (u.lo ? u.lo : 1);
-  places = (u.hi ?   64 : 0);
-  x      = (u.hi ? u.hi : x);
+  x      = (fc::uint128_low_bits(u) ? fc::uint128_low_bits(u) : 1);
+  places = (fc::uint128_high_bits(u) ?   64 : 0);
+  x      = (fc::uint128_high_bits(u) ? fc::uint128_high_bits(u) : x);
   return uint8_t( boost::multiprecision::detail::find_msb(x) + places );
 }
 
 uint64_t approx_sqrt( const uint128_t& x )
 {
-  if( (x.lo == 0) && (x.hi == 0) )
+  if( x == 0 )
     return 0;
 
   uint8_t msb_x = find_msb(x);
@@ -473,7 +451,7 @@ uint64_t approx_sqrt( const uint128_t& x )
   uint128_t mantissa_mask = msb_x_bit - 1;
   uint128_t mantissa_x = x & mantissa_mask;
   uint64_t mantissa_z_hi = (msb_x & 1) ? msb_z_bit : 0;
-  uint64_t mantissa_z_lo = (mantissa_x >> (msb_x - msb_z)).lo;
+  uint64_t mantissa_z_lo = fc::uint128_low_bits(mantissa_x >> (msb_x - msb_z));
   uint64_t mantissa_z = (mantissa_z_hi | mantissa_z_lo) >> 1;
   uint64_t result = msb_z_bit | mantissa_z;
 
@@ -483,29 +461,29 @@ uint64_t approx_sqrt( const uint128_t& x )
 BOOST_AUTO_TEST_CASE( curation_weight_test )
 {
   fc::uint128_t rshares = 856158;
-  fc::uint128_t s = uint128_t( 0, 2000000000000ull );
+  fc::uint128_t s = fc::to_uint128( 0, 2000000000000ull );
   fc::uint128_t sqrt = approx_sqrt( rshares + 2 * s );
-  uint64_t result = ( rshares / sqrt ).to_uint64();
+  uint64_t result = fc::uint128_to_uint64( rshares / sqrt );
 
-  BOOST_REQUIRE( sqrt.to_uint64() == 2002250 );
+  BOOST_REQUIRE( fc::uint128_to_uint64(sqrt) == 2002250 );
   BOOST_REQUIRE( result == 0 );
 
   rshares = 0;
   sqrt = approx_sqrt( rshares + 2 * s );
-  result = ( rshares / sqrt ).to_uint64();
+  result = fc::uint128_to_uint64( rshares / sqrt );
 
-  BOOST_REQUIRE( sqrt.to_uint64() == 2002250 );
+  BOOST_REQUIRE( fc::uint128_to_uint64(sqrt) == 2002250 );
   BOOST_REQUIRE( result == 0 );
 
-  result = ( uint128_t( 0 ) - uint128_t( 0 ) ).to_uint64();
+  result = fc::uint128_to_uint64( uint128_t( 0 ) - uint128_t( 0 ) );
 
   BOOST_REQUIRE( result == 0 );
-  rshares = uint128_t( 0, 3351842535167ull );
+  rshares = fc::to_uint128( 0, 3351842535167ull );
 
   for( int64_t i = 856158; i >= 0; --i )
   {
-    uint64_t old_weight = util::evaluate_reward_curve( rshares - i, protocol::convergent_square_root, s ).to_uint64();
-    uint64_t new_weight = util::evaluate_reward_curve( rshares, protocol::convergent_square_root, s ).to_uint64();
+    uint64_t old_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( rshares - i, protocol::convergent_square_root, s ));
+    uint64_t new_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( rshares, protocol::convergent_square_root, s ));
 
     BOOST_REQUIRE( old_weight <= new_weight );
 
@@ -513,7 +491,7 @@ BOOST_AUTO_TEST_CASE( curation_weight_test )
 
     w *= 300;
     w /= 300;
-    BOOST_REQUIRE( w.to_uint64() == new_weight - old_weight );
+    BOOST_REQUIRE( fc::uint128_to_uint64(w) == new_weight - old_weight );
   }
 
   //idump( (delta)(old_weight)(new_weight) );
@@ -550,7 +528,7 @@ BOOST_AUTO_TEST_CASE( fc_uint128_to_string )
     uint32_t i4 = std::rand();
     uint64_t lo = static_cast<uint64_t>(i1) << 32 | i2;
     uint64_t hi = static_cast<uint64_t>(i3) << 32 | i4;
-    fci = fc::uint128(hi, lo);
+    fci = fc::to_uint128(hi, lo);
     gcci = static_cast<__uint128_t>(hi) << 64 | lo;
     BOOST_CHECK_EQUAL( std::to_string(fci), std::to_string(gcci) );
   }
