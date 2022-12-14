@@ -134,7 +134,7 @@ namespace hive { namespace chain {
       /**
         * used to compute witness participation.
         */
-      fc::uint128_t recent_slots_filled = fc::uint128::max_value();
+      fc::uint128_t recent_slots_filled = fc::uint128_max_value();
       uint8_t       participation_count = 128; ///< Divide by 128 to compute participation percentage
 
       /**

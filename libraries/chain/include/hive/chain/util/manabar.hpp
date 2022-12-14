@@ -59,7 +59,7 @@ struct manabar
 
     uint128_t max_mana_dt = uint64_t( params.max_mana >= 0 ? params.max_mana : 0 );
     max_mana_dt *= dt;
-    uint64_t u_regen = (max_mana_dt / params.regen_time).to_uint64();
+    uint64_t u_regen = fc::uint128_to_uint64(max_mana_dt / params.regen_time);
     FC_ASSERT( u_regen <= static_cast<uint64_t>( std::numeric_limits< int64_t >::max() ) );
     int64_t new_current_mana = fc::signed_sat_add( current_mana, int64_t( u_regen ) );
     current_mana = (new_current_mana > params.max_mana) ? params.max_mana : new_current_mana;
@@ -142,13 +142,13 @@ void update_manabar( const PropType& gpo, AccountType& account, bool downvote_ma
 
     if( check_overflow )
     {
-      params.max_mana = ( ( uint128_t( effective_vests ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ).to_int64();
+      params.max_mana = fc::uint128_to_int64( ( uint128_t( effective_vests ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
     }
     else
     {
       FC_TODO( "Cleanup once we have verified the overflow has not permanently made it in to the chain" );
       uint128_t numerator = effective_vests * gpo.downvote_pool_percent;
-      if( numerator.hi != 0 )
+      if( fc::uint128_high_bits(numerator) != 0 )
         elog( "NOTIFYALERT! max mana overflow made it in to the chain" );
 
       params.max_mana = ( effective_vests * gpo.downvote_pool_percent ) / HIVE_100_PERCENT;
