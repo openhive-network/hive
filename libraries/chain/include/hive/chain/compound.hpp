@@ -25,7 +25,7 @@ share_type calc_percent_reward( share_type current_supply )
   reward *= (percent * multiply_constant);      // compile-time constant, fits in 64 bits
   reward += half;                               // round to nearest whole integer instead of truncating
   reward >>= shift_constant;
-  return reward.to_uint64();
+  return fc::uint128_to_uint64(reward);
 }
 
 template< uint16_t percent >
