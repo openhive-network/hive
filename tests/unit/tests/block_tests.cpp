@@ -937,7 +937,7 @@ BOOST_FIXTURE_TEST_CASE( rsf_missed_blocks, clean_database_fixture )
       result.reserve(128);
       for( int i=0; i<128; i++ )
       {
-        result += ((rsf.lo & 1) == 0) ? '0' : '1';
+        result += ((fc::uint128_low_bits(rsf) & 1) == 0) ? '0' : '1';
         rsf >>= 1;
       }
       return result;
