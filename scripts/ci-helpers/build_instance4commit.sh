@@ -1,5 +1,4 @@
 #! /bin/bash
-set -xeuo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTPATH/.."
@@ -23,7 +22,7 @@ print_help () {
     echo "Allows to build docker image containing Hived installation built from pointed COMMIT"
     echo "OPTIONS:"
     echo "  --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet"
-    echo "  --export-binaries=PATH      Allows to specify a path where binaries shall be exported from built image."
+    echo "  --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image."
     echo "  --help                    Display this help screen and exit"
     echo
 }

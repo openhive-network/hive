@@ -5,9 +5,6 @@ set -xeuo pipefail
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTDIR/scripts"
 
-: "${DATADIR:=/home/hived/datadir}"
-: "${SHM_DIR:=/home/hived/shm_dir}"
-
 if [ ! -d "$DATADIR" ];
 then
     echo "Data directory (DATADIR) $DATADIR does not exist. Exiting."
@@ -20,8 +17,13 @@ then
     exit 1
 fi
 
-LOG_FILE=${DATADIR}/docker_entrypoint.log
+
+LOG_FILE="${DATADIR}/${LOG_FILE:=docker_entrypoint.log}"
+sudo -n touch "$LOG_FILE"
+sudo -n chown -Rc hived:hived "$LOG_FILE"
+sudo -n chmod a+rw "$LOG_FILE"
 source "$SCRIPTSDIR/common.sh"
+
 
 cleanup () {
   echo "Performing cleanup...."
@@ -42,18 +44,13 @@ cleanup () {
 #trap cleanup EXIT
 trap cleanup INT QUIT TERM
 
-if [ ! -d /home/hived/datadir ]
-then
-  sudo -n mkdir -p /home/hived/datadir
-fi
-
-sudo -n chown -Rc hived:hived /home/hived/datadir
+sudo -n chown -Rc hived:hived "$DATADIR"
+sudo -n chown -Rc hived:hived "$SHM_DIR"
 
 # Be sure this directory exists
-mkdir --mode=777 -p /home/hived/datadir/blockchain
-sudo -n chown -Rc hived:hived /home/hived/shm_dir
+sudo -Enu hived mkdir --mode=777 -p "$DATADIR/blockchain"
 
-cd $DATADIR
+cd "$DATADIR"
 
 HIVED_ARGS=()
 HIVED_ARGS+=("$@")
@@ -66,7 +63,7 @@ sudo -Enu hived /bin/bash << EOF
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[@]}"
 
 /home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
-  --data-dir=${DATADIR} --shared-file-dir=${SHM_DIR} \
+  --data-dir="$DATADIR" --shared-file-dir="$SHM_DIR"  \
   ${HIVED_ARGS[@]} 2>&1 | tee -i hived.log
 echo "$? Hived process finished execution."
 EOF

@@ -1,5 +1,4 @@
 #! /bin/bash
-
 set -xeuo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -31,7 +30,7 @@ print_help () {
 }
 
 
-IMGNAME=instance
+IMGNAME=base_instance
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -41,10 +40,10 @@ while [ $# -gt 0 ]; do
 
         case $NETWORK_TYPE in
           "testnet"*)
-            IMGNAME=testnet-instance
+            IMGNAME=testnet-base_instance
             ;;
           "mirrornet"*)
-            IMGNAME=mirrornet-instance
+            IMGNAME=mirrornet-base_instance
             ;;
           "mainnet"*)
             ;;
@@ -89,19 +88,10 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-retrieve_submodule_commit () {
-  local p="${1}"
-  pushd "$p" >/dev/null 2>&1
-  local commit=$( git rev-parse HEAD )
-
-  popd >/dev/null 2>&1
-
-  echo "$commit"
-}
-
 echo "Attempting to get commit for: $submodule_path"
 
-commit=$( retrieve_submodule_commit ${submodule_path} )
+commit=$( $SCRIPTPATH/retrieve_last_commit.sh ${submodule_path} )
+echo "commit with last source code changes is $commit"
 
 img=$( build_image_name $IMGNAME $commit $REGISTRY )
 img_path=$( build_image_registry_path $IMGNAME $commit $REGISTRY )

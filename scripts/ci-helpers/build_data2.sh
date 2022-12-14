@@ -8,27 +8,28 @@ LOG_FILE=build_data.log
 source "$SCRIPTSDIR/common.sh"
 
 
-DATA_BASE_DIR=""
+IMG=""
+DATA_CACHE=""
 CONFIG_INI_SOURCE=""
 BLOCK_LOG_SOURCE_DIR=""
 
 print_help () {
-    echo "Usage: $0 [OPTION[=VALUE]]..."
+    echo "Usage: $0 <image> [OPTION[=VALUE]]..."
     echo
     echo "Allows to build docker image containing Hived installation"
     echo "OPTIONS:"
-    echo "  --data-base-dir=PATH        Allows to specify a directory where data and shared memory file should be stored."
-    echo "  --block-log-source-dir=PATH Allows to specify a directory of block_log used to perform initial replay."
-    echo "  --config-ini-source=PATH    Allows to specify a path of config.ini configuration file used for building data."
-    echo "  --help                      Display this help screen and exit"
+    echo "  --data-cache=PATH             Allows to specify a directory where data and shared memory file should be stored."
+    echo "  --block-log-source-dir=PATH   Allows to specify a directory of block_log used to perform initial replay."
+    echo "  --config-ini-source=PATH      Allows to specify a path of config.ini configuration file used for building data."
+    echo "  --help                        Display this help screen and exit"
     echo
 }
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --data-base-dir=*)
-        DATA_BASE_DIR="${1#*=}"
-        echo "using DATA_BASE_DIR $DATA_BASE_DIR"
+    --data-cache=*)
+        DATA_CACHE="${1#*=}"
+        echo "using DATA_CACHE $DATA_CACHE"
         ;;
     --block-log-source-dir=*)
         BLOCK_LOG_SOURCE_DIR="${1#*=}"
@@ -43,25 +44,33 @@ while [ $# -gt 0 ]; do
         exit 0
         ;;
     *)
-        echo "ERROR: '$1' is not a valid option/positional argument"
-        echo
-        print_help
-        exit 2
+        if [ -z "$IMG" ];
+        then
+          IMG="$1"
+        else
+          echo "ERROR: '$1' is not a valid option/positional argument"
+          echo
+          print_help
+          exit 2
+        fi
         ;;
     esac
     shift
 done
 
 
-echo "Attempting to perform 5000000 block replay basing on ${HIVED_IMAGE_NAME}..."
-
-
-"$SCRIPTPATH/prepare_data_and_shm_dir.sh" --data-base-dir="$DATA_BASE_DIR" \
+echo "Preparing datadir and shm_dir in location ${DATA_CACHE}"
+rm "$DATA_CACHE" -rf
+"$SCRIPTPATH/prepare_data_and_shm_dir.sh" --data-base-dir="$DATA_CACHE" \
     --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
 
-"$SCRIPTSDIR/run_hived_img.sh" --name=hived_instance \
-    --shared-file-dir=$DATA_BASE_DIR/shm_dir --data-dir=$DATA_BASE_DIR/datadir \
-    $HIVED_IMAGE_NAME --replay-blockchain --stop-replay-at-block=5000000 --exit-before-sync
+echo "Attempting to perform replay basing on image ${IMG}..."
 
-docker logs -f hived_instance
-exit $(docker wait hived_instance)
+"$SCRIPTSDIR/run_hived_img.sh" --name=hived_instance \
+    --shared-file-dir="$DATA_CACHE/shm_dir" --data-dir="$DATA_CACHE/datadir" \
+    $IMG --replay-blockchain --stop-replay-at-block=5000000 --exit-before-sync
+
+echo "Logs from container hived_instance:"
+docker logs -f hived_instance || true
+
+exit $(docker wait hived_instance || true)

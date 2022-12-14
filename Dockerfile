@@ -115,19 +115,20 @@ ADD ./docker/docker_entrypoint.sh .
 RUN sudo -n mkdir -p /home/hived/bin && sudo -n mkdir -p /home/hived/shm_dir && \
   sudo -n mkdir -p /home/hived/datadir && sudo -n chown -Rc hived:hived /home/hived/
 
-VOLUME [ "/home/hived/datadir", "/home/hived/shm_dir" ]
+ENV DATADIR=/home/hived/datadir
+ENV SHM_DIR=/home/hived/shm_dir
 
-STOPSIGNAL SIGINT 
+STOPSIGNAL SIGINT
+
+# JSON rpc service
+EXPOSE ${HTTP_PORT}
 
 ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
 
-# default command line to be passed for this version (which should be stopped at 5M)
-CMD ["--replay-blockchain", "--stop-replay-at-block=5000000"]
-
 FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-${BUILD_IMAGE_TAG} as instance
 
-# p2p service is not always enabled and this is workaround for gitlab healthcheck bug
-# EXPOSE ${P2P_PORT}
+#p2p service
+EXPOSE ${P2P_PORT}
 # websocket service
 EXPOSE ${WS_PORT}
 # JSON rpc service
@@ -148,6 +149,4 @@ ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
 
 # default command line to be passed for this version (which should be stopped at 5M)
 CMD ["--replay-blockchain", "--stop-replay-at-block=5000000"]
-
-EXPOSE ${HTTP_PORT}
 
