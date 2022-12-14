@@ -1,4 +1,6 @@
 #pragma once
+#include <fc/uint128.hpp>
+
 #include <hive/chain/hive_fwd.hpp>
 
 #include <fc/fixed_string.hpp>
