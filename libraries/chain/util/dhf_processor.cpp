@@ -150,7 +150,7 @@ asset dhf_processor::calculate_maintenance_budget( const time_point_sec& head_ti
   //Calculate daily_budget_limit
   int64_t daily_budget_limit = treasury_fund.amount.value / total_amount_divider;
 
-  daily_budget_limit = ( ( uint128_t( passed_time_seconds ) * daily_budget_limit ) / daily_seconds ).to_uint64();
+  daily_budget_limit = fc::uint128_to_uint64( ( uint128_t( passed_time_seconds ) * daily_budget_limit ) / daily_seconds );
 
   return asset( daily_budget_limit, treasury_fund.symbol );
 }
@@ -192,7 +192,7 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& m
     else
     {
       uint128_t ratio = ( passed_time_seconds * HIVE_100_PERCENT ) / daily_seconds;
-      period_pay = asset( ( ratio * _item.daily_pay.amount.value ).to_uint64() / HIVE_100_PERCENT, _item.daily_pay.symbol );
+      period_pay = asset( fc::uint128_to_uint64( ratio * _item.daily_pay.amount.value ) / HIVE_100_PERCENT, _item.daily_pay.symbol );
     }
 
     if( period_pay >= maintenance_budget_limit )

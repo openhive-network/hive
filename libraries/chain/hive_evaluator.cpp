@@ -1482,7 +1482,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   FC_ASSERT( used_power <= current_power, "Account does not have enough power to vote." );
 
-  int64_t abs_rshares = ((uint128_t( _db.get_effective_vesting_shares( voter, VESTS_SYMBOL ).amount.value ) * used_power) / (HIVE_100_PERCENT)).to_uint64();
+  int64_t abs_rshares = fc::uint128_to_uint64((uint128_t( _db.get_effective_vesting_shares( voter, VESTS_SYMBOL ).amount.value ) * used_power) / (HIVE_100_PERCENT));
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 ) abs_rshares = 1;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
@@ -1557,7 +1557,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
             new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12;
           avg_cashout_sec = ( cur_cashout_time_sec * old_root_abs_rshares + new_cashout_time_sec * abs_rshares ) / root_cashout_ex->get_children_abs_rshares();
         }
-        c.set_cashout_time( fc::time_point_sec( std::min( uint32_t( avg_cashout_sec.to_uint64() ), root_cashout_ex->get_max_cashout_time().sec_since_epoch() ) ) );
+        c.set_cashout_time( fc::time_point_sec( std::min( uint32_t( fc::uint128_to_uint64(avg_cashout_sec) ), root_cashout_ex->get_max_cashout_time().sec_since_epoch() ) ) );
       }
 
       if( root_cashout_ex->get_max_cashout_time() == fc::time_point_sec::maximum() )
@@ -1642,20 +1642,20 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
             const auto& reward_fund = _db.get_reward_fund();
             auto curve = !_db.has_hardfork( HIVE_HARDFORK_0_19__1052 ) && comment_cashout->get_creation_time() > HIVE_HF_19_SQRT_PRE_CALC
                       ? curve_id::square_root : reward_fund.curation_reward_curve;
-            uint64_t old_weight = util::evaluate_reward_curve( old_vote_rshares, curve, reward_fund.content_constant ).to_uint64();
-            uint64_t new_weight = util::evaluate_reward_curve( comment_cashout->get_vote_rshares(), curve, reward_fund.content_constant ).to_uint64();
+            uint64_t old_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( old_vote_rshares, curve, reward_fund.content_constant ));
+            uint64_t new_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( comment_cashout->get_vote_rshares(), curve, reward_fund.content_constant ));
             vote_weight = new_weight - old_weight;
           }
           else if ( _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
           {
-            uint64_t old_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( old_vote_rshares ) ) / ( two_s + old_vote_rshares ) ).to_uint64();
-            uint64_t new_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( comment_cashout->get_vote_rshares() ) ) / ( two_s + comment_cashout->get_vote_rshares() ) ).to_uint64();
+            uint64_t old_weight = fc::uint128_to_uint64( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( old_vote_rshares ) ) / ( two_s + old_vote_rshares ) );
+            uint64_t new_weight = fc::uint128_to_uint64( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( comment_cashout->get_vote_rshares() ) ) / ( two_s + comment_cashout->get_vote_rshares() ) );
             vote_weight = new_weight - old_weight;
           }
           else
           {
-            uint64_t old_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( 1000000 * old_vote_rshares ) ) / ( two_s + ( 1000000 * old_vote_rshares ) ) ).to_uint64();
-            uint64_t new_weight = ( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( 1000000 * comment_cashout->get_vote_rshares() ) ) / ( two_s + ( 1000000 * comment_cashout->get_vote_rshares() ) ) ).to_uint64();
+            uint64_t old_weight = fc::uint128_to_uint64( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( 1000000 * old_vote_rshares ) ) / ( two_s + ( 1000000 * old_vote_rshares ) ) );
+            uint64_t new_weight = fc::uint128_to_uint64( ( std::numeric_limits< uint64_t >::max() * fc::uint128_t( 1000000 * comment_cashout->get_vote_rshares() ) ) / ( two_s + ( 1000000 * comment_cashout->get_vote_rshares() ) ) );
             vote_weight = new_weight - old_weight;
           }
         }
@@ -1670,7 +1670,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
           w *= delta_t;
           w /= dgpo.reverse_auction_seconds;
-          vote_weight = w.to_uint64();
+          vote_weight = fc::uint128_to_uint64(w);
         }
       }
     }
@@ -1814,16 +1814,16 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   used_mana = ( used_mana + max_vote_denom - 1 ) / max_vote_denom;
   if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) && dgpo.downvote_pool_percent && o.weight < 0 )
   {
-    FC_ASSERT( voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > used_mana.to_int64(),
+    FC_ASSERT( voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64(used_mana),
       "Account does not have enough mana to downvote. voting_mana: ${v} downvote_mana: ${d} required_mana: ${r}",
-      ("v", voter.voting_manabar.current_mana)("d", voter.downvote_manabar.current_mana)("r", used_mana.to_int64()) );
+      ("v", voter.voting_manabar.current_mana)("d", voter.downvote_manabar.current_mana)("r", fc::uint128_to_int64(used_mana)) );
   }
   else
   {
-    FC_ASSERT( voter.voting_manabar.has_mana( used_mana.to_int64() ), "Account does not have enough mana to vote." );
+    FC_ASSERT( voter.voting_manabar.has_mana( fc::uint128_to_int64(used_mana) ), "Account does not have enough mana to vote." );
   }
 
-  int64_t abs_rshares = used_mana.to_int64();
+  int64_t abs_rshares = fc::uint128_to_uint64(used_mana);
 
   abs_rshares -= HIVE_VOTE_DUST_THRESHOLD;
   abs_rshares = std::max( int64_t(0), abs_rshares );
@@ -1832,14 +1832,14 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( cashout_delta < HIVE_UPVOTE_LOCKOUT_SECONDS )
   {
-    abs_rshares = (int64_t) ( ( uint128_t( abs_rshares ) * cashout_delta ) / HIVE_UPVOTE_LOCKOUT_SECONDS ).to_uint64();
+    abs_rshares = (int64_t) fc::uint128_to_uint64( ( uint128_t( abs_rshares ) * cashout_delta ) / HIVE_UPVOTE_LOCKOUT_SECONDS );
   }
 
   _db.modify( voter, [&]( account_object& a )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) && dgpo.downvote_pool_percent > 0 && o.weight < 0 )
     {
-      if( used_mana.to_int64() > a.downvote_manabar.current_mana )
+      if( fc::uint128_to_int64(used_mana) > a.downvote_manabar.current_mana )
       {
         /* used mana is always less than downvote_mana + voting_mana because the amount used
           * is a fraction of max( downvote_mana, voting_mana ). If more mana is consumed than
@@ -1847,18 +1847,18 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
           * is strictly smaller than voting_mana. This is the same reason why a check is not
           * required when using voting mana on its own as an upvote.
           */
-        auto remainder = used_mana.to_int64() - a.downvote_manabar.current_mana;
+        auto remainder = fc::uint128_to_int64(used_mana) - a.downvote_manabar.current_mana;
         a.downvote_manabar.use_mana( a.downvote_manabar.current_mana );
         a.voting_manabar.use_mana( remainder );
       }
       else
       {
-        a.downvote_manabar.use_mana( used_mana.to_int64() );
+        a.downvote_manabar.use_mana( fc::uint128_to_int64(used_mana) );
       }
     }
     else
     {
-      a.voting_manabar.use_mana( used_mana.to_int64() );
+      a.voting_manabar.use_mana( fc::uint128_to_int64(used_mana) );
     }
 
     a.last_vote_time = _now;
@@ -1907,8 +1907,8 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
           // cv.weight = W(R_1) - W(R_0)
           const auto& reward_fund = _db.get_reward_fund();
           auto curve = reward_fund.curation_reward_curve;
-          uint64_t old_weight = util::evaluate_reward_curve( old_vote_rshares, curve, reward_fund.content_constant ).to_uint64();
-          uint64_t new_weight = util::evaluate_reward_curve( c.get_vote_rshares(), curve, reward_fund.content_constant ).to_uint64();
+          uint64_t old_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( old_vote_rshares, curve, reward_fund.content_constant ));
+          uint64_t new_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( c.get_vote_rshares(), curve, reward_fund.content_constant ));
 
           if( old_weight < new_weight ) // old_weight > new_weight should never happen, but == is ok
           {
@@ -1927,7 +1927,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
               w *= delta_t;
               w /= dgpo.reverse_auction_seconds;
-              vote_weight = w.to_uint64();
+              vote_weight = fc::uint128_to_uint64(w);
             }
             else if( _seconds >= dgpo.early_voting_seconds && dgpo.early_voting_seconds )
             {
@@ -2348,7 +2348,7 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
 
   //cut amount by collateral ratio
   uint128_t _amount = ( uint128_t( o.amount.amount.value ) * HIVE_100_PERCENT ) / HIVE_CONVERSION_COLLATERAL_RATIO;
-  asset for_immediate_conversion = asset( _amount.to_uint64(), o.amount.symbol );
+  asset for_immediate_conversion = asset( fc::uint128_to_uint64(_amount), o.amount.symbol );
 
   //immediately create HBD - apply fee to current rolling minimum price
   auto converted_amount = multiply_with_fee( for_immediate_conversion, fhistory.current_min_history,
@@ -2776,8 +2776,8 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   if( op.reward_vests == acnt.get_vest_rewards() )
     reward_vesting_hive_to_move = acnt.get_vest_rewards_as_hive();
   else
-    reward_vesting_hive_to_move = asset( ( ( uint128_t( op.reward_vests.amount.value ) * uint128_t( acnt.get_vest_rewards_as_hive().amount.value ) )
-      / uint128_t( acnt.get_vest_rewards().amount.value ) ).to_uint64(), HIVE_SYMBOL );
+    reward_vesting_hive_to_move = asset( fc::uint128_to_uint64( ( uint128_t( op.reward_vests.amount.value ) * uint128_t( acnt.get_vest_rewards_as_hive().amount.value ) )
+      / uint128_t( acnt.get_vest_rewards().amount.value ) ), HIVE_SYMBOL );
 
   _db.adjust_reward_balance( acnt, -op.reward_hive );
   _db.adjust_reward_balance( acnt, -op.reward_hbd );
@@ -2906,8 +2906,8 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
       {
         available_downvote_shares = asset(
-          ( ( uint128_t( delegator.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
-          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 ).to_int64(), VESTS_SYMBOL );
+          fc::uint128_to_int64( ( uint128_t( delegator.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
+          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 ), VESTS_SYMBOL );
       }
       else
       {
@@ -2987,7 +2987,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
         {
-          a.downvote_manabar.use_mana( ( ( uint128_t( op.vesting_shares.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ).to_int64() );
+          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( op.vesting_shares.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
         }
         else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
@@ -3029,7 +3029,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
         {
-          a.downvote_manabar.use_mana( ( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ).to_int64() );
+          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
         }
         else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
@@ -3093,7 +3093,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
         {
           if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
           {
-            a.downvote_manabar.use_mana( ( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ).to_int64() );
+            a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
           }
           else
           {
