@@ -16,6 +16,9 @@
         DOCKER_DRIVER: "overlay2"
         DOCKER_TLS_CERTDIR: "/certs"
 
+  before_script:
+    - git config --global --add safe.directory $CI_PROJECT_DIR
+
 .docker_image_cleanup_job:
   image: alpine:3.16
   interruptible: true
@@ -48,14 +51,14 @@
 
     SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
   script:
-    - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS" "hived-mainnet-binaries"
-    - ls -la ./hived-mainnet-binaries/*
+    - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS" "hived-binaries"
+    - ls -la ./hived-binaries/*
 
   artifacts:
     reports:
       dotenv: docker_image_name.env
     paths:
-      - ./hived-mainnet-binaries/*
+      - ./hived-binaries/*
     expire_in: 6 hours
 
 .prepare_hived_image:
@@ -66,7 +69,7 @@
     SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
     REGISTRY_USER: "$CI_IMG_BUILDER_USER"
     REGISTRY_PASS: $CI_IMG_BUILDER_PASSWORD
-    BINARY_CACHE_PATH: "hived-mainnet-binaries"
+    BINARY_CACHE_PATH: "hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
   script:
     - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
@@ -74,7 +77,6 @@
         "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS"
         --export-binaries="$BINARY_CACHE_PATH" --network-type="$HIVE_NETWORK_TYPE"
     - ls -la ./$BINARY_CACHE_PATH/*
-    - du -h -d 1 /cache
 
   artifacts:
     reports:
@@ -83,17 +85,24 @@
       - ./$BINARY_CACHE_PATH/*
     expire_in: 6 hours
 
-.prepare_hived_data:
+.prepare_hived_data_5m:
   extends: .docker_image_builder_job
 
   variables:
     SUBMODULE_DIR: "$CI_PROJECT_DIR"
     SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
-    DATA_CACHE: ""
     BLOCK_LOG_SOURCE_DIR: ""
     CONFIG_INI_SOURCE: ""
+    DATA_CACHE: $DATA_CACHE_MAINNET
+    HIVE_NETWORK_TYPE: mainnet
   script:
     - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
-    - $SCRIPTS_PATH/ci-helpers/build_data2.sh
-        --data-base-dir="$DATA_CACHE" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
+    - $SCRIPTS_PATH/ci-helpers/build_data2.sh $HIVED_IMAGE_NAME
+        --data-cache="$DATA_CACHE" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
     - du -h -d 1 /cache
+    - cp $DATA_CACHE/datadir/docker_entrypoint.log $CI_PROJECT_DIR
+
+  artifacts:
+    paths:
+    - docker_entrypoint.log
+    expire_in: 6 hours

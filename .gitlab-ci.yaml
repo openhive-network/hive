@@ -7,10 +7,9 @@ variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
   MIRRORNET_CHAIN_ID: 42
   MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
-  GIT_DEPTH: 1
+  GIT_DEPTH: 20
   GIT_SUBMODULE_STRATEGY: recursive
   CI_DEBUG_SERVICES: "true"
-  FF_ENABLE_JOB_CLEANUP: "true"
   # pin to specific docker images for build repeatability
   #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04-7
   RUNTIME_IMAGE_TAG: "@sha256:d3aec951725cedbccfe024f27301a7fc2c2cf3b4282533f622041d82f0710b86"
@@ -25,8 +24,8 @@ variables:
 
   TOX_VERSION: "3.25.1"
 
-  DATA_CACHE_MAINNET: /cache/replay_data_hive_${CI_COMMIT_SHORT_SHA}_mainnet
-  DATA_CACHE_MIRRORNET: /cache/replay_data_hive_${CI_COMMIT_SHORT_SHA}_mirrornet
+  DATA_CACHE_MAINNET: /cache/replay_data_hive_mainnet_${CI_PIPELINE_ID}
+  DATA_CACHE_MIRRORNET: /cache/replay_data_hive_mirrornet_${CI_PIPELINE_ID}
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
 
@@ -38,25 +37,26 @@ prepare_hived_image:
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
-    BINARY_CACHE_PATH: "hived-mainnet-binaries"
+    BINARY_CACHE_PATH: "hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
   tags:
     - public-runner-docker
     - hived-for-tests
 
 prepare_hived_data:
-  extends: .prepare_hived_data
+  extends: .prepare_hived_data_5m
   needs:
     - job: prepare_hived_image
       artifacts: true
   stage: build
   variables:
     DATA_CACHE: $DATA_CACHE_MAINNET
+    HIVE_NETWORK_TYPE: mainnet
     BLOCK_LOG_SOURCE_DIR: $BLOCK_LOG_SOURCE_DIR_5M
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
+  resource_group: ${CI_COMMIT_SHA}
   tags:
     - hive-builder-4
-  resource_group: ${CI_COMMIT_SHORT_SHA}_mainnet
 
 cleanup_cache_manual:
   extends: .docker_image_cleanup_job
@@ -65,7 +65,8 @@ cleanup_cache_manual:
   script:
     - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
     - du -h -d 1 /cache
-    - rm /cache/replay_data_hived* -rf
+    - rm /cache/replay_data_hive_* -rf
+  resource_group: ${CI_COMMIT_SHA}
   tags:
     - hive-builder-4
   when: manual
@@ -489,6 +490,8 @@ patterns_tests:
       variables:
         DATADIR: $DATA_CACHE/datadir
         SHM_DIR: $DATA_CACHE/shm_dir
+        LOG_FILE: $CI_JOB_NAME.log
+      command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
 
   before_script:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
@@ -501,9 +504,8 @@ patterns_tests:
     - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
   after_script:
-    - ls -lath /cache
-    - du -h -d 1 /cache
-    - cp $DATA_CACHE/datadir/docker_entrypoint.log $DATA_CACHE/datadir/hived.log $CI_PROJECT_DIR
+    - rm docker_entrypoint.log -f
+    - cp $DATA_CACHE/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
 
   artifacts:
     reports:
@@ -517,9 +519,9 @@ patterns_tests:
     - docker_entrypoint.log
     when: always
     expire_in: 6 hours
+  resource_group: ${CI_COMMIT_SHA}
   tags:
     - hive-builder-4
-  resource_group: ${CI_COMMIT_SHORT_SHA}_mainnet
 
 transaction_serialization_testnet_tests:
   stage: test
@@ -545,6 +547,7 @@ python_pattern_mainnet_tests:
     PYTEST_TIMEOUT_MINUTES: 27
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
     JUNIT_REPORT: tests/api_tests/python_patterns_tests/report.xml
+    BINARY_CACHE_PATH: "hived-binaries"
     DATA_CACHE: $DATA_CACHE_MAINNET
   needs:
     - job: prepare_hived_image
@@ -557,6 +560,8 @@ python_pattern_mainnet_tests:
       variables:
         DATADIR: $DATA_CACHE/datadir
         SHM_DIR: $DATA_CACHE/shm_dir
+        LOG_FILE: $CI_JOB_NAME.log
+      command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
 
   before_script:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
@@ -564,13 +569,12 @@ python_pattern_mainnet_tests:
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/api_tests/python_patterns_tests
-    - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8090 --ws-endpoint hived-instance:8091 --wallet-path $CI_PROJECT_DIR/hived-mainnet-binaries/cli_wallet)
+    - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8090 --ws-endpoint hived-instance:8091 --wallet-path $CI_PROJECT_DIR/$BINARY_CACHE_PATH/cli_wallet)
     - *run-pytest
 
   after_script:
-    - ls -lath /cache
-    - du -h -d 1 /cache
-    - cp $DATA_CACHE/datadir/docker_entrypoint.log $DATA_CACHE/datadir/hived.log $CI_PROJECT_DIR
+    - rm docker_entrypoint.log -f
+    - cp $DATA_CACHE/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
 
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
@@ -582,9 +586,9 @@ python_pattern_mainnet_tests:
     - docker_entrypoint.log
     when: always
     expire_in: 1 week
+  resource_group: ${CI_COMMIT_SHA}
   tags:
     - hive-builder-4
-  resource_group: ${CI_COMMIT_SHORT_SHA}_mainnet
 
 .message_format_tests:
   stage: test
@@ -614,6 +618,8 @@ message_format_mainnet_5m_tests:
       variables:
         DATADIR: $DATA_CACHE/datadir
         SHM_DIR: $DATA_CACHE/shm_dir
+        LOG_FILE: $CI_JOB_NAME.log
+      command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
   variables:
     NODE_ADDRESS: "hived-instance:8090"
     NODE_TYPE: "mainnet_5m"
@@ -622,9 +628,8 @@ message_format_mainnet_5m_tests:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
     - !reference [.message_format_tests, before_script]
   after_script:
-    - ls -lath /cache
-    - du -h -d 1 /cache
-    - cp $DATA_CACHE/datadir/docker_entrypoint.log $DATA_CACHE/datadir/hived.log $CI_PROJECT_DIR
+    - rm docker_entrypoint.log -f
+    - cp $DATA_CACHE/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     reports:
@@ -635,9 +640,9 @@ message_format_mainnet_5m_tests:
     - docker_entrypoint.log
     when: always
     expire_in: 1 week
+  resource_group: ${CI_COMMIT_SHA}
   tags:
     - hive-builder-4
-  resource_group: ${CI_COMMIT_SHORT_SHA}_mainnet
 
 message_format_live_mainnet_tests:
   extends: .message_format_tests
@@ -667,19 +672,30 @@ witness_tests:
   stage: test
   extends: .test_tools_based
   needs:
-    - job: prepare_hived_data_image
+    - job: prepare_hived_image
       artifacts: true
+    - job: prepare_hived_data
   services:
     - name: $HIVED_IMAGE_NAME
       alias: hived-instance
+      variables:
+        DATADIR: $DATA_CACHE/datadir
+        SHM_DIR: $DATA_CACHE/shm_dir
+        LOG_FILE: $CI_JOB_NAME.log
+      command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
   variables:
     NODE_ADDRESS: "hived-instance:8090"
     PYTEST_TIMEOUT_MINUTES: 5
     JUNIT_REPORT: tests/functional/python_tests/witness_tests/report.xml
+    DATA_CACHE: $DATA_CACHE_MAINNET
   script:
+    - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
     - cd tests/functional/python_tests/witness_tests
     - export PYTEST_ARGS=(--http-endpoint=${NODE_ADDRESS})
     - *run-pytest
+  after_script:
+    - rm docker_entrypoint.log -f
+    - cp $DATA_CACHE/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
+  resource_group: ${CI_COMMIT_SHA}
   tags:
-    - public-runner-docker
-    - hived-for-tests
+    - hive-builder-4
