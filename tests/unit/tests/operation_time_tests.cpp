@@ -1723,7 +1723,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     else
     {
       auto interest_op = get_last_operations( 1 )[0].get< interest_operation >();
-      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
+      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + fc::uint128_to_uint64( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ) );
       BOOST_REQUIRE( interest_op.owner == "alice" );
       BOOST_REQUIRE( interest_op.interest.amount.value == get_hbd_balance( "alice" ).amount.value - ( alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value ) );
     }
@@ -1765,7 +1765,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     }
     else
     {
-      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + ( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() + alice_coindays ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ).to_uint64() );
+      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - ASSET( "1.000 TBD" ).amount.value + fc::uint128_to_uint64( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() + alice_coindays ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ) );
     }
 
     validate_database();
@@ -1826,7 +1826,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
     BOOST_TEST_MESSAGE("Alice HDB saving balance: " + legacy_asset::from_asset(get_hbd_savings("alice")).to_string());
 
     auto interest_op = get_last_operations(1)[0].get< interest_operation >();
-    BOOST_REQUIRE(static_cast<uint64_t>(get_hbd_savings("alice").amount.value) == alice_hbd_savings.amount.value + ASSET("1.000 TBD").amount.value + ((((uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds()) / HIVE_SECONDS_PER_YEAR) * gpo.get_hbd_interest_rate()) / HIVE_100_PERCENT).to_uint64());
+    BOOST_REQUIRE(static_cast<uint64_t>(get_hbd_savings("alice").amount.value) == alice_hbd_savings.amount.value + ASSET("1.000 TBD").amount.value + fc::uint128_to_uint64((((uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds()) / HIVE_SECONDS_PER_YEAR) * gpo.get_hbd_interest_rate()) / HIVE_100_PERCENT));
     BOOST_REQUIRE(interest_op.owner == "alice");
     BOOST_REQUIRE(interest_op.interest == get_hbd_savings("alice") - (alice_hbd_savings + ASSET("1.000 TBD")));
 
@@ -1859,7 +1859,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
     /// This op is needed to trigger interest payment...
     push_transaction(transfer, alice_private_key);
 
-    BOOST_REQUIRE(static_cast<uint64_t>(get_hbd_savings("alice").amount.value) == alice_hbd_savings.amount.value + ASSET("1.000 TBD").amount.value + ((((uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds() + alice_coindays) / HIVE_SECONDS_PER_YEAR) * gpo.get_hbd_interest_rate()) / HIVE_100_PERCENT).to_uint64());
+    BOOST_REQUIRE(static_cast<uint64_t>(get_hbd_savings("alice").amount.value) == alice_hbd_savings.amount.value + ASSET("1.000 TBD").amount.value + fc::uint128_to_uint64((((uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds() + alice_coindays) / HIVE_SECONDS_PER_YEAR) * gpo.get_hbd_interest_rate()) / HIVE_100_PERCENT));
 
     validate_database();
   }
