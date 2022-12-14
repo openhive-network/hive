@@ -89,11 +89,22 @@
   variables:
     SUBMODULE_DIR: "$CI_PROJECT_DIR"
     SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
-    DATA_CACHE: ""
     BLOCK_LOG_SOURCE_DIR: ""
     CONFIG_INI_SOURCE: ""
+    DATA_CACHE: $DATA_CACHE_MAINNET
+    HIVE_NETWORK_TYPE: mainnet
   script:
+    - set -x
     - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
-    - $SCRIPTS_PATH/ci-helpers/build_data2.sh
+    - export COMMIT=$( $SCRIPTS_PATH/ci-helpers/retrieve_last_commit.sh ${SUBMODULE_DIR} )
+    - echo "Detected that last changes afecting binary hived are at ${COMMIT}"
+    - export LAST_COMMIT_DATA_CACHE=/cache/replay_data_hived_${HIVE_NETWORK_TYPE}_${COMMIT}
+    - $SCRIPTS_PATH/ci-helpers/build_data2.sh --last-commit-data-cache=$LAST_COMMIT_DATA_CACHE
         --data-base-dir="$DATA_CACHE" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
-    - du -h -d 1 /cache
+    - du -h -d 1 /cache || true
+    - cp $DATA_CACHE/datadir/docker_entrypoint.log $CI_PROJECT_DIR || true
+
+  artifacts:
+    paths:
+    - docker_entrypoint.log
+    expire_in: 6 hours

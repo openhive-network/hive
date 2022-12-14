@@ -7,10 +7,9 @@ variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
   MIRRORNET_CHAIN_ID: 42
   MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
-  GIT_DEPTH: 1
+  GIT_DEPTH: 10
   GIT_SUBMODULE_STRATEGY: recursive
   CI_DEBUG_SERVICES: "true"
-  FF_ENABLE_JOB_CLEANUP: "true"
   # pin to specific docker images for build repeatability
   #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04-5
   RUNTIME_IMAGE_TAG: "@sha256:598fadc96705d1be39c742e94836ae48009acd47f96a4ac087b835df7f7960d7"
@@ -30,8 +29,8 @@ variables:
 
   TOX_VERSION: "3.25.1"
 
-  DATA_CACHE_MAINNET: /cache/replay_data_hive_${CI_COMMIT_SHORT_SHA}_mainnet
-  DATA_CACHE_MIRRORNET: /cache/replay_data_hive_${CI_COMMIT_SHORT_SHA}_mirrornet
+  DATA_CACHE_MAINNET: /cache/replay_data_hived_mainnet_${CI_COMMIT_SHA}
+  DATA_CACHE_MIRRORNET: /cache/replay_data_hived_mirrornet_${CI_COMMIT_SHA}
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
 
@@ -49,7 +48,7 @@ prepare_hived_image:
     - public-runner-docker
     - hived-for-tests
 
-prepare_hived_data:
+.build_data: &build_data
   extends: .prepare_hived_data
   needs:
     - job: prepare_hived_image
@@ -57,11 +56,11 @@ prepare_hived_data:
   stage: build
   variables:
     DATA_CACHE: $DATA_CACHE_MAINNET
+    HIVE_NETWORK_TYPE: mainnet
     BLOCK_LOG_SOURCE_DIR: $BLOCK_LOG_SOURCE_DIR_5M
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
   tags:
     - hive-builder-4
-  resource_group: ${CI_COMMIT_SHORT_SHA}_mainnet
 
 cleanup_cache_manual:
   extends: .docker_image_cleanup_job
@@ -476,6 +475,7 @@ datagen_api_tests:
     - public-runner-docker
 
 patterns_tests:
+  <<: *build_data
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   variables:
@@ -486,7 +486,6 @@ patterns_tests:
   needs:
     - job: prepare_hived_image
       artifacts: true
-    - job: prepare_hived_data
 
   services:
     - name: $HIVED_IMAGE_NAME
@@ -494,9 +493,11 @@ patterns_tests:
       variables:
         DATADIR: $DATA_CACHE/datadir
         SHM_DIR: $DATA_CACHE/shm_dir
+        COPY_DATADIR: 1
 
   before_script:
-    - curl -I hived-instance:8090 || echo "error connecting to service hived-instance" && false
+    - !reference [.prepare_hived_data, script]
+    - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
     - echo "HIVED image name $HIVED_IMAGE_NAME"
     - python3 -m venv venv/
     - . venv/bin/activate
@@ -511,8 +512,8 @@ patterns_tests:
 
   after_script:
     - ls -lath /cache
-    - du -h -d 1 /cache
-    - cp $DATA_CACHE/datadir/docker_entrypoint.log $DATA_CACHE/datadir/hived.log $CI_PROJECT_DIR
+    - rm docker_entrypoint.log -f
+    - cp $DATA_CACHE/datadir/docker_entrypoint.log $CI_PROJECT_DIR
 
   artifacts:
     reports:
@@ -524,12 +525,10 @@ patterns_tests:
     - "**/*.out.json"
     - "$CI_PROJECT_DIR/tests/tests_api/hived/workdir_*"
     - docker_entrypoint.log
-    - hived.log
     when: always
     expire_in: 6 hours
   tags:
     - hive-builder-4
-  resource_group: ${CI_COMMIT_SHORT_SHA}_mainnet
 
 transaction_serialization_testnet_tests:
   stage: test
@@ -547,6 +546,7 @@ transaction_serialization_testnet_tests:
     - public-runner-docker
 
 python_pattern_mainnet_tests:
+  <<: *build_data
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   interruptible: true
@@ -557,7 +557,6 @@ python_pattern_mainnet_tests:
   needs:
     - job: prepare_hived_image
       artifacts: true
-    - job: prepare_hived_data
 
   services:
     - name: $HIVED_IMAGE_NAME
@@ -565,9 +564,11 @@ python_pattern_mainnet_tests:
       variables:
         DATADIR: $DATA_CACHE/datadir
         SHM_DIR: $DATA_CACHE/shm_dir
+        COPY_DATADIR: 1
 
   before_script:
-    - curl -I hived-instance:8090 || echo "error connecting to service hived-instance" && false
+    - !reference [.prepare_hived_data, script]
+    - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
     - echo "HIVED image name $HIVED_IMAGE_NAME"
     - python3 -m venv venv/
     - . venv/bin/activate
@@ -581,8 +582,8 @@ python_pattern_mainnet_tests:
 
   after_script:
     - ls -lath /cache
-    - du -h -d 1 /cache
-    - cp $DATA_CACHE/datadir/docker_entrypoint.log $DATA_CACHE/datadir/hived.log $CI_PROJECT_DIR
+    - rm docker_entrypoint.log -f
+    - cp $DATA_CACHE/datadir/docker_entrypoint.log $CI_PROJECT_DIR
 
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
@@ -592,12 +593,10 @@ python_pattern_mainnet_tests:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
     - docker_entrypoint.log
-    - hived.log
     when: always
     expire_in: 1 week
   tags:
     - hive-builder-4
-  resource_group: ${CI_COMMIT_SHORT_SHA}_mainnet
 
 .message_format_tests:
   stage: test
@@ -616,35 +615,35 @@ python_pattern_mainnet_tests:
     - hived-for-tests
 
 message_format_mainnet_5m_tests:
+  <<: *build_data
   extends: .message_format_tests
   needs:
     - job: prepare_hived_image
       artifacts: true
-    - job: prepare_hived_data
   services:
     - name: $HIVED_IMAGE_NAME
       alias: hived-instance
       variables:
         DATADIR: $DATA_CACHE/datadir
         SHM_DIR: $DATA_CACHE/shm_dir
+        COPY_DATADIR: 1
   variables:
     NODE_ADDRESS: "hived-instance:8090"
     NODE_TYPE: "mainnet_5m"
     DATA_CACHE: $DATA_CACHE_MAINNET
   before_script:
-    - curl -I hived-instance:8090 || echo "error connecting to service hived-instance" && false
+    - !reference [.prepare_hived_data, script]
+    - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
     - !reference [.message_format_tests, before_script]
   after_script:
     - ls -lath /cache
-    - du -h -d 1 /cache
-    - cp $DATA_CACHE/datadir/docker_entrypoint.log $DATA_CACHE/datadir/hived.log $CI_PROJECT_DIR
+    - rm docker_entrypoint.log -f
+    - cp $DATA_CACHE/datadir/docker_entrypoint.log $CI_PROJECT_DIR
   artifacts:
     paths:
     - docker_entrypoint.log
-    - hived.log
   tags:
     - hive-builder-4
-  resource_group: ${CI_COMMIT_SHORT_SHA}_mainnet
 
 message_format_live_mainnet_tests:
   extends: .message_format_tests

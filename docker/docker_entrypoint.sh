@@ -20,8 +20,27 @@ then
     exit 1
 fi
 
+
+if [ -v COPY_DATADIR ]
+then
+    if [ ! "$DATADIR" == "/home/hived/datadir" ]
+    then
+      cp $DATADIR/* /home/hived/datadir -rf
+      DATADIR=/home/hived/datadir
+    fi
+    if [ ! "$SHM_DIR" == "/home/hived/shm_dir" ]
+    then
+      cp $SHM_DIR/* /home/hived/shm_dir -rf
+      SHM_DIR=/home/hived/shm_dir
+    fi
+fi
+
 LOG_FILE=${DATADIR}/docker_entrypoint.log
+sudo touch $LOG_FILE
+sudo -n chown -Rc hived:hived $LOG_FILE
+sudo chmod a+rw $LOG_FILE
 source "$SCRIPTSDIR/common.sh"
+
 
 cleanup () {
   echo "Performing cleanup...."
@@ -68,7 +87,8 @@ echo "Attempting to execute hived using additional command line arguments: ${HIV
 /home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
   --data-dir=${DATADIR} --shared-file-dir=${SHM_DIR} \
   ${HIVED_ARGS[@]} 2>&1 | tee -i hived.log
-echo "$? Hived process finished execution."
+echo "$?" | tee hived_command_exit_code
+echo "Hived process finished execution."
 EOF
 
 } &

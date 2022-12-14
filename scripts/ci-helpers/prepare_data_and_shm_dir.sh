@@ -1,5 +1,4 @@
 #! /bin/bash
-
 set -xeuo pipefail
 
 while [ $# -gt 0 ]; do

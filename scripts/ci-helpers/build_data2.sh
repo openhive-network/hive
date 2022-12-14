@@ -8,6 +8,7 @@ LOG_FILE=build_data.log
 source "$SCRIPTSDIR/common.sh"
 
 
+LAST_COMMIT_DATA_CACHE=""
 DATA_BASE_DIR=""
 CONFIG_INI_SOURCE=""
 BLOCK_LOG_SOURCE_DIR=""
@@ -17,15 +18,20 @@ print_help () {
     echo
     echo "Allows to build docker image containing Hived installation"
     echo "OPTIONS:"
-    echo "  --data-base-dir=PATH        Allows to specify a directory where data and shared memory file should be stored."
-    echo "  --block-log-source-dir=PATH Allows to specify a directory of block_log used to perform initial replay."
-    echo "  --config-ini-source=PATH    Allows to specify a path of config.ini configuration file used for building data."
-    echo "  --help                      Display this help screen and exit"
+    echo "  --last-commit-data-cache=PATH Allows to specify a directory where last changing executable commit datadir and shm_dir is stored."
+    echo "  --data-base-dir=PATH          Allows to specify a directory where data and shared memory file should be stored."
+    echo "  --block-log-source-dir=PATH   Allows to specify a directory of block_log used to perform initial replay."
+    echo "  --config-ini-source=PATH      Allows to specify a path of config.ini configuration file used for building data."
+    echo "  --help                        Display this help screen and exit"
     echo
 }
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    --last-commit-data-cache=*)
+        LAST_COMMIT_DATA_CACHE="${1#*=}"
+        echo "using LAST_COMMIT_DATA_CACHE $LAST_COMMIT_DATA_CACHE"
+        ;;
     --data-base-dir=*)
         DATA_BASE_DIR="${1#*=}"
         echo "using DATA_BASE_DIR $DATA_BASE_DIR"
@@ -52,6 +58,18 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+
+if [ -f $LAST_COMMIT_DATA_CACHE/datadir/hived_command_exit_code ]
+then
+  date
+  if [ "${LAST_COMMIT_DATA_CACHE}" != "${DATA_CACHE}" ]
+  then
+    cp $LAST_COMMIT_DATA_CACHE/. $DATA_CACHE -rfa
+  fi
+  date
+  echo "Found datadir and shm_dir in ${LAST_COMMIT_DATA_CACHE}. Not performing replay."
+  exit 0
+fi
 
 echo "Attempting to perform 5000000 block replay basing on ${HIVED_IMAGE_NAME}..."
 
