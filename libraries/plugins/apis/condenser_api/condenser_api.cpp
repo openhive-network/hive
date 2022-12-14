@@ -1325,7 +1325,7 @@ uint16_t api_account_object::_compute_voting_power( const database_api::api_acco
   vp_t2 *= a.voting_manabar.current_mana;
   vp_t2 /= vests;
 
-  uint64_t vp_t2u = vp_t2.to_uint64();
+  uint64_t vp_t2u = fc::uint128_to_uint64(vp_t2);
   if( vp_t2u >= HIVE_100_PERCENT )
   {
     dlog( "Truncated vp_t2u to HIVE_100_PERCENT for account ${a}", ("a", a.name) );
