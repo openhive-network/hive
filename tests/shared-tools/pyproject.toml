@@ -9,7 +9,7 @@ version = "0.0.0"
 description = "Tools shared by tests in hive projects"
 authors = ["Mariusz Trela"]
 packages = [
-    { include = "shared_tools", from = "package" },
+    { include = "shared_tools" },
 ]
 
 
