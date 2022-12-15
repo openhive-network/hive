@@ -1827,7 +1827,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     FC_ASSERT( voter.voting_manabar.has_mana( fc::uint128_to_int64(used_mana) ), "Account does not have enough mana to vote." );
   }
 
-  int64_t abs_rshares = fc::uint128_to_uint64(used_mana);
+  int64_t abs_rshares = fc::uint128_to_int64(used_mana);
 
   abs_rshares -= HIVE_VOTE_DUST_THRESHOLD;
   abs_rshares = std::max( int64_t(0), abs_rshares );
