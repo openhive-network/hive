@@ -8,7 +8,18 @@
 #include <fc/network/url.hpp>
 #include <boost/algorithm/string.hpp>
 
-   int fc::http::connection::impl::read_until( char* buffer, char* end, char c ) {
+
+namespace fc { namespace http {
+  class connection::impl
+  {
+  public:
+    fc::tcp_socket sock;
+    fc::ip::endpoint ep;
+    int read_until( char* buffer, char* end, char c = '\n' );
+    fc::http::reply parse_reply();
+  };
+
+   int connection::impl::read_until( char* buffer, char* end, char c ) {
       char* p = buffer;
      // try {
           while( p < end && 1 == sock.readsome(p,1) ) {
@@ -25,8 +36,8 @@
       return (p-buffer);
    }
 
-   fc::http::reply fc::http::connection::impl::parse_reply() {
-      fc::http::reply rep;
+   reply connection::impl::parse_reply() {
+      reply rep;
       try {
         std::vector<char> line(1024*8);
         int s = read_until( line.data(), line.data()+line.size(), ' ' ); // HTTP/1.1
@@ -35,7 +46,7 @@
         s = read_until( line.data(), line.data()+line.size(), '\n' ); // DESCRIPTION
         
         while( (s = read_until( line.data(), line.data()+line.size(), '\n' )) > 1 ) {
-          fc::http::header h;
+          header h;
           char* end = line.data();
           while( *end != ':' )++end;
           h.key = fc::string(line.data(),end);
@@ -61,11 +72,10 @@
       } 
    }
 
-namespace fc { namespace http {
+  connection::connection()
+  :my( new connection::impl() ){}
 
-         connection::connection()
-         :my( new connection::impl() ){}
-
+  connection::~connection(){}
 
 // used for clients
 void       connection::connect_to( const fc::ip::endpoint& ep ) {
