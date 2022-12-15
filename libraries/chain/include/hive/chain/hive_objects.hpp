@@ -181,11 +181,10 @@ namespace hive { namespace chain {
       int64_t get_hbd_volume() const { return hbd_volume; }
 
       account_id_type   owner;
+      time_point_sec    last_update = fc::time_point_sec::min(); /// used to decay negative liquidity balances. block num
+      uint128_t         weight = 0;
       int64_t           hive_volume = 0;
       int64_t           hbd_volume = 0;
-      uint128_t         weight = 0;
-
-      time_point_sec    last_update = fc::time_point_sec::min(); /// used to decay negative liquidity balances. block num
 
       /// this is the sort index
       uint128_t volume_weight()const
@@ -658,7 +657,7 @@ FC_REFLECT( hive::chain::collateralized_convert_request_object,
 CHAINBASE_SET_INDEX_TYPE( hive::chain::collateralized_convert_request_object, hive::chain::collateralized_convert_request_index )
 
 FC_REFLECT( hive::chain::liquidity_reward_balance_object,
-          (id)(owner)(hive_volume)(hbd_volume)(weight)(last_update) )
+          (id)(owner)(last_update)(weight)(hive_volume)(hbd_volume) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::liquidity_reward_balance_object, hive::chain::liquidity_reward_balance_index )
 
 FC_REFLECT( hive::chain::withdraw_vesting_route_object,
