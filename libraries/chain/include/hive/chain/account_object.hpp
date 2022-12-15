@@ -104,8 +104,6 @@ namespace hive { namespace chain {
 
       //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
 
-    private:
-      account_id_type   proxy;
     public:
       account_name_type name;
     private:
@@ -174,10 +172,10 @@ namespace hive { namespace chain {
       time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
 
     private:
+      account_id_type   proxy;
       time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
 
     public:
-
       uint32_t          comment_count = 0;
       uint32_t          lifetime_vote_count = 0;
       uint32_t          post_count = 0;
@@ -193,7 +191,6 @@ namespace hive { namespace chain {
       bool              mined = true;
 
     public:
-
       public_key_type   memo_key;   //public_key_type - 33 bytes; ABW: it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't COLLECT_ACCOUNT_METADATA
 
       fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes;// = std::vector<share_type>( HIVE_MAX_PROXY_RECURSION_DEPTH, 0 ); ///< the total VFS votes proxied to this account
@@ -615,7 +612,7 @@ namespace hive { namespace chain {
 } }
 
 FC_REFLECT( hive::chain::account_object,
-          (id)(name)(memo_key)(proxy)(last_account_update)
+          (id)(name)(memo_key)(last_account_update)
           (created)(mined)
           (recovery_account)(last_account_recovery)
           (comment_count)(lifetime_vote_count)(post_count)(can_vote)(voting_manabar)(downvote_manabar)
@@ -633,6 +630,7 @@ FC_REFLECT( hive::chain::account_object,
           (pending_claimed_accounts)
           (delayed_votes)
           (sum_delayed_votes)
+          (proxy)
           (governance_vote_expiration_ts)
         )
 
