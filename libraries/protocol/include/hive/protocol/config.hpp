@@ -89,7 +89,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 ///                               LIVE HIVE NETWORK (MainNet)                                   ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 27, 2) )
+#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 27, 3) )
 
 #ifndef HIVE_INIT_PUBLIC_KEY_STR
 # define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
