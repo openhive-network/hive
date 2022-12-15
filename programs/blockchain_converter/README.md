@@ -25,9 +25,12 @@ All of the second authority keys will be printed before exiting the program.
 ### Plugins
 You can choose a conversion method by using the `plugin` option.
 
-#### `blog_log_conversion`
+#### `block_log_conversion`
 `block_log_conversion` plugin relies on the `block_log` files.
 As the `input` option value you will have to specify a path to a non-empty input original block_log file and as the `output` option value you should specify a path to an output `block_log` file that will contain converted blockchain.
+
+#### `iceberg_generate`
+`iceberg_generate` works just like [`block_log_conversion`](#block_log_conversion) plugin, but converts only a given range of blocks, generating required information in order for converted operations to work, like creating non-existing accounts, posts (comments), etc.
 
 #### `node_based_conversion`
 `node_based_conversion` plugin relies on the remote nodes.
@@ -68,9 +71,11 @@ By default, it uses only 1 signing thread. If you want to increase this value, u
 If you want to stop the conversion at a specific block, you will have to provide the `stop-block` option.
 
 If you want to resume it later, the converter will automatically retrieve the last block number if either the `resume-block` option has not been specified or its value is not equal to 0.
-If use [blog_log_conversion plugin](#blog_log_conversion) this value will be set to the last block number in the output block log + 1 and if you use [node_based_conversion plugin](#node_based_conversion) it will be equal to the last `head_block_number` value retrieved from the `database_api.get_dynamic_global_properties` API call sent to the output node + 1.
+If use [block_log_conversion plugin](#block_log_conversion) this value will be set to the last block number in the output block log + 1 and if you use [node_based_conversion plugin](#node_based_conversion) it will be equal to the last `head_block_number` value retrieved from the `database_api.get_dynamic_global_properties` API call sent to the output node + 1.
 
 Note: If you stop the conversion before hardfork 17, the converter state will be most probably corrupted and you will be unable to resume the conversion from the given state. To continue, you will have to restart the conversion from the beginning.
+
+Another note: [`iceberg_generate`](#iceberg_generate) plugin does not allow resuming the conversion due to the required reference operations state that is not being saved on program interrupt
 
 ### Logging
 You can log block information before and after each conversion.
@@ -84,6 +89,13 @@ Convert `block_log` file and dump the output to `new_fancy_block_log` file, alte
 blockchain_converter --plugin block_log_conversion --input block_log --output new_fancy_block_log --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
 ```
 Note: block_log_conversion plugin increases the block size by default to the `HIVE_MAX_BLOCK_SIZE` (2 MiB) using the `witness_update` and `witness_set_properties` operations. After replay you can change this using your witness and run node_based_conversion normally without the increase in blocks size
+
+#### iceberg_generate plugin
+Convert blocks in 100000-200000 range from the `block_log` file and dump the output to `new_fancy_block_log` file, alter chain to use the id `1`, sign blocks using witness private key: `5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n`. This key will be also used as a second authority key for every user:
+```
+blockchain_converter --plugin iceberg_generate --resume-block 100000 --stop-block 200000 --input block_log --output new_fancy_block_log --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
+```
+Note: Block size will be increased just like in the [`block_log_conversion` plugin example run](#block_log_conversion-plugin). Also additional operations will be added (See [iceberg_generate](#iceberg_generate)).
 
 #### node_based_conversion plugin
 Convert blocks from `api.deathwing.me` and send converted transactions to `127.0.0.1` node with same private keys and chain id as in the [block_log_conversion plugin example run](#block_log_conversion%20plugin)
