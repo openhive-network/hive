@@ -277,6 +277,83 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
 
 } FC_LOG_AND_RETHROW() }
 
+// account history API -> where it's used in condenser API implementation
+//  get_ops_in_block -> get_ops_in_block
+//  get_transaction -> ditto get_transaction
+//  get_account_history -> ditto get_account_history
+//  enum_virtual_ops -> not used
+
+BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
+{ try {
+
+  BOOST_TEST_MESSAGE( "get_ops_in_block / get_transaction test" );
+
+  ACTORS((alice0ah)(bob0ah))
+  fund( "alice0ah", 500000000 );
+  transfer("alice0ah", "bob0ah", asset(1234, HIVE_SYMBOL));
+
+  // We'll be expecting 11 operations here:
+  // 4 operations for each actor (2 for account creation & 2 for its vesting)
+  // 1 operation for alice funding.
+  // 1 operation for transfer between alice and bob.
+  // 1 block producer reward operation
+
+  // These operations will go into next head block.
+  uint32_t block_num = db->head_block_num() +1;
+  ilog("block #${num}", ("num", block_num));
+
+  // Let's make the block irreversible (see below why).
+  for(int i = 0; i<= 21; ++i)
+    generate_block();
+
+  // Call condenser get_ops_in_block and verify results with result of account history variant.
+  // Condenser variant accepts 2 args and calls ah's variant with default value of include_reversible = false.
+  auto block_ops = condenser_api->get_ops_in_block({block_num, false /*only_virtual*/});
+  auto ah_block_ops = account_history_api->get_ops_in_block({block_num, false /*only_virtual*/, false /*include_reversible*/});
+  ilog("block #${num}, ${op} operations from condenser, ${ah} operations from account history",
+    ("num", block_num)("op", block_ops.size())("ah", ah_block_ops.ops.size()));
+  BOOST_REQUIRE_EQUAL( block_ops.size(), ah_block_ops.ops.size() );
+
+  auto i_condenser = block_ops.begin();
+  auto i_ah = ah_block_ops.ops.begin();
+  for (; i_condenser != block_ops.end(); ++i_condenser, ++i_ah )
+  {
+    // Compare basic data about operations.
+    const condenser_api::api_operation_object& op_obj = i_condenser->value;
+    const account_history::api_operation_object& ah_op_obj = *i_ah;
+    ilog("operation from condenser get_ops_in_block: ${op}", ("op", op_obj));
+    ilog("operation from account history get_ops_in_block: ${op}", ("op", ah_op_obj));
+    BOOST_REQUIRE_EQUAL( op_obj.trx_id, ah_op_obj.trx_id );
+    BOOST_REQUIRE_EQUAL( op_obj.block, ah_op_obj.block );
+    BOOST_REQUIRE_EQUAL( op_obj.trx_in_block, ah_op_obj.trx_in_block );
+    BOOST_REQUIRE_EQUAL( op_obj.op_in_trx, ah_op_obj.op_in_trx );
+
+    if( op_obj.trx_id == hive::protocol::transaction_id_type() )
+    {
+      // We won't get this transaction by tx_hash 
+      ilog("skipping transaction check due to empty hash/id");
+    }
+    else
+    {
+      // Call condenser get_transaction and verify results with result of account history variant.
+      const auto tx_hash = op_obj.trx_id.str();
+      const auto result = condenser_api->get_transaction( condenser_api::get_transaction_args(1, fc::variant(tx_hash)) );
+      const condenser_api::annotated_signed_transaction op_tx = result.value;
+      ilog("operation transaction is ${tx}", ("tx", op_tx));
+      const account_history::annotated_signed_transaction ah_op_tx = 
+        account_history_api->get_transaction( {tx_hash, false /*include_reversible*/} );
+      ilog("operation transaction is ${tx}", ("tx", ah_op_tx));
+      BOOST_REQUIRE_EQUAL( op_tx.transaction_id, ah_op_tx.transaction_id );
+      BOOST_REQUIRE_EQUAL( op_tx.block_num, ah_op_tx.block_num );
+      BOOST_REQUIRE_EQUAL( op_tx.transaction_num, ah_op_tx.transaction_num );
+    }
+  }
+
+  validate_database();
+
+} FC_LOG_AND_RETHROW() }
+
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
 
