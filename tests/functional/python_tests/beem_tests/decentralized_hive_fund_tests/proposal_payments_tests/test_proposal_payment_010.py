@@ -4,8 +4,8 @@ from beem import Hive
 import test_tools as tt
 
 from .. import test_utils
-from ..conftest import CREATOR,  TREASURY
-from ...conftest import NodeClientMaker
+from ..local_tools import CREATOR,  TREASURY
+from ...local_tools import NodeClientMaker
 from ..... import hive_utils
 
 

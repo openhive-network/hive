@@ -314,6 +314,12 @@ namespace chainbase {
   template<typename MultiIndexType>
   class generic_index
   {
+    private:
+      std::string get_type_name() const
+      {
+        return boost::core::demangle( typeid( typename index_type::value_type ).name() );
+      }
+
     public:
       typedef MultiIndexType                                        index_type;
       typedef typename index_type::value_type                       value_type;
@@ -329,7 +335,17 @@ namespace chainbase {
 
       void validate()const {
         if( sizeof(typename MultiIndexType::value_type) != _size_of_value_type || sizeof(*this) != _size_of_this )
-          CHAINBASE_THROW_EXCEPTION( std::runtime_error("content of memory does not match data expected by executable") );
+        {
+          char buffer[512];
+          std::snprintf( buffer, sizeof(buffer), "content of memory does not match data expected by executable. type-name: %s new-value-type-size: %s old-value-type-size: %s new-generic-index-size: %s old-generic-index-size: %s",
+            get_type_name().c_str(),
+            std::to_string( sizeof(typename MultiIndexType::value_type) ).c_str(),
+            std::to_string( _size_of_value_type ).c_str(),
+            std::to_string( sizeof(*this) ).c_str(),
+            std::to_string( _size_of_this ).c_str() );
+
+          CHAINBASE_THROW_EXCEPTION( std::runtime_error(buffer) );
+        }
       }
 
       /**
@@ -343,9 +359,8 @@ namespace chainbase {
         auto insert_result = _indices.emplace( _indices.get_allocator(), new_id, std::forward<Args>( args )... );
 
         if( !insert_result.second ) {
-          std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
           CHAINBASE_THROW_EXCEPTION(std::logic_error(
-            "could not insert object, most likely a uniqueness constraint was violated inside index holding types: " + type_name));
+            "could not insert object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
         }
 
         ++_next_id;
@@ -412,9 +427,8 @@ namespace chainbase {
 
         if(!ok)
         {
-          std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
           CHAINBASE_THROW_EXCEPTION(std::logic_error(
-            "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: " + type_name));
+            "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
         }
       }
 
@@ -565,10 +579,9 @@ namespace chainbase {
 
           if( !ok )
           {
-            std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
             CHAINBASE_THROW_EXCEPTION(std::logic_error(
               "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: "
-                + type_name));
+                + get_type_name()));
           }
         }
 
@@ -578,9 +591,8 @@ namespace chainbase {
 
           if(position == _indices.end())
           {
-            std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
             CHAINBASE_THROW_EXCEPTION(std::logic_error("unable to find object with id: " +
-              std::to_string(id) + "in the index holding types: " + type_name));
+              std::to_string(id) + "in the index holding types: " + get_type_name()));
           }
 
             _indices.erase( position );
@@ -591,9 +603,8 @@ namespace chainbase {
           bool ok = _indices.emplace( std::move( item.second ) ).second;
           if( !ok )
           {
-            std::string type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
             CHAINBASE_THROW_EXCEPTION(std::logic_error(
-              "Could not restore object, most likely a uniqueness constraint was violated inside index holding types: " + type_name));
+              "Could not restore object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
           }
         }
 
@@ -1318,14 +1329,37 @@ namespace chainbase {
           CHAINBASE_THROW_EXCEPTION( std::logic_error( type_name + "::type_id is already in use" ) );
         }
         index_type* idx_ptr =  nullptr;
+        bool _is_index_new = false;
 #ifdef ENABLE_STD_ALLOCATOR
         idx_ptr = new index_type( index_alloc() );
 #else
-        idx_ptr = _segment->find_or_construct< index_type >( type_name.c_str() )( index_alloc( _segment->get_segment_manager() ) );
+        auto _found = _segment->find< index_type >( type_name.c_str() );
+        if( !_found.first )
+        {
+          _is_index_new = true;
+          idx_ptr = _segment->construct< index_type >( type_name.c_str() )( index_alloc( _segment->get_segment_manager() ) );
+        }
+        else
+        {
+          idx_ptr = _found.first;
+        }
 #endif
 
 
         idx_ptr->validate();
+
+        if( _is_index_new )
+          _at_least_one_index_is_created_now = true;
+        else
+          _at_least_one_index_was_created_earlier = true;
+
+        if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
+        {
+          if( _is_index_new )
+            CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is created, but other indexes are found in `shared_memory_file` file. A replay is needed. Problem with: " + type_name ) );
+          else
+            CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is found in `shared_memory_file` file, but other indexes are created. A replay is needed. Problem with: " + type_name ) );
+        }
 
         if( type_id >= _index_map.size() )
           _index_map.resize( type_id + 1 );
@@ -1367,6 +1401,9 @@ namespace chainbase {
       int32_t                                                     _undo_session_count = 0;
       size_t                                                      _file_size = 0;
       boost::any                                                  _database_cfg = nullptr;
+
+      bool                                                        _at_least_one_index_was_created_earlier = false;
+      bool                                                        _at_least_one_index_is_created_now = false;
   };
 
 }  // namepsace chainbase

@@ -36,11 +36,7 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load():
     # wait for the blocks with the transactions to become irreversible, and will be saved in block_log
     first_node.wait_number_of_blocks(21)
 
-    # Node during snapshot is restarted - this requires wallet reconnection. This is a bug described in issue
-    # https://gitlab.syncad.com/hive/test-tools/-/issues/9. This place have to be rewritten after solving this issue.
-    wallet.close()
     snapshot = first_node.dump_snapshot()
-    wallet.run()
 
     second_node = tt.ApiNode()
     connect_nodes(first_node, second_node)

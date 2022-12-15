@@ -14,8 +14,8 @@ def test_verify_authority_in_mainnet_5m(node):
     node.api.condenser.verify_authority(transaction)
 
 
-@run_for('mainnet_64m')
-def test_verify_authority_in_mainnet_64m(node):
+@run_for('live_mainnet')
+def test_verify_authority_in_live_mainnet(node):
     block = node.api.condenser.get_block(48000034)
     transaction = block['transactions'][17]
     node.api.condenser.verify_authority(transaction)

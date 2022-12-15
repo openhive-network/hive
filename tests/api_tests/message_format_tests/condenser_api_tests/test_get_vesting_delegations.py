@@ -5,7 +5,7 @@ from ....local_tools import run_for
 
 # This test is not performed on 5 million block log because it doesn't contain any vesting delegations.
 # See the readme.md file in this directory for further explanation.
-@run_for('testnet', 'mainnet_64m')
+@run_for('testnet', 'live_mainnet')
 def test_get_vesting_delegations(node, should_prepare):
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)

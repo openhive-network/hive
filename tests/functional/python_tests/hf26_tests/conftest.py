@@ -1,12 +1,10 @@
-from datetime import timezone
 from typing import Dict, Optional
 
 import pytest
 
 import test_tools as tt
 
-from ..local_tools import init_network, parse_datetime
-
+from shared_tools.complex_networks import init_network
 
 def run_with_faketime(node, time):
     #time example: '2020-01-01T00:00:00'
@@ -109,7 +107,7 @@ def prepare_environment_with_2_sub_networks(hard_fork_26_time_alpha, hard_fork_2
 
 
 def calculate_epoch_time(date):
-    return int(parse_datetime(date).replace(tzinfo=timezone.utc).timestamp())
+    return int(tt.Time.parse(date).timestamp())
 
 
 @pytest.fixture
@@ -144,4 +142,3 @@ def network_after_hf26_without_majority():
         'alpha': alpha_net,
         'beta': beta_net,
     }
-

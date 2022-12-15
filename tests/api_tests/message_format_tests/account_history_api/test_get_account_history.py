@@ -21,7 +21,7 @@ ACCOUNT = 'initminer'
         (None, True),  # none is treated like numeric (0)
     ]
 )
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_account_history_with_correct_values(node, start, limit):
     node.api.account_history.get_account_history(
         account='initminer',
@@ -58,7 +58,7 @@ def test_get_account_history_with_correct_values(node, start, limit):
         (ACCOUNT, 0, {}),
     ]
 )
-@run_for('testnet', 'mainnet_5m', 'mainnet_64m')
+@run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_account_history_with_incorrect_values(node, account_name, start, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.get_account_history(

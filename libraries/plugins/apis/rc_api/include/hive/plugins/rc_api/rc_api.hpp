@@ -8,6 +8,7 @@
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
 
+#define RC_API_DEFAULT_QUERY_LIMIT 0
 #define RC_API_SINGLE_QUERY_LIMIT 1000
 
 namespace hive { namespace plugins { namespace rc {
@@ -20,7 +21,7 @@ namespace detail
 struct list_object_args_type
 {
   fc::variant       start;
-  uint32_t          limit;
+  uint32_t          limit = RC_API_DEFAULT_QUERY_LIMIT;
 };
 
 using plugins::json_rpc::void_type;

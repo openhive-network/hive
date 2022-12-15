@@ -8,12 +8,14 @@
 #include <hive/plugins/rc/resource_count.hpp>
 #include <hive/chain/database.hpp>
 
+#include <hive/chain/account_object.hpp>
 #include <hive/chain/hive_object_types.hpp>
 
 #include <fc/int_array.hpp>
 
 namespace hive { namespace chain {
 struct by_account;
+class remove_guard;
 } }
 
 namespace hive { namespace plugins { namespace rc {
@@ -24,13 +26,14 @@ using hive::protocol::asset;
 
 enum rc_object_types
 {
-  rc_resource_param_object_type    = ( HIVE_RC_SPACE_ID << 8 ),
-  rc_pool_object_type              = ( HIVE_RC_SPACE_ID << 8 ) + 1,
-  rc_account_object_type           = ( HIVE_RC_SPACE_ID << 8 ) + 2,
-  rc_direct_delegation_object_type = ( HIVE_RC_SPACE_ID << 8 ) + 3,
-  rc_usage_bucket_object_type      = ( HIVE_RC_SPACE_ID << 8 ) + 4,
-  rc_pending_data_type             = ( HIVE_RC_SPACE_ID << 8 ) + 5,
-  rc_stats_object_type             = ( HIVE_RC_SPACE_ID << 8 ) + 6
+  rc_resource_param_object_type     = ( HIVE_RC_SPACE_ID << 8 ),
+  rc_pool_object_type               = ( HIVE_RC_SPACE_ID << 8 ) + 1,
+  rc_account_object_type            = ( HIVE_RC_SPACE_ID << 8 ) + 2,
+  rc_direct_delegation_object_type  = ( HIVE_RC_SPACE_ID << 8 ) + 3,
+  rc_usage_bucket_object_type       = ( HIVE_RC_SPACE_ID << 8 ) + 4,
+  rc_pending_data_type              = ( HIVE_RC_SPACE_ID << 8 ) + 5,
+  rc_stats_object_type              = ( HIVE_RC_SPACE_ID << 8 ) + 6,
+  rc_expired_delegation_object_type = ( HIVE_RC_SPACE_ID << 8 ) + 7
 };
 
 class rc_resource_param_object : public object< rc_resource_param_object_type, rc_resource_param_object >
@@ -287,17 +290,43 @@ class rc_direct_delegation_object : public object< rc_direct_delegation_object_t
   public:
     template< typename Allocator >
     rc_direct_delegation_object( allocator< Allocator > a, uint64_t _id,
-      const account_id_type& _from, const account_id_type& _to, const uint64_t& _delegated_rc)
-    : id( _id ), from(_from), to(_to), delegated_rc(_delegated_rc) {}
+      const account_object& _from, const account_object& _to, uint64_t _delegated_rc )
+    : id( _id ), from( _from.get_id() ), to( _to.get_id() ), delegated_rc( _delegated_rc ) {}
 
     account_id_type from;
     account_id_type to;
     uint64_t        delegated_rc = 0;
   CHAINBASE_UNPACK_CONSTRUCTOR(rc_direct_delegation_object);
 };
+typedef oid_ref< rc_direct_delegation_object > rc_direct_delegtion_id_type;
 
 int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account, bool only_delegable_rc = false );
 void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object& account, uint32_t now, int64_t delta, bool regenerate_mana = false );
+
+/**
+  * When delegation overflow happens (see check_for_rc_delegation_overflow) some direct rc delegations need to be removed.
+  * If the removal process hits limit (too many of them need to be removed) the remaining delegations are moved to new
+  * object of expired delegation, that is, original delegator behaves as if delegations were properly removed (*), but some
+  * remain active. They are to be removed in consecutive blocks.
+  * (*) When there is still expired delegation object for selected delegator, that account cannot create new delegations.
+  */
+class rc_expired_delegation_object : public object< rc_expired_delegation_object_type, rc_expired_delegation_object >
+{
+  CHAINBASE_OBJECT( rc_expired_delegation_object );
+  public:
+  template< typename Allocator >
+    rc_expired_delegation_object( allocator< Allocator > a, uint64_t _id,
+      const account_object& _from, const uint64_t& _expired_delegation )
+    : id( _id ), from( _from.get_id() ), expired_delegation( _expired_delegation ) {}
+
+    account_id_type from;
+    uint64_t        expired_delegation = 0;
+  CHAINBASE_UNPACK_CONSTRUCTOR( rc_expired_delegation_object );
+};
+typedef oid_ref< rc_expired_delegation_object > rc_expired_delegtion_id_type;
+
+bool has_expired_delegation( const database& _db, const account_object& account );
+void remove_delegations( database& _db, int64_t& delegation_overflow, account_id_type delegator_id, uint32_t now, remove_guard& obj_perf );
 
 /**
   * Holds HIVE_RC_BUCKET_TIME_LENGTH of cumulative usage of resources.
@@ -407,6 +436,17 @@ typedef multi_index_container<
   allocator< rc_direct_delegation_object >
 > rc_direct_delegation_index;
 
+typedef multi_index_container<
+  rc_expired_delegation_object,
+  indexed_by<
+    ordered_unique< tag< by_id >,
+      const_mem_fun< rc_expired_delegation_object, rc_expired_delegation_object::id_type, &rc_expired_delegation_object::get_id > >,
+    ordered_unique< tag< by_account >,
+      member< rc_expired_delegation_object, account_id_type, &rc_expired_delegation_object::from > >
+  >,
+  allocator< rc_expired_delegation_object >
+> rc_expired_delegation_index;
+
 struct by_timestamp;
 
 typedef multi_index_container<
@@ -475,6 +515,13 @@ FC_REFLECT( hive::plugins::rc::rc_direct_delegation_object,
   (delegated_rc)
   )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_direct_delegation_object, hive::plugins::rc::rc_direct_delegation_index )
+
+FC_REFLECT( hive::plugins::rc::rc_expired_delegation_object,
+  (id)
+  (from)
+  (expired_delegation)
+  )
+CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_expired_delegation_object, hive::plugins::rc::rc_expired_delegation_index )
 
 FC_REFLECT( hive::plugins::rc::rc_usage_bucket_object,
   (id)

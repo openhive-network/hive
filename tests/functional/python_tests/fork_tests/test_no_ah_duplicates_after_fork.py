@@ -1,11 +1,10 @@
+import shared_tools.complex_networks_helper_functions as sh
 import test_tools as tt
 
-from .local_tools import assert_no_duplicates
 
-
-def test_no_duplicates_in_account_history_plugin_after_fork(prepared_networks):
-    alpha_net = prepared_networks['Alpha']
-    beta_net = prepared_networks['Beta']
+def test_no_duplicates_in_account_history_plugin_after_fork(prepare_basic_networks):
+    alpha_net = prepare_basic_networks['Alpha']
+    beta_net = prepare_basic_networks['Beta']
 
     alpha_node = alpha_net.node('ApiNode0')
     beta_node = beta_net.node('ApiNode1')
@@ -19,7 +18,7 @@ def test_no_duplicates_in_account_history_plugin_after_fork(prepared_networks):
     # Expected behaviour is that nodes in one of subnetworks (random one, alpha or beta) will perform undo and enter
     # live sync. We check there are no duplicates in account_history_api after such scenario (issue #117).
     tt.logger.info('Assert there are no duplicates in account_history.get_ops_in_block after fork...')
-    assert_no_duplicates(alpha_node, beta_node)
+    sh.assert_no_duplicates(alpha_node, beta_node)
 
 
 def trigger_fork(alpha_net, beta_net):

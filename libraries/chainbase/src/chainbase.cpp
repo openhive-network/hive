@@ -247,6 +247,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   {
     _index_list.clear();
     _index_map.clear();
+
+    _at_least_one_index_was_created_earlier = false;
+    _at_least_one_index_is_created_now      = false;
   }
 
   void database::wipe( const bfs::path& dir )

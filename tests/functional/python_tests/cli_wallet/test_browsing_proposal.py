@@ -4,7 +4,7 @@ import test_tools as tt
 
 from .shared_utilites import *
 from .shared_utilites import prepared_proposal_data_with_id as proposal_data_t
-from .conftest import create_funded_account
+from .local_tools import create_funded_account
 
 active_values = ["all", "inactive", "active", "expired", "votable"]
 proposals_order_by_values = ["by_creator", "by_start_date", "by_end_date", "by_total_votes"]

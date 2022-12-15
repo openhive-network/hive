@@ -40,14 +40,43 @@
 
 #include <fc/crypto/digest.hpp>
 #include <fc/crypto/hex.hpp>
+#include <fc/uint128.hpp>
 #include "../db_fixture/database_fixture.hpp"
 
 #include <algorithm>
 #include <random>
+#include <string>
 
 using namespace hive;
 using namespace hive::chain;
 using namespace hive::protocol;
+
+namespace std
+{
+string to_string(const fc::uint128& i)
+{
+  return static_cast<string>(i);
+}
+
+string to_string(const __uint128_t& i)
+{
+  // based on idea from https://stackoverflow.com/questions/11656241/how-to-print-uint128-t-number-using-gcc/11660651#11660651
+  constexpr auto p10 = 10000000000000000000ULL; /* 19 zeroes */
+  constexpr auto e10 = 19; // max_digits-1 for uint64_t
+
+  if (i > numeric_limits<uint64_t>::max())
+  {
+    __uint128_t hi = i / p10;
+    uint64_t lo = i % p10;
+    string lo_str = to_string(lo);
+    return to_string(hi) + string(e10 - lo_str.size(), '0') + lo_str;
+  }
+  else
+  {
+    return to_string(static_cast<uint64_t>(i));
+  }
+}
+} // namespace std
 
 BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 
@@ -433,6 +462,43 @@ BOOST_AUTO_TEST_CASE( curation_weight_test )
   }
 
   //idump( (delta)(old_weight)(new_weight) );
+
+}
+
+BOOST_AUTO_TEST_CASE( fc_uint128_to_string )
+{
+  fc::uint128 fci(0xf);
+  __uint128_t gcci(0xf);
+
+  for (int i = 1; i < 129; ++i)
+  {
+    BOOST_CHECK_EQUAL( std::to_string(fci), std::to_string(gcci) );
+    fci <<= 1;
+    gcci <<= 1;
+  }
+
+  fci = 333;
+  gcci = 333;
+
+  for (int i = 1; i < 1001; ++i)
+  {
+    BOOST_CHECK_EQUAL( std::to_string(fci), std::to_string(gcci) );
+    fci += 261; fci *= i;
+    gcci += 261; gcci *= i;
+  }
+
+  for (int i = 1; i < 1001; ++i)
+  {
+    uint32_t i1 = std::rand();
+    uint32_t i2 = std::rand();
+    uint32_t i3 = std::rand();
+    uint32_t i4 = std::rand();
+    uint64_t lo = static_cast<uint64_t>(i1) << 32 | i2;
+    uint64_t hi = static_cast<uint64_t>(i3) << 32 | i4;
+    fci = fc::uint128(hi, lo);
+    gcci = static_cast<__uint128_t>(hi) << 64 | lo;
+    BOOST_CHECK_EQUAL( std::to_string(fci), std::to_string(gcci) );
+  }
 
 }
 

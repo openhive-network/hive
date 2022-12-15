@@ -71,6 +71,22 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
 {
   try
   {
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+      {
+        wso.median_props.account_creation_fee = ASSET( "3.000 TESTS" ); //mainnet value
+      } );
+    } );
+    generate_block();
+
+    uint64_t min_delegation = 0;
+    {
+      const auto& gpo = db->get_dynamic_global_properties();
+      const auto& wso = db->get_witness_schedule_object();
+      min_delegation = (asset( wso.median_props.account_creation_fee.amount / 3, HIVE_SYMBOL ) * gpo.get_vesting_share_price()).amount.value;
+    }
+
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_single to a single account" );
     ACTORS( (alice)(bob)(dave) )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
@@ -88,9 +104,15 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
+    // Delegating less than the minimum should fail
+    op.delegatees = {"bob"};
+    op.max_rc = min_delegation - 1;
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
+
     // Delegating to a non-existing account should fail
     op.delegatees = {"eve"};
-    op.max_rc = 10;
+    op.max_rc = min_delegation;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
@@ -102,7 +124,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
 
     // Successful delegation
     op.delegatees = {"bob"};
-    op.max_rc = 10;
+    op.max_rc = min_delegation + 1;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     push_transaction(custom_op, alice_private_key);
 
@@ -116,20 +138,20 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     const rc_account_object& from_rc_account = db->get< rc_account_object, by_name >( op.from );
     const rc_account_object& to_rc_account = db->get< rc_account_object, by_name >( "bob" );
 
-    BOOST_REQUIRE( from_rc_account.delegated_rc == 10 );
+    BOOST_REQUIRE( from_rc_account.delegated_rc == min_delegation + 1 );
     BOOST_REQUIRE( from_rc_account.received_delegated_rc == 0 );
     BOOST_REQUIRE( to_rc_account.delegated_rc == 0 );
-    BOOST_REQUIRE( to_rc_account.received_delegated_rc == 10 );
+    BOOST_REQUIRE( to_rc_account.received_delegated_rc == min_delegation + 1 );
 
 
     // Delegating the same amount shouldn't work
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
-    
+
     // Decrease the delegation
     op.from = "alice";
     op.delegatees = {"bob"};
-    op.max_rc = 5;
+    op.max_rc = min_delegation;
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
@@ -145,15 +167,15 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     const rc_account_object& from_rc_account_decreased = db->get< rc_account_object, by_name >( op.from );
     const rc_account_object& to_rc_account_decreased = db->get< rc_account_object, by_name >( "bob" );
 
-    BOOST_REQUIRE( from_rc_account_decreased.delegated_rc == 5 );
+    BOOST_REQUIRE( from_rc_account_decreased.delegated_rc == min_delegation );
     BOOST_REQUIRE( from_rc_account_decreased.received_delegated_rc == 0 );
     BOOST_REQUIRE( to_rc_account_decreased.delegated_rc == 0 );
-    BOOST_REQUIRE( to_rc_account_decreased.received_delegated_rc == 5 );
+    BOOST_REQUIRE( to_rc_account_decreased.received_delegated_rc == min_delegation );
 
     // Increase the delegation
     op.from = "alice";
     op.delegatees = {"bob"};
-    op.max_rc = 50;
+    op.max_rc = min_delegation + 10;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     push_transaction(custom_op, alice_private_key);
 
@@ -167,10 +189,10 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     const rc_account_object& from_rc_account_increased = db->get< rc_account_object, by_name >( op.from );
     const rc_account_object& to_rc_account_increased = db->get< rc_account_object, by_name >( "bob" );
 
-    BOOST_REQUIRE( from_rc_account_increased.delegated_rc == 50 );
+    BOOST_REQUIRE( from_rc_account_increased.delegated_rc == min_delegation + 10 );
     BOOST_REQUIRE( from_rc_account_increased.received_delegated_rc == 0 );
     BOOST_REQUIRE( to_rc_account_increased.delegated_rc == 0 );
-    BOOST_REQUIRE( to_rc_account_increased.received_delegated_rc == 50 );
+    BOOST_REQUIRE( to_rc_account_increased.received_delegated_rc == min_delegation + 10 );
 
     // Delete the delegation
     op.from = "alice";
@@ -200,6 +222,22 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
 {
   try
   {
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+      {
+        wso.median_props.account_creation_fee = ASSET( "3.000 TESTS" ); //mainnet value
+      } );
+    } );
+    generate_block();
+
+    uint64_t min_delegation = 0;
+    {
+      const auto& gpo = db->get_dynamic_global_properties();
+      const auto& wso = db->get_witness_schedule_object();
+      min_delegation = (asset( wso.median_props.account_creation_fee.amount / 3, HIVE_SYMBOL ) * gpo.get_vesting_share_price()).amount.value;
+    }
+
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan) )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
@@ -219,7 +257,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
 
     // Delegating to a non-existing account should fail
     op.delegatees = {"bob", "eve"};
-    op.max_rc = 10;
+    op.max_rc = min_delegation;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
 
@@ -231,7 +269,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
 
     // Successful delegations
     op.delegatees = {"bob", "dave"};
-    op.max_rc = 10;
+    op.max_rc = min_delegation * 2;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     push_transaction(custom_op, alice_private_key);
 
@@ -245,15 +283,14 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     const rc_account_object& from_rc_account = db->get< rc_account_object, by_name >( op.from );
     const rc_account_object& to_rc_account = db->get< rc_account_object, by_name >( "bob" );
 
-    BOOST_REQUIRE( from_rc_account.delegated_rc == 20 );
+    BOOST_REQUIRE( from_rc_account.delegated_rc == min_delegation * 4 );
     BOOST_REQUIRE( from_rc_account.received_delegated_rc == 0 );
     BOOST_REQUIRE( to_rc_account.delegated_rc == 0 );
-    BOOST_REQUIRE( to_rc_account.received_delegated_rc == 10 );
+    BOOST_REQUIRE( to_rc_account.received_delegated_rc == min_delegation * 2 );
 
     // Delegating the same amount shouldn't work
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     BOOST_CHECK_THROW( push_transaction(custom_op, alice_private_key), fc::exception );
-
 
     // Delegating 0 shouldn't work if there isn't already a delegation that exists (since 0 deletes the delegation)
     // dave/bob got a delegation but not dan so it should fail
@@ -265,7 +302,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     // Decrease the delegations
     op.from = "alice";
     op.delegatees = {"bob", "dave"};
-    op.max_rc = 5;
+    op.max_rc = min_delegation;
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "alice" );
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
@@ -286,17 +323,17 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     const rc_account_object& bob_rc_account_decreased = db->get< rc_account_object, by_name >( "bob" );
     const rc_account_object& dave_rc_account_decreased = db->get< rc_account_object, by_name >( "dave" );
 
-    BOOST_REQUIRE( from_rc_account_decreased.delegated_rc == 10 );
+    BOOST_REQUIRE( from_rc_account_decreased.delegated_rc == min_delegation * 2 );
     BOOST_REQUIRE( from_rc_account_decreased.received_delegated_rc == 0 );
     BOOST_REQUIRE( bob_rc_account_decreased.delegated_rc == 0 );
-    BOOST_REQUIRE( bob_rc_account_decreased.received_delegated_rc == 5 );
+    BOOST_REQUIRE( bob_rc_account_decreased.received_delegated_rc == min_delegation );
     BOOST_REQUIRE( dave_rc_account_decreased.delegated_rc == 0 );
-    BOOST_REQUIRE( dave_rc_account_decreased.received_delegated_rc == 5 );
+    BOOST_REQUIRE( dave_rc_account_decreased.received_delegated_rc == min_delegation );
 
     // Increase and create a delegation
     op.from = "alice";
     op.delegatees = {"bob", "dan"};
-    op.max_rc = 50;
+    op.max_rc = min_delegation * 2;
     custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
     push_transaction(custom_op, alice_private_key);
 
@@ -316,13 +353,13 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     const rc_account_object& dan_rc_account_created = db->get< rc_account_object, by_name >( "dan" );
     const rc_account_object& bob_rc_account_increased = db->get< rc_account_object, by_name >( "bob" );
 
-    BOOST_REQUIRE( alice_rc_account_increased.delegated_rc == 105 );
+    BOOST_REQUIRE( alice_rc_account_increased.delegated_rc == min_delegation * 5 );
     BOOST_REQUIRE( alice_rc_account_increased.received_delegated_rc == 0 );
 
     BOOST_REQUIRE( dan_rc_account_created.delegated_rc == 0 );
-    BOOST_REQUIRE( dan_rc_account_created.received_delegated_rc == 50 );
+    BOOST_REQUIRE( dan_rc_account_created.received_delegated_rc == min_delegation * 2 );
     BOOST_REQUIRE( bob_rc_account_increased.delegated_rc == 0 );
-    BOOST_REQUIRE( bob_rc_account_increased.received_delegated_rc == 50 );
+    BOOST_REQUIRE( bob_rc_account_increased.received_delegated_rc == min_delegation * 2 );
 
     // Delete the delegations
     op.from = "alice";
@@ -501,7 +538,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -549,7 +586,6 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( bob_rc_account_before.rc_manabar.current_mana == creation_rc + 10 );
     BOOST_REQUIRE( bob_rc_account_before.last_max_rc == creation_rc + 10 );
     BOOST_REQUIRE( bob_rc_account_before.received_delegated_rc == 10 );
-
     BOOST_REQUIRE( dave_rc_account_before.rc_manabar.current_mana == creation_rc + vesting_amount - 10 );
     BOOST_REQUIRE( dave_rc_account_before.last_max_rc == creation_rc + vesting_amount - 10 );
     BOOST_REQUIRE( dave_rc_account_before.received_delegated_rc == uint64_t(vesting_amount - 10) );
@@ -594,7 +630,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
 
     const rc_direct_delegation_object* delegation_deleted = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
     BOOST_REQUIRE( delegation_deleted == nullptr );
-   
+
     BOOST_REQUIRE( alice_rc_after_two.delegated_rc == uint64_t(vesting_amount) - 11 );
     BOOST_REQUIRE( alice_rc_after_two.received_delegated_rc == 0 );
     BOOST_REQUIRE( alice_rc_after_two.last_max_rc == creation_rc );
@@ -607,6 +643,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( dave_rc_account_after_two.rc_manabar.current_mana == creation_rc + vesting_amount - 11 );
     BOOST_REQUIRE( dave_rc_account_after_two.last_max_rc == creation_rc + vesting_amount - 11 );
     BOOST_REQUIRE( dave_rc_account_after_two.received_delegated_rc == uint64_t(vesting_amount - 11) );
+
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -618,12 +655,14 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
   {
     BOOST_TEST_MESSAGE( "Testing:  update_outdel_overflow with many actors" );
     generate_block();
+    const int removal_limit = 200; //current mainnet value - if we increase it (we should, but it requires HF) we need to change it here as well
     db_plugin->debug_update( [=]( database& db )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
       });
+      db.set_remove_threshold( removal_limit );
     });
     generate_block();
     #define NUM_ACTORS 250
@@ -736,6 +775,13 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     BOOST_REQUIRE( alice_rc_end.received_delegated_rc == 0 );
     BOOST_REQUIRE( alice_rc_end.last_max_rc == creation_rc );
 
+    // we might wait couple of blocks due to limit on delegation removal
+    int i = NUM_ACTORS - removal_limit;
+    while( i > 0 )
+    {
+      generate_block();
+      i -= removal_limit;
+    }
     // We check that every delegation got deleted
     for (int i = 0; i < NUM_ACTORS; i++) {
       const rc_account_object& actor_rc_account = db->get< rc_account_object, by_name >( "actor" + std::to_string(i) );
@@ -745,7 +791,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     }
 
     // Remove vests delegation and check that we don't get the rc back immediately
-    dvso.vesting_shares = ASSET( "0.000000 VESTS");;
+    dvso.vesting_shares = ASSET( "0.000000 VESTS");
     dvso.delegator = "alice";
     dvso.delegatee = "bob";
     push_transaction(dvso, alice_private_key);
@@ -768,7 +814,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -937,7 +983,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -1081,7 +1127,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -1226,7 +1272,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -1310,7 +1356,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     const auto& pattern3_rc = db->get< rc_account_object, by_name >( "pattern3" );
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern2_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern3_rc.rc_manabar.current_mana );
-    
+
     BOOST_TEST_MESSAGE( "Pattern2 makes a comment and delegator2 votes on it - payout will trigger RC regen" );
     comment_operation comment;
     comment.parent_permlink = "test";
@@ -1352,7 +1398,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     generate_block();
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern2_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern3_rc.rc_manabar.current_mana );
-    
+
     BOOST_TEST_MESSAGE( "Artificially going negative with RC of delegatees to expose problem" );
     int64_t full_rc = get_maximum_rc( db->get< account_object, by_name >( "delegatee" ), delegatee_rc );
     int64_t min_rc = -1 * ( HIVE_RC_MAX_NEGATIVE_PERCENT * full_rc ) / HIVE_100_PERCENT;
@@ -1399,7 +1445,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -1498,88 +1544,186 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing:  erformance is taken into consideration, when `rc_direct_delegation_object` are removed" );
+    BOOST_TEST_MESSAGE( "Testing: performance is taken into consideration, when `rc_direct_delegation_object` are removed" );
     generate_block();
+    const int removal_limit = 200; //current mainnet value - if we increase it (we should, but it requires HF) we need to change it here as well
     db_plugin->debug_update( [=]( database& db )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" );
+        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
       });
+      db.set_remove_threshold( removal_limit );
     });
     generate_block();
 
-    ACTORS_DEFAULT_FEE( (alice)(bob) )
+    ACTORS_DEFAULT_FEE( (alice)(bob)(carol) )
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1000.000 TESTS" ) );
+    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "2000.000 TESTS" ) );
     generate_block();
 
-    const uint32_t nr_accounts = 100'000;
+    const uint32_t nr_accounts = removal_limit * 4;
 
     const account_object& alice_account_initial = db->get_account( "alice" );
 
     std::vector< performance::initial_data > accounts = performance::generate_accounts( this, nr_accounts );
 
-    // We delegate all our vesting shares to bob
-    delegate_vesting_shares_operation dvso;
-    dvso.vesting_shares = alice_account_initial.get_vesting();
-    dvso.delegator = "alice";
-    dvso.delegatee = {"bob"};
-    push_transaction(dvso, alice_private_key);
-
-    auto time_checker = []( std::function<void()> callable, uint32_t value = 0 )
+    auto time_checker = []( std::function<void()> callable, uint32_t value )
     {
       auto _start = std::chrono::high_resolution_clock::now();
       callable();
       auto _end = std::chrono::high_resolution_clock::now();
       double elapsed_time_ms = std::chrono::duration<double, std::milli>( _end - _start ).count();
       BOOST_TEST_MESSAGE( "time: " + std::to_string( elapsed_time_ms ) );
-      if( value )
-        BOOST_REQUIRE_GT( value, elapsed_time_ms );
+#ifdef NDEBUG
+      BOOST_REQUIRE_GT( value, elapsed_time_ms );
+#endif
     };
 
+    // We delegate all our vesting shares to bob and carol
+    delegate_vesting_shares_operation dvso;
+    dvso.vesting_shares = alice_account_initial.get_vesting();
+    dvso.vesting_shares.amount.value /= 2;
+    dvso.delegator = "alice";
+    dvso.delegatee = "bob";
+    push_transaction( dvso, alice_private_key );
+    dvso.delegatee = "carol";
+    push_transaction( dvso, alice_private_key );
+    generate_block();
+
     delegate_rc_operation op;
-    op.from = "bob";
     op.max_rc = 5;
+    custom_json_operation custom_op;
+    custom_op.id = HIVE_RC_PLUGIN_NAME;
 
     size_t cnt = 0;
     while( cnt < accounts.size() )
     {
+      op.delegatees.clear();
       for( size_t i = cnt; i < cnt + HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP; ++i )
         op.delegatees.insert( accounts[i].account );
 
       cnt += op.delegatees.size();
 
-      custom_json_operation custom_op;
-      custom_op.required_posting_auths.insert( "bob" );
-      custom_op.id = HIVE_RC_PLUGIN_NAME;
-      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-
       BOOST_TEST_MESSAGE( "create delegations" );
-      auto push_00 = [ this, &custom_op, &bob_private_key ]{ push_transaction(custom_op, bob_private_key); };
-      time_checker( push_00, 0 );
-      generate_block();
 
-      op.delegatees.clear();
+      custom_op.required_posting_auths.clear();
+      custom_op.required_posting_auths.insert( "bob" );
+      op.from = "bob";
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      push_transaction( custom_op, bob_private_key );
+
+      custom_op.required_posting_auths.clear();
+      custom_op.required_posting_auths.insert( "carol" );
+      op.from = "carol";
+      custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+      push_transaction( custom_op, carol_private_key );
+
+      generate_block();
     }
 
     for( auto& account : accounts )
     {
       const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
-      BOOST_REQUIRE( _account.received_delegated_rc == 5 );
+      BOOST_REQUIRE( _account.received_delegated_rc == 10 );
     }
 
     BOOST_TEST_MESSAGE( "remove delegations" );
     dvso.vesting_shares = asset( 0, VESTS_SYMBOL );
-    auto push_01 = [ this, &dvso, &alice_private_key ]{ push_transaction(dvso, alice_private_key); };
-    //for `AMD Ryzen 7 5800X 8-Core Processor` ~480ms
-    time_checker( push_01, 1000 );
+    dvso.delegatee = "bob";
+    auto push_10 = [this, &dvso, &alice_private_key] { push_transaction( dvso, alice_private_key ); };
+    time_checker( push_10, 100 ); // <- removes `removal_limit` delegations from bob, rest (3 limits) postponed
+    // leave a bit at carol - we will test supplementation of delegation removal object
+    dvso.vesting_shares = asset( op.max_rc * removal_limit * 2, VESTS_SYMBOL );
+    dvso.delegatee = "carol";
+    auto push_11 = [this, &dvso, &alice_private_key] { push_transaction( dvso, alice_private_key ); };
+    time_checker( push_11, 100 ); // <- removes `removal_limit` delegations from carol, rest (1 limit) postponed
 
+    const auto& rc_del_idx = db->get_index<rc_direct_delegation_index, by_id>();
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 2 * removal_limit );
+
+    int i = 0;
     for( auto& account : accounts )
     {
       const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
-      BOOST_REQUIRE( _account.received_delegated_rc == 0 );
+      BOOST_REQUIRE( _account.received_delegated_rc == ( i >= removal_limit ? 10 : 0 ) );
+      ++i;
     }
+    generate_block();
+    // since automatic expired delegation removal happens on end of block, now there should be twice as many removed,
+    // however only the delegations from bob are processed this way (limit on automatic removal is common for all delegations)
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 3 * removal_limit );
+
+    i = 0;
+    for( auto& account : accounts )
+    {
+      const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
+      BOOST_REQUIRE( _account.received_delegated_rc == ( i >= removal_limit * 2 ? 10 : i >= removal_limit ? 5 : 0 ) );
+      ++i;
+    }
+
+    // not possible to create new delegation while previous are still being removed
+    op.delegatees.clear();
+    op.delegatees.insert( accounts[0].account );
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "bob" );
+    op.from = "bob";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "carol" );
+    op.from = "carol";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+
+    // but we can test that dedelegation while previous one did not end just adds to the object
+    // (note that execution of dedelegation will in itself stop at removal limit and only excess
+    // will be added to the expired delegation object)
+    dvso.vesting_shares = asset( 0, VESTS_SYMBOL );
+    dvso.delegatee = "carol";
+    auto push_12 = [this, &dvso, &alice_private_key] { push_transaction( dvso, alice_private_key ); };
+    time_checker( push_12, 100 ); // <- removes `removal_limit` delegations from carol, rest (1 limit) added postponed
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 4 * removal_limit );
+
+    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "1000.000 TESTS" ) );
+    vest( HIVE_INIT_MINER_NAME, "carol", ASSET( "1000.000 TESTS" ) );
+    // even though delegators have new vests that could cover not-yet-removed delegations
+    // we still continue to remove them (we could make it differently but that complicates
+    // implementation - the mechanism is an safety trigger, so it should be simple)
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "bob" );
+    op.from = "bob";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "carol" );
+    op.from = "carol";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+
+    generate_block();
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 5 * removal_limit );
+    generate_block();
+
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 6 * removal_limit );
+    // bob is free to delegate again, since he was first in queue so his delegations were handled first
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "bob" );
+    op.from = "bob";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    push_transaction( custom_op, bob_private_key );
+    // carol is still 2 blocks behind with delegation removal
+    custom_op.required_posting_auths.clear();
+    custom_op.required_posting_auths.insert( "carol" );
+    op.from = "carol";
+    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+
+    generate_block();
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 7 * removal_limit + 1 );
+    generate_block();
+    BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 1 );
+    push_transaction( custom_op, carol_private_key );
 
     validate_database();
   }

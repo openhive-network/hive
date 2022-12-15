@@ -1,0 +1,17 @@
+[build-system]
+requires = ["poetry-core==1.1.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry]
+name = "shared-tools"
+version = "0.0.0"
+description = "Tools shared by tests in hive projects"
+authors = ["Mariusz Trela"]
+packages = [
+    { include = "shared_tools", from = "package" },
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.8"

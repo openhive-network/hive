@@ -103,7 +103,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
     create_node = {
         "testnet": __create_init_node,
         "mainnet_5m": __create_remote_node,
-        "mainnet_64m": __create_remote_node,
+        "live_mainnet": __create_remote_node,
     }
 
     hint_message = (

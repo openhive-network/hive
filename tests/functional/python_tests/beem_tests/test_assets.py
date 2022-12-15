@@ -10,7 +10,7 @@ import pytest
 import test_tools as tt
 
 if TYPE_CHECKING:
-    from .conftest import NodeClientMaker
+    from .local_tools import NodeClientMaker
 
 
 @pytest.fixture

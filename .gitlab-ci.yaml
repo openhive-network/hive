@@ -231,7 +231,7 @@ plugin_test:
     before_script:
       - python3 -m venv venv/
       - . venv/bin/activate
-      - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas"
+      - pip3 install pytest==${PYTEST_VERSION} pytest-xdist==${PYTEST_XDIST_VERSION} pytest-timeout==${PYTEST_TIMEOUT_VERSION} "$CI_PROJECT_DIR/tests/test_tools" "$CI_PROJECT_DIR/tests/schemas" "$CI_PROJECT_DIR/tests/shared_tools"
     artifacts:
       reports:
         junit: $JUNIT_REPORT
@@ -437,7 +437,7 @@ message_format_testnet_tests:
   script:
     - cd tests/api_tests/message_format_tests
     - pip3 install "$CI_PROJECT_DIR/tests/schemas"
-    - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not mainnet_64m)")
+    - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
     - *run-pytest
   tags:
     - public-runner-docker
@@ -583,14 +583,14 @@ message_format_mainnet_5m_tests:
     NODE_ADDRESS: "hived-instance:8090"
     NODE_TYPE: "mainnet_5m"
 
-message_format_mainnet_64m_tests:
+message_format_live_mainnet_tests:
   extends: .message_format_tests
   variables:
     NODE_ADDRESS: "http://api.fqdn.pl:8092"
-    NODE_TYPE: "mainnet_64m"
+    NODE_TYPE: "live_mainnet"
   rules:
-    # Run this job, only when environment variable "RUN_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M" is set
-    - if: $RUN_MESSAGE_FORMAT_TESTS_ON_MAINNET_64M == "TRUE"
+    # Run this job, only when environment variable "RUN_MESSAGE_FORMAT_TESTS_ON_LIVE_MAINNET" is set
+    - if: $RUN_MESSAGE_FORMAT_TESTS_ON_LIVE_MAINNET == "TRUE"
       when: always
 
 foundation_layer_tests:

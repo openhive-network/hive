@@ -23,7 +23,8 @@ const std::vector< std::string > default_seeds = {
   "api.deathwing.me:2001",               // deathwing
   "seed.liondani.com:2016",              // liondani
   "hiveseed-se.privex.io:2001",          // privex
-  "seed.mintrawa.com:2001"               // mintrawa
+  "seed.mintrawa.com:2001",              // mintrawa
+  "hive-seed.actifit.io:2001"            // actifit
 };
 #endif
 

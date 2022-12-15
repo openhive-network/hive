@@ -587,7 +587,7 @@ struct count_operation_visitor
     if( op.amount.amount > 0 )
     {
       uint32_t lifetime = op.recurrence * op.executions; //since recurrence is in hours, so is lifetime
-      state_bytes_count += _w.recurrent_transfer_base_size * lifetime;
+      state_bytes_count += ( _w.recurrent_transfer_base_size + _w.recurrent_transfer_memo_char_size * op.memo.size() ) * lifetime;
     }
     execution_time_count += _e.recurrent_transfer_base_time
       + _e.recurrent_transfer_processing_time * op.executions;

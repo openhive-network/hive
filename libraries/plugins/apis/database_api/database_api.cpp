@@ -1662,7 +1662,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
   list_proposal_votes_return result;
   result.proposal_votes.reserve( args.limit );
 
-  //auto current_time = _db.head_block_time();
+  const auto current_time = _db.head_block_time();
 
   switch( args.order )
   {
@@ -1676,8 +1676,8 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
         &database_api_impl::on_push_default< api_proposal_vote_object, proposal_vote_object >,
         [&]( const proposal_vote_object& po )
         {
-          auto itr = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( po.proposal_id );
-          return itr != nullptr && !itr->removed;
+          auto* proposal = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( po.proposal_id );
+          return proposal != nullptr && filter_proposal_status( *proposal, args.status, current_time );
         },
         args.order_direction
       );
@@ -1693,8 +1693,8 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
         &database_api_impl::on_push_default< api_proposal_vote_object, proposal_vote_object >,
         [&]( const proposal_vote_object& po )
         {
-          auto itr = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( po.proposal_id );
-          return itr != nullptr && !itr->removed;
+          auto* proposal = _db.find< hive::chain::proposal_object, hive::chain::by_proposal_id >( po.proposal_id );
+          return proposal != nullptr && filter_proposal_status( *proposal, args.status, current_time );
         },
         args.order_direction
       );

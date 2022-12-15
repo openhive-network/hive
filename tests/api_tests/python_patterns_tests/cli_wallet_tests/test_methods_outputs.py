@@ -31,7 +31,7 @@ def remote_node_wallet(http_endpoint, ws_endpoint, wallet_path):
     # To allow working on CI, change remote node http_endpoint, ws_endpoint and path to mainnet wallet.
     tt.paths_to_executables.set_path_of('cli_wallet', wallet_path)
     remote_node = tt.RemoteNode(http_endpoint=http_endpoint, ws_endpoint=ws_endpoint)
-    return tt.Wallet(attach_to=remote_node)
+    return tt.Wallet(attach_to=remote_node, time_offset="@2022-12-02 09:00:00")
 
 
 WALLET_API_METHODS = [
