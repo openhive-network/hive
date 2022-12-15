@@ -1,9 +1,12 @@
+from datetime import timedelta
+
 import pytest
 
 import test_tools as tt
-
-from .shared_utilites import *
-from .shared_utilites import prepared_proposal_data_with_id as proposal_data_t
+from hive_local_tools.functional.python.cli_wallet import (prepared_proposal_data_with_id, get_list_proposal_args,
+                                                           get_list_proposal_votes_args, funded_account_info,
+                                                           find_proposals_by_creator_name, find_proposals_by_voter_name,
+                                                           prepare_proposal, format_datetime)
 
 
 def list_proposals_by_creator(wallet: tt.Wallet, creator_name: str) -> list:
@@ -18,7 +21,7 @@ def test_create_proposal(wallet: tt.Wallet, creator: tt.Account, creator_proposa
   creator_proposals_after_count = len(list_proposals_by_creator(wallet, creator.name))
   assert creator_proposals_after_count == 1
 
-def test_remove_proposal(wallet: tt.Wallet, funded_account: funded_account_info, creator_proposal_id: proposal_data_t, account_proposal_id: proposal_data_t):
+def test_remove_proposal(wallet: tt.Wallet, funded_account: funded_account_info, creator_proposal_id: prepared_proposal_data_with_id, account_proposal_id: prepared_proposal_data_with_id):
   wallet.api.remove_proposal(deleter=funded_account.creator.name, ids=[creator_proposal_id.id])
 
   proposals_after_creator = list_proposals_by_creator(wallet, creator_name=funded_account.creator.name)
@@ -28,7 +31,7 @@ def test_remove_proposal(wallet: tt.Wallet, funded_account: funded_account_info,
   assert len([x for x in proposals_after_creator if x['id'] == creator_proposal_id.id]) == 0, "removed invalid proposal"
   assert len([x for x in proposals_after_account if x['id'] == creator_proposal_id.id]) == 0, "removed invalid proposal"
 
-def test_update_proposal_votes(wallet: tt.Wallet, creator_proposal_id: proposal_data_t, creator: tt.Account):
+def test_update_proposal_votes(wallet: tt.Wallet, creator_proposal_id: prepared_proposal_data_with_id, creator: tt.Account):
   voter_proposals_before_count = len(list_proposal_votes_by_voter(wallet, creator.name))
 
   wallet.api.update_proposal_votes(voter=creator.name, proposals=[creator_proposal_id.id], approve=True)

@@ -1,6 +1,6 @@
 import test_tools as tt
 
-from .shared_utilites import *
+from hive_local_tools.functional.python.cli_wallet import funded_account_info
 
 
 def test_delayed_voting(wallet: tt.Wallet, funded_account: funded_account_info, creator: tt.Account):
