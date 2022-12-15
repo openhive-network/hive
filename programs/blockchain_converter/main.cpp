@@ -14,6 +14,7 @@
 
 #include "block_log_conversion_plugin.hpp"
 #include "node_based_conversion_plugin.hpp"
+#include "iceberg_generate_plugin.hpp"
 
 namespace bpo = boost::program_options;
 
@@ -24,6 +25,7 @@ namespace hcplugins = hive::converter::plugins;
 
 using hcplugins::node_based_conversion::node_based_conversion_plugin;
 using hcplugins::block_log_conversion::block_log_conversion_plugin;
+using hcplugins::iceberg_generate::iceberg_generate_plugin;
 
 std::string& version_string()
 {
@@ -67,6 +69,7 @@ int main( int argc, char** argv )
 
     bc_converter_app.register_plugin< node_based_conversion_plugin >();
     bc_converter_app.register_plugin< block_log_conversion_plugin >();
+    bc_converter_app.register_plugin< iceberg_generate_plugin >();
 
     bc_converter_app.set_version_string( version_string() );
     bc_converter_app.set_app_name( "blockchain_converter" );

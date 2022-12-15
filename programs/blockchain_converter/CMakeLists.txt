@@ -9,7 +9,7 @@ else()
   endif()
 
   ADD_HIVE_EXECUTABLE ( NAME blockchain_converter
-                        SOURCES main.cpp converter.cpp conversion_plugin.cpp block_log_conversion_plugin.cpp node_based_conversion_plugin.cpp
+                        SOURCES main.cpp converter.cpp conversion_plugin.cpp block_log_conversion_plugin.cpp node_based_conversion_plugin.cpp iceberg_generate_plugin.cpp
                         LIBRARIES hive_utilities hive_protocol hive_chain appbase fc )
-  
+
 endif()
