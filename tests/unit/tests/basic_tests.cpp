@@ -536,8 +536,19 @@ BOOST_AUTO_TEST_CASE( fc_uint128_to_string )
 }
 
 #ifndef ENABLE_STD_ALLOCATOR
+
+struct dummy : public object< 1111, dummy >
+  {
+  CHAINBASE_OBJECT( dummy );
+  };
+
 BOOST_AUTO_TEST_CASE( chain_object_size )
 {
+  BOOST_CHECK_EQUAL( sizeof( dummy ), 4u );
+  BOOST_CHECK_EQUAL( sizeof( util::manabar ), 16u );
+  BOOST_CHECK_EQUAL( sizeof( fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> ), 32u );
+  BOOST_CHECK_EQUAL( sizeof( t_vector< delayed_votes_data > ), 32u );
+
   //typical elements of various objects
   BOOST_CHECK_EQUAL( sizeof( account_object::id_type ), 4u ); //hidden first element of all objects (here just an example, all are the same size)
   BOOST_CHECK_EQUAL( sizeof( account_id_type ), 4u ); //all id_refs are of the same size
@@ -550,6 +561,19 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( price ), 32u );
   BOOST_CHECK_EQUAL( sizeof( t_vector< char > ), 32u ); //it has dynamic component as well, all vectors have the same static size
   BOOST_CHECK_EQUAL( sizeof( public_key_type ), 33u );
+  BOOST_CHECK_EQUAL( sizeof( fc::fixed_string<> ), 16u );
+  BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<16> ), 16u );
+  // ! failed ! BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<24> ), 24u );
+  BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<32> ), 32u );
+  BOOST_CHECK_EQUAL( sizeof( hive::protocol::custom_id_type ), 32u );
+  BOOST_CHECK_EQUAL( alignof( hive::protocol::custom_id_type ), 16u );
+
+  BOOST_CHECK_EQUAL( sizeof( hive::protocol::custom_json_operation ), 112u );
+  BOOST_CHECK_EQUAL( alignof( hive::protocol::custom_json_operation ), 16u );
+  BOOST_CHECK_EQUAL( offsetof( hive::protocol::custom_json_operation, id ), 48u );
+  BOOST_CHECK_EQUAL( sizeof( hive::protocol::operation ), 368u );
+  BOOST_CHECK_EQUAL( alignof( hive::protocol::operation ), 16u );
+
   /*
   The purpose of this test is to make you think about the impact on RAM when you make changes in chain objects.
   Also somewhat helps in catching new problems with alignment (f.e. when you added a flag member and object
@@ -563,8 +587,10 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( comment_index::MULTIINDEX_NODE_TYPE ), 96u );
 
   //permanent objects (no operation to remove)
-  BOOST_CHECK_EQUAL( sizeof( account_object ), 424u ); //1.3M+
-  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 616u );
+  BOOST_TEST_MESSAGE("alignof(account_object): " << alignof(account_object));
+  BOOST_CHECK_EQUAL(alignof(account_object), 16u);
+  BOOST_CHECK_EQUAL( sizeof( account_object ), 432u ); //1.3M+
+  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 624u );
   BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 72u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
   BOOST_CHECK_EQUAL( sizeof( account_metadata_index::MULTIINDEX_NODE_TYPE ), 136u );
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248u ); //as many as account_object
@@ -627,14 +653,14 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( recurrent_transfer_index::MULTIINDEX_NODE_TYPE ), 200u );
 
   //singletons (size only affects performance)
-  BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 96u );
-  BOOST_CHECK_EQUAL( sizeof( reward_fund_index::MULTIINDEX_NODE_TYPE ), 160u );
-  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 368u
+  BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 112u );
+  BOOST_CHECK_EQUAL( sizeof( reward_fund_index::MULTIINDEX_NODE_TYPE ), 176u );
+  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 384u
 #ifdef HIVE_ENABLE_SMT
     + 16
 #endif
   );
-  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_index::MULTIINDEX_NODE_TYPE ), 400u
+  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_index::MULTIINDEX_NODE_TYPE ), 416u
 #ifdef HIVE_ENABLE_SMT
     + 16
 #endif
@@ -645,8 +671,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_index::MULTIINDEX_NODE_TYPE ), 152u );
   BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 232u ); //dynamic size worth 7*24 of sizeof(price)
   BOOST_CHECK_EQUAL( sizeof( feed_history_index::MULTIINDEX_NODE_TYPE ), 264u );
-  BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 536u );
-  BOOST_CHECK_EQUAL( sizeof( witness_schedule_index::MULTIINDEX_NODE_TYPE ), 568u );
+  BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 544u );
+  BOOST_CHECK_EQUAL( sizeof( witness_schedule_index::MULTIINDEX_NODE_TYPE ), 576u );
 
   //TODO: categorize and evaluate size potential of SMT related objects:
   //account_regular_balance_object
