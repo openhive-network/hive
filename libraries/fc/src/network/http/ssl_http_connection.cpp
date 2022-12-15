@@ -8,7 +8,19 @@
 #include <fc/network/url.hpp>
 #include <boost/algorithm/string.hpp>
 
-   int fc::http::ssl_connection::impl::read_until( char* buffer, char* end, char c ) {
+namespace fc { namespace http {
+
+  class ssl_connection::impl
+  {
+  public:
+    fc::tcp_ssl_socket sock;
+    fc::ip::endpoint ep;
+    std::string hostname;
+    int read_until( char* buffer, char* end, char c = '\n' );
+    fc::http::reply parse_reply();
+  };
+
+   int ssl_connection::impl::read_until( char* buffer, char* end, char c ) {
       char* p = buffer;
      // try {
           while( p < end && 1 == sock.readsome(p,1) ) {
@@ -25,8 +37,8 @@
       return (p-buffer);
    }
 
-   fc::http::reply fc::http::ssl_connection::impl::parse_reply() {
-      fc::http::reply rep;
+   reply ssl_connection::impl::parse_reply() {
+      reply rep;
       try {
         std::vector<char> line(1024*8);
         int s = read_until( line.data(), line.data()+line.size(), ' ' ); // HTTP/1.1
@@ -35,7 +47,7 @@
         s = read_until( line.data(), line.data()+line.size(), '\n' ); // DESCRIPTION
         
         while( (s = read_until( line.data(), line.data()+line.size(), '\n' )) > 1 ) {
-          fc::http::header h;
+          header h;
           char* end = line.data();
           while( *end != ':' )++end;
           h.key = fc::string(line.data(),end);
@@ -61,12 +73,10 @@
       } 
    }
 
+  ssl_connection::ssl_connection()
+  :my( new ssl_connection::impl() ){}
 
-
-namespace fc { namespace http {
-
-         ssl_connection::ssl_connection()
-         :my( new ssl_connection::impl() ){}
+  ssl_connection::~ssl_connection(){}
 
 
 // used for clients

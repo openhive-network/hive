@@ -64,6 +64,7 @@ namespace fc {
      {
       public:
          connection();
+         ~connection();
          // used for clients
          void         connect_to( const fc::ip::endpoint& ep );
          http::reply  request( const fc::string& method, const fc::string& url, const fc::string& body = std::string(), const headers& = headers());
@@ -74,15 +75,7 @@ namespace fc {
          http::request    read_request()const;
 
       private:
-        class impl
-        {
-        public:
-          fc::tcp_socket sock;
-          fc::ip::endpoint ep;
-          int read_until( char* buffer, char* end, char c = '\n' );
-          fc::http::reply parse_reply();
-        };
-
+        class impl;
         std::unique_ptr<impl> my;
      };
 
@@ -95,6 +88,7 @@ namespace fc {
      {
       public:
          ssl_connection();
+         ~ssl_connection();
          // used for clients
          void         connect_to( const fc::ip::endpoint& ep, const std::string& hostname );
          http::reply  request( const fc::string& method, const fc::string& url, const fc::string& body = std::string(), const headers& = headers());
@@ -105,16 +99,7 @@ namespace fc {
          http::request    read_request()const;
 
       private:
-        class impl
-        {
-        public:
-          fc::tcp_ssl_socket sock;
-          fc::ip::endpoint ep;
-          std::string hostname;
-          int read_until( char* buffer, char* end, char c = '\n' );
-          fc::http::reply parse_reply();
-        };
-
+         class impl;
          std::unique_ptr<impl> my;
      };
 
