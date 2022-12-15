@@ -516,6 +516,11 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( comment_object ), 32u ); //85M+ growing fast
   BOOST_CHECK_EQUAL( sizeof( comment_index::MULTIINDEX_NODE_TYPE ), 96u );
 
+  BOOST_CHECK_EQUAL( sizeof( fc::time_point_sec ), 4u );
+  BOOST_CHECK_EQUAL( sizeof( hive::chain::account_id_type ), 4u );
+  BOOST_CHECK_EQUAL( sizeof( fc::fixed_string<> ), 16u );
+  BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<16> ), 16u );
+
   //permanent objects (no operation to remove)
   BOOST_TEST_MESSAGE("alignof(account_object): " << alignof(account_object));
   BOOST_CHECK_EQUAL(alignof(account_object), 16u);
