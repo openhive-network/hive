@@ -1,5 +1,7 @@
 #if defined IS_TEST_NET
 #include <boost/test/unit_test.hpp>
+#include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
+#include <hive/plugins/account_history_api/account_history_api.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 #include <hive/plugins/condenser_api/condenser_api.hpp>
@@ -7,6 +9,7 @@
 #include "../db_fixture/database_fixture.hpp"
 
 using namespace hive::chain;
+using namespace hive::plugins;
 using namespace hive::protocol;
 
 struct condenser_api_fixture : database_fixture
@@ -15,6 +18,10 @@ struct condenser_api_fixture : database_fixture
   {
     auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
     {
+      ah_plugin = &app.register_plugin< ah_plugin_type >();
+      ah_plugin->set_destroy_database_on_startup();
+      ah_plugin->set_destroy_database_on_shutdown();
+      app.register_plugin< hive::plugins::account_history::account_history_api_plugin >();
       app.register_plugin< hive::plugins::database_api::database_api_plugin >();
       app.register_plugin< hive::plugins::condenser_api::condenser_api_plugin >();
       db_plugin = &app.register_plugin< hive::plugins::debug_node::debug_node_plugin >();
@@ -24,12 +31,21 @@ struct condenser_api_fixture : database_fixture
 
       db_plugin->logging = false;
       app.initialize<
+        ah_plugin_type,
+        hive::plugins::account_history::account_history_api_plugin,
         hive::plugins::database_api::database_api_plugin,
         hive::plugins::condenser_api::condenser_api_plugin,
         hive::plugins::debug_node::debug_node_plugin >( test_argc, ( char** ) test_argv );
 
       db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
       BOOST_REQUIRE( db );
+
+      ah_plugin->plugin_startup();
+
+      auto& account_history = app.get_plugin< hive::plugins::account_history::account_history_api_plugin > ();
+      account_history.plugin_startup();
+      account_history_api = account_history.api.get();
+      BOOST_REQUIRE( account_history_api );
 
       auto& condenser = app.get_plugin< hive::plugins::condenser_api::condenser_api_plugin >();
       condenser.plugin_startup(); //has to be called because condenser fills its variables then
@@ -97,7 +113,27 @@ struct condenser_api_fixture : database_fixture
     validate_database();
   }
 
+  virtual ~condenser_api_fixture()
+  {
+    try {
+      // If we're unwinding due to an exception, don't do any more checks.
+      // This way, boost test's last checkpoint tells us approximately where the error was.
+      if( !std::uncaught_exceptions() )
+      {
+        BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
+      }
+
+      if( ah_plugin )
+        ah_plugin->plugin_shutdown();
+      if( data_dir )
+        db->wipe( data_dir->path(), data_dir->path(), true );
+      return;
+    } FC_CAPTURE_AND_LOG( () )
+    exit(1);
+  }
+
   hive::plugins::condenser_api::condenser_api* condenser_api = nullptr;
+  hive::plugins::account_history::account_history_api* account_history_api = nullptr;
 };
 
 BOOST_FIXTURE_TEST_SUITE( condenser_api_tests, condenser_api_fixture );
