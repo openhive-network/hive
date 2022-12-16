@@ -5,12 +5,17 @@ import shutil
 
 from pathlib import Path
 from distutils.util import strtobool
+from typing import Final
 
-PACKAGE_PATH = Path(__file__).parent
+from hive_local_tools import TESTS_DIR
+
+PATTERNS_DIR: Final[Path] = (
+        TESTS_DIR / 'functional/python_tests/transaction_serialization_tests/cli_wallet/transaction_pattern_tests'
+)
 
 
 def __get_path_of_pattern_file(extension, type_of_serialization, pattern_name):
-    return PACKAGE_PATH / f'dumped_files_{type_of_serialization}_wallet' / f'{pattern_name}.{extension}'
+    return PATTERNS_DIR / f'dumped_files_{type_of_serialization}_wallet' / f'{pattern_name}.{extension}'
 
 
 def __able_to_generate_pattern(validate_function):
