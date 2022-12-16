@@ -684,6 +684,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
   /* this method is from condenser_api -> broadcast_transaction_synchronous. */
   auto tx = get_trx( arguments );
   boost::promise< broadcast_transaction_synchronous_return > p;
+  auto f = p.get_future();
   hive::chain::full_transaction_ptr full_transaction;
 
   auto set_remove_callback = [&]( bool fail )
@@ -739,7 +740,20 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
       std::current_exception() );
   }
 
-  return p.get_future().get();
+  const boost::chrono::milliseconds _wait_time = boost::chrono::milliseconds( 100 );
+  do
+  {
+    if( appbase::app().is_interrupt_request() )
+    {
+      return broadcast_transaction_synchronous_return();
+    }
+
+    if( !f.valid() )
+      break;
+
+  } while ( f.wait_for( _wait_time ) != boost::future_status::ready );
+
+  return f.get();
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
