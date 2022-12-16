@@ -4,8 +4,8 @@ from beem import Hive
 from beem.account import Account
 from beembase.operations import Create_proposal
 
-from .... import hive_utils
 import test_tools as tt
+import hive_utils
 from hive_local_tools.functional.python.beem import NodeClientMaker
 from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR,  TREASURY
 

@@ -5,7 +5,7 @@ import threading
 from time import sleep
 from uuid import uuid4
 
-from .... import hive_utils
+import hive_utils
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"

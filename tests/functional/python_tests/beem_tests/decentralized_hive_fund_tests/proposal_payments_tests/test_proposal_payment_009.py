@@ -2,11 +2,10 @@ import datetime
 
 from beembase.operations import Account_witness_proxy
 
-from .. import test_utils
-from ..... import hive_utils
+import hive_utils
 import test_tools as tt
 from hive_local_tools.functional.python.beem import NodeClientMaker
-from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR, TREASURY
+from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR, TREASURY, test_utils
 from hive_local_tools.functional.python.beem.decentralized_hive_fund.proposal_payments import vote_proposals
 
 

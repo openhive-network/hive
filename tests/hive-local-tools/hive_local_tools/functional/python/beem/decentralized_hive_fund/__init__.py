@@ -4,8 +4,8 @@ from beembase.operations import Create_proposal
 import pytest
 
 import test_tools as tt
-from . import test_utils
-from .... import hive_utils
+import hive_utils
+from hive_local_tools.functional.python.beem.decentralized_hive_fund import test_utils
 
 CREATOR: Final[str] = "initminer"
 TREASURY: Final[str] = "hive.fund"

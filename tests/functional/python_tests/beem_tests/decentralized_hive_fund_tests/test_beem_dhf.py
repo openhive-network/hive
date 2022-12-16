@@ -9,12 +9,11 @@ from beembase.operations import Remove_proposal
 from beembase.operations import Update_proposal
 from beembase.operations import Update_proposal_votes
 import dateutil.parser
-import test_tools as tt
 
-from . import test_utils
-from .... import hive_utils
+import test_tools as tt
+import hive_utils
 from hive_local_tools.functional.python.beem import NodeClientMaker
-from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR,  TREASURY
+from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR,  TREASURY, test_utils
 
 
 def create_proposal(node, creator_account, receiver_account, wif, subject):
