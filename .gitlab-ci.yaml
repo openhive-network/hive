@@ -17,12 +17,6 @@ variables:
   # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu20.04-7
   TEST_IMAGE_TAG: "@sha256:034b706db277c62e36f07c7d8d8729f55b6be9d4cbc3eddd3a63d38c9a77ead6"
 
-  # Variables required bu Common CI jobs
-  CI_COMMON_JOB_VERSION: "03ffbc88c25fc78994fa8ea6b878e8b73d680ed9"
-  DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
-  DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
-  IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
-
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
   PYTHON_DATEUTIL_VERSION: "2.8.2"
@@ -30,9 +24,8 @@ variables:
   TOX_VERSION: "3.25.1"
 
 include:
-  - project: 'hive/common-ci-configuration'
-    ref: 03ffbc88c25fc78994fa8ea6b878e8b73d680ed9
-    file: '/templates/data_image_jobs.gitlab-ci.yml'
+  - template: Workflows/Branch-Pipelines.gitlab-ci.yml
+  - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
 
 prepare_hived_data_image:
   extends: .prepare_hived_data_5m_image
@@ -97,6 +90,7 @@ mirrornet_node_build:
       "$IMAGE_TAG"
       "$SOURCES_DIR"
       "$REGISTRY_URL"
+      --cache-path=$CI_COMMIT_REF_SLUG
       --network-type="mirrornet"
       --export-binaries="$BINARIES_DIR"
     - chmod -Rc a+rwx "$BINARIES_DIR"

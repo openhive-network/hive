@@ -1,17 +1,22 @@
 #! /bin/bash
 
-SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+SCRIPTPATH=$(realpath "$0")
+SCRIPTPATH=$(dirname "$SCRIPTPATH")
 SCRIPTSDIR="$SCRIPTPATH/.."
 
+# shellcheck disable=SC2034 
 LOG_FILE=build_data.log
+# shellcheck source=../common.sh
 source "$SCRIPTSDIR/common.sh"
 
-BUILD_IMAGE_TAG=${1:?"Missing arg #1 to specify built image tag"}
+BUILD_IMAGE_TAG=${1:?"Missing argument #1: build image tag"}
 shift
-SRCROOTDIR=${1:?Missing arg #2 to specify source directory}
+SRCROOTDIR=${1:?"Missing argument #2: source directory"}
 shift
-REGISTRY=${1:?"Missing arg #3 to specify target container registry"}
+REGISTRY=${1:?"Missing argument #3: target image registry"}
 shift 
+BRANCH_NAME=${1:?"Missing argument #4: branch to get buildkit cache for"}
+shift
 
 # Supplement a registry path by trailing slash (if needed)
 [[ "${REGISTRY}" != */ ]] && REGISTRY="${REGISTRY}/"
@@ -19,19 +24,19 @@ shift
 BUILD_HIVE_TESTNET=OFF
 HIVE_CONVERTER_BUILD=OFF
 
-"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "${SRCROOTDIR}" "${REGISTRY}" "$@"
+"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "${SRCROOTDIR}" "${REGISTRY}" "--cache-path=$BRANCH_NAME" "$@"
 
 echo "Instance image built. Attempting to build a data image basing on it..."
 
-pushd "$SRCROOTDIR"
+pushd "$SRCROOTDIR" || exit 1
 
-export DOCKER_BUILDKIT=1
-
-docker build --target=data \
-  --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
+docker buildx build --target=data  --progress=plain --load \
+  --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
-  -t ${REGISTRY}data:data-${BUILD_IMAGE_TAG} -f Dockerfile .
+  --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
+  --cache-from "type=registry,ref=${REGISTRY}data:data-$BRANCH_NAME" \
+  --cache-to "type=registry,mode=max,ref=${REGISTRY}data:data-$BRANCH_NAME" \
+  --tag "${REGISTRY}data:data-${BUILD_IMAGE_TAG}" -f Dockerfile .
 
-popd
+popd || exit 1
