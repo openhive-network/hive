@@ -73,7 +73,7 @@ def create_alice_and_bob_accounts_with_received_rewards(node, wallet):
     wallet.api.vote('bob', 'alice', 'permlink', 100)
 
     # Waiting to become post and vote transactions irreversible
-    node.wait_number_of_blocks(21)
+    node.wait_for_irreversible_block()
 
     # Rerun node with time offset allow to change time in 'node' one hour forward and stimulate node to block producing.
     wallet.close()

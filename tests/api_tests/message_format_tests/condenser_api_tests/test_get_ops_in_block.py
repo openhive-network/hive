@@ -29,8 +29,7 @@ UINT64_MAX = 2 ** 64 - 1
 @run_for('testnet', 'mainnet_5m', 'live_mainnet')
 def test_get_ops_in_block(node, should_prepare, block_num, only_virtual):
     if should_prepare:
-        # Wait until block containing above transaction will become irreversible.
-        node.wait_number_of_blocks(21)
+        node.wait_for_irreversible_block()
     node.api.condenser.get_ops_in_block(block_num, only_virtual)
 
 

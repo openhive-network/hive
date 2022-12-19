@@ -33,8 +33,7 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load():
     create_proposal(wallet)
     wallet.api.remove_proposal("alice", [0])
 
-    # wait for the blocks with the transactions to become irreversible, and will be saved in block_log
-    first_node.wait_number_of_blocks(21)
+    first_node.wait_for_irreversible_block()
 
     snapshot = first_node.dump_snapshot()
 

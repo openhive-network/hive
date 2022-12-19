@@ -12,7 +12,7 @@ def prepare_block_log_with_witnesses():
 
     wallet.create_accounts(len(ACCOUNTS))
 
-    node.wait_number_of_blocks(21)
+    node.wait_for_irreversible_block()
 
     node.close()
 

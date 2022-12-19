@@ -37,7 +37,7 @@ def test_getters(node, wallet):
     block_number = _response['ref_block_num'] + 1
 
     tt.logger.info('Waiting...')
-    node.wait_number_of_blocks(22)
+    node.wait_for_irreversible_block()
 
     _result = wallet.api.get_ops_in_block( block_number, False )
 
