@@ -51,7 +51,7 @@ def prepare_blocklog():
 
     ####################################################################################################################
 
-    node.wait_number_of_blocks(21)
+    node.wait_for_irreversible_block()
     node.close()
     node.block_log.copy_to(Path(__file__).parent.absolute())
 

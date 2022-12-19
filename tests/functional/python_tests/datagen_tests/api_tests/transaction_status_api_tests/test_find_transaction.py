@@ -13,7 +13,7 @@ def test_find_existing_transaction(node, wallet):
     assert node.api.database.is_known_transaction(id=transaction_id)['is_known'] is True
     assert node.api.transaction_status.find_transaction(transaction_id=transaction_id)['status'] == 'within_reversible_block'
 
-    node.wait_number_of_blocks(22)
+    node.wait_for_irreversible_block()
     assert node.api.transaction_status.find_transaction(transaction_id=transaction_id)['status'] == 'within_irreversible_block'
 
     time.sleep(90)

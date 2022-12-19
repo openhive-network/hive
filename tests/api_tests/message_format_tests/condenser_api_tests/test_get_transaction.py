@@ -7,8 +7,7 @@ from hive_local_tools import run_for
 def test_get_transaction_in_testnet(node, wallet):
     transaction = wallet.api.create_account('initminer', 'alice', '{}')
 
-    # Wait until block containing above transaction will become irreversible.
-    node.wait_number_of_blocks(22)
+    node.wait_for_irreversible_block()
     node.api.condenser.get_transaction(transaction['transaction_id'])
 
 

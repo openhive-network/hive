@@ -30,8 +30,7 @@ def prepare_block_log_with_transactions():
     prepare_transactions_for_get_account_history_test(wallet)
     prepare_accounts_for_list_my_accounts_test(wallet)
 
-    # Wait to appear transactions in block log
-    node.wait_number_of_blocks(21)
+    node.wait_for_irreversible_block()
 
     node.close()
 

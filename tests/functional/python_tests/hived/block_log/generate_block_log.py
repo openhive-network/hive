@@ -28,8 +28,8 @@ def prepare_node_with_proposal_votes():
             executor.submit(__generate_and_broadcast, wallet, account_names[lower:upper])
             tt.logger.info(f"Pack generated: {lower}:{upper}")
 
-    tt.logger.info("Waiting 21 blocks for the blocks with the transactions to become irreversible")
-    node.wait_number_of_blocks(21)
+    tt.logger.info("Waiting for the blocks with the transactions to become irreversible")
+    node.wait_for_irreversible_block()
 
     head_block_num = node.get_last_block_number()
     timestamp = node.api.block.get_block(block_num=head_block_num)["block"]["timestamp"]
