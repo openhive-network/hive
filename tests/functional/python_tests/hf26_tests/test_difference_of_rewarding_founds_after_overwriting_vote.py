@@ -32,8 +32,7 @@ def perform_test_preparation(node, wallet):
     wallet.api.vote('bob', 'alice', 'permlink', 100)
     wallet.api.vote('bob', 'alice', 'permlink', 90)
 
-    # Waiting to become post and vote transactions irreversible
-    node.wait_number_of_blocks(21)
+    node.wait_for_irreversible_block()
 
     # Offset 1 hour allow to skip time necessary to receive reward balances.
     wallet.close()
