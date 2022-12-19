@@ -27,13 +27,19 @@ include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
 
+.buildkit-cache-config:
+  cache:
+    key: buildkit-cache-$CI_JOB_NAME-$CI_COMMIT_REF_SLUG
+    paths:
+      - buildkit-cache/
+
 prepare_hived_data_image:
   extends: .prepare_hived_data_5m_image
   stage: build
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
-
+  cache: !reference [.buildkit-cache-config, cache]  
   tags:
     - public-runner-docker
     - hived-for-tests
@@ -90,13 +96,14 @@ mirrornet_node_build:
       "$IMAGE_TAG"
       "$SOURCES_DIR"
       "$REGISTRY_URL"
-      --cache-path=$CI_COMMIT_REF_SLUG
+      --cache-path=buildkit-cache
       --network-type="mirrornet"
       --export-binaries="$BINARIES_DIR"
     - chmod -Rc a+rwx "$BINARIES_DIR"
   artifacts:
     paths:
       - "$BINARIES_DIR"
+  cache: !reference [.buildkit-cache-config, cache]
   tags:
     - public-runner-docker
     - hived-for-tests

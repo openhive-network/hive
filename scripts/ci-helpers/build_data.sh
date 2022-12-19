@@ -14,8 +14,6 @@ shift
 SRCROOTDIR=${1:?"Missing argument #2: source directory"}
 shift
 REGISTRY=${1:?"Missing argument #3: target image registry"}
-shift 
-BRANCH_NAME=${1:?"Missing argument #4: branch to get buildkit cache for"}
 shift
 
 # Supplement a registry path by trailing slash (if needed)
@@ -24,19 +22,47 @@ shift
 BUILD_HIVE_TESTNET=OFF
 HIVE_CONVERTER_BUILD=OFF
 
-"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "${SRCROOTDIR}" "${REGISTRY}" "--cache-path=$BRANCH_NAME" "$@"
+if [ -n "${CI:-}" ];
+then
+  BUILDKIT_CACHE_PATH=${1:?"Missing argument #3: Docker BuildKit cache path"}
+  shift
+  BINARY_CACHE_PATH=${1:?"Missing argument #4: binary cache path"}
+  shift
 
-echo "Instance image built. Attempting to build a data image basing on it..."
+  CACHE_REF="${CI_PROJECT_DIR}/${BUILDKIT_CACHE_PATH}"
+  export CACHE_REF
+  export REGISTRY
+  export BUILD_HIVE_TESTNET
+  export HIVE_CONVERTER_BUILD
+  export BUILD_IMAGE_TAG
+  export IMAGE_TAG_PREFIX
 
-pushd "$SRCROOTDIR" || exit 1
+  pushd "$SRCROOTDIR" || exit 1
 
-docker buildx build --target=data  --progress=plain --load \
-  --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
-  --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
-  --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
-  --cache-from "type=registry,ref=${REGISTRY}data:data-$BRANCH_NAME" \
-  --cache-to "type=registry,mode=max,ref=${REGISTRY}data:data-$BRANCH_NAME" \
-  --tag "${REGISTRY}data:data-${BUILD_IMAGE_TAG}" -f Dockerfile .
+  docker buildx bake --progress=plain --load data-ci
+  
+  du -h "$CACHE_REF"
+  docker image ls
 
-popd || exit 1
+  popd || exit 1
+
+  set -x
+  BUILDER_NAME=$(docker buildx inspect | head -n 1 | awk '{print $2}')
+  echo "BUILDER_NAME=${BUILDER_NAME}"
+  docker buildx use default
+  "$SCRIPTPATH/export-binaries.sh" "${REGISTRY}data:data-${BUILD_IMAGE_TAG}" "${BINARY_CACHE_PATH}"
+  docker buildx use "$BUILDER_NAME"
+  set +x
+else
+  "$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "${SRCROOTDIR}" "${REGISTRY}" "$@"
+
+  pushd "$SRCROOTDIR" || exit 1
+  echo "Instance image built. Attempting to build a data image basing on it..."
+  docker buildx build --target=data  --progress=plain \
+    --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
+    --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
+    --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
+    --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
+    --tag "${REGISTRY}data:data-${BUILD_IMAGE_TAG}" -f Dockerfile .
+  popd || exit 1  
+fi

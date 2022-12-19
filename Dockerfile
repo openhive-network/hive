@@ -134,7 +134,7 @@ EXPOSE ${CLI_WALLET_PORT}
 
 FROM ${CI_REGISTRY_IMAGE}ci-base-image-5m$CI_IMAGE_TAG AS block_log_5m_source
 
-FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-$BUILD_IMAGE_TAG as data
+FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-${BUILD_IMAGE_TAG} as data
 
 COPY --from=block_log_5m_source /home/hived/datadir /home/hived/datadir 
 ADD --chown=hived:hived ./docker/config_5M.ini /home/hived/datadir/config.ini

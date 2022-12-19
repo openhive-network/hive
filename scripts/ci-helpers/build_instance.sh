@@ -12,7 +12,7 @@ source "$SCRIPTSDIR/common.sh"
 BUILD_IMAGE_TAG=""
 REGISTRY=""
 SRCROOTDIR=""
-
+BUILDKIT_CACHE_PATH=""
 IMAGE_TAG_PREFIX=""
 
 BUILD_HIVE_TESTNET=OFF
@@ -26,7 +26,7 @@ print_help () {
     echo "OPTIONS:"
     echo "  --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet"
     echo "  --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image."
-    echo "  --cache-path=BRANCH_NAME  Allows to specify a Git branch to pull and push Docker BuildKit cache for"
+    echo "  --cache-path=PATH         Allows to specify a directory for BuildKit cache (requires BuildKit builder with docker-contaienr driver), for CI"
     echo "  --help                    Display this help screen and exit"
     echo
 }
@@ -65,7 +65,7 @@ while [ $# -gt 0 ]; do
         ;;
     --cache-path=*)
         arg="${1#*=}"
-        BRANCH_NAME="$arg"
+        BUILDKIT_CACHE_PATH="$arg"
         ;;
     --help)
         print_help
@@ -104,42 +104,40 @@ echo "Moving into source root directory: ${SRCROOTDIR}"
 pushd "$SRCROOTDIR" || exit 1
 #pwd
 
-if [ -n "${BRANCH_NAME}" ];
+if [ -n "$BUILDKIT_CACHE_PATH" ];
 then
-  CACHE_REF="${REGISTRY}base_instance:base_instance-$BRANCH_NAME"
-  echo "Building base instance image with cache ${CACHE_REF}"
-  docker buildx build --target=base_instance  --progress=plain --load \
-    --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
-    --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
-    --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-    --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
-    --cache-from "type=registry,ref=${CACHE_REF}" \
-    --cache-to "type=registry,mode=max,ref=${CACHE_REF}" \
-    --tag "${REGISTRY}base_instance:base_instance-${BUILD_IMAGE_TAG}" -f Dockerfile .
+  if [ -n "${CI:-}" ];
+  then
+    CACHE_REF="${CI_PROJECT_DIR}/${BUILDKIT_CACHE_PATH}"
+  else
+    CACHE_REF="${BUILDKIT_CACHE_PATH}"
+  fi
+  mkdir -p "${CACHE_REF}"
+  export REGISTRY
+  export BUILD_HIVE_TESTNET
+  export HIVE_CONVERTER_BUILD
+  export BUILD_IMAGE_TAG
+  export CACHE_REF
+  export IMAGE_TAG_PREFIX
 
-  # Build the image containing only binaries and be ready to start running hived instance, operating on mounted volummes pointing instance datadir and shm_dir
-  CACHE_REF="${REGISTRY}${IMAGE_TAG_PREFIX}instance:instance-$BRANCH_NAME"
+  # Build the image containing only binaries and be ready to start running hived instance, operating on mounted volumes pointing at instance datadir and shm_dir
   echo "Building instance image with cache ${CACHE_REF}"
-  docker buildx build --target=instance  --progress=plain --load \
-  --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
-  --build-arg BUILD_HIVE_TESTNET="$BUILD_HIVE_TESTNET" \
-  --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --cache-from "type=registry,ref=${CACHE_REF}" \
-  --cache-to "type=registry,mode=max,ref=${CACHE_REF}" \
-  --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:instance-${BUILD_IMAGE_TAG}" -f Dockerfile .
+
+  docker buildx bake --progress=plain --load instance-ci
+  du -h "$CACHE_REF"
+  docker image ls
 else
   echo "Building base instance image"
-  docker buildx build --target=base_instance  --progress=plain --load \
+  docker buildx build --target=base_instance  --progress=plain \
     --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
     --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
     --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
     --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
     --tag "${REGISTRY}base_instance:base_instance-${BUILD_IMAGE_TAG}" -f Dockerfile .
 
-  # Build the image containing only binaries and be ready to start running hived instance, operating on mounted volummes pointing instance datadir and shm_dir
+  # Build the image containing only binaries and be ready to start running hived instance, operating on mounted volumes pointing at instance datadir and shm_dir
   echo "Building instance image"
-  docker buildx build --target=instance  --progress=plain --load \
+  docker buildx build --target=instance  --progress=plain \
     --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
     --build-arg BUILD_HIVE_TESTNET="$BUILD_HIVE_TESTNET" \
     --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
@@ -147,13 +145,18 @@ else
     --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:instance-${BUILD_IMAGE_TAG}" -f Dockerfile .
 fi
 
-
-
-
 popd || exit 1
 
 if [ -n "${EXPORT_PATH}" ];
 then
+  if [ -n "$BUILDKIT_CACHE_PATH" ];
+  then
+    BUILDER_NAME=$(docker buildx inspect | head -n 1 | awk '{print $2}')
+    docker buildx use default
+  fi
   "$SCRIPTPATH/export-binaries.sh" "${REGISTRY}${IMAGE_TAG_PREFIX}instance:instance-${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
+  if [ -n "$BUILDKIT_CACHE_PATH" ];
+  then
+    docker buildx use "$BUILDER_NAME"
+  fi
 fi
-

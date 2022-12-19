@@ -22,7 +22,7 @@ REGISTRY_PASSWORD=${1:?"Missing argument #5: registry password"}
 shift
 BINARY_CACHE_PATH=${1:?"Missing argument #6: binary cache path"}
 shift
-BRANCH_NAME=${1:?"Missing argument #7: branch to get buildkit cache for"}
+BUILDKIT_CACHE_PATH=${1:?"Missing argument #7: Docker BuildKit cache path"}
 shift
 
 retrieve_submodule_commit () {
@@ -56,7 +56,12 @@ then
 else
   # Here continue an image build.
   echo "${img} image is missing. Building it..."
-  "$SCRIPTPATH/build_data4commit.sh" "$commit" "$REGISTRY" "$BRANCH_NAME" --export-binaries="${BINARY_CACHE_PATH}"
+  if [ -n "${CI:-}" ];
+  then
+    "$SCRIPTPATH/build_data4commit.sh" "$commit" "$REGISTRY" "$BUILDKIT_CACHE_PATH" "$BINARY_CACHE_PATH" --export-binaries="${BINARY_CACHE_PATH}"
+  else
+    "$SCRIPTPATH/build_data4commit.sh" "$commit" "$REGISTRY" "$BUILDKIT_CACHE_PATH" --export-binaries="${BINARY_CACHE_PATH}"
+  fi
   time docker push "$img"
 fi
 
