@@ -132,8 +132,7 @@ namespace visitors
 
     void operator()(const char *name, const int64_t value) const
     {
-      checksum += pos + value;
-      ++pos;
+      checksum += std::hash<std::string>{}(name) + value;
       values.emplace_back(member_data{.type_or_value = std::to_string(value), .name = name});
     }
 
@@ -142,7 +141,6 @@ namespace visitors
   private:
     std::vector<member_data> &values;
     mutable size_t checksum = 0;
-    mutable size_t pos = 0;
   };
 }
 
