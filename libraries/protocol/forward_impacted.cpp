@@ -1018,6 +1018,68 @@ private:
 };
 
 
+struct metadata_collector
+{
+  collected_metadata_collection_t collected_metadata;
+  
+  bool has_metadata = false;  
+
+  typedef void result_type;
+  
+  public:
+
+  void collect_one(
+    std::string _account_name,
+    std::string _json_metadata,
+    std::string _posting_json_metadata
+    )
+  {
+    has_metadata = true;
+    collected_metadata_t collected_item;
+    collected_item.account_name   = _account_name;
+    collected_item.json_metadata = _json_metadata;
+    collected_item.posting_json_metadata = _posting_json_metadata;
+
+    collected_metadata.emplace_back(collected_item);
+  }
+
+
+  // ops
+
+  result_type operator()( const account_create_operation& op )
+  {
+    collect_one(op.new_account_name, op.json_metadata, "");
+  }
+
+  result_type operator()( const account_update_operation& op )
+  {
+    collect_one(op.account, op.json_metadata, "");
+  }
+  
+  result_type operator()( const create_claimed_account_operation& op )
+  {
+    collect_one(op.new_account_name, op.json_metadata, "");
+  }
+
+  result_type operator()( const account_create_with_delegation_operation& op )
+  {
+    collect_one(op.new_account_name, op.json_metadata, "");
+  }
+  
+  result_type operator()( const account_update2_operation& op )
+  {
+    collect_one(op.account, op.json_metadata, op.posting_json_metadata);
+  }
+
+  template <typename T>
+  void operator()(const T& op) 
+  {
+    exclude_from_used_operations<T>(used_operations);
+  }
+
+  hive::app::stringset used_operations;
+
+};
 
 } /// anonymous
 
@@ -1036,6 +1098,7 @@ stringset get_operations_used_in_get_balance_impacting_operations()
   static auto used_operations = run_all_visitor_overloads(collector);
   return used_operations;
 }
+
 
 
 collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::operation& op)
@@ -1059,6 +1122,29 @@ bool is_keyauths_operation( const operation& op )
   keyauth_collector collector;
   op.visit(collector);
   return collector.has_keyauth;
+}
+
+collected_metadata_collection_t operation_get_metadata(const hive::protocol::operation& op)
+{
+  metadata_collector collector;
+
+  op.visit(collector);
+  
+  return std::move(collector.collected_metadata);
+}
+
+bool is_metadata_operation( const operation& op )
+{
+  metadata_collector collector;
+  op.visit(collector);
+  return collector.has_metadata;
+}
+
+stringset get_operations_used_in_get_metadata()
+{
+  metadata_collector collector;
+  static auto used_operations = run_all_visitor_overloads(collector);
+  return used_operations;
 }
 
 void transaction_get_impacted_accounts( const transaction& tx, flat_set<account_name_type>& result )
