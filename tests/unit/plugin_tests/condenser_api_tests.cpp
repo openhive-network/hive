@@ -294,6 +294,8 @@ void compare_operations(const condenser_api::api_operation_object& op_obj,
   BOOST_REQUIRE_EQUAL( op_obj.block, ah_op_obj.block );
   BOOST_REQUIRE_EQUAL( op_obj.trx_in_block, ah_op_obj.trx_in_block );
   BOOST_REQUIRE_EQUAL( op_obj.op_in_trx, ah_op_obj.op_in_trx );
+  // TODO: Compare operations in depth
+  BOOST_REQUIRE_EQUAL( op_obj.op.which(), ah_op_obj.op.which() ); // At least verify type of operation now
 
   // Compare transactions of operations.
   tx_compare(op_obj.trx_id);
