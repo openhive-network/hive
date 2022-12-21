@@ -180,6 +180,11 @@ void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool
 }
 */
 
+void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_price)
+{
+  /// TO BE IMPLEMENTED
+}
+
 uint32_t debug_node_plugin::debug_generate_blocks(const std::string& debug_key, uint32_t count, uint32_t skip, uint32_t miss_blocks, bool immediate_generation)
 {
   debug_generate_blocks_args args;
