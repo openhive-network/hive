@@ -130,7 +130,7 @@ struct condenser_api_fixture : database_fixture
       return;
     } FC_CAPTURE_AND_LOG( () )
     exit(1);
-  }
+      }
 
   hive::plugins::condenser_api::condenser_api* condenser_api = nullptr;
   hive::plugins::account_history::account_history_api* account_history_api = nullptr;
@@ -283,6 +283,42 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
 //  get_account_history -> ditto get_account_history
 //  enum_virtual_ops -> not used
 
+typedef std::function<void(const hive::protocol::transaction_id_type& trx_id)> transaction_comparator_t;
+void compare_operations(const condenser_api::api_operation_object& op_obj, 
+                        const account_history::api_operation_object& ah_op_obj,
+                        transaction_comparator_t tx_compare)
+{
+  ilog("operation from condenser get_ops_in_block: ${op}", ("op", op_obj));
+  ilog("operation from account history get_ops_in_block: ${op}", ("op", ah_op_obj));
+  // Compare basic data about operations.
+  BOOST_REQUIRE_EQUAL( op_obj.trx_id, ah_op_obj.trx_id );
+  BOOST_REQUIRE_EQUAL( op_obj.block, ah_op_obj.block );
+  BOOST_REQUIRE_EQUAL( op_obj.trx_in_block, ah_op_obj.trx_in_block );
+  BOOST_REQUIRE_EQUAL( op_obj.op_in_trx, ah_op_obj.op_in_trx );
+
+  // Compare transactions of operations.
+  tx_compare(op_obj.trx_id);
+}
+
+void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_return& block_ops,
+                                      const account_history::get_ops_in_block_return& ah_block_ops,
+                                      uint32_t block_num,
+                                      transaction_comparator_t tx_compare)
+{
+  ilog("block #${num}, ${op} operations from condenser, ${ah} operations from account history",
+    ("num", block_num)("op", block_ops.size())("ah", ah_block_ops.ops.size()));
+  BOOST_REQUIRE_EQUAL( block_ops.size(), ah_block_ops.ops.size() );
+
+  auto i_condenser = block_ops.begin();
+  auto i_ah = ah_block_ops.ops.begin();
+  for (; i_condenser != block_ops.end(); ++i_condenser, ++i_ah )
+  {
+    const condenser_api::api_operation_object& op_obj = i_condenser->value;
+    const account_history::api_operation_object& ah_op_obj = *i_ah;
+    compare_operations(op_obj, ah_op_obj, tx_compare);
+  }
+}
+
 BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 { try {
 
@@ -306,29 +342,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   for(int i = 0; i<= 21; ++i)
     generate_block();
 
-  // Call condenser get_ops_in_block and verify results with result of account history variant.
-  // Condenser variant accepts 2 args and calls ah's variant with default value of include_reversible = false.
-  auto block_ops = condenser_api->get_ops_in_block({block_num, false /*only_virtual*/});
-  auto ah_block_ops = account_history_api->get_ops_in_block({block_num, false /*only_virtual*/, false /*include_reversible*/});
-  ilog("block #${num}, ${op} operations from condenser, ${ah} operations from account history",
-    ("num", block_num)("op", block_ops.size())("ah", ah_block_ops.ops.size()));
-  BOOST_REQUIRE_EQUAL( block_ops.size(), ah_block_ops.ops.size() );
-
-  auto i_condenser = block_ops.begin();
-  auto i_ah = ah_block_ops.ops.begin();
-  for (; i_condenser != block_ops.end(); ++i_condenser, ++i_ah )
-  {
-    // Compare basic data about operations.
-    const condenser_api::api_operation_object& op_obj = i_condenser->value;
-    const account_history::api_operation_object& ah_op_obj = *i_ah;
-    ilog("operation from condenser get_ops_in_block: ${op}", ("op", op_obj));
-    ilog("operation from account history get_ops_in_block: ${op}", ("op", ah_op_obj));
-    BOOST_REQUIRE_EQUAL( op_obj.trx_id, ah_op_obj.trx_id );
-    BOOST_REQUIRE_EQUAL( op_obj.block, ah_op_obj.block );
-    BOOST_REQUIRE_EQUAL( op_obj.trx_in_block, ah_op_obj.trx_in_block );
-    BOOST_REQUIRE_EQUAL( op_obj.op_in_trx, ah_op_obj.op_in_trx );
-
-    if( op_obj.trx_id == hive::protocol::transaction_id_type() )
+  // Compare operations & their transactions.
+  auto transaction_comparator = [&](const hive::protocol::transaction_id_type& trx_id) {
+    if( trx_id == hive::protocol::transaction_id_type() )
     {
       // We won't get this transaction by tx_hash 
       ilog("skipping transaction check due to empty hash/id");
@@ -336,7 +352,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
     else
     {
       // Call condenser get_transaction and verify results with result of account history variant.
-      const auto tx_hash = op_obj.trx_id.str();
+      const auto tx_hash = trx_id.str();
       const auto result = condenser_api->get_transaction( condenser_api::get_transaction_args(1, fc::variant(tx_hash)) );
       const condenser_api::annotated_signed_transaction op_tx = result.value;
       ilog("operation transaction is ${tx}", ("tx", op_tx));
@@ -347,7 +363,14 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
       BOOST_REQUIRE_EQUAL( op_tx.block_num, ah_op_tx.block_num );
       BOOST_REQUIRE_EQUAL( op_tx.transaction_num, ah_op_tx.transaction_num );
     }
-  }
+  };
+
+  // Call condenser get_ops_in_block and verify results with result of account history variant.
+  // Note that condenser variant calls ah's one with default value of include_reversible = false.
+  // Two arguments, second set to false.
+  auto block_ops = condenser_api->get_ops_in_block({block_num, false /*only_virtual*/});
+  auto ah_block_ops = account_history_api->get_ops_in_block({block_num, false /*only_virtual*/, false /*include_reversible*/});
+  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
 
   validate_database();
 
