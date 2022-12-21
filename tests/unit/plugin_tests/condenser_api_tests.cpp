@@ -129,7 +129,6 @@ struct condenser_api_fixture : database_fixture
         db->wipe( data_dir->path(), data_dir->path(), true );
       return;
     } FC_CAPTURE_AND_LOG( () )
-    exit(1);
       }
 
   hive::plugins::condenser_api::condenser_api* condenser_api = nullptr;
