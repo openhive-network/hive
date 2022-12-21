@@ -1,6 +1,8 @@
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
 #include <hive/plugins/witness/block_producer.hpp>
+
+#include <hive/chain/account_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database_exceptions.hpp>
 
@@ -8,8 +10,8 @@
 #include <fc/io/fstream.hpp>
 #include <fc/io/json.hpp>
 
-#include <fc/thread/future.hpp>
-#include <fc/thread/mutex.hpp>
+//#include <fc/thread/future.hpp>
+//#include <fc/thread/mutex.hpp>
 #include <fc/thread/scoped_lock.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
@@ -182,7 +184,69 @@ void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool
 
 void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_price)
 {
-  /// TO BE IMPLEMENTED
+  FC_ASSERT(new_price.base.symbol == HIVE_SYMBOL);
+  FC_ASSERT(new_price.quote.symbol == VESTS_SYMBOL);
+
+  chain::database& db = database();
+
+  const auto& dgpo = db.get_dynamic_global_properties();
+
+  hive::protocol::asset vests = dgpo.total_vesting_shares;
+  hive::protocol::asset hive = dgpo.total_vesting_fund_hive;
+
+
+  auto alpha_x = new_price.quote.amount * hive.amount;
+  auto alpha_y = new_price.base.amount * vests.amount;
+
+  hive::protocol::asset hive_modifier(0, HIVE_SYMBOL);
+  hive::protocol::asset vest_modifier(0, VESTS_SYMBOL);
+
+  if (alpha_x >= alpha_y)
+  {
+    /// Means that alpha is >= 1, so we will be increasing vests pool
+    fc::uint128_t a = vests.amount.value;
+    a *= (alpha_x - alpha_y).value;
+    a /= alpha_y.value;
+    vest_modifier = hive::protocol::asset(a.to_int64(), VESTS_SYMBOL);
+  }
+  else
+  {
+    /// Means that alpha is < 1, so we will be increasing Hive pool
+    fc::uint128_t b = hive.amount.value;
+    b *= (alpha_y - alpha_x).value;
+    b /= alpha_x.value;
+    hive_modifier = hive::protocol::asset(b.to_int64(), HIVE_SYMBOL);
+  }
+
+  ilog("vest_modifier=${vest_modifier}, hive_modifier=${hive_modifier}", (vest_modifier)(hive_modifier));
+
+  debug_update([&dgpo, &vest_modifier, &hive_modifier](chain::database& db)
+    {
+      /// If we increased vests pool, we need to put them to initminer account to avoid validate_invariants failure 
+      const hive::chain::account_object& miner_account = db.get_account(HIVE_INIT_MINER_NAME);
+
+      db.modify(miner_account, [&vest_modifier](hive::chain::account_object& account)
+        {
+          account.vesting_shares += vest_modifier;
+        });
+
+      db.modify(dgpo, [&vest_modifier, &hive_modifier](hive::chain::dynamic_global_property_object& p)
+        {
+          ilog("Before modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}", ("vest", p.total_vesting_shares)("hive", p.total_vesting_fund_hive));
+
+          p.total_vesting_shares += vest_modifier;
+          p.total_vesting_fund_hive += hive_modifier;
+
+          ilog("After modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}", ("vest", p.total_vesting_shares)("hive", p.total_vesting_fund_hive));
+
+          p.current_supply += hive_modifier;
+          p.virtual_supply += hive_modifier;
+        });
+
+      ilog("Final total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}", ("vest", dgpo.total_vesting_shares)("hive", dgpo.total_vesting_fund_hive));
+
+      ilog("Final price=${p}", ("p", hive::protocol::price(dgpo.total_vesting_fund_hive, dgpo.total_vesting_shares)));
+    });
 }
 
 uint32_t debug_node_plugin::debug_generate_blocks(const std::string& debug_key, uint32_t count, uint32_t skip, uint32_t miss_blocks, bool immediate_generation)
