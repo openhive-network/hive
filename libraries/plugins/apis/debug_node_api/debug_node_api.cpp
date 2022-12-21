@@ -32,6 +32,7 @@ class debug_node_api_impl
       (debug_get_future_witness_schedule)
       (debug_get_hardfork_property_object)
       (debug_set_hardfork)
+      (debug_set_vest_price)
       (debug_has_hardfork)
       (debug_get_json_schema)
       (debug_throw_exception)
@@ -149,6 +150,13 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_has_hardfork )
   return { _db.get( chain::hardfork_property_id_type() ).last_hardfork >= args.hardfork_id };
 }
 
+DEFINE_API_IMPL(debug_node_api_impl, debug_set_vest_price)
+{
+  _debug_node.debug_set_vest_price(args.vest_price);
+
+  return {};
+}
+
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_json_schema )
 {
   return { _db.get_json_schema() };
@@ -179,6 +187,7 @@ DEFINE_LOCKLESS_APIS( debug_node_api,
   (debug_get_hardfork_property_object)
   (debug_set_hardfork)
   (debug_has_hardfork)
+  (debug_set_vest_price)
   (debug_get_json_schema)
   (debug_throw_exception)
 )

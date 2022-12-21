@@ -110,6 +110,13 @@ struct debug_set_hardfork_args
   uint32_t hardfork_id;
 };
 
+struct debug_set_vest_price_args
+{
+  hive::protocol::price vest_price;
+};
+
+typedef void_type debug_set_vest_price_return;
+
 typedef void_type debug_set_hardfork_return;
 
 typedef debug_set_hardfork_args debug_has_hardfork_args;
@@ -167,6 +174,7 @@ class debug_node_api
       (debug_has_hardfork)
       (debug_get_json_schema)
       (debug_throw_exception)
+      (debug_set_vest_price)
     )
 
   private:
@@ -209,6 +217,9 @@ FC_REFLECT( hive::plugins::debug_node::api_witness_schedule_object,
 
 FC_REFLECT( hive::plugins::debug_node::debug_set_hardfork_args,
         (hardfork_id) )
+
+FC_REFLECT( hive::plugins::debug_node::debug_set_vest_price_args,
+        (vest_price) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_has_hardfork_return,
         (has_hardfork) )
