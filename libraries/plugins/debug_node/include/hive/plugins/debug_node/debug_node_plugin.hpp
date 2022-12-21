@@ -90,6 +90,8 @@ class debug_node_plugin : public plugin< debug_node_plugin >
       db.push_block( block_ctrl, skip );
     }
 
+    void debug_set_vest_price(const hive::protocol::price& new_price);
+
     void debug_generate_blocks(
       debug_generate_blocks_return& ret,
       const debug_generate_blocks_args& args,
