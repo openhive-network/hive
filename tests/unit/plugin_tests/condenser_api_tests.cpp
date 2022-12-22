@@ -372,6 +372,14 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   auto block_ops = condenser_api->get_ops_in_block({block_num, false /*only_virtual*/});
   auto ah_block_ops = account_history_api->get_ops_in_block({block_num, false /*only_virtual*/, false /*include_reversible*/});
   compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
+  // Two arguments, second set to true.
+  block_ops = condenser_api->get_ops_in_block({block_num, true /*only_virtual*/});
+  ah_block_ops = account_history_api->get_ops_in_block({block_num, true /*only_virtual*/});
+  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
+  // Single argument
+  block_ops = condenser_api->get_ops_in_block({block_num});
+  ah_block_ops = account_history_api->get_ops_in_block({block_num});
+  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
 
   validate_database();
 
