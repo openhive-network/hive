@@ -381,6 +381,11 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   ah_block_ops = account_history_api->get_ops_in_block({block_num});
   compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
 
+  // Too few arguments
+  BOOST_REQUIRE_THROW( condenser_api->get_ops_in_block({}), fc::assert_exception );
+  // Too many arguments
+  BOOST_REQUIRE_THROW( condenser_api->get_ops_in_block({block_num, false /*only_virtual*/, 0 /*redundant arg*/}), fc::assert_exception );
+
   validate_database();
 
 } FC_LOG_AND_RETHROW() }
