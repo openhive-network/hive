@@ -72,7 +72,7 @@ namespace fc
        // if the string doesn't look like "123.45" or ".45", this code isn't designed to parse it correctly
        // in particular, we don't try to handle leading whitespace or '+'/'-' indicators at the beginning
        assert(*c == '.');
-       fixed = fc::uint128();
+       fixed = 0;
      }
 
 

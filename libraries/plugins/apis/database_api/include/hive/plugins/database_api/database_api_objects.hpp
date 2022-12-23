@@ -282,7 +282,7 @@ struct api_dynamic_global_property_object
   asset                           total_vesting_fund_hive;
   asset                           total_vesting_shares;
   asset                           total_reward_fund_hive;
-  fc::uint128                     total_reward_shares2;
+  fc::uint128                     total_reward_shares2                = 0;
   asset                           pending_rewarded_vesting_shares;
   asset                           pending_rewarded_vesting_hive;
   uint16_t                        hbd_interest_rate                   = 0;
@@ -290,7 +290,7 @@ struct api_dynamic_global_property_object
   uint32_t                        maximum_block_size                  = 0;
   uint16_t                        required_actions_partition_percent  = 0;
   uint64_t                        current_aslot                       = 0;
-  fc::uint128_t                   recent_slots_filled;
+  fc::uint128_t                   recent_slots_filled                 = 0;
   uint8_t                         participation_count                 = 0;
   uint32_t                        last_irreversible_block_num         = 0;
   uint32_t                        vote_power_reserve_rate             = 0;
@@ -605,12 +605,12 @@ struct api_account_object
   asset             savings_balance;
 
   asset             hbd_balance;
-  uint128_t         hbd_seconds;
+  uint128_t         hbd_seconds = 0;
   time_point_sec    hbd_seconds_last_update;
   time_point_sec    hbd_last_interest_payment;
 
   asset             savings_hbd_balance;
-  uint128_t         savings_hbd_seconds;
+  uint128_t         savings_hbd_seconds = 0;
   time_point_sec    savings_hbd_seconds_last_update;
   time_point_sec    savings_hbd_last_interest_payment;
 
@@ -781,9 +781,9 @@ struct api_witness_object
   price             hbd_exchange_rate;
   time_point_sec    last_hbd_exchange_update;
   share_type        votes;
-  fc::uint128       virtual_last_update;
-  fc::uint128       virtual_position;
-  fc::uint128       virtual_scheduled_time;
+  fc::uint128       virtual_last_update = 0;
+  fc::uint128       virtual_position = 0;
+  fc::uint128       virtual_scheduled_time = 0;
   digest_type       last_work;
   version           running_version;
   hardfork_version  hardfork_version_vote;
@@ -878,7 +878,7 @@ struct api_witness_schedule_object
 
   witness_schedule_id_type              id; //always from active wso
 
-  fc::uint128                           current_virtual_time; //always from future wso
+  fc::uint128                           current_virtual_time = 0; //always from future wso
   uint32_t                              next_shuffle_block_num; //always from future wso
   vector<string>                        current_shuffled_witnesses; //from active wso
   fc::optional< vector<string> >        future_shuffled_witnesses; //from future wso (only filled on request)
