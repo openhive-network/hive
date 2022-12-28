@@ -11,6 +11,9 @@
 Debug/
 Release/
 
+# Visual Studio for Windows files
+CMakeSettings.json
+
 # Visual Studio Code files
 .vscode
 
