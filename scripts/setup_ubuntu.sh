@@ -75,6 +75,8 @@ install_user_packages() {
   sudo cp ./websocat.x86_64-unknown-linux-musl /usr/local/bin/
 
   popd
+
+  curl -sSL https://install.python-poetry.org | python3 -  # install poetry in an isolated environment
 }
 
 while [ $# -gt 0 ]; do
