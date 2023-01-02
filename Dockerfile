@@ -24,6 +24,7 @@ WORKDIR /home/hived
 FROM ${CI_REGISTRY_IMAGE}runtime$CI_IMAGE_TAG AS ci-base-image
 
 ENV LANG=en_US.UTF-8
+ENV PATH="/home/hived/.local/bin:$PATH"
 
 SHELL ["/bin/bash", "-c"] 
 
