@@ -10,12 +10,12 @@ variables:
   GIT_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: recursive
   # pin to specific docker images for build repeatability
-  #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04-5
-  RUNTIME_IMAGE_TAG: "@sha256:598fadc96705d1be39c742e94836ae48009acd47f96a4ac087b835df7f7960d7"
+  #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-20.04-7
+  RUNTIME_IMAGE_TAG: "@sha256:d3aec951725cedbccfe024f27301a7fc2c2cf3b4282533f622041d82f0710b86"
   #points registry.gitlab.syncad.com/hive/hive/builder:ubuntu-20.04-3
   BUILDER_IMAGE_TAG: "@sha256:590750387c74c470ee30910502b4f855122eae9ef9c6e7ad0841985abdc3938c"
-  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu20.04-5
-  TEST_IMAGE_TAG: "@sha256:f6f8d1a300a7f13c1c5a64088db38cd641fb2ec397f4ac46b4ae8733753a62be"
+  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu20.04-7
+  TEST_IMAGE_TAG: "@sha256:034b706db277c62e36f07c7d8d8729f55b6be9d4cbc3eddd3a63d38c9a77ead6"
 
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
