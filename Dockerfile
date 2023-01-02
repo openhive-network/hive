@@ -2,7 +2,7 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=:ubuntu20.04-5 
+ARG CI_IMAGE_TAG=:ubuntu20.04-7
 ARG BUILD_IMAGE_TAG
 
 FROM phusion/baseimage:focal-1.0.0 AS runtime

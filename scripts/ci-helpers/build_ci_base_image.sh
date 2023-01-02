@@ -1,7 +1,7 @@
 #! /bin/bash
 
 REGISTRY=${1:-registry.gitlab.syncad.com/hive/hive/}
-CI_IMAGE_TAG=:ubuntu20.04-5
+CI_IMAGE_TAG=:ubuntu20.04-7
 
 export DOCKER_BUILDKIT=1
 
