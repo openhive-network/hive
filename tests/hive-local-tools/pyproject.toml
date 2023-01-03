@@ -21,6 +21,6 @@ pytest = "7.1.2"
 pytest-xdist = "2.5.0"
 pytest-rerunfailures = "10.2"
 pytest-timeout = "2.1.0"
-shared-tools = { path = "shared-tools" }
-test-tools = { path = "test-tools" }
-schemas = { path = "schemas" }
+shared-tools = { path = "shared-tools", develop = true }
+test-tools = { path = "test-tools", develop = true }
+schemas = { path = "schemas", develop = true }
