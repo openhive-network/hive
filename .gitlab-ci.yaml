@@ -678,3 +678,17 @@ witness_tests:
   resource_group: ${CI_COMMIT_SHA}
   tags:
     - hive-builder-4
+
+hf28_tests:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/hf28_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/hf28_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
