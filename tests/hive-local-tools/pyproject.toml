@@ -22,11 +22,5 @@ pytest-xdist = "2.5.0"
 pytest-rerunfailures = "10.2"
 pytest-timeout = "2.1.0"
 shared-tools = { path = "shared-tools" }
-
-# Extras
-test-tools = { path = "test-tools", optional = true }
-schemas = { path = "schemas", optional = true }
-
-
-[tool.poetry.extras]
-test-tools = ["test-tools", "schemas"]
+test-tools = { path = "test-tools" }
+schemas = { path = "schemas" }
