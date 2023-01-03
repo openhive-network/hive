@@ -226,7 +226,7 @@ plugin_test:
     before_script:
       - python3 -m venv venv/
       - . venv/bin/activate
-      - (cd $CI_PROJECT_DIR/tests/hive-local-tools && poetry install -E test-tools)
+      - (cd $CI_PROJECT_DIR/tests/hive-local-tools && poetry install)
     artifacts:
       reports:
         junit: $JUNIT_REPORT
