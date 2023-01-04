@@ -49,7 +49,8 @@ struct memo_data
     try {
       if( str.size() > sizeof(memo_data) && str[0] == '#') {
         auto data = fc::from_base58( str.substr(1) );
-        auto m  = fc::raw::unpack_from_vector<memo_data>( data );
+        memo_data m;
+        fc::raw::unpack_from_vector( data, m );
         FC_ASSERT( string(m) == str );
         return m;
       }

@@ -1295,7 +1295,8 @@ void wallet_api::unlock(const string& password)
   FC_ASSERT(password.size() > 0);
   auto pw = fc::sha512::hash(password.c_str(), password.size());
   vector<char> decrypted = fc::aes_decrypt(pw, my->_wallet.cipher_keys);
-  auto pk = fc::raw::unpack_from_vector<plain_keys>(decrypted);
+  plain_keys pk;
+  fc::raw::unpack_from_vector(decrypted, pk);
   FC_ASSERT(pk.checksum == pw);
   my->_keys = std::move(pk.keys);
   my->_checksum = pk.checksum;
@@ -2534,7 +2535,9 @@ string wallet_api::decrypt_memo( string encrypted_memo )
       try
       {
         vector<char> decrypted = fc::aes_decrypt( encryption_key, m->encrypted );
-        return fc::raw::unpack_from_vector<std::string>( decrypted );
+        std::string descrypted_string;
+        fc::raw::unpack_from_vector( decrypted, descrypted_string);
+        return descrypted_string;
       } catch ( ... ){}
     }
   }
