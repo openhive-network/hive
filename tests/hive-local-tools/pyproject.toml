@@ -30,3 +30,7 @@ test-tools = { path = "test-tools", develop = true }
 black = "22.8.0"
 isort = { version = "5.10.1", extras = ["colors"] }
 pre-commit = "2.20.0"
+
+
+[tool.black]
+line-length = 120
