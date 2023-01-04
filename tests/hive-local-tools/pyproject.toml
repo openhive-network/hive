@@ -24,3 +24,7 @@ pytest-xdist = "2.5.0"
 schemas = { path = "schemas", develop = true }
 shared-tools = { path = "shared-tools", develop = true }
 test-tools = { path = "test-tools", develop = true }
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "2.20.0"
