@@ -23,3 +23,9 @@ repos:
       - id: poetry-lock
         name: checking if poetry.lock is consistent with pyproject.toml
         args: [ "--directory", "tests/hive-local-tools", "--no-update" ]
+  - repo: https://github.com/psf/black
+    rev: 22.8.0
+    hooks:
+      - id: black
+        name: format code using black
+        args: [ "--config", "tests/hive-local-tools/pyproject.toml" ]
