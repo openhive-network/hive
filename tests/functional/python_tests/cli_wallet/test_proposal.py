@@ -128,4 +128,3 @@ def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: funded_account_i
   assert proposal['subject'] == update_args['subject']
   assert proposal['permlink'] == prepared_proposal.permlink
   assert proposal['end_date'] == last_date
-

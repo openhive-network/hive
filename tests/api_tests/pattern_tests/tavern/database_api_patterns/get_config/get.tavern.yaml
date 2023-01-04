@@ -25,4 +25,3 @@
           function: validate_response:compare_response_with_pattern
           extra_kwargs:
             ignore_tags: ["HIVE_BLOCKCHAIN_HARDFORK_VERSION", "HIVE_BLOCKCHAIN_VERSION"]
-

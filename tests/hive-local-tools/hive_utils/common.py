@@ -382,4 +382,3 @@ def junit_test_case(method):
                 test_case.add_failure_info(output = error)
             junit_test_cases.append(test_case)
     return log_test_case
-

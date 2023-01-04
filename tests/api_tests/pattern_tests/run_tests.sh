@@ -25,4 +25,3 @@ tox -e tavern --                                 \
     -W ignore::pytest.PytestDeprecationWarning   \
     -W ignore::DeprecationWarning                \
     -k "${default_testsuite}"
-

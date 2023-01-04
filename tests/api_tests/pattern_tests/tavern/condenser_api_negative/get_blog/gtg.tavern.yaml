@@ -26,4 +26,3 @@
           extra_kwargs:
             error_response: true
             ignore_tags: ["timestamp"]
-

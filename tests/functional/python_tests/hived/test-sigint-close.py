@@ -86,5 +86,3 @@ if __name__ == '__main__':
         crash_time += wait_time
 
         res = try_generate_crash( command_line, dump_file_str, crash_time, wait_time, exec_name )
-
-

@@ -53,4 +53,3 @@ def test_get_ops_in_block_with_incorrect_value(node, block_number, virtual_opera
 def test_get_ops_in_block_with_incorrect_type_of_arguments(node, block_number, virtual_operation):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
-

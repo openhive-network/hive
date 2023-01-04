@@ -114,4 +114,3 @@ def test_direct_rc_delegations(wallet):
     assert (accounts_offset[0]['account'] == 'receiver')
     assert (accounts_offset[0]['rc_manabar']['current_mana'] == 0)
     assert (accounts_offset[1]['account'] == 'steem.dao')
-

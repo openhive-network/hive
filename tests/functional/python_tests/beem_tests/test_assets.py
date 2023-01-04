@@ -82,4 +82,3 @@ def test_hive_transfer(node_client: NodeClientMaker):
     balance = new_account.get_balance("available", 'HIVE')
 
     assert balance.amount == expected_amount
-
