@@ -34,3 +34,10 @@ pre-commit = "2.20.0"
 
 [tool.black]
 line-length = 120
+
+
+[tool.isort]
+profile = "black"
+line_length = 120
+known_first_party = ["hive_local_tools", "test_tools", "shared_tools", "hive_utils"]
+color_output = true
