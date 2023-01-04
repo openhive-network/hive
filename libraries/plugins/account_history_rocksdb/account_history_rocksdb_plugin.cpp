@@ -1288,46 +1288,41 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
 
   uint32_t lookupUpperBound = blockRangeEnd;
 
+  /**
+   * Iterates over `reversibleOps` and returns pair of two ints, where:
+   * * first - informs about last _block number_ that was touched
+   *
+   * * second - informs about operation id of first virtual operation over
+   *      limit (0 if iterated over whole reversible set
+   *      and no more virtual operations left)
+   */
+  const auto process_reversible_blocks = [&]{
+    uint32_t last_block_number{0u};
+    for(const auto& op : reversibleOps)
+    {
+      if (op.is_virtual)
+      {
+        if(limit.valid() && (cntLimit >= *limit))
+        {
+          return std::make_pair(op.block, (op.block != last_block_number ? 0ul : op.id));
+        }else if(processor(op, op.id, false))
+          ++cntLimit;
+        last_block_number = op.block;
+      }
+    }
+    return std::make_pair<uint32_t, uint64_t>(0, 0);
+  };
+
   if(include_reversible)
   {
-    auto collection = collectReversibleOps(&collectedReversibleRangeBegin, &collectedReversibleRangeEnd,
-      &collectedIrreversibleBlock);
+    auto collection = collectReversibleOps(&collectedReversibleRangeBegin, &collectedReversibleRangeEnd, &collectedIrreversibleBlock);
     reversibleOps = std::move(collection);
 
     dlog("EnumVirtualOps for blockRangeBegin: ${b}, blockRangeEnd: ${e}, irreversible block: ${i}",("b", blockRangeBegin)("e", blockRangeEnd)("i", collectedIrreversibleBlock));
 
+    /// Simplest case, whole requested range is located inside reversible space
     if(blockRangeBegin > collectedIrreversibleBlock)
-    {
-      /// Simplest case, whole requested range is located inside reversible space
-
-      for(const auto& op : reversibleOps)
-      {
-
-        /// Accept only virtual operations
-        if (op.is_virtual)
-        {
-          if(limit.valid() && (cntLimit >= *limit))
-          {
-            /** There is no available any stable identifier to be next stored inside persistent storage.
-            *   Such identifier would be required for case when paging will be supported here and
-            *   block have been converted into irreversible between calls.
-            *   So for simplicity, just all ops will be returned up to processed next block.
-            */
-            nextElementAfterLimit = (op.block != lastFoundBlock ? 0 : decltype(nextElementAfterLimit){});
-            lastFoundBlock = op.block;
-            break;
-          }else if(processor(op, op.id, false))
-            ++cntLimit;
-        }
-
-        lastFoundBlock = op.block;
-      }
-
-      if(nextElementAfterLimit.valid())
-        return std::make_pair(lastFoundBlock, *nextElementAfterLimit);
-      else
-        return std::make_pair(0, 0);
-    }
+      return process_reversible_blocks();
 
     /// Partial case: rangeBegin is <= collectedIrreversibleBlock but blockRangeEnd > collectedIrreversibleBlock
     if(lookupUpperBound > collectedIrreversibleBlock)
@@ -1386,39 +1381,11 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
   }
 
   if( nextElementAfterLimit.valid() )
-  {
     return std::make_pair( lastFoundBlock, *nextElementAfterLimit );
-  }
   else
   {
     if(include_reversible && hasTrailingReversibleBlocks)
-    {
-      for(const auto& op : reversibleOps)
-      {
-        if(limit.valid() && (cntLimit >= *limit) && op.block != lastFoundBlock)
-        {
-          /** There is no available any stable identifier to be next stored inside persistent storage.
-          *   Such identifier would be required for case when paging will be supported here and
-          *   block have been converted into irreversible between calls.
-          *   So for simplicity, just all ops will be returned up to processed next block.
-          */
-          nextElementAfterLimit = 0;
-          lastFoundBlock = op.block;
-          break;
-        }
-
-        /// Accept only virtual operations
-        if(op.is_virtual && processor(op, op.id, false))
-          ++cntLimit;
-
-        lastFoundBlock = op.block;
-      }
-
-      if(nextElementAfterLimit.valid())
-        return std::make_pair(lastFoundBlock, *nextElementAfterLimit);
-      else
-        return std::make_pair(0, 0);
-    }
+      return process_reversible_blocks();
 
     lastFoundBlock = blockRangeEnd; /// start lookup from next block basing on processed range end
 
