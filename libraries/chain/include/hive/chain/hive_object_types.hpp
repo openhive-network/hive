@@ -287,17 +287,15 @@ void unpack( Stream& s, boost::interprocess::flat_map< K, V, C, A >& value, uint
 
 #ifndef ENABLE_STD_ALLOCATOR
 template< typename T >
-T unpack_from_vector( const hive::chain::buffer_type& s )
+void unpack_from_vector( const hive::chain::buffer_type& s, T& tmp )
 {
   try
   {
-    T tmp;
     if( s.size() )
     {
       datastream<const char*>  ds( s.data(), size_t(s.size()) );
       fc::raw::unpack(ds,tmp);
     }
-    return tmp;
   } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) )
 }
 #endif
