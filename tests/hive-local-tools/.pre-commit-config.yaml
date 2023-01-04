@@ -8,3 +8,5 @@ repos:
     hooks:
       - id: check-added-large-files
       - id: check-merge-conflict
+      - id: check-yaml
+        args: [ "--unsafe" ]
