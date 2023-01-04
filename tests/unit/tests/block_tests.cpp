@@ -1167,7 +1167,8 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     ilog("Looked up AH-id: ${a}, found: ${i}", ("a", last_ah_id)("i", itr->get_id()));
 
     /// Original AH record points (by_id) actual operation data. We need to query for it again
-    auto last_op = fc::raw::unpack_from_vector< hive::chain::operation >(itr->serialized_op);
+    hive::protocol::operation last_op;
+    fc::raw::unpack_from_vector(itr->serialized_op, last_op);
 
     BOOST_REQUIRE( db->has_hardfork( 0 ) );
     BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_1 ) );
@@ -1184,7 +1185,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
     /// Continue (starting from last HF op position), but skip last HF op
     for(++itr; itr != ah_idx.end(); ++itr)
     {
-      processed_op = fc::raw::unpack_from_vector< hive::chain::operation >(itr->serialized_op);
+      fc::raw::unpack_from_vector(itr->serialized_op, processed_op);
     }
 
       /// There shall be no more hardfork ops after last one.
