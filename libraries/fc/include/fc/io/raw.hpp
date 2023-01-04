@@ -207,15 +207,6 @@ namespace fc {
       vi.value = static_cast<uint32_t>(v);
     }
 
-    template<typename Stream, typename T> inline void unpack( Stream& s, const T& vi, uint32_t depth )
-    {
-       depth++;
-       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
-       T tmp;
-       fc::raw::unpack( s, tmp, depth );
-       FC_ASSERT( vi == tmp );
-    }
-
     template<typename Stream> inline void pack( Stream& s, const char* v ) { fc::raw::pack( s, fc::string(v) ); }
 
     template<typename Stream, typename T>
@@ -692,18 +683,6 @@ namespace fc {
          boost::tuples::tuple< Args... >
       >::tuple_unpack( s, var );
    }
-
-    template<typename T>
-    inline T unpack_from_vector( const std::vector<char>& s, uint32_t depth )
-    { try  {
-      depth++;
-      T tmp;
-      if( s.size() ) {
-        datastream<const char*>  ds( s.data(), size_t(s.size()) );
-        fc::raw::unpack(ds,tmp,depth);
-      }
-      return tmp;
-    } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
 
     template<typename T>
     inline void unpack_from_vector( const std::vector<char>& s, T& tmp, uint32_t depth = 0 )
