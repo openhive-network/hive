@@ -77,8 +77,8 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path):
 def perform_replay(node_bin_path, node_work_dir_path, is_steem_node):
   logger.info("Performing replay with {}".format(node_bin_path))
   node = hive_utils.hive_node.HiveNodeInScreen(
-    node_bin_path, 
-    node_work_dir_path, 
+    node_bin_path,
+    node_work_dir_path,
     None,
     True,
     is_steem_node
@@ -90,8 +90,8 @@ def perform_replay(node_bin_path, node_work_dir_path, is_steem_node):
 def run_node(node_bin_path, node_work_dir_path, is_steem_node):
   logger.info("Running node with {}".format(node_bin_path))
   node = hive_utils.hive_node.HiveNodeInScreen(
-    node_bin_path, 
-    node_work_dir_path, 
+    node_bin_path,
+    node_work_dir_path,
     None,
     True,
     is_steem_node

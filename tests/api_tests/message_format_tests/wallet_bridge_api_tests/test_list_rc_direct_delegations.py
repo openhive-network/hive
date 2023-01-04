@@ -87,4 +87,3 @@ def create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts):
     wallet.create_accounts(len(accounts))
     wallet.api.transfer_to_vesting('initminer', accounts[0], tt.Asset.Test(0.1))
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 5)
-    

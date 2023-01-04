@@ -40,7 +40,7 @@ def get_current_block_number(source_node) -> int:
   payload = {
     "jsonrpc" : "2.0",
     "id" : get_random_id(),
-    "method" : "database_api.get_dynamic_global_properties", 
+    "method" : "database_api.get_dynamic_global_properties",
     "params" : {}
   }
 
@@ -272,7 +272,7 @@ def get_last_line_of_file(file_name):
   with open(file_name, "r") as f:
     f.seek(-2, SEEK_END)
     while f.read(1) != b'\n':
-      f.seek(-2, SEEK_CUR) 
+      f.seek(-2, SEEK_CUR)
     last_line = f.readline().decode()
   return last_line
 
@@ -342,8 +342,8 @@ def block_until_transaction_in_block(node_url, transaction_id, block_type = BLOC
   while True:
     query = {
       "id" : "{}".format(get_random_id()),
-      "jsonrpc":"2.0", 
-      "method":"transaction_status_api.find_transaction", 
+      "jsonrpc":"2.0",
+      "method":"transaction_status_api.find_transaction",
       "params": {
         "transaction_id": transaction_id
       }

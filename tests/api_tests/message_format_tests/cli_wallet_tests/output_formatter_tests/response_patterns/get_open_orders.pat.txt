@@ -1,5 +1,5 @@
- Order #    Price        Quantity       Type      
+ Order #    Price        Quantity       Type
 ===============================================================================
- 0          0.571441     11.534 TESTS   SELL      
- 1          0.575770     12.175 TESTS   SELL      
- 2          0.567940     0.907 TBD      BUY       
+ 0          0.571441     11.534 TESTS   SELL
+ 1          0.575770     12.175 TESTS   SELL
+ 2          0.567940     0.907 TBD      BUY

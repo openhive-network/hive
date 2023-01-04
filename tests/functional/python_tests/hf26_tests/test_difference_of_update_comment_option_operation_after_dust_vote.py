@@ -1,7 +1,7 @@
 import test_tools as tt
 
 """
-A bug has been detected in hardfork 25. Votes with weight below the dust_threshold (called "dust votes"), 
+A bug has been detected in hardfork 25. Votes with weight below the dust_threshold (called "dust votes"),
 can be created when were send from an account with very low resources or have low weight. On HF25 they were ignored.
 """
 

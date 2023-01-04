@@ -18,9 +18,9 @@ def test_find_existing_transaction(node, wallet):
 
     time.sleep(90)
     '''
-        In this test case we can't really use find_transaction from transaction_status API to check status of 
-        transaction (after expiration) because it holds transactions for one hour before it flag it as expired. Instead 
-        of this is_known_transaction from database API is used. 
+        In this test case we can't really use find_transaction from transaction_status API to check status of
+        transaction (after expiration) because it holds transactions for one hour before it flag it as expired. Instead
+        of this is_known_transaction from database API is used.
     '''
     assert node.api.database.is_known_transaction(id=transaction_id)['is_known'] is False
 

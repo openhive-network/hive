@@ -93,7 +93,7 @@ def validate_address(val : str) -> bool:
 		val = val.strip()
 		address, port = val.split(":")
 		port = int(port)
-		
+
 		assert port >= 0
 		assert port < 0xffff
 
@@ -104,7 +104,7 @@ def validate_address(val : str) -> bool:
 				x = int(part)
 				assert x >= 0
 				assert x <= 255
-		
+
 		try:
 			validate_address(address)
 		except:

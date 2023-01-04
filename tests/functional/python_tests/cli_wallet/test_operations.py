@@ -12,7 +12,7 @@ def test_delayed_voting(wallet: tt.Wallet, funded_account: funded_account_info, 
   votes_before = count_votes()
   wallet.api.transfer_to_vesting(from_=creator.name, to=account.name, amount=tt.Asset.Test(1))
   votes_after = count_votes()
-  
+
   assert votes_after > votes_before
 
 
@@ -29,11 +29,11 @@ def test_get_open_orders(wallet: tt.Wallet, funded_account: funded_account_info)
 
   tt.logger.info( f"testing buy order: {AMOUNT_TO_SELL_1} for {MIN_TO_RECEIVE_1} created by user {user.name}" )
   wallet.api.create_order(
-    owner=user.name, 
-    order_id=1, 
-    amount_to_sell=AMOUNT_TO_SELL_1, 
-    min_to_receive=MIN_TO_RECEIVE_1, 
-    fill_or_kill=False, 
+    owner=user.name,
+    order_id=1,
+    amount_to_sell=AMOUNT_TO_SELL_1,
+    min_to_receive=MIN_TO_RECEIVE_1,
+    fill_or_kill=False,
     expiration=9999
   )
   result_sell = wallet.api.get_open_orders(accountname=user.name)
@@ -47,11 +47,11 @@ def test_get_open_orders(wallet: tt.Wallet, funded_account: funded_account_info)
 
   tt.logger.info( f"testing buy order: {AMOUNT_TO_SELL_2} for {MIN_TO_RECEIVE_2} created by user {user.name}" )
   wallet.api.create_order(
-    owner=user.name, 
+    owner=user.name,
     order_id=2,
-    amount_to_sell=AMOUNT_TO_SELL_2, 
-    min_to_receive=MIN_TO_RECEIVE_2, 
-    fill_or_kill=False, 
+    amount_to_sell=AMOUNT_TO_SELL_2,
+    min_to_receive=MIN_TO_RECEIVE_2,
+    fill_or_kill=False,
     expiration=9999
   )
   result_buy = wallet.api.get_open_orders(accountname=user.name)
@@ -73,11 +73,11 @@ def test_create_recurent_transfer(wallet: tt.Wallet, funded_account: funded_acco
   tt.logger.info(f"recurrent_transfers: {recurrent_transfers_before_count}")
 
   wallet.api.recurrent_transfer(
-    from_=creator.name, 
-    to=receiver.name, 
-    amount=AMOUNT, 
-    memo=MEMO, 
-    recurrence=RECURRENCE, 
+    from_=creator.name,
+    to=receiver.name,
+    amount=AMOUNT,
+    memo=MEMO,
+    recurrence=RECURRENCE,
     executions=EXECUTIONS
   )
 

@@ -18,9 +18,9 @@ logger.setLevel(LOG_LEVEL)
 def create_accounts(node, creator, accounts):
     for account in accounts:
         logger.info("Creating account: {}".format(account['name']))
-        node.create_account(account['name'], 
-            owner_key=account['public_key'], 
-            active_key=account['public_key'], 
+        node.create_account(account['name'],
+            owner_key=account['public_key'],
+            active_key=account['public_key'],
             posting_key=account['public_key'],
             memo_key=account['public_key'],
             store_keys = False,
@@ -44,7 +44,7 @@ def transfer_to_vesting(node, from_account, accounts, amount, asset):
 def transfer_assets_to_accounts(node, from_account, accounts, amount, asset):
     from beem.account import Account
     for acnt in accounts:
-        logger.info("Transfer from {} to {} amount {} {}".format(from_account, 
+        logger.info("Transfer from {} to {} amount {} {}".format(from_account,
             acnt['name'], amount, asset)
         )
         acc = Account(from_account, hive_instance=node)
@@ -60,16 +60,16 @@ def create_posts(node, accounts):
     logger.info("Creating posts...")
     for acnt in accounts:
         logger.info("New post ==> ({},{},{},{},{})".format(
-            "Post title [{}]".format(acnt['name']), 
-            "Post body [{}]".format(acnt['name']), 
-            acnt['name'], 
-            get_post_permlink(acnt['name']), 
+            "Post title [{}]".format(acnt['name']),
+            "Post body [{}]".format(acnt['name']),
+            acnt['name'],
+            get_post_permlink(acnt['name']),
             "firstpost"
         ))
-        node.post("Post title [{}]".format(acnt['name']), 
-            "Post body [{}]".format(acnt['name']), 
-            author=acnt['name'], 
-            permlink = get_post_permlink(acnt['name']), 
+        node.post("Post title [{}]".format(acnt['name']),
+            "Post body [{}]".format(acnt['name']),
+            author=acnt['name'],
+            permlink = get_post_permlink(acnt['name']),
             reply_identifier=None,
             json_metadata=None,
             comment_options=None,

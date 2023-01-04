@@ -62,7 +62,7 @@ def get_vops(range_begin : int, range_end : int, start_from_id : int, limit : in
 
 	from requests import post
 	from json import dumps
-	
+
 	# from time import sleep
 	# sleep(0.25)
 
@@ -81,7 +81,7 @@ def get_vops(range_begin : int, range_end : int, start_from_id : int, limit : in
 		],
 		"id":1
 	}
-	
+
 	ret = post(f"http://{config.webserver_http_endpoint}", data=dumps(data))
 	if ret.status_code == 200:
 		return ret.json()['result']
@@ -129,7 +129,7 @@ def get_vops_one_by_one(range_begin : int, range_end : int) -> list:
 def check_range(range_begin : int, blocks : int):
 	from operator import itemgetter
 	from json import dump
-	
+
 	range_end = range_begin + blocks + 1
 
 	print(f"gathering blocks in range [ {range_begin} ; {range_end} )")

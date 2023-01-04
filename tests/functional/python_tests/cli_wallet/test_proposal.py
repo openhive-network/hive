@@ -114,7 +114,7 @@ def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: funded_account_i
   tt.logger.info("testing updating the proposal without the end date")
   from copy import deepcopy
   last_date = deepcopy(update_args['end_date'])
-  
+
   current_daily_pay -= tt.Asset.Tbd(1)
   tt.logger.info(current_daily_pay)
   update_args['daily_pay'] = str(current_daily_pay)
