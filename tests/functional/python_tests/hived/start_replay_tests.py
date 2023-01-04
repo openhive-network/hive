@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
-import sys
-import os
-import tempfile
 import argparse
+import os
 import subprocess as sub
+import sys
+import tempfile
 
 sys.path.append("../../")
 
@@ -55,9 +55,10 @@ config.update_plugins(
     ]
 )
 
-# creating working dir
-from uuid import uuid5, NAMESPACE_URL
 from random import randint
+
+# creating working dir
+from uuid import NAMESPACE_URL, uuid5
 
 work_dir = os.path.join(
     tempfile.gettempdir(), uuid5(NAMESPACE_URL, str(randint(0, 1000000))).__str__().replace("-", "")
@@ -164,7 +165,7 @@ except Exception as exception:
 
 finally:
 
-    from psutil import pid_exists, Process
+    from psutil import Process, pid_exists
 
     while pid_exists(PID):
         proc = Process(PID)

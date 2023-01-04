@@ -1,12 +1,10 @@
-from pathlib import Path
 import re
+from pathlib import Path
 
 import pytest
 
 import test_tools as tt
-
 from hive_local_tools.api.message_format.cli_wallet import verify_text_patterns
-
 
 __PATTERNS_DIRECTORY = Path(__file__).with_name("gethelp_response_patterns")
 

@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from beem.account import Account
 import beem.exceptions
 import pytest
+from beem.account import Account
 
 import test_tools as tt
 

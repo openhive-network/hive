@@ -4,14 +4,14 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.cli_wallet import (
-    prepared_proposal_data_with_id,
-    get_list_proposal_args,
-    get_list_proposal_votes_args,
-    funded_account_info,
     find_proposals_by_creator_name,
     find_proposals_by_voter_name,
-    prepare_proposal,
     format_datetime,
+    funded_account_info,
+    get_list_proposal_args,
+    get_list_proposal_votes_args,
+    prepare_proposal,
+    prepared_proposal_data_with_id,
 )
 
 

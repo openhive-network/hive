@@ -3,7 +3,6 @@ from typing import Dict, Optional
 import pytest
 
 import test_tools as tt
-
 from shared_tools.complex_networks import init_network
 
 

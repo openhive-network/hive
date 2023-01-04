@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List
 
 import test_tools as tt
+
 from .complex_networks_helper_functions import connect_sub_networks
 
 

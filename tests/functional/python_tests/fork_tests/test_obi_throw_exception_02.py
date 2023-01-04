@@ -1,14 +1,13 @@
 import time
 
 import test_tools as tt
-
 from shared_tools.complex_networks_helper_functions import (
-    wait,
+    NodeLog,
     get_last_head_block_number,
     get_last_irreversible_block_num,
+    wait,
     wait_for_final_block,
     wait_for_specific_witnesses,
-    NodeLog,
 )
 
 

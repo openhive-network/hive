@@ -1,7 +1,8 @@
 import json
-import pytest
 import os
 import subprocess
+
+import pytest
 
 import test_tools as tt
 

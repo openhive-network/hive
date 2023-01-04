@@ -1,5 +1,5 @@
-from random import randint
 from datetime import datetime, timedelta
+from random import randint
 
 import test_tools as tt
 

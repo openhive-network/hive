@@ -1,5 +1,4 @@
 import test_tools as tt
-
 from hive_local_tools.functional.python.cli_wallet import funded_account_info
 
 

@@ -26,8 +26,8 @@ def test_snapshots_content_binary(block_log: Path):
 
 def test_snapshots_existing_dir(block_log: Path, block_log_length: int):
     def clear_state(node):
-        from shutil import rmtree
         from os.path import join as join_paths
+        from shutil import rmtree
 
         rmtree(join_paths(str(node.directory), "blockchain", "shared_memory.bin"), ignore_errors=True)
 

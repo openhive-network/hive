@@ -1,6 +1,6 @@
+import math
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-import math
 from pathlib import Path
 from typing import Final, List
 

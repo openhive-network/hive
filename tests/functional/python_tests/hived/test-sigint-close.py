@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-import os
 import argparse
-import time
-import subprocess
-import random
+import os
 import os.path
-from subprocess import check_output
+import random
+import subprocess
+import time
 from datetime import datetime
+from subprocess import check_output
 
 cnt = 0
 

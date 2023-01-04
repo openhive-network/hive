@@ -2,16 +2,13 @@ import datetime
 from datetime import timedelta
 from uuid import uuid4
 
+import dateutil.parser
 from beem import Hive
 from beem.account import Account
-from beembase.operations import Create_proposal
-from beembase.operations import Remove_proposal
-from beembase.operations import Update_proposal
-from beembase.operations import Update_proposal_votes
-import dateutil.parser
+from beembase.operations import Create_proposal, Remove_proposal, Update_proposal, Update_proposal_votes
 
-import test_tools as tt
 import hive_utils
+import test_tools as tt
 from hive_local_tools.functional.python.beem import NodeClientMaker
 from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR, TREASURY, test_utils
 

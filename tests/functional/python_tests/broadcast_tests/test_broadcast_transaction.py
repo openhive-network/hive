@@ -1,5 +1,6 @@
-import pytest
 from time import sleep
+
+import pytest
 
 import test_tools as tt
 

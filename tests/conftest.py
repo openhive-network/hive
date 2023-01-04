@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import List, NoReturn, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, NoReturn, Optional, Union
 
 import pytest
+
 import test_tools as tt
 from test_tools.__private.scope.scope_fixtures import *  # pylint: disable=wildcard-import, unused-wildcard-import
 

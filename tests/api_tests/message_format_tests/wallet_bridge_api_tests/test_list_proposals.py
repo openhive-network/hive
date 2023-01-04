@@ -1,7 +1,6 @@
 import pytest
 
 import test_tools as tt
-
 from hive_local_tools.api.message_format import as_string
 from hive_local_tools.api.message_format.wallet_bridge_api import create_accounts_with_vests_and_tbd, prepare_proposals
 

@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-import sys
-import os
-import tempfile
 import argparse
+import os
+import sys
+import tempfile
 from threading import Thread
 
 sys.path.append("../../../")
@@ -11,7 +11,6 @@ sys.path.append("../../../")
 import hive_utils
 from hive_utils.resources.configini import config as configuration
 from hive_utils.resources.configini import validate_address
-
 
 # https://developers.hive.io/tutorials-recipes/paginated-api-methods.html#account_history_apiget_account_history
 MAX_AT_ONCE = 10000
@@ -41,8 +40,8 @@ assert "account_history_api" in plugins
 class compressed_vop:
     def __init__(self, vop):
         from hashlib import sha512
-        from random import randint
         from json import dumps
+        from random import randint
 
         self.id = "{}_{}_{}".format((~0x8000000000000000) & int(vop["operation_id"]), vop["block"], vop["trx_in_block"])
         self.checksum = sha512(dumps(vop).encode()).hexdigest()
@@ -64,8 +63,9 @@ def compress_vops(data: list) -> list:
 def get_vops(range_begin: int, range_end: int, start_from_id: int, limit: int) -> dict:
     global config
 
-    from requests import post
     from json import dumps
+
+    from requests import post
 
     # from time import sleep
     # sleep(0.25)
@@ -140,8 +140,8 @@ def get_vops_one_by_one(range_begin: int, range_end: int) -> list:
 
 # get same data in given range with diffrent step
 def check_range(range_begin: int, blocks: int):
-    from operator import itemgetter
     from json import dump
+    from operator import itemgetter
 
     range_end = range_begin + blocks + 1
 

@@ -1,7 +1,6 @@
 from typing import List
 
 import pytest
-
 from beem import Hive
 
 from hive_local_tools.functional.python.beem import NodeClientMaker

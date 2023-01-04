@@ -1,5 +1,4 @@
 import test_tools as tt
-
 from shared_tools.complex_networks_helper_functions import assert_no_duplicates
 
 

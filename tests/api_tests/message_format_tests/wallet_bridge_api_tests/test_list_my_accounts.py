@@ -2,7 +2,6 @@ import pytest
 
 import test_tools as tt
 
-
 ACCOUNTS = [f"account-{i}" for i in range(10)]
 
 

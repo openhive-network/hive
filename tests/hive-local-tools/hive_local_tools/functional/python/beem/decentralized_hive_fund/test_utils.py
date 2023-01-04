@@ -1,8 +1,7 @@
 from typing import Final
 
-import test_tools as tt
-
 import hive_utils
+import test_tools as tt
 
 STACK_LEVEL: Final[int] = 2
 

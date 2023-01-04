@@ -1,10 +1,9 @@
 import pytest
 
 import test_tools as tt
-
-from .block_log.generate_block_log import ACCOUNTS
 from hive_local_tools.api.message_format import as_string
 
+from .block_log.generate_block_log import ACCOUNTS
 
 UINT64_MAX = 2**64 - 1
 

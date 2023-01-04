@@ -1,11 +1,11 @@
 import sys
 
 sys.path.append("../../")
-import hive_utils
-
-from uuid import uuid4
-from time import sleep
 import logging
+from time import sleep
+from uuid import uuid4
+
+import hive_utils
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"

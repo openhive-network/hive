@@ -2,9 +2,8 @@ import filecmp
 import json
 import os
 import shutil
-
-from pathlib import Path
 from distutils.util import strtobool
+from pathlib import Path
 from typing import Final
 
 from hive_local_tools import TESTS_DIR

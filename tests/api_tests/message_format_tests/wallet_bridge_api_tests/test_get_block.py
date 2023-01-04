@@ -1,7 +1,6 @@
 import pytest
 
 import test_tools as tt
-
 from hive_local_tools.api.message_format import as_string
 
 UINT64_MAX = 2**64 - 1

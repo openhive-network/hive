@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import logging
-from junit_xml import TestCase
-import time
-from typing import TYPE_CHECKING
 import sys
+import time
 import traceback
+from typing import TYPE_CHECKING
+
+from junit_xml import TestCase
 
 from test_tools.__private.communication import CustomJsonEncoder
 
 if TYPE_CHECKING:
     from typing import Union
+
     import test_tools as tt
 
 
@@ -25,8 +27,9 @@ logger.setLevel(DEFAULT_LOG_LEVEL)
 
 
 def send_rpc_query(target_node: str, payload: dict) -> dict:
-    from requests import post
     from json import dumps
+
+    from requests import post
 
     resp = post(target_node, data=dumps(payload, cls=CustomJsonEncoder))
     if resp.status_code != 200:
@@ -49,8 +52,9 @@ def get_current_block_number(source_node) -> int:
         "params": {},
     }
 
-    from requests import post
     from json import dumps, loads
+
+    from requests import post
 
     try:
         resp = post(source_node, data=dumps(payload, cls=CustomJsonEncoder))
@@ -112,6 +116,7 @@ def debug_quick_block_skip(node, debug_key, blocks, safe_block_offset: int = 100
     assert blocks > safe_block_offset
 
     import datetime
+
     import dateutil.parser
 
     now = node.get_dynamic_global_properties(False).get("time", None)
@@ -243,8 +248,8 @@ def wait_for_string_in_file(log_file_name, string, timeout):
     logger.info('Waiting for string "{}" in file {}'.format(string, log_file_name))
     step = 1
     to_timeout = 0.0
-    from time import sleep
     from os.path import exists
+    from time import sleep
 
     while True:
         sleep(step)
@@ -294,7 +299,7 @@ def kill_process(pid_file_name, proc_name, ip_address, port):
     pids = []
     pid_name = None
     try:
-        from os import popen, kill, remove
+        from os import kill, popen, remove
         from os.path import exists
 
         with open(pid_file_name, "r") as pid_file:
@@ -346,6 +351,7 @@ BLOCK_TYPE_IRREVERSIBLE = "within_irreversible_block"
 def block_until_transaction_in_block(node_url, transaction_id, block_type=BLOCK_TYPE_HEADBLOCK, timeout=60.0):
     logger.info("Block until transaction_id: {0} is {1}".format(transaction_id, block_type))
     from time import sleep
+
     from requests import post
 
     step = 1.0
