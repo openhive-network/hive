@@ -77,7 +77,6 @@ namespace fc {
 
 
     template<typename Stream, typename T> void unpack( Stream& s, fc::optional<T>& v, uint32_t depth = 0 );
-    template<typename Stream, typename T> void unpack( Stream& s, const T& v, uint32_t depth = 0 );
     template<typename Stream, typename T> void pack( Stream& s, const fc::optional<T>& v );
     template<typename Stream, typename T> void pack( Stream& s, const safe<T>& v );
     template<typename Stream, typename T> void unpack( Stream& s, fc::safe<T>& v, uint32_t depth = 0 );
@@ -124,7 +123,6 @@ namespace fc {
     template< typename Stream, typename... Args > void unpack( Stream& s, boost::tuples::tuple< Args... >& var );
 
     template<typename T> inline std::vector<char> pack_to_vector( const T& v );
-    template<typename T> inline T unpack_from_vector( const std::vector<char>& s, uint32_t depth = 0 );
     template<typename T> inline T unpack_from_char_array( const char* d, uint32_t s, uint32_t depth = 0 );
     template<typename T> inline void unpack_from_char_array( const char* d, uint32_t s, T& v, uint32_t depth = 0 );
 } }
