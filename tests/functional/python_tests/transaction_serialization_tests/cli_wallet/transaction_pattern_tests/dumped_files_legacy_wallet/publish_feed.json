@@ -1,1 +1,21 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[["feed_publish",{"publisher":"initminer","exchange_rate":{"base":"0.001 TBD","quote":"0.001 TESTS"}}]],"extensions":[],"signatures":["204c7ab70ac6066f0383971080764c14ef31a174e66ad84fcb0c13a46dd7a4c15317f123f41617eb2cc86b2e38d5d53be3c1dc510d08be6ddf6804d4159f2d43d0"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    [
+      "feed_publish",
+      {
+        "exchange_rate": {
+          "base": "0.001 TBD",
+          "quote": "0.001 TESTS"
+        },
+        "publisher": "initminer"
+      }
+    ]
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "204c7ab70ac6066f0383971080764c14ef31a174e66ad84fcb0c13a46dd7a4c15317f123f41617eb2cc86b2e38d5d53be3c1dc510d08be6ddf6804d4159f2d43d0"
+  ]
+}

@@ -1,1 +1,73 @@
-{"accounts": [{"name": "bob", "balance": {"amount": "100000", "precision": 3, "nai": "@@000000021"}, "vesting_shares": {"amount": "23842996", "precision": 6, "nai": "@@000000037"}, "hbd_balance": {"amount": "120000", "precision": 3, "nai": "@@000000013"}}, {"name": "carol", "balance": {"amount": "200000", "precision": 3, "nai": "@@000000021"}, "vesting_shares": {"amount": "45370444", "precision": 6, "nai": "@@000000037"}, "hbd_balance": {"amount": "220000", "precision": 3, "nai": "@@000000013"}}, {"name": "dan", "balance": {"amount": "300000", "precision": 3, "nai": "@@000000021"}, "vesting_shares": {"amount": "66865772", "precision": 6, "nai": "@@000000037"}, "hbd_balance": {"amount": "320000", "precision": 3, "nai": "@@000000013"}}], "total_hive": {"amount": "600000", "precision": 3, "nai": "@@000000021"}, "total_vest": {"amount": "136079212", "precision": 6, "nai": "@@000000037"}, "total_hbd": {"amount": "660000", "precision": 3, "nai": "@@000000013"}}
+{
+  "accounts": [
+    {
+      "balance": {
+        "amount": "100000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "hbd_balance": {
+        "amount": "120000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "name": "bob",
+      "vesting_shares": {
+        "amount": "23842996",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "balance": {
+        "amount": "200000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "hbd_balance": {
+        "amount": "220000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "name": "carol",
+      "vesting_shares": {
+        "amount": "45370444",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    },
+    {
+      "balance": {
+        "amount": "300000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "hbd_balance": {
+        "amount": "320000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "name": "dan",
+      "vesting_shares": {
+        "amount": "66865772",
+        "nai": "@@000000037",
+        "precision": 6
+      }
+    }
+  ],
+  "total_hbd": {
+    "amount": "660000",
+    "nai": "@@000000013",
+    "precision": 3
+  },
+  "total_hive": {
+    "amount": "600000",
+    "nai": "@@000000021",
+    "precision": 3
+  },
+  "total_vest": {
+    "amount": "136079212",
+    "nai": "@@000000037",
+    "precision": 6
+  }
+}

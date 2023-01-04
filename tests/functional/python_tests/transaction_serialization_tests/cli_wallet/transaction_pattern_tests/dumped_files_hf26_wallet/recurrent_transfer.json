@@ -1,1 +1,27 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[{"type":"recurrent_transfer_operation","value":{"from":"alice","to":"bob","amount":{"amount":"5000","precision":3,"nai":"@@000000021"},"memo":"memo","recurrence":720,"executions":12,"extensions":[]}}],"extensions":[],"signatures":["1f0d8e2122ed0e751be98e94c5f410cc14b7d1aa65140a638e86aa1c2e124175e912a83a4d15db1bc19898d494b4a9c4d6fe52aac33c5047bd46d5a8aab4bd3dca"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "recurrent_transfer_operation",
+      "value": {
+        "amount": {
+          "amount": "5000",
+          "nai": "@@000000021",
+          "precision": 3
+        },
+        "executions": 12,
+        "extensions": [],
+        "from": "alice",
+        "memo": "memo",
+        "recurrence": 720,
+        "to": "bob"
+      }
+    }
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f0d8e2122ed0e751be98e94c5f410cc14b7d1aa65140a638e86aa1c2e124175e912a83a4d15db1bc19898d494b4a9c4d6fe52aac33c5047bd46d5a8aab4bd3dca"
+  ]
+}

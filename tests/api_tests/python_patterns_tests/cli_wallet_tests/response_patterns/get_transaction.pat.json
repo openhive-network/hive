@@ -1,1 +1,23 @@
-{"ref_block_num": 13031, "ref_block_prefix": 3958853557, "expiration": "2016-09-15T18:55:45", "operations": [["vote", {"voter": "liondani", "author": "gtg", "permlink": "re-chitty-a-balanced-voting-system-is-impossible-with-current-witness-s-payouts-20160915t141551322z", "weight": 10000}]], "extensions": [], "signatures": ["202545a719ec89f6606d0444a6a148cf8a85ce344d9efa99145e0911c43e95ef8744a5adf6a6fc339f75966b5fc0fe309609d90a99eca03fcbd01fa2eb2fe99646"], "transaction_id": "82d2c772db5312024f572c9dfbe926e45391f8e9", "block_num": 4999013, "transaction_num": 2}
+{
+  "block_num": 4999013,
+  "expiration": "2016-09-15T18:55:45",
+  "extensions": [],
+  "operations": [
+    [
+      "vote",
+      {
+        "author": "gtg",
+        "permlink": "re-chitty-a-balanced-voting-system-is-impossible-with-current-witness-s-payouts-20160915t141551322z",
+        "voter": "liondani",
+        "weight": 10000
+      }
+    ]
+  ],
+  "ref_block_num": 13031,
+  "ref_block_prefix": 3958853557,
+  "signatures": [
+    "202545a719ec89f6606d0444a6a148cf8a85ce344d9efa99145e0911c43e95ef8744a5adf6a6fc339f75966b5fc0fe309609d90a99eca03fcbd01fa2eb2fe99646"
+  ],
+  "transaction_id": "82d2c772db5312024f572c9dfbe926e45391f8e9",
+  "transaction_num": 2
+}

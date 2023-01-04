@@ -1,1 +1,22 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[["limit_order_create",{"owner":"alice","orderid":1000,"amount_to_sell":"1.000 TESTS","min_to_receive":"1.000 TBD","fill_or_kill":false,"expiration":"2023-01-02T11:43:07"}]],"extensions":[],"signatures":["1f7d68b0317c586119db4f8309070e204417e7e9ed23c989be04f384aae0c64b116abb02cb1892b93586eb26b47f227ac3bb3a713ca9917583619052457738ab1c"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    [
+      "limit_order_create",
+      {
+        "amount_to_sell": "1.000 TESTS",
+        "expiration": "2023-01-02T11:43:07",
+        "fill_or_kill": false,
+        "min_to_receive": "1.000 TBD",
+        "orderid": 1000,
+        "owner": "alice"
+      }
+    ]
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f7d68b0317c586119db4f8309070e204417e7e9ed23c989be04f384aae0c64b116abb02cb1892b93586eb26b47f227ac3bb3a713ca9917583619052457738ab1c"
+  ]
+}

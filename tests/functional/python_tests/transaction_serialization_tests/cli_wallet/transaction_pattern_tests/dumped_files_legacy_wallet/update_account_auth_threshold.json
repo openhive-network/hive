@@ -1,1 +1,29 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[["account_update",{"account":"alice","posting":{"weight_threshold":4,"account_auths":[],"key_auths":[["TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",1]]},"memo_key":"TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW","json_metadata":"{}"}]],"extensions":[],"signatures":["1f78c3150e887d048d9830bfe3dfd33b75a6a3411da79ec7f0f60793b1a7fc31ba46da3fabc83a2dbb2ad986941de3e09feb3a74236e8802ddcf8ca171031638ff"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    [
+      "account_update",
+      {
+        "account": "alice",
+        "json_metadata": "{}",
+        "memo_key": "TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",
+        "posting": {
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",
+              1
+            ]
+          ],
+          "weight_threshold": 4
+        }
+      }
+    ]
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f78c3150e887d048d9830bfe3dfd33b75a6a3411da79ec7f0f60793b1a7fc31ba46da3fabc83a2dbb2ad986941de3e09feb3a74236e8802ddcf8ca171031638ff"
+  ]
+}

@@ -1,1 +1,34 @@
-{"orders": [{"id": 0, "price": "0.57144095717010579", "quantity": {"amount": "11534", "precision": 3, "nai": "@@000000021"}, "type": "SELL"}, {"id": 1, "price": "0.57577002053388093", "quantity": {"amount": "12175", "precision": 3, "nai": "@@000000021"}, "type": "SELL"}, {"id": 2, "price": "0.56793988728866629", "quantity": {"amount": "907", "precision": 3, "nai": "@@000000013"}, "type": "BUY"}]}
+{
+  "orders": [
+    {
+      "id": 0,
+      "price": "0.57144095717010579",
+      "quantity": {
+        "amount": "11534",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "type": "SELL"
+    },
+    {
+      "id": 1,
+      "price": "0.57577002053388093",
+      "quantity": {
+        "amount": "12175",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "type": "SELL"
+    },
+    {
+      "id": 2,
+      "price": "0.56793988728866629",
+      "quantity": {
+        "amount": "907",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "type": "BUY"
+    }
+  ]
+}

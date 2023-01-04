@@ -1,1 +1,33 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[{"type":"update_proposal_operation","value":{"proposal_id":0,"creator":"alice","daily_pay":{"amount":"10000","precision":3,"nai":"@@000000013"},"subject":"subject-1","permlink":"permlink","extensions":[{"type":"update_proposal_end_date","value":{"end_date":"2031-05-01T00:00:00"}}]}}],"extensions":[],"signatures":["1f432048bcc32a9dd266a086cc2be7185405b9f0d6bce2688acbc88397099f82680ba99bce364035e2e435843600fd0057cc8884733159198c86f9c4e65926734d"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "update_proposal_operation",
+      "value": {
+        "creator": "alice",
+        "daily_pay": {
+          "amount": "10000",
+          "nai": "@@000000013",
+          "precision": 3
+        },
+        "extensions": [
+          {
+            "type": "update_proposal_end_date",
+            "value": {
+              "end_date": "2031-05-01T00:00:00"
+            }
+          }
+        ],
+        "permlink": "permlink",
+        "proposal_id": 0,
+        "subject": "subject-1"
+      }
+    }
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f432048bcc32a9dd266a086cc2be7185405b9f0d6bce2688acbc88397099f82680ba99bce364035e2e435843600fd0057cc8884733159198c86f9c4e65926734d"
+  ]
+}

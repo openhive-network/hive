@@ -1,1 +1,18 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[{"type":"decline_voting_rights_operation","value":{"account":"initminer","decline":true}}],"extensions":[],"signatures":["1f64a399268db2a3875ae35fcd2249df9dd6d9d75f732aa985ee978c1f93b4caa023f8c22598dd1b144990f407d5158df625bf35ff5729f4e44cf7dc36922ef543"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "decline_voting_rights_operation",
+      "value": {
+        "account": "initminer",
+        "decline": true
+      }
+    }
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f64a399268db2a3875ae35fcd2249df9dd6d9d75f732aa985ee978c1f93b4caa023f8c22598dd1b144990f407d5158df625bf35ff5729f4e44cf7dc36922ef543"
+  ]
+}

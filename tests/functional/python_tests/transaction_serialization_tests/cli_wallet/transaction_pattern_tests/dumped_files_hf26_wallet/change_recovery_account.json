@@ -1,1 +1,19 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[{"type":"change_recovery_account_operation","value":{"account_to_recover":"initminer","new_recovery_account":"alice","extensions":[]}}],"extensions":[],"signatures":["200f607e830dbeb9ea91ae60045b26954316f3a524a5581d22a179e0ea478780324f0917ccbe886a52cec134b75cd5375141cd3f8e99a4286e809e879fbc8f0cf2"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "change_recovery_account_operation",
+      "value": {
+        "account_to_recover": "initminer",
+        "extensions": [],
+        "new_recovery_account": "alice"
+      }
+    }
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "200f607e830dbeb9ea91ae60045b26954316f3a524a5581d22a179e0ea478780324f0917ccbe886a52cec134b75cd5375141cd3f8e99a4286e809e879fbc8f0cf2"
+  ]
+}

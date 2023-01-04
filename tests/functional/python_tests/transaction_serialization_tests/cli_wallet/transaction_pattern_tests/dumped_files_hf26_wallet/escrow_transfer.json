@@ -1,1 +1,38 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[{"type":"escrow_transfer_operation","value":{"from":"initminer","to":"alice","hbd_amount":{"amount":"10000","precision":3,"nai":"@@000000013"},"hive_amount":{"amount":"10000","precision":3,"nai":"@@000000021"},"escrow_id":10,"agent":"bob","fee":{"amount":"10000","precision":3,"nai":"@@000000013"},"json_meta":"{}","ratification_deadline":"2030-01-01T00:00:00","escrow_expiration":"2030-06-01T00:00:00"}}],"extensions":[],"signatures":["1f2ed864ad5a324fb075cd16fdbc8687a917e6e2a8a232973d30dffe7c101192ca13b2edee101d4c62c18e11beb6e312c922d510891455a807c79881d62bf25133"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "escrow_transfer_operation",
+      "value": {
+        "agent": "bob",
+        "escrow_expiration": "2030-06-01T00:00:00",
+        "escrow_id": 10,
+        "fee": {
+          "amount": "10000",
+          "nai": "@@000000013",
+          "precision": 3
+        },
+        "from": "initminer",
+        "hbd_amount": {
+          "amount": "10000",
+          "nai": "@@000000013",
+          "precision": 3
+        },
+        "hive_amount": {
+          "amount": "10000",
+          "nai": "@@000000021",
+          "precision": 3
+        },
+        "json_meta": "{}",
+        "ratification_deadline": "2030-01-01T00:00:00",
+        "to": "alice"
+      }
+    }
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f2ed864ad5a324fb075cd16fdbc8687a917e6e2a8a232973d30dffe7c101192ca13b2edee101d4c62c18e11beb6e312c922d510891455a807c79881d62bf25133"
+  ]
+}

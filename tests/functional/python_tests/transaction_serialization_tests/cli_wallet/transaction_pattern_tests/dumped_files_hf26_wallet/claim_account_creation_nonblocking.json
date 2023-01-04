@@ -1,1 +1,23 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[{"type":"claim_account_operation","value":{"creator":"initminer","fee":{"amount":"0","precision":3,"nai":"@@000000021"},"extensions":[]}}],"extensions":[],"signatures":["204528a62340c17a3deab0d8787177406a0c570e9d7dc58031a0cf3a413ba5b37e55dd8d70338493e5d819785150d31ac17968caa8741f161123a39d07d9ae37b5"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "claim_account_operation",
+      "value": {
+        "creator": "initminer",
+        "extensions": [],
+        "fee": {
+          "amount": "0",
+          "nai": "@@000000021",
+          "precision": 3
+        }
+      }
+    }
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "204528a62340c17a3deab0d8787177406a0c570e9d7dc58031a0cf3a413ba5b37e55dd8d70338493e5d819785150d31ac17968caa8741f161123a39d07d9ae37b5"
+  ]
+}

@@ -1,1 +1,21 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[{"type":"escrow_dispute_operation","value":{"from":"initminer","to":"alice","agent":"bob","who":"initminer","escrow_id":3}}],"extensions":[],"signatures":["1f3b9da699404a04732eccf9716a1f4e7776c55558986f015c03c36eea3a10c45b180e95ec63900c6b5a99e4dcf11a8aafa851f835fe31b348314d022d68c435a0"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "escrow_dispute_operation",
+      "value": {
+        "agent": "bob",
+        "escrow_id": 3,
+        "from": "initminer",
+        "to": "alice",
+        "who": "initminer"
+      }
+    }
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f3b9da699404a04732eccf9716a1f4e7776c55558986f015c03c36eea3a10c45b180e95ec63900c6b5a99e4dcf11a8aafa851f835fe31b348314d022d68c435a0"
+  ]
+}

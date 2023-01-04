@@ -12,5 +12,8 @@ repos:
         args: [ "--unsafe" ]
       - id: check-json
         exclude: ^tests/unit/|^tests/api_tests/pattern_tests/tavern/
+      - id: pretty-format-json
+        args: [ "--autofix" ]
+        exclude: ^tests/unit/|^tests/api_tests/pattern_tests/tavern/
       - id: trailing-whitespace
       - id: end-of-file-fixer

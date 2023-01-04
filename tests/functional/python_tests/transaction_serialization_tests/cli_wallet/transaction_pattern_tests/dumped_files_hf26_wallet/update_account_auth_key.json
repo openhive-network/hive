@@ -1,1 +1,29 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[{"type":"account_update_operation","value":{"account":"alice","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",3]]},"memo_key":"TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW","json_metadata":"{}"}}],"extensions":[],"signatures":["2003ae94258890d3ec23257cb7367c9566da7b022d38dbc4d7cfeb54f3baf4f2ea19b67b0d219430a0ac9d4301c9fcb34b13a6c6d1d5428cef8da5861cfc4b7a78"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "account_update_operation",
+      "value": {
+        "account": "alice",
+        "json_metadata": "{}",
+        "memo_key": "TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",
+        "owner": {
+          "account_auths": [],
+          "key_auths": [
+            [
+              "TST5P8syqoj7itoDjbtDvCMCb5W3BNJtUjws9v7TDNZKqBLmp3pQW",
+              3
+            ]
+          ],
+          "weight_threshold": 1
+        }
+      }
+    }
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "2003ae94258890d3ec23257cb7367c9566da7b022d38dbc4d7cfeb54f3baf4f2ea19b67b0d219430a0ac9d4301c9fcb34b13a6c6d1d5428cef8da5861cfc4b7a78"
+  ]
+}

@@ -1,1 +1,88 @@
-{"bids": [{"hive": {"amount": "100000", "precision": 3, "nai": "@@000000021"}, "hbd": {"amount": "20000", "precision": 3, "nai": "@@000000013"}, "sum_hbd": {"amount": "20000", "precision": 3, "nai": "@@000000013"}, "price": "0.20000000000000001"}, {"hive": {"amount": "300000", "precision": 3, "nai": "@@000000021"}, "hbd": {"amount": "50000", "precision": 3, "nai": "@@000000013"}, "sum_hbd": {"amount": "70000", "precision": 3, "nai": "@@000000013"}, "price": "0.16666666666666666"}], "asks": [{"hive": {"amount": "100000", "precision": 3, "nai": "@@000000021"}, "hbd": {"amount": "40000", "precision": 3, "nai": "@@000000013"}, "sum_hbd": {"amount": "40000", "precision": 3, "nai": "@@000000013"}, "price": "0.40000000000000002"}, {"hive": {"amount": "100000", "precision": 3, "nai": "@@000000021"}, "hbd": {"amount": "50000", "precision": 3, "nai": "@@000000013"}, "sum_hbd": {"amount": "90000", "precision": 3, "nai": "@@000000013"}, "price": "0.50000000000000000"}], "bid_total": {"amount": "70000", "precision": 3, "nai": "@@000000013"}, "ask_total": {"amount": "90000", "precision": 3, "nai": "@@000000013"}}
+{
+  "ask_total": {
+    "amount": "90000",
+    "nai": "@@000000013",
+    "precision": 3
+  },
+  "asks": [
+    {
+      "hbd": {
+        "amount": "40000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive": {
+        "amount": "100000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "price": "0.40000000000000002",
+      "sum_hbd": {
+        "amount": "40000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "hbd": {
+        "amount": "50000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive": {
+        "amount": "100000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "price": "0.50000000000000000",
+      "sum_hbd": {
+        "amount": "90000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    }
+  ],
+  "bid_total": {
+    "amount": "70000",
+    "nai": "@@000000013",
+    "precision": 3
+  },
+  "bids": [
+    {
+      "hbd": {
+        "amount": "20000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive": {
+        "amount": "100000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "price": "0.20000000000000001",
+      "sum_hbd": {
+        "amount": "20000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    },
+    {
+      "hbd": {
+        "amount": "50000",
+        "nai": "@@000000013",
+        "precision": 3
+      },
+      "hive": {
+        "amount": "300000",
+        "nai": "@@000000021",
+        "precision": 3
+      },
+      "price": "0.16666666666666666",
+      "sum_hbd": {
+        "amount": "70000",
+        "nai": "@@000000013",
+        "precision": 3
+      }
+    }
+  ]
+}

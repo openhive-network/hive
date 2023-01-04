@@ -1,1 +1,19 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[["transfer_to_vesting",{"from":"initminer","to":"alice","amount":"100.000 TESTS"}]],"extensions":[],"signatures":["1f60693643e20cd9cde122bf21fb8b8cf447e0e2f3c9a01490ab8a9166fc5c04e169c16353fc440c9e99bc28dbc1d80cdcce0ffcd7351350231f89363b18bb5d83"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    [
+      "transfer_to_vesting",
+      {
+        "amount": "100.000 TESTS",
+        "from": "initminer",
+        "to": "alice"
+      }
+    ]
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f60693643e20cd9cde122bf21fb8b8cf447e0e2f3c9a01490ab8a9166fc5c04e169c16353fc440c9e99bc28dbc1d80cdcce0ffcd7351350231f89363b18bb5d83"
+  ]
+}

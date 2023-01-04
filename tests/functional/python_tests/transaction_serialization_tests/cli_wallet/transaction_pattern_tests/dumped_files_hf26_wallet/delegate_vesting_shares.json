@@ -1,1 +1,23 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[{"type":"delegate_vesting_shares_operation","value":{"delegator":"alice","delegatee":"bob","vesting_shares":{"amount":"1000000","precision":6,"nai":"@@000000037"}}}],"extensions":[],"signatures":["201d633eccd541a95a1202b90eb5ca463587df8b605992b388abb8644df2f564453dc402633e17e7256517eaccc7c4c921c623f360d75222a1fe1fa1b4af95d81b"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "delegate_vesting_shares_operation",
+      "value": {
+        "delegatee": "bob",
+        "delegator": "alice",
+        "vesting_shares": {
+          "amount": "1000000",
+          "nai": "@@000000037",
+          "precision": 6
+        }
+      }
+    }
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "201d633eccd541a95a1202b90eb5ca463587df8b605992b388abb8644df2f564453dc402633e17e7256517eaccc7c4c921c623f360d75222a1fe1fa1b4af95d81b"
+  ]
+}

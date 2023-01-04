@@ -1,1 +1,24 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[["create_proposal",{"creator":"alice","receiver":"alice","start_date":"2031-01-01T00:00:00","end_date":"2031-06-01T00:00:00","daily_pay":"1000.000 TBD","subject":"subject-1","permlink":"permlink","extensions":[]}]],"extensions":[],"signatures":["20735693b9380a1fb142a6f44c0aea4f00e1e2fd99d52dcd74dba7d35acce1a96346db4846ea03a8f3328c54a13fce380ea0207c12c8ccc0bc7dc3792b341db163"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    [
+      "create_proposal",
+      {
+        "creator": "alice",
+        "daily_pay": "1000.000 TBD",
+        "end_date": "2031-06-01T00:00:00",
+        "extensions": [],
+        "permlink": "permlink",
+        "receiver": "alice",
+        "start_date": "2031-01-01T00:00:00",
+        "subject": "subject-1"
+      }
+    ]
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "20735693b9380a1fb142a6f44c0aea4f00e1e2fd99d52dcd74dba7d35acce1a96346db4846ea03a8f3328c54a13fce380ea0207c12c8ccc0bc7dc3792b341db163"
+  ]
+}

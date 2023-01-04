@@ -1,1 +1,20 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[["set_withdraw_vesting_route",{"from_account":"alice","to_account":"bob","percent":30,"auto_vest":true}]],"extensions":[],"signatures":["1f2235847ae47c61597c7ecd3e2371af149bc7c7e345f063a74b0212b9726d109a45226deb5cc5fdd1a23da62ef99b78bdfa0c43d82aaf287f6b0c31fd3636b202"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    [
+      "set_withdraw_vesting_route",
+      {
+        "auto_vest": true,
+        "from_account": "alice",
+        "percent": 30,
+        "to_account": "bob"
+      }
+    ]
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f2235847ae47c61597c7ecd3e2371af149bc7c7e345f063a74b0212b9726d109a45226deb5cc5fdd1a23da62ef99b78bdfa0c43d82aaf287f6b0c31fd3636b202"
+  ]
+}

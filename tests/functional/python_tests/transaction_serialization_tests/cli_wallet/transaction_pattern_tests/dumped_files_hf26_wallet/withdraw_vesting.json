@@ -1,1 +1,22 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[{"type":"withdraw_vesting_operation","value":{"account":"alice","vesting_shares":{"amount":"10000000","precision":6,"nai":"@@000000037"}}}],"extensions":[],"signatures":["1f6f359c92171fe323d53c9a88d2586ad2ff4bea1f82f1ee2ee6fcb3d9dd2c767649f21a93232b2a846df70e55039b6e4b508a0423e76862646873724cfdb96562"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    {
+      "type": "withdraw_vesting_operation",
+      "value": {
+        "account": "alice",
+        "vesting_shares": {
+          "amount": "10000000",
+          "nai": "@@000000037",
+          "precision": 6
+        }
+      }
+    }
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f6f359c92171fe323d53c9a88d2586ad2ff4bea1f82f1ee2ee6fcb3d9dd2c767649f21a93232b2a846df70e55039b6e4b508a0423e76862646873724cfdb96562"
+  ]
+}

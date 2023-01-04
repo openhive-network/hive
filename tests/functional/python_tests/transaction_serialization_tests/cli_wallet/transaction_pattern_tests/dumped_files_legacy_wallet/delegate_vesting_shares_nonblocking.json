@@ -1,1 +1,19 @@
-{"ref_block_num":30,"ref_block_prefix":1561542156,"expiration":"2023-01-02T11:26:57","operations":[["delegate_vesting_shares",{"delegator":"alice","delegatee":"bob","vesting_shares":"1.000000 VESTS"}]],"extensions":[],"signatures":["1f5ffa40349f17acd27eb467441e8cdc1d7e2c22614a702a4b51b3a28bd37fc6d7483e19629128fdc8e8e2d6d24aae2da4aeaa6d90c5b8a8718bd50d5049200ce3"]}
+{
+  "expiration": "2023-01-02T11:26:57",
+  "extensions": [],
+  "operations": [
+    [
+      "delegate_vesting_shares",
+      {
+        "delegatee": "bob",
+        "delegator": "alice",
+        "vesting_shares": "1.000000 VESTS"
+      }
+    ]
+  ],
+  "ref_block_num": 30,
+  "ref_block_prefix": 1561542156,
+  "signatures": [
+    "1f5ffa40349f17acd27eb467441e8cdc1d7e2c22614a702a4b51b3a28bd37fc6d7483e19629128fdc8e8e2d6d24aae2da4aeaa6d90c5b8a8718bd50d5049200ce3"
+  ]
+}
