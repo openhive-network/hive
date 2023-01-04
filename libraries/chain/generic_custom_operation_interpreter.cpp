@@ -1,3 +1,5 @@
+#include <hive/chain/database.hpp>
+
 #include <hive/chain/generic_custom_operation_interpreter.hpp>
 
 namespace hive { namespace chain {
