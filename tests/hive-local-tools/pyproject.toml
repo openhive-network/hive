@@ -28,4 +28,5 @@ test-tools = { path = "test-tools", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 black = "22.8.0"
+isort = { version = "5.10.1", extras = ["colors"] }
 pre-commit = "2.20.0"
