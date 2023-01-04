@@ -29,3 +29,9 @@ repos:
       - id: black
         name: format code using black
         args: [ "--config", "tests/hive-local-tools/pyproject.toml" ]
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        name: reorder python imports with isort
+        args: [ "--settings", "tests/hive-local-tools/pyproject.toml" ]
