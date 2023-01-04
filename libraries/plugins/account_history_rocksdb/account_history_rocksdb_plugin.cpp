@@ -1285,7 +1285,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     uint32_t last_block_number{0u};
     for(const auto& op : reversibleOps)
     {
-      if (op.is_virtual)
+      if (op.is_virtual && op.id >= lastProcessedOperationId)
       {
         if(limit.valid() && (cntLimit >= *limit))
         {
@@ -1341,7 +1341,7 @@ std::pair< uint32_t, uint64_t > account_history_rocksdb_plugin::impl::enumVirtua
     dlog("Found op. in block: ${b}", ("b", key.first));
 
     /// Accept only virtual operations
-    if(key.second.is_virtual())
+    if(key.second.is_virtual() && key.second.get_id() >= lastProcessedOperationId)
     {
       auto valueSlice = it->value();
       auto opId = id_slice_t::unpackSlice(valueSlice);
