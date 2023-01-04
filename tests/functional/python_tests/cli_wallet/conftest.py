@@ -2,8 +2,13 @@ import pytest
 
 import test_tools as tt
 
-from hive_local_tools.functional.python.cli_wallet import (create_funded_account, prepared_proposal_data_with_id,
-                                                           funded_account_info, prepare_proposal)
+from hive_local_tools.functional.python.cli_wallet import (
+    create_funded_account,
+    prepared_proposal_data_with_id,
+    funded_account_info,
+    prepare_proposal,
+)
+
 
 @pytest.fixture
 def wallet(node) -> tt.Wallet:
@@ -12,7 +17,7 @@ def wallet(node) -> tt.Wallet:
 
 @pytest.fixture
 def creator(node) -> tt.Account:
-    return tt.Account('initminer')
+    return tt.Account("initminer")
 
 
 @pytest.fixture
@@ -21,16 +26,17 @@ def funded_account(creator: tt.Account, wallet: tt.Wallet, id: int = 0) -> funde
 
 
 def create_proposal(wallet: tt.Wallet, funded_account: funded_account_info, creator_is_propsal_creator: bool):
-    prepared_proposal = prepare_proposal(funded_account, 'initial', author_is_creator=creator_is_propsal_creator)
+    prepared_proposal = prepare_proposal(funded_account, "initial", author_is_creator=creator_is_propsal_creator)
     wallet.api.post_comment(**prepared_proposal.post_comment_arguments)
     wallet.api.create_proposal(**prepared_proposal.create_proposal_arguments)
-    response = wallet.api.list_proposals(start=[''], limit=50, order_by='by_creator', order_type='ascending',
-                                         status='all')
+    response = wallet.api.list_proposals(
+        start=[""], limit=50, order_by="by_creator", order_type="ascending", status="all"
+    )
     for prop in response:
-        if prop['permlink'] == prepared_proposal.permlink:
-            return prepared_proposal_data_with_id(base=prepared_proposal, id=prop['id'])
+        if prop["permlink"] == prepared_proposal.permlink:
+            return prepared_proposal_data_with_id(base=prepared_proposal, id=prop["id"])
 
-    assert False, 'proposal not found'
+    assert False, "proposal not found"
 
 
 @pytest.fixture

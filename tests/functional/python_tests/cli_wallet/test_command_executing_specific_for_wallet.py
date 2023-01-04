@@ -21,12 +21,12 @@ def configured_offline_wallet():
     return tt.Wallet()
 
 
-@pytest.fixture(params=['unconfigured_online_wallet', 'unconfigured_offline_wallet'])
+@pytest.fixture(params=["unconfigured_online_wallet", "unconfigured_offline_wallet"])
 def unconfigured_wallet(request):
     return request.getfixturevalue(request.param)
 
 
-@pytest.fixture(params=['wallet', 'configured_offline_wallet'])
+@pytest.fixture(params=["wallet", "configured_offline_wallet"])
 def configured_wallet(request):
     return request.getfixturevalue(request.param)
 
@@ -66,28 +66,28 @@ def test_if_state_is_locked_after_close_and_reopen(unconfigured_wallet: tt.Walle
 
 
 def test_save_wallet_to_file(configured_wallet: tt.Wallet):
-    wallet_file_path = configured_wallet.directory / 'test_file.json'
+    wallet_file_path = configured_wallet.directory / "test_file.json"
     configured_wallet.api.save_wallet_file(str(wallet_file_path))
     assert wallet_file_path.exists()
 
 
 def test_load_wallet_from_file(configured_wallet: tt.Wallet):
-    wallet_file_path = configured_wallet.directory / 'test_file.json'
+    wallet_file_path = configured_wallet.directory / "test_file.json"
     configured_wallet.api.save_wallet_file(str(wallet_file_path))
     assert configured_wallet.api.load_wallet_file(str(wallet_file_path)) is True
 
 
 def test_get_prototype_operation(configured_wallet: tt.Wallet):
-    assert 'comment' in configured_wallet.api.get_prototype_operation('comment_operation')
+    assert "comment" in configured_wallet.api.get_prototype_operation("comment_operation")
 
 
 def test_about(configured_wallet: tt.Wallet):
-    assert 'blockchain_version' in configured_wallet.api.about()
-    assert 'client_version' in configured_wallet.api.about()
+    assert "blockchain_version" in configured_wallet.api.about()
+    assert "client_version" in configured_wallet.api.about()
 
 
 def test_normalize_brain_key(configured_wallet: tt.Wallet):
-    assert configured_wallet.api.normalize_brain_key('     mango Apple CHERRY ') == 'MANGO APPLE CHERRY'
+    assert configured_wallet.api.normalize_brain_key("     mango Apple CHERRY ") == "MANGO APPLE CHERRY"
 
 
 def test_list_keys_and_import_key(unconfigured_wallet: tt.Wallet):
@@ -96,13 +96,13 @@ def test_list_keys_and_import_key(unconfigured_wallet: tt.Wallet):
     keys = unconfigured_wallet.api.list_keys()
     assert len(keys) == 0
 
-    unconfigured_wallet.api.import_key(tt.Account('initminer').private_key)
-    unconfigured_wallet.api.import_key(tt.Account('alice').private_key)
+    unconfigured_wallet.api.import_key(tt.Account("initminer").private_key)
+    unconfigured_wallet.api.import_key(tt.Account("alice").private_key)
 
     keys = unconfigured_wallet.api.list_keys()
     assert len(keys) == 2
-    assert keys[0][1] == tt.Account('alice').private_key
-    assert keys[1][1] == tt.Account('initminer').private_key
+    assert keys[0][1] == tt.Account("alice").private_key
+    assert keys[1][1] == tt.Account("initminer").private_key
 
 
 def test_import_keys(unconfigured_wallet: tt.Wallet):
@@ -111,34 +111,34 @@ def test_import_keys(unconfigured_wallet: tt.Wallet):
     keys = unconfigured_wallet.api.list_keys()
     assert len(keys) == 0
 
-    unconfigured_wallet.api.import_keys([tt.Account('initminer').private_key, tt.Account('alice').private_key])
+    unconfigured_wallet.api.import_keys([tt.Account("initminer").private_key, tt.Account("alice").private_key])
     keys = unconfigured_wallet.api.list_keys()
     assert len(keys) == 2
-    assert keys[0][1] == tt.Account('alice').private_key
-    assert keys[1][1] == tt.Account('initminer').private_key
+    assert keys[0][1] == tt.Account("alice").private_key
+    assert keys[1][1] == tt.Account("initminer").private_key
 
 
 def test_generate_keys(configured_wallet: tt.Wallet):
-    result = configured_wallet.api.get_private_key_from_password('hulabula', 'owner', 'apricot')
+    result = configured_wallet.api.get_private_key_from_password("hulabula", "owner", "apricot")
     assert len(result) == 2
 
-    assert result[0] == 'TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB'
-    assert result[1] == '5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H'
+    assert result[0] == "TST5Fuu7PnmJh5dxguaxMZU1KLGcmAh8xgg3uGMUmV9m62BDQb3kB"
+    assert result[1] == "5HwfhtUXPdxgwukwfjBbwogWfaxrUcrJk6u6oCfv4Uw6DZwqC1H"
 
 
 def test_get_private_key_related_to_public_key(configured_wallet: tt.Wallet):
-    public_key = tt.Account('initminer').public_key
-    private_key = tt.Account('initminer').private_key
+    public_key = tt.Account("initminer").public_key
+    private_key = tt.Account("initminer").private_key
     assert configured_wallet.api.get_private_key(public_key) == private_key
 
 
 def test_suggest_brain_key(configured_wallet: tt.Wallet):
     result = configured_wallet.api.suggest_brain_key()
-    brain_priv_key = result['brain_priv_key'].split(' ')
+    brain_priv_key = result["brain_priv_key"].split(" ")
 
     assert len(brain_priv_key) == 16
-    assert len(result['wif_priv_key']) == 51
-    assert result['pub_key'].startswith('TST')
+    assert len(result["wif_priv_key"]) == 51
+    assert result["pub_key"].startswith("TST")
 
 
 def test_set_transaction_expiration():
@@ -150,23 +150,19 @@ def test_set_transaction_expiration():
     node.run()
     node.wait_for_block_with_number(3)
     node.api.debug_node.debug_generate_blocks(
-        debug_key=tt.Account('initminer').private_key,
-        count=20,
-        skip=0,
-        miss_blocks=0,
-        edit_if_needed=True
+        debug_key=tt.Account("initminer").private_key, count=20, skip=0, miss_blocks=0, edit_if_needed=True
     )
 
     response = node.api.condenser.get_block(23)
-    time_format = '%Y-%m-%dT%H:%M:%S'
-    last_block_time_point = datetime.strptime(response['timestamp'], time_format).replace(tzinfo=timezone.utc)
+    time_format = "%Y-%m-%dT%H:%M:%S"
+    last_block_time_point = datetime.strptime(response["timestamp"], time_format).replace(tzinfo=timezone.utc)
 
     wallet = tt.Wallet(attach_to=node)
 
     set_expiration_time = 1000
     wallet.api.set_transaction_expiration(set_expiration_time)
-    transaction = wallet.api.create_account('initminer', 'alice', '{}', False)
-    expiration_time_point = datetime.strptime(transaction['expiration'], '%Y-%m-%dT%H:%M:%S')
+    transaction = wallet.api.create_account("initminer", "alice", "{}", False)
+    expiration_time_point = datetime.strptime(transaction["expiration"], "%Y-%m-%dT%H:%M:%S")
     expiration_time_point = expiration_time_point.replace(tzinfo=timezone.utc)
     expiration_time = expiration_time_point - last_block_time_point
     assert expiration_time == timedelta(seconds=set_expiration_time)
@@ -174,16 +170,16 @@ def test_set_transaction_expiration():
 
 def test_serialize_transaction(configured_wallet: tt.Wallet, node):
     wallet_temp = tt.Wallet(attach_to=node)
-    transaction = wallet_temp.api.create_account('initminer', 'alice', '{}', False)
+    transaction = wallet_temp.api.create_account("initminer", "alice", "{}", False)
     serialized_transaction = configured_wallet.api.serialize_transaction(transaction)
-    assert serialized_transaction != '00000000000000000000000000'
+    assert serialized_transaction != "00000000000000000000000000"
 
 
 def test_get_encrypted_memo_and_decrypt_memo(configured_wallet: tt.Wallet, node):
     wallet_temp = tt.Wallet(attach_to=node)
-    wallet_temp.api.create_account('initminer', 'alice', '{}')
-    encrypted = wallet_temp.api.get_encrypted_memo('alice', 'initminer', '#this is memo')
-    assert configured_wallet.api.decrypt_memo(encrypted) == 'this is memo'
+    wallet_temp.api.create_account("initminer", "alice", "{}")
+    encrypted = wallet_temp.api.get_encrypted_memo("alice", "initminer", "#this is memo")
+    assert configured_wallet.api.decrypt_memo(encrypted) == "this is memo"
 
 
 def test_exit_from_wallet(configured_wallet: tt.Wallet):

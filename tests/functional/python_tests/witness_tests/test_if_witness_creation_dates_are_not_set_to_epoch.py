@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from hive_local_tools import run_for
 
 
-@run_for('mainnet_5m', 'live_mainnet')
+@run_for("mainnet_5m", "live_mainnet")
 def test_if_witness_creation_dates_are_not_set_to_epoch(node):
     def get_witnesses(first_witness_index: int, amount: int = 1000) -> List[Optional[Dict]]:
         witness_ids = list(range(first_witness_index, first_witness_index + amount))
@@ -15,7 +15,7 @@ def test_if_witness_creation_dates_are_not_set_to_epoch(node):
     while True:
         witnesses = get_witnesses(witness_id)
         if not all(witnesses):
-            all_witnesses.extend(witnesses[:witnesses.index(None)])
+            all_witnesses.extend(witnesses[: witnesses.index(None)])
             break
 
         all_witnesses.extend(witnesses)
@@ -23,4 +23,4 @@ def test_if_witness_creation_dates_are_not_set_to_epoch(node):
         witness_id += 1000
 
     for witness in all_witnesses:
-        assert witness['created'] != '1970-01-01T00:00:00'
+        assert witness["created"] != "1970-01-01T00:00:00"

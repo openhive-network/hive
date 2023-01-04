@@ -7,7 +7,7 @@ from beembase.operations import Create_proposal
 import test_tools as tt
 import hive_utils
 from hive_local_tools.functional.python.beem import NodeClientMaker
-from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR,  TREASURY
+from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR, TREASURY
 
 START_END_SUBJECTS = [
     [1, 3, "Subject001"],
@@ -75,218 +75,156 @@ def create_proposals(node_client, creator_account, receiver_account):
 
 def list_proposals_test(node_client, creator):
     tt.logger.info("Testing direction ascending with start field given")
-    proposals = node_client.rpc.list_proposals(
-        [creator], 1000, "by_creator", "ascending", "all"
-    )
+    proposals = node_client.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
     # we should get len(START_END_SUBJECTS) proposals with wirs proposal with subject Subject001
     # and last with subject Subject009
     assert len(proposals) == len(
         START_END_SUBJECTS
     ), f"Proposals count do not match assumed proposal count {len(proposals)}!={len(START_END_SUBJECTS)}"
     assert (
-            proposals[0]["subject"] == START_END_SUBJECTS[0][2]
+        proposals[0]["subject"] == START_END_SUBJECTS[0][2]
     ), f"Subject of the first proposal does not match with assumed proposal subject {proposals[0]['subject']}!={START_END_SUBJECTS[0][2]}"
     assert (
-            proposals[-1]["subject"] == START_END_SUBJECTS[-1][2]
+        proposals[-1]["subject"] == START_END_SUBJECTS[-1][2]
     ), f"Subject of the last proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[-1][2]}"
 
     tt.logger.info("Testing direction by_creator ascending with no start field given")
-    proposals = node_client.rpc.list_proposals(
-        [], 1000, "by_creator", "ascending", "all"
-    )
+    proposals = node_client.rpc.list_proposals([], 1000, "by_creator", "ascending", "all")
     # we should get len(START_END_SUBJECTS) proposals with wirs proposal with subject Subject001
     # and last with subject Subject009
     assert len(proposals) == len(
         START_END_SUBJECTS
     ), f"Proposals count do not match assumed proposal count {len(proposals)}!={len(START_END_SUBJECTS)}"
     assert (
-            proposals[0]["subject"] == START_END_SUBJECTS[0][2]
+        proposals[0]["subject"] == START_END_SUBJECTS[0][2]
     ), f"Subject of the first proposal does not match with assumed proposal subject {proposals[0]['subject']}!={START_END_SUBJECTS[0][2]}"
     assert (
-            proposals[-1]["subject"] == START_END_SUBJECTS[-1][2]
+        proposals[-1]["subject"] == START_END_SUBJECTS[-1][2]
     ), f"Subject of the last proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[-1][2]}"
 
     id_first = proposals[0]["id"]
     id_last = proposals[-1]["id"]
 
     tt.logger.info("Testing direction descending with start field given")
-    proposals = node_client.rpc.list_proposals(
-        [creator], 1000, "by_creator", "descending", "all"
-    )
+    proposals = node_client.rpc.list_proposals([creator], 1000, "by_creator", "descending", "all")
     # we should get len(START_END_SUBJECTS) proposals with first proposal with subject Subject009
     # and last with subject Subject001
     assert len(proposals) == len(
         START_END_SUBJECTS
     ), f"Proposals count do not match assumed proposal count {len(proposals)}!={len(START_END_SUBJECTS)}"
     assert (
-            proposals[0]["subject"] == START_END_SUBJECTS[-1][2]
+        proposals[0]["subject"] == START_END_SUBJECTS[-1][2]
     ), f"Subject of the first proposal does not match with assumed proposal subject {proposals[0]['subject']}!={START_END_SUBJECTS[-1][2]}"
     assert (
-            proposals[-1]["subject"] == START_END_SUBJECTS[0][2]
+        proposals[-1]["subject"] == START_END_SUBJECTS[0][2]
     ), f"Subject of the last proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[0][2]}"
 
     tt.logger.info("Testing direction descending bu_creator with no start field given")
-    proposals = node_client.rpc.list_proposals(
-        [], 1000, "by_creator", "descending", "all"
-    )
+    proposals = node_client.rpc.list_proposals([], 1000, "by_creator", "descending", "all")
     assert len(proposals) == len(
         START_END_SUBJECTS
     ), f"Proposals count do not match assumed proposal count {len(proposals)}!={len(START_END_SUBJECTS)}"
     assert (
-            proposals[0]["subject"] == START_END_SUBJECTS[-1][2]
+        proposals[0]["subject"] == START_END_SUBJECTS[-1][2]
     ), f"Subject of the first proposal does not match with assumed proposal subject {proposals[0]['subject']}!={START_END_SUBJECTS[-1][2]}"
     assert (
-            proposals[-1]["subject"] == START_END_SUBJECTS[0][2]
+        proposals[-1]["subject"] == START_END_SUBJECTS[0][2]
     ), f"Subject of the last proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[0][2]}"
 
     # if all pass we can proceed with other tests
     # first we will test empty start string in defferent directions
     tt.logger.info("Testing empty start string and ascending direction")
-    proposals = node_client.rpc.list_proposals(
-        [""], 1, "by_start_date", "ascending", "all"
-    )
+    proposals = node_client.rpc.list_proposals([""], 1, "by_start_date", "ascending", "all")
     # we shoud get proposal with Subject001
     assert (
-            proposals[0]["subject"] == START_END_SUBJECTS[0][2]
+        proposals[0]["subject"] == START_END_SUBJECTS[0][2]
     ), f"Subject of the proposal does not match with assumed proposal subject {proposals[0]['subject']}!={START_END_SUBJECTS[0][2]}"
 
     tt.logger.info("Testing by_start_date no start string and ascending direction")
-    proposals = node_client.rpc.list_proposals(
-        [], 1, "by_start_date", "ascending", "all"
-    )
+    proposals = node_client.rpc.list_proposals([], 1, "by_start_date", "ascending", "all")
     # we shoud get proposal with Subject001
     assert (
-            proposals[0]["subject"] == START_END_SUBJECTS[0][2]
+        proposals[0]["subject"] == START_END_SUBJECTS[0][2]
     ), f"Subject of the proposal does not match with assumed proposal subject {proposals[0]['subject']}!={START_END_SUBJECTS[0][2]}"
 
     # now we will test empty start string in descending
     tt.logger.info("Testing empty start string and descending direction")
-    proposals = node_client.rpc.list_proposals(
-        [""], 1, "by_start_date", "descending", "all"
-    )
+    proposals = node_client.rpc.list_proposals([""], 1, "by_start_date", "descending", "all")
     assert (
-            proposals[0]["subject"] == START_END_SUBJECTS[-1][2]
+        proposals[0]["subject"] == START_END_SUBJECTS[-1][2]
     ), f"Subject of the proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[-1][2]}"
 
     # now we will test no start parameter in descending
     tt.logger.info("Testing by_start_data with no start and descending direction")
-    proposals = node_client.rpc.list_proposals(
-        [], 1, "by_start_date", "descending", "all"
-    )
+    proposals = node_client.rpc.list_proposals([], 1, "by_start_date", "descending", "all")
     assert (
-            proposals[0]["subject"] == START_END_SUBJECTS[-1][2]
+        proposals[0]["subject"] == START_END_SUBJECTS[-1][2]
     ), f"Subject of the proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[-1][2]}"
 
     # now we will test empty start string with ascending order and last_id set
 
     tt.logger.info("Testing empty start string and ascending direction and last_id set")
-    proposals = node_client.rpc.list_proposals(
-        [""], 100, "by_start_date", "ascending", "all", 5
-    )
+    proposals = node_client.rpc.list_proposals([""], 100, "by_start_date", "ascending", "all", 5)
+    assert proposals[0]["id"] == 5, f"First proposal should have id == 5, has {proposals[0]['id']}"
     assert (
-            proposals[0]["id"] == 5
-    ), f"First proposal should have id == 5, has {proposals[0]['id']}"
-    assert (
-            proposals[-1]["subject"] == START_END_SUBJECTS[-1][2]
+        proposals[-1]["subject"] == START_END_SUBJECTS[-1][2]
     ), f"Subject of the proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[-1][2]}"
 
     tt.logger.info("Testing no start parameter and ascending direction and last_id set")
-    proposals = node_client.rpc.list_proposals(
-        [], 100, "by_start_date", "ascending", "all", 5
-    )
+    proposals = node_client.rpc.list_proposals([], 100, "by_start_date", "ascending", "all", 5)
+    assert proposals[0]["id"] == 5, f"First proposal should have id == 5, has {proposals[0]['id']}"
     assert (
-            proposals[0]["id"] == 5
-    ), f"First proposal should have id == 5, has {proposals[0]['id']}"
-    assert (
-            proposals[-1]["subject"] == START_END_SUBJECTS[-1][2]
+        proposals[-1]["subject"] == START_END_SUBJECTS[-1][2]
     ), f"Subject of the proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[-1][2]}"
 
     # now we will test empty start string with descending order and last_id set
-    tt.logger.info(
-        "Testing empty start string and descending direction and last_id set"
-    )
-    proposals = node_client.rpc.list_proposals(
-        [""], 100, "by_start_date", "descending", "all", 5
-    )
+    tt.logger.info("Testing empty start string and descending direction and last_id set")
+    proposals = node_client.rpc.list_proposals([""], 100, "by_start_date", "descending", "all", 5)
+    assert proposals[0]["id"] == 5, f"First proposal should have id == 5, has {proposals[0]['id']}"
     assert (
-            proposals[0]["id"] == 5
-    ), f"First proposal should have id == 5, has {proposals[0]['id']}"
-    assert (
-            proposals[-1]["subject"] == START_END_SUBJECTS[0][2]
+        proposals[-1]["subject"] == START_END_SUBJECTS[0][2]
     ), f"Subject of the proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[0][2]}"
 
     # now we will test empty start string with descending order and last_id set
     tt.logger.info("Testing no start string and descending direction and last_id set")
-    proposals = node_client.rpc.list_proposals(
-        [], 100, "by_start_date", "descending", "all", 5
-    )
+    proposals = node_client.rpc.list_proposals([], 100, "by_start_date", "descending", "all", 5)
+    assert proposals[0]["id"] == 5, f"First proposal should have id == 5, has {proposals[0]['id']}"
     assert (
-            proposals[0]["id"] == 5
-    ), f"First proposal should have id == 5, has {proposals[0]['id']}"
-    assert (
-            proposals[-1]["subject"] == START_END_SUBJECTS[0][2]
+        proposals[-1]["subject"] == START_END_SUBJECTS[0][2]
     ), f"Subject of the proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[0][2]}"
 
     # now we will test empty start string with ascending order and last_id set
-    tt.logger.info(
-        "Testing not empty start string and ascenging direction and last_id set"
-    )
-    proposals = node_client.rpc.list_proposals(
-        [creator], 100, "by_creator", "ascending", "all", 5
-    )
+    tt.logger.info("Testing not empty start string and ascenging direction and last_id set")
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "ascending", "all", 5)
+    assert proposals[0]["id"] == 5, f"First proposal should have id == 5, has {proposals[0]['id']}"
     assert (
-            proposals[0]["id"] == 5
-    ), f"First proposal should have id == 5, has {proposals[0]['id']}"
-    assert (
-            proposals[-1]["subject"] == START_END_SUBJECTS[-1][2]
+        proposals[-1]["subject"] == START_END_SUBJECTS[-1][2]
     ), f"Subject of the proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[-1][2]}"
 
     # now we will test empty start string with descending order and last_id set
-    tt.logger.info(
-        "Testing not empty start string and descending direction and last_id set"
-    )
-    proposals = node_client.rpc.list_proposals(
-        [creator], 100, "by_creator", "descending", "all", 5
-    )
+    tt.logger.info("Testing not empty start string and descending direction and last_id set")
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "descending", "all", 5)
+    assert proposals[0]["id"] == 5, f"First proposal should have id == 5, has {proposals[0]['id']}"
     assert (
-            proposals[0]["id"] == 5
-    ), f"First proposal should have id == 5, has {proposals[0]['id']}"
-    assert (
-            proposals[-1]["subject"] == START_END_SUBJECTS[0][2]
+        proposals[-1]["subject"] == START_END_SUBJECTS[0][2]
     ), f"Subject of the proposal does not match with assumed proposal subject {proposals[-1]['subject']}!={START_END_SUBJECTS[0][2]}"
 
-    tt.logger.info(
-        "Testing not empty start string and ascending direction and last_id set to the last element"
-    )
-    proposals = node_client.rpc.list_proposals(
-        [creator], 100, "by_creator", "ascending", "all", id_last
-    )
+    tt.logger.info("Testing not empty start string and ascending direction and last_id set to the last element")
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "ascending", "all", id_last)
     assert len(proposals) == 1
     assert proposals[0]["id"] == id_last
 
-    tt.logger.info(
-        "Testing not empty start string and descending direction and last_id set to the first element"
-    )
-    proposals = node_client.rpc.list_proposals(
-        [creator], 100, "by_creator", "descending", "all", id_first
-    )
+    tt.logger.info("Testing not empty start string and descending direction and last_id set to the first element")
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "descending", "all", id_first)
     assert len(proposals) == 1
     assert proposals[0]["id"] == id_first
 
-    tt.logger.info(
-        "Testing not empty start string and ascending direction and last_id set to the first element"
-    )
-    proposals = node_client.rpc.list_proposals(
-        [creator], 100, "by_creator", "ascending", "all", id_first
-    )
+    tt.logger.info("Testing not empty start string and ascending direction and last_id set to the first element")
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "ascending", "all", id_first)
     assert len(proposals) == len(START_END_SUBJECTS)
 
-    tt.logger.info(
-        "Testing not empty start string and descending direction and last_id set to the last element"
-    )
-    proposals = node_client.rpc.list_proposals(
-        [creator], 100, "by_creator", "descending", "all", id_last
-    )
+    tt.logger.info("Testing not empty start string and descending direction and last_id set to the last element")
+    proposals = node_client.rpc.list_proposals([creator], 100, "by_creator", "descending", "all", id_last)
     assert len(proposals) == len(START_END_SUBJECTS)
 
 

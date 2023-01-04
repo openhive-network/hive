@@ -12,41 +12,42 @@ def get_commands(commands_with_arguments):
 
 
 COMMANDS_WITH_CORRECT_ARGUMENTS = [
-    ('list_proposals', ([""], 100, 29, 0, 0)),
-    ('list_proposal_votes', ([""], 100, 33, 0, 0)),
-    ('find_proposals', ([0],)),
-    ('find_rc_accounts', ([''],)),
-    ('list_rc_accounts', ('initminer', 100)),
-    ('list_rc_direct_delegations', (['initminer', ''], 100)),
-    ('get_account', ('get_account',)),
-    ('get_account_history', ('non-exist-acc', -1, 1000)),
-    ('get_accounts', (['non-exist-acc'],)),
-    ('get_block', (0,)),
-    ('get_ops_in_block', (0, True)),
-    ('get_open_orders', ('non-exist-acc',)),
-    ('get_owner_history', ('non-exist-acc',)),
-    ('is_known_transaction', ('0000000000000000000000000000000000000000',)),
-    ('get_reward_fund', ('post',)),
-    ('get_order_book', (10,)),
-    ('get_witness', ('non-exist-acc',)),
-    ('get_active_witnesses', (False,)),
-    ('get_witness_schedule', (False,)),
-    ('list_accounts', ('non-exist-acc', 100)),
+    ("list_proposals", ([""], 100, 29, 0, 0)),
+    ("list_proposal_votes", ([""], 100, 33, 0, 0)),
+    ("find_proposals", ([0],)),
+    ("find_rc_accounts", ([""],)),
+    ("list_rc_accounts", ("initminer", 100)),
+    ("list_rc_direct_delegations", (["initminer", ""], 100)),
+    ("get_account", ("get_account",)),
+    ("get_account_history", ("non-exist-acc", -1, 1000)),
+    ("get_accounts", (["non-exist-acc"],)),
+    ("get_block", (0,)),
+    ("get_ops_in_block", (0, True)),
+    ("get_open_orders", ("non-exist-acc",)),
+    ("get_owner_history", ("non-exist-acc",)),
+    ("is_known_transaction", ("0000000000000000000000000000000000000000",)),
+    ("get_reward_fund", ("post",)),
+    ("get_order_book", (10,)),
+    ("get_witness", ("non-exist-acc",)),
+    ("get_active_witnesses", (False,)),
+    ("get_witness_schedule", (False,)),
+    ("list_accounts", ("non-exist-acc", 100)),
 ]
 
 
 @pytest.mark.parametrize(
-    'wallet_bridge_api_command', [
+    "wallet_bridge_api_command",
+    [
         *get_commands(COMMANDS_WITH_CORRECT_ARGUMENTS),
-        'get_transaction',
-        'get_conversion_requests',
-        'get_collateralized_conversion_requests',
-        'find_recurrent_transfers',
-        'broadcast_transaction',
-        'broadcast_transaction_synchronous',
-        'list_my_accounts',
-        'get_withdraw_routes',
-    ]
+        "get_transaction",
+        "get_conversion_requests",
+        "get_collateralized_conversion_requests",
+        "find_recurrent_transfers",
+        "broadcast_transaction",
+        "broadcast_transaction_synchronous",
+        "list_my_accounts",
+        "get_withdraw_routes",
+    ],
 )
 def test_run_command_without_arguments_where_arguments_are_required(node, wallet_bridge_api_command):
     with pytest.raises(tt.exceptions.CommunicationError):
@@ -54,29 +55,31 @@ def test_run_command_without_arguments_where_arguments_are_required(node, wallet
 
 
 @pytest.mark.parametrize(
-    'wallet_bridge_api_command, arguments', [
+    "wallet_bridge_api_command, arguments",
+    [
         *COMMANDS_WITH_CORRECT_ARGUMENTS,
-        ('get_chain_properties', ()),
-        ('get_feed_history', ()),
-        ('get_current_median_history_price', ()),
-        ('get_dynamic_global_properties', ()),
-        ('get_hardfork_version', ()),
-    ]
+        ("get_chain_properties", ()),
+        ("get_feed_history", ()),
+        ("get_current_median_history_price", ()),
+        ("get_dynamic_global_properties", ()),
+        ("get_hardfork_version", ()),
+    ],
 )
 def test_run_command_with_additional_argument(node, wallet_bridge_api_command, arguments):
-    getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, 'additional_string_argument')
+    getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, "additional_string_argument")
 
 
 @pytest.mark.parametrize(
-    'wallet_bridge_api_command, arguments', [
+    "wallet_bridge_api_command, arguments",
+    [
         *COMMANDS_WITH_CORRECT_ARGUMENTS,
-        ('get_transaction', ('transaction_id',)),
-        ('get_conversion_requests', ('alice',)),
-        ('get_collateralized_conversion_requests', ('alice',)),
-        ('find_recurrent_transfers', ('alice',)),
-        ('broadcast_transaction', ('transaction',)),
-        ('broadcast_transaction_synchronous', ('transaction',)),
-    ]
+        ("get_transaction", ("transaction_id",)),
+        ("get_conversion_requests", ("alice",)),
+        ("get_collateralized_conversion_requests", ("alice",)),
+        ("find_recurrent_transfers", ("alice",)),
+        ("broadcast_transaction", ("transaction",)),
+        ("broadcast_transaction_synchronous", ("transaction",)),
+    ],
 )
 def test_run_command_with_missing_argument(node, wallet_bridge_api_command, arguments):
     with pytest.raises(tt.exceptions.CommunicationError):

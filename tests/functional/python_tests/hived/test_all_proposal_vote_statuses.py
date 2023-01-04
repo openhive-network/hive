@@ -16,6 +16,7 @@ CALL_LIST_PROPOSAL_VOTES_TEMPLATE: Final[dict] = {
     "status": "STATUS_TO_BE_DEFINED",
 }
 
+
 @run_for("testnet")
 @pytest.mark.parametrize("api", ["condenser", "database", "wallet_bridge"])
 @pytest.mark.parametrize("status", ["active", "all", "expired", "inactive", "votable"])
@@ -61,7 +62,7 @@ def wait_for_proposal_expiration(node: tt.InitNode) -> None:
 
 def approve_all_created_proposals(node: tt.InitNode, wallet: tt.Wallet) -> None:
     voters = get_account_names(wallet.create_accounts(VOTERS_AMOUNT))
-    proposals_amount = len(node.api.condenser.list_proposals([''], 100, 'by_creator', 'ascending', 'all'))
+    proposals_amount = len(node.api.condenser.list_proposals([""], 100, "by_creator", "ascending", "all"))
 
     with wallet.in_single_transaction():
         for voter in voters:
@@ -87,7 +88,7 @@ def call_list_proposal_votes(node: tt.InitNode, api: str, status: str) -> dict:
 
 
 def create_account_and_proposal(
-        wallet: tt.Wallet, account_name: str, proposal_start_date: str, proposal_end_date: str
+    wallet: tt.Wallet, account_name: str, proposal_start_date: str, proposal_end_date: str
 ) -> None:
     wallet.create_account(account_name, hives=tt.Asset.Test(100), vests=tt.Asset.Test(100), hbds=tt.Asset.Tbd(100))
     wallet.api.post_comment(

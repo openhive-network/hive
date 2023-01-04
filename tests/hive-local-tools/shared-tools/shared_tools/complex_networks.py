@@ -12,7 +12,7 @@ def get_relative_time_offset_from_file(file: Path):
 
     delta = tt.Time.now(serialize=False) - tt.Time.parse(timestamp)
     delta += tt.Time.seconds(5)  # Node starting and entering live mode takes some time to complete
-    return f'-{delta.total_seconds():.3f}s'
+    return f"-{delta.total_seconds():.3f}s"
 
 
 def init_network(init_node, all_witness_names: List[str], key: str = None, block_log_directory_name: str = None):

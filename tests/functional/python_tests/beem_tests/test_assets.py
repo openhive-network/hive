@@ -15,11 +15,11 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def node(chain_id, skeleton_key):
-    block_log_directory = Path(__file__).parent / 'block_log_mirrornet_1k'
+    block_log_directory = Path(__file__).parent / "block_log_mirrornet_1k"
     block_log_path = block_log_directory / "block_log"
     timestamp_path = block_log_directory / "timestamp"
 
-    with open(timestamp_path, encoding='utf-8') as file:
+    with open(timestamp_path, encoding="utf-8") as file:
         timestamp = tt.Time.parse(file.read())
 
     timestamp -= tt.Time.seconds(5)
@@ -31,7 +31,7 @@ def node(chain_id, skeleton_key):
         time_offset=tt.Time.serialize(timestamp, format_=tt.Time.TIME_OFFSET_FORMAT),
         wait_for_live=True,
         replay_from=block_log_path,
-        arguments=[f"--chain-id={chain_id}", f"--skeleton-key={skeleton_key}"]
+        arguments=[f"--chain-id={chain_id}", f"--skeleton-key={skeleton_key}"],
     )
 
     return init_node
@@ -69,16 +69,16 @@ def test_hive_transfer(node_client: NodeClientMaker):
     node_client = node_client()
 
     expected_amount = 1
-    new_account_name = 'new-account'
+    new_account_name = "new-account"
     initminer_account = Account("initminer", hive_instance=node_client)
 
-    node_client.create_account(new_account_name, creator='initminer', password='secret')
+    node_client.create_account(new_account_name, creator="initminer", password="secret")
 
     # ACT
-    initminer_account.transfer(to=new_account_name, amount=expected_amount, asset='HIVE')
+    initminer_account.transfer(to=new_account_name, amount=expected_amount, asset="HIVE")
 
     # ASSERT
     new_account = Account(new_account_name, hive_instance=node_client)
-    balance = new_account.get_balance("available", 'HIVE')
+    balance = new_account.get_balance("available", "HIVE")
 
     assert balance.amount == expected_amount

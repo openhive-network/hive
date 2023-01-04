@@ -27,12 +27,13 @@ def run_for_all_cases(**assets: tt.AnyAsset):
         3. with wallet using legacy serialization and assets in modern (nai) format,
         4. with wallet using modern serialization and assets in legacy format.
     """
+
     def __decorator(test: Callable):
         old_test_signature = inspect.signature(test)
         test.__signature__ = old_test_signature.replace(
             parameters=[
-                inspect.Parameter('description', inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
-                inspect.Parameter('formats_matches', inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=bool),
+                inspect.Parameter("description", inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
+                inspect.Parameter("formats_matches", inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=bool),
                 *old_test_signature.parameters.values(),
             ],
         )
@@ -40,16 +41,16 @@ def run_for_all_cases(**assets: tt.AnyAsset):
         @pytest.mark.parametrize(
             f'description, formats_matches, prepared_wallet{"".join([f", {key}" for key in assets.keys()])}',
             [
-                ('legacy wallet and legacy assets (matched)', True, 'legacy', *__serialize_legacy(assets.values())),
-                ('modern wallet and modern assets (matched)', True, 'modern', *__serialize_modern(assets.values())),
-                ('legacy wallet and modern assets (mismatched)', False, 'legacy', *__serialize_modern(assets.values())),
-                ('modern wallet and legacy assets (mismatched)', False, 'modern', *__serialize_legacy(assets.values())),
+                ("legacy wallet and legacy assets (matched)", True, "legacy", *__serialize_legacy(assets.values())),
+                ("modern wallet and modern assets (matched)", True, "modern", *__serialize_modern(assets.values())),
+                ("legacy wallet and modern assets (mismatched)", False, "legacy", *__serialize_modern(assets.values())),
+                ("modern wallet and legacy assets (mismatched)", False, "modern", *__serialize_legacy(assets.values())),
             ],
-            indirect=['prepared_wallet'],
+            indirect=["prepared_wallet"],
         )
         @functools.wraps(test)
         def __decorated_test(description, formats_matches, **kwargs):
-            tt.logger.info(f'Running {test.__name__} -- {description}')
+            tt.logger.info(f"Running {test.__name__} -- {description}")
             if formats_matches:
                 return test(**kwargs)
 
@@ -63,14 +64,13 @@ def run_for_all_cases(**assets: tt.AnyAsset):
 
 def create_alice_and_bob_accounts_with_received_rewards(node, wallet):
     # Transfer to vest huge amount of test to give power to accounts.
-    wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100000),
-                          hbds=tt.Asset.Tbd(100))
-    wallet.create_account('bob', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100000))
+    wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100000), hbds=tt.Asset.Tbd(100))
+    wallet.create_account("bob", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100000))
 
     # Post comment and vote allow to get reward on accounts alice and bob.
-    wallet.api.post_comment('alice', 'permlink', '', 'paremt-permlink', 'title', 'body', '{}')
+    wallet.api.post_comment("alice", "permlink", "", "paremt-permlink", "title", "body", "{}")
 
-    wallet.api.vote('bob', 'alice', 'permlink', 100)
+    wallet.api.vote("bob", "alice", "permlink", 100)
 
     # Waiting to become post and vote transactions irreversible
     node.wait_for_irreversible_block()
@@ -78,5 +78,5 @@ def create_alice_and_bob_accounts_with_received_rewards(node, wallet):
     # Rerun node with time offset allow to change time in 'node' one hour forward and stimulate node to block producing.
     wallet.close()
     node.close()
-    node.run(time_offset='+1h')
+    node.run(time_offset="+1h")
     wallet.run(timeout=10)

@@ -51,16 +51,13 @@ def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
     This place have to be removed after solving issue https://gitlab.syncad.com/hive/test-tools/-/issues/10
     """
     from test_tools.__private.user_handles.get_implementation import get_implementation
+
     second_node.config.p2p_seed_node = get_implementation(first_node).get_p2p_endpoint()
 
 
 def get_last_proposal_id(node) -> int:
     return node.api.database.list_proposals(
-        start=["alice"],
-        limit=100,
-        order="by_creator",
-        order_direction="ascending",
-        status="all"
+        start=["alice"], limit=100, order="by_creator", order_direction="ascending", status="all"
     )["proposals"][-1]["id"]
 
 

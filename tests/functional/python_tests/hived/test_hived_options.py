@@ -23,7 +23,7 @@ def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used(
     node = tt.InitNode()
     node.run()
 
-    with open(node.directory / 'stderr.txt') as file:
+    with open(node.directory / "stderr.txt") as file:
         stderr = file.read()
 
     warning = "flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync`"
@@ -33,9 +33,9 @@ def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used(
 def test_warning_about_deprecated_flag_exit_after_replay(block_log):
     node = tt.ApiNode()
 
-    node.run(replay_from=block_log, arguments=['--exit-after-replay'])
+    node.run(replay_from=block_log, arguments=["--exit-after-replay"])
 
-    with open(node.directory / 'stderr.txt') as file:
+    with open(node.directory / "stderr.txt") as file:
         stderr = file.read()
 
     warning = "flag `--exit-after-replay` is deprecated, please consider usage of `--exit-before-sync`"
@@ -43,10 +43,11 @@ def test_warning_about_deprecated_flag_exit_after_replay(block_log):
 
 
 @pytest.mark.parametrize(
-    'way_to_stop', [
-        {'arguments': ['--exit-after-replay']},
-        {'exit_before_synchronization': True},
-    ]
+    "way_to_stop",
+    [
+        {"arguments": ["--exit-after-replay"]},
+        {"exit_before_synchronization": True},
+    ],
 )
 def test_stop_after_replay(way_to_stop, block_log: Path, block_log_length: int):
     network = tt.Network()
@@ -68,16 +69,17 @@ def test_stop_after_replay(way_to_stop, block_log: Path, block_log_length: int):
 
 
 @pytest.mark.parametrize(
-    'way_to_stop', [
-        {'arguments': ['--exit-after-replay']},
-        {'exit_before_synchronization': True},
-    ]
+    "way_to_stop",
+    [
+        {"arguments": ["--exit-after-replay"]},
+        {"exit_before_synchronization": True},
+    ],
 )
 def test_stop_after_replay_in_load_from_snapshot(way_to_stop, block_log: Path):
     node = tt.ApiNode()
     node.run(replay_from=block_log, **way_to_stop)
     snap = node.dump_snapshot(close=True)
-    Path(node.directory / 'blockchain' / 'shared_memory.bin').unlink()
+    Path(node.directory / "blockchain" / "shared_memory.bin").unlink()
     node.run(load_snapshot_from=snap, **way_to_stop)
     assert not node.is_running()
 
@@ -100,7 +102,7 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path,
 
     final_block: Final[int] = block_log_length // 2
 
-    node = tt.WitnessNode(witnesses=['alice'])
+    node = tt.WitnessNode(witnesses=["alice"])
     node.run(replay_from=block_log, stop_at_block=final_block, wait_for_live=False)
 
     assert node.get_last_block_number() == final_block

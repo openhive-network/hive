@@ -7,25 +7,25 @@ can be created when were send from an account with very low resources or have lo
 
 
 def test_modify_beneficiaries_after_dust_vote_on_hf26(wallet_hf26):
-    for account in ['alice', 'bob']:
-        wallet_hf26.api.create_account('initminer', account, '{}')
+    for account in ["alice", "bob"]:
+        wallet_hf26.api.create_account("initminer", account, "{}")
 
-    wallet_hf26.create_account('carol', vests=tt.Asset.Test(1))
+    wallet_hf26.create_account("carol", vests=tt.Asset.Test(1))
 
-    wallet_hf26.api.post_comment('initminer', 'test-post', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
-    wallet_hf26.api.vote('carol', 'initminer', 'test-post', 1)  # "dust-vote"
+    wallet_hf26.api.post_comment("initminer", "test-post", "", "test-parent-permlink", "test-title", "test-body", "{}")
+    wallet_hf26.api.vote("carol", "initminer", "test-post", 1)  # "dust-vote"
 
     assert not is_dust_vote_ignored(wallet_hf26)
 
 
 def test_modify_beneficiaries_after_dust_vote_on_hf25(wallet_hf25):
-    for account in ['alice', 'bob']:
-        wallet_hf25.api.create_account('initminer', account, '{}')
+    for account in ["alice", "bob"]:
+        wallet_hf25.api.create_account("initminer", account, "{}")
 
-    wallet_hf25.create_account('carol', vests=tt.Asset.Test(1))
+    wallet_hf25.create_account("carol", vests=tt.Asset.Test(1))
 
-    wallet_hf25.api.post_comment('initminer', 'test-post', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
-    wallet_hf25.api.vote('carol', 'initminer', 'test-post', 1)  # "dust-vote"
+    wallet_hf25.api.post_comment("initminer", "test-post", "", "test-parent-permlink", "test-title", "test-body", "{}")
+    wallet_hf25.api.vote("carol", "initminer", "test-post", 1)  # "dust-vote"
 
     assert is_dust_vote_ignored(wallet_hf25)
 
@@ -53,28 +53,17 @@ def is_dust_vote_ignored(wallet):
                     "extensions": [
                         [
                             "comment_payout_beneficiaries",
-                            {
-                                "beneficiaries": [
-                                    {
-                                        "account": "alice",
-                                        "weight": 100
-                                    },
-                                    {
-                                        "account": "bob",
-                                        "weight": 100
-                                    }
-                                ]
-                            }
+                            {"beneficiaries": [{"account": "alice", "weight": 100}, {"account": "bob", "weight": 100}]},
                         ]
-                    ]
-                }
+                    ],
+                },
             ]
         ],
         "extensions": [],
         "signatures": [],
         "transaction_id": "9c8455cdf0e3ab1ab9a54ce3301848fed27bc820",
         "block_num": 0,
-        "transaction_num": 0
+        "transaction_num": 0,
     }
 
     try:

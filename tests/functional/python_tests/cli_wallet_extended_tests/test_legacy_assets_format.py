@@ -7,15 +7,15 @@ import test_tools as tt
 
 
 def test_format_in_list_my_accounts(wallet):
-    response = wallet.api.create_account('initminer', 'alice', '{}')
+    response = wallet.api.create_account("initminer", "alice", "{}")
 
     response = wallet.api.list_my_accounts()
-    assert response[0]['balance'] == tt.Asset.Test(0)
-    assert response[0]['savings_balance'] == tt.Asset.Test(0)
+    assert response[0]["balance"] == tt.Asset.Test(0)
+    assert response[0]["savings_balance"] == tt.Asset.Test(0)
 
 
 def test_format_in_get_account(wallet):
-    wallet.api.create_account('initminer', 'alice', '{}')
+    wallet.api.create_account("initminer", "alice", "{}")
 
-    response = wallet.api.get_account('alice')
-    assert response['hbd_balance'] == tt.Asset.Tbd(0)
+    response = wallet.api.get_account("alice")
+    assert response["hbd_balance"] == tt.Asset.Tbd(0)

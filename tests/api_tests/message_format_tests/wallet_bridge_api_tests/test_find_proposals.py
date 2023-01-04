@@ -5,7 +5,7 @@ import test_tools as tt
 from hive_local_tools.api.message_format import as_string
 from hive_local_tools.api.message_format.wallet_bridge_api import create_accounts_with_vests_and_tbd, prepare_proposals
 
-ACCOUNTS = [f'account-{i}' for i in range(5)]
+ACCOUNTS = [f"account-{i}" for i in range(5)]
 
 CORRECT_VALUES = [
     [0],
@@ -15,11 +15,12 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    'proposal_ids', [
+    "proposal_ids",
+    [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
         [True],
-    ]
+    ],
 )
 def test_find_proposals_with_correct_values(node, wallet, proposal_ids):
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
@@ -29,10 +30,11 @@ def test_find_proposals_with_correct_values(node, wallet, proposal_ids):
 
 
 @pytest.mark.parametrize(
-    'proposal_id', [
+    "proposal_id",
+    [
         [-1],  # OUT OFF LIMITS: too low id
-        ['true'],
-    ]
+        ["true"],
+    ],
 )
 def test_find_proposals_with_incorrect_values(node, wallet, proposal_id):
     create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
@@ -43,10 +45,11 @@ def test_find_proposals_with_incorrect_values(node, wallet, proposal_id):
 
 
 @pytest.mark.parametrize(
-    'proposal_id', [
-        ['invalid-argument'],
+    "proposal_id",
+    [
+        ["invalid-argument"],
         "[1,2,3,4,5]",
-    ]
+    ],
 )
 def test_find_proposals_with_incorrect_type_of_argument(node, proposal_id):
     with pytest.raises(tt.exceptions.CommunicationError):

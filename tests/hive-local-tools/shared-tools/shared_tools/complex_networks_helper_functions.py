@@ -40,7 +40,7 @@ def assert_no_duplicates(node, *nodes):
     tt.logger.info("No there are no duplicates in account_history.get_ops_in_block...")
 
 
-def connect_sub_networks(sub_networks : list):
+def connect_sub_networks(sub_networks: list):
     assert len(sub_networks) > 1
 
     current_idx = 0
@@ -105,16 +105,16 @@ def get_part_of_witness_details(witness_details: list, start, length: int):
     return new_witness_details
 
 
-def info(msg : str, wallet : tt.Wallet):
-    info            = wallet.api.info()
-    hb              = info['head_block_number']
-    lib             = info['last_irreversible_block_num']
-    current_witness = info['current_witness']
-    tt.logger.info(f'network: \'{msg}\' head: {hb} lib: {lib} current witness: {current_witness}')
+def info(msg: str, wallet: tt.Wallet):
+    info = wallet.api.info()
+    hb = info["head_block_number"]
+    lib = info["last_irreversible_block_num"]
+    current_witness = info["current_witness"]
+    tt.logger.info(f"network: '{msg}' head: {hb} lib: {lib} current witness: {current_witness}")
     return hb, lib
 
-class NodeLog:
 
+class NodeLog:
     def __init__(self, name, wallet):
         self.name = name
         self.collector = []
@@ -178,9 +178,9 @@ def wait_for_final_block(
 
 
 def calculate_transformed_witnesses(wallet, node):
-    witnesses       = wallet.api.get_active_witnesses(False)['witnesses']
+    witnesses = wallet.api.get_active_witnesses(False)["witnesses"]
     current_witness = node.get_current_witness()
-    tt.logger.info(f'current witness: {current_witness} active witnesses: {witnesses}')
+    tt.logger.info(f"current witness: {current_witness} active witnesses: {witnesses}")
 
     transformed_witnesses = []
     start = False
@@ -195,7 +195,7 @@ def calculate_transformed_witnesses(wallet, node):
         else:
             transformed_witnesses.append(witness)
 
-    tt.logger.info(f'transformed witnesses: {transformed_witnesses}')
+    tt.logger.info(f"transformed witnesses: {transformed_witnesses}")
     return transformed_witnesses
 
 
@@ -204,7 +204,9 @@ def is_witness_in_given_patterns(witness, witness_name_patterns):
 
 
 def are_witnesses_match_patterns(witnesses, witness_name_patterns):
-    return all([is_witness_in_given_patterns(witness, pattern) for pattern, witness in zip(witness_name_patterns, witnesses)])
+    return all(
+        [is_witness_in_given_patterns(witness, pattern) for pattern, witness in zip(witness_name_patterns, witnesses)]
+    )
 
 
 def wait_for_specific_witnesses(node, logs, witness_name_patterns):
@@ -216,10 +218,10 @@ def wait_for_specific_witnesses(node, logs, witness_name_patterns):
         witnesses = calculate_transformed_witnesses(wallet, node)
 
         if are_witnesses_match_patterns(witnesses, witness_name_patterns):
-            last_block_number   = node.get_last_block_number()
-            val_1               = last_block_number % witnesses_interval
-            val_2               = (last_block_number + len(witness_name_patterns)) % witnesses_interval
-            tt.logger.info(f'schedule-status now: {val_1} schedule-status after: {val_2}')
+            last_block_number = node.get_last_block_number()
+            val_1 = last_block_number % witnesses_interval
+            val_2 = (last_block_number + len(witness_name_patterns)) % witnesses_interval
+            tt.logger.info(f"schedule-status now: {val_1} schedule-status after: {val_2}")
             if val_1 < val_2:
                 tt.logger.info("Witnesses patterns will be processed in the same schedule")
                 return
@@ -233,29 +235,29 @@ def display_info(wallet):
     result = wallet.api.info()
     irreversible = result["last_irreversible_block_num"]
     head = result["head_block_num"]
-    tt.logger.info(f'Network prepared, irreversible block: {irreversible}, head block: {head}')
+    tt.logger.info(f"Network prepared, irreversible block: {irreversible}, head block: {head}")
 
 
-def prepare_nodes(sub_networks_sizes : list) -> list:
+def prepare_nodes(sub_networks_sizes: list) -> list:
     assert len(sub_networks_sizes) > 0, "At least 1 sub-network is required"
 
-    cnt               = 0
+    cnt = 0
     all_witness_names = []
-    sub_networks      = []
-    init_node         = None
+    sub_networks = []
+    init_node = None
 
     for sub_networks_size in sub_networks_sizes:
-        tt.logger.info(f'Preparing sub-network nr: {cnt} that consists of {sub_networks_size} witnesses')
+        tt.logger.info(f"Preparing sub-network nr: {cnt} that consists of {sub_networks_size} witnesses")
 
-        witness_names = [f'witness-{cnt}-{i}' for i in range(sub_networks_size)]
+        witness_names = [f"witness-{cnt}-{i}" for i in range(sub_networks_size)]
         all_witness_names += witness_names
 
         sub_network = tt.Network()  # TODO: Add network name prefix, e.g. AlphaNetwork0 (Alpha- is custom prefix)
         if cnt == 0:
-            init_node = tt.InitNode(network = sub_network)
+            init_node = tt.InitNode(network=sub_network)
         sub_networks.append(sub_network)
-        tt.WitnessNode(witnesses = witness_names, network = sub_network)
-        tt.ApiNode(network = sub_network)
+        tt.WitnessNode(witnesses=witness_names, network=sub_network)
+        tt.ApiNode(network=sub_network)
 
         cnt += 1
     return sub_networks, init_node, all_witness_names

@@ -42,6 +42,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
          def test_marked_with_run_for_decorator(node: Union[tt.InitNode, tt.RemoteNode]):
              node.api.some_api.some_method()
     """
+
     def __create_init_node() -> tt.InitNode:
         init_node = tt.InitNode()
         init_node.run()
