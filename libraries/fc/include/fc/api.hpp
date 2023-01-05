@@ -19,11 +19,20 @@ namespace fc {
        template<typename R, typename C, typename P, typename... Args>
        static std::function<R(Args...)> functor( P&& p, R (C::*mem_func)(Args...)const );
   };
-   
+
   template< typename Interface, typename Transform  >
-  struct vtable  : public std::enable_shared_from_this<vtable<Interface,Transform>> 
-  { private: vtable(); };
-  
+  struct vtable  : public std::enable_shared_from_this<vtable<Interface,Transform>>
+  {
+  public:
+    template<typename Visitor>
+    void visit_other( Visitor&& v )
+    {}
+
+    template<typename Visitor>
+    void visit( Visitor&& v )
+    {}
+  };
+
   template<typename OtherType>
   struct vtable_copy_visitor {
       typedef OtherType other_type;

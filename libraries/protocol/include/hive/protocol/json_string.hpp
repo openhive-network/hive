@@ -10,14 +10,10 @@ namespace fc
 {
   inline void to_variant(const hive::protocol::json_string& json_string, variant& var);
   inline void from_variant(const variant& var, hive::protocol::json_string& json_string);
-  namespace raw
-  {
-    template<typename Stream>
-    inline Stream& operator<<(Stream& s, const hive::protocol::json_string& json_string);
-    template<typename Stream>
-    inline Stream& operator>>(Stream& s, hive::protocol::json_string& json_string);
-  }
-
+  template<typename Stream>
+  inline Stream& operator<<(Stream& s, const hive::protocol::json_string& json_string);
+  template<typename Stream>
+  inline Stream& operator>>(Stream& s, hive::protocol::json_string& json_string);
 }
 
 namespace hive { namespace protocol {
@@ -30,8 +26,8 @@ namespace hive { namespace protocol {
   {
     friend inline void fc::to_variant(const json_string& json_string, fc::variant& var);
     friend inline void fc::from_variant(const fc::variant& var, json_string& json_string);
-    template<typename Stream> friend inline Stream& fc::raw::operator<<(Stream& s, const hive::protocol::json_string& json_string);
-    template<typename Stream> friend inline Stream& fc::raw::operator>>(Stream& s, hive::protocol::json_string& json_string);
+    template<typename Stream> friend inline Stream& fc::operator<<(Stream& s, const hive::protocol::json_string& json_string);
+    template<typename Stream> friend inline Stream& fc::operator>>(Stream& s, hive::protocol::json_string& json_string);
 
     std::string s;
   public:
@@ -106,24 +102,21 @@ namespace fc
     assert(json_string.s.capacity() - json_string.s.size() >= hive::protocol::json_string::required_padding);
   } FC_CAPTURE_AND_RETHROW() }
 
-  namespace raw
-  {
-    template<typename Stream>
-    inline Stream& operator<<(Stream& s, const hive::protocol::json_string& json_str)
-    { try {
-      pack(s, json_str.s);
-      return s;
-    } FC_CAPTURE_AND_RETHROW() }
-    template<typename Stream>
-    inline Stream& operator>>(Stream& s, hive::protocol::json_string& json_str)
-    { try {
-      unsigned_int string_length;
-      unpack(s, string_length);
-      json_str.s.reserve(string_length.value + hive::protocol::json_string::required_padding);
-      json_str.s.resize(string_length.value);
-      if (string_length.value)
-        s.read(&json_str.s[0], string_length.value);
-      return s;
-    } FC_CAPTURE_AND_RETHROW() }
-  }
+  template<typename Stream>
+  inline Stream& operator<<(Stream& s, const hive::protocol::json_string& json_str)
+  { try {
+    raw::pack(s, json_str.s);
+    return s;
+  } FC_CAPTURE_AND_RETHROW() }
+  template<typename Stream>
+  inline Stream& operator>>(Stream& s, hive::protocol::json_string& json_str)
+  { try {
+    unsigned_int string_length;
+    raw::unpack(s, string_length);
+    json_str.s.reserve(string_length.value + hive::protocol::json_string::required_padding);
+    json_str.s.resize(string_length.value);
+    if (string_length.value)
+      s.read(&json_str.s[0], string_length.value);
+    return s;
+  } FC_CAPTURE_AND_RETHROW() }
 } // end namespace fc
