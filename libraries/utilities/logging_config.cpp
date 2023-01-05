@@ -30,7 +30,7 @@ void set_logging_program_options( boost::program_options::options_description& o
 {
   std::vector< std::string > default_appender(
     { "{\"appender\":\"stderr\",\"stream\":\"std_error\",\"time_format\":\"iso_8601_microseconds\"}",
-      "{\"appender\":\"p2p\",\"file\":\"logs/p2p/p2p.log\",\"time_format\":\"iso_8601_milliseconds\", \"delta_times\": false}" } );
+      "{\"appender\":\"p2p\",\"file\":\"logs/p2p/p2p.log\",\"time_format\":\"iso_8601_milliseconds\",\"delta_times\":false}" } );
   std::string str_default_appender = boost::algorithm::join( default_appender, " " );
 
   std::vector< std::string > default_logger(

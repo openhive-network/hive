@@ -3,197 +3,145 @@
 #include <boost/any.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+
 #include <fc/io/json.hpp>
 #include <fc/reflect/variant.hpp>
 #include <fc/variant_object.hpp>
 
-#include <algorithm>
-#include <type_traits>
-#include <variant>
 #include <vector>
 
 
-namespace boost {
-  template <>
-  std::string lexical_cast<std::string, bool>(const bool& b) 
-  {
-    std::ostringstream ss;
-    ss << std::boolalpha << b;
-    return ss.str();
-  }
-};
-
 namespace appbase {
 
-namespace detail {
-
-template<typename>
-struct is_std_vector : std::false_type {};
-
-template<typename T, typename A>
-struct is_std_vector<std::vector<T,A>> : std::true_type {};
-
-template <typename... Arg>
-inline bool any_of(Arg... arg)
+template<typename T>
+fc::variant get_default_value(const boost::any& default_value )
 {
-  return (arg || ...);
+  if( default_value.empty() )
+    return fc::variant( std::string() );
+
+  return boost::lexical_cast<std::string>( boost::any_cast<T>( default_value ) );
 }
 
-inline bool is_multitoken(const boost::program_options::value_semantic* semantic)
+template<>
+fc::variant get_default_value<bool>(const boost::any& default_value )
 {
-  return semantic->max_tokens() > 1;
+  if( default_value.empty() )
+    return fc::variant( std::string() );
+
+  std::ostringstream _ss;
+  _ss << std::boolalpha << boost::any_cast<bool>( default_value );
+
+  return _ss.str();
 }
 
-template <typename T, typename... T1>
-inline static bool try_handle_type_impl(options_dumper::value_info& info, 
-  const boost::program_options::value_semantic* option, 
-  const char* type_name)
+template<>
+fc::variant get_default_value<std::vector<std::string>>(const boost::any& default_value )
 {
-  auto* typed_option = dynamic_cast<const boost::program_options::typed_value<T>*>(option);
-  constexpr bool is_vector = is_std_vector<T>::value;
+  if( default_value.empty() )
+    return fc::variant( std::vector<std::string>() );
 
-  if (!typed_option) 
-  {
-    if constexpr (sizeof...(T1) > 0)
-      return try_handle_type_impl<T1...>(info, option, type_name);
-    else
-      return false;
-  }
+  std::vector<std::string> _v;
+  for (const auto& item : boost::any_cast<std::vector<std::string>>( default_value ) ) 
+    _v.emplace_back( boost::lexical_cast<std::string>( item ) );
 
-  boost::any def_value_any;
-  typed_option->apply_default(def_value_any);
-
-  fc::variant def_value;
-  if (!def_value_any.empty()) 
-  {
-    if constexpr (is_vector) 
-    {
-      std::vector<std::string> def_value_vec;
-
-      for (const auto& v : boost::any_cast<T>(def_value_any)) 
-      {
-        def_value_vec.emplace_back(boost::lexical_cast<std::string>(v));
-      }
-
-      def_value = std::move(def_value_vec);
-    }
-    else
-      def_value = boost::lexical_cast<std::string>(boost::any_cast<T>(def_value_any));
-  } 
-  else 
-  {
-    if constexpr (is_vector)
-      def_value = std::vector<std::string>();
-    else
-      def_value = std::string();
-  }
-
-  info.composed = typed_option->is_composing();
-  info.multiple_allowed = detail::is_multitoken(option);
-  info.value_type = type_name;
-  info.default_value = def_value;
-
-  if constexpr (is_vector)
-    info.value_type += "_array";
-
-  return true;
+  return fc::variant( std::move( _v ) );
 }
 
-template <typename... T>
-static bool try_handle_type(options_dumper::value_info& info, 
-  const boost::program_options::value_semantic* option, 
-  const char* type_name, bool multitoken)
+template<typename T>
+void handle_type( options_dumper::value_info& val_info, const boost::program_options::typed_value_base* typed, const std::string& type_name )
 {
-  if (multitoken)
-    return try_handle_type_impl<std::vector<T>...>(info, option, type_name);
-  
-  return try_handle_type_impl<T...>(info, option, type_name);
+  auto* _typed = dynamic_cast<const boost::program_options::typed_value<T>*>( typed );
+  assert( _typed );
+
+  fc::variant _def_value;
+  boost::any _def_value_any;
+  _typed->apply_default( _def_value_any );
+
+  val_info.required       = _typed->is_required();
+  val_info.multitoken     = _typed->max_tokens() > 1;
+  val_info.composed       = _typed->is_composing();
+  val_info.value_type     = type_name;
+  val_info.default_value  = get_default_value<T>( _def_value_any );
 }
 
-};
-
-options_dumper::options_dumper() {}
+void try_handle_type( options_dumper::value_info& val_info, const boost::program_options::typed_value_base* typed )
+{
+  if( typed->value_type() == typeid(bool) )
+    handle_type<bool>( val_info, typed, "bool" );
+  else if( typed->value_type() == typeid(int8_t) )
+    handle_type<int8_t>( val_info, typed, "byte" );
+  else if( typed->value_type() == typeid(int16_t) )
+    handle_type<int16_t>( val_info, typed, "short" );
+  else if( typed->value_type() == typeid(int32_t) )
+    handle_type<int32_t>( val_info, typed, "int" );
+  else if( typed->value_type() == typeid(int64_t) )
+    handle_type<int64_t>( val_info, typed, "long" );
+  else if( typed->value_type() == typeid(uint8_t) )
+    handle_type<uint8_t>( val_info, typed, "ubyte" );
+  else if( typed->value_type() == typeid(uint16_t) )
+    handle_type<uint16_t>( val_info, typed, "ushort" );
+  else if( typed->value_type() == typeid(uint32_t) )
+    handle_type<uint32_t>( val_info, typed, "uint" );
+  else if( typed->value_type() == typeid(uint64_t) )
+    handle_type<uint64_t>( val_info, typed, "ulong" );
+  else if( typed->value_type() == typeid(std::string) )
+    handle_type<std::string>( val_info, typed, "string" );
+  else if( typed->value_type() == typeid(fc::string) )
+    handle_type<fc::string>( val_info, typed, "string" );
+  else if( typed->value_type() == typeid(boost::filesystem::path) )
+    handle_type<boost::filesystem::path>( val_info, typed, "path" );
+  else if( typed->value_type() == typeid(std::vector<std::string>) )
+    handle_type<std::vector<std::string>>( val_info, typed, "string_array" );
+  else
+    val_info.value_type = "unknown";
+}
 
 options_dumper::options_dumper(std::initializer_list<entry_t> entries) 
-  : _option_groups(std::move(entries)) {}
+  : option_groups( std::move(entries) ) {}
 
-void options_dumper::add_options_group(const std::string& name, const bpo& group)
+std::optional<options_dumper::value_info> options_dumper::get_value_info( const boost::shared_ptr<const boost::program_options::value_semantic>& semantic ) const
 {
-  _option_groups.emplace(name, group);
+  if( !semantic )
+    return std::nullopt;
+
+  auto* _typed = dynamic_cast<const boost::program_options::typed_value_base*>( semantic.get() );
+  if( !_typed )
+    return std::nullopt;
+
+  value_info _info;
+  try_handle_type( _info, _typed );
+
+  return _info;
 }
 
-void options_dumper::clear()
+options_dumper::option_entry options_dumper::serialize_option( const boost::program_options::option_description& option ) const
 {
-  _option_groups.clear();
+  return
+    {
+      option.long_name(),
+      option.description(),
+      get_value_info( option.semantic() ),
+    } ;
 }
 
 std::string options_dumper::dump_to_string() const
 {
-  fc::mutable_variant_object obj;
+  fc::mutable_variant_object _obj;
 
-  for (const auto& group : _option_groups)
+  for( const auto& group : option_groups )
   {
-    std::vector<option_entry> entries;
+    std::vector<option_entry> _entries;
 
-    for (const auto& option : group.second.get().options()) 
-    {
-      entries.emplace_back(serialize_option(*option));
-    }
+    for( const auto& option : group.second.options() ) 
+      _entries.emplace_back( serialize_option( *option ) );
 
-    obj[group.first] = std::move(entries);
+    _obj[group.first] = std::move( _entries );
   }
 
-  return fc::json::to_pretty_string(obj);
-}
-
-auto options_dumper::get_value_info(
-const boost::program_options::value_semantic* semantic) -> std::optional<value_info>
-{
-  auto* typed = dynamic_cast<const boost::program_options::typed_value_base*>(semantic);
-  if (!typed)
-    return std::nullopt;
-
-  value_info info;
-  bool multitoken = detail::is_multitoken(semantic) || semantic->is_composing();
-
-  bool success = detail::any_of(
-    detail::try_handle_type<bool>(info, semantic, "bool", multitoken),
-    detail::try_handle_type<int8_t>(info, semantic, "byte", multitoken),
-    detail::try_handle_type<int16_t>(info, semantic, "short", multitoken),
-    detail::try_handle_type<int32_t>(info, semantic, "int", multitoken),
-    detail::try_handle_type<int64_t>(info, semantic, "long", multitoken),
-    detail::try_handle_type<uint8_t>(info, semantic, "ubyte", multitoken),
-    detail::try_handle_type<uint16_t>(info, semantic, "ushort", multitoken),
-    detail::try_handle_type<uint32_t>(info, semantic, "uint", multitoken),
-    detail::try_handle_type<uint64_t>(info, semantic, "ulong", multitoken),
-    detail::try_handle_type<std::string, fc::string>(info, semantic, "string", multitoken),
-    detail::try_handle_type<boost::filesystem::path>(info, semantic, "path", multitoken)
-  );
-
-  if (success)
-    return info;
-
-  info.composed = semantic->is_composing();
-  info.default_value = std::string();
-  info.multiple_allowed = detail::is_multitoken(semantic);
-  info.value_type = "unknown";
-  return info;
-}
-
-auto options_dumper::serialize_option(
-const boost::program_options::option_description& option) -> option_entry
-{
-  const boost::program_options::value_semantic* semantic = option.semantic().get();
-
-  return {
-    option.long_name(),
-    option.description(),
-    semantic->is_required(),
-    get_value_info(semantic),
-  };
+  return fc::json::to_pretty_string( _obj );
 }
 
 };
 
-FC_REFLECT(appbase::options_dumper::value_info, (multiple_allowed)(composed)(value_type)(default_value));
-FC_REFLECT(appbase::options_dumper::option_entry, (name)(description)(required)(value));
+FC_REFLECT(appbase::options_dumper::option_entry, (name)(description)(value));
+FC_REFLECT(appbase::options_dumper::value_info, (required)(multitoken)(composed)(value_type)(default_value));

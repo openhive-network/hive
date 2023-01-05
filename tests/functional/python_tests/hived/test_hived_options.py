@@ -125,6 +125,6 @@ def test_hived_get_version():
 def test_dump_options_does_not_contain_unknown_types():
     node = tt.RawNode()
 
-    for option in node.config_options + node.cli_options:
+    for option in node.config_options() + node.cli_options():
         if option.value is not None:
             assert option.value.value_type != 'unknown'
