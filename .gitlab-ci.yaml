@@ -584,3 +584,24 @@ foundation_layer_tests:
     - *run-pytest
   tags:
     - public-runner-docker
+
+witness_tests:
+  stage: test
+  extends: .test_tools_based
+  needs:
+    - job: prepare_hived_data_image
+      artifacts: true
+  services:
+    - name: $HIVED_IMAGE_NAME
+      alias: hived-instance
+  variables:
+    NODE_ADDRESS: "hived-instance:8090"
+    PYTEST_TIMEOUT_MINUTES: 5
+    JUNIT_REPORT: tests/functional/python_tests/witness_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/witness_tests
+    - export PYTEST_ARGS=(--http-endpoint=${NODE_ADDRESS})
+    - *run-pytest
+  tags:
+    - public-runner-docker
+    - hived-for-tests
