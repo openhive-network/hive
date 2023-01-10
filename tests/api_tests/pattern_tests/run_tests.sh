@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# $1 - port or address to node
+# $2 - path to root project (hive)
+# $3 - testsuite (-k argument in pytest)
+# $4 - is direct call (TRUE or FALSE)
 
 export PYTHONPATH="$(realpath $2/tests/hive-local-tools/tests_api/scripts/):$PYTHONPATH"
 echo "$PYTHONPATH"
