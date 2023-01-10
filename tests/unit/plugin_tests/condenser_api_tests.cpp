@@ -1,5 +1,8 @@
 #if defined IS_TEST_NET
 #include <boost/test/unit_test.hpp>
+
+#include <fc/io/json.hpp>
+
 #include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
 #include <hive/plugins/account_history_api/account_history_api.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
@@ -294,8 +297,8 @@ void compare_operations(const condenser_api::api_operation_object& op_obj,
   BOOST_REQUIRE_EQUAL( op_obj.block, ah_op_obj.block );
   BOOST_REQUIRE_EQUAL( op_obj.trx_in_block, ah_op_obj.trx_in_block );
   BOOST_REQUIRE_EQUAL( op_obj.op_in_trx, ah_op_obj.op_in_trx );
-  // TODO: Compare operations in depth
-  BOOST_REQUIRE_EQUAL( op_obj.op.which(), ah_op_obj.op.which() ); // At least verify type of operation now
+  // Compare actual operations
+  BOOST_REQUIRE_EQUAL( fc::json::to_string(op_obj.op), fc::json::to_string(ah_op_obj.op) );
 
   // Compare transactions of operations.
   tx_compare(op_obj.trx_id);
