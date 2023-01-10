@@ -34,7 +34,7 @@ wallet_serializer_wrapper<vector<database_api::api_recurrent_transfer_object>> f
 wallet_serializer_wrapper<database_api::api_account_object> get_account(const string & account_name)
                                  variant get_account_history(const string & account, uint32_t from, uint32_t limit)
 wallet_serializer_wrapper<vector<database_api::api_account_object>> get_accounts(fc::variant account_names)
-wallet_bridge_api::get_active_witnesses_return get_active_witnesses(bool include_future)
+             get_active_witnesses_return get_active_witnesses(bool include_future)
 optional<wallet_serializer_wrapper<block_api::api_signed_block_object>> get_block(uint32_t num)
 wallet_serializer_wrapper<vector<database_api::api_collateralized_convert_request_object>> get_collateralized_conversion_requests(fc::variant owner)
 wallet_serializer_wrapper<vector<database_api::api_convert_request_object>> get_conversion_requests(fc::variant owner)

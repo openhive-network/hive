@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
+#include <hive/plugins/wallet_bridge_api/wallet_bridge_api_args.hpp>
 #include <hive/wallet/misc_utilities.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
@@ -18,6 +19,8 @@ using namespace std;
 using namespace hive::utilities;
 using namespace hive::protocol;
 using namespace hive::plugins;
+
+using hive::plugins::wallet_bridge_api::get_active_witnesses_return;
 
 using hive::wallet::output_formatter_type;
 
@@ -164,7 +167,7 @@ class wallet_api
       *
       * @param include_future Set to true to return both current and next round of witnesses
       */
-    wallet_bridge_api::get_active_witnesses_return get_active_witnesses( bool include_future )const;
+    get_active_witnesses_return get_active_witnesses( bool include_future )const;
 
     /** Returns vesting withdraw routes for an account.
       *
