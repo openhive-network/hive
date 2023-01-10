@@ -18,6 +18,7 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+#include <chrono>
 
 struct member_data
 {
@@ -229,6 +230,8 @@ int main( int argc, char** argv )
 {
   try
   {
+    auto begin = std::chrono::steady_clock::now();
+
     add_type_to_decode<hive::chain::account_object>();
     add_type_to_decode<hive::chain::account_metadata_object>();
     add_type_to_decode<hive::chain::account_authority_object>();
@@ -289,19 +292,23 @@ int main( int argc, char** argv )
     add_type_to_decode<hive::plugins::transaction_status::transaction_status_object>();
     add_type_to_decode<hive::plugins::witness::witness_custom_op_object>();
 
-  #ifdef HIVE_ENABLE_SMT
-  add_type_to_decode<hive::chain::smt_token_object>();
-  add_type_to_decode<hive::chain::account_regular_balance_object>();
-  add_type_to_decode<hive::chain::account_rewards_balance_object>();
-  add_type_to_decode<hive::chain::nai_pool_object>();
-  add_type_to_decode<hive::chain::smt_token_emissions_object>();
-  add_type_to_decode<hive::chain::smt_contribution_object>();
-  add_type_to_decode<hive::chain::smt_ico_object>();
-  #endif
+    #ifdef HIVE_ENABLE_SMT
+    add_type_to_decode<hive::chain::smt_token_object>();
+    add_type_to_decode<hive::chain::account_regular_balance_object>();
+    add_type_to_decode<hive::chain::account_rewards_balance_object>();
+    add_type_to_decode<hive::chain::nai_pool_object>();
+    add_type_to_decode<hive::chain::smt_token_emissions_object>();
+    add_type_to_decode<hive::chain::smt_contribution_object>();
+    add_type_to_decode<hive::chain::smt_ico_object>();
+    #endif
+
+    auto end = std::chrono::steady_clock::now();
 
     std::cerr << "\n----- Results: ----- \n\n";
     for (const auto& [key, val] : decoded_types)
       val.print_type_info();
+
+    std::cerr << "\n\nDecoding time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << " microseconds.\n";
   }
   catch ( const fc::exception& e )
   {
