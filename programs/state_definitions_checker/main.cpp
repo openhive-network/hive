@@ -1,4 +1,19 @@
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/hive_object_types.hpp>
+#include <hive/plugins/account_by_key/account_by_key_objects.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
+#include <hive/plugins/block_log_info/block_log_info_objects.hpp>
+#include <hive/plugins/follow/follow_objects.hpp>
+#include <hive/plugins/market_history/market_history_plugin.hpp>
+#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/reputation/reputation_objects.hpp>
+#include <hive/plugins/tags/tags_plugin.hpp>
+#include <hive/plugins/transaction_status/transaction_status_objects.hpp>
+#include <hive/plugins/witness/witness_plugin_objects.hpp>
+#include <hive/chain/block_summary_object.hpp>
+#include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/pending_required_action_object.hpp>
+#include <hive/chain/pending_optional_action_object.hpp>
+#include <hive/chain/transaction_object.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -215,7 +230,74 @@ int main( int argc, char** argv )
   try
   {
     add_type_to_decode<hive::chain::account_object>();
+    add_type_to_decode<hive::chain::account_metadata_object>();
+    add_type_to_decode<hive::chain::account_authority_object>();
+    add_type_to_decode<hive::chain::vesting_delegation_object>();
+    add_type_to_decode<hive::chain::vesting_delegation_expiration_object>();
+    add_type_to_decode<hive::chain::owner_authority_history_object>();
+    add_type_to_decode<hive::chain::account_recovery_request_object>();
+    add_type_to_decode<hive::chain::change_recovery_account_request_object>();
+    add_type_to_decode<hive::chain::block_summary_object>();
+    add_type_to_decode<hive::chain::comment_object>();
+    add_type_to_decode<hive::chain::comment_cashout_object>();
+    add_type_to_decode<hive::chain::comment_cashout_ex_object>();
+    add_type_to_decode<hive::chain::comment_vote_object>();
+    add_type_to_decode<hive::chain::proposal_object>();
+    add_type_to_decode<hive::chain::proposal_vote_object>();
+    add_type_to_decode<hive::chain::dynamic_global_property_object>();
+    add_type_to_decode<hive::chain::hardfork_property_object>();
+    add_type_to_decode<hive::chain::convert_request_object>();
+    add_type_to_decode<hive::chain::collateralized_convert_request_object>();
+    add_type_to_decode<hive::chain::escrow_object>();
+    add_type_to_decode<hive::chain::savings_withdraw_object>();
+    add_type_to_decode<hive::chain::liquidity_reward_balance_object>();
+    add_type_to_decode<hive::chain::feed_history_object>();
+    add_type_to_decode<hive::chain::limit_order_object>();
+    add_type_to_decode<hive::chain::withdraw_vesting_route_object>();
+    add_type_to_decode<hive::chain::decline_voting_rights_request_object>();
+    add_type_to_decode<hive::chain::reward_fund_object>();
+    add_type_to_decode<hive::chain::recurrent_transfer_object>();
+    add_type_to_decode<hive::chain::pending_required_action_object>();
+    add_type_to_decode<hive::chain::pending_optional_action_object>();
+    add_type_to_decode<hive::chain::transaction_object>();
+    add_type_to_decode<hive::chain::witness_vote_object>();
+    add_type_to_decode<hive::chain::witness_schedule_object>();
     add_type_to_decode<hive::chain::witness_object>();
+    add_type_to_decode<hive::plugins::account_by_key::key_lookup_object>();
+    add_type_to_decode<hive::plugins::account_history_rocksdb::volatile_operation_object>();
+    add_type_to_decode<hive::plugins::block_log_info::block_log_hash_state_object>();
+    add_type_to_decode<hive::plugins::block_log_info::block_log_pending_message_object>();
+    add_type_to_decode<hive::plugins::follow::follow_object>();
+    add_type_to_decode<hive::plugins::follow::feed_object>();
+    add_type_to_decode<hive::plugins::follow::blog_object>();
+    add_type_to_decode<hive::plugins::follow::blog_author_stats_object>();
+    add_type_to_decode<hive::plugins::follow::reputation_object>();
+    add_type_to_decode<hive::plugins::follow::follow_count_object>();
+    add_type_to_decode<hive::plugins::market_history::bucket_object>();
+    add_type_to_decode<hive::plugins::market_history::order_history_object>();
+    add_type_to_decode<hive::plugins::rc::rc_resource_param_object>();
+    add_type_to_decode<hive::plugins::rc::rc_pool_object>();
+    add_type_to_decode<hive::plugins::rc::rc_stats_object>();
+    add_type_to_decode<hive::plugins::rc::rc_pending_data>();
+    add_type_to_decode<hive::plugins::rc::rc_account_object>();
+    add_type_to_decode<hive::plugins::rc::rc_direct_delegation_object>();
+    add_type_to_decode<hive::plugins::rc::rc_usage_bucket_object>();
+    add_type_to_decode<hive::plugins::reputation::reputation_object>();
+    add_type_to_decode<hive::plugins::tags::tag_object>();
+    add_type_to_decode<hive::plugins::tags::tag_stats_object>();
+    add_type_to_decode<hive::plugins::tags::author_tag_stats_object>();
+    add_type_to_decode<hive::plugins::transaction_status::transaction_status_object>();
+    add_type_to_decode<hive::plugins::witness::witness_custom_op_object>();
+
+  #ifdef HIVE_ENABLE_SMT
+  add_type_to_decode<hive::chain::smt_token_object>();
+  add_type_to_decode<hive::chain::account_regular_balance_object>();
+  add_type_to_decode<hive::chain::account_rewards_balance_object>();
+  add_type_to_decode<hive::chain::nai_pool_object>();
+  add_type_to_decode<hive::chain::smt_token_emissions_object>();
+  add_type_to_decode<hive::chain::smt_contribution_object>();
+  add_type_to_decode<hive::chain::smt_ico_object>();
+  #endif
 
     std::cerr << "\n----- Results: ----- \n\n";
     for (const auto& [key, val] : decoded_types)
