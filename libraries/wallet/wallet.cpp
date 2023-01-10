@@ -1074,7 +1074,7 @@ vector< account_name_type > wallet_api::list_accounts(const string& lowerbound, 
   return result;
 }
 
-wallet_bridge_api::get_active_witnesses_return wallet_api::get_active_witnesses( bool include_future )const
+get_active_witnesses_return wallet_api::get_active_witnesses( bool include_future )const
 {
   my->require_online();
   vector<variant> args{ include_future };
