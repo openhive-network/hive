@@ -19,7 +19,18 @@ namespace fc {
        template<typename R, typename C, typename P, typename... Args>
        static std::function<R(Args...)> functor( P&& p, R (C::*mem_func)(Args...)const );
   };
-   
+
+  /*
+   * This is just a template definition for api class and is not intended to be used without template
+   * specialization like the one in the FC_API macro, which is also the only recommended way of creating fc apis.
+   * No specialization results in errors due to the inaccessible constructor to prevent invalid usage.
+   * XXX: In the future (after upgrading code to the C++20 standard) we can use concepts to enforce required
+   * `visit` and `visit_other` methods on given partial template specialization in fc api
+   *
+   * `Intel(R) oneAPI DPC++/C++ Compiler 2023.0.0` reported false-positive errors here. The solution was to add missing
+   * `visit` and `visit_other` * function definitions along with making the vtable constructor visible to the fc::api class.
+   * All of the officially supported compilers, like g++ and clang do not report any errors here.
+   */
   template< typename Interface, typename Transform  >
   struct vtable  : public std::enable_shared_from_this<vtable<Interface,Transform>> 
   { private: vtable(); };
