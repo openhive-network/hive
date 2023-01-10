@@ -29,7 +29,7 @@ then
   BINARY_CACHE_PATH=${1:?"Missing argument #4: binary cache path"}
   shift
 
-  CACHE_REF="${CI_PROJECT_DIR}/${BUILDKIT_CACHE_PATH}"
+  CACHE_REF="${BUILDKIT_CACHE_PATH}"
   export CACHE_REF
   export REGISTRY
   export BUILD_HIVE_TESTNET
@@ -40,8 +40,6 @@ then
   pushd "$SRCROOTDIR" || exit 1
 
   docker buildx bake --progress=plain --load data-ci
-  
-  du -h "$CACHE_REF"
   docker image ls
 
   popd || exit 1
@@ -58,7 +56,7 @@ else
 
   pushd "$SRCROOTDIR" || exit 1
   echo "Instance image built. Attempting to build a data image basing on it..."
-  docker buildx build --target=data  --progress=plain \
+  docker buildx build --target=data --progress=plain \
     --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
     --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
     --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \

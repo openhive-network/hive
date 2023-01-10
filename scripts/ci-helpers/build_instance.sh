@@ -106,13 +106,7 @@ pushd "$SRCROOTDIR" || exit 1
 
 if [ -n "$BUILDKIT_CACHE_PATH" ];
 then
-  if [ -n "${CI:-}" ];
-  then
-    CACHE_REF="${CI_PROJECT_DIR}/${BUILDKIT_CACHE_PATH}"
-  else
-    CACHE_REF="${BUILDKIT_CACHE_PATH}"
-  fi
-  mkdir -p "${CACHE_REF}"
+  CACHE_REF="${BUILDKIT_CACHE_PATH}"
   export REGISTRY
   export BUILD_HIVE_TESTNET
   export HIVE_CONVERTER_BUILD
@@ -124,7 +118,6 @@ then
   echo "Building instance image with cache ${CACHE_REF}"
 
   docker buildx bake --progress=plain --load instance-ci
-  du -h "$CACHE_REF"
   docker image ls
 else
   echo "Building base instance image"

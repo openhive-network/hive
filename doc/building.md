@@ -43,7 +43,7 @@ We ship a Dockerfile.  This builds both common node type binaries.
     - mainnet (default)
 
 - `--export-binaries=PATH` - allows to extract built binaries from created image
-- `--cache-path=PATH` - allows to specify a custom path to BuildKit cache directory (requires BuildKit builder with docker-contaienr driver), meant to be used with CI
+- `--cache-path=TAG-SUFFIX` - allows to specify a custom path to BuildKit cache image (requires BuildKit builder with docker-container driver), meant to be used with CI
 
 Above example call will create the image: `registry.gitlab.syncad.com/hive/hive/instance:my-local-tag`
 

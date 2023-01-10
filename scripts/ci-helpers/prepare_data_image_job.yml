@@ -26,7 +26,7 @@ include:
     REGISTRY_USER: "$CI_IMG_BUILDER_USER"
     REGISTRY_PASS: $CI_IMG_BUILDER_PASSWORD
     SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
-    BUILDKIT_CACHE_PATH: "buildkit-cache"
+    BUILDKIT_CACHE_PATH: "$CI_COMMIT_REF_SLUG"
   script:
     - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS" "hived-mainnet-binaries" $BUILDKIT_CACHE_PATH
     - ls -la ./hived-mainnet-binaries/*

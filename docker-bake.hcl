@@ -18,8 +18,8 @@ target base_instance-ci {
         HIVE_CONVERTER_BUILD=HIVE_CONVERTER_BUILD
         BUILD_IMAGE_TAG=BUILD_IMAGE_TAG
     }
-    cache-from = [ "type=local,src=${CACHE_REF}" ]
-    cache-to = [ "type=local,mode=max,dest=${CACHE_REF}" ]
+    cache-from = [ "type=registry,ref=${REGISTRY}base_instance:base_instance-${CACHE_REF}" ]
+    cache-to = [ "type=registry,mode=max,ref=${REGISTRY}base_instance:base_instance-${CACHE_REF}" ]
     tags = [ "${REGISTRY}base_instance:base_instance-${BUILD_IMAGE_TAG}" ] 
     target = "base_instance"
 }
@@ -31,8 +31,8 @@ target instance-ci {
         HIVE_CONVERTER_BUILD=HIVE_CONVERTER_BUILD
         BUILD_IMAGE_TAG=BUILD_IMAGE_TAG
     }
-    cache-from = [ "type=local,src=${CACHE_REF}" ]
-    cache-to = [ "type=local,mode=max,dest=${CACHE_REF}" ]
+    cache-from = [ "type=registry,ref=${REGISTRY}${IMAGE_TAG_PREFIX}instance:instance-${CACHE_REF}" ]
+    cache-to = [ "type=registry,mode=max,ref=${REGISTRY}${IMAGE_TAG_PREFIX}instance:instance-${CACHE_REF}" ]
     contexts = {
         "${REGISTRY}base_instance:base_instance-${BUILD_IMAGE_TAG}" = "target:base_instance-ci"
     }
@@ -48,8 +48,8 @@ target data-ci {
         BUILD_IMAGE_TAG=BUILD_IMAGE_TAG
     }
     # Cache disabled - takes too much space due to replay data
-    #cache-from = [ "type=local,src=${CACHE_REF}" ]
-    #cache-to = [ "type=local,mode=max,dest=${CACHE_REF}" ]
+    #cache-from = [ "type=registry,ref=${REGISTRY}data:data-${CACHE_REF}" ]
+    #cache-to = [ "type=registry,mode=max,ref=${REGISTRY}data:data-${CACHE_REF}" ]
     contexts = {
         "${REGISTRY}base_instance:base_instance-${BUILD_IMAGE_TAG}" = "target:base_instance-ci"
     }
