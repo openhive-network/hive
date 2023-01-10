@@ -62,6 +62,7 @@ add_library( hive_chain
              util/extractors.cpp
              util/advanced_benchmark_dumper.cpp
              util/smt_token.cpp
+             util/decoded_types_data_storage.cpp
              util/dhf_processor.cpp
              util/dhf_helper.cpp
              util/delayed_voting.cpp
