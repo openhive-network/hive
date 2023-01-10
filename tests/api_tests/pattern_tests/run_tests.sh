@@ -1,6 +1,8 @@
 #!/bin/bash
 
-export PYTHONPATH="$2/tests/test_tools/package"
+
+export PYTHONPATH="$(realpath $2/tests/hive-local-tools/tests_api/scripts/):$PYTHONPATH"
+echo "$PYTHONPATH"
 
 if [[ $1 == *":"* ]]; then
     export HIVEMIND_ADDRESS=${1%:*}
@@ -15,7 +17,7 @@ default_testsuite=${3:?"Test suite must be specified as 3-rd script argument"}
 
 export IS_DIRECT_CALL_HAFAH=${4:-FALSE}
 
-tox -e tavern --                                 \
+tavern-ci .                                      \
     --tb=line                                    \
     -n 8                                         \
     --cache-clear                                \

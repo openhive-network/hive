@@ -103,7 +103,7 @@ mirrornet_node_build:
 mirrornet_replay_test:
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  needs: 
+  needs:
     - job: "mirrornet_node_build"
       artifacts: true
 
@@ -469,7 +469,6 @@ patterns_tests:
 
   before_script:
     - !reference [.test_tools_based, before_script]
-    - pip3 install tox==${TOX_VERSION}
 
   script:
     # run pattern tests
