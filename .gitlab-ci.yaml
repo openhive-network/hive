@@ -472,6 +472,7 @@ patterns_tests:
 
   script:
     # run pattern tests
+    - pip install tavern
     - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests
     - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
