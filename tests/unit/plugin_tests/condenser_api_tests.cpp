@@ -328,21 +328,25 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 
   BOOST_TEST_MESSAGE( "get_ops_in_block / get_transaction test" );
 
+  // Following operations happen below for each account:
+  // account_create_operation, account_created_operation,
+  // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
   ACTORS((alice0ah)(bob0ah))
+  // transfer_operation from initminer
   fund( "alice0ah", 500000000 );
+  // transfer_operation from alice0ah
   transfer("alice0ah", "bob0ah", asset(1234, HIVE_SYMBOL));
-
-  // We'll be expecting 11 operations here:
-  // 4 operations for each actor (2 for account creation & 2 for its vesting)
-  // 1 operation for alice funding.
-  // 1 operation for transfer between alice and bob.
-  // 1 block producer reward operation
+  // comment_operation
+  post_comment("alice0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", alice0ah_private_key);
+  // vote_operation & effective_comment_vote_operation
+  vote("alice0ah", "permlink1", "bob0ah", HIVE_1_PERCENT * 100, bob0ah_private_key);
 
   // These operations will go into next head block.
   uint32_t block_num = db->head_block_num() +1;
   ilog("block #${num}", ("num", block_num));
 
   // Let's make the block irreversible (see below why).
+  // Note that producer_reward_operation is put in every generated block.
   for(int i = 0; i<= 21; ++i)
     generate_block();
 
