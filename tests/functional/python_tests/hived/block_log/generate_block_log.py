@@ -6,6 +6,8 @@ from typing import Final, List
 
 import test_tools as tt
 
+from hive_local_tools.constants import TRANSACTION_TEMPLATE
+
 AMOUNT_OF_ALL_ACCOUNTS: Final[int] = 20_000
 ACCOUNTS_PER_CHUNK: Final[int] = 750
 MAX_WORKERS: Final[int] = 6
@@ -64,19 +66,7 @@ def __generate_operations_for_receiver(receiver: str, amount: tt.Asset.Test = tt
 
 
 def __generate_and_broadcast(wallet: tt.Wallet, account_names: List[str]) -> None:
-    transaction_template = {
-        "ref_block_num": 0,
-        "ref_block_prefix": 0,
-        "expiration": "2022-11-23T11:55:36",
-        "operations": [],
-        "extensions": [],
-        "signatures": [],
-        "transaction_id": "0000000000000000000000000000000000000000",
-        "block_num": 0,
-        "transaction_num": 0,
-    }
-
-    transaction = deepcopy(transaction_template)
+    transaction = deepcopy(TRANSACTION_TEMPLATE)
 
     for name in account_names:
         transaction["operations"].extend(__generate_operations_for_receiver(name))
