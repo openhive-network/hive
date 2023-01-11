@@ -39,8 +39,8 @@ class decoded_types_data_storage final
     decoded_types_data_storage();
     ~decoded_types_data_storage();
 
-    void add_type_decoding_set(const std::string_view type_name);
-    void remove_type_decoding_set(const std::string_view type_name);
+    void add_type_to_decoding_set(const std::string_view type_name);
+    void remove_type_from_decoding_set(const std::string_view type_name);
     void add_decoded_type_data_to_map(decoded_type_data&& decoded_type);
     bool type_is_being_decoded_or_already_decoded(const std::string_view type_name);
 
@@ -75,7 +75,7 @@ class decoded_types_data_storage final
 
         if (!get_instance().type_is_being_decoded_or_already_decoded(type))
         {
-          get_instance().add_type_decoding_set(type);
+          get_instance().add_type_to_decoding_set(type);
 
           if (fc::reflector<Member>::is_enum::value)
           {
@@ -88,7 +88,7 @@ class decoded_types_data_storage final
             decoder.decode();
           }
 
-          get_instance().remove_type_decoding_set(type);
+          get_instance().remove_type_from_decoding_set(type);
         }
       }
     };

@@ -34,13 +34,13 @@ decoded_types_data_storage& decoded_types_data_storage::get_instance()
   return instance;
 }
 
-void decoded_types_data_storage::add_type_decoding_set(const std::string_view type_name)
+void decoded_types_data_storage::add_type_to_decoding_set(const std::string_view type_name)
 {
   std::lock_guard<std::shared_mutex> write_lock(mutex);
   types_being_decoded_set.emplace(type_name);
 }
 
-void decoded_types_data_storage::remove_type_decoding_set(const std::string_view type_name)
+void decoded_types_data_storage::remove_type_from_decoding_set(const std::string_view type_name)
 {
   std::lock_guard<std::shared_mutex> write_lock(mutex);
   types_being_decoded_set.erase(type_name);
