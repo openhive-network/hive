@@ -113,8 +113,8 @@ namespace hive { namespace chain {
                                           //ABW: actually we could create "steem" account at genesis, just fake some of its properties to keep history intact
 
     public:
-      uint128_t         hbd_seconds; ///< total HBD * how long it has been held
-      uint128_t         savings_hbd_seconds; ///< total HBD * how long it has been held
+      uint128_t         hbd_seconds = 0; ///< total HBD * how long it has been held
+      uint128_t         savings_hbd_seconds = 0; ///< total HBD * how long it has been held
 
       util::manabar     voting_manabar;
       util::manabar     downvote_manabar;

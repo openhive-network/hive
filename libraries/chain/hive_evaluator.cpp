@@ -1543,14 +1543,14 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
       else
       {
         fc::uint128_t cur_cashout_time_sec = _db.calculate_discussion_payout_time( comment, *comment_cashout ).sec_since_epoch();
-        fc::uint128_t avg_cashout_sec;
+        fc::uint128_t avg_cashout_sec = 0;
         if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 )
         {
           avg_cashout_sec = cur_cashout_time_sec;
         }
         else
         {
-          fc::uint128_t new_cashout_time_sec;
+          fc::uint128_t new_cashout_time_sec = 0;
           if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && !_db.has_hardfork( HIVE_HARDFORK_0_13__257 ) )
             new_cashout_time_sec = _now.sec_since_epoch() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17;
           else

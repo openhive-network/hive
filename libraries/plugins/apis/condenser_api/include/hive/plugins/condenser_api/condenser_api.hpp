@@ -190,12 +190,12 @@ struct api_account_object
   legacy_asset      savings_balance;
 
   legacy_asset      hbd_balance;
-  uint128_t         hbd_seconds;
+  uint128_t         hbd_seconds = 0;
   time_point_sec    hbd_seconds_last_update;
   time_point_sec    hbd_last_interest_payment;
 
   legacy_asset      savings_hbd_balance;
-  uint128_t         savings_hbd_seconds;
+  uint128_t         savings_hbd_seconds = 0;
   time_point_sec    savings_hbd_seconds_last_update;
   time_point_sec    savings_hbd_last_interest_payment;
 
@@ -331,7 +331,7 @@ struct extended_dynamic_global_properties
   legacy_asset      total_vesting_fund_hive;
   legacy_asset      total_vesting_shares;
   legacy_asset      total_reward_fund_hive;
-  fc::uint128       total_reward_shares2;
+  fc::uint128       total_reward_shares2 = 0;
   legacy_asset      pending_rewarded_vesting_shares;
   legacy_asset      pending_rewarded_vesting_hive;
 
@@ -341,7 +341,7 @@ struct extended_dynamic_global_properties
   uint32_t          maximum_block_size = 0;
   uint16_t          required_actions_partition_percent = 0;
   uint64_t          current_aslot = 0;
-  fc::uint128_t     recent_slots_filled;
+  fc::uint128_t     recent_slots_filled = 0;
   uint8_t           participation_count = 0;
 
   uint32_t          last_irreversible_block_num = 0;
@@ -420,8 +420,8 @@ struct api_witness_object
   legacy_price            hbd_exchange_rate;
   time_point_sec          last_hbd_exchange_update;
   share_type              votes;
-  fc::uint128_t           virtual_last_update;
-  fc::uint128_t           virtual_position;
+  fc::uint128_t           virtual_last_update = 0;
+  fc::uint128_t           virtual_position = 0;
   fc::uint128_t           virtual_scheduled_time = fc::uint128_max_value();
   digest_type             last_work;
   version                 running_version;
@@ -525,7 +525,7 @@ struct api_witness_schedule_object
   }
 
   witness_schedule_id_type                    id;
-  fc::uint128_t                               current_virtual_time;
+  fc::uint128_t                               current_virtual_time = 0;
   uint32_t                                    next_shuffle_block_num = 1;
   vector< account_name_type >                 current_shuffled_witnesses;
   fc::optional< vector< account_name_type > > future_shuffled_witnesses;

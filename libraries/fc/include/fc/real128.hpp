@@ -37,7 +37,7 @@ namespace fc {
          uint64_t to_uint64()const;
 
       private:
-         uint128  fixed;
+         uint128  fixed = 0;
    };
 
    void to_variant( const real128& var,  variant& vo );

@@ -24,7 +24,7 @@ struct comment_reward_context
   share_type rshares;
   uint16_t   reward_weight = 0;
   asset      max_hbd;
-  uint128_t  total_reward_shares2;
+  uint128_t  total_reward_shares2 = 0;
   asset      total_reward_fund_hive;
   price      current_hive_price;
   protocol::curve_id   reward_curve = protocol::quadratic;

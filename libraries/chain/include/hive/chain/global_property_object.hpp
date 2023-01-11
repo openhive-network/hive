@@ -80,7 +80,7 @@ namespace hive { namespace chain {
       asset       total_vesting_fund_hive    = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
       asset       total_vesting_shares       = asset( 0, VESTS_SYMBOL ); //< TODO: replace with VEST_asset
       asset       total_reward_fund_hive     = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
-      fc::uint128 total_reward_shares2; ///< the running total of REWARD^2
+      fc::uint128 total_reward_shares2 = 0; ///< the running total of REWARD^2
       asset       pending_rewarded_vesting_shares = asset( 0, VESTS_SYMBOL ); //< TODO: replace with VEST_asset
       asset       pending_rewarded_vesting_hive   = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
 

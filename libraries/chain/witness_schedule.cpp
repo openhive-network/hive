@@ -425,7 +425,7 @@ void update_witness_schedule(database& db)
     vector<account_name_type> active_witnesses;
     active_witnesses.reserve( HIVE_MAX_WITNESSES );
 
-    fc::uint128 new_virtual_time;
+    fc::uint128 new_virtual_time = 0;
 
     /// only use vote based scheduling after the first 1M HIVE is created or if there is no POW queued
     if( props.num_pow_witnesses == 0 || db.head_block_num() > HIVE_START_MINER_VOTING_BLOCK )
