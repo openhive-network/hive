@@ -141,8 +141,8 @@ namespace hive { namespace chain {
         * @defgroup virtual_time Virtual Time Scheduling
         */
       ///@{
-      fc::uint128       virtual_last_update;
-      fc::uint128       virtual_position;
+      fc::uint128       virtual_last_update = 0;
+      fc::uint128       virtual_position = 0;
       fc::uint128       virtual_scheduled_time = fc::uint128_max_value();
       ///@}
 
@@ -176,7 +176,7 @@ namespace hive { namespace chain {
     public:
       CHAINBASE_DEFAULT_CONSTRUCTOR( witness_schedule_object )
 
-      fc::uint128                                        current_virtual_time;
+      fc::uint128                                        current_virtual_time = 0;
       uint32_t                                           next_shuffle_block_num = 1;
       fc::array< account_name_type, HIVE_MAX_WITNESSES > current_shuffled_witnesses;
       uint8_t                                            num_scheduled_witnesses = 1;

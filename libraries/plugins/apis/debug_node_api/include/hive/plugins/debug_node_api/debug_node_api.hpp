@@ -75,7 +75,7 @@ struct api_witness_schedule_object
 
   hive::chain::witness_schedule_id_type id;
 
-  fc::uint128                           current_virtual_time;
+  fc::uint128                           current_virtual_time = 0;
   uint32_t                              next_shuffle_block_num;
   vector<string>                        current_shuffled_witnesses;
   uint8_t                               num_scheduled_witnesses;
