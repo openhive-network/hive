@@ -10,3 +10,18 @@ or package in which they will be used. e.g.:
  - create in the test .py module - when used by tests only in this file,
  - create in proper place in the hive-local-tools - when used by tests in multiple modules/packages.
 """
+
+from typing import Final
+
+
+TRANSACTION_TEMPLATE: Final[dict] = {
+    "ref_block_num": 0,
+    "ref_block_prefix": 0,
+    "expiration": "1970-01-01T00:00:00",
+    "operations": [],
+    "extensions": [],
+    "signatures": [],
+    "transaction_id": "0000000000000000000000000000000000000000",
+    "block_num": 0,
+    "transaction_num": 0,
+}

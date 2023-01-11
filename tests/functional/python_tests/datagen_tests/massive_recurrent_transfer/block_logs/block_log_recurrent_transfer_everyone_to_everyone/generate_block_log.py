@@ -8,6 +8,7 @@ from typing import Final, List
 
 import test_tools as tt
 
+from hive_local_tools.constants import TRANSACTION_TEMPLATE
 from hive_local_tools.functional import VestPrice
 from hive_local_tools.functional.python.datagen.massive_recurrent_transfer import execute_function_in_threads
 
@@ -117,39 +118,15 @@ def __generate_recurrent_transfers_for_sender(sender: str, all_accounts: List[st
 
 
 def __order_and_broadcast_recurrent_transfers(wallet: tt.Wallet, account_names: List[str]) -> None:
-    transaction_template = {
-        "ref_block_num": 0,
-        "ref_block_prefix": 0,
-        "expiration": "2022-11-23T11:55:36",
-        "operations": [],
-        "extensions": [],
-        "signatures": [],
-        "transaction_id": "0000000000000000000000000000000000000000",
-        "block_num": 0,
-        "transaction_num": 0,
-    }
-
     for name in account_names:
-        transaction = deepcopy(transaction_template)
+        transaction = deepcopy(TRANSACTION_TEMPLATE)
         transaction["operations"].extend(__generate_recurrent_transfers_for_sender(name, account_names))
         wallet.api.sign_transaction(transaction)
         tt.logger.info(f"Finished: {name}")
 
 
 def __fund_account_and_broadcast(wallet: tt.Wallet, account_names: List[str]) -> None:
-    transaction_template = {
-        "ref_block_num": 0,
-        "ref_block_prefix": 0,
-        "expiration": "2022-11-23T11:55:36",
-        "operations": [],
-        "extensions": [],
-        "signatures": [],
-        "transaction_id": "0000000000000000000000000000000000000000",
-        "block_num": 0,
-        "transaction_num": 0,
-    }
-
-    transaction = deepcopy(transaction_template)
+    transaction = deepcopy(TRANSACTION_TEMPLATE)
     transaction["operations"].extend(__fund_account(account_names))
     wallet.api.sign_transaction(transaction)
     tt.logger.info(f"Finished: {account_names[-1]}")
