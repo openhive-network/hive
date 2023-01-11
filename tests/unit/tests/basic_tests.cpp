@@ -38,6 +38,19 @@
 
 #include <hive/chain/util/reward.hpp>
 
+#include <hive/chain/util/decoded_types_data_storage.hpp>
+#include <hive/chain/pending_required_action_object.hpp>
+#include <hive/chain/pending_optional_action_object.hpp>
+#include <hive/plugins/block_log_info/block_log_info_objects.hpp>
+#include <hive/plugins/account_by_key/account_by_key_objects.hpp>
+#include <hive/plugins/market_history/market_history_plugin.hpp>
+#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/plugins/reputation/reputation_objects.hpp>
+#include <hive/plugins/tags/tags_plugin.hpp>
+#include <hive/plugins/witness/witness_plugin_objects.hpp>
+#include <hive/plugins/transaction_status/transaction_status_objects.hpp>
+#include <hive/plugins/follow/follow_objects.hpp>
+
 #include <fc/crypto/digest.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/uint128.hpp>
@@ -688,6 +701,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //pending_required_action_object
 
   BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 456 ); //not a chain object but potentially very numerous
+
 }
 #endif
 
@@ -724,6 +738,69 @@ BOOST_AUTO_TEST_CASE( fc_optional_alignment )
   t[0]->m4 = t[1]->m2;
   BOOST_CHECK_EQUAL( t[0]->m2, t[1]->m4 );
   BOOST_CHECK_EQUAL( t[0]->m4, t[1]->m2 );
+}
+
+BOOST_AUTO_TEST_CASE( types_checksum_tests )
+{
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::account_object>(), 1802 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::account_metadata_object>(), 78 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::account_authority_object>(), 265 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::vesting_delegation_object>(), 34 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::vesting_delegation_expiration_object>(), 26 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::owner_authority_history_object>(), 102 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::account_recovery_request_object>(), 102 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::change_recovery_account_request_object>(), 46 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::block_summary_object>(), 25 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::comment_object>(), 36 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::comment_cashout_object>(), 245 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::comment_cashout_ex_object>(), 103 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::comment_vote_object>(), 63 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::proposal_object>(), 192 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::proposal_vote_object>(), 27 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(), 1333 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::hardfork_property_object>(), 129 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::convert_request_object>(), 34 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::collateralized_convert_request_object>(), 47 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::escrow_object>(), 193 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::savings_withdraw_object>(), 113 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>(), 59 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::feed_history_object>(), 243 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::limit_order_object>(), 93 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::withdraw_vesting_route_object>(), 49 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::decline_voting_rights_request_object>(), 27 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::reward_fund_object>(), 129 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::recurrent_transfer_object>(), 105 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::pending_required_action_object>(), 35 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::pending_optional_action_object>(), 35 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::transaction_object>(), 31 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::witness_vote_object>(), 39 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::witness_schedule_object>(), 677 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::chain::witness_object>(), 552 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::account_by_key::key_lookup_object>(), 56 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::account_history_rocksdb::volatile_operation_object>(), 151 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::block_log_info::block_log_hash_state_object>(), 138 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::block_log_info::block_log_pending_message_object>(), 141 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::follow::follow_object>(), 44 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::follow::feed_object>(), 101 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::follow::blog_object>(), 42 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::follow::blog_author_stats_object>(), 46 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::follow::reputation_object>(), 31 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::follow::follow_count_object>(), 34 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::market_history::bucket_object>(), 102 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::market_history::order_history_object>(), 91 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::rc::rc_resource_param_object>(), 365 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::rc::rc_pool_object>(), 187 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::rc::rc_stats_object>(), 5550 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::rc::rc_pending_data>(), 138 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::rc::rc_account_object>(), 97 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::rc::rc_direct_delegation_object>(), 26 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::rc::rc_usage_bucket_object>(), 51 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::reputation::reputation_object>(), 31 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::tags::tag_object>(), 191 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::tags::tag_stats_object>(), 101 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::tags::author_tag_stats_object>(), 70 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::transaction_status::transaction_status_object>(), 42 );
+  BOOST_CHECK_EQUAL( hive::chain::util::decoded_types_data_storage::get_instance().get_decoded_type_checksum<hive::plugins::witness::witness_custom_op_object>(), 27 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
