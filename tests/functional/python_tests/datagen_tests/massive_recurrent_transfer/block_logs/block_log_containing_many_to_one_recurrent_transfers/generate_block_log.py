@@ -73,6 +73,13 @@ def execute_function_in_threads(
 
 
 def prepare_block_log_with_many_to_one_recurrent_transfers() -> None:
+    """
+    This script generate block_log with specific conditions:
+      1) create a receiver account
+      2) create accounts - the number is specified in a constant - NUMBER_OF_ACCOUNTS
+      3) fund accounts - each account is credited with HIVE
+      4) order recurring transfers - each of the created accounts order one recurring transfer to receiver account
+    """
     init_node = tt.InitNode()
     init_node.config.shared_file_size = "16G"
     init_node.run()
