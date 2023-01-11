@@ -26,8 +26,13 @@ if [ -n "${CI:-}" ];
 then
   BUILDKIT_CACHE_PATH=${1:?"Missing argument #3: Docker BuildKit cache path"}
   shift
-  BINARY_CACHE_PATH=${1:?"Missing argument #4: binary cache path"}
-  shift
+  BINARY_CACHE_PATH=${1:-}
+  if [ "a${BINARY_CACHE_PATH:0:2}" != "a--" ]
+  then
+    shift
+  else
+    BINARY_CACHE_PATH=""  
+  fi
 
   CACHE_REF="${BUILDKIT_CACHE_PATH}"
   export CACHE_REF
@@ -45,11 +50,14 @@ then
   popd || exit 1
 
   set -x
-  BUILDER_NAME=$(docker buildx inspect | head -n 1 | awk '{print $2}')
-  echo "BUILDER_NAME=${BUILDER_NAME}"
-  docker buildx use default
-  "$SCRIPTPATH/export-binaries.sh" "${REGISTRY}data:data-${BUILD_IMAGE_TAG}" "${BINARY_CACHE_PATH}"
-  docker buildx use "$BUILDER_NAME"
+  if [ -n "${BINARY_CACHE_PATH}" ];
+  then
+    BUILDER_NAME=$(docker buildx inspect | head -n 1 | awk '{print $2}')
+    echo "BUILDER_NAME=${BUILDER_NAME}"
+    docker buildx use default
+    "$SCRIPTPATH/export-binaries.sh" "${REGISTRY}data:data-${BUILD_IMAGE_TAG}" "${BINARY_CACHE_PATH}"
+    docker buildx use "$BUILDER_NAME"
+  fi
   set +x
 else
   "$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "${SRCROOTDIR}" "${REGISTRY}" "$@"
