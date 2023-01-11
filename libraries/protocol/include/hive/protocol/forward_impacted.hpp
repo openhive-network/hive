@@ -42,7 +42,7 @@ typedef std::vector<std::pair<protocol::account_name_type, protocol::asset>> imp
 impacted_balance_data operation_get_impacted_balances(const hive::protocol::operation& op, const bool is_hf01);
 stringset get_operations_used_in_get_balance_impacting_operations();
 
-protocol::account_name_type get_creator_from_account_create_operations( const protocol::operation& op );
+protocol::account_name_type get_created_from_account_create_operations( const protocol::operation& op );
 
 void transaction_get_impacted_accounts(
   const hive::protocol::transaction& tx,
