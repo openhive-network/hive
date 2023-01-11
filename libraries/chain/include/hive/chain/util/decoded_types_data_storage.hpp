@@ -19,7 +19,7 @@ class decoded_type_data
 
     size_t get_checksum() const { return checksum; }
     std::string_view get_type_name() const { return name; }
-    bool is_enum() const { return enum_values.empty(); }
+    bool is_enum() const { return members.empty(); }
 
   private:
     size_t checksum = 0;
