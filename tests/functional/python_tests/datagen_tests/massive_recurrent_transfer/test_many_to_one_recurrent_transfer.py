@@ -10,7 +10,7 @@ def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker):
     receiver_accounts = ["bank"]
     base_accounts = ['hive.fund', 'initminer', 'miners', 'null', 'steem.dao', 'temp']
 
-    block_log_directory = Path(__file__).parent / "block_log/block_log"
+    block_log_directory = Path(__file__).parent / "block_logs/block_log_containing_many_to_one_recurrent_transfers"
     with open(block_log_directory / "timestamp", encoding='utf-8') as file:
         timestamp = tt.Time.parse(file.read())
 
