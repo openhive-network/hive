@@ -443,10 +443,10 @@ datagen_api_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
-    JUNIT_REPORT: tests/functional/python_tests/datagen_tests/api_tests/report.xml
+    JUNIT_REPORT: tests/functional/python_tests/datagen_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/datagen_tests/api_tests/
+    - cd tests/functional/python_tests/datagen_tests/
     - *run-pytest
   tags:
     - public-runner-docker
