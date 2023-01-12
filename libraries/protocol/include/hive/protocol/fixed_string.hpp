@@ -213,7 +213,7 @@ struct fixed_string_size_for_impl< STORAGE_TYPE >                  \
 };
 
 HIVE_DEFINE_FIXED_STRING_IMPL( 16, BOOST_IDENTITY_TYPE((fc::erpair< uint64_t, uint64_t >)) )
-HIVE_DEFINE_FIXED_STRING_IMPL( 24, BOOST_IDENTITY_TYPE((fc::erpair< fc::uint128_t, uint64_t >)) )
+HIVE_DEFINE_FIXED_STRING_IMPL( 24, BOOST_IDENTITY_TYPE((fc::erpair< fc::erpair< uint64_t, uint64_t >, uint64_t >)) )
 HIVE_DEFINE_FIXED_STRING_IMPL( 32, BOOST_IDENTITY_TYPE((fc::erpair< fc::uint128_t, fc::uint128_t >)) )
 
 template< size_t N >
