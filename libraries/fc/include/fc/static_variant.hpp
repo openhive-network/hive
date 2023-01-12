@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <typeinfo>
 #include <fc/exception/exception.hpp>
+#include <fc/uint128.hpp>
 
 namespace fc {
 
@@ -217,9 +218,9 @@ class static_variant {
     static_assert(impl::type_info<Types...>::no_reference_types, "Reference types are not permitted in static_variant.");
     static_assert(impl::type_info<Types...>::no_duplicates, "static_variant type arguments contain duplicate types.");
 
-    int64_t _tag;
-    char storage[impl::type_info<Types...>::size];
-
+    int64_t                 _tag;
+    alignas(Types...) char  storage[impl::type_info<Types...>::size];  // to be sure address of 'storage' is properly aligned
+      
     template<typename X>
     void init(const X& x) {
         _tag = impl::position<X, Types...>::pos;
