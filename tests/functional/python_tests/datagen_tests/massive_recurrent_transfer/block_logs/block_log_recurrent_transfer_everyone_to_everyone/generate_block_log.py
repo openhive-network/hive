@@ -8,7 +8,7 @@ from typing import Final, List
 
 import test_tools as tt
 
-from hive_local_tools.constants import TRANSACTION_TEMPLATE
+from hive_local_tools.constants import TRANSACTION_TEMPLATE, MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
 from hive_local_tools.functional import VestPrice
 from hive_local_tools.functional.python.datagen.massive_recurrent_transfer import execute_function_in_threads
 
@@ -82,7 +82,7 @@ def prepare_block_log():
     node.wait_for_irreversible_block()
     tt.logger.info(f"Last block number after apply all rt: {node.get_last_block_number()}")
 
-    waiting_to_block_with_number = math.ceil(AMOUNT_OF_ALL_ACCOUNTS * 255 / 1000)
+    waiting_to_block_with_number = math.ceil(AMOUNT_OF_ALL_ACCOUNTS * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK)
     tt.logger.info(f"Waiting till block {waiting_to_block_with_number} for pending recurrent transfers to be processed...")
     node.wait_for_block_with_number(waiting_to_block_with_number)
 

@@ -4,6 +4,7 @@ from pathlib import Path
 import test_tools as tt
 
 from hive_local_tools.functional.python.datagen.massive_recurrent_transfer import ReplayedNodeMaker
+from hive_local_tools.constants import MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
 
 
 def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(replayed_node: ReplayedNodeMaker):
@@ -30,7 +31,7 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
     all_accounts_names = wallet.list_accounts()
 
     tt.logger.info(f"start waiting, headblock: {replayed_node.get_last_block_number()}")
-    replayed_node.wait_number_of_blocks(math.ceil(len(all_accounts_names) * 255 / 1000))
+    replayed_node.wait_number_of_blocks(math.ceil(len(all_accounts_names) * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK))
     tt.logger.info(f"finish waiting, headblock: {replayed_node.get_last_block_number()}")
 
     for account_name in all_accounts_names:
