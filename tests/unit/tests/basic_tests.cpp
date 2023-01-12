@@ -563,7 +563,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( public_key_type ), 33u );
   BOOST_CHECK_EQUAL( sizeof( fc::fixed_string<> ), 16u );
   BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<16> ), 16u );
-  // ! failed ! BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<24> ), 24u );
+  BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<24> ), 24u );
   BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<32> ), 32u );
   BOOST_CHECK_EQUAL( sizeof( hive::protocol::custom_id_type ), 32u );
   BOOST_CHECK_EQUAL( alignof( hive::protocol::custom_id_type ), 16u );
