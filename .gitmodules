@@ -19,3 +19,6 @@
 [submodule "libraries/chain/compression_dictionaries"]
 	path = libraries/chain/compression_dictionaries
 	url = ../compression_dictionaries.git
+[submodule "libraries/vendor/rocksdb"]
+	path = libraries/vendor/rocksdb
+	url = https://github.com/facebook/rocksdb.git
