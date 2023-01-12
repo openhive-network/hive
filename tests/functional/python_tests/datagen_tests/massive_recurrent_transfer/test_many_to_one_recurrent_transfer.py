@@ -17,6 +17,7 @@ def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker):
         absolute_start_time=timestamp + tt.Time.days(2),
         time_multiplier=50,
     )
+    wallet = tt.Wallet(attach_to=replayed_node)
 
     replayed_node.wait_number_of_blocks(math.ceil(bl.NUMBER_OF_SENDER_ACCOUNTS / MAX_RECURRENT_TRANSFERS_PER_BLOCK))
 

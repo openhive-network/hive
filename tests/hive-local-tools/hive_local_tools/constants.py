@@ -25,3 +25,5 @@ TRANSACTION_TEMPLATE: Final[dict] = {
     "block_num": 0,
     "transaction_num": 0,
 }
+
+BASE_ACCOUNTS: Final[list] = ['hive.fund', 'initminer', 'miners', 'null', 'steem.dao', 'temp']
