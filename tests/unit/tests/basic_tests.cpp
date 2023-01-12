@@ -571,7 +571,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( hive::protocol::custom_json_operation ), 112u );
   BOOST_CHECK_EQUAL( alignof( hive::protocol::custom_json_operation ), 16u );
   BOOST_CHECK_EQUAL( offsetof( hive::protocol::custom_json_operation, id ), 48u );
-  BOOST_CHECK_EQUAL( sizeof( hive::protocol::operation ), 368u );
+  BOOST_CHECK_EQUAL( sizeof( hive::protocol::operation ), 352u );
   BOOST_CHECK_EQUAL( alignof( hive::protocol::operation ), 16u );
 
   /*
