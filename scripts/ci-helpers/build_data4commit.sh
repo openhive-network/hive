@@ -7,11 +7,8 @@ SCRIPTSDIR="$SCRIPTPATH/.."
 # shellcheck disable=SC2034 
 LOG_FILE=build_data4commit.log
 
-DIRECTORY_PREFIX=${DIRECTORY_PREFIX:"hive-"}
-GIT_REPOSITORY=${GIT_REPOSITORY:"https://gitlab.syncad.com/hive/hive.git"}
-
-echo $DIRECTORY_PREFIX
-echo $GIT_REPOSITORY
+DIRECTORY_PREFIX=${DIRECTORY_PREFIX:-"hive-"}
+GIT_REPOSITORY=${GIT_REPOSITORY:-"https://gitlab.syncad.com/hive/hive.git"}
 
 # shellcheck source=../common.sh
 source "$SCRIPTSDIR/common.sh"
