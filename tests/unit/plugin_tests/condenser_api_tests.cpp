@@ -61,6 +61,38 @@ struct condenser_api_fixture : database_fixture
     open_database( _data_dir );
 
     generate_block();
+    validate_database();
+  }
+
+  virtual ~condenser_api_fixture()
+  {
+    try {
+      // If we're unwinding due to an exception, don't do any more checks.
+      // This way, boost test's last checkpoint tells us approximately where the error was.
+      if( !std::uncaught_exceptions() )
+      {
+        BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
+      }
+
+      if( ah_plugin )
+        ah_plugin->plugin_shutdown();
+      if( data_dir )
+        db->wipe( data_dir->path(), data_dir->path(), true );
+      return;
+    } FC_CAPTURE_AND_LOG( () )
+      }
+
+  hive::plugins::condenser_api::condenser_api* condenser_api = nullptr;
+  hive::plugins::account_history::account_history_api* account_history_api = nullptr;
+};
+
+BOOST_FIXTURE_TEST_SUITE( condenser_api_tests, condenser_api_fixture );
+
+BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
+{ try {
+  // Start code block moved here from condenser_api_fixture's constructor,
+  // to allow other tests using condenser_api_fixture with earlier hardforks.
+  {
     db->set_hardfork( HIVE_NUM_HARDFORKS );
     generate_block();
 
@@ -115,33 +147,7 @@ struct condenser_api_fixture : database_fixture
 
     validate_database();
   }
-
-  virtual ~condenser_api_fixture()
-  {
-    try {
-      // If we're unwinding due to an exception, don't do any more checks.
-      // This way, boost test's last checkpoint tells us approximately where the error was.
-      if( !std::uncaught_exceptions() )
-      {
-        BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
-      }
-
-      if( ah_plugin )
-        ah_plugin->plugin_shutdown();
-      if( data_dir )
-        db->wipe( data_dir->path(), data_dir->path(), true );
-      return;
-    } FC_CAPTURE_AND_LOG( () )
-      }
-
-  hive::plugins::condenser_api::condenser_api* condenser_api = nullptr;
-  hive::plugins::account_history::account_history_api* account_history_api = nullptr;
-};
-
-BOOST_FIXTURE_TEST_SUITE( condenser_api_tests, condenser_api_fixture );
-
-BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
-{ try {
+  // End code block moved here from condenser_api_fixture's constructor
 
   BOOST_TEST_MESSAGE( "get_active_witnesses / get_witness_schedule test" );
 
@@ -327,6 +333,17 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 { try {
 
   BOOST_TEST_MESSAGE( "get_ops_in_block / get_transaction test" );
+
+  // Following operations need lower hardfork set to be tested:
+  // pow_operation < HIVE_HARDFORK_0_13__256
+  // pow_reward_operation < HIVE_HARDFORK_0_16__551
+  // pow2_operation < HIVE_HARDFORK_0_17__770
+  // ineffective_delete_comment_operation < HIVE_HARDFORK_0_19__977
+  // account_create_with_delegation_operation < HIVE_HARDFORK_0_20__1760
+  
+  // Set low hardfork to allow testing these operations
+  db->set_hardfork( HIVE_HARDFORK_0_12 );
+  generate_block();
 
   // Following operations happen below for each account:
   // account_create_operation, account_created_operation,
