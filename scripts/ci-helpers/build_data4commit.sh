@@ -6,6 +6,10 @@ SCRIPTSDIR="$SCRIPTPATH/.."
 
 # shellcheck disable=SC2034 
 LOG_FILE=build_data4commit.log
+
+DIRECTORY_PREFIX=${DIRECTORY_PREFIX:"hive-"}
+GIT_REPOSITORY=${GIT_REPOSITORY:"https://gitlab.syncad.com/hive/hive.git"}
+
 # shellcheck source=../common.sh
 source "$SCRIPTSDIR/common.sh"
 
@@ -17,9 +21,6 @@ shift
 BRANCH="master"
 
 BUILD_IMAGE_TAG=$COMMIT
-
-DIRECTORY_PREFIX=${DIRECTORY_PREFIX:"hive-"}
-GIT_REPOSITORY=${GIT_REPOSITORY:"https://gitlab.syncad.com/hive/hive.git"}
 
 do_clone "$BRANCH" "./${DIRECTORY_PREFIX}${COMMIT}" "${GIT_REPOSITORY}" "$COMMIT"
 
