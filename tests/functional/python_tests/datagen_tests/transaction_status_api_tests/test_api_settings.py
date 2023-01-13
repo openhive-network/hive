@@ -43,7 +43,7 @@ def test_transaction_status_rebuild_state(replayed_node):
     verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, 'unknown')
 
     replayed_node.close()
-    replayed_node.config.transaction_status_block_depth = '300'
+    replayed_node.config.transaction_status_block_depth = 300
     replayed_node.run(wait_for_live=False, arguments=['--transaction-status-rebuild-state'])
 
     verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, 'within_irreversible_block')
