@@ -402,13 +402,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   db->set_hardfork( HIVE_HARDFORK_0_12 );
   generate_block();
 
-  // Following operations happen below for each account (ACTOR):
-  // account_create_operation, account_created_operation,
-  // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
-  ACTORS((alice0ah)(bob0ah))
-  // transfer_operation from initminer
-  fund( "alice0ah", 500000000 );
-
+  PREP_ACTOR( carol0ah )
+  // pow_operation, pow_reward_operation
+  create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
   //TODO: Add remaining obsolete operations here.
 
   do_the_testing( *this );
@@ -417,6 +413,12 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   db->set_hardfork( HIVE_NUM_HARDFORKS );
   generate_block();
 
+  // Following operations happen below for each account (ACTOR):
+  // account_create_operation, account_created_operation,
+  // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
+  ACTORS((alice0ah)(bob0ah))
+  // transfer_operation from initminer
+  fund( "alice0ah", 500000000 );
   // transfer_operation from alice0ah
   transfer("alice0ah", "bob0ah", asset(1234, HIVE_SYMBOL));
   // comment_operation

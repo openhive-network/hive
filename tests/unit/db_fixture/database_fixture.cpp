@@ -882,6 +882,42 @@ void database_fixture::vote( std::string _author, std::string _permlink, std::st
   trx.operations.clear();
 }
 
+void database_fixture::create_with_pow( std::string _name, const fc::ecc::public_key& _public_key,
+                                       const fc::ecc::private_key& _private_key )
+{
+  pow_operation op;
+  op.worker_account = _name;
+  op.block_id = db->head_block_id();
+  op.work.worker = _public_key;
+  //note: we cannot compute nonce once and hardcode it in the test because HIVE_BLOCKCHAIN_VERSION
+  //becomes part of first block as extension, which means when version changes (because we have new
+  //hardfork coming or just because of HIVE_ENABLE_SMT) the nonces will have to change as well
+  op.nonce = -1;
+  do
+  {
+    ++op.nonce;
+    op.work.create( _private_key, op.work_input() );
+  }
+  while( op.work.work >= db->get_pow_target() );
+  //default props
+
+  //pow_operation does not need signature - signing it anyway leads to superfluous signature error
+  //on the other hand current RC mechanism needs to decide who pays for the transaction and when there is
+  //no signature no one is paying which is also an error; therefore we need some other operation that
+  //actually needs a signature;
+  comment_operation comment;
+  comment.author = "initminer"; // cannot be worker
+  comment.permlink = "test";
+  comment.parent_permlink = "test";
+  comment.body = "Hello world!";
+
+  signed_transaction tx;
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  tx.operations.push_back( comment );
+  push_transaction( tx, init_account_priv_key ); //cannot be worker private key
+}
+
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
 {
   vector< operation > ops;
