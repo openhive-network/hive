@@ -301,7 +301,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   else if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1761 ) && _db.has_hardfork( HIVE_HARDFORK_0_19__987 ) )
   {
     FC_ASSERT( o.fee >= asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL ), "Insufficient Fee: ${f} required, ${p} provided.",
-            ("f", wso.median_props.account_creation_fee * asset( HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL ) )
+            ("f", asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL ))
             ("p", o.fee) );
   }
   else if( _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
