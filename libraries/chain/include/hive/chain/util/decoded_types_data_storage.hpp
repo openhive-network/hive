@@ -20,6 +20,8 @@ class decoded_type_data
     size_t get_checksum() const { return checksum; }
     std::string_view get_type_name() const { return name; }
     bool is_enum() const { return members.empty(); }
+    const members_vector& get_members() const { return members; }
+    const enum_values_vector& get_enum_values() const { return enum_values; }
 
   private:
     size_t checksum = 0;
@@ -197,6 +199,8 @@ class decoded_types_data_storage final
     {
       return get_decoded_type_data<T>().get_checksum();
     }
+
+    const std::unordered_map<std::string_view, decoded_type_data>& get_decoded_types_data_map() const { return decoded_types_data_map; }
 
   private:
     std::unordered_set<std::string_view> types_being_decoded_set;
