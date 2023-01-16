@@ -2,6 +2,7 @@ stages:
 - build
 - test
 - cleanup
+- publish
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
@@ -23,7 +24,9 @@ variables:
 
   TOX_VERSION: "3.25.1"
 
-include: '/scripts/ci-helpers/prepare_data_image_job.yml'
+include:
+  - template: Workflows/Branch-Pipelines.gitlab-ci.yml
+  - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
 
 prepare_hived_data_image:
   extends: .prepare_hived_data_5m_image
@@ -605,3 +608,14 @@ witness_tests:
   tags:
     - public-runner-docker
     - hived-for-tests
+
+build_and_publish_image:
+  stage: publish
+  extends: .docker_image_builder_job
+  script:
+    - scripts/ci-helpers/build_and_push_instance.sh
+  tags:
+    - public-runner-docker  
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED'
+      when: manual 
