@@ -329,43 +329,16 @@ void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_retu
   }
 }
 
-BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
-{ try {
-
-  BOOST_TEST_MESSAGE( "get_ops_in_block / get_transaction test" );
-
-  // Following operations need lower hardfork set to be tested:
-  // pow_operation < HIVE_HARDFORK_0_13__256
-  // pow_reward_operation < HIVE_HARDFORK_0_16__551
-  // pow2_operation < HIVE_HARDFORK_0_17__770
-  // ineffective_delete_comment_operation < HIVE_HARDFORK_0_19__977
-  // account_create_with_delegation_operation < HIVE_HARDFORK_0_20__1760
-  
-  // Set low hardfork to allow testing these operations
-  db->set_hardfork( HIVE_HARDFORK_0_12 );
-  generate_block();
-
-  // Following operations happen below for each account:
-  // account_create_operation, account_created_operation,
-  // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
-  ACTORS((alice0ah)(bob0ah))
-  // transfer_operation from initminer
-  fund( "alice0ah", 500000000 );
-  // transfer_operation from alice0ah
-  transfer("alice0ah", "bob0ah", asset(1234, HIVE_SYMBOL));
-  // comment_operation
-  post_comment("alice0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", alice0ah_private_key);
-  // vote_operation & effective_comment_vote_operation
-  vote("alice0ah", "permlink1", "bob0ah", HIVE_1_PERCENT * 100, bob0ah_private_key);
-
-  // These operations will go into next head block.
-  uint32_t block_num = db->head_block_num() +1;
+void do_the_testing( condenser_api_fixture& caf )
+{
+  // The tested operations will go into next head block.
+  uint32_t block_num = caf.db->head_block_num() +1;
   ilog("block #${num}", ("num", block_num));
 
   // Let's make the block irreversible (see below why).
   // Note that producer_reward_operation is put in every generated block.
   for(int i = 0; i<= 21; ++i)
-    generate_block();
+    caf.generate_block();
 
   // Compare operations & their transactions.
   auto transaction_comparator = [&](const hive::protocol::transaction_id_type& trx_id) {
@@ -378,11 +351,11 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
     {
       // Call condenser get_transaction and verify results with result of account history variant.
       const auto tx_hash = trx_id.str();
-      const auto result = condenser_api->get_transaction( condenser_api::get_transaction_args(1, fc::variant(tx_hash)) );
+      const auto result = caf.condenser_api->get_transaction( condenser_api::get_transaction_args(1, fc::variant(tx_hash)) );
       const condenser_api::annotated_signed_transaction op_tx = result.value;
       ilog("operation transaction is ${tx}", ("tx", op_tx));
       const account_history::annotated_signed_transaction ah_op_tx = 
-        account_history_api->get_transaction( {tx_hash, false /*include_reversible*/} );
+        caf.account_history_api->get_transaction( {tx_hash, false /*include_reversible*/} );
       ilog("operation transaction is ${tx}", ("tx", ah_op_tx));
       BOOST_REQUIRE_EQUAL( op_tx.transaction_id, ah_op_tx.transaction_id );
       BOOST_REQUIRE_EQUAL( op_tx.block_num, ah_op_tx.block_num );
@@ -393,24 +366,66 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // Call condenser get_ops_in_block and verify results with result of account history variant.
   // Note that condenser variant calls ah's one with default value of include_reversible = false.
   // Two arguments, second set to false.
-  auto block_ops = condenser_api->get_ops_in_block({block_num, false /*only_virtual*/});
-  auto ah_block_ops = account_history_api->get_ops_in_block({block_num, false /*only_virtual*/, false /*include_reversible*/});
+  auto block_ops = caf.condenser_api->get_ops_in_block({block_num, false /*only_virtual*/});
+  auto ah_block_ops = caf.account_history_api->get_ops_in_block({block_num, false /*only_virtual*/, false /*include_reversible*/});
   compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
   // Two arguments, second set to true.
-  block_ops = condenser_api->get_ops_in_block({block_num, true /*only_virtual*/});
-  ah_block_ops = account_history_api->get_ops_in_block({block_num, true /*only_virtual*/});
+  block_ops = caf.condenser_api->get_ops_in_block({block_num, true /*only_virtual*/});
+  ah_block_ops = caf.account_history_api->get_ops_in_block({block_num, true /*only_virtual*/});
   compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
   // Single argument
-  block_ops = condenser_api->get_ops_in_block({block_num});
-  ah_block_ops = account_history_api->get_ops_in_block({block_num});
+  block_ops = caf.condenser_api->get_ops_in_block({block_num});
+  ah_block_ops = caf.account_history_api->get_ops_in_block({block_num});
   compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
 
   // Too few arguments
-  BOOST_REQUIRE_THROW( condenser_api->get_ops_in_block({}), fc::assert_exception );
+  BOOST_REQUIRE_THROW( caf.condenser_api->get_ops_in_block({}), fc::assert_exception );
   // Too many arguments
-  BOOST_REQUIRE_THROW( condenser_api->get_ops_in_block({block_num, false /*only_virtual*/, 0 /*redundant arg*/}), fc::assert_exception );
+  BOOST_REQUIRE_THROW( caf.condenser_api->get_ops_in_block({block_num, false /*only_virtual*/, 0 /*redundant arg*/}), fc::assert_exception );
 
-  validate_database();
+  caf.validate_database();
+}
+
+BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
+{ try {
+
+  BOOST_TEST_MESSAGE( "get_ops_in_block / get_transaction test" );
+
+  // Following operations need lower hardfork set to be tested:
+  // pow_operation < HIVE_HARDFORK_0_13__256
+  // pow_reward_operation < HIVE_HARDFORK_0_16__551
+  // pow2_operation < HIVE_HARDFORK_0_17__770
+  // ineffective_delete_comment_operation < HIVE_HARDFORK_0_19__977
+  // account_create_with_delegation_operation < HIVE_HARDFORK_0_20__1760
+  
+  // Set low hardfork to allow testing of obsolete operations
+  db->set_hardfork( HIVE_HARDFORK_0_12 );
+  generate_block();
+
+  // Following operations happen below for each account (ACTOR):
+  // account_create_operation, account_created_operation,
+  // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
+  ACTORS((alice0ah)(bob0ah))
+  // transfer_operation from initminer
+  fund( "alice0ah", 500000000 );
+
+  //TODO: Add remaining obsolete operations here.
+
+  do_the_testing( *this );
+
+  // Set current hardfork for easier testing of current operations
+  db->set_hardfork( HIVE_NUM_HARDFORKS );
+  generate_block();
+
+  // transfer_operation from alice0ah
+  transfer("alice0ah", "bob0ah", asset(1234, HIVE_SYMBOL));
+  // comment_operation
+  post_comment("alice0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", alice0ah_private_key);
+  // vote_operation & effective_comment_vote_operation
+  vote("alice0ah", "permlink1", "bob0ah", HIVE_1_PERCENT * 100, bob0ah_private_key);
+  //TODO: Add remaining current operations here.
+
+  do_the_testing( *this );
 
 } FC_LOG_AND_RETHROW() }
 
