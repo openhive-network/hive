@@ -7,7 +7,6 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include <unordered_set>
-#include <iostream>
 
 namespace hive { namespace chain { namespace util {
 
@@ -131,7 +130,6 @@ class decoded_types_data_storage final
 
       void operator()(const char *name, const int64_t value) const
       {
-        std::cerr << "visitor_enum_decoder - ()\n";
         const std::string value_name(name);
         const std::string value_in_string(std::to_string(value));
         encoder.write(value_name.data(), value_name.size());
