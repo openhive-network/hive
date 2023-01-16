@@ -20,7 +20,7 @@
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
-#include <rocksdb/utilities/backupable_db.h>
+#include <rocksdb/utilities/backup_engine.h>
 #include <rocksdb/utilities/write_batch_with_index.h>
 
 #include <boost/type.hpp>
@@ -1479,7 +1479,7 @@ void account_history_rocksdb_plugin::impl::supplement_snapshot(const hive::chain
   auto pathString = actual_path.to_native_ansi_path();
 
   ::rocksdb::Env* backupEnv = ::rocksdb::Env::Default();
-  ::rocksdb::BackupableDBOptions backupableDbOptions(pathString);
+  ::rocksdb::BackupEngineOptions backupableDbOptions(pathString);
 
   std::unique_ptr<::rocksdb::BackupEngine> backupEngine;
   ::rocksdb::BackupEngine* _backupEngine = nullptr;
@@ -1519,7 +1519,7 @@ void account_history_rocksdb_plugin::impl::load_additional_data_from_snapshot(co
   ilog("Attempting to load external data for Account History RocksDB plugin from location: `${p}'", ("p", pathString));
 
   ::rocksdb::Env* backupEnv = ::rocksdb::Env::Default();
-  ::rocksdb::BackupableDBOptions backupableDbOptions(pathString);
+  ::rocksdb::BackupEngineOptions backupableDbOptions(pathString);
 
   std::unique_ptr<::rocksdb::BackupEngineReadOnly> backupEngine;
   ::rocksdb::BackupEngineReadOnly* _backupEngine = nullptr;
