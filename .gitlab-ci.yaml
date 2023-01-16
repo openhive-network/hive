@@ -2,6 +2,7 @@ stages:
 - build
 - test
 - cleanup
+- publish
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
@@ -29,7 +30,9 @@ variables:
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
 
-include: '/scripts/ci-helpers/prepare_data_image_job.yml'
+include:
+  - template: Workflows/Branch-Pipelines.gitlab-ci.yml
+  - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
 
 prepare_hived_image:
   extends: .prepare_hived_image
@@ -706,3 +709,17 @@ functional_api_tests:
     - *run-pytest
   tags:
     - public-runner-docker
+
+build_and_publish_image:
+  stage: publish
+  extends: .docker_image_builder_job
+  # Image specified in .docker_image_builder_job has a bug that prevents full access to BuildKit capabilities
+  image: registry.gitlab.syncad.com/hive/common-ci-configuration/docker-builder:0a8b4a4d6098c3e4087a58a61622ffb0817ecb39
+  dependencies: []
+  script:
+    - scripts/ci-helpers/build_and_publish_instance.sh
+  tags:
+    - public-runner-docker  
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
+      when: manual
