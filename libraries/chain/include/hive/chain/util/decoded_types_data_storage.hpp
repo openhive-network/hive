@@ -1,11 +1,13 @@
 #pragma once
 
+#include <fc/crypto/ripemd160.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/reflect/reflect.hpp>
 
 #include <shared_mutex>
 #include <unordered_map>
 #include <unordered_set>
+#include <iostream>
 
 namespace hive { namespace chain { namespace util {
 
@@ -15,19 +17,19 @@ class decoded_type_data
     using members_vector = std::vector<std::pair<std::string, std::string>>;
     using enum_values_vector = std::vector<std::pair<std::string, size_t>>;
 
-    decoded_type_data(const size_t _checksum, const std::string_view _name, members_vector&& _members, enum_values_vector _enum_values);
+    decoded_type_data(const fc::ripemd160& _checksum, const std::string_view _name, members_vector&& _members, enum_values_vector _enum_values);
 
-    size_t get_checksum() const { return checksum; }
+    fc::ripemd160 get_checksum() const { return checksum; }
     std::string_view get_type_name() const { return name; }
     bool is_enum() const { return members.empty(); }
     const members_vector& get_members() const { return members; }
     const enum_values_vector& get_enum_values() const { return enum_values; }
 
   private:
-    size_t checksum = 0;
-    std::string_view name;
     members_vector members; // in case of structure
     enum_values_vector enum_values; // in case of enum
+    fc::ripemd160 checksum;
+    std::string_view name;
 };
 
 class decoded_types_data_storage final
@@ -103,17 +105,23 @@ class decoded_types_data_storage final
       template <typename Member, class Class, Member(Class::*member)>
       void operator()(const char *name) const
       {
-        checksum += pos + sizeof(Member);
-        ++pos;
-        members.push_back({fc::get_typename<Member>::name(), name});
+        const std::string field_name(name);
+        const std::string type_name(fc::get_typename<Member>::name());
+        const std::string field_position_string(std::to_string(field_position));
+
+        encoder.write(field_position_string.data(), field_position_string.size());
+        encoder.write(type_name.data(), type_name.size());
+        encoder.write(field_name.data(), field_name.size());
+        ++field_position;
+        members.push_back({type_name, field_name});
       }
       
-      size_t get_checksum() { return checksum; }
+      fc::ripemd160 get_checksum() { return encoder.result(); }
 
     private:
+      mutable fc::ripemd160::encoder encoder;
       decoded_type_data::members_vector& members;
-      mutable size_t checksum = 0;
-      mutable size_t pos = 0;
+      mutable size_t field_position{0};
     };
 
     class visitor_enum_decoder
@@ -123,15 +131,19 @@ class decoded_types_data_storage final
 
       void operator()(const char *name, const int64_t value) const
       {
-        checksum += std::hash<std::string>{}(name) + value;
-        enum_values.push_back({name, value});
+        std::cerr << "visitor_enum_decoder - ()\n";
+        const std::string value_name(name);
+        const std::string value_in_string(std::to_string(value));
+        encoder.write(value_name.data(), value_name.size());
+        encoder.write(value_in_string.data(), value_in_string.size());
+        enum_values.push_back({value_name, value});
       }
 
-      size_t get_checksum() { return checksum; }
+      fc::ripemd160 get_checksum() { return encoder.result(); }
 
     private:
+      mutable fc::ripemd160::encoder encoder;
       decoded_type_data::enum_values_vector& enum_values;
-      mutable size_t checksum = 0;
   };
 
     template<typename T>
@@ -195,7 +207,7 @@ class decoded_types_data_storage final
     }
 
     template <typename T>
-    size_t get_decoded_type_checksum()
+    fc::ripemd160 get_decoded_type_checksum()
     {
       return get_decoded_type_data<T>().get_checksum();
     }

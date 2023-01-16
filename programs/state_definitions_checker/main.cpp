@@ -118,7 +118,7 @@ int main( int argc, char** argv )
     {
       
       ss << "Type: " << type_data.get_type_name() << "\n";
-      ss << "Checksum: " << type_data.get_checksum() << "\n";
+      ss << "Checksum: " << type_data.get_checksum().str() << "\n";
       
       if (type_data.is_enum())
       {
