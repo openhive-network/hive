@@ -4,8 +4,8 @@
 
 namespace hive { namespace chain { namespace util {
 
-decoded_type_data::decoded_type_data(const size_t _checksum, const std::string_view _name, members_vector&& _members, enum_values_vector _enum_values)
-  : checksum(_checksum), name(_name), members(std::move(_members)), enum_values(_enum_values)
+decoded_type_data::decoded_type_data(const fc::ripemd160& _checksum, const std::string_view _name, members_vector&& _members, enum_values_vector _enum_values)
+  : members(std::move(_members)), enum_values(_enum_values), checksum(_checksum), name(_name)
 {
   if (name.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - name cannot be empty" );
