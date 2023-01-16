@@ -373,6 +373,11 @@ public:
   void post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key );
   void post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key);
   void vote( std::string _author, std::string _permlink, std::string _voter, int16_t _weight, const fc::ecc::private_key& _key );
+  /// @brief Creates proof of work and account for the worker. Also posts a comment by initminer for reasons explained in the body.
+  /// @param _name Name of the worker (and account to be created too).
+  /// @param _public_key worker (account) public key
+  /// @param _private_key worker (account) private key
+  void create_with_pow( std::string _name, const fc::ecc::public_key& _public_key, const fc::ecc::private_key& _private_key );
 
   vector< operation > get_last_operations( uint32_t ops );
 
