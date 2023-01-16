@@ -97,32 +97,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
 
     //now the same with "normal" account
     PREP_ACTOR( alice )
-    {
-      pow_operation op;
-      op.worker_account = "alice";
-      op.block_id = db->head_block_id();
-      op.work.worker = alice_public_key;
-      op.nonce = -1;
-      do
-      {
-        ++op.nonce;
-        op.work.create( alice_private_key, op.work_input() );
-      }
-      while( op.work.work >= db->get_pow_target() );
-      //default props
-
-      //same story as with "steem" above
-      comment_operation comment;
-      comment.author = "initminer"; //cannot be "alice"
-      comment.permlink = "test";
-      comment.body = "Hello world!!";
-
-      signed_transaction tx;
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.operations.push_back( op );
-      tx.operations.push_back( comment );
-      push_transaction( tx, init_account_priv_key ); //cannot be alice_private_key
-    }
+    create_with_pow( "alice", alice_public_key, alice_private_key );
     generate_block();
     
     auto* rc_alice = db->find< rc_account_object, by_name >( "alice" );
