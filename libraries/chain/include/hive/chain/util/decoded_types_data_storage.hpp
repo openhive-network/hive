@@ -105,11 +105,11 @@ class decoded_types_data_storage final
       void operator()(const char *name) const
       {
         const std::string field_name(name);
-        const std::string type_name(fc::get_typename<Member>::name());
+        const std::string type_id(typeid(Member).name());
 
-        encoder.write(type_name.data(), type_name.size());
+        encoder.write(type_id.data(), type_id.size());
         encoder.write(field_name.data(), field_name.size());
-        members.push_back({type_name, field_name});
+        members.push_back({fc::get_typename<Member>::name(), field_name});
       }
       
       fc::ripemd160 get_checksum() { return encoder.result(); }
