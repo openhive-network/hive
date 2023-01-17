@@ -405,6 +405,15 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   PREP_ACTOR( carol0ah )
   // pow_operation, pow_reward_operation
   create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
+
+  do_the_testing( *this );
+
+  db->set_hardfork( HIVE_HARDFORK_0_13 );
+  generate_block();
+  
+  PREP_ACTOR( dan0ah )
+  // pow2_operation, pow_reward_operation
+  create_with_pow2( "dan0ah", dan0ah_public_key, dan0ah_private_key );
   //TODO: Add remaining obsolete operations here.
 
   do_the_testing( *this );
