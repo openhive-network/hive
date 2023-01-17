@@ -378,6 +378,8 @@ public:
   /// @param _public_key worker (account) public key
   /// @param _private_key worker (account) private key
   void create_with_pow( std::string _name, const fc::ecc::public_key& _public_key, const fc::ecc::private_key& _private_key );
+  /// Same as create_with_pow but uses pow2 operation and does a transfer instead of comment (see comments in body).
+  void create_with_pow2( std::string _name, const fc::ecc::public_key& _public_key, const fc::ecc::private_key& _private_key );
 
   vector< operation > get_last_operations( uint32_t ops );
 

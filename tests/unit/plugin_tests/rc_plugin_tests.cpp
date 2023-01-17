@@ -106,37 +106,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
     inject_hardfork( 13 );
 
     PREP_ACTOR( bob )
-    {
-      pow2_operation op;
-      pow2 pow;
-      int nonce = -1;
-      do
-      {
-        ++nonce;
-        pow.create( db->head_block_id(), "bob", nonce );
-      }
-      while( pow.pow_summary >= db->get_pow_summary_target() );
-      op.work = pow;
-      op.new_owner_key = bob_public_key;
-      //default props
-
-      //and once again the same as above with "steem" and "alice", however this time signature is not superfluous;
-      //when we set new_owner_key (which we have to for new account) pow2_operation declares needed authority as "other",
-      //which prevents us from mixing it with comment_operation which requires posting key - using transfer instead;
-      //why can't we just have only bob key then? because it is not effective yet (no such authority) and also because
-      //while bob signature is required, it does not count when RC chooses who to charge for transaction
-      transfer_operation transfer;
-      transfer.from = "initminer";
-      transfer.to = "bob";
-      transfer.amount = ASSET( "0.001 TESTS ");
-      transfer.memo = "test";
-
-      signed_transaction tx;
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.operations.push_back( op );
-      tx.operations.push_back( transfer );
-      push_transaction( tx, {init_account_priv_key, bob_private_key/*still needed as "other"*/}, 0 );
-    }
+    create_with_pow2( "bob", bob_public_key, bob_private_key );
     generate_block();
 
     auto* rc_bob = db->find< rc_account_object, by_name >( "bob" );
