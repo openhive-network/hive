@@ -27,5 +27,5 @@ docker buildx build --progress=plain --target=instance \
   --tag "hiveio/hive:${CI_COMMIT_TAG}" \
   --file Dockerfile .
 
-docker push "${CI_REGISTRY_IMAGE}instance:instance-${CI_COMMIT_TAG}"
+docker push "${CI_REGISTRY_IMAGE}/instance:instance-${CI_COMMIT_TAG}"
 #docker push "hiveio/hive:${CI_COMMIT_TAG}"
