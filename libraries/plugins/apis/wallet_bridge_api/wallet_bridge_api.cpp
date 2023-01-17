@@ -16,10 +16,6 @@
 #include <hive/plugins/rc_api/rc_api.hpp>
 #include <hive/plugins/rc_api/rc_api_plugin.hpp>
 
-#include <fc/fixed_string.hpp>
-
-#include <boost/scope_exit.hpp>
-
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
 typedef std::function< void( const broadcast_transaction_synchronous_return& ) > confirmation_callback;
@@ -664,12 +660,8 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_reward_fund )
 protocol::signed_transaction wallet_bridge_api_impl::get_trx( const variant& args )
 {
   FC_ASSERT( args.get_array().at(0).is_object(), "Signed transaction is required as first argument" );
-
-  BOOST_SCOPE_EXIT(void) { fc::verifier_switch::set_verify( false ); } BOOST_SCOPE_EXIT_END
-
   try
   {
-    fc::verifier_switch::set_verify( true );
     return args.get_array().at(0).as<protocol::signed_transaction>();
   }
   catch( fc::bad_cast_exception& e )
