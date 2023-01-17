@@ -4,6 +4,7 @@ set(BUILD_SHARED_LIBS OFF)
 set(ROCKSDB_STATIC ON)
 
 #Configure needed build options of RocksDB.
+set(ROCKSDB_BUILD_SHARED OFF CACHE BOOL "Build shared versions of the RocksDB libraries")
 SET(FAIL_ON_WARNINGS OFF CACHE BOOL "Treat compile warnings as errors")
 SET(WITH_TESTS OFF CACHE BOOL "build with tests")
 SET(WITH_SNAPPY ON CACHE BOOL "build with SNAPPY")
