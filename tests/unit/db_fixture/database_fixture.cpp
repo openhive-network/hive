@@ -918,6 +918,40 @@ void database_fixture::create_with_pow( std::string _name, const fc::ecc::public
   push_transaction( tx, init_account_priv_key ); //cannot be worker private key
 }
 
+void database_fixture::create_with_pow2( std::string _worker_account, const fc::ecc::public_key& _public_key,
+                                         const fc::ecc::private_key& _private_key )
+{
+  pow2_operation op;
+  pow2 pow;
+  int nonce = -1;
+  do
+  {
+    ++nonce;
+    pow.create( db->head_block_id(), _worker_account, nonce );
+  }
+  while( pow.pow_summary >= db->get_pow_summary_target() );
+  op.work = pow;
+  op.new_owner_key = _public_key;
+  //default props
+
+  //This time signature is not superfluous;
+  //when we set new_owner_key (which we have to for new account) pow2_operation declares needed authority as "other",
+  //which prevents us from mixing it with comment_operation which requires posting key - using transfer instead;
+  //why can't we just have only worker key then? because it is not effective yet (no such authority) and also because
+  //while worker signature is required, it does not count when RC chooses who to charge for transaction
+  transfer_operation transfer;
+  transfer.from = "initminer";
+  transfer.to = _worker_account;
+  transfer.amount = ASSET( "0.001 TESTS ");
+  transfer.memo = "test";
+
+  signed_transaction tx;
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  tx.operations.push_back( transfer );
+  push_transaction( tx, {init_account_priv_key, _private_key/*still needed as "other"*/}, 0 );
+}
+
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
 {
   vector< operation > ops;
