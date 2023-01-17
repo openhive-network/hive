@@ -612,8 +612,9 @@ witness_tests:
 build_and_publish_image:
   stage: publish
   extends: .docker_image_builder_job
+  # Image specified in .docker_image_builder_job has a bug that prevents full access to BuildKit capabilities
+  image: registry.gitlab.syncad.com/hive/common-ci-configuration/docker-builder:0a8b4a4d6098c3e4087a58a61622ffb0817ecb39
   script:
-    - echo CI_COMMIT_REF_PROTECTED=${CI_COMMIT_REF_PROTECTED:-unset}
     - scripts/ci-helpers/build_and_push_instance.sh
   tags:
     - public-runner-docker  
