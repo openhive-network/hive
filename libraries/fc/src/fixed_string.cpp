@@ -2,6 +2,6 @@
 
 namespace fc {
 
-  thread_local bool verifier_switch::verify = false;
+  thread_local bool verifier_switch::verify = true;
 
 }
