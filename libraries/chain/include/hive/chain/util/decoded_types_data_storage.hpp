@@ -106,12 +106,9 @@ class decoded_types_data_storage final
       {
         const std::string field_name(name);
         const std::string type_name(fc::get_typename<Member>::name());
-        const std::string field_position_string(std::to_string(field_position));
 
-        encoder.write(field_position_string.data(), field_position_string.size());
         encoder.write(type_name.data(), type_name.size());
         encoder.write(field_name.data(), field_name.size());
-        ++field_position;
         members.push_back({type_name, field_name});
       }
       
@@ -120,7 +117,6 @@ class decoded_types_data_storage final
     private:
       mutable fc::ripemd160::encoder encoder;
       decoded_type_data::members_vector& members;
-      mutable size_t field_position{0};
     };
 
     class visitor_enum_decoder
