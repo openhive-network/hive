@@ -715,6 +715,17 @@ void database_fixture::vest( const string& from, const string& to, const asset& 
   push_transaction( op, key );
 }
 
+void database_fixture::set_withdraw_vesting_route( const string& from, const string& to, uint16_t percent, bool auto_vest,
+                                                   const fc::ecc::private_key& key )
+{
+  set_withdraw_vesting_route_operation op;
+  op.from_account = from;
+  op.to_account = to;
+  op.percent = percent;
+  op.auto_vest = auto_vest;
+  push_transaction( op, key );
+}
+
 void database_fixture::proxy( const string& account, const string& proxy )
 {
   try

@@ -1000,30 +1000,10 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     int64_t delegated_rc = vesting_shares / 2;
 
     BOOST_TEST_MESSAGE( "Setting up vesting routes" );
-    {
-      set_withdraw_vesting_route_operation op;
-      op.from_account = "alice";
-      op.to_account = "bob";
-      op.percent = HIVE_1_PERCENT * 25;
-      op.auto_vest = true;
-      push_transaction( op, alice_private_key );
-    }
-    {
-      set_withdraw_vesting_route_operation op;
-      op.from_account = "alice";
-      op.to_account = "alice";
-      op.percent = HIVE_1_PERCENT * 50;
-      op.auto_vest = true;
-      push_transaction( op, alice_private_key );
-    }
-    {
-      set_withdraw_vesting_route_operation op;
-      op.from_account = "alice";
-      op.to_account = "dave";
-      op.percent = HIVE_1_PERCENT * 25;
-      op.auto_vest = false;
-      push_transaction( op, alice_private_key );
-    }
+    set_withdraw_vesting_route( "alice", "bob", HIVE_1_PERCENT * 25, true, alice_private_key);
+    set_withdraw_vesting_route( "alice", "alice", HIVE_1_PERCENT * 50, true, alice_private_key);
+    set_withdraw_vesting_route( "alice", "dave", HIVE_1_PERCENT * 25, false, alice_private_key);
+    
     BOOST_TEST_MESSAGE( "Setting up rc delegations" );
 
     delegate_rc_operation drc_op;
