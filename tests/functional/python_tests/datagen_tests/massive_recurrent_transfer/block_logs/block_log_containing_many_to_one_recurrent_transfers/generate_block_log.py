@@ -6,10 +6,11 @@ import test_tools as tt
 
 from hive_local_tools.functional.python.datagen.massive_recurrent_transfer import execute_function_in_threads
 
-AMOUNT_OF_ALL_ACCOUNTS: Final[int] = 50_000
+NUMBER_OF_SENDER_ACCOUNTS: Final[int] = 50_000
 ACCOUNTS_PER_CHUNK: Final[int] = 500
 MAX_WORKERS: Final[int] = 6
-
+RECEIVER_ACCOUNT_NAME: Final[str] = "receiver"
+SINGLE_TRANSFER_AMOUNT: Final[tt.Asset.Test] = tt.Asset.Test(1)
 
 def prepare_block_log_with_many_to_one_recurrent_transfers() -> None:
     """
@@ -25,16 +26,16 @@ def prepare_block_log_with_many_to_one_recurrent_transfers() -> None:
 
     wallet = tt.Wallet(attach_to=init_node)
 
-    wallet.create_account("bank")
+    wallet.create_account(RECEIVER_ACCOUNT_NAME)
 
-    account_names = [account.name for account in wallet.create_accounts(AMOUNT_OF_ALL_ACCOUNTS)]
+    account_names = [account.name for account in wallet.create_accounts(NUMBER_OF_SENDER_ACCOUNTS)]
     tt.logger.info(f"{len(account_names)} accounts successfully created!")
 
     execute_function_in_threads(
         __generate_and_broadcast,
         args=(wallet,),
         args_sequences=(account_names,),
-        amount=AMOUNT_OF_ALL_ACCOUNTS,
+        amount=NUMBER_OF_SENDER_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
     )
@@ -53,19 +54,19 @@ def prepare_block_log_with_many_to_one_recurrent_transfers() -> None:
     init_node.block_log.copy_to(Path(__file__).parent)
 
 
-def __generate_operations_for_receiver(receiver: str, amount: tt.Asset.Test = tt.Asset.Test(100)) -> list:
+def __generate_operations_for_receiver(account: str) -> list:
     return [
         [
             "transfer",
-            {"from": "initminer", "to": receiver, "amount": str(amount), "memo": f"supply_transfer-{receiver}"},
+            {"from": "initminer", "to": account, "amount": str(tt.Asset.Test(4)), "memo": f"supply_transfer-{account}"},
         ],
         [
             "recurrent_transfer",
             {
-                "from": receiver,
-                "to": "bank",
-                "amount": str(tt.Asset.Test(0.001)),
-                "memo": f"rec_transfer-{receiver}",
+                "from": account,
+                "to": RECEIVER_ACCOUNT_NAME,
+                "amount": str(SINGLE_TRANSFER_AMOUNT),
+                "memo": f"rec_transfer-{account}",
                 "recurrence": 24,
                 "executions": 2,
                 "extensions": [],
