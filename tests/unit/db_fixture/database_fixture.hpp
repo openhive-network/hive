@@ -380,6 +380,16 @@ public:
   void create_with_pow( std::string _name, const fc::ecc::public_key& _public_key, const fc::ecc::private_key& _private_key );
   /// Same as create_with_pow but uses pow2 operation and does a transfer instead of comment (see comments in body).
   void create_with_pow2( std::string _name, const fc::ecc::public_key& _public_key, const fc::ecc::private_key& _private_key );
+  void create_with_delegation( const std::string& creator, const std::string& new_account_name, const fc::ecc::public_key& public_key,
+                               const fc::ecc::private_key& posting_key, const asset& delegation, const fc::ecc::private_key& key );
+  void claim_account( const std::string& creator, const asset& fee, const fc::ecc::private_key& key );
+  void create_claimed_account( const std::string& creator, const std::string& new_account_name, const fc::ecc::public_key& public_key,
+                               const fc::ecc::public_key& posting_key, const string& json_metadata, const fc::ecc::private_key& key );
+  void change_recovery_account( const std::string& account_to_recover, const std::string& new_recovery_account, const fc::ecc::private_key& key );
+  void request_account_recovery( const std::string& recovery_account, const std::string& account_to_recover, 
+                                 const authority& new_owner_authority, const fc::ecc::private_key& key );
+  void recover_account( const std::string& account_to_recover, const fc::ecc::private_key& new_owner_key, 
+                        const fc::ecc::private_key& recent_owner_key );
 
   vector< operation > get_last_operations( uint32_t ops );
 

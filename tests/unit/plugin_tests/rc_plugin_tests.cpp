@@ -115,22 +115,8 @@ BOOST_AUTO_TEST_CASE( account_creation )
     inject_hardfork( 17 );
 
     PREP_ACTOR( sam )
-    {
-      vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
-
-      account_create_with_delegation_operation op;
-      op.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
-      op.delegation = ASSET( "100000000.000000 VESTS" );
-      op.creator = HIVE_INIT_MINER_NAME;
-      op.new_account_name = "sam";
-      op.owner = authority( 1, sam_public_key, 1 );
-      op.active = authority( 1, sam_public_key, 1 );
-      op.posting = authority( 1, sam_post_key.get_public_key(), 1 );
-      op.memo_key = sam_post_key.get_public_key();
-      op.json_metadata = "";
-
-      push_transaction( op, init_account_priv_key );
-    }
+    vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
+    create_with_delegation( HIVE_INIT_MINER_NAME, "sam", sam_public_key, sam_post_key, ASSET( "100000000.000000 VESTS" ), init_account_priv_key );
     generate_block();
 
     auto* rc_sam = db->find< rc_account_object, by_name >( "sam" );
