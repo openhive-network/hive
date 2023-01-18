@@ -433,6 +433,13 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   db->set_hardfork( HIVE_NUM_HARDFORKS );
   generate_block();
 
+  // By now carol0ah should have a neat sum awarded for her comment.
+  BOOST_REQUIRE_EQUAL( get_balance( "carol0ah" ).amount.value, 3000 );
+  // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
+  vest( "carol0ah", "carol0ah", asset(2000, HIVE_SYMBOL), carol0ah_private_key );
+  // set_withdraw_vesting_route_operation
+  set_withdraw_vesting_route( "carol0ah", "edgar0ah", HIVE_1_PERCENT * 50, true, carol0ah_private_key);
+
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
