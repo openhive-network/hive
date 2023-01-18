@@ -403,7 +403,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   generate_block();
 
   PREP_ACTOR( carol0ah )
-  // pow_operation, pow_reward_operation
+  // pow_operation, pow_reward_operation, account_created_operation
   create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
 
   do_the_testing( *this );
@@ -414,7 +414,11 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   PREP_ACTOR( dan0ah )
   // pow2_operation, pow_reward_operation
   create_with_pow2( "dan0ah", dan0ah_public_key, dan0ah_private_key );
-  //TODO: Add remaining obsolete operations here.
+  PREP_ACTOR( edgar0ah )
+
+  vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
+  create_with_delegation( HIVE_INIT_MINER_NAME, "edgar0ah", edgar0ah_public_key, edgar0ah_post_key, ASSET( "100000000.000000 VESTS" ), init_account_priv_key );
+  expected_operations.insert( OP_TAG(account_create_with_delegation_operation) );
 
   do_the_testing( *this );
 
