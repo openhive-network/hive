@@ -8435,10 +8435,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     BOOST_TEST_MESSAGE( "--- Deleting comment (right before cashout)" );
     generate_blocks( comment_cashout->get_cashout_time() - HIVE_BLOCK_INTERVAL );
 
-    delete_comment_operation del_com;
-    del_com.author = "alice";
-    del_com.permlink = "test";
-    push_transaction( del_com, alice_private_key );
+    delete_comment( "alice", "test", alice_private_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Comment no longer exists, vote was also deleted" );

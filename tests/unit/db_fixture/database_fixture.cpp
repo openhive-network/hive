@@ -866,6 +866,20 @@ void database_fixture::post_comment( std::string _author, std::string _permlink,
   post_comment_internal( _author, _permlink, _title, _body, _parent_permlink, _key );
 }
 
+void database_fixture::delete_comment( std::string _author, std::string _permlink, const fc::ecc::private_key& _key )
+{
+  delete_comment_operation op;
+
+  op.author = _author;
+  op.permlink = _permlink;
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  push_transaction( tx, _key );
+  tx.operations.clear();
+}
+
 void database_fixture::vote( std::string _author, std::string _permlink, std::string _voter, int16_t _weight, const fc::ecc::private_key& _key )
 {
   vote_operation vote;
