@@ -420,6 +420,13 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   create_with_delegation( HIVE_INIT_MINER_NAME, "edgar0ah", edgar0ah_public_key, edgar0ah_post_key, ASSET( "100000000.000000 VESTS" ), init_account_priv_key );
   expected_operations.insert( OP_TAG(account_create_with_delegation_operation) );
 
+  // comment_operation
+  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
+  // vote_operation & effective_comment_vote_operation
+  vote("edgar0ah", "permlink1", "carol0ah", HIVE_1_PERCENT * 100, carol0ah_private_key);
+  // delete_comment_operation & ineffective_delete_comment_operation
+  delete_comment( "edgar0ah", "permlink1", edgar0ah_private_key );
+
   do_the_testing( *this );
 
   // Set current hardfork for easier testing of current operations
@@ -434,10 +441,6 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   fund( "alice0ah", 500000000 );
   // transfer_operation from alice0ah
   transfer("alice0ah", "bob0ah", asset(1234, HIVE_SYMBOL));
-  // comment_operation
-  post_comment("alice0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", alice0ah_private_key);
-  // vote_operation & effective_comment_vote_operation
-  vote("alice0ah", "permlink1", "bob0ah", HIVE_1_PERCENT * 100, bob0ah_private_key);
   //TODO: Add remaining current operations here.
 
   do_the_testing( *this );
