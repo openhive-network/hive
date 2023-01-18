@@ -952,6 +952,24 @@ void database_fixture::create_with_pow2( std::string _worker_account, const fc::
   push_transaction( tx, {init_account_priv_key, _private_key/*still needed as "other"*/}, 0 );
 }
 
+void database_fixture::create_with_delegation( const std::string& creator, const std::string& new_account_name, 
+  const fc::ecc::public_key& public_key, const fc::ecc::private_key& posting_key, const asset& delegation,
+  const fc::ecc::private_key& key )
+{
+  account_create_with_delegation_operation op;
+  op.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+  op.delegation = delegation;
+  op.creator = creator;
+  op.new_account_name = new_account_name;
+  op.owner = authority( 1, public_key, 1 );
+  op.active = authority( 1, public_key, 1 );
+  op.posting = authority( 1, posting_key.get_public_key(), 1 );
+  op.memo_key = posting_key.get_public_key();
+  op.json_metadata = "";
+
+  push_transaction( op, key );
+}
+
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
 {
   vector< operation > ops;
