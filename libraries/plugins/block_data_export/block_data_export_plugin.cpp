@@ -8,6 +8,8 @@
 #include <hive/plugins/block_data_export/block_data_export_plugin.hpp>
 #include <hive/plugins/block_data_export/exportable_block_data.hpp>
 
+#include <appbase/application.hpp>
+
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/global_property_object.hpp>
@@ -143,6 +145,9 @@ void block_data_export_plugin_impl::convert_to_json_thread_main()
 {
   while( true )
   {
+    if (appbase::app().is_interrupt_request() )
+      break;
+
     std::shared_ptr< work_item > work;
     try
     {
@@ -164,6 +169,9 @@ void block_data_export_plugin_impl::output_thread_main()
   std::ofstream output_file( _output_name, std::ios::binary );
   while( true )
   {
+    if (appbase::app().is_interrupt_request() )
+      break;
+
     std::shared_ptr< work_item > work;
     try
     {
