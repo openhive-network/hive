@@ -34,7 +34,7 @@ CORRECT_VALUES = [
 
         ([10], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
-        (['invalid-account-name'], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
+        (['invalid-acc-name'], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
         ([ACCOUNTS[1]], 100, ORDER_BY['by_voter_proposal'], ORDER_DIRECTION['ascending'], STATUS['all']),
 
