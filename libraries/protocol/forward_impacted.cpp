@@ -873,6 +873,12 @@ struct impacted_balance_collector
 struct keyauth_collector
 {
   collected_keyauth_collection_t collected_keyauths;
+  /*
+   * Setting one boolean flag is faster than comparing whole operation names (with namespaces in `is_keyauths_operation`
+   * function using `get_operations_used_in_get_keyauths` function). Also we could use collected_keyauths.size(), but sometimes there are
+   * operations with optional authority, which are uninitialized
+   */
+  bool has_keyauth = false;
 
   typedef void result_type;
 
@@ -897,6 +903,7 @@ private:
     authority_t _authority_kind,
     std::string _account_name)
   {
+    has_keyauth = true;
     collected_keyauth_t collected_item;
     collected_item.account_name   = _account_name;
     collected_item.authority_kind = _authority_kind;
@@ -1019,6 +1026,13 @@ stringset get_operations_used_in_get_keyauths()
   keyauth_collector collector;
   static auto used_operations = run_all_visitor_overloads(collector);
   return used_operations;
+}
+
+bool is_keyauths_operation( const operation& op )
+{
+  keyauth_collector collector;
+  op.visit(collector);
+  return collector.has_keyauth;
 }
 
 void transaction_get_impacted_accounts( const transaction& tx, flat_set<account_name_type>& result )
