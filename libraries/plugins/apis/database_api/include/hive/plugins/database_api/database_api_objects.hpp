@@ -374,8 +374,6 @@ struct api_comment_object
     {
       total_vote_weight       = cc->get_total_vote_weight();
       reward_weight           = HIVE_100_PERCENT; // since HF17 reward is not limited if posts are too frequent
-      total_payout_value      = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
-      curator_payout_value    = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
       author_rewards          = 0; // since HF19 it was always 0 or cc did not exist
       net_votes               = cc->get_net_votes();
       last_payout             = time_point_sec::min(); // since HF19 it is the only value possible
@@ -433,8 +431,8 @@ struct api_comment_object
 
   uint16_t          reward_weight = 0;
 
-  asset             total_payout_value;
-  asset             curator_payout_value;
+  asset             total_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
+  asset             curator_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
 
   share_type        author_rewards;
 
@@ -443,7 +441,7 @@ struct api_comment_object
   account_name_type root_author;
   string            root_permlink;
 
-  asset             max_accepted_payout;
+  asset             max_accepted_payout = HBD_asset(); 
   uint16_t          percent_hbd = 0;
   bool              allow_replies = false;
   bool              allow_votes = false;
