@@ -341,6 +341,7 @@ void follow_plugin::plugin_initialize( const boost::program_options::variables_m
 {
   try
   {
+    FC_ASSERT( false, "A plugin `follow` is deprecated and is no longer supported.");
     ilog("Intializing follow plugin" );
 
     my = std::make_unique< detail::follow_plugin_impl >( *this );

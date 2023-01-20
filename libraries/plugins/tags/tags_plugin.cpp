@@ -63,6 +63,7 @@ void tags_plugin::set_program_options(
 
 void tags_plugin::plugin_initialize(const boost::program_options::variables_map& options)
 {
+  FC_ASSERT( false, "A plugin `tags` is deprecated and is no longer supported.");
   ilog("Intializing tags plugin" );
   my = std::make_unique< detail::tags_plugin_impl >();
 
