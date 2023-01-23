@@ -352,6 +352,7 @@ struct database_fixture {
   void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
   void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
   void set_withdraw_vesting_route(const string& from, const string& to, uint16_t percent, bool auto_vest, const fc::ecc::private_key& key);
+  void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
   void proxy( const string& account, const string& proxy );
   void set_price_feed( const price& new_price, bool stop_at_update_block = false );
   void set_witness_props( const flat_map< string, vector< char > >& new_props );
@@ -589,7 +590,6 @@ struct delayed_vote_database_fixture : public virtual clean_database_fixture
     virtual ~delayed_vote_database_fixture(){}
 
     void witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key );
-    void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
     void proxy( const string& account, const string& proxy, const fc::ecc::private_key& key );
     void decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key );
 
