@@ -34,3 +34,6 @@ MAX_OPEN_RECURRENT_TRANSFERS: Final[int] = 255
 
 # waiting time for approval decline voting rights (60 seconds in testnet / 30 days on mainnet)
 TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS: Final[int] = 21
+MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES: Final[int] = 10
+
+MAX_RECURRENT_TRANSFER_END_DATE: Final[int] = 730
