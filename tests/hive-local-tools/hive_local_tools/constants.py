@@ -31,3 +31,7 @@ BASE_ACCOUNTS: Final[list] = ['hive.fund', 'initminer', 'miners', 'null', 'steem
 MAX_RECURRENT_TRANSFERS_PER_BLOCK: Final[int] = 1000
 
 MAX_OPEN_RECURRENT_TRANSFERS: Final[int] = 255
+
+MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES: Final[int] = 10
+
+MAX_RECURRENT_TRANSFER_END_DATE: Final[int] = 730
