@@ -398,6 +398,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // ineffective_delete_comment_operation < HIVE_HARDFORK_0_19__977
   // account_create_with_delegation_operation < HIVE_HARDFORK_0_20__1760
   
+  // TODO check vesting_shares_split_operation on HF 1 here.
+
   // Set low hardfork to allow testing of obsolete operations
   db->set_hardfork( HIVE_HARDFORK_0_12 );
   generate_block();
@@ -441,6 +443,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   set_withdraw_vesting_route( "carol0ah", "edgar0ah", HIVE_1_PERCENT * 50, true, carol0ah_private_key);
   // delegate_vesting_shares_operation
   delegate_vest( "carol0ah", "dan0ah", asset(3, VESTS_SYMBOL), carol0ah_private_key );
+  // withdraw_vesting_operation
+  withdraw_vesting( "carol0ah", asset( 123, VESTS_SYMBOL ), carol0ah_private_key );
+  // TODO generate enough blocks to test fill_vesting_withdraw_operation & return_vesting_delegation_operation.
 
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
