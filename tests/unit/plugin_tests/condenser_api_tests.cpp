@@ -439,6 +439,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   vest( "carol0ah", "carol0ah", asset(2000, HIVE_SYMBOL), carol0ah_private_key );
   // set_withdraw_vesting_route_operation
   set_withdraw_vesting_route( "carol0ah", "edgar0ah", HIVE_1_PERCENT * 50, true, carol0ah_private_key);
+  // delegate_vesting_shares_operation
+  delegate_vest( "carol0ah", "dan0ah", asset(3, VESTS_SYMBOL), carol0ah_private_key );
 
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,

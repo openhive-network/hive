@@ -715,6 +715,16 @@ void database_fixture::vest( const string& from, const string& to, const asset& 
   push_transaction( op, key );
 }
 
+void database_fixture::delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key )
+{
+  delegate_vesting_shares_operation op;
+  op.vesting_shares = amount;
+  op.delegator = delegator;
+  op.delegatee = delegatee;
+
+  push_transaction( op, key );
+}
+
 void database_fixture::set_withdraw_vesting_route( const string& from, const string& to, uint16_t percent, bool auto_vest,
                                                    const fc::ecc::private_key& key )
 {
@@ -1406,16 +1416,6 @@ void dhf_database_fixture::proxy( account_name_type _account, account_name_type 
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   push_transaction( tx, _key );
-}
-
-void hf23_database_fixture::delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key )
-{
-  delegate_vesting_shares_operation op;
-  op.vesting_shares = amount;
-  op.delegator = delegator;
-  op.delegatee = delegatee;
-
-  push_transaction( op, key );
 }
 
 void delayed_vote_database_fixture::witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key )
