@@ -736,6 +736,15 @@ void database_fixture::set_withdraw_vesting_route( const string& from, const str
   push_transaction( op, key );
 }
 
+void database_fixture::withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key )
+{
+  withdraw_vesting_operation op;
+  op.account = account;
+  op.vesting_shares = amount;
+
+  push_transaction( op, key );
+}
+
 void database_fixture::proxy( const string& account, const string& proxy )
 {
   try
@@ -1459,17 +1468,6 @@ time_point_sec delayed_vote_database_fixture::move_forward_with_update( const fc
 
     return db->head_block_time();
 };
-
-void delayed_vote_database_fixture::withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key )
-{
-  FC_ASSERT( amount.symbol == VESTS_SYMBOL, "Can only withdraw VESTS");
-
-  withdraw_vesting_operation op;
-  op.account = account;
-  op.vesting_shares = amount;
-
-  push_transaction( op, key );
-}
 
 void delayed_vote_database_fixture::proxy( const string& account, const string& proxy, const fc::ecc::private_key& key )
 {
