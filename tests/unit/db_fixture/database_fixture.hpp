@@ -350,6 +350,7 @@ struct database_fixture {
   void vest( const string& from, const string& to, const asset& amount );
   void vest( const string& from, const share_type& amount );
   void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
+  void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
   void set_withdraw_vesting_route(const string& from, const string& to, uint16_t percent, bool auto_vest, const fc::ecc::private_key& key);
   void proxy( const string& account, const string& proxy );
   void set_price_feed( const price& new_price, bool stop_at_update_block = false );
@@ -569,8 +570,6 @@ struct hf23_database_fixture : public clean_database_fixture
     hf23_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
                     : clean_database_fixture( shared_file_size_in_mb ){}
     virtual ~hf23_database_fixture(){}
-
-    void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
 };
 
 struct hf24_database_fixture : public clean_database_fixture
