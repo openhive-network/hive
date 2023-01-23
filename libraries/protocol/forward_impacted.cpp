@@ -518,10 +518,8 @@ struct get_static_variant_name_with_prefix
 };
 
 
-hive::app::stringset used_operations;
-
 template <typename T>
-void exclude_from_used_operations()
+void exclude_from_used_operations(hive::app::stringset& used_operations)
 {
   used_operations.erase(fc::get_typename<T>::name());
 }
@@ -541,11 +539,11 @@ hive::app::stringset run_all_visitor_overloads(Collector& k)
         string_variant_map[operation_name] = variant;
     }
     
-    used_operations.clear();
+    k.used_operations.clear();
     //collect all type strings
     for(const auto& [s, _]: string_variant_map)
     {
-      used_operations.insert(s);
+      k.used_operations.insert(s);
     }
     
     //call all overloads by visiting - inside overload remove unused type strings with exclude_from_used_operations
@@ -554,7 +552,7 @@ hive::app::stringset run_all_visitor_overloads(Collector& k)
       variant_instance.visit(k);
     }
 
-    return used_operations;
+    return k.used_operations;
 }
 
 
@@ -865,9 +863,10 @@ struct impacted_balance_collector
   template <typename T>
   void operator()(const T& op) 
   {
-    exclude_from_used_operations<T>();
+    exclude_from_used_operations<T>(used_operations);
   }
 
+  hive::app::stringset used_operations;  
 };
 
 
@@ -979,10 +978,10 @@ private:
   template <typename T>
   void operator()(const T& op) 
   {
-    exclude_from_used_operations<T>();
+    exclude_from_used_operations<T>(used_operations);
   }
 
-
+  hive::app::stringset used_operations;
 };
 
 
