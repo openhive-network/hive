@@ -272,6 +272,7 @@ plugin_test:
   stage: test
   extends: .test_tools_based
   script:
+    - export OPENSSL_CONF="$CI_PROJECT_DIR/scripts/openssl.conf"
     - git clone --depth=1 --single-branch --branch master https://gitlab.syncad.com/hive/beem.git
     - pip3 install junit-xml==${PYTHON_JUNIT_XML_VERSION} python-dateutil==${PYTHON_DATEUTIL_VERSION}
     - cd beem
