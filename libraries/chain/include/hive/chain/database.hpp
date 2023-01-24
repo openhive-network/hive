@@ -257,7 +257,7 @@ namespace chain {
       std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
       std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
                                                                         fc::microseconds wait_for_microseconds = fc::microseconds() );
-      std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
+      /// mtlk         std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
@@ -708,9 +708,13 @@ namespace chain {
     private:
       optional< chainbase::database::session > _pending_tx_session;
 
+      public:
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
+      private:
       void switch_forks(item_ptr new_head);
+      public:
       void _apply_block(const std::shared_ptr<full_block_type>& full_block);
+      private:
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
       void apply_operation( const operation& op );
