@@ -518,6 +518,18 @@ const witness_object& database_fixture::witness_create(
   FC_CAPTURE_AND_RETHROW( (owner)(url) )
 }
 
+void database_fixture::witness_feed_publish(
+  const string& publisher,
+  const price& exchange_rate,
+  const private_key_type& key )
+{
+  feed_publish_operation op;
+  op.publisher = publisher;
+  op.exchange_rate = exchange_rate;
+
+  push_transaction( op, key );
+}
+
 void database_fixture::fund(
   const string& account_name,
   const share_type& amount
