@@ -456,6 +456,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 
   // witness_update_operation
   witness_create( "carol0ah", carol0ah_private_key, "foo.bar", carol0ah_private_key.get_public_key(), 1000 );
+  // feed_publish_operation
+  witness_feed_publish( "carol0ah", price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ), carol0ah_private_key );
   // witness_block_approve_operation - never appears in block (see its evaluator)
   // account_witness_proxy_operation
   proxy( "edgar0ah", "dan0ah" );
