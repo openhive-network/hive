@@ -10,7 +10,7 @@ import test_tools as tt
 
 from hive_local_tools.constants import TRANSACTION_TEMPLATE, MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
 from hive_local_tools.functional import VestPrice
-from hive_local_tools.functional.python.datagen.massive_recurrent_transfer import execute_function_in_threads
+from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 
 AMOUNT_OF_ALL_ACCOUNTS: Final[int] = 30_000
 ACCOUNTS_PER_CHUNK: Final[int] = 256

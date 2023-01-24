@@ -5,7 +5,7 @@ from typing import Final, List
 import test_tools as tt
 
 from hive_local_tools.constants import TRANSACTION_TEMPLATE
-from hive_local_tools.functional.python.datagen.massive_recurrent_transfer import execute_function_in_threads
+from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 
 NUMBER_OF_SENDER_ACCOUNTS: Final[int] = 50_000
 ACCOUNTS_PER_CHUNK: Final[int] = 500

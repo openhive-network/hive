@@ -3,7 +3,7 @@ from pathlib import Path
 
 import test_tools as tt
 
-from hive_local_tools.functional.python.datagen.massive_recurrent_transfer import ReplayedNodeMaker
+from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 from hive_local_tools.constants import MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
 
 
