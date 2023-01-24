@@ -447,6 +447,13 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   withdraw_vesting( "carol0ah", asset( 123, VESTS_SYMBOL ), carol0ah_private_key );
   // TODO generate enough blocks to test fill_vesting_withdraw_operation & return_vesting_delegation_operation.
 
+  limit_order_create( "carol0ah", ASSET( "0.400 TESTS" ), ASSET( "0.650 TBD" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 1, carol0ah_private_key );
+  expected_operations.insert( OP_TAG(limit_order_create_operation) );
+  // limit_order_create2_operation
+  limit_order2_create( "carol0ah", ASSET( "0.075 TESTS" ), price( ASSET( "0.010 TESTS" ), ASSET( "0.010 TBD" ) ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 2, carol0ah_private_key );
+  // limit_order_cancel_operation, limit_order_cancelled_operation
+  limit_order_cancel( "carol0ah", 1, carol0ah_private_key );
+
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation

@@ -817,6 +817,55 @@ void database_fixture::set_witness_props( const flat_map< string, vector< char >
   FC_ASSERT( false, "Couldn't apply properties in ${n} blocks", ("n", 2*HIVE_MAX_WITNESSES+1) );
 }
 
+void database_fixture::limit_order_create( const string& owner, const asset& amount_to_sell, const asset& min_to_receive, bool fill_or_kill,
+                                           const fc::microseconds& expiration_shift, uint32_t orderid, const fc::ecc::private_key& key )
+{
+  limit_order_create_operation op;
+  op.owner = owner;
+  op.amount_to_sell = amount_to_sell;
+  op.min_to_receive = min_to_receive;
+  op.fill_or_kill = fill_or_kill;
+  op.expiration = db->head_block_time() + expiration_shift;
+  op.orderid = orderid;
+
+  signed_transaction tx;
+  tx.operations.clear();
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  push_transaction( tx, key );
+}
+
+void database_fixture::limit_order_cancel( const string& owner, uint32_t orderid, const fc::ecc::private_key& key )
+{
+  limit_order_cancel_operation op;
+  op.owner = owner;
+  op.orderid = orderid;
+
+  signed_transaction tx;
+  tx.operations.clear();
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  push_transaction( tx, key );
+}
+
+void database_fixture::limit_order2_create( const string& owner, const asset& amount_to_sell, const price& exchange_rate, bool fill_or_kill,
+                                            const fc::microseconds& expiration_shift, uint32_t orderid, const fc::ecc::private_key& key )
+{
+  limit_order_create2_operation op;
+  op.owner = owner;
+  op.orderid = orderid;
+  op.amount_to_sell = amount_to_sell;
+  op.exchange_rate = exchange_rate;
+  op.fill_or_kill = fill_or_kill;
+  op.expiration = db->head_block_time() + expiration_shift;
+
+  signed_transaction tx;
+  tx.operations.clear();
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  push_transaction( tx, key );
+}
+
 account_id_type database_fixture::get_account_id( const string& account_name )const
 {
   return db->get_account( account_name ).get_id();
