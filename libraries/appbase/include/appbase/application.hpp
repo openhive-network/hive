@@ -11,6 +11,37 @@
 
 #define APPBASE_VERSION_STRING ("appbase 1.0")
 
+
+
+
+
+class comma_numpunct : public std::numpunct<char>
+{
+  protected:
+    virtual char do_thousands_sep() const
+    {
+        return '\'';
+    }
+
+    virtual std::string do_grouping() const
+    {
+        return "\03";
+    }
+};
+
+inline std::locale comma_locale(std::locale(), new comma_numpunct());
+
+
+template<typename In> std::string decorate_number_with_upticks(In n)
+{
+  std::ostringstream num_stream;
+  num_stream.imbue(comma_locale);
+  num_stream << std::fixed << n;
+  return num_stream.str();
+}
+
+
+
 namespace appbase {
 
   namespace bpo = boost::program_options;

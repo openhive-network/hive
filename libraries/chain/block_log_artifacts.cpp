@@ -380,7 +380,7 @@ bool block_log_artifacts::impl::load_header()
     read_data(&_header, 0, "Reading the artifact file header");
 
     ilog("Loaded header containing: git rev: ${gr}, format version: ${major}.${minor}, head_block_num: ${hb}",
-         ("gr", _header.git_version)("major", _header.format_major_version)("minor", _header.format_minor_version)("hb", _header.head_block_num));
+         ("gr", _header.git_version)("major", _header.format_major_version)("minor", _header.format_minor_version)("hb", decorate_number_with_upticks(_header.head_block_num)));
 
     return true;
   }

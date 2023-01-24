@@ -55,6 +55,64 @@
 
 #include <stdlib.h>
 
+
+
+void inside_apply_block_play_json(  const hive::protocol::signed_block& input_block ,   const uint32_t block_num)
+{
+
+  ilog("MTLK Block: ${block_num}. Data : ${block}", ("block_num", block_num)("block", input_block));
+
+  if(false)//block_num == 209120)
+  {
+
+    // ilog("MTLK Block: ${block_num}. Data : ${block}", ("block_num", block_num)("block", input_block));
+
+    std::string json_filename;
+
+    {
+        std::ostringstream json_filename_stream;
+
+        json_filename_stream << "/home/dev/jsons/block";
+        json_filename_stream << std::setw(6) << std::setfill('0') <<  block_num ;
+        json_filename_stream << ".json";
+        json_filename = json_filename_stream.str();
+
+    }
+
+    {
+        auto write_block = input_block;
+        fc::variant v;
+        fc::to_variant( write_block, v );
+        auto s = fc::json::to_string( v );
+       // ilog("SIZE: ${siz}", ("siz", s.size()));
+        
+        //ilog("MTLK variant: ${s}", ("s", s));
+
+        fc::json::save_to_file( v, json_filename);
+    }
+
+    // {
+
+    //     hive::protocol::signed_block read_block;
+
+    //     {
+    //         fc::variant vr = fc::json::from_file(json_filename);
+    //         fc::from_variant(vr, read_block);
+    //     }
+
+    //     fc::variant wv;
+    //     fc::to_variant( read_block, wv );
+        
+    //     fc::json::save_to_file( wv, json_filename + '2');
+    //     int a = 0;
+    //     a=a;
+    // }
+
+
+  }
+}
+
+
 long next_hf_time()
 {
   // current "next hardfork" is HF27
@@ -199,7 +257,7 @@ void database::load_state_initial_data(const open_args& args)
 
   FC_ASSERT(hb >= last_irreversible_block);
 
-  ilog("Loaded a blockchain database holding a state specific to head block: ${hb} and last irreversible block: ${last_irreversible_block}", (hb)(last_irreversible_block));
+  ilog("Loaded a blockchain database holding a state specific to head block: ${hb} and last irreversible block: ${last_irreversible_block}", (hb)("last_irreversible_block", decorate_number_with_upticks(last_irreversible_block)));
 
   // Rewind all undo state. This should return us to the state at the last irreversible block.
   with_write_lock([&]() {
@@ -218,7 +276,7 @@ void database::load_state_initial_data(const open_args& args)
     FC_ASSERT(get_last_irreversible_block_num() == last_irreversible_block, "Undo operation should not touch irreversible block value");
 
     ilog("Blockchain state database is AT IRREVERSIBLE state specific to head block: ${hb} and LIB: ${lb}",
-         ("hb", head_block_num())("lb", this->get_last_irreversible_block_num()));
+         ("hb", decorate_number_with_upticks(head_block_num()))("lb", decorate_number_with_upticks(this->get_last_irreversible_block_num())));
 
     if (args.chainbase_flags & chainbase::skip_env_check)
     {
@@ -280,6 +338,7 @@ void database::load_state_initial_data(const open_args& args)
 
 }
 
+
 uint32_t database::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
 {
   uint64_t skip_flags = skip_validate_invariants | skip_block_log;
@@ -313,14 +372,15 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
   const auto process_block = [&](const std::shared_ptr<full_block_type>& full_block) {
     const uint32_t current_block_num = full_block->get_block_num();
 
-    if (current_block_num % 100000 == 0)
+    if (current_block_num % 10000 == 0)
     {
       std::ostringstream percent_complete_stream;
       percent_complete_stream << std::fixed << std::setprecision(2) << double(current_block_num) * 100 / last_block_num;
       ulog("   ${current_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shared memory free)",
            ("percent_complete", percent_complete_stream.str())
-           (current_block_num)(last_block_num)
-           ("free_memory_megabytes", get_free_memory() >> 20));
+           ("current_block_num", decorate_number_with_upticks(current_block_num))
+           ("last_block_num", decorate_number_with_upticks(last_block_num))
+           ("free_memory_megabytes", decorate_number_with_upticks(get_free_memory() >> 20)));
     }
 
     apply_block(full_block, skip_flags);
@@ -337,7 +397,7 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
 
   if (appbase::app().is_interrupt_request())
     ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})", 
-         ("n", last_applied_block->get_block_num())("id", last_applied_block->get_block_id()));
+         ("n", decorate_number_with_upticks(last_applied_block->get_block_num()))("id", last_applied_block->get_block_id()));
 
   fc::enable_record_assert_trip = rat; //restore flag
   fc::enable_assert_stacktrace = as;
@@ -414,7 +474,29 @@ uint32_t database::reindex( const open_args& args )
       if( _head_block_num > 0 )
       {
         if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
+        {
           start_block = _block_log.read_block_by_num( _head_block_num + 1 );
+
+          static auto enable = false;
+          if(enable)
+          {
+            std::ifstream json_file("/home/dev/jsons/block.json");
+            if(json_file)
+            {
+              std::stringstream raw_data_stream;
+              raw_data_stream << json_file.rdbuf();
+              std::string raw_data = raw_data_stream.str();
+
+            fc::variant v = fc::json::from_string( raw_data );
+
+              hive::protocol::operation op;
+              fc::from_variant( v, op );
+              int a = 0;
+              a=a;
+            }
+          }
+
+        }
 
         if( !start_block )
         {
@@ -433,7 +515,7 @@ uint32_t database::reindex( const open_args& args )
       {
         auto _last_block_number = start_block->get_block_num();
         if( _last_block_number && !args.force_replay )
-          ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
+          ilog("Resume of replaying. Last applied block: ${n}", ( "n", decorate_number_with_upticks(_last_block_number - 1 )) );
 
         note.last_block_number = reindex_internal( args, start_block );
       }
@@ -492,7 +574,7 @@ void database::close(bool rewind)
 
     auto lib = this->get_last_irreversible_block_num();
 
-    ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
+    ilog("Database flushed at last irreversible block: ${b}", ("b", decorate_number_with_upticks(lib)));
 
     chainbase::database::close();
 
@@ -991,6 +1073,9 @@ bool database::before_last_checkpoint()const
   *
   * @return true if we switched forks as a result of this push.
   */
+
+//na krotkim blocklogu zobacz jak to push blok chodzi
+
 bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
 {
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
@@ -4277,11 +4362,32 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
   }
 }
 
+
+
+
 void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 {
   const signed_block& block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
   block_notification note(full_block);
+
+
+
+   inside_apply_block_play_json(block, block_num);
+
+  // if(block_num % 10000 == 333)
+  // {
+  //   ilog("MTLK Block: ${block_num}. Data : ${block}", ("block_num", block_num)("block", block));
+
+  //   fc::variant v;
+  //   fc::to_variant( block, v );
+  //   auto s = fc::json::to_string( v );
+  //   ilog("MTLK variant: ${s}", ("s", s));
+
+  //   fc::json::save_to_file( v, "temp.json");
+
+  // }
+
 
   try {
   notify_pre_apply_block( note );
@@ -6528,7 +6634,7 @@ void database::set_hardfork( uint32_t hardfork, bool apply_now )
 void database::apply_hardfork( uint32_t hardfork )
 {
   if( _log_hardforks )
-    elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", head_block_num()) );
+    elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", decorate_number_with_upticks(head_block_num())) );
   operation hardfork_vop = hardfork_operation( hardfork );
 
   pre_push_virtual_operation( hardfork_vop );
