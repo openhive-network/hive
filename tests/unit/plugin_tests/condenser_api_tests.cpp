@@ -454,6 +454,12 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // limit_order_cancel_operation, limit_order_cancelled_operation
   limit_order_cancel( "carol0ah", 1, carol0ah_private_key );
 
+  // witness_update_operation
+  witness_create( "carol0ah", carol0ah_private_key, "foo.bar", carol0ah_private_key.get_public_key(), 1000 );
+  // witness_block_approve_operation - never appears in block (see its evaluator)
+  // account_witness_proxy_operation
+  proxy( "edgar0ah", "dan0ah" );
+
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
