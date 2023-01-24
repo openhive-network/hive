@@ -4,6 +4,10 @@
 
 #include <fc/utility.hpp>
 
+#include <hive/protocol/block.hpp>
+#include <fc/io/json.hpp>
+#include <fc/io/varint.hpp>
+
 namespace hive { namespace app {
 
 using namespace fc;
@@ -1152,5 +1156,8 @@ void transaction_get_impacted_accounts( const transaction& tx, flat_set<account_
   for( const auto& op : tx.operations )
     operation_get_impacted_accounts( op, result );
 }
+
+
+
 
 } }
