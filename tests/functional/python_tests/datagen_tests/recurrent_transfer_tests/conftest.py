@@ -6,7 +6,7 @@ import pytest
 
 import test_tools as tt
 
-from hive_local_tools.functional.python.datagen.massive_recurrent_transfer import ReplayedNodeMaker
+from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 @pytest.fixture
 def replayed_node() -> ReplayedNodeMaker:
