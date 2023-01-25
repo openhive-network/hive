@@ -483,6 +483,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   escrow_approve( "carol0ah", "dan0ah", "edgar0ah", "edgar0ah", edgar0ah_private_key );
   // escrow_approved_operation
   escrow_approve( "carol0ah", "dan0ah", "edgar0ah", "dan0ah", dan0ah_private_key );
+  // escrow_release_operation
+  escrow_release( "carol0ah", "dan0ah", "edgar0ah", "carol0ah", "dan0ah", ASSET( "0.013 TESTS" ), ASSET( "0.000 TBD" ), carol0ah_private_key );
 
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
