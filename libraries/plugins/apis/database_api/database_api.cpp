@@ -8,6 +8,7 @@
 #include <hive/protocol/get_config.hpp>
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/transaction_util.hpp>
+#include <hive/protocol/forward_impacted.hpp>
 
 #include <hive/chain/util/smt_token.hpp>
 
@@ -2172,3 +2173,23 @@ DEFINE_READ_APIS( database_api,
 )
 
 } } } // hive::plugins::database_api
+
+
+namespace hive { namespace app {
+
+
+collected_account_balances_collection_t collect_current_all_accounts_balances()
+{
+    // iterate_results< chain::account_index, chain::by_name >(
+    //   args.start.as< protocol::account_name_type >(),
+    //   result.accounts,
+    //   args.limit,
+    //   [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },
+    //   &database_api_impl::filter_default< account_object > );
+
+
+  return hive::app::collected_account_balances_collection_t();
+}
+
+}
+}
