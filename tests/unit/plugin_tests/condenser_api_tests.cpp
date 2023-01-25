@@ -463,6 +463,18 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   proxy( "edgar0ah", "dan0ah" );
   // account_witness_vote_operation
   witness_vote( "dan0ah", "carol0ah", dan0ah_private_key );
+  // Note that we don't use existing database_fixture::set_witness_props function below,
+  // because we don't want "uncontrolled" block generation that happens there. We only
+  // need the operation in block, so we can do our test on it.
+  // witness_set_properties_operation
+  fc::flat_map< std::string, std::vector<char> > props;
+  props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
+  props["key"] = fc::raw::pack_to_vector( carol0ah_private_key.get_public_key() );
+  witness_set_properties_operation op;
+  op.owner = "carol0ah";
+  op.props = props;
+  push_transaction( op, carol0ah_private_key );
+  expected_operations.insert( OP_TAG(witness_set_properties_operation) );
 
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
