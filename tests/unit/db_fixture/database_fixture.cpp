@@ -927,6 +927,25 @@ void database_fixture::escrow_approve( const string& from, const string& to, con
   push_transaction( tx, key );
 }
 
+void database_fixture::escrow_release( const string& from, const string& to, const string& agent, const string& who,
+                                       const string& receiver, const asset& hive_amount, 
+                                       const asset& hbd_amount, const fc::ecc::private_key& key )
+{
+  escrow_release_operation op;
+  op.from = from;
+  op.to = to;
+  op.agent = agent;
+  op.who = who;
+  op.receiver = receiver;
+  op.hive_amount = hive_amount;
+  op.hbd_amount = hbd_amount;
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  push_transaction( tx, key );
+}
+
 account_id_type database_fixture::get_account_id( const string& account_name )const
 {
   return db->get_account( account_name ).get_id();
