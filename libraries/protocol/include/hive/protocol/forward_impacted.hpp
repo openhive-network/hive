@@ -63,6 +63,15 @@ void transaction_get_impacted_accounts(
   fc::flat_set<protocol::account_name_type>& result
   );
 
+struct collected_account_balances_t
+{
+  std::string account_name;
+  long long balance;
+};
+
+typedef std::vector<collected_account_balances_t> collected_account_balances_collection_t;
+collected_account_balances_collection_t collect_current_all_accounts_balances();
+
 bool is_keyauths_operation( const protocol::operation& op );
 
 bool is_metadata_operation( const protocol::operation& op );
