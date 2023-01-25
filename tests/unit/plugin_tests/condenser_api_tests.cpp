@@ -476,6 +476,10 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   push_transaction( op, carol0ah_private_key );
   expected_operations.insert( OP_TAG(witness_set_properties_operation) );
 
+  // escrow_transfer_operation
+  escrow_transfer( "carol0ah", "dan0ah", "edgar0ah", ASSET( "0.071 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
+                   fc::seconds( HIVE_BLOCK_INTERVAL * 10 ), fc::seconds( HIVE_BLOCK_INTERVAL * 20 ), carol0ah_private_key );
+
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
