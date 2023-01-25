@@ -479,6 +479,10 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // escrow_transfer_operation
   escrow_transfer( "carol0ah", "dan0ah", "edgar0ah", ASSET( "0.071 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
                    fc::seconds( HIVE_BLOCK_INTERVAL * 10 ), fc::seconds( HIVE_BLOCK_INTERVAL * 20 ), carol0ah_private_key );
+  // escrow_approve_operation
+  escrow_approve( "carol0ah", "dan0ah", "edgar0ah", "edgar0ah", edgar0ah_private_key );
+  // escrow_approved_operation
+  escrow_approve( "carol0ah", "dan0ah", "edgar0ah", "dan0ah", dan0ah_private_key );
 
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
