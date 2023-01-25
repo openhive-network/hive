@@ -2748,6 +2748,102 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( account_witness_proxy_too_long )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: account_witness_proxy too long chain" );
+
+    ACTORS( (alice)(bob)(sam)(dave)(greg)(henry) )
+    fund( "alice", 1000 );
+    vest( "alice", 1000 );
+    fund( "bob", 3000 );
+    vest( "bob", 3000 );
+    fund( "sam", 5000 );
+    vest( "sam", 5000 );
+    fund( "dave", 7000 );
+    vest( "dave", 7000 );
+    fund( "greg", 9000 );
+    vest( "greg", 9000 );
+    fund( "henry", 11000 );
+    vest( "henry", 11000 );
+
+    //wait for delayed votes to become active
+    generate_blocks( db->head_block_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
+    generate_block();
+
+    proxy( "dave", "sam" );
+    proxy( "greg", "dave" );
+    proxy( "henry" , "greg" );
+    generate_block();
+    //we have henry -> greg -> dave -> sam
+
+    HIVE_REQUIRE_ASSERT( proxy( "alice", "henry" ), "proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH" );
+    //ABW: above is actually a bug, because we have space for 4 proxy levels, but we've only covered three
+    //so far, so above should still be possible (sam has only 3 of 4 elements of his proxied_vsf_votes
+    //filled)
+    {
+      auto top_proxied_votes = db->get_account( "sam" ).proxied_vsf_votes;
+      BOOST_REQUIRE_EQUAL( top_proxied_votes[0].value, get_vesting( "dave" ).amount.value );
+      BOOST_REQUIRE_EQUAL( top_proxied_votes[1].value, get_vesting( "greg" ).amount.value );
+      BOOST_REQUIRE_EQUAL( top_proxied_votes[2].value, get_vesting( "henry" ).amount.value );
+      BOOST_REQUIRE_EQUAL( top_proxied_votes[3].value, 0 );
+    }
+
+    proxy( "sam", "bob" );
+    //what didn't work from the bottom, works from the top (and rightfully so, after all sam had nothing
+    //to say when he became proxy, so why would he be affected by it?)
+
+    generate_block();
+    //we have henry -> greg -> dave -> sam -> bob
+    //we've managed to fill up the last element of proxied_vsf_votes (which shows us that sadly we can't
+    //just remove the element from the table, because it might have actually been used, so hardfork is
+    //required first and maybe we could remove it later)
+    {
+      auto top_proxied_votes = db->get_account( "bob" ).proxied_vsf_votes;
+      BOOST_REQUIRE_EQUAL( top_proxied_votes[0].value, get_vesting( "sam" ).amount.value );
+      BOOST_REQUIRE_EQUAL( top_proxied_votes[1].value, get_vesting( "dave" ).amount.value );
+      BOOST_REQUIRE_EQUAL( top_proxied_votes[2].value, get_vesting( "greg" ).amount.value );
+      BOOST_REQUIRE_EQUAL( top_proxied_votes[3].value, get_vesting( "henry" ).amount.value );
+    }
+
+    //since above worked, why not try it once more
+    proxy( "bob", "alice" );
+
+    generate_block();
+    //we have henry -> greg -> dave -> sam -> bob -> alice
+    //now we have too many layers of proxy, so henry's stake is not reflected in total vote power of alice
+    auto top_proxied_votes = db->get_account( "alice" ).proxied_vsf_votes;
+    BOOST_REQUIRE_EQUAL( top_proxied_votes[0].value, get_vesting( "bob" ).amount.value );
+    BOOST_REQUIRE_EQUAL( top_proxied_votes[1].value, get_vesting( "sam" ).amount.value );
+    BOOST_REQUIRE_EQUAL( top_proxied_votes[2].value, get_vesting( "dave" ).amount.value );
+    BOOST_REQUIRE_EQUAL( top_proxied_votes[3].value, get_vesting( "greg" ).amount.value );
+
+    //let's change voting power of henry and see what happens (should be reflected up to bob, but not alice)
+    fund( "henry", 100 );
+    vest( "henry", 100 );
+    //wait for delayed votes to become active
+    generate_blocks( db->head_block_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
+    generate_block();
+
+    {
+      auto alice_proxied_votes = db->get_account( "alice" ).proxied_vsf_votes;
+      BOOST_REQUIRE_EQUAL( alice_proxied_votes[0].value, top_proxied_votes[0].value );
+      BOOST_REQUIRE_EQUAL( alice_proxied_votes[1].value, top_proxied_votes[1].value );
+      BOOST_REQUIRE_EQUAL( alice_proxied_votes[2].value, top_proxied_votes[2].value );
+      BOOST_REQUIRE_EQUAL( alice_proxied_votes[3].value, top_proxied_votes[3].value );
+      auto bob_proxied_votes = db->get_account( "bob" ).proxied_vsf_votes;
+      BOOST_REQUIRE_EQUAL( bob_proxied_votes[0].value, top_proxied_votes[1].value );
+      BOOST_REQUIRE_EQUAL( bob_proxied_votes[1].value, top_proxied_votes[2].value );
+      BOOST_REQUIRE_EQUAL( bob_proxied_votes[2].value, top_proxied_votes[3].value );
+      BOOST_REQUIRE_EQUAL( bob_proxied_votes[3].value, get_vesting( "henry" ).amount.value );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
 {
   //copy of account_witness_proxy_apply with extra checks to account for delayed voting effect
@@ -7113,7 +7209,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
 
-    BOOST_TEST_MESSAGE( "--- successs cancelling a request" );
+    BOOST_TEST_MESSAGE( "--- success cancelling a request" );
     op.decline = false;
     tx.clear();
     tx.operations.push_back( op );

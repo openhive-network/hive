@@ -722,10 +722,10 @@ void database_fixture::proxy( const string& account, const string& proxy )
     account_witness_proxy_operation op;
     op.account = account;
     op.proxy = proxy;
-    trx.operations.push_back( op );
-    trx.set_expiration(db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
-    push_transaction( trx, fc::ecc::private_key(), ~0 );
-    trx.clear();
+    signed_transaction tx;
+    tx.operations.push_back( op );
+    tx.set_expiration(db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+    push_transaction( tx, fc::ecc::private_key(), ~0 );
   } FC_CAPTURE_AND_RETHROW( (account)(proxy) )
 }
 
