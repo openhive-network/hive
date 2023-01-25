@@ -532,7 +532,6 @@ struct dhf_database_fixture : public virtual clean_database_fixture
   uint64_t get_nr_blocks_until_maintenance_block();
   uint64_t get_nr_blocks_until_daily_maintenance_block();
 
-  void witness_vote( account_name_type _voter, account_name_type _witness, const fc::ecc::private_key& _key, bool _approve = true );
   void proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key );
 
   struct create_proposal_data

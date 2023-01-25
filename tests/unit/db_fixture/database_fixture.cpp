@@ -530,6 +530,19 @@ void database_fixture::witness_feed_publish(
   push_transaction( op, key );
 }
 
+void database_fixture::witness_vote( account_name_type voter, account_name_type witness, const fc::ecc::private_key& key, bool approve )
+{
+  signed_transaction tx;
+  account_witness_vote_operation op;
+  op.account = voter;
+  op.witness = witness;
+  op.approve = approve;
+
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  push_transaction( tx, key );
+}
+
 void database_fixture::fund(
   const string& account_name,
   const share_type& amount
@@ -1461,19 +1474,6 @@ uint64_t dhf_database_fixture::get_nr_blocks_until_daily_maintenance_block()
   FC_ASSERT( next_maintenance_time >= block_time );
 
   return ret;
-}
-
-void dhf_database_fixture::witness_vote( account_name_type _voter, account_name_type _witness, const fc::ecc::private_key& _key, bool _approve )
-{
-  signed_transaction tx;
-  account_witness_vote_operation op;
-  op.account = _voter;
-  op.witness = _witness;
-  op.approve = _approve;
-
-  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  tx.operations.push_back( op );
-  push_transaction( tx, _key );
 }
 
 void dhf_database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )

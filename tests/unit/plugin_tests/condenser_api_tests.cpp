@@ -461,6 +461,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // witness_block_approve_operation - never appears in block (see its evaluator)
   // account_witness_proxy_operation
   proxy( "edgar0ah", "dan0ah" );
+  // account_witness_vote_operation
+  witness_vote( "dan0ah", "carol0ah", dan0ah_private_key );
 
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
