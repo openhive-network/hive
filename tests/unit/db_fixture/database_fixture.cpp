@@ -891,6 +891,27 @@ void database_fixture::limit_order2_create( const string& owner, const asset& am
   push_transaction( tx, key );
 }
 
+void database_fixture::escrow_transfer( const string& from, const string& to, const string& agent, const asset& hive_amount, 
+  const asset& hbd_amount, const asset& fee, const std::string& json_meta, const fc::microseconds& ratification_shift,
+  const fc::microseconds& expiration_shift, const fc::ecc::private_key& key )
+{
+  escrow_transfer_operation op;
+  op.from = from;
+  op.to = to;
+  op.agent = agent;
+  op.hive_amount = hive_amount;
+  op.hbd_amount = hbd_amount;
+  op.fee = fee;
+  op.json_meta = json_meta;
+  op.ratification_deadline = db->head_block_time() + ratification_shift;
+  op.escrow_expiration = db->head_block_time() + expiration_shift;
+
+  signed_transaction tx;
+  tx.operations.push_back( op );
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  push_transaction( tx, key );
+}
+
 account_id_type database_fixture::get_account_id( const string& account_name )const
 {
   return db->get_account( account_name ).get_id();

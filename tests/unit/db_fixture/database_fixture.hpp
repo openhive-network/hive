@@ -363,6 +363,9 @@ struct database_fixture {
   void limit_order_cancel( const string& owner, uint32_t orderid, const fc::ecc::private_key& key );
   void limit_order2_create( const string& owner, const asset& amount_to_sell, const price& exchange_rate, bool fill_or_kill,
                             const fc::microseconds& expiration_shift, uint32_t orderid, const fc::ecc::private_key& key );
+  void escrow_transfer( const string& from, const string& to, const string& agent, const asset& hive_amount, 
+                        const asset& hbd_amount, const asset& fee, const std::string& json_meta, const fc::microseconds& ratification_shift,
+                        const fc::microseconds& expiration_shift, const fc::ecc::private_key& key );
   account_id_type get_account_id( const string& account_name )const;
   asset get_balance( const string& account_name )const;
   asset get_hbd_balance( const string& account_name )const;
