@@ -961,6 +961,18 @@ void database_fixture::escrow_dispute( const string& from, const string& to, con
   push_transaction( tx, key );
 }
 
+void database_fixture::transfer_to_savings( const string& from, const string& to, const asset& amount, const string& memo,
+                                            const fc::ecc::private_key& key )
+{
+  transfer_to_savings_operation op;
+  op.from = from;
+  op.to = to;
+  op.amount = amount;
+  op.memo = memo;
+
+  push_transaction( op, key );
+}
+
 account_id_type database_fixture::get_account_id( const string& account_name )const
 {
   return db->get_account( account_name ).get_id();
