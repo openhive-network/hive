@@ -973,6 +973,18 @@ void database_fixture::transfer_to_savings( const string& from, const string& to
   push_transaction( op, key );
 }
 
+void database_fixture::transfer_from_savings( const string& from, const string& to, const asset& amount, uint32_t request_id,
+                                              const fc::ecc::private_key& key )
+{
+  transfer_from_savings_operation op;
+  op.from = from;
+  op.request_id = request_id;
+  op.to = to;
+  op.amount = amount;
+
+  push_transaction( op, key );
+}
+
 account_id_type database_fixture::get_account_id( const string& account_name )const
 {
   return db->get_account( account_name ).get_id();
