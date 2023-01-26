@@ -488,6 +488,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // escrow_dispute_operation
   escrow_dispute( "carol0ah", "dan0ah", "edgar0ah", "dan0ah", dan0ah_private_key );
 
+  // transfer_to_savings_operation
+  transfer_to_savings( "carol0ah", "carol0ah", ASSET( "0.009 TESTS" ), "ah savings", carol0ah_private_key );
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
