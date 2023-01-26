@@ -1790,12 +1790,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
     auto alice_funds = ASSET("31.903 TBD");
     fund("alice", alice_funds);
 
-    transfer_to_savings_operation savings_supply;
-    savings_supply.from = "alice";
-    savings_supply.to = "alice";
-    savings_supply.memo = "New Tesla fund";
-    savings_supply.amount = alice_funds;
-    push_transaction(savings_supply, alice_private_key);
+    transfer_to_savings( "alice", "alice", alice_funds, "New Tesla fund", alice_private_key);
 
     fund("alice", ASSET("3.000 TBD"));
 
