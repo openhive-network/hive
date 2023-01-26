@@ -371,6 +371,8 @@ struct database_fixture {
                        const asset& hive_amount, const asset& hbd_amount, const fc::ecc::private_key& key );
   void escrow_dispute( const string& from, const string& to, const string& agent, const string& who, const fc::ecc::private_key& key );
   void transfer_to_savings( const string& from, const string& to, const asset& amount, const string& memo, const fc::ecc::private_key& key );
+  void transfer_from_savings( const string& from, const string& to, const asset& amount, uint32_t request_id,
+                              const fc::ecc::private_key& key );
   account_id_type get_account_id( const string& account_name )const;
   asset get_balance( const string& account_name )const;
   asset get_hbd_balance( const string& account_name )const;
