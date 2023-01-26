@@ -1285,15 +1285,8 @@ BOOST_AUTO_TEST_CASE( savings_test_01 )
     generate_block();
 
     fund( "alice", ASSET( "1000.000 TBD" ) );
-    
-    signed_transaction tx;
-    transfer_to_savings_operation op;
-    op.from = "alice";
-    op.to = "alice";
-    op.amount = ASSET( "1000.000 TBD" );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+
+    transfer_to_savings( "alice", "alice", ASSET( "1000.000 TBD" ), "", alice_private_key );
 
     BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "1000.000 TBD" ) );
     db->clear_account( db->get_account( "alice" ) );
@@ -1315,14 +1308,7 @@ BOOST_AUTO_TEST_CASE( savings_test_02 )
 
     fund( "alice", ASSET( "1000.000 TBD" ) );
 
-    signed_transaction tx;
-    transfer_to_savings_operation op;
-    op.from = "alice";
-    op.to = "alice";
-    op.amount = ASSET( "1000.000 TBD" );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( op );
-    push_transaction( tx, alice_private_key );
+    transfer_to_savings( "alice", "alice", ASSET( "1000.000 TBD" ), "", alice_private_key );
 
     BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "1000.000 TBD" ) );
 
