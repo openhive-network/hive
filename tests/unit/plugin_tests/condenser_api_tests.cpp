@@ -492,6 +492,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   transfer_to_savings( "carol0ah", "carol0ah", ASSET( "0.009 TESTS" ), "ah savings", carol0ah_private_key );
   // transfer_from_savings_operation
   transfer_from_savings( "carol0ah", "carol0ah", ASSET( "0.006 TESTS" ), 0, carol0ah_private_key );
+  // cancel_transfer_from_savings_operation
+  cancel_transfer_from_savings( "carol0ah", 0, carol0ah_private_key );
+
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
