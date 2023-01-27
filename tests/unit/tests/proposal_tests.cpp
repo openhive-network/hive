@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       auto before_voter_01_hbd_balance = _voter_01.hbd_balance;
       auto before_treasury_hbd_balance = _treasury.hbd_balance;
 
-      auto next_block = get_nr_blocks_until_maintenance_block();
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_block();
 
@@ -1018,7 +1018,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
       auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
 
-      auto next_block = get_nr_blocks_until_maintenance_block();
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_blocks( 1 );
 
@@ -1458,7 +1458,7 @@ try
       auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
       auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
 
-      auto next_block = get_nr_blocks_until_maintenance_block();
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_block();
 
@@ -1546,7 +1546,7 @@ try
       auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
       auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
 
-      auto next_block = get_nr_blocks_until_maintenance_block();
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_block();
 
@@ -4611,7 +4611,7 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     // Same because of the 1:1 tests to tbd ratio
     const auto hbd_converted = asset(hive_converted.amount, HBD_SYMBOL);
     // Generate until the next daily maintenance
-    auto next_block = get_nr_blocks_until_daily_maintenance_block();
+    auto next_block = get_nr_blocks_until_daily_proposal_maintenance_block();
     auto before_daily_maintenance_time = dgpo.next_daily_maintenance_time;
     generate_blocks( next_block - 1);
 
