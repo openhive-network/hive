@@ -518,6 +518,36 @@ const witness_object& database_fixture::witness_create(
   FC_CAPTURE_AND_RETHROW( (owner)(url) )
 }
 
+void database_fixture::account_update( const string& account, const fc::ecc::public_key& memo_key, const string& metadata,
+  optional<authority> owner, optional<authority> active, optional<authority> posting, const fc::ecc::private_key& key )
+{
+  account_update_operation op;
+  op.account = account;
+  op.owner = owner;
+  op.active = active;
+  op.posting = posting;
+  op.memo_key = memo_key;
+  op.json_metadata = metadata;
+
+  push_transaction( op, key );
+}
+
+void database_fixture::account_update2( const string& account,
+  optional<authority> owner, optional<authority> active, optional<authority> posting,
+  optional<public_key_type> memo_key, const string& metadata, const string& posting_metadata, const fc::ecc::private_key& key )
+{
+  account_update2_operation op;
+  op.account = account;
+  op.owner = owner;
+  op.active = active;
+  op.posting = posting;
+  op.memo_key = memo_key;
+  op.json_metadata = metadata;
+  op.posting_json_metadata = posting_metadata;
+
+  push_transaction( op, key );
+}
+
 void database_fixture::witness_feed_publish(
   const string& publisher,
   const price& exchange_rate,
