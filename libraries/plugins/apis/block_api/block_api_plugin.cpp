@@ -100,7 +100,7 @@ void consume_json_block_impl(const char *json_block)
 {
 
 
-  static auto stop2 = 1; 
+  static auto stop2 = 0; 
   while(stop2)
   {
      int *a = 0;
