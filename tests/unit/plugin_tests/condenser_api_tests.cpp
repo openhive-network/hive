@@ -515,6 +515,12 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
   ACTORS((alice0ah)(bob0ah))
+  // account_update_operation
+  account_update( "alice0ah", alice0ah_private_key.get_public_key(), "{\"success\":true}",
+                  fc::optional<authority>(), fc::optional<authority>(), fc::optional<authority>(), alice0ah_private_key );
+  // account_update2_operation
+  account_update2( "alice0ah", fc::optional<authority>(), fc::optional<authority>(), fc::optional<authority>(),
+                   fc::optional<fc::ecc::public_key>(), "{\"position\":\"top\"}", "{\"winner\":\"me\"}", alice0ah_private_key );
   // transfer_operation from initminer
   fund( "alice0ah", 500000000 );
   // transfer_operation from alice0ah
