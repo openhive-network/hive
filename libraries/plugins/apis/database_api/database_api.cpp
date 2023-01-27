@@ -2174,18 +2174,29 @@ DEFINE_READ_APIS( database_api,
 
 } } } // hive::plugins::database_api
 
-
+#include <chainbase/chainbase.hpp>
 namespace hive { namespace app {
 
 
 collected_account_balances_collection_t collect_current_all_accounts_balances()
 {
-    // iterate_results< chain::account_index, chain::by_name >(
-    //   args.start.as< protocol::account_name_type >(),
-    //   result.accounts,
-    //   args.limit,
-    //   [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },
-    //   &database_api_impl::filter_default< account_object > );
+
+  // const auto& account_idx = get_index< chain::account_index >().indices().get< chain::by_id >();
+  // std::for_each(
+  //     account_idx.begin()
+  //   , account_idx.end()
+  //   , [&]( const account_object& obj ){
+  //       push_virtual_operation(
+  //         account_created_operation(obj.name, obj.name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+  //     }
+
+
+  //   hive::plugins::database_api::iterate_results< chain::account_index, chain::by_name >(
+  //   args.start.as< protocol::account_name_type >(),
+  //   result.accounts,
+  //   args.limit,
+  //   [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },
+  //   &database_api_impl::filter_default< account_object > );
 
 
   return hive::app::collected_account_balances_collection_t();
