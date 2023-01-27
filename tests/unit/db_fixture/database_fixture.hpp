@@ -374,6 +374,30 @@ struct database_fixture {
   void transfer_from_savings( const string& from, const string& to, const asset& amount, uint32_t request_id,
                               const fc::ecc::private_key& key );
   void cancel_transfer_from_savings( const string& from, uint32_t request_id, const fc::ecc::private_key& key );
+
+  void push_custom_operation( const flat_set< account_name_type >& required_auths, uint16_t id,
+                              const vector< char >& data, const fc::ecc::private_key& key );
+  void push_custom_json_operation( const flat_set< account_name_type >& required_auths, 
+                                   const flat_set< account_name_type >& required_posting_auths,
+                                   const custom_id_type& id, const std::string& json, const fc::ecc::private_key& key );
+
+  void decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key );
+
+  int64_t create_proposal( const std::string& creator, const std::string& receiver, const std::string& subject, const std::string& permlink,
+                           time_point_sec start_date, time_point_sec end_date, asset daily_pay, const fc::ecc::private_key& key );
+  int64_t create_proposal(   std::string creator, std::string receiver,
+                    time_point_sec start_date, time_point_sec end_date,
+                    asset daily_pay, const fc::ecc::private_key& key, bool with_block_generation = true );
+  void vote_proposal( std::string voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key );
+  void remove_proposal(account_name_type _deleter, flat_set<int64_t> _proposal_id, const fc::ecc::private_key& _key);
+  void update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, time_point_sec* end_date = nullptr );
+
+  bool exist_proposal( int64_t id );
+  const proposal_object* find_proposal( int64_t id );
+  bool find_vote_for_proposal(const std::string& _user, int64_t _proposal_id);
+  uint64_t get_nr_blocks_until_proposal_maintenance_block();
+  uint64_t get_nr_blocks_until_daily_proposal_maintenance_block();
+
   account_id_type get_account_id( const string& account_name )const;
   asset get_balance( const string& account_name )const;
   asset get_hbd_balance( const string& account_name )const;
@@ -524,24 +548,8 @@ struct dhf_database_fixture : public virtual clean_database_fixture
                   : clean_database_fixture( shared_file_size_in_mb ){}
   virtual ~dhf_database_fixture(){}
 
-  void plugin_prepare();
-
-  int64_t create_proposal(   std::string creator, std::string receiver,
-                    time_point_sec start_date, time_point_sec end_date,
-                    asset daily_pay, const fc::ecc::private_key& key, bool with_block_generation = true );
-
-  void vote_proposal( std::string voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key );
-
-  bool exist_proposal( int64_t id );
-  const proposal_object* find_proposal( int64_t id );
-
-  void remove_proposal(account_name_type _deleter, flat_set<int64_t> _proposal_id, const fc::ecc::private_key& _key);
-
-  void update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, time_point_sec* end_date = nullptr );
-  bool find_vote_for_proposal(const std::string& _user, int64_t _proposal_id);
-
-  uint64_t get_nr_blocks_until_maintenance_block();
-  uint64_t get_nr_blocks_until_daily_maintenance_block();
+  // Note that all proposal-related operation execution methods have been moved to database_fixture,
+  // to allow using them by unit tests that base on it.
 
   void proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key );
 

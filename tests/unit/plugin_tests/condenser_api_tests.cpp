@@ -495,6 +495,22 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // cancel_transfer_from_savings_operation
   cancel_transfer_from_savings( "carol0ah", 0, carol0ah_private_key );
 
+  // create_proposal_operation, proposal_fee_operation
+  fund( "carol0ah", ASSET( "800.000 TBD" ) );
+  dhf_database_fixture::create_proposal_data cpd(db->head_block_time());
+  cpd.end_date = cpd.start_date + fc::days( 2 );
+  int64_t proposal_id = 
+    create_proposal( "carol0ah", "dan0ah", cpd.start_date, cpd.end_date, cpd.daily_pay, carol0ah_private_key, false/*with_block_generation*/ );
+  const proposal_object* proposal = find_proposal( proposal_id );
+  BOOST_REQUIRE_NE( proposal, nullptr );
+  // update_proposal_operation
+  update_proposal( proposal_id, "carol0ah", asset( 80, HBD_SYMBOL ), "new subject", proposal->permlink, carol0ah_private_key);
+  // update_proposal_votes_operation
+  vote_proposal( "edgar0ah", { proposal_id }, true/*approve*/, edgar0ah_private_key);
+  // remove_proposal_operation
+  remove_proposal( "carol0ah", { proposal_id }, carol0ah_private_key );
+  // proposal_pay_operation, // last_regular + 17
+
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
