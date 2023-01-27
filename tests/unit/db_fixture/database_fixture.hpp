@@ -401,7 +401,7 @@ struct database_fixture {
 
   bool exist_proposal( int64_t id );
   const proposal_object* find_proposal( int64_t id );
-  bool find_vote_for_proposal(const std::string& _user, int64_t _proposal_id);
+  const proposal_vote_object* find_vote_for_proposal(const std::string& _user, int64_t _proposal_id);
   uint64_t get_nr_blocks_until_proposal_maintenance_block();
   uint64_t get_nr_blocks_until_daily_proposal_maintenance_block();
 
