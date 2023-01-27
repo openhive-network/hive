@@ -595,6 +595,7 @@ witness_tests:
     - name: $HIVED_IMAGE_NAME
       alias: hived-instance
   variables:
+#    CI_DEBUG_SERVICES: trace
     NODE_ADDRESS: "hived-instance:8090"
     PYTEST_TIMEOUT_MINUTES: 5
     JUNIT_REPORT: tests/functional/python_tests/witness_tests/report.xml
@@ -605,3 +606,13 @@ witness_tests:
   tags:
     - public-runner-docker
     - hived-for-tests
+  artifacts:
+    reports:
+      junit: $JUNIT_REPORT
+
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    paths:
+      - "**/generated_during_*"
+      - "**/generated_by_package_fixtures"
+    when: always
+    expire_in: 1 week
