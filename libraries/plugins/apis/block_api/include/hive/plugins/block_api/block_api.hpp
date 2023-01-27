@@ -51,7 +51,7 @@ class block_api
 };
 
 
-void consume_json_block_impl(const char *json_block);
+
 
 
 } } } //hive::plugins::block_api
