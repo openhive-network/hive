@@ -1159,11 +1159,14 @@ void database_fixture::remove_proposal(account_name_type _deleter, flat_set<int6
   trx.operations.clear();
 }
 
-bool database_fixture::find_vote_for_proposal(const std::string& _user, int64_t _proposal_id)
+const proposal_vote_object* database_fixture::find_vote_for_proposal(const std::string& _user, int64_t _proposal_id)
 {
   const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices(). template get< by_voter_proposal >();
   auto found_vote = proposal_vote_idx.find( boost::make_tuple(_user, _proposal_id ) );
-  return found_vote != proposal_vote_idx.end();
+  if( found_vote != proposal_vote_idx.end() )
+    return &(*found_vote);
+  else
+    return nullptr;
 }
 
 uint64_t database_fixture::get_nr_blocks_until_proposal_maintenance_block()

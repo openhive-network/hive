@@ -2866,7 +2866,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_005 )
     std::vector<int64_t> vote_proposals = {proposal_1};
 
     vote_proposal( "bob", vote_proposals, true, bob_private_key );
-    BOOST_REQUIRE( find_vote_for_proposal("bob", proposal_1) );
+    BOOST_REQUIRE( find_vote_for_proposal("bob", proposal_1) != nullptr );
 
     flat_set<int64_t> proposals = { proposal_1 };
     remove_proposal(cpd.creator, proposals, alice_private_key);
@@ -2904,7 +2904,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_006 )
     std::vector<int64_t> vote_proposals = {proposal_1};
 
     vote_proposal( "bob",   vote_proposals, true, bob_private_key );
-    BOOST_REQUIRE( find_vote_for_proposal("bob", proposal_1) );
+    BOOST_REQUIRE( find_vote_for_proposal("bob", proposal_1) != nullptr );
 
     flat_set<int64_t> proposals = { proposal_1, proposal_2 };
     remove_proposal(cpd.creator, proposals, alice_private_key);
@@ -2941,11 +2941,11 @@ BOOST_AUTO_TEST_CASE( remove_proposal_007 )
 
     std::vector<int64_t> vote_proposals = {proposal_1};
     vote_proposal( "bob",   vote_proposals, true, bob_private_key );
-    BOOST_REQUIRE( find_vote_for_proposal("bob", proposal_1) );
+    BOOST_REQUIRE( find_vote_for_proposal("bob", proposal_1) != nullptr );
     vote_proposals.clear();
     vote_proposals.push_back(proposal_2);
     vote_proposal( "carol", vote_proposals, true, carol_private_key );
-    BOOST_REQUIRE( find_vote_for_proposal("carol", proposal_2) );
+    BOOST_REQUIRE( find_vote_for_proposal("carol", proposal_2) != nullptr );
 
     flat_set<int64_t> proposals = { proposal_1, proposal_2 };
     remove_proposal(cpd.creator, proposals, alice_private_key);
