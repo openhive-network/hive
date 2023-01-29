@@ -1260,6 +1260,21 @@ void database_fixture::delete_comment( std::string _author, std::string _permlin
   tx.operations.clear();
 }
 
+void database_fixture::set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout,
+  uint16_t percent_hbd, bool allow_curation_rewards, bool allow_votes, const fc::ecc::private_key& key )
+{
+  comment_options_operation op;
+  op.author = author;
+  op.permlink = permlink;
+  op.max_accepted_payout = max_accepted_payout;
+  op.percent_hbd = percent_hbd;
+  op.allow_curation_rewards = allow_curation_rewards;
+  op.allow_votes = allow_votes;
+
+  push_transaction( op, key );
+}
+
+
 void database_fixture::vote( std::string _author, std::string _permlink, std::string _voter, int16_t _weight, const fc::ecc::private_key& _key )
 {
   vote_operation vote;
