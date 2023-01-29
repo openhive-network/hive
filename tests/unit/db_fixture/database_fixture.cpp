@@ -1291,6 +1291,18 @@ void database_fixture::vote( std::string _author, std::string _permlink, std::st
   trx.operations.clear();
 }
 
+void database_fixture::claim_reward_balance( const std::string& account, const asset& reward_hive, const asset& reward_hbd,
+                                             const asset& reward_vests, const fc::ecc::private_key& key )
+{
+  claim_reward_balance_operation op;
+  op.account = account;
+  op.reward_hive = reward_hive;
+  op.reward_hbd = reward_hbd;
+  op.reward_vests = reward_vests;
+
+  push_transaction( op, key );
+}
+
 void database_fixture::create_with_pow( std::string _name, const fc::ecc::public_key& _public_key,
                                        const fc::ecc::private_key& _private_key )
 {

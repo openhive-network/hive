@@ -435,7 +435,11 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 
   // Set current hardfork for easier testing of current operations
   db->set_hardfork( HIVE_NUM_HARDFORKS );
+  for( int i = 0; i < 20*60; ++i )
   generate_block();
+
+  // claim_reward_balance_operation
+  claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
 
   // By now carol0ah should have a neat sum awarded for her comment.
   BOOST_REQUIRE_EQUAL( get_balance( "carol0ah" ).amount.value, 3000 );
