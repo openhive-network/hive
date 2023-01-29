@@ -424,6 +424,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 
   // comment_operation
   post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
+  // comment_options_operation
+  set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_100_PERCENT, true, true, edgar0ah_private_key );
   // vote_operation & effective_comment_vote_operation
   vote("edgar0ah", "permlink1", "carol0ah", HIVE_1_PERCENT * 100, carol0ah_private_key);
   // delete_comment_operation & ineffective_delete_comment_operation
