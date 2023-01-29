@@ -428,6 +428,8 @@ public:
   void set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout, uint16_t percent_hbd,
                             bool allow_curation_rewards, bool allow_votes, const fc::ecc::private_key& key );
   void vote( std::string _author, std::string _permlink, std::string _voter, int16_t _weight, const fc::ecc::private_key& _key );
+  void claim_reward_balance( const std::string& account, const asset& reward_hive, const asset& reward_hbd, const asset& reward_vests,
+                             const fc::ecc::private_key& key );
   /// @brief Creates proof of work and account for the worker. Also posts a comment by initminer for reasons explained in the body.
   /// @param _name Name of the worker (and account to be created too).
   /// @param _public_key worker (account) public key
