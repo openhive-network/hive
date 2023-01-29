@@ -8397,7 +8397,6 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
 
     comment_operation comment;
     vote_operation vote;
-    comment_options_operation op;
 
     comment.author = "alice";
     comment.permlink = "test";
@@ -8405,12 +8404,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     comment.title = "test";
     comment.body = "foobar";
     push_transaction( comment, alice_private_key );
-    op.author = "alice";
-    op.permlink = "test";
-    op.allow_curation_rewards = false;
-    op.allow_votes = false;
-    op.max_accepted_payout = ASSET( "0.010 TBD" );
-    push_transaction( op, alice_private_key );
+    set_comment_options( "alice", "test", ASSET( "0.010 TBD" ), HIVE_100_PERCENT, false, false, alice_private_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Downvoting comment (possible even with voting disabled)" );
