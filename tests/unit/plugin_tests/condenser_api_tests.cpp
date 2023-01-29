@@ -515,7 +515,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   vote_proposal( "edgar0ah", { proposal_id }, true/*approve*/, edgar0ah_private_key);
   // remove_proposal_operation
   remove_proposal( "carol0ah", { proposal_id }, carol0ah_private_key );
-  // proposal_pay_operation, // last_regular + 17
+  // claim_account_operation
+  claim_account( "edgar0ah", ASSET( "0.000 TESTS" ), edgar0ah_private_key );
 
   // Following operations happen below for each account (ACTOR):
   // account_create_operation, account_created_operation,

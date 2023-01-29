@@ -1391,6 +1391,15 @@ void database_fixture::create_with_delegation( const std::string& creator, const
   push_transaction( op, key );
 }
 
+void database_fixture::claim_account( const std::string& creator, const asset& fee, const fc::ecc::private_key& key )
+  {
+    claim_account_operation claim_account;
+    claim_account.creator = creator;
+    claim_account.fee = fee;
+
+    push_transaction( claim_account, key );
+  }
+
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
 {
   vector< operation > ops;
