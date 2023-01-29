@@ -427,10 +427,7 @@ BOOST_AUTO_TEST_CASE( rc_usage_buckets )
     market_bytes_share = new_market_bytes_share;
     BOOST_CHECK_EQUAL( pools.get_usage( resource_new_accounts ), 0 );
 
-    claim_account_operation claim_account;
-    claim_account.creator = "alice";
-    claim_account.fee = ASSET( "0.000 TESTS" );
-    push_transaction( claim_account, alice_private_key );
+    claim_account( "alice", ASSET( "0.000 TESTS" ), alice_private_key );
     generate_block(); //switch bucket
     BOOST_CHECK_EQUAL( print( true ), 0 );
     //last transaction should be registered within new bucket - it uses new account and execution, tx itself also state and history
