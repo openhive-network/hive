@@ -517,11 +517,14 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   remove_proposal( "carol0ah", { proposal_id }, carol0ah_private_key );
   // claim_account_operation
   claim_account( "edgar0ah", ASSET( "0.000 TESTS" ), edgar0ah_private_key );
+  // create_claimed_account_operation
+  PREP_ACTOR( bob0ah )
+  create_claimed_account( "edgar0ah", "bob0ah", bob0ah_public_key, bob0ah_post_key.get_public_key(), "", edgar0ah_private_key );
 
-  // Following operations happen below for each account (ACTOR):
+  // Following operations happen for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
-  ACTORS((alice0ah)(bob0ah))
+  ACTORS((alice0ah))
   // account_update_operation
   account_update( "alice0ah", alice0ah_private_key.get_public_key(), "{\"success\":true}",
                   fc::optional<authority>(), fc::optional<authority>(), fc::optional<authority>(), alice0ah_private_key );
