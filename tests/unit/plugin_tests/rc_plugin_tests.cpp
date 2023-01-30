@@ -155,16 +155,7 @@ BOOST_AUTO_TEST_CASE( account_creation )
         } );
       } );
 
-      create_claimed_account_operation op;
-      op.creator = HIVE_INIT_MINER_NAME;
-      op.new_account_name = "greg";
-      op.owner = authority( 1, greg_public_key, 1 );
-      op.active = authority( 1, greg_public_key, 1 );
-      op.posting = authority( 1, greg_post_key.get_public_key(), 1 );
-      op.memo_key = greg_post_key.get_public_key();
-      op.json_metadata = "";
-      
-      push_transaction( op, init_account_priv_key );
+      create_claimed_account( HIVE_INIT_MINER_NAME, "greg", greg_public_key, greg_post_key.get_public_key(), "", init_account_priv_key );
     }
     generate_block();
 
