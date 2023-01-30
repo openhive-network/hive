@@ -5016,15 +5016,7 @@ BOOST_AUTO_TEST_CASE( change_recovery_account )
 
     auto request_account_recovery = [&]( const std::string& recovery_account, const fc::ecc::private_key& recovery_account_key, const std::string& account_to_recover, const public_key_type& new_owner_key )
     {
-      request_account_recovery_operation op;
-      op.recovery_account    = recovery_account;
-      op.account_to_recover  = account_to_recover;
-      op.new_owner_authority = authority( 1, new_owner_key, 1 );
-
-      signed_transaction tx;
-      tx.operations.push_back( op );
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      push_transaction( tx, recovery_account_key );
+      this->request_account_recovery( recovery_account, account_to_recover, authority( 1, new_owner_key, 1 ), recovery_account_key );
     };
 
     auto change_owner = [&]( const std::string& account, const fc::ecc::private_key& old_private_key, const public_key_type& new_public_key )

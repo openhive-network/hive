@@ -1426,6 +1426,17 @@ void database_fixture::change_recovery_account( const std::string& account_to_re
   push_transaction( op, key );
 }
 
+void database_fixture::request_account_recovery( const std::string& recovery_account, const std::string& account_to_recover,
+  const authority& new_owner_authority, const fc::ecc::private_key& key )
+{
+  request_account_recovery_operation op;
+  op.recovery_account = recovery_account;
+  op.account_to_recover = account_to_recover;
+  op.new_owner_authority = new_owner_authority;
+
+  push_transaction( op, key );
+}
+
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
 {
   vector< operation > ops;
