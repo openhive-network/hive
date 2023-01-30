@@ -28,6 +28,7 @@
 #include "conversion_plugin.hpp"
 
 #include "converter.hpp"
+#include "hive/protocol/hive_operations.hpp"
 
 namespace hive {namespace converter { namespace plugins { namespace iceberg_generate {
 
@@ -43,10 +44,23 @@ namespace detail {
 
   class generate_iceberg_ops_from_op_visitor
   {
+  private:
+    static inline std::set<hp::account_name_type> dependent_accounts = { "initminer" };
+
   public:
     typedef hp::operation result_type;
 
     generate_iceberg_ops_from_op_visitor() {}
+
+    static size_t get_dependent_accounts_amount()
+    {
+      return dependent_accounts.size();
+    }
+
+    static size_t get_dependent_accounts_total_size_b()
+    {
+      return sizeof(dependent_accounts) + (dependent_accounts.size() * sizeof(hp::account_name_type));
+    }
 
     result_type operator()( hp::account_create_operation& op )const
     {
@@ -54,6 +68,8 @@ namespace detail {
       op.active.clear();
       op.posting.clear();
       op.json_metadata.clear();
+
+      dependent_accounts.emplace(op.new_account_name);
 
       return op;
     }
@@ -65,6 +81,24 @@ namespace detail {
       op.posting.clear();
       op.json_metadata.clear();
       op.extensions.clear();
+
+      dependent_accounts.emplace(op.new_account_name);
+
+      return op;
+    }
+
+    result_type operator()( hp::pow_operation& op )const
+    {
+      dependent_accounts.emplace(op.worker_account);
+
+      return op;
+    }
+
+    result_type operator()( hp::pow2_operation& op )const
+    {
+      const auto& input = op.work.which() ? op.work.get< hp::equihash_pow >().input : op.work.get< hp::pow2 >().input;
+
+      dependent_accounts.emplace(input.worker_account);
 
       return op;
     }
@@ -108,6 +142,8 @@ namespace detail {
       op.posting.clear();
       op.json_metadata.clear();
       op.extensions.clear();
+
+      dependent_accounts.emplace(op.new_account_name);
 
       return op;
     }
@@ -341,8 +377,6 @@ namespace detail {
       HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " plugin currently does not currently support conversion continue" );
     start_block_num = 1;
 
-    const auto init_start_block_num = start_block_num;
-
     hp::block_id_type last_block_id;
 
     if( !stop_block_num || stop_block_num > log_in.head()->get_block_num() )
@@ -385,34 +419,6 @@ namespace detail {
       head_block_time = block.timestamp;
     }
 
-    // The actual conversion
-    start_block_num = init_start_block_num;
-    for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
-    {
-      std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
-      FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
-
-      hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
-
-      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", block));
-
-      auto fb = converter.convert_signed_block( block, last_block_id, head_block_time, false );
-      last_block_id = fb->get_block_id();
-      converter.on_tapos_change();
-
-      if( start_block_num % 1000 == 0 ) // Progress
-        ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
-          ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
-
-      log_out.append( fb );
-
-      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("After conversion: ${block}", ("block", block));
-
-      head_block_time = block.timestamp;
-    }
-
     if( !appbase::app().is_interrupt_request() )
       appbase::app().generate_interrupt_request();
   }
@@ -427,6 +433,12 @@ namespace detail {
 
     if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770 ) )
       wlog("Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log");
+
+    ilog(
+      "Created accounts amount: ${a}. Bytes taken: ${cap}B",
+      ("a", generate_iceberg_ops_from_op_visitor::get_dependent_accounts_amount())
+      ("cap", generate_iceberg_ops_from_op_visitor::get_dependent_accounts_total_size_b())
+    );
   }
 
 } // detail
