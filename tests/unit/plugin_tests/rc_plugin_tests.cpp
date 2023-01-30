@@ -474,12 +474,8 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     generate_blocks( db->head_block_time() + ( HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2 ) );
 
     BOOST_TEST_MESSAGE( "victim notices a problem and asks agent for recovery" );
-    request_account_recovery_operation request;
-    request.account_to_recover = "victim";
-    request.recovery_account = "agent";
     auto victim_new_private_key = generate_private_key( "victim2" );
-    request.new_owner_authority = authority( 1, victim_new_private_key.get_public_key(), 1 );
-    push_transaction( request, agent_private_key );
+    request_account_recovery( "agent", "victim", authority( 1, victim_new_private_key.get_public_key(), 1 ), agent_private_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "thief keeps RC of victim at zero - recovery still possible" );
@@ -514,11 +510,8 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     push_transaction( account_update, victim_new_private_key );
     generate_blocks( db->head_block_time() + ( HIVE_OWNER_AUTH_RECOVERY_PERIOD.to_seconds() / 2 ) );
     //ask agent for help to recover "stolen" account - again add agent
-    request.account_to_recover = "victim";
-    request.recovery_account = "agent";
     auto victim_testB_private_key = generate_private_key( "victimB" );
-    request.new_owner_authority = authority( 3, "agent", 1, victim_testB_private_key.get_public_key(), 3 );
-    push_transaction( request, agent_private_key );
+    request_account_recovery( "agent", "victim", authority( 3, "agent", 1, victim_testB_private_key.get_public_key(), 3 ), agent_private_key );
     generate_block();
     //finally recover adding expensive operation as extra - test 1: before actual recovery
     pre_tx_agent_mana = regenerate_mana( db_plugin, agent_rc );
@@ -883,11 +876,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
       generate_block();
 
       BOOST_TEST_MESSAGE( "victim notices a problem and asks agent for recovery" );
-      request_account_recovery_operation request;
-      request.account_to_recover = "victim";
-      request.recovery_account = "agent";
-      request.new_owner_authority = alternative_auth;
-      push_transaction( request, agent_private_key );
+      request_account_recovery( "agent", "victim", alternative_auth, agent_private_key );
       generate_block();
       
       BOOST_TEST_MESSAGE( "victim gets account back" );
