@@ -2281,8 +2281,6 @@ std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl
 extern "C" void create_consume_json_blocks_impl(const char *context)
 {
   dlog("create_consume_json_blocks_impl started mtlk pid=${pid}", ("pid", getpid()));
-  dlog("create_consume_json_blocks_impl finished mtlk pid=${pid}", ("pid", getpid()));
-  return;
   
   // mtlk todo  ASSERT NOT haf_database_api_impls.has_key(context)
   hive::chain::database* db = new hive::chain::database;
@@ -2302,6 +2300,7 @@ extern "C" void create_consume_json_blocks_impl(const char *context)
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 
+  dlog("create_consume_json_blocks_impl finished mtlk pid=${pid}", ("pid", getpid()));
 
 
 }
@@ -2309,12 +2308,11 @@ extern "C" void create_consume_json_blocks_impl(const char *context)
 extern "C" void delete_consume_json_blocks_impl(const char *context)
 {
   dlog("delete_consume_json_blocks_impl started mtlk pid=${pid}", ("pid", getpid()));
-  dlog("delete_consume_json_blocks_impl finished mtlk pid=${pid}", ("pid", getpid()));
-  return;
 
   delete &(haf_database_api_impls[context]._db);
   haf_database_api_impls.erase(context);
 
+  dlog("delete_consume_json_blocks_impl finished mtlk pid=${pid}", ("pid", getpid()));
 
 }
 
@@ -2325,15 +2323,15 @@ extern "C" void consume_json_block_impl(const char *json_block, const char* cont
   dlog("consume_json_block_impl started mtlk pid=${pid}", ("pid", getpid()));
 
 
-  if(haf_database_api_impls.size() == 0)
-  {
-    // mtlk todo  ASSERT NOT haf_database_api_impls.has_key(context)
-    hive::chain::database* db = new hive::chain::database;
-    init(*db);
+  // if(haf_database_api_impls.size() == 0)
+  // {
+  //   // mtlk todo  ASSERT NOT haf_database_api_impls.has_key(context)
+  //   hive::chain::database* db = new hive::chain::database;
+  //   init(*db);
 
-    std::string  s(context);
-    haf_database_api_impls.emplace(std::make_pair(s, hive::plugins::database_api::database_api_impl(*db)));
-  }
+  //   std::string  s(context);
+  //   haf_database_api_impls.emplace(std::make_pair(s, hive::plugins::database_api::database_api_impl(*db)));
+  // }
 
   std::string s(context);
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[s];
