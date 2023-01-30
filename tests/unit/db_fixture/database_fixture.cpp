@@ -1400,6 +1400,22 @@ void database_fixture::claim_account( const std::string& creator, const asset& f
     push_transaction( claim_account, key );
   }
 
+void database_fixture::create_claimed_account( const std::string& creator, const std::string& new_account_name, 
+  const fc::ecc::public_key& public_key, const fc::ecc::public_key& posting_key, const string& json_metadata, 
+  const fc::ecc::private_key& key )
+{
+  create_claimed_account_operation op;
+  op.creator = creator;
+  op.new_account_name = new_account_name;
+  op.owner = authority( 1, public_key, 1 );
+  op.active = authority( 1, public_key, 1 );
+  op.posting = authority( 1, posting_key, 1 );
+  op.memo_key = posting_key;
+  op.json_metadata = json_metadata;
+
+  push_transaction( op, key );
+}
+
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
 {
   vector< operation > ops;
