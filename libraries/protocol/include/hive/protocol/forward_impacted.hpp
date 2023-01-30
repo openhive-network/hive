@@ -57,7 +57,7 @@ struct collected_account_balances_t
 };
 
 typedef std::vector<collected_account_balances_t> collected_account_balances_collection_t;
-collected_account_balances_collection_t collect_current_all_accounts_balances();
+collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context);
 
  
 } } // hive::app

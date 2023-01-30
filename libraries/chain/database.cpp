@@ -236,13 +236,16 @@ void database::initialize_state_independent_data(const open_args& args)
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
 
-  with_write_lock([&]()
+  if(!args.dont_use_blocklog)
   {
-    _block_log.open(args.data_dir / "block_log");
-    _block_log.set_compression(args.enable_block_log_compression);
-    _block_log.set_compression_level(args.block_log_compression_level);
-  });
-
+    with_write_lock([&]()
+    {
+      _block_log.open(args.data_dir / "block_log");
+      _block_log.set_compression(args.enable_block_log_compression);
+      _block_log.set_compression_level(args.block_log_compression_level);
+    });
+  }
+  
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
