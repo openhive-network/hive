@@ -1437,6 +1437,20 @@ void database_fixture::request_account_recovery( const std::string& recovery_acc
   push_transaction( op, key );
 }
 
+void database_fixture::recover_account( const std::string& account_to_recover, const fc::ecc::private_key& new_owner_key,
+  const fc::ecc::private_key& recent_owner_key )
+{
+  recover_account_operation op;
+  op.account_to_recover = account_to_recover;
+  op.new_owner_authority = authority( 1, new_owner_key.get_public_key(), 1);
+  op.recent_owner_authority = authority( 1, recent_owner_key.get_public_key(), 1);;
+
+  signed_transaction tx;
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  push_transaction( tx, { recent_owner_key, new_owner_key } );
+}
+
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
 {
   vector< operation > ops;
