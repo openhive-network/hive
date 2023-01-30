@@ -43,6 +43,7 @@ class database_api_impl
 {
   public:
     database_api_impl();
+    database_api_impl(chain::database& a_db);
     ~database_api_impl();
 
     DECLARE_API_IMPL
@@ -251,6 +252,12 @@ database_api::~database_api() {}
 
 database_api_impl::database_api_impl()
   : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+
+
+database_api_impl::database_api_impl(chain::database& a_db)
+  : _db( a_db) {}
+
+
 
 database_api_impl::~database_api_impl() {}
 
@@ -2174,90 +2181,124 @@ DEFINE_READ_APIS( database_api,
 
 } } } // hive::plugins::database_api
 
+
+
+
+
 #include <chainbase/chainbase.hpp>
 
 
-hive::chain::database& init()
+hive::plugins::database_api::database_api_impl& database_api_impl_init(hive::chain::database& a_db)
 {
-  static hive::chain::database db;
-  static auto inited = false;
-  if(inited)
-    return db;
-  inited = true;
+  static hive::plugins::database_api::database_api_impl db_api_impl(a_db);
+  return db_api_impl;
+}
 
 
-// my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
-//     auto chainId = chainPlugin.db().get_chain_id();
-    db.set_flush_interval( 10'000 );//10 000
-//     db.add_checkpoints( loaded_checkpoints );// empty flat_map<uint32_t,block_id_type> loaded_checkpoints;
-    db.set_require_locking( false );// false 
-    const auto& abstract_index_cntr = db.get_abstract_index_cntr();
+void init(hive::chain::database& db)
+{
+  
+
+  
+  
+    
 
 
-    hive::chain::open_args db_open_args;
-    db_open_args.data_dir = "/home/dev/mainnet-5m/blockchain2"; //"/home/dev/mainnet-5m/blockchain"
-    db_open_args.shared_mem_dir = db_open_args.data_dir ; // "/home/dev/mainnet-5m/blockchain"
-    db_open_args.initial_supply = HIVE_INIT_SUPPLY; // 0
-    db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;// 0
-
-    db_open_args.shared_file_size = 25769803776;  //my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
-
-    db_open_args.shared_file_full_threshold = 0;// 0
-    db_open_args.shared_file_scale_rate = 0;// 0
-    db_open_args.chainbase_flags = 0;// 0
-    db_open_args.do_validate_invariants = false; // false
-    db_open_args.stop_replay_at = 0;//0
-    db_open_args.exit_after_replay = false;//false
-    db_open_args.force_replay = true;// true
-    db_open_args.validate_during_replay = false;// false
-    db_open_args.benchmark_is_enabled = false;//false
-    // db_open_args.database_cfg = fc::variant database_config();// empty fc::variant database_config;
-    db_open_args.replay_in_memory = false;// false
-    // db_open_args.replay_memory_indices = std::vector< std::string >; // ? empty vector
-    db_open_args.enable_block_log_compression = true;// true
-    db_open_args.block_log_compression_level = 15;// 15
+  // my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
+  //     auto chainId = chainPlugin.db().get_chain_id();
+      db.set_flush_interval( 10'000 );//10 000
+  //     db.add_checkpoints( loaded_checkpoints );// empty flat_map<uint32_t,block_id_type> loaded_checkpoints;
+      db.set_require_locking( false );// false 
+      const auto& abstract_index_cntr = db.get_abstract_index_cntr();
 
 
+      hive::chain::open_args db_open_args;
+      db_open_args.data_dir = "/home/dev/mainnet-5m/blockchain2"; //"/home/dev/mainnet-5m/blockchain"
+      db_open_args.shared_mem_dir = db_open_args.data_dir ; // "/home/dev/mainnet-5m/blockchain"
+      db_open_args.initial_supply = HIVE_INIT_SUPPLY; // 0
+      db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;// 0
 
+      db_open_args.shared_file_size = 25769803776;  //my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
 
-    db.open( db_open_args );
-//         init_schema();
-//         initialize_state_independent_data(args);
-//             initialize_indexes();
-//             initialize_evaluators();
-//             initialize_irreversible_storage();
-//             with_write_lock([&]()
-//             {
-//             init_genesis(args.initial_supply, args.hbd_initial_supply);
-//                 auth_inhibitor(database& db) : db(db), old_flags(db.node_properties().skip_flags)
-//                 modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
-//                 { db.node_properties().skip_flags = old_flags; }
-//         init_hardforks();
-//     load_state_initial_data(args);
-//         head_block_num();
-//             get_dynamic_global_properties().head_block_number;
-//         get_last_irreversible_block_num();
-//         with_read_lock([&]() {
-//             const auto& hardforks = get_hardfork_property_object();
-//                 bool operator <= ( const version& o )const { return _operator< operator_type::less_equal >(     o.v_num, []( uint32_t val ){ return val & 0xFFFF0000; } ); }
+      db_open_args.shared_file_full_threshold = 0;// 0
+      db_open_args.shared_file_scale_rate = 0;// 0
+      db_open_args.chainbase_flags = 0;// 0
+      db_open_args.do_validate_invariants = false; // false
+      db_open_args.stop_replay_at = 0;//0
+      db_open_args.exit_after_replay = false;//false
+      db_open_args.force_replay = true;// true
+      db_open_args.validate_during_replay = false;// false
+      db_open_args.benchmark_is_enabled = false;//false
+      // db_open_args.database_cfg = fc::variant database_config();// empty fc::variant database_config;
+      db_open_args.replay_in_memory = false;// false
+      // db_open_args.replay_memory_indices = std::vector< std::string >; // ? empty vector
+      db_open_args.enable_block_log_compression = true;// true
+      db_open_args.block_log_compression_level = 15;// 15
+      db_open_args.dont_use_blocklog = true;
 
 
 
-// db.reindex( db_open_args );
-//     reindex_internal( args, start_block );
-//         apply_block(full_block, skip_flags);
-//           _apply_block(full_block);
+
+      db.open( db_open_args );
+  //         init_schema();
+  //         initialize_state_independent_data(args);
+  //             initialize_indexes();
+  //             initialize_evaluators();
+  //             initialize_irreversible_storage();
+  //             with_write_lock([&]()
+  //             {
+  //             init_genesis(args.initial_supply, args.hbd_initial_supply);
+  //                 auth_inhibitor(database& db) : db(db), old_flags(db.node_properties().skip_flags)
+  //                 modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
+  //                 { db.node_properties().skip_flags = old_flags; }
+  //         init_hardforks();
+  //     load_state_initial_data(args);
+  //         head_block_num();
+  //             get_dynamic_global_properties().head_block_number;
+  //         get_last_irreversible_block_num();
+  //         with_read_lock([&]() {
+  //             const auto& hardforks = get_hardfork_property_object();
+  //                 bool operator <= ( const version& o )const { return _operator< operator_type::less_equal >(     o.v_num, []( uint32_t val ){ return val & 0xFFFF0000; } ); }
 
 
-  return db;
+
+  // db.reindex( db_open_args );
+  //     reindex_internal( args, start_block );
+  //         apply_block(full_block, skip_flags);
+  //           _apply_block(full_block);
+
+      
+  
+
 }
 
 #include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
 #include <hive/chain/full_block.hpp>
 
+
+std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
+
 extern "C" void consume_json_block_impl(const char *json_block)
 {
-  hive::chain::database& db = init();
+  
+  dlog("consume_json_block_impl started mtlk pid=${pid}", ("pid", getpid()));
+
+
+  if(haf_database_api_impls.size() == 0)
+  {
+    // mtlk todo  ASSERT NOT haf_database_api_impls.has_key(context)
+    hive::chain::database* db = new hive::chain::database;
+    init(*db);
+
+    std::string  s("context");
+    haf_database_api_impls.emplace(std::make_pair(s, hive::plugins::database_api::database_api_impl(*db)));
+  }
+
+  std::string s("context");
+  hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[s];
+  hive::chain::database& db = db_api_impl._db;
+  
+
 
     fc::variant v = fc::json::from_string( std::string{ json_block } );
 
@@ -2299,12 +2340,34 @@ extern "C" void consume_json_block_impl(const char *json_block)
 
 
 
-
 namespace hive { namespace app {
 
 
 collected_account_balances_collection_t collect_current_all_accounts_balances()
 {
+
+  dlog("collect_current_all_accounts_balances started mtlk pid=${pid}", ("pid", getpid()));
+
+
+  hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls["context"];
+
+
+
+  hive::plugins::database_api::list_accounts_args args;
+  args.start = "";
+  args.limit = 10;
+  args.order = hive::plugins::database_api::by_name;
+  hive::plugins::database_api::list_accounts_return db_api_impl_result = db_api_impl.list_accounts(args);
+  
+  collected_account_balances_collection_t r;
+
+  for(const auto& a : db_api_impl_result.accounts)
+  {
+    collected_account_balances_t e;
+    e.account_name = a.name;
+    e.balance = a.balance.amount.value;
+    r.emplace_back(e);
+  }
 
   // const auto& account_idx = get_index< chain::account_index >().indices().get< chain::by_id >();
   // std::for_each(
@@ -2324,7 +2387,9 @@ collected_account_balances_collection_t collect_current_all_accounts_balances()
   //   &database_api_impl::filter_default< account_object > );
 
 
-  return hive::app::collected_account_balances_collection_t();
+  dlog("collect_current_all_accounts_balances finished mtlk pid=${pid}", ("pid", getpid()));
+
+  return r;
 }
 
 }
