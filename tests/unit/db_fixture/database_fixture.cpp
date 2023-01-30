@@ -1416,6 +1416,16 @@ void database_fixture::create_claimed_account( const std::string& creator, const
   push_transaction( op, key );
 }
 
+void database_fixture::change_recovery_account( const std::string& account_to_recover, const std::string& new_recovery_account, 
+  const fc::ecc::private_key& key )
+{
+  change_recovery_account_operation op;
+  op.account_to_recover = account_to_recover;
+  op.new_recovery_account = new_recovery_account;
+
+  push_transaction( op, key );
+}
+
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
 {
   vector< operation > ops;

@@ -461,10 +461,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     const auto& thief_rc = db->get< rc_account_object, by_name >( "thief" );
 
     BOOST_TEST_MESSAGE( "agent becomes recovery account for victim" );
-    change_recovery_account_operation recovery_change;
-    recovery_change.account_to_recover = "victim";
-    recovery_change.new_recovery_account = "agent";
-    push_transaction( recovery_change, victim_private_key );
+    change_recovery_account( "victim", "agent", victim_private_key );
     generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
 
     generate_block();
@@ -593,18 +590,11 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     const auto& thief3_rc = db->get< rc_account_object, by_name >( "thief3" );
 
     BOOST_TEST_MESSAGE( "agent becomes recovery account for all victims" );
-    change_recovery_account_operation recovery_change;
-    recovery_change.account_to_recover = "victim1";
-    recovery_change.new_recovery_account = "agent";
-    push_transaction( recovery_change, victim1_private_key );
+    change_recovery_account( "victim1", "agent", victim1_private_key );
     generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
-    recovery_change.account_to_recover = "victim2";
-    recovery_change.new_recovery_account = "agent";
-    push_transaction( recovery_change, victim2_private_key );
+    change_recovery_account( "victim2", "agent", victim2_private_key );
     generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
-    recovery_change.account_to_recover = "victim3";
-    recovery_change.new_recovery_account = "agent";
-    push_transaction( recovery_change, victim3_private_key );
+    change_recovery_account( "victim3", "agent", victim3_private_key );
     generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
 
     generate_block();
