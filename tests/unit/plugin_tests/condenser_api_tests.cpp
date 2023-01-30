@@ -522,16 +522,18 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   create_claimed_account( "edgar0ah", "bob0ah", bob0ah_public_key, bob0ah_post_key.get_public_key(), "", edgar0ah_private_key );
   // change_recovery_account_operation
   change_recovery_account( "bob0ah", HIVE_INIT_MINER_NAME, bob0ah_private_key );
+  // account_update_operation
+  account_update( "bob0ah", bob0ah_private_key.get_public_key(), "{\"success\":true}",
+                  authority(1, carol0ah_public_key,1), fc::optional<authority>(), fc::optional<authority>(), bob0ah_private_key );
   // request_account_recovery_operation
   request_account_recovery( "edgar0ah", "bob0ah", authority( 1, edgar0ah_private_key.get_public_key(), 1 ), edgar0ah_private_key );
+  // recover_account_operation
+  recover_account( "bob0ah", edgar0ah_private_key, bob0ah_private_key );
 
   // Following operations happen for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
   ACTORS((alice0ah))
-  // account_update_operation
-  account_update( "alice0ah", alice0ah_private_key.get_public_key(), "{\"success\":true}",
-                  fc::optional<authority>(), fc::optional<authority>(), fc::optional<authority>(), alice0ah_private_key );
   // account_update2_operation
   account_update2( "alice0ah", fc::optional<authority>(), fc::optional<authority>(), fc::optional<authority>(),
                    fc::optional<fc::ecc::public_key>(), "{\"position\":\"top\"}", "{\"winner\":\"me\"}", alice0ah_private_key );
