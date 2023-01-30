@@ -1024,6 +1024,17 @@ void database_fixture::cancel_transfer_from_savings( const string& from, uint32_
   push_transaction( op, key );
 }
 
+void database_fixture::push_custom_operation( const flat_set< account_name_type >& required_auths, uint16_t id, const vector< char >& data,
+  const fc::ecc::private_key& key )
+{
+  custom_operation op;
+  op.required_auths = required_auths;
+  op.id = id;
+  op.data = data;
+
+  push_transaction( op, key );
+}
+
 
 int64_t database_fixture::create_proposal( const std::string& creator, const std::string& receiver, const std::string& subject,
   const std::string& permlink, time_point_sec start_date, time_point_sec end_date, asset daily_pay, const fc::ecc::private_key& key )
