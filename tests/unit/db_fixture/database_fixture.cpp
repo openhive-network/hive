@@ -1035,6 +1035,18 @@ void database_fixture::push_custom_operation( const flat_set< account_name_type 
   push_transaction( op, key );
 }
 
+void database_fixture::push_custom_json_operation( const flat_set< account_name_type >& required_auths,
+  const flat_set< account_name_type >& required_posting_auths, const custom_id_type& id, const std::string& json,
+  const fc::ecc::private_key& key )
+{
+  custom_json_operation op;
+  op.required_auths = required_auths;
+  op.required_posting_auths = required_posting_auths;
+  op.id = id;
+  op.json = json;
+
+  push_transaction( op, key );
+}
 
 int64_t database_fixture::create_proposal( const std::string& creator, const std::string& receiver, const std::string& subject,
   const std::string& permlink, time_point_sec start_date, time_point_sec end_date, asset daily_pay, const fc::ecc::private_key& key )
