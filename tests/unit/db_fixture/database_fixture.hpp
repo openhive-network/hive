@@ -445,6 +445,8 @@ public:
   void change_recovery_account( const std::string& account_to_recover, const std::string& new_recovery_account, const fc::ecc::private_key& key );
   void request_account_recovery( const std::string& recovery_account, const std::string& account_to_recover, 
                                  const authority& new_owner_authority, const fc::ecc::private_key& key );
+  void recover_account( const std::string& account_to_recover, const fc::ecc::private_key& new_owner_key, 
+                        const fc::ecc::private_key& recent_owner_key );
 
   vector< operation > get_last_operations( uint32_t ops );
 
