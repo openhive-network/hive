@@ -687,11 +687,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     for (int i = 0; i < NUM_ACTORS; i++) {
       op.delegatees.insert( "actor" + std::to_string(i) );
       if (count == 50 || i == NUM_ACTORS -1 ) {
-        custom_json_operation custom_op;
-        custom_op.required_posting_auths.insert( "alice" );
-        custom_op.id = HIVE_RC_PLUGIN_NAME;
-        custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-        push_transaction(custom_op, alice_private_key);
+        push_custom_json_operation( {}, { "alice" }, HIVE_RC_PLUGIN_NAME, fc::json::to_string( rc_plugin_operation( op ) ), alice_private_key );
         generate_block();
         op.delegatees = {};
         count = 0;
@@ -702,11 +698,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     // We delegate to bob last so that his delegation would be the last to be affected
     op.delegatees = {"bob"};
     op.max_rc = vesting_amount - NUM_ACTORS * 10 ;
-    custom_json_operation custom_op;
-    custom_op.required_posting_auths.insert( "alice" );
-    custom_op.id = HIVE_RC_PLUGIN_NAME;
-    custom_op.json = fc::json::to_string( rc_plugin_operation( op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_custom_json_operation( {}, { "alice" }, HIVE_RC_PLUGIN_NAME, fc::json::to_string( rc_plugin_operation( op ) ), alice_private_key );
     generate_block();
 
     const rc_account_object& actor0_rc_account_before = db->get< rc_account_object, by_name >("actor0");
@@ -836,11 +828,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     drc_op.from = "alice";
     drc_op.delegatees = {"bob", "dave"};
     drc_op.max_rc = alice_account_initial.get_vesting().amount.value / 2;
-    custom_json_operation custom_op;
-    custom_op.required_posting_auths.insert( "alice" );
-    custom_op.id = HIVE_RC_PLUGIN_NAME;
-    custom_op.json = fc::json::to_string( rc_plugin_operation( drc_op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_custom_json_operation( {}, { "alice" }, HIVE_RC_PLUGIN_NAME, fc::json::to_string( rc_plugin_operation( drc_op ) ), alice_private_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Setting up withdrawal" );
@@ -1010,11 +998,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     drc_op.from = "alice";
     drc_op.delegatees = {"bob", "dave"};
     drc_op.max_rc = delegated_rc;
-    custom_json_operation custom_op;
-    custom_op.required_posting_auths.insert( "alice" );
-    custom_op.id = HIVE_RC_PLUGIN_NAME;
-    custom_op.json = fc::json::to_string( rc_plugin_operation( drc_op ) );
-    push_transaction(custom_op, alice_private_key);
+    push_custom_json_operation( {}, { "alice" }, HIVE_RC_PLUGIN_NAME, fc::json::to_string( rc_plugin_operation( drc_op ) ), alice_private_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Setting up withdrawal" );
@@ -1366,11 +1350,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
       delegate.from = from;
       delegate.delegatees = { to };
       delegate.max_rc = amount;
-      custom_json_operation custom_op;
-      custom_op.required_posting_auths.insert( from );
-      custom_op.id = HIVE_RC_PLUGIN_NAME;
-      custom_op.json = fc::json::to_string( rc_plugin_operation( delegate ) );
-      push_transaction( custom_op, key );
+      push_custom_json_operation( {}, { from }, HIVE_RC_PLUGIN_NAME, fc::json::to_string( rc_plugin_operation( delegate ) ), key );
     };
     rc_delegate( "delegator1", "delegatee", full_vest, delegator1_private_key );
     rc_delegate( "delegator2", "pattern2", full_vest, delegator2_private_key );
