@@ -442,6 +442,7 @@ public:
   void claim_account( const std::string& creator, const asset& fee, const fc::ecc::private_key& key );
   void create_claimed_account( const std::string& creator, const std::string& new_account_name, const fc::ecc::public_key& public_key,
                                const fc::ecc::public_key& posting_key, const string& json_metadata, const fc::ecc::private_key& key );
+  void change_recovery_account( const std::string& account_to_recover, const std::string& new_recovery_account, const fc::ecc::private_key& key );
 
   vector< operation > get_last_operations( uint32_t ops );
 

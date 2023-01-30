@@ -520,6 +520,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // create_claimed_account_operation
   PREP_ACTOR( bob0ah )
   create_claimed_account( "edgar0ah", "bob0ah", bob0ah_public_key, bob0ah_post_key.get_public_key(), "", edgar0ah_private_key );
+  // change_recovery_account_operation
+  change_recovery_account( "bob0ah", HIVE_INIT_MINER_NAME, bob0ah_private_key );
 
   // Following operations happen for each account (ACTOR):
   // account_create_operation, account_created_operation,
