@@ -530,6 +530,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // recover_account_operation
   recover_account( "bob0ah", edgar0ah_private_key, bob0ah_private_key );
 
+  // custom_operation
+  push_custom_operation( { "carol0ah" }, 7, { 'D', 'A', 'T', 'A' }, carol0ah_private_key );
   // Following operations happen for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
