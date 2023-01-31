@@ -229,10 +229,8 @@ namespace fc {
       T*       ptr()      { void* v = &_value[0]; return static_cast<T*>(v); }
       const T* ptr()const { const void* v = &_value[0]; return static_cast<const T*>(v); }
 
-
-      // force alignment... to 8 byte boundaries 
-      double _value[((sizeof(T)+7)/8)];
-      bool   _valid;
+      alignas(T) char   _value[sizeof(T)]; // to be sure address of '_value' is properly aligned
+      bool              _valid;
   };
 
   template<typename T>
