@@ -1,3 +1,5 @@
+#include <filesystem>
+
 #include <hive/chain/hive_fwd.hpp>
 
 #include <appbase/application.hpp>
@@ -13,6 +15,9 @@
 #include <hive/chain/util/smt_token.hpp>
 
 #include <hive/utilities/git_revision.hpp>
+
+namespace fs = std::filesystem;
+
 
 namespace hive { namespace plugins { namespace database_api {
 
@@ -2213,7 +2218,8 @@ void init(hive::chain::database& db)
 
 
       hive::chain::open_args db_open_args;
-      db_open_args.data_dir = "/home/dev/mainnet-5m/blockchain2"; //"/home/dev/mainnet-5m/blockchain"
+      db_open_args.data_dir = fs::temp_directory_path().string(); //"/home/dev/mainnet-5m/blockchain"
+
       db_open_args.shared_mem_dir = db_open_args.data_dir ; // "/home/dev/mainnet-5m/blockchain"
       db_open_args.initial_supply = HIVE_INIT_SUPPLY; // 0
       db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;// 0
