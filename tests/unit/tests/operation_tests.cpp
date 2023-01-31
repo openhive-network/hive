@@ -3823,11 +3823,8 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_narrow_price )
     fund( "alice", ASSET( "0.042 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 50 cents per HIVE, both initial and actual" );
-    collateralized_convert_operation op;
-    op.owner = "alice";
-    op.amount = ASSET( "0.042 TESTS" );
     auto conversion_time = db->head_block_time();
-    push_transaction( op, alice_private_key );
+    collateralized_convert_hive_to_hbd( "alice", 0, ASSET( "0.042 TESTS" ), alice_private_key );
 
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.010 TBD" ) ); // 0.042/2 collateral * 10/21 price with fee

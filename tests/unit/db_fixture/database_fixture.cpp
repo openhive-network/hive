@@ -679,6 +679,17 @@ void database_fixture::convert_hbd_to_hive( const std::string& owner, uint32_t r
   push_transaction( op, key );
 }
 
+void database_fixture::collateralized_convert_hive_to_hbd( const std::string& owner, uint32_t requestid, const asset& amount, 
+  const fc::ecc::private_key& key )
+{
+    collateralized_convert_operation op;
+    op.owner = owner;
+    op.requestid = requestid;
+    op.amount = amount;
+
+    push_transaction( op, key );
+}
+
 void database_fixture::transfer(
   const string& from,
   const string& to,
