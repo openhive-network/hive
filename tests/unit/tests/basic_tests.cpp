@@ -41,6 +41,9 @@
 #include <fc/crypto/digest.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/uint128.hpp>
+#include <fc/reflect/typename.hpp>
+#include <fc/static_variant.hpp>
+#include <fc/optional.hpp>
 #include "../db_fixture/database_fixture.hpp"
 
 #include <algorithm>
@@ -50,6 +53,40 @@
 using namespace hive;
 using namespace hive::chain;
 using namespace hive::protocol;
+
+namespace std
+{
+
+std::ostream& operator << (std::ostream& o, const fc::uint128_t& u)
+  {
+  return o << std::to_string(u);
+  }
+
+} // namespace std
+
+namespace
+{
+
+struct dummy : public object< 1111, dummy >
+  {
+  CHAINBASE_OBJECT( dummy );
+  };
+
+struct __test_for_alignment
+{
+  char            m1;
+  ::fc::uint128_t m2 = 2;
+  int             m3;
+  ::fc::uint128_t m4 = 4;
+  char            m5;
+};
+
+}
+
+namespace fc
+{
+template<> struct get_typename<__test_for_alignment> { static const char* name() { return "__test_for_alignment"; } };
+}
 
 BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 
@@ -537,11 +574,6 @@ BOOST_AUTO_TEST_CASE( fc_uint128_to_string )
 
 #ifndef ENABLE_STD_ALLOCATOR
 
-struct dummy : public object< 1111, dummy >
-  {
-  CHAINBASE_OBJECT( dummy );
-  };
-
 BOOST_AUTO_TEST_CASE( chain_object_size )
 {
   BOOST_CHECK_EQUAL( sizeof( dummy ), 4u );
@@ -690,5 +722,34 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 456 ); //not a chain object but potentially very numerous
 }
 #endif
+
+BOOST_AUTO_TEST_CASE( fc_static_variant_alignment )
+{
+  BOOST_CHECK_EQUAL( sizeof(__test_for_alignment), 80u );
+  BOOST_CHECK_EQUAL( alignof(__test_for_alignment), 16u );
+
+  using test_static_variant = static_variant<int, char, __test_for_alignment>;
+
+  test_static_variant t[2];
+  t[0] = __test_for_alignment();
+  t[1] = __test_for_alignment();
+  t[0].get<__test_for_alignment>().m2 = t[1].get<__test_for_alignment>().m4;
+  t[0].get<__test_for_alignment>().m4 = t[1].get<__test_for_alignment>().m2;
+  BOOST_CHECK_EQUAL( t[0].get<__test_for_alignment>().m2, t[1].get<__test_for_alignment>().m4 );
+  BOOST_CHECK_EQUAL( t[0].get<__test_for_alignment>().m4, t[1].get<__test_for_alignment>().m2 );
+}
+
+BOOST_AUTO_TEST_CASE( fc_optional_alignment )
+{
+  using test_optional = fc::optional<__test_for_alignment>;
+
+  test_optional t[2];
+  t[0] = __test_for_alignment();
+  t[1] = __test_for_alignment();
+  t[0]->m2 = t[1]->m4;
+  t[0]->m4 = t[1]->m2;
+  BOOST_CHECK_EQUAL( t[0]->m2, t[1]->m4 );
+  BOOST_CHECK_EQUAL( t[0]->m4, t[1]->m2 );
+}
 
 BOOST_AUTO_TEST_SUITE_END()
