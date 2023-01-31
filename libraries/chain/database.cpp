@@ -201,7 +201,8 @@ void database::open( const open_args& args )
   {
     init_schema();
 
-    return;
+    if(args.dont_use_blocklog)
+      return;
 
     helpers::environment_extension_resources environment_extension(
                                                 appbase::app().get_version_string(),
