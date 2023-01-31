@@ -2284,46 +2284,38 @@ void init(hive::chain::database& db)
 
 std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
 
-extern "C" void consume_json_block_impl(const char *json_block)
+extern "C" void consume_json_block_impl(const char *json_block, const char* context)
 {
   
   dlog("consume_json_block_impl started mtlk pid=${pid}", ("pid", getpid()));
 
 
-  if(haf_database_api_impls.size() == 0)
+  if(haf_database_api_impls.find(context) == haf_database_api_impls.end())
   {
     // mtlk todo  ASSERT NOT haf_database_api_impls.has_key(context)
     hive::chain::database* db = new hive::chain::database;
     init(*db);
   
-    std::string  s("context");
+    std::string  s(context);
     haf_database_api_impls.emplace(std::make_pair(s, hive::plugins::database_api::database_api_impl(*db)));
   }
 
-  std::string s("context");
+  std::string s(context);
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[s];
   hive::chain::database& db = db_api_impl._db;
   
 
 
-    fc::variant v = fc::json::from_string( std::string{ json_block } );
+  fc::variant v = fc::json::from_string( std::string{ json_block } );
 
-    
-    
+  hive::plugins::block_api::api_signed_block_object sb;
 
+  fc::from_variant( v, sb );
 
-    hive::plugins::block_api::api_signed_block_object sb;
+  auto siz = sb.transactions.size();
+  siz = siz;
 
-
-
-    fc::from_variant( v, sb );
-
-    auto siz = sb.transactions.size();
-    siz = siz;
-
-    std::shared_ptr<hive::chain::full_block_type> fb_ptr = hive::chain::full_block_type::create_from_signed_block(sb);
-
-
+  std::shared_ptr<hive::chain::full_block_type> fb_ptr = hive::chain::full_block_type::create_from_signed_block(sb);
 
   uint64_t skip_flags = hive::plugins::chain::database::skip_validate_invariants | 
       hive::plugins::chain::database::skip_block_log;
@@ -2336,12 +2328,7 @@ extern "C" void consume_json_block_impl(const char *json_block)
     hive::plugins::chain::database::skip_authority_check |
     hive::plugins::chain::database::skip_validate;
 
-
-
     db.apply_block(fb_ptr, skip_flags);
-
-    int a = 0;
-    a=a;
 }
 
 
@@ -2349,13 +2336,13 @@ extern "C" void consume_json_block_impl(const char *json_block)
 namespace hive { namespace app {
 
 
-collected_account_balances_collection_t collect_current_all_accounts_balances()
+collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
 
   dlog("collect_current_all_accounts_balances started mtlk pid=${pid}", ("pid", getpid()));
 
 
-  hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls["context"];
+  hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
 
 
 
