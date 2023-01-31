@@ -3157,14 +3157,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_consecutive_failure_deletion )
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
 
-    recurrent_transfer_operation op;
-    op.from = "alice";
-    op.to = "bob";
-    op.memo = "test";
-    op.amount = ASSET( "5.000 TESTS" );
-    op.recurrence = 24;
-    op.executions = 100;
-    push_transaction(op, alice_private_key);
+    recurrent_transfer( "alice", "bob", ASSET( "5.000 TESTS" ), "test", 24, 100, alice_private_key );
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
