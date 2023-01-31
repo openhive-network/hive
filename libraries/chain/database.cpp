@@ -208,7 +208,8 @@ void database::open( const open_args& args )
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
     
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, 
+      args.dont_use_blocklog ? true : args.force_replay );
 
     if(args.dont_use_blocklog)
       return;
