@@ -19,10 +19,11 @@ CORRECT_VALUES = [
         True,  # bool is treated like numeric (0:1)
     ]
 )
-@run_for("testnet")
-def test_get_order_book_with_correct_value_testnet(node, orders_limit):
-    wallet = tt.Wallet(attach_to=node)
-    create_account_and_create_order(wallet, account_name='alice')
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_get_order_book_with_correct_value_testnet(node, should_prepare, orders_limit):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_account_and_create_order(wallet, account_name='alice')
     node.api.wallet_bridge.get_order_book(orders_limit)
 
 
@@ -32,7 +33,7 @@ def test_get_order_book_with_correct_value_testnet(node, orders_limit):
         501,
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_order_book_with_incorrect_value(node, orders_limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_order_book(orders_limit)
@@ -45,7 +46,7 @@ def test_get_order_book_with_incorrect_value(node, orders_limit):
         'true'
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_order_book_with_incorrect_type_of_argument(node, orders_limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_order_book(orders_limit)

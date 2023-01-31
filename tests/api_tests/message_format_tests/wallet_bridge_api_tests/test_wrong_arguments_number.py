@@ -48,7 +48,7 @@ COMMANDS_WITH_CORRECT_ARGUMENTS = [
         'get_withdraw_routes',
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_run_command_without_arguments_where_arguments_are_required(node, wallet_bridge_api_command):
     with pytest.raises(tt.exceptions.CommunicationError):
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
@@ -64,7 +64,7 @@ def test_run_command_without_arguments_where_arguments_are_required(node, wallet
         ('get_hardfork_version', ()),
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_run_command_with_additional_argument(node, wallet_bridge_api_command, arguments):
     getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, 'additional_string_argument')
 
@@ -80,7 +80,7 @@ def test_run_command_with_additional_argument(node, wallet_bridge_api_command, a
         ('broadcast_transaction_synchronous', ('transaction',)),
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_run_command_with_missing_argument(node, wallet_bridge_api_command, arguments):
     with pytest.raises(tt.exceptions.CommunicationError):
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments[:-1])

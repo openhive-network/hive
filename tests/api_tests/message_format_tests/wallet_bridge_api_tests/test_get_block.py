@@ -22,10 +22,11 @@ CORRECT_VALUES = [
         True,
     ]
 )
-@run_for("testnet")
-def test_get_block_with_correct_value(node, block_number):
-    if int(block_number) < 2:  # To get existing block for block ids: 0 and 1.
-        node.wait_for_block_with_number(2)
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_get_block_with_correct_value(node, should_prepare, block_number):
+    if should_prepare:
+        if int(block_number) < 2:  # To get existing block for block ids: 0 and 1.
+            node.wait_for_block_with_number(2)
 
     node.api.wallet_bridge.get_block(block_number)
 
@@ -35,7 +36,7 @@ def test_get_block_with_correct_value(node, block_number):
         UINT64_MAX+1,
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_block_with_incorrect_value(node, block_number):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_block(block_number)
@@ -48,7 +49,7 @@ def test_get_block_with_incorrect_value(node, block_number):
         'true'
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_block_with_incorrect_type_of_argument(node, block_number):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_block(block_number)
