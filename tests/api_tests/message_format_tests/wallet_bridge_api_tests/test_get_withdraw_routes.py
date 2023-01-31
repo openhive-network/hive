@@ -29,10 +29,11 @@ CORRECT_VALUES = [
         ('alice', True),
     ]
 )
-@run_for("testnet")
-def test_get_withdraw_routes_with_correct_value_in_testnet(node, account_name, withdraw_route_type):
-    wallet = tt.Wallet(attach_to=node)
-    create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_get_withdraw_routes_with_correct_value(node, should_prepare, account_name, withdraw_route_type):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
     node.api.wallet_bridge.get_withdraw_routes(account_name, withdraw_route_type)
 
 
@@ -47,10 +48,11 @@ def test_get_withdraw_routes_with_correct_value_in_testnet(node, account_name, w
         ('alice', '3'),
     ]
 )
-@run_for("testnet")
-def test_get_withdraw_routes_with_incorrect_value(node, account_name, withdraw_route_type):
-    wallet = tt.Wallet(attach_to=node)
-    create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_get_withdraw_routes_with_incorrect_value(node, should_prepare, account_name, withdraw_route_type):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_withdraw_routes(account_name, withdraw_route_type)
@@ -66,27 +68,30 @@ def test_get_withdraw_routes_with_incorrect_value(node, account_name, withdraw_r
         ('alice', 100),
     ]
 )
-@run_for("testnet")
-def test_get_withdraw_routes_with_incorrect_type_of_arguments(node, account_name, withdraw_route_type):
-    wallet = tt.Wallet(attach_to=node)
-    create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_get_withdraw_routes_with_incorrect_type_of_arguments(node, should_prepare, account_name, withdraw_route_type):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_withdraw_routes(account_name, withdraw_route_type)
 
 
-@run_for("testnet")
-def test_get_withdraw_routes_with_additional_argument(node):
-    wallet = tt.Wallet(attach_to=node)
-    create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_get_withdraw_routes_with_additional_argument(node, should_prepare):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
     node.api.wallet_bridge.get_withdraw_routes('alice', 'all', 'additional_argument')
 
 
-@run_for("testnet")
-def test_get_withdraw_routes_with_missing_argument(node):
-    wallet = tt.Wallet(attach_to=node)
-    create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_get_withdraw_routes_with_missing_argument(node, should_prepare):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_='alice', to='bob')
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_withdraw_routes('alice')

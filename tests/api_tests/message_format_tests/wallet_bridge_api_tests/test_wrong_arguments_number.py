@@ -11,6 +11,10 @@ def get_commands(commands_with_arguments):
     return commands
 
 
+def is_mainnet_5m_node(node) -> bool:
+    return True if isinstance(node, tt.RemoteNode) and node.get_last_block_number() <= 5_000_000 else False
+
+
 COMMANDS_WITH_CORRECT_ARGUMENTS = [
     ('list_proposals', ([""], 100, 29, 0, 0)),
     ('list_proposal_votes', ([""], 100, 33, 0, 0)),
@@ -48,7 +52,7 @@ COMMANDS_WITH_CORRECT_ARGUMENTS = [
         'get_withdraw_routes',
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_run_command_without_arguments_where_arguments_are_required(node, wallet_bridge_api_command):
     with pytest.raises(tt.exceptions.CommunicationError):
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
@@ -64,9 +68,13 @@ def test_run_command_without_arguments_where_arguments_are_required(node, wallet
         ('get_hardfork_version', ()),
     ]
 )
-@run_for("testnet")
-def test_run_command_with_additional_argument(node, wallet_bridge_api_command, arguments):
-    getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, 'additional_string_argument')
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_run_command_with_additional_argument(node, should_prepare, wallet_bridge_api_command, arguments):
+    if is_mainnet_5m_node(node) and wallet_bridge_api_command == "get_reward_fund":
+        with pytest.raises(tt.exceptions.CommunicationError):
+            getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, 'additional_string_argument')
+    else:
+        getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, 'additional_string_argument')
 
 
 @pytest.mark.parametrize(
@@ -80,7 +88,7 @@ def test_run_command_with_additional_argument(node, wallet_bridge_api_command, a
         ('broadcast_transaction_synchronous', ('transaction',)),
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_run_command_with_missing_argument(node, wallet_bridge_api_command, arguments):
     with pytest.raises(tt.exceptions.CommunicationError):
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments[:-1])
