@@ -24,7 +24,7 @@
 
 #include <string>
 #include <memory>
-#include <unordered_set>
+#include <set>
 
 #include "conversion_plugin.hpp"
 
@@ -43,17 +43,18 @@ namespace detail {
 
   using hive::chain::block_log;
 
-  class generate_iceberg_ops_from_op_visitor
+  class iceberg_generate_ops_from_op_visitor
   {
   private:
-    static inline std::unordered_set<hp::account_name_type> created_accounts = {};
-    static inline std::unordered_set<hp::account_name_type> accounts_to_create = {};
+    // Check if using unordered_set would be more optimized
+    static inline std::set<hp::account_name_type> created_accounts = {};
+    static inline std::set<hp::account_name_type> accounts_to_create = {};
     bool enable_op_content_strip;
 
   public:
     typedef hp::operation result_type;
 
-    generate_iceberg_ops_from_op_visitor( bool enable_op_content_strip )
+    iceberg_generate_ops_from_op_visitor( bool enable_op_content_strip )
       : enable_op_content_strip( enable_op_content_strip )
     {}
 
@@ -72,6 +73,12 @@ namespace detail {
       created_accounts.merge(accounts_to_create);
     }
 
+    static void add_account(const hp::account_name_type& acc)
+    {
+      if(created_accounts.find(acc) == created_accounts.end())
+        accounts_to_create.emplace(acc);
+    }
+
     result_type operator()( hp::account_create_operation& op )const
     {
       if( enable_op_content_strip )
@@ -83,6 +90,7 @@ namespace detail {
       }
 
       created_accounts.emplace(op.new_account_name);
+      add_account(op.creator);
 
       return op;
     }
@@ -99,6 +107,7 @@ namespace detail {
       }
 
       created_accounts.emplace(op.new_account_name);
+      add_account(op.creator);
 
       return op;
     }
@@ -129,6 +138,8 @@ namespace detail {
         op.json_metadata.clear();
       }
 
+      add_account(op.account);
+
       return op;
     }
 
@@ -145,6 +156,8 @@ namespace detail {
         op.extensions.clear();
       }
 
+      add_account(op.account);
+
       return op;
     }
 
@@ -156,6 +169,9 @@ namespace detail {
         op.body.clear();
         op.json_metadata.clear();
       }
+
+      add_account(op.parent_author);
+      add_account(op.author);
 
       return op;
     }
@@ -172,6 +188,45 @@ namespace detail {
       }
 
       created_accounts.emplace(op.new_account_name);
+      add_account(op.creator);
+
+      return op;
+    }
+
+    result_type operator()( hp::comment_options_operation& op )const
+    {
+      add_account(op.author);
+
+      for( auto& ext : op.extensions )
+      {
+        fc::optional<hp::comment_payout_beneficiaries> cpb = ext.which() ? fc::optional<hp::comment_payout_beneficiaries>{} : ext.get<hp::comment_payout_beneficiaries>();
+
+        if( cpb.valid() )
+          for( auto& route : cpb->beneficiaries )
+            add_account(route.account);
+      }
+
+      return op;
+    }
+
+    result_type operator()( hp::claim_account_operation& op )const
+    {
+      add_account(op.creator);
+
+      return op;
+    }
+
+    result_type operator()( hp::delete_comment_operation& op )const
+    {
+      add_account(op.author);
+
+      return op;
+    }
+
+    result_type operator()( hp::vote_operation& op )const
+    {
+      add_account(op.voter);
+      add_account(op.author);
 
       return op;
     }
@@ -181,6 +236,9 @@ namespace detail {
       if( enable_op_content_strip )
         op.memo.clear();
 
+      add_account(op.from);
+      add_account(op.to);
+
       return op;
     }
 
@@ -188,6 +246,64 @@ namespace detail {
     {
       if( enable_op_content_strip )
         op.json_meta.clear();
+
+      add_account(op.agent);
+      add_account(op.from);
+      add_account(op.to);
+
+      return op;
+    }
+
+    result_type operator()( hp::escrow_approve_operation& op )const
+    {
+      add_account(op.agent);
+      add_account(op.from);
+      add_account(op.to);
+      add_account(op.who);
+
+      return op;
+    }
+
+    result_type operator()( hp::escrow_dispute_operation& op )const
+    {
+      add_account(op.agent);
+      add_account(op.from);
+      add_account(op.to);
+      add_account(op.who);
+
+      return op;
+    }
+
+    result_type operator()( hp::escrow_release_operation& op )const
+    {
+      add_account(op.agent);
+      add_account(op.from);
+      add_account(op.to);
+      add_account(op.who);
+      add_account(op.receiver);
+
+      return op;
+    }
+
+    result_type operator()( hp::transfer_to_vesting_operation& op )const
+    {
+      add_account(op.from);
+      add_account(op.to);
+
+      return op;
+    }
+
+    result_type operator()( hp::withdraw_vesting_operation& op )const
+    {
+      add_account(op.account);
+
+      return op;
+    }
+
+    result_type operator()( hp::set_withdraw_vesting_route_operation& op )const
+    {
+      add_account(op.from_account);
+      add_account(op.to_account);
 
       return op;
     }
@@ -197,6 +313,8 @@ namespace detail {
       if( enable_op_content_strip )
         op.url.clear();
 
+      add_account(op.owner);
+
       return op;
     }
 
@@ -204,6 +322,24 @@ namespace detail {
     {
       if( enable_op_content_strip )
         op.extensions.clear();
+
+      add_account(op.owner);
+
+      return op;
+    }
+
+    result_type operator()( hp::account_witness_vote_operation& op )const
+    {
+      add_account(op.account);
+      add_account(op.witness);
+
+      return op;
+    }
+
+    result_type operator()( hp::account_witness_proxy_operation& op )const
+    {
+      add_account(op.account);
+      add_account(op.proxy);
 
       return op;
     }
@@ -216,6 +352,9 @@ namespace detail {
         op.data.clear();
       }
 
+      for( const auto& acc : op.required_auths )
+        add_account(acc);
+
       return op;
     }
 
@@ -227,6 +366,12 @@ namespace detail {
         op.required_posting_auths.clear();
         op.json.clear();
       }
+
+      for( const auto& acc : op.required_auths )
+        add_account(acc);
+
+      for( const auto& acc : op.required_posting_auths )
+        add_account(acc);
 
       return op;
     }
@@ -242,6 +387,57 @@ namespace detail {
         op.data.clear();
       }
 
+      for( const auto& acc : op.required_owner_auths )
+        add_account(acc);
+
+      for( const auto& acc : op.required_active_auths )
+        add_account(acc);
+
+      for( const auto& acc : op.required_posting_auths )
+        add_account(acc);
+
+      return op;
+    }
+
+    result_type operator()( hp::feed_publish_operation& op )const
+    {
+      add_account(op.publisher);
+
+      return op;
+    }
+
+    result_type operator()( hp::convert_operation& op )const
+    {
+      add_account(op.owner);
+
+      return op;
+    }
+
+    result_type operator()( hp::collateralized_convert_operation& op )const
+    {
+      add_account(op.owner);
+
+      return op;
+    }
+
+    result_type operator()( hp::limit_order_create_operation& op )const
+    {
+      add_account(op.owner);
+
+      return op;
+    }
+
+    result_type operator()( hp::limit_order_create2_operation& op )const
+    {
+      add_account(op.owner);
+
+      return op;
+    }
+
+    result_type operator()( hp::limit_order_cancel_operation& op )const
+    {
+      add_account(op.owner);
+
       return op;
     }
 
@@ -252,6 +448,9 @@ namespace detail {
         op.new_owner_authority.clear();
         op.extensions.clear();
       }
+
+      add_account(op.recovery_account);
+      add_account(op.account_to_recover);
 
       return op;
     }
@@ -265,6 +464,8 @@ namespace detail {
         op.extensions.clear();
       }
 
+      add_account(op.account_to_recover);
+
       return op;
     }
 
@@ -272,6 +473,18 @@ namespace detail {
     {
       if( enable_op_content_strip )
         op.new_owner_authority.clear();
+
+      add_account(op.reset_account);
+      add_account(op.account_to_reset);
+
+      return op;
+    }
+
+    result_type operator()( hp::set_reset_account_operation& op )const
+    {
+      add_account(op.reset_account);
+      add_account(op.account);
+      add_account(op.current_reset_account);
 
       return op;
     }
@@ -281,6 +494,9 @@ namespace detail {
       if( enable_op_content_strip )
         op.extensions.clear();
 
+      add_account(op.account_to_recover);
+      add_account(op.new_recovery_account);
+
       return op;
     }
 
@@ -289,6 +505,9 @@ namespace detail {
       if( enable_op_content_strip )
         op.memo.clear();
 
+      add_account(op.to);
+      add_account(op.from);
+
       return op;
     }
 
@@ -296,6 +515,38 @@ namespace detail {
     {
       if( enable_op_content_strip )
         op.memo.clear();
+
+      add_account(op.to);
+      add_account(op.from);
+
+      return op;
+    }
+
+    result_type operator()( hp::cancel_transfer_from_savings_operation& op )const
+    {
+      add_account(op.from);
+
+      return op;
+    }
+
+    result_type operator()( hp::decline_voting_rights_operation& op )const
+    {
+      add_account(op.account);
+
+      return op;
+    }
+
+    result_type operator()( hp::claim_reward_balance_operation& op )const
+    {
+      add_account(op.account);
+
+      return op;
+    }
+
+    result_type operator()( hp::delegate_vesting_shares_operation& op )const
+    {
+      add_account(op.delegator);
+      add_account(op.delegatee);
 
       return op;
     }
@@ -308,6 +559,16 @@ namespace detail {
         op.extensions.clear();
       }
 
+      add_account(op.from);
+      add_account(op.to);
+
+      return op;
+    }
+
+    result_type operator()( hp::witness_block_approve_operation& op )const
+    {
+      add_account(op.witness);
+
       return op;
     }
 
@@ -318,6 +579,9 @@ namespace detail {
         op.subject.clear();
         op.extensions.clear();
       }
+
+      add_account(op.creator);
+      add_account(op.receiver);
 
       return op;
     }
@@ -330,6 +594,8 @@ namespace detail {
         op.extensions.clear();
       }
 
+      add_account(op.creator);
+
       return op;
     }
 
@@ -337,6 +603,8 @@ namespace detail {
     {
       if( enable_op_content_strip )
         op.extensions.clear();
+
+      add_account(op.voter);
 
       return op;
     }
@@ -346,14 +614,25 @@ namespace detail {
       if( enable_op_content_strip )
         op.extensions.clear();
 
+      add_account(op.proposal_owner);
+
       return op;
     }
 
 #ifdef HIVE_ENABLE_SMT
+    result_type operator()( hp::claim_reward_balance2_operation& op )const
+    {
+      add_account(op.account);
+
+      return op;
+    }
+
     result_type operator()( hp::smt_create_operation& op )const
     {
       if( enable_op_content_strip )
         op.extensions.clear();
+
+      add_account(op.control_account);
 
       return op;
     }
@@ -363,6 +642,22 @@ namespace detail {
       if( enable_op_content_strip )
         op.extensions.clear();
 
+      fc::optional<hp::smt_capped_generation_policy> cpb = op.initial_generation_policy.which() ? fc::optional<hp::smt_capped_generation_policy>{} : op.initial_generation_policy.get<hp::smt_capped_generation_policy>();
+
+      if( cpb.valid() )
+      {
+        for( const auto& [acc, unit] : cpb.pre_soft_cap_unit.hive_unit )
+          add_account(acc);
+        for( const auto& [acc, unit] : cpb.pre_soft_cap_unit.token_unit )
+          add_account(acc);
+        for( const auto& [acc, unit] : cpb.post_soft_cap_unit.hive_unit )
+          add_account(acc);
+        for( const auto& [acc, unit] : cpb.post_soft_cap_unit.token_unit )
+          add_account(acc);
+      }
+
+      add_account(op.control_account);
+
       return op;
     }
 
@@ -370,6 +665,12 @@ namespace detail {
     {
       if( enable_op_content_strip )
         op.extensions.clear();
+
+      if( cpb.valid() )
+        for( const auto& [acc, unit] : op.emissions_unit.token_unit )
+          add_account(acc);
+
+      add_account(op.control_account);
 
       return op;
     }
@@ -379,6 +680,8 @@ namespace detail {
       if( enable_op_content_strip )
         op.extensions.clear();
 
+      add_account(op.control_account);
+
       return op;
     }
 
@@ -387,6 +690,8 @@ namespace detail {
       if( enable_op_content_strip )
         op.extensions.clear();
 
+      add_account(op.control_account);
+
       return op;
     }
 
@@ -394,6 +699,8 @@ namespace detail {
     {
       if( enable_op_content_strip )
         op.extensions.clear();
+
+      add_account(op.contributor);
 
       return op;
     }
@@ -465,8 +772,9 @@ namespace detail {
 
       for( auto& tx : block.transactions )
       {
-        generate_iceberg_ops_from_op_visitor pci{ enable_op_content_strip };
-        generate_iceberg_ops_from_op_visitor::trigger_accounts_created();
+        iceberg_generate_ops_from_op_visitor pci{ enable_op_content_strip };
+        // TODO: Create dependent accounts here
+        iceberg_generate_ops_from_op_visitor::trigger_accounts_created();
 
         for( auto& op : tx.operations )
           op = op.visit( pci );
@@ -505,8 +813,11 @@ namespace detail {
 
     ilog(
       "Created accounts amount: ${a}",
-      ("a", generate_iceberg_ops_from_op_visitor::get_dependent_accounts_amount())
+      ("a", iceberg_generate_ops_from_op_visitor::get_dependent_accounts_amount())
     );
+
+    if( iceberg_generate_ops_from_op_visitor::get_accounts_to_create().size() )
+      wlog("Some accounts has not been created due to the unknown interruption");
   }
 
 } // detail
@@ -518,7 +829,7 @@ namespace detail {
   {
     cfg.add_options()
       // TODO: Requires documentation:
-      ( "strip-operations-content,X", bpo::bool_switch()->default_value( false ), "Strips redundant content of some operations like posts and json operations content" )
+      ( "strip-operations-content,X", bpo::bool_switch()->default_value( false ), "Strips redundant content of some operations like posts and json operations content" );
   }
 
   void iceberg_generate_plugin::plugin_initialize( const bpo::variables_map& options )
