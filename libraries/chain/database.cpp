@@ -43,8 +43,6 @@
 
 #include <fc/io/fstream.hpp>
 
-#include <fc/fixed_string.hpp>
-
 #include <boost/scope_exit.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 
@@ -4807,10 +4805,8 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
     // make sure to call set_tx_status() with proper status when your call can lead here
   }
 
-  auto _old_verify_status = fc::verifier_switch::is_verifying_enabled();
   transaction_notification note( full_transaction );
-  BOOST_SCOPE_EXIT(this_, &_old_verify_status) { this_->_current_trx_id = transaction_id_type(); fc::verifier_switch::set_verify( _old_verify_status ); } BOOST_SCOPE_EXIT_END
-  fc::verifier_switch::set_verify( false );
+  BOOST_SCOPE_EXIT(this_) { this_->_current_trx_id = transaction_id_type(); } BOOST_SCOPE_EXIT_END
   _current_trx_id = full_transaction->get_transaction_id();
   const transaction_id_type& trx_id = full_transaction->get_transaction_id();
 
