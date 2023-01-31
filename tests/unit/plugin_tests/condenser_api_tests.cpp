@@ -440,6 +440,14 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 
   // claim_reward_balance_operation
   claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
+  expected_operations.insert( OP_TAG(claim_reward_balance_operation) );
+
+  convert_hbd_to_hive( "edgar0ah", 0, ASSET( "11.201 TBD" ), edgar0ah_private_key );
+  expected_operations.insert( OP_TAG(convert_operation) );
+
+  collaterized_convert_with_operation( "carol0ah", 0, ASSET( "0.100 TESTS" ), carol0ah_private_key );
+  expected_operations.insert( OP_TAG(collateralized_convert_operation) );
+  expected_operations.insert( OP_TAG(collateralized_convert_immediate_conversion_operation) );
 
   // By now carol0ah should have a neat sum awarded for her comment.
   BOOST_REQUIRE_EQUAL( get_balance( "carol0ah" ).amount.value, 3000 );
@@ -534,6 +542,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   push_custom_operation( { "carol0ah" }, 7, { 'D', 'A', 'T', 'A' }, carol0ah_private_key );
   // custom_json_operation
   push_custom_json_operation( {}, { "carol0ah" }, "7id", "{\"type\": \"json\"}", carol0ah_private_key );
+  // custom_binary_operation has been disabled and does not occur in blockchain
 
   // Following operations happen for each account (ACTOR):
   // account_create_operation, account_created_operation,
