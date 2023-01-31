@@ -24,6 +24,7 @@
 
 #include <string>
 #include <memory>
+#include <unordered_set>
 
 #include "conversion_plugin.hpp"
 
@@ -45,51 +46,66 @@ namespace detail {
   class generate_iceberg_ops_from_op_visitor
   {
   private:
-    static inline std::set<hp::account_name_type> dependent_accounts = { "initminer" };
+    static inline std::unordered_set<hp::account_name_type> created_accounts = {};
+    static inline std::unordered_set<hp::account_name_type> accounts_to_create = {};
+    bool enable_op_content_strip;
 
   public:
     typedef hp::operation result_type;
 
-    generate_iceberg_ops_from_op_visitor() {}
+    generate_iceberg_ops_from_op_visitor( bool enable_op_content_strip )
+      : enable_op_content_strip( enable_op_content_strip )
+    {}
 
     static size_t get_dependent_accounts_amount()
     {
-      return dependent_accounts.size();
+      return created_accounts.size() + accounts_to_create.size();
     }
 
-    static size_t get_dependent_accounts_total_size_b()
+    static const std::set<hp::account_name_type>& get_accounts_to_create()
     {
-      return sizeof(dependent_accounts) + (dependent_accounts.size() * sizeof(hp::account_name_type));
+      return accounts_to_create;
+    }
+
+    static void trigger_accounts_created()
+    {
+      created_accounts.merge(accounts_to_create);
     }
 
     result_type operator()( hp::account_create_operation& op )const
     {
-      op.owner.clear();
-      op.active.clear();
-      op.posting.clear();
-      op.json_metadata.clear();
+      if( enable_op_content_strip )
+      {
+        op.owner.clear();
+        op.active.clear();
+        op.posting.clear();
+        op.json_metadata.clear();
+      }
 
-      dependent_accounts.emplace(op.new_account_name);
+      created_accounts.emplace(op.new_account_name);
 
       return op;
     }
 
     result_type operator()( hp::account_create_with_delegation_operation& op )const
     {
-      op.owner.clear();
-      op.active.clear();
-      op.posting.clear();
-      op.json_metadata.clear();
-      op.extensions.clear();
+      if( enable_op_content_strip )
+      {
+        op.owner.clear();
+        op.active.clear();
+        op.posting.clear();
+        op.json_metadata.clear();
+        op.extensions.clear();
+      }
 
-      dependent_accounts.emplace(op.new_account_name);
+      created_accounts.emplace(op.new_account_name);
 
       return op;
     }
 
     result_type operator()( hp::pow_operation& op )const
     {
-      dependent_accounts.emplace(op.worker_account);
+      created_accounts.emplace(op.worker_account);
 
       return op;
     }
@@ -98,191 +114,237 @@ namespace detail {
     {
       const auto& input = op.work.which() ? op.work.get< hp::equihash_pow >().input : op.work.get< hp::pow2 >().input;
 
-      dependent_accounts.emplace(input.worker_account);
+      created_accounts.emplace(input.worker_account);
 
       return op;
     }
 
     result_type operator()( hp::account_update_operation& op )const
     {
-      op.owner.reset();
-      op.active.reset();
-      op.posting.reset();
-      op.json_metadata.clear();
+      if( enable_op_content_strip )
+      {
+        op.owner.reset();
+        op.active.reset();
+        op.posting.reset();
+        op.json_metadata.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::account_update2_operation& op )const
     {
-      op.owner.reset();
-      op.active.reset();
-      op.posting.reset();
-      op.memo_key.reset();
-      op.json_metadata.clear();
-      op.posting_json_metadata.clear();
-      op.extensions.clear();
+      if( enable_op_content_strip )
+      {
+        op.owner.reset();
+        op.active.reset();
+        op.posting.reset();
+        op.memo_key.reset();
+        op.json_metadata.clear();
+        op.posting_json_metadata.clear();
+        op.extensions.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::comment_operation& op )const
     {
-      op.title.clear();
-      op.body.clear();
-      op.json_metadata.clear();
+      if( enable_op_content_strip )
+      {
+        op.title.clear();
+        op.body.clear();
+        op.json_metadata.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::create_claimed_account_operation& op )const
     {
-      op.owner.clear();
-      op.active.clear();
-      op.posting.clear();
-      op.json_metadata.clear();
-      op.extensions.clear();
+      if( enable_op_content_strip )
+      {
+        op.owner.clear();
+        op.active.clear();
+        op.posting.clear();
+        op.json_metadata.clear();
+        op.extensions.clear();
+      }
 
-      dependent_accounts.emplace(op.new_account_name);
+      created_accounts.emplace(op.new_account_name);
 
       return op;
     }
 
     result_type operator()( hp::transfer_operation& op )const
     {
-      op.memo.clear();
+      if( enable_op_content_strip )
+        op.memo.clear();
 
       return op;
     }
 
     result_type operator()( hp::escrow_transfer_operation& op )const
     {
-      op.json_meta.clear();
+      if( enable_op_content_strip )
+        op.json_meta.clear();
 
       return op;
     }
 
     result_type operator()( hp::witness_update_operation& op )const
     {
-      op.url.clear();
+      if( enable_op_content_strip )
+        op.url.clear();
 
       return op;
     }
 
     result_type operator()( hp::witness_set_properties_operation& op )const
     {
-      op.extensions.clear();
+      if( enable_op_content_strip )
+        op.extensions.clear();
 
       return op;
     }
 
     result_type operator()( hp::custom_operation& op )const
     {
-      op.required_auths.clear();
-      op.data.clear();
+      if( enable_op_content_strip )
+      {
+        op.required_auths.clear();
+        op.data.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::custom_json_operation& op )const
     {
-      op.required_auths.clear();
-      op.required_posting_auths.clear();
-      op.json.clear();
+      if( enable_op_content_strip )
+      {
+        op.required_auths.clear();
+        op.required_posting_auths.clear();
+        op.json.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::custom_binary_operation& op )const
     {
-      op.required_owner_auths.clear();
-      op.required_active_auths.clear();
-      op.required_posting_auths.clear();
-      op.required_auths.clear();
-      op.data.clear();
+      if( enable_op_content_strip )
+      {
+        op.required_owner_auths.clear();
+        op.required_active_auths.clear();
+        op.required_posting_auths.clear();
+        op.required_auths.clear();
+        op.data.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::request_account_recovery_operation& op )const
     {
-      op.new_owner_authority.clear();
-      op.extensions.clear();
+      if( enable_op_content_strip )
+      {
+        op.new_owner_authority.clear();
+        op.extensions.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::recover_account_operation& op )const
     {
-      op.new_owner_authority.clear();
-      op.recent_owner_authority.clear();
-      op.extensions.clear();
+      if( enable_op_content_strip )
+      {
+        op.new_owner_authority.clear();
+        op.recent_owner_authority.clear();
+        op.extensions.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::reset_account_operation& op )const
     {
-      op.new_owner_authority.clear();
+      if( enable_op_content_strip )
+        op.new_owner_authority.clear();
 
       return op;
     }
 
     result_type operator()( hp::change_recovery_account_operation& op )const
     {
-      op.extensions.clear();
+      if( enable_op_content_strip )
+        op.extensions.clear();
 
       return op;
     }
 
     result_type operator()( hp::transfer_to_savings_operation& op )const
     {
-      op.memo.clear();
+      if( enable_op_content_strip )
+        op.memo.clear();
 
       return op;
     }
 
     result_type operator()( hp::transfer_from_savings_operation& op )const
     {
-      op.memo.clear();
+      if( enable_op_content_strip )
+        op.memo.clear();
 
       return op;
     }
 
     result_type operator()( hp::recurrent_transfer_operation& op )const
     {
-      op.memo.clear();
-      op.extensions.clear();
+      if( enable_op_content_strip )
+      {
+        op.memo.clear();
+        op.extensions.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::create_proposal_operation& op )const
     {
-      op.subject.clear();
-      op.extensions.clear();
+      if( enable_op_content_strip )
+      {
+        op.subject.clear();
+        op.extensions.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::update_proposal_operation& op )const
     {
-      op.subject.clear();
-      op.extensions.clear();
+      if( enable_op_content_strip )
+      {
+        op.subject.clear();
+        op.extensions.clear();
+      }
 
       return op;
     }
 
     result_type operator()( hp::update_proposal_votes_operation& op )const
     {
-      op.extensions.clear();
+      if( enable_op_content_strip )
+        op.extensions.clear();
 
       return op;
     }
 
     result_type operator()( hp::remove_proposal_operation& op )const
     {
-      op.extensions.clear();
+      if( enable_op_content_strip )
+        op.extensions.clear();
 
       return op;
     }
@@ -290,42 +352,48 @@ namespace detail {
 #ifdef HIVE_ENABLE_SMT
     result_type operator()( hp::smt_create_operation& op )const
     {
-      op.extensions.clear();
+      if( enable_op_content_strip )
+        op.extensions.clear();
 
       return op;
     }
 
     result_type operator()( hp::smt_setup_operation& op )const
     {
-      op.extensions.clear();
+      if( enable_op_content_strip )
+        op.extensions.clear();
 
       return op;
     }
 
     result_type operator()( hp::smt_setup_emissions_operation& op )const
     {
-      op.extensions.clear();
+      if( enable_op_content_strip )
+        op.extensions.clear();
 
       return op;
     }
 
     result_type operator()( hp::smt_set_setup_parameters_operation& op )const
     {
-      op.extensions.clear();
+      if( enable_op_content_strip )
+        op.extensions.clear();
 
       return op;
     }
 
     result_type operator()( hp::smt_set_runtime_parameters_operation& op )const
     {
-      op.extensions.clear();
+      if( enable_op_content_strip )
+        op.extensions.clear();
 
       return op;
     }
 
     result_type operator()( hp::smt_contribute_operation& op )const
     {
-      op.extensions.clear();
+      if( enable_op_content_strip )
+        op.extensions.clear();
 
       return op;
     }
@@ -343,8 +411,9 @@ namespace detail {
   class iceberg_generate_plugin_impl final : public conversion_plugin_impl {
   public:
     block_log log_in, log_out;
+    bool enable_op_content_strip;
 
-    iceberg_generate_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size = 1 )
+    iceberg_generate_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, bool enable_op_content_strip = false, size_t signers_size = 1 )
       : conversion_plugin_impl( _private_key, chain_id, signers_size, true ) {}
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
@@ -373,9 +442,8 @@ namespace detail {
 
     fc::time_point_sec head_block_time = HIVE_GENESIS_TIME;
 
-    FC_ASSERT( !log_out.head() && !start_block_num,
+    FC_ASSERT( !log_out.head(),
       HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " plugin currently does not currently support conversion continue" );
-    start_block_num = 1;
 
     hp::block_id_type last_block_id;
 
@@ -397,7 +465,8 @@ namespace detail {
 
       for( auto& tx : block.transactions )
       {
-        generate_iceberg_ops_from_op_visitor pci{};
+        generate_iceberg_ops_from_op_visitor pci{ enable_op_content_strip };
+        generate_iceberg_ops_from_op_visitor::trigger_accounts_created();
 
         for( auto& op : tx.operations )
           op = op.visit( pci );
@@ -435,9 +504,8 @@ namespace detail {
       wlog("Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log");
 
     ilog(
-      "Created accounts amount: ${a}. Bytes taken: ${cap}B",
+      "Created accounts amount: ${a}",
       ("a", generate_iceberg_ops_from_op_visitor::get_dependent_accounts_amount())
-      ("cap", generate_iceberg_ops_from_op_visitor::get_dependent_accounts_total_size_b())
     );
   }
 
@@ -446,7 +514,12 @@ namespace detail {
   iceberg_generate_plugin::iceberg_generate_plugin() {}
   iceberg_generate_plugin::~iceberg_generate_plugin() {}
 
-  void iceberg_generate_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg ) {}
+  void iceberg_generate_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg )
+  {
+    cfg.add_options()
+      // TODO: Requires documentation:
+      ( "strip-operations-content,X", bpo::bool_switch()->default_value( false ), "Strips redundant content of some operations like posts and json operations content" )
+  }
 
   void iceberg_generate_plugin::plugin_initialize( const bpo::variables_map& options )
   {
@@ -481,7 +554,7 @@ namespace detail {
     const auto private_key = wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
-    my = std::make_unique< detail::iceberg_generate_plugin_impl >( *private_key, _hive_chain_id, options.at( "jobs" ).as< size_t >() );
+    my = std::make_unique< detail::iceberg_generate_plugin_impl >( *private_key, _hive_chain_id, options.count("strip-operations-content"), options.at( "jobs" ).as< size_t >() );
 
     my->log_per_block = options["log-per-block"].as< uint32_t >();
     my->log_specific = options["log-specific"].as< uint32_t >();
