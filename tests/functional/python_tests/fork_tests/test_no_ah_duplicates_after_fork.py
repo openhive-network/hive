@@ -21,23 +21,41 @@ def test_no_duplicates_in_account_history_plugin_after_fork(prepare_basic_networ
     sh.assert_no_duplicates(alpha_node, beta_node)
 
 
+def display_current_head_block_number_in_both_networks(info, nodes):
+    res = {}
+
+    for node in nodes:
+        current_head_block = node.api.database.get_dynamic_global_properties()['head_block_number']
+        res[ str(node) ] = current_head_block
+        tt.logger.info(f'{info}: {node}: {current_head_block}')
+
+    return res
+
 def trigger_fork(alpha_net, beta_net):
     alpha_node = alpha_net.node('ApiNode0')
     beta_node = beta_net.node('ApiNode1')
 
+    witness_node = alpha_net.node('WitnessNode0')
+    tt.logger.info(f'Correct witnesses detection')
+    sh.wait_for_specific_witnesses(witness_node, [], [['witness[0-9]+-alpha'], ['witness[0-9]+-beta']])
+
+    head_blocks = display_current_head_block_number_in_both_networks('head_block_before_disconnection', [alpha_node, beta_node])
+
     alpha_net.disconnect_from(beta_net)
     tt.logger.info(f'Disconnected {alpha_net} and {beta_net}')
 
-    # wait until head block number increases in both subnetworks
-    head_block_during_disconnection = alpha_node.api.database.get_dynamic_global_properties()['head_block_number']
-    tt.logger.info(f'head_block_during_disconnection: {head_block_during_disconnection}')
+    head_blocks = display_current_head_block_number_in_both_networks('head_block_after_disconnection', [alpha_node, beta_node])
+
     tt.logger.info('Waiting until head block increases in both subnetworks')
     for node in [alpha_node, beta_node]:
         while True:
+            old_head_block = head_blocks[ str(node) ]
             current_head_block = node.api.database.get_dynamic_global_properties()['head_block_number']
-            tt.logger.info(f'Head in {node}: {current_head_block}')
-            if current_head_block > head_block_during_disconnection:
+            tt.logger.info(f'{node}: current_head_block: {current_head_block} old_head_block: {old_head_block}')
+
+            if current_head_block > old_head_block:
                 break
+
             node.wait_number_of_blocks(1)
 
     alpha_net.connect_with(beta_net)
