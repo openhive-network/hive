@@ -629,7 +629,6 @@ struct delayed_vote_database_fixture : public virtual clean_database_fixture
 
     void witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key );
     void proxy( const string& account, const string& proxy, const fc::ecc::private_key& key );
-    void decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key );
 
     share_type get_votes( const string& witness_name );
     int32_t get_user_voted_witness_count( const account_name_type& name );

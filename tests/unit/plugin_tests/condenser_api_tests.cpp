@@ -544,6 +544,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   push_custom_json_operation( {}, { "carol0ah" }, "7id", "{\"type\": \"json\"}", carol0ah_private_key );
   // custom_binary_operation has been disabled and does not occur in blockchain
 
+  // decline_voting_rights_operation
+  decline_voting_rights( "dan0ah", true, dan0ah_private_key );
+
   // Following operations happen for each account (ACTOR):
   // account_create_operation, account_created_operation,
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
