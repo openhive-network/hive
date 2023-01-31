@@ -236,7 +236,7 @@ void database::initialize_state_independent_data(const open_args& args)
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
 
-  if(!args.dont_use_blocklog)
+  if(!args.postgres_not_block_log)
   {
     with_write_lock([&]()
     {

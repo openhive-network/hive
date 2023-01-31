@@ -98,7 +98,7 @@ namespace chain {
     bool exit_after_replay = false;
     bool force_replay = false;
     bool validate_during_replay = false;
-    bool dont_use_blocklog = false;
+    bool postgres_not_block_log = false;
   };
 
   /**
