@@ -11,10 +11,11 @@ from hive_local_tools.api.message_format import as_string
         'bob',
     ]
 )
-@run_for("testnet")
-def test_find_recurrent_transfers_with_correct_value(node, reward_fund_name):
-    wallet = tt.Wallet(attach_to=node)
-    create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_find_recurrent_transfers_with_correct_value(node, should_prepare, reward_fund_name):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
     node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
 
@@ -23,7 +24,7 @@ INCORRECT_VALUES = [
     'non-exist-acc',
     '',
     100,
-    True,
+    ["initminer"],
 ]
 
 
@@ -33,7 +34,7 @@ INCORRECT_VALUES = [
         *as_string(INCORRECT_VALUES),
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_find_recurrent_transfers_with_incorrect_value(node, reward_fund_name):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
@@ -44,19 +45,21 @@ def test_find_recurrent_transfers_with_incorrect_value(node, reward_fund_name):
         ['alice']
     ]
 )
-@run_for("testnet")
-def test_find_recurrent_transfers_with_incorrect_type_of_argument(node, reward_fund_name):
-    wallet = tt.Wallet(attach_to=node)
-    create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_find_recurrent_transfers_with_incorrect_type_of_argument(node, should_prepare, reward_fund_name):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
 
 
-@run_for("testnet")
-def test_find_recurrent_transfers_with_additional_argument(node):
-    wallet = tt.Wallet(attach_to=node)
-    create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_find_recurrent_transfers_with_additional_argument(node, should_prepare):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        create_accounts_and_make_recurrent_transfer(wallet, from_account='alice', to_account='bob')
 
     node.api.wallet_bridge.find_recurrent_transfers('alice', 'additional_argument')
 
