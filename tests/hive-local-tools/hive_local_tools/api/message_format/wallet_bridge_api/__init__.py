@@ -39,3 +39,36 @@ def prepare_proposals(wallet, accounts):
                                        tt.Asset.Tbd(account_number * 100),
                                        f'subject-{account_number}',
                                        'permlink')
+
+
+def prepare_node_with_witnesses(witnesses_names):
+    node = tt.InitNode()
+    for name in witnesses_names:
+        witness = tt.Account(name)
+        node.config.witness.append(witness.name)
+        node.config.private_key.append(witness.private_key)
+
+    node.run(time_offset="+0h x50")
+    wallet = tt.Wallet(attach_to=node)
+
+    with wallet.in_single_transaction():
+        for name in witnesses_names:
+            wallet.api.create_account('initminer', name, '')
+
+    with wallet.in_single_transaction():
+        for name in witnesses_names:
+            wallet.api.transfer_to_vesting("initminer", name, tt.Asset.Test(1000))
+
+    with wallet.in_single_transaction():
+        for name in witnesses_names:
+            wallet.api.update_witness(
+                name, "https://" + name,
+                tt.Account(name).public_key,
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
+            )
+    wallet.close()
+    tt.logger.info('Waiting for next witness schedule...')
+    node.wait_for_block_with_number(22+21) # activation of HF26 makes current schedule also a future one,
+                                           # so we have to wait two terms for the witnesses to activate
+
+    return node
