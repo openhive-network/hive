@@ -1,8 +1,10 @@
 import pytest
 
 import test_tools as tt
+from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
-from .block_log.generate_block_log import WITNESSES_NAMES
+from hive_local_tools.api.message_format.wallet_bridge_api import prepare_node_with_witnesses
+from hive_local_tools.api.message_format.wallet_bridge_api.constants import WITNESSES_NAMES
 
 
 CORRECT_VALUES = [
@@ -29,8 +31,11 @@ CORRECT_VALUES = [
         (WITNESSES_NAMES[0], True),  # bool is treated like numeric (0:1)
     ]
 )
-def test_list_witnesses_with_correct_value(witness_account, limit, replayed_node):
-    replayed_node.api.wallet_bridge.list_witnesses(witness_account, limit)
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_list_witnesses_with_correct_value(node, witness_account, limit, should_prepare):
+    if should_prepare:
+        node = prepare_node_with_witnesses(WITNESSES_NAMES)
+    node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
 @pytest.mark.parametrize(
@@ -40,9 +45,12 @@ def test_list_witnesses_with_correct_value(witness_account, limit, replayed_node
         (WITNESSES_NAMES[0], 1001),
     ]
 )
-def test_list_witnesses_with_incorrect_value(replayed_node, witness_account, limit):
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_list_witnesses_with_incorrect_value(node, witness_account, limit, should_prepare):
+    if should_prepare:
+        node = prepare_node_with_witnesses(WITNESSES_NAMES)
     with pytest.raises(tt.exceptions.CommunicationError):
-        replayed_node.api.wallet_bridge.list_witnesses(witness_account, limit)
+        node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
 @pytest.mark.parametrize(
@@ -55,6 +63,9 @@ def test_list_witnesses_with_incorrect_value(replayed_node, witness_account, lim
         (WITNESSES_NAMES[0], 'true'),
     ]
 )
-def test_list_witnesses_with_incorrect_type_of_arguments(replayed_node, witness_account, limit):
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_list_witnesses_with_incorrect_type_of_arguments(node, witness_account, limit, should_prepare):
+    if should_prepare:
+        node = prepare_node_with_witnesses(WITNESSES_NAMES)
     with pytest.raises(tt.exceptions.CommunicationError):
-        replayed_node.api.wallet_bridge.list_witnesses(witness_account, limit)
+        node.api.wallet_bridge.list_witnesses(witness_account, limit)

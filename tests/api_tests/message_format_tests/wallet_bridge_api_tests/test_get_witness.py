@@ -3,7 +3,8 @@ import pytest
 import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
-from .block_log.generate_block_log import WITNESSES_NAMES
+from hive_local_tools.api.message_format.wallet_bridge_api.constants import WITNESSES_NAMES
+from hive_local_tools.api.message_format.wallet_bridge_api import prepare_node_with_witnesses
 
 
 CORRECT_VALUES = [
@@ -22,17 +23,19 @@ CORRECT_VALUES = [
         *as_string(CORRECT_VALUES),
     ],
 )
-def test_get_witness_with_correct_value(replayed_node, witness_account):
-    replayed_node.api.wallet_bridge.get_witness(witness_account)
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_get_witness_with_correct_value(node, witness_account, should_prepare):
+    if should_prepare:
+        node = prepare_node_with_witnesses(WITNESSES_NAMES)
+    node.api.wallet_bridge.get_witness(witness_account)
 
 
 @pytest.mark.parametrize(
     'witness_account', [
-
         ['example-array']
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_witness_with_incorrect_type_of_argument(node, witness_account):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_witness(witness_account)
