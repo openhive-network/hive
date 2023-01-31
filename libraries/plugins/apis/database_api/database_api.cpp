@@ -2296,13 +2296,9 @@ extern "C" void consume_json_block_impl(const char *json_block)
     hive::chain::database* db = new hive::chain::database;
     init(*db);
   
-    return;
-
     std::string  s("context");
     haf_database_api_impls.emplace(std::make_pair(s, hive::plugins::database_api::database_api_impl(*db)));
   }
-
-  return;
 
   std::string s("context");
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[s];
