@@ -3704,10 +3704,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     BOOST_TEST_MESSAGE( "--- Test ok - regular conversion" );
     {
       //let's schedule conversion from HBD to hive
-      convert_operation op;
-      op.owner = "bob";
-      op.amount = ASSET( "20.000 TBD" );
-      push_transaction( op, bob_private_key );
+      convert_hbd_to_hive( "bob", 0, ASSET( "20.000 TBD" ), bob_private_key );
     }
     generate_block();
     BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
