@@ -243,8 +243,6 @@ public:
     const std::string& store_transaction ) : self( s ), _wallet( initial_data ), _hive_chain_id( hive_chain_id ), _chosen_transaction_serialization(transaction_serialization),
     _remote_wallet_bridge_api(remote_api), _store_transaction(store_transaction)
   {
-    fc::verifier_switch::set_verify( true );
-
     wallet_transaction_serialization::transaction_serialization = transaction_serialization;
     serialization_mode_controller::set_pack( transaction_serialization );
     init_prototype_ops();
