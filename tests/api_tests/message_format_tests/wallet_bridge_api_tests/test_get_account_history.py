@@ -1,9 +1,9 @@
 import pytest
 
 import test_tools as tt
-from .block_log.generate_block_log import ACCOUNTS
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
+from hive_local_tools.api.message_format.wallet_bridge_api.constants import ACCOUNTS, MAINNET_ACCOUNT
 
 
 UINT64_MAX = 2**64 - 1
@@ -11,6 +11,7 @@ UINT64_MAX = 2**64 - 1
 CORRECT_VALUES = [
         # ACCOUNT
         (ACCOUNTS[0], -1, 1000),
+        (MAINNET_ACCOUNT, -1, 1000),
         ('non-exist-acc', -1, 1000),
         ('', -1, 1000),
         (100, -1, 1000),
@@ -37,10 +38,14 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], -1, True),  # bool is treated like numeric (0:1)
     ]
 )
-def test_get_account_history_with_correct_value(replayed_node, account, from_, limit):
-    # A replayed node was used. Because of this, there is no need to wait for transactions
-    # to become visible in `get_account_history`
-    replayed_node.api.wallet_bridge.get_account_history(account, from_, limit)
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_get_account_history_with_correct_value(node, account, from_, limit, should_prepare):
+    if should_prepare:
+        node.restart(time_offset="+0h x10")
+        wallet = tt.Wallet(attach_to=node)
+        wallet.create_accounts(len(ACCOUNTS))
+        node.wait_for_irreversible_block()
+    node.api.wallet_bridge.get_account_history(account, from_, limit)
 
 
 @pytest.mark.parametrize(
@@ -54,7 +59,7 @@ def test_get_account_history_with_correct_value(replayed_node, account, from_, l
         (ACCOUNTS[5], -1, 1001),
     ]
 )
-@run_for("testnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_account_history_with_incorrect_value(node, account, from_, limit):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_account_history(account, from_, limit)
@@ -75,10 +80,11 @@ def test_get_account_history_with_incorrect_value(node, account, from_, limit):
         (ACCOUNTS[5], -1, [1000]),
     ]
 )
-@run_for("testnet")
-def test_get_account_history_with_incorrect_type_of_argument(node, account, from_, limit):
-    wallet = tt.Wallet(attach_to=node)
-    wallet.create_accounts(len(ACCOUNTS))
+@run_for("testnet", "mainnet_5m", "live_mainnet")
+def test_get_account_history_with_incorrect_type_of_argument(node, account, from_, limit, should_prepare):
+    if should_prepare:
+        wallet = tt.Wallet(attach_to=node)
+        wallet.create_accounts(len(ACCOUNTS))
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_account_history(account, from_, limit)
