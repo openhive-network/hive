@@ -546,6 +546,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 
   // decline_voting_rights_operation
   decline_voting_rights( "dan0ah", true, dan0ah_private_key );
+  // recurrent_transfer_operation, fill_recurrent_transfer_operation
+  recurrent_transfer( "carol0ah", "dan0ah", ASSET( "0.037 TESTS" ), "With love", 24, 2, carol0ah_private_key );
 
   // Following operations happen for each account (ACTOR):
   // account_create_operation, account_created_operation,
