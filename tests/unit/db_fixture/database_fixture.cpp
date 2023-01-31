@@ -1732,7 +1732,7 @@ void delayed_vote_database_fixture::witness_vote( const std::string& account, co
   push_transaction( op, key );
 }
 
-void delayed_vote_database_fixture::decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key )
+void database_fixture::decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key )
 {
   decline_voting_rights_operation op;
   op.account = account;
