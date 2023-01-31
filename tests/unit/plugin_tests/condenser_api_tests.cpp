@@ -445,12 +445,12 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   convert_hbd_to_hive( "edgar0ah", 0, ASSET( "11.201 TBD" ), edgar0ah_private_key );
   expected_operations.insert( OP_TAG(convert_operation) );
 
-  collaterized_convert_with_operation( "carol0ah", 0, ASSET( "0.100 TESTS" ), carol0ah_private_key );
+  collateralized_convert_hive_to_hbd( "carol0ah", 0, ASSET( "0.100 TESTS" ), carol0ah_private_key );
   expected_operations.insert( OP_TAG(collateralized_convert_operation) );
   expected_operations.insert( OP_TAG(collateralized_convert_immediate_conversion_operation) );
 
   // By now carol0ah should have a neat sum awarded for her comment.
-  BOOST_REQUIRE_EQUAL( get_balance( "carol0ah" ).amount.value, 3000 );
+  BOOST_REQUIRE_EQUAL( get_balance( "carol0ah" ).amount.value, 2900 );
   // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
   vest( "carol0ah", "carol0ah", asset(2000, HIVE_SYMBOL), carol0ah_private_key );
   // set_withdraw_vesting_route_operation
@@ -542,7 +542,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   push_custom_operation( { "carol0ah" }, 7, { 'D', 'A', 'T', 'A' }, carol0ah_private_key );
   // custom_json_operation
   push_custom_json_operation( {}, { "carol0ah" }, "7id", "{\"type\": \"json\"}", carol0ah_private_key );
-  // custom_binary_operation has been disabled and does not occur in blockchain
+  // custom_binary_operation, reset_account_operation & set_reset_account_operation have been disabled and do not occur in blockchain
 
   // decline_voting_rights_operation
   decline_voting_rights( "dan0ah", true, dan0ah_private_key );
