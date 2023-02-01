@@ -41,6 +41,18 @@
 
   when: always
 
+.cleanup_cache_manual:
+  image: alpine:3.16
+  interruptible: true
+  variables:
+    CLEANUP_PATH_PATTERN: ""
+  needs: []
+  script:
+    - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
+    - du -h -d 1 /cache
+    - rm $CLEANUP_PATH_PATTERN -rf
+  when: manual
+
 .prepare_hived_data_5m_image:
   extends: .docker_image_builder_job
 
@@ -83,6 +95,7 @@
       dotenv: docker_image_name.env
     paths:
       - ./$BINARY_CACHE_PATH/*
+      - ./docker_image_name.env
     expire_in: 6 hours
 
 .prepare_hived_data_5m:
@@ -103,6 +116,8 @@
     - cp $DATA_CACHE/datadir/docker_entrypoint.log $CI_PROJECT_DIR
 
   artifacts:
+    reports:
+      dotenv: docker_image_name.env
     paths:
     - docker_entrypoint.log
     expire_in: 6 hours
