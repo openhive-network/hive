@@ -2,7 +2,7 @@
 #include <fc/io/raw_fwd.hpp>
 
 
-namespace fc {
+namespace fc { namespace fixed_string_wrapper {
 
   class verifier_switch
   {
@@ -119,14 +119,14 @@ namespace fc {
   namespace raw
   {
     template<typename Stream, typename Storage>
-    inline void pack( Stream& s, const fc::fixed_string<Storage>& u ) {
+    inline void pack( Stream& s, const fc::fixed_string_wrapper::fixed_string<Storage>& u ) {
        unsigned_int size = u.size();
        pack( s, size );
        s.write( (const char*)&u.data, size );
     }
 
     template<typename Stream, typename Storage>
-    inline void unpack( Stream& s, fc::fixed_string<Storage>& u, uint32_t depth ) {
+    inline void unpack( Stream& s, fc::fixed_string_wrapper::fixed_string<Storage>& u, uint32_t depth ) {
        depth++;
        unsigned_int size;
        fc::raw::unpack( s, size, depth );
@@ -167,7 +167,7 @@ namespace fc {
     }
     */
   }
-}
+} }
 
 #include <fc/variant.hpp>
 namespace fc {
@@ -186,7 +186,7 @@ struct get_typename< fixed_string< Storage > >
 {
    static const char* name()
    {
-      static std::string n = std::string("fc::fixed_string<")
+      static std::string n = std::string("fc::fixed_string_wrapper::fixed_string<")
          + std::to_string( sizeof(Storage) ) + std::string(">");
       return n.c_str();
    }
