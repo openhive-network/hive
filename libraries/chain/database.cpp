@@ -55,7 +55,7 @@
 
 #include <stdlib.h>
 
-
+extern bool g_postgres_not_block_log;
 
 void inside_apply_block_play_json(  const hive::protocol::signed_block& input_block ,   const uint32_t block_num)
 {
