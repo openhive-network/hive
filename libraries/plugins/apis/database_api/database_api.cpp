@@ -2338,7 +2338,12 @@ extern "C" void consume_json_block_impl(const char *json_block, const char* cont
     hive::plugins::chain::database::skip_authority_check |
     hive::plugins::chain::database::skip_validate;
 
+    db.set_tx_status( hive::plugins::chain::database::TX_STATUS_BLOCK );
+
+
     db.apply_block(fb_ptr, skip_flags);
+
+    db.clear_tx_status();
 }
 
 
