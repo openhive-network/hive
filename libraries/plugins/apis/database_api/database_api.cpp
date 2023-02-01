@@ -2242,7 +2242,7 @@ void init(hive::chain::database& db)
       db_open_args.do_validate_invariants = false; // false
       db_open_args.stop_replay_at = 0;//0
       db_open_args.exit_after_replay = false;//false
-      db_open_args.force_replay = false;// false
+      db_open_args.force_replay = true;// false
       db_open_args.validate_during_replay = false;// false
       db_open_args.benchmark_is_enabled = false;//false
       // db_open_args.database_cfg = fc::variant database_config();// empty fc::variant database_config;
