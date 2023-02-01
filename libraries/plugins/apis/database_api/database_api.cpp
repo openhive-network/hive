@@ -2300,7 +2300,7 @@ std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl
 extern "C" void consume_json_block_impl(const char *json_block, const char* context)
 {
   
-  dlog("consume_json_block_impl started mtlk pid=${pid}", ("pid", getpid()));
+  //dlog("consume_json_block_impl started mtlk pid=${pid}", ("pid", getpid()));
 
 
   if(haf_database_api_impls.find(context) == haf_database_api_impls.end())
@@ -2357,7 +2357,7 @@ namespace hive { namespace app {
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
 
-  dlog("collect_current_all_accounts_balances started mtlk pid=${pid}", ("pid", getpid()));
+  // dlog("collect_current_all_accounts_balances started mtlk pid=${pid}", ("pid", getpid()));
 
 
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
@@ -2398,7 +2398,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
   //   &database_api_impl::filter_default< account_object > );
 
 
-  dlog("collect_current_all_accounts_balances finished mtlk pid=${pid}", ("pid", getpid()));
+  // dlog("collect_current_all_accounts_balances finished mtlk pid=${pid}", ("pid", getpid()));
 
   return r;
 }
