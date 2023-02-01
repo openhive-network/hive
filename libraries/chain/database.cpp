@@ -4902,6 +4902,18 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
   if( _current_tx_status == TX_STATUS_NONE )
   {
     wlog( "Missing tx processing indicator" );
+
+    if(g_postgres_not_block_log)
+    {
+      static int stop8 = 0;
+      while(stop8)
+      {
+          int a = 0;
+          a=a;
+      }
+
+    }
+
     // make sure to call set_tx_status() with proper status when your call can lead here
   }
 
