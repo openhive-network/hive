@@ -58,18 +58,14 @@ prepare_hived_data:
   tags:
     - hive-builder-4
 
-cleanup_cache_manual:
-  extends: .docker_image_cleanup_job
-  needs: []
+cleanup_hived_cache_manual:
+  extends: .cleanup_cache_manual
   stage: cleanup
-  script:
-    - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
-    - du -h -d 1 /cache
-    - rm /cache/replay_data_hive_* -rf
+  variables:
+    CLEANUP_PATH_PATTERN: "/cache/replay_data_hive_*"
   resource_group: ${CI_COMMIT_SHA}
   tags:
     - hive-builder-4
-  when: manual
 
 testnet_node_build:
   stage: build
@@ -214,6 +210,15 @@ plugin_test:
     expire_in: 6 months
   tags:
     - public-runner-docker
+
+.hived-service: &hived-service
+  - name: $HIVED_IMAGE_NAME
+    alias: hived-instance
+    variables:
+      DATADIR: $DATA_CACHE/datadir
+      SHM_DIR: $DATA_CACHE/shm_dir
+      LOG_FILE: $CI_JOB_NAME.log
+    command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
 
 .run-pytest: &run-pytest
   # Usage:
@@ -480,18 +485,11 @@ patterns_tests:
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
     DATA_CACHE: $DATA_CACHE_MAINNET
   needs:
-    - job: prepare_hived_image
-      artifacts: true
     - job: prepare_hived_data
+      artifacts: true
 
   services:
-    - name: $HIVED_IMAGE_NAME
-      alias: hived-instance
-      variables:
-        DATADIR: $DATA_CACHE/datadir
-        SHM_DIR: $DATA_CACHE/shm_dir
-        LOG_FILE: $CI_JOB_NAME.log
-      command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
+    - *hived-service
 
   before_script:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
@@ -553,15 +551,10 @@ python_pattern_mainnet_tests:
     - job: prepare_hived_image
       artifacts: true
     - job: prepare_hived_data
+      artifacts: true
 
   services:
-    - name: $HIVED_IMAGE_NAME
-      alias: hived-instance
-      variables:
-        DATADIR: $DATA_CACHE/datadir
-        SHM_DIR: $DATA_CACHE/shm_dir
-        LOG_FILE: $CI_JOB_NAME.log
-      command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
+    - *hived-service
 
   before_script:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
@@ -609,17 +602,10 @@ python_pattern_mainnet_tests:
 message_format_mainnet_5m_tests:
   extends: .message_format_tests
   needs:
-    - job: prepare_hived_image
-      artifacts: true
     - job: prepare_hived_data
+      artifacts: true
   services:
-    - name: $HIVED_IMAGE_NAME
-      alias: hived-instance
-      variables:
-        DATADIR: $DATA_CACHE/datadir
-        SHM_DIR: $DATA_CACHE/shm_dir
-        LOG_FILE: $CI_JOB_NAME.log
-      command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
+    - *hived-service
   variables:
     NODE_ADDRESS: "hived-instance:8090"
     NODE_TYPE: "mainnet_5m"
@@ -672,17 +658,10 @@ witness_tests:
   stage: test
   extends: .test_tools_based
   needs:
-    - job: prepare_hived_image
-      artifacts: true
     - job: prepare_hived_data
+      artifacts: true
   services:
-    - name: $HIVED_IMAGE_NAME
-      alias: hived-instance
-      variables:
-        DATADIR: $DATA_CACHE/datadir
-        SHM_DIR: $DATA_CACHE/shm_dir
-        LOG_FILE: $CI_JOB_NAME.log
-      command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
+    - *hived-service
   variables:
     NODE_ADDRESS: "hived-instance:8090"
     PYTEST_TIMEOUT_MINUTES: 5
