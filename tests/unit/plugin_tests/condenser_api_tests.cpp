@@ -310,10 +310,13 @@ void compare_operations(const condenser_api::api_operation_object& op_obj,
   tx_compare(op_obj.trx_id);
 }
 
+typedef std::set<int64_t> tag_set_t;
+
 void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_return& block_ops,
                                       const account_history::get_ops_in_block_return& ah_block_ops,
                                       uint32_t block_num,
-                                      transaction_comparator_t tx_compare)
+                                      transaction_comparator_t tx_compare,
+                                      tag_set_t& expected_operations )
 {
   ilog("block #${num}, ${op} operations from condenser, ${ah} operations from account history",
     ("num", block_num)("op", block_ops.size())("ah", ah_block_ops.ops.size()));
@@ -326,10 +329,13 @@ void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_retu
     const condenser_api::api_operation_object& op_obj = i_condenser->value;
     const account_history::api_operation_object& ah_op_obj = *i_ah;
     compare_operations(op_obj, ah_op_obj, tx_compare);
+
+    // "unregister" the kind of found operation
+    expected_operations.erase( op_obj.op.which() );
   }
 }
 
-void do_the_testing( condenser_api_fixture& caf )
+void do_the_testing( condenser_api_fixture& caf, tag_set_t& expected_operations )
 {
   // The tested operations will go into next head block.
   uint32_t block_num = caf.db->head_block_num() +1;
@@ -368,28 +374,38 @@ void do_the_testing( condenser_api_fixture& caf )
   // Two arguments, second set to false.
   auto block_ops = caf.condenser_api->get_ops_in_block({block_num, false /*only_virtual*/});
   auto ah_block_ops = caf.account_history_api->get_ops_in_block({block_num, false /*only_virtual*/, false /*include_reversible*/});
-  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
+  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator, expected_operations );
   // Two arguments, second set to true.
   block_ops = caf.condenser_api->get_ops_in_block({block_num, true /*only_virtual*/});
   ah_block_ops = caf.account_history_api->get_ops_in_block({block_num, true /*only_virtual*/});
-  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
+  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator, expected_operations );
   // Single argument
   block_ops = caf.condenser_api->get_ops_in_block({block_num});
   ah_block_ops = caf.account_history_api->get_ops_in_block({block_num});
-  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator );
+  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator, expected_operations );
 
   // Too few arguments
   BOOST_REQUIRE_THROW( caf.condenser_api->get_ops_in_block({}), fc::assert_exception );
   // Too many arguments
   BOOST_REQUIRE_THROW( caf.condenser_api->get_ops_in_block({block_num, false /*only_virtual*/, 0 /*redundant arg*/}), fc::assert_exception );
 
+  // Verify that all expected kinds of operations have been found in the block.
+  BOOST_REQUIRE( expected_operations.empty() );
+
   caf.validate_database();
 }
+
+#define OP_TAG( OP_NAME ) \
+  int64_t(operation::tag< OP_NAME >::value)
 
 BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 { try {
 
   BOOST_TEST_MESSAGE( "get_ops_in_block / get_transaction test" );
+
+  // The container for the kinds of operations that we expect to be found in blocks.
+  // We'll use it to be sure that all kind of operations have been used during testing.
+  tag_set_t expected_operations;
 
   // Following operations need lower hardfork set to be tested:
   // pow_operation < HIVE_HARDFORK_0_13__256
@@ -405,17 +421,24 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   generate_block();
 
   PREP_ACTOR( carol0ah )
-  // pow_operation, pow_reward_operation, account_created_operation
+  
   create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
+  expected_operations = { 
+    OP_TAG(pow_operation),
+    OP_TAG(pow_reward_operation), // direct result of pow_operation
+    OP_TAG(account_created_operation), // ditto
+    OP_TAG(producer_reward_operation) }; // attached to every block
 
-  do_the_testing( *this );
+  do_the_testing( *this, expected_operations ); // clears the container nominally
 
   db->set_hardfork( HIVE_HARDFORK_0_13 );
   generate_block();
   
   PREP_ACTOR( dan0ah )
-  // pow2_operation, pow_reward_operation
+
   create_with_pow2( "dan0ah", dan0ah_public_key, dan0ah_private_key );
+  expected_operations.insert( OP_TAG(pow2_operation) );
+
   PREP_ACTOR( edgar0ah )
 
   vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
@@ -424,21 +447,26 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 
   // comment_operation
   post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
-  // comment_options_operation
-  set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_100_PERCENT, true, true, edgar0ah_private_key );
-  // vote_operation & effective_comment_vote_operation
-  vote("edgar0ah", "permlink1", "carol0ah", HIVE_1_PERCENT * 100, carol0ah_private_key);
-  // delete_comment_operation & ineffective_delete_comment_operation
-  delete_comment( "edgar0ah", "permlink1", edgar0ah_private_key );
+  expected_operations.insert( OP_TAG(comment_operation) );
 
-  do_the_testing( *this );
+  set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_100_PERCENT, true, true, edgar0ah_private_key );
+  expected_operations.insert( OP_TAG(comment_options_operation) );
+
+  vote("edgar0ah", "permlink1", "carol0ah", HIVE_1_PERCENT * 100, carol0ah_private_key);
+  expected_operations.insert( OP_TAG(vote_operation) );
+  expected_operations.insert( OP_TAG(effective_comment_vote_operation) );
+  
+  delete_comment( "edgar0ah", "permlink1", edgar0ah_private_key );
+  expected_operations.insert( OP_TAG(delete_comment_operation) );
+  expected_operations.insert( OP_TAG(ineffective_delete_comment_operation) );
+
+  do_the_testing( *this, expected_operations ); // clears the container nominally
 
   // Set current hardfork for easier testing of current operations
   db->set_hardfork( HIVE_NUM_HARDFORKS );
   for( int i = 0; i < 20*60; ++i )
   generate_block();
 
-  // claim_reward_balance_operation
   claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
   expected_operations.insert( OP_TAG(claim_reward_balance_operation) );
 
@@ -451,32 +479,44 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 
   // By now carol0ah should have a neat sum awarded for her comment.
   BOOST_REQUIRE_EQUAL( get_balance( "carol0ah" ).amount.value, 2900 );
-  // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
+
   vest( "carol0ah", "carol0ah", asset(2000, HIVE_SYMBOL), carol0ah_private_key );
-  // set_withdraw_vesting_route_operation
+  expected_operations.insert( OP_TAG(transfer_to_vesting_operation) );
+  expected_operations.insert( OP_TAG(transfer_to_vesting_completed_operation) );
+
   set_withdraw_vesting_route( "carol0ah", "edgar0ah", HIVE_1_PERCENT * 50, true, carol0ah_private_key);
-  // delegate_vesting_shares_operation
+  expected_operations.insert( OP_TAG(set_withdraw_vesting_route_operation) );
+
   delegate_vest( "carol0ah", "dan0ah", asset(3, VESTS_SYMBOL), carol0ah_private_key );
-  // withdraw_vesting_operation
+  expected_operations.insert( OP_TAG(delegate_vesting_shares_operation) );
+
   withdraw_vesting( "carol0ah", asset( 123, VESTS_SYMBOL ), carol0ah_private_key );
+  expected_operations.insert( OP_TAG(withdraw_vesting_operation) );
   // TODO generate enough blocks to test fill_vesting_withdraw_operation & return_vesting_delegation_operation.
 
   limit_order_create( "carol0ah", ASSET( "0.400 TESTS" ), ASSET( "0.650 TBD" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 1, carol0ah_private_key );
   expected_operations.insert( OP_TAG(limit_order_create_operation) );
-  // limit_order_create2_operation
   limit_order2_create( "carol0ah", ASSET( "0.075 TESTS" ), price( ASSET( "0.010 TESTS" ), ASSET( "0.010 TBD" ) ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 2, carol0ah_private_key );
-  // limit_order_cancel_operation, limit_order_cancelled_operation
+  expected_operations.insert( OP_TAG(limit_order_create2_operation) );
+  
   limit_order_cancel( "carol0ah", 1, carol0ah_private_key );
+  expected_operations.insert( OP_TAG(limit_order_cancel_operation) );
+  expected_operations.insert( OP_TAG(limit_order_cancelled_operation) );
 
-  // witness_update_operation
   witness_create( "carol0ah", carol0ah_private_key, "foo.bar", carol0ah_private_key.get_public_key(), 1000 );
-  // feed_publish_operation
+  expected_operations.insert( OP_TAG(witness_update_operation) );
+
   witness_feed_publish( "carol0ah", price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ), carol0ah_private_key );
+  expected_operations.insert( OP_TAG(feed_publish_operation) );
+  
   // witness_block_approve_operation - never appears in block (see its evaluator)
-  // account_witness_proxy_operation
+  
   proxy( "edgar0ah", "dan0ah" );
-  // account_witness_vote_operation
+  expected_operations.insert( OP_TAG(account_witness_proxy_operation) );
+
   witness_vote( "dan0ah", "carol0ah", dan0ah_private_key );
+  expected_operations.insert( OP_TAG(account_witness_vote_operation) );
+  
   // Note that we don't use existing database_fixture::set_witness_props function below,
   // because we don't want "uncontrolled" block generation that happens there. We only
   // need the operation in block, so we can do our test on it.
@@ -490,26 +530,31 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   push_transaction( op, carol0ah_private_key );
   expected_operations.insert( OP_TAG(witness_set_properties_operation) );
 
-  // escrow_transfer_operation
   escrow_transfer( "carol0ah", "dan0ah", "edgar0ah", ASSET( "0.071 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
                    fc::seconds( HIVE_BLOCK_INTERVAL * 10 ), fc::seconds( HIVE_BLOCK_INTERVAL * 20 ), carol0ah_private_key );
-  // escrow_approve_operation
+  expected_operations.insert( OP_TAG(escrow_transfer_operation) );
+
   escrow_approve( "carol0ah", "dan0ah", "edgar0ah", "edgar0ah", edgar0ah_private_key );
-  // escrow_approved_operation
+  expected_operations.insert( OP_TAG(escrow_approve_operation) );
+
   escrow_approve( "carol0ah", "dan0ah", "edgar0ah", "dan0ah", dan0ah_private_key );
-  // escrow_release_operation
+  expected_operations.insert( OP_TAG(escrow_approved_operation) );
+
   escrow_release( "carol0ah", "dan0ah", "edgar0ah", "carol0ah", "dan0ah", ASSET( "0.013 TESTS" ), ASSET( "0.000 TBD" ), carol0ah_private_key );
-  // escrow_dispute_operation
+  expected_operations.insert( OP_TAG(escrow_release_operation) );
+
   escrow_dispute( "carol0ah", "dan0ah", "edgar0ah", "dan0ah", dan0ah_private_key );
+  expected_operations.insert( OP_TAG(escrow_dispute_operation) );
 
-  // transfer_to_savings_operation
   transfer_to_savings( "carol0ah", "carol0ah", ASSET( "0.009 TESTS" ), "ah savings", carol0ah_private_key );
-  // transfer_from_savings_operation
+  expected_operations.insert( OP_TAG(transfer_to_savings_operation) );
+  
   transfer_from_savings( "carol0ah", "carol0ah", ASSET( "0.006 TESTS" ), 0, carol0ah_private_key );
-  // cancel_transfer_from_savings_operation
+  expected_operations.insert( OP_TAG(transfer_from_savings_operation) );
+  
   cancel_transfer_from_savings( "carol0ah", 0, carol0ah_private_key );
+  expected_operations.insert( OP_TAG(cancel_transfer_from_savings_operation) );
 
-  // create_proposal_operation, proposal_fee_operation
   fund( "carol0ah", ASSET( "800.000 TBD" ) );
   dhf_database_fixture::create_proposal_data cpd(db->head_block_time());
   cpd.end_date = cpd.start_date + fc::days( 2 );
@@ -517,55 +562,71 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
     create_proposal( "carol0ah", "dan0ah", cpd.start_date, cpd.end_date, cpd.daily_pay, carol0ah_private_key, false/*with_block_generation*/ );
   const proposal_object* proposal = find_proposal( proposal_id );
   BOOST_REQUIRE_NE( proposal, nullptr );
-  // update_proposal_operation
+  expected_operations.insert( OP_TAG(create_proposal_operation) );
+  expected_operations.insert( OP_TAG(proposal_fee_operation) );
+  expected_operations.insert( OP_TAG(dhf_funding_operation) );
+
   update_proposal( proposal_id, "carol0ah", asset( 80, HBD_SYMBOL ), "new subject", proposal->permlink, carol0ah_private_key);
-  // update_proposal_votes_operation
+  expected_operations.insert( OP_TAG(update_proposal_operation) );
+
   vote_proposal( "edgar0ah", { proposal_id }, true/*approve*/, edgar0ah_private_key);
-  // remove_proposal_operation
+  expected_operations.insert( OP_TAG(update_proposal_votes_operation) );
+
   remove_proposal( "carol0ah", { proposal_id }, carol0ah_private_key );
-  // claim_account_operation
+  expected_operations.insert( OP_TAG(remove_proposal_operation) );
+
   claim_account( "edgar0ah", ASSET( "0.000 TESTS" ), edgar0ah_private_key );
-  // create_claimed_account_operation
+  expected_operations.insert( OP_TAG(claim_account_operation) );
+
   PREP_ACTOR( bob0ah )
   create_claimed_account( "edgar0ah", "bob0ah", bob0ah_public_key, bob0ah_post_key.get_public_key(), "", edgar0ah_private_key );
-  // change_recovery_account_operation
+  expected_operations.insert( OP_TAG(create_claimed_account_operation) );
+
   change_recovery_account( "bob0ah", HIVE_INIT_MINER_NAME, bob0ah_private_key );
-  // account_update_operation
+  expected_operations.insert( OP_TAG(change_recovery_account_operation) );
+
   account_update( "bob0ah", bob0ah_private_key.get_public_key(), "{\"success\":true}",
                   authority(1, carol0ah_public_key,1), fc::optional<authority>(), fc::optional<authority>(), bob0ah_private_key );
-  // request_account_recovery_operation
-  request_account_recovery( "edgar0ah", "bob0ah", authority( 1, edgar0ah_private_key.get_public_key(), 1 ), edgar0ah_private_key );
-  // recover_account_operation
-  recover_account( "bob0ah", edgar0ah_private_key, bob0ah_private_key );
+  expected_operations.insert( OP_TAG(account_update_operation) );
 
-  // custom_operation
+  request_account_recovery( "edgar0ah", "bob0ah", authority( 1, edgar0ah_private_key.get_public_key(), 1 ), edgar0ah_private_key );
+  expected_operations.insert( OP_TAG(request_account_recovery_operation) );
+
+  recover_account( "bob0ah", edgar0ah_private_key, bob0ah_private_key );
+  expected_operations.insert( OP_TAG(recover_account_operation) );
+
   push_custom_operation( { "carol0ah" }, 7, { 'D', 'A', 'T', 'A' }, carol0ah_private_key );
-  // custom_json_operation
+  expected_operations.insert( OP_TAG(custom_operation) );
+
   push_custom_json_operation( {}, { "carol0ah" }, "7id", "{\"type\": \"json\"}", carol0ah_private_key );
+  expected_operations.insert( OP_TAG(custom_json_operation) );
   // custom_binary_operation, reset_account_operation & set_reset_account_operation have been disabled and do not occur in blockchain
 
-  // decline_voting_rights_operation
   decline_voting_rights( "dan0ah", true, dan0ah_private_key );
-  // recurrent_transfer_operation, fill_recurrent_transfer_operation
-  recurrent_transfer( "carol0ah", "dan0ah", ASSET( "0.037 TESTS" ), "With love", 24, 2, carol0ah_private_key );
+  expected_operations.insert( OP_TAG(decline_voting_rights_operation) );
 
-  // Following operations happen for each account (ACTOR):
-  // account_create_operation, account_created_operation,
-  // transfer_to_vesting_operation & transfer_to_vesting_completed_operation
+  recurrent_transfer( "carol0ah", "dan0ah", ASSET( "0.037 TESTS" ), "With love", 24, 2, carol0ah_private_key );
+  expected_operations.insert( OP_TAG(recurrent_transfer_operation) );
+  expected_operations.insert( OP_TAG(fill_recurrent_transfer_operation) );
+
   ACTORS((alice0ah))
-  // account_update2_operation
+  expected_operations.insert( OP_TAG(account_create_operation) );
+  fund( "alice0ah", 500000000 );
+
   account_update2( "alice0ah", fc::optional<authority>(), fc::optional<authority>(), fc::optional<authority>(),
                    fc::optional<fc::ecc::public_key>(), "{\"position\":\"top\"}", "{\"winner\":\"me\"}", alice0ah_private_key );
-  // transfer_operation from initminer
-  fund( "alice0ah", 500000000 );
+  expected_operations.insert( OP_TAG(account_update2_operation) );
+
   // transfer_operation from alice0ah
   transfer("alice0ah", "bob0ah", asset(1234, HIVE_SYMBOL));
-  //TODO: Add remaining current operations here.
+  expected_operations.insert( OP_TAG(transfer_operation) );
 
-  do_the_testing( *this );
+  do_the_testing( *this, expected_operations ); // clears the container nominally
+
 
 } FC_LOG_AND_RETHROW() }
 
+#undef OP_TAG
 
 BOOST_AUTO_TEST_SUITE_END()
 #endif
