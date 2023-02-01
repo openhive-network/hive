@@ -96,9 +96,9 @@ typedef multi_index_container<
 FC_REFLECT( book, (name)(author)(pages)(prize)(deq)(auth) )
 
 struct astr {
-  fc::fixed_string<> str;
-  fc::fixed_string<> str1;
-  fc::fixed_string<> str2;
+  fc::fixed_string_wrapper::fixed_string<> str;
+  fc::fixed_string_wrapper::fixed_string<> str1;
+  fc::fixed_string_wrapper::fixed_string<> str2;
 };
 FC_REFLECT( astr, (str)(str1)(str2) );
 struct bstr {

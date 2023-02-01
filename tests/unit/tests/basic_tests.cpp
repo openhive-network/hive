@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
     BOOST_TEST_MESSAGE( "Testing: fixed_string verification" );
 
     {
-      fc::verifier_switch::set_verify( false );
+      fc::fixed_string_wrapper::verifier_switch::set_verify( false );
 
       transfer_operation op;
       op.from = "abcde-0123456789";
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
     }
 
     {
-      fc::verifier_switch::set_verify( false );
+      fc::fixed_string_wrapper::verifier_switch::set_verify( false );
 
       transfer_operation op;
       op.from = "abcde-0123456789xxx";
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
     }
 
     {
-      fc::verifier_switch::set_verify( true );
+      fc::fixed_string_wrapper::verifier_switch::set_verify( true );
 
       transfer_operation op;
       op.from = "abcde-0123456789";
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
     }
 
     {
-      fc::verifier_switch::set_verify( true );
+      fc::fixed_string_wrapper::verifier_switch::set_verify( true );
 
       transfer_operation op;
 
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
       };
       HIVE_REQUIRE_ASSERT( _assign(), "in_len <= sizeof(data)" );
 
-      fc::verifier_switch::set_verify( false );
+      fc::fixed_string_wrapper::verifier_switch::set_verify( false );
     }
 
   }

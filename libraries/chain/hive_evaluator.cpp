@@ -2028,11 +2028,11 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 
   try
   {
-    auto _old_verify_status = fc::verifier_switch::is_verifying_enabled();
-    BOOST_SCOPE_EXIT(&_old_verify_status) { fc::verifier_switch::set_verify( _old_verify_status ); } BOOST_SCOPE_EXIT_END
+    auto _old_verify_status = fc::fixed_string_wrapper::verifier_switch::is_verifying_enabled();
+    BOOST_SCOPE_EXIT(&_old_verify_status) { fc::fixed_string_wrapper::verifier_switch::set_verify( _old_verify_status ); } BOOST_SCOPE_EXIT_END
 
     if( !_db.is_in_control() )
-      fc::verifier_switch::set_verify( false );
+      fc::fixed_string_wrapper::verifier_switch::set_verify( false );
 
     eval->apply( o );
   }
