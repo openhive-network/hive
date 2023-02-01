@@ -2202,9 +2202,17 @@ hive::plugins::database_api::database_api_impl& database_api_impl_init(hive::cha
 
 void init(hive::chain::database& db)
 {
-  
+
 
   
+  
+
+  static int step6 = 0;
+  while(step6)
+  {
+    int a = 0;
+    a=a;
+  }
   
     
 
@@ -2220,6 +2228,8 @@ void init(hive::chain::database& db)
       hive::chain::open_args db_open_args;
       db_open_args.data_dir = fs::temp_directory_path().string(); //"/home/dev/mainnet-5m/blockchain"
 
+      ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
+
       db_open_args.shared_mem_dir = db_open_args.data_dir ; // "/home/dev/mainnet-5m/blockchain"
       db_open_args.initial_supply = HIVE_INIT_SUPPLY; // 0
       db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;// 0
@@ -2232,7 +2242,7 @@ void init(hive::chain::database& db)
       db_open_args.do_validate_invariants = false; // false
       db_open_args.stop_replay_at = 0;//0
       db_open_args.exit_after_replay = false;//false
-      db_open_args.force_replay = true;// true
+      db_open_args.force_replay = false;// false
       db_open_args.validate_during_replay = false;// false
       db_open_args.benchmark_is_enabled = false;//false
       // db_open_args.database_cfg = fc::variant database_config();// empty fc::variant database_config;
