@@ -60,7 +60,7 @@
 void inside_apply_block_play_json(  const hive::protocol::signed_block& input_block ,   const uint32_t block_num)
 {
 
-  //ilog("MTLK Block: ${block_num}. Data : ${block}", ("block_num", block_num)("block", input_block));
+  ilog("MTLK Block: ${block_num}. Data : ${block}", ("block_num", block_num)("block", input_block));
 
   if(false)//block_num == 209120)
   {
