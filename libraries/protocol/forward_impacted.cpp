@@ -1062,6 +1062,7 @@ stringset get_operations_used_in_get_balance_impacting_operations()
 }
 
 
+
 collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::operation& op)
 {
   keyauth_collector collector;
