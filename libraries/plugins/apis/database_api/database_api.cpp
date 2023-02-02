@@ -2330,23 +2330,24 @@ extern "C" void consume_json_block_impl(const char *json_block, const char* cont
 
   std::shared_ptr<hive::chain::full_block_type> fb_ptr = hive::chain::full_block_type::create_from_signed_block(sb);
 
-  uint64_t skip_flags = hive::plugins::chain::database::skip_validate_invariants | 
-      hive::plugins::chain::database::skip_block_log;
-  skip_flags |= hive::plugins::chain::database::skip_witness_signature |
-    hive::plugins::chain::database::skip_transaction_signatures |
-    hive::plugins::chain::database::skip_transaction_dupe_check |
-    hive::plugins::chain::database::skip_tapos_check |
-    hive::plugins::chain::database::skip_merkle_check |
-    hive::plugins::chain::database::skip_witness_schedule_check |
-    hive::plugins::chain::database::skip_authority_check |
-    hive::plugins::chain::database::skip_validate;
+  uint64_t skip_flags = hive::plugins::chain::database::skip_block_log;
+  skip_flags |= hive::plugins::chain::database::skip_validate_invariants;
+  
+  skip_flags |= hive::plugins::chain::database::skip_witness_signature ;
+  skip_flags |= hive::plugins::chain::database::skip_transaction_signatures;
+  skip_flags |= hive::plugins::chain::database::skip_transaction_dupe_check;
+  skip_flags |= hive::plugins::chain::database::skip_tapos_check;
+  skip_flags |= hive::plugins::chain::database::skip_merkle_check;
+  skip_flags |= hive::plugins::chain::database::skip_witness_schedule_check;
+  skip_flags |= hive::plugins::chain::database::skip_authority_check;
+  skip_flags |= hive::plugins::chain::database::skip_validate;
 
-    db.set_tx_status( hive::plugins::chain::database::TX_STATUS_BLOCK );
+  db.set_tx_status( hive::plugins::chain::database::TX_STATUS_BLOCK );
 
 
-    db.apply_block(fb_ptr, skip_flags);
+  db.apply_block(fb_ptr, skip_flags);
 
-    db.clear_tx_status();
+  db.clear_tx_status();
 }
 
 
