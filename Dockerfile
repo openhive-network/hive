@@ -30,17 +30,19 @@ SHELL ["/bin/bash", "-c"]
 
 USER root
 WORKDIR /usr/local/src
+
+COPY scripts/openssl.conf /etc/ssl/hive-openssl.conf
+
 # Install additionally development packages
-RUN ./scripts/setup_ubuntu.sh --dev --hived-account="hived"
+# TODO REMOVE the additional openssl configuaration when OpenSSL 3.0.7 or above will be distributed by Ubuntu.
+RUN echo -e "\n.include /etc/ssl/hive-openssl.conf\n" >> /etc/ssl/openssl.cnf && \
+   ./scripts/setup_ubuntu.sh --dev --hived-account="hived"
 
 USER hived
 WORKDIR /home/hived
 
 # Install additionally packages located in user directory
 RUN /usr/local/src/scripts/setup_ubuntu.sh --user
-
-COPY scripts/openssl.conf /home/hived/openssl.conf
-ENV OPENSSL_CONF="/home/hived/openssl.conf"
 
 #docker build --target=ci-base-image-5m -t registry.gitlab.syncad.com/hive/hive/ci-base-image-5m:ubuntu20.04-xxx -f Dockerfile .
 FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS ci-base-image-5m
