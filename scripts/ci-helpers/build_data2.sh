@@ -12,6 +12,7 @@ IMG=""
 DATA_CACHE=""
 CONFIG_INI_SOURCE=""
 BLOCK_LOG_SOURCE_DIR=""
+FAKETIME_TIMESTAMP=""
 
 print_help () {
     echo "Usage: $0 <image> [OPTION[=VALUE]]..."
@@ -39,6 +40,10 @@ while [ $# -gt 0 ]; do
         CONFIG_INI_SOURCE="${1#*=}"
         echo "using CONFIG_INI_SOURCE $CONFIG_INI_SOURCE"
         ;;
+    --faketime-timestamp=*)
+        FAKETIME_TIMESTAMP="${1#*=}"
+        echo "using FAKETIME_TIMESTAMP $FAKETIME_TIMESTAMP"
+        ;;
     --help)
         print_help
         exit 0
@@ -62,7 +67,8 @@ done
 echo "Preparing datadir and shm_dir in location ${DATA_CACHE}"
 rm "$DATA_CACHE" -rf
 "$SCRIPTPATH/prepare_data_and_shm_dir.sh" --data-base-dir="$DATA_CACHE" \
-    --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
+    --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE" \
+    --faketime-timestamp="$FAKETIME_TIMESTAMP"
 
 echo "Attempting to perform replay basing on image ${IMG}..."
 

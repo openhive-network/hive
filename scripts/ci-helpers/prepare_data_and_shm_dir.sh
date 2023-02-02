@@ -1,6 +1,9 @@
 #! /bin/bash
 set -xeuo pipefail
 
+CONFIG_INI_SOURCE=""
+FAKETIME_TIMESTAMP=""
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --data-base-dir=*)
@@ -14,6 +17,10 @@ while [ $# -gt 0 ]; do
     --config-ini-source=*)
         CONFIG_INI_SOURCE="${1#*=}"
         echo "config-ini $CONFIG_INI_SOURCE"
+        ;;
+    --faketime-timestamp=*)
+        FAKETIME_TIMESTAMP="${1#*=}"
+        echo "faketime-timestamp $FAKETIME_TIMESTAMP"
         ;;
     *)
         echo "ERROR: '$1' is not a valid option/positional argument"
@@ -48,4 +55,12 @@ fi
 if [ -n "$CONFIG_INI_SOURCE" ];
 then
   cp "$CONFIG_INI_SOURCE" $DATA_BASE_DIR/datadir/config.ini
+fi
+
+
+if [ -n "$FAKETIME_TIMESTAMP" ];
+then
+  # we use date command from buxybox becasue GNU version doesn't have -D option specyfying input format
+  FAKETIME="-$(( $(busybox date -u +%s) - $(busybox date -D "%Y-%m-%dT%H:%M:%S" -d $FAKETIME_TIMESTAMP -u +%s) ))s"
+  echo $FAKETIME > $DATA_BASE_DIR/datadir/faketime.rc
 fi
