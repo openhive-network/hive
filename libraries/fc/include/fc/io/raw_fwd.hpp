@@ -28,14 +28,10 @@ namespace fc {
    namespace ip { class endpoint; }
 
    namespace ecc { class public_key; class private_key; }
-   template<typename Storage> class fixed_string;
 
    namespace raw {
     template<typename T>
     inline size_t pack_size(  const T& v );
-
-    template<typename Stream, typename Storage> inline void pack( Stream& s, const fc::fixed_string<Storage>& u );
-    template<typename Stream, typename Storage> inline void unpack( Stream& s, fc::fixed_string<Storage>& u, uint32_t depth = 0 );
 
     template<typename Stream, typename IntType, typename EnumType>
     inline void pack( Stream& s, const fc::enum_type<IntType,EnumType>& tp );

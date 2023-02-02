@@ -1,5 +1,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
+#include <hive/protocol/fixed_string.hpp>
+
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/custom_operation_interpreter.hpp>
@@ -16,7 +18,6 @@
 
 #include <fc/uint128.hpp>
 #include <fc/utf8.hpp>
-#include <fc/fixed_string.hpp>
 
 #include <boost/scope_exit.hpp>
 
@@ -2007,6 +2008,8 @@ void custom_evaluator::do_apply( const custom_operation& o )
 
 void custom_json_evaluator::do_apply( const custom_json_operation& o )
 {
+  using hive::protocol::details::truncation_controller;
+
   FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
   if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
   {
@@ -2028,11 +2031,11 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 
   try
   {
-    auto _old_verify_status = fc::fixed_string_wrapper::verifier_switch::is_verifying_enabled();
-    BOOST_SCOPE_EXIT(&_old_verify_status) { fc::fixed_string_wrapper::verifier_switch::set_verify( _old_verify_status ); } BOOST_SCOPE_EXIT_END
+    auto _old_verify_status = truncation_controller::is_verifying_enabled();
+    BOOST_SCOPE_EXIT(&_old_verify_status) { truncation_controller::set_verify( _old_verify_status ); } BOOST_SCOPE_EXIT_END
 
     if( !_db.is_in_control() )
-      fc::fixed_string_wrapper::verifier_switch::set_verify( false );
+      truncation_controller::set_verify( false );
 
     eval->apply( o );
   }

@@ -66,11 +66,6 @@ void to_variant( const flat_set_ex<T>& var,  variant& vo );
 template<typename T>
 void from_variant( const variant& var, flat_set_ex<T>& vo );
 
-template< typename Storage >
-inline void to_variant( const hive::protocol::fixed_string_impl< Storage >& s, fc::variant& v );
-template< typename Storage >
-inline void from_variant( const variant& v, hive::protocol::fixed_string_impl< Storage >& s );
-
 inline void to_variant( const hive::protocol::asset_symbol_type& sym, fc::variant& v );
 
 inline void from_variant( const fc::variant& v, hive::protocol::legacy_hive_asset& leg );
