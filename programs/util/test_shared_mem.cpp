@@ -41,8 +41,6 @@
 #include <sstream>
 #include <string>
 
-#include <fc/fixed_string.hpp>
-
 
 using boost::multi_index_container;
 using namespace boost::multi_index;
@@ -94,19 +92,6 @@ typedef multi_index_container<
 
 
 FC_REFLECT( book, (name)(author)(pages)(prize)(deq)(auth) )
-
-struct astr {
-  fc::fixed_string_wrapper::fixed_string<> str;
-  fc::fixed_string_wrapper::fixed_string<> str1;
-  fc::fixed_string_wrapper::fixed_string<> str2;
-};
-FC_REFLECT( astr, (str)(str1)(str2) );
-struct bstr {
-  std::string str;
-  std::string str1;
-  std::string str2;
-};
-FC_REFLECT( bstr, (str)(str1)(str2) );
 
 int main(int argc, char** argv, char** envp)
 {

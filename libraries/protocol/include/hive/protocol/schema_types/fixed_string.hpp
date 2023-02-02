@@ -4,7 +4,7 @@
 #include <hive/schema/abstract_schema.hpp>
 #include <hive/schema/schema_impl.hpp>
 
-#include <fc/fixed_string.hpp>
+#include <hive/protocol/fixed_string.hpp>
 
 namespace hive { namespace schema { namespace detail {
 

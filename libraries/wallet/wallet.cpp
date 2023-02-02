@@ -64,7 +64,6 @@
 #include <fc/thread/scoped_lock.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/smart_ref_impl.hpp>
-#include <fc/fixed_string.hpp>
 
 #ifndef WIN32
 # include <sys/types.h>

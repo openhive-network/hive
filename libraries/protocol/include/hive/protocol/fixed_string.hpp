@@ -2,7 +2,6 @@
 
 #include <fc/uint128.hpp>
 #include <fc/io/raw_fwd.hpp>
-#include <fc/fixed_string.hpp>
 
 #include <boost/endian/conversion.hpp>
 #include <boost/utility/identity_type.hpp>
@@ -57,6 +56,20 @@ namespace fc
   }
 }
 
+namespace hive { namespace protocol { namespace details {
+
+class truncation_controller
+{
+  private:
+    thread_local static bool verify;
+
+  public:
+    static void set_verify( bool val ){ verify = val; }
+    static bool is_verifying_enabled() { return verify; };
+};
+
+} } }
+
 namespace hive { namespace protocol {
 
 /**
@@ -66,7 +79,7 @@ namespace hive { namespace protocol {
   */
 
 template< typename _Storage >
-class fixed_string_impl
+class fixed_string_impl : public details::truncation_controller
 {
   public:
     typedef _Storage Storage;
@@ -133,7 +146,7 @@ class fixed_string_impl
   private:
     void assign(Storage& storage, const char* in, size_t in_len) const
     {
-      if( fc::fixed_string_wrapper::verifier_switch::is_verifying_enabled() )
+      if( is_verifying_enabled() )
       {
         FC_ASSERT(in_len <= sizeof(data), "Input too large: `${in}` (${is}) for fixed size string: (${fs})", (in)("is", in_len)("fs", sizeof(data)));
         memcpy( (char*)&storage, in, in_len );
