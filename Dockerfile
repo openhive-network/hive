@@ -39,6 +39,9 @@ WORKDIR /home/hived
 # Install additionally packages located in user directory
 RUN /usr/local/src/scripts/setup_ubuntu.sh --user
 
+COPY scripts/openssl.conf /home/hived/openssl.conf
+ENV OPENSSL_CONF="/home/hived/openssl.conf"
+
 #docker build --target=ci-base-image-5m -t registry.gitlab.syncad.com/hive/hive/ci-base-image-5m:ubuntu20.04-xxx -f Dockerfile .
 FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS ci-base-image-5m
 
