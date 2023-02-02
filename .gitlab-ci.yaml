@@ -633,7 +633,7 @@ message_format_mainnet_5m_tests:
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     reports:
-      junit: $CI_PROJECT_DIR/tests/api_tests/python_patterns_tests/report.xml
+      junit: $CI_PROJECT_DIR/tests/api_tests/message_format_tests/report.xml
     paths:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
