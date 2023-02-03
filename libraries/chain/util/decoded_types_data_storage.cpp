@@ -34,16 +34,10 @@ decoded_types_data_storage& decoded_types_data_storage::get_instance()
   return instance;
 }
 
-void decoded_types_data_storage::add_type_to_decoding_set(const std::string_view type_name)
+void decoded_types_data_storage::add_type_to_decoded_types_set(const std::string_view type_name)
 {
   std::lock_guard<std::shared_mutex> write_lock(mutex);
-  types_being_decoded_set.emplace(type_name);
-}
-
-void decoded_types_data_storage::remove_type_from_decoding_set(const std::string_view type_name)
-{
-  std::lock_guard<std::shared_mutex> write_lock(mutex);
-  types_being_decoded_set.erase(type_name);
+  decoded_types_set.emplace(type_name);
 }
 
 void decoded_types_data_storage::add_decoded_type_data_to_map(decoded_type_data&& decoded_type)
@@ -52,11 +46,10 @@ void decoded_types_data_storage::add_decoded_type_data_to_map(decoded_type_data&
   decoded_types_data_map.try_emplace(decoded_type.get_type_name(), std::move(decoded_type));
 }
 
-bool decoded_types_data_storage::type_is_being_decoded_or_already_decoded(const std::string_view type_name)
+bool decoded_types_data_storage::type_already_decoded(const std::string_view type_name)
 {
   std::shared_lock<std::shared_mutex> read_lock(mutex);
-  if (types_being_decoded_set.find(type_name) != types_being_decoded_set.end() ||
-      decoded_types_data_map.find(type_name) != decoded_types_data_map.end())
+  if (decoded_types_set.find(type_name) != decoded_types_set.end())
     return true;
 
   else
