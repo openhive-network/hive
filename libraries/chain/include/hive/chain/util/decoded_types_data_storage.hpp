@@ -109,17 +109,8 @@ class decoded_types_data_storage final
 
         if (fc::reflector<Member>::is_defined::value)
         {
-          if (fc::reflector<Member>::is_enum::value)
-          {
-            decoder<Member> decoder;
-            decoder.decode();
-          }
-          else
-          {
-            decoder<Member> decoder;
-            decoder.decode();
-          }
-
+          decoder<Member> decoder;
+          decoder.decode();
           get_instance().add_type_to_decoded_types_set(type_id_name);
         }
 
@@ -236,10 +227,6 @@ class decoded_types_data_storage final
     void register_new_type()
     {
       static_assert(is_defined);
-
-      if (type_already_decoded(typeid(T).name()))
-        return;
-
       decoder<T> decoder;
       decoder.decode();
     }
