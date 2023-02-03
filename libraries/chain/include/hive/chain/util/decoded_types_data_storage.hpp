@@ -134,7 +134,10 @@ class decoded_types_data_storage final
     class visitor_type_decoder
     {
     public:
-      visitor_type_decoder(decoded_type_data::members_vector& _members) : members(_members) {}
+      visitor_type_decoder(decoded_type_data::members_vector& _members, const std::string_view type_name) : members(_members) 
+      {
+        encoder.write(type_name.data(), type_name.size());
+      }
 
       template <typename Member, class Class, Member(Class::*member)>
       void operator()(const char *name) const
@@ -157,7 +160,10 @@ class decoded_types_data_storage final
     class visitor_enum_decoder
     {
     public:
-      visitor_enum_decoder(decoded_type_data::enum_values_vector& _enum_values) : enum_values(_enum_values) {}
+      visitor_enum_decoder(decoded_type_data::enum_values_vector& _enum_values, const std::string_view enum_name) : enum_values(_enum_values)
+      {
+        encoder.write(enum_name.data(), enum_name.size());
+      }
 
       void operator()(const char *name, const int64_t value) const
       {
@@ -191,7 +197,7 @@ class decoded_types_data_storage final
 
         fc::reflector<T>::visit(visitor_defined_types_detector());
         decoded_type_data::members_vector members;
-        visitor_type_decoder visitor(members);
+        visitor_type_decoder visitor(members, type_id_name);
         fc::reflector<T>::visit(visitor);
         const std::string_view type_name = fc::get_typename<T>::name();
         get_instance().add_decoded_type_data_to_map(std::move(decoded_type_data(visitor.get_checksum(), type_name, std::move(members), std::move(decoded_type_data::enum_values_vector()))));
@@ -203,15 +209,15 @@ class decoded_types_data_storage final
     {
       void decode()
       {
-        const std::string_view type_id_name = typeid(T).name();
+        const std::string_view enum_id_name = typeid(T).name();
 
-        if (get_instance().type_already_decoded(type_id_name))
+        if (get_instance().type_already_decoded(enum_id_name))
           return;
         else
-          get_instance().add_type_to_decoded_types_set(type_id_name);
+          get_instance().add_type_to_decoded_types_set(enum_id_name);
 
         decoded_type_data::enum_values_vector enum_values;
-        visitor_enum_decoder visitor(enum_values);
+        visitor_enum_decoder visitor(enum_values, enum_id_name);
         fc::reflector<T>::visit(visitor);
         const std::string_view type_name = fc::get_typename<T>::name();
         get_instance().add_decoded_type_data_to_map(std::move(decoded_type_data(visitor.get_checksum(), type_name, std::move(decoded_type_data::members_vector()), std::move(enum_values))));
