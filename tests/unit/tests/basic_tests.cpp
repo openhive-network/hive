@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
     BOOST_TEST_MESSAGE( "Testing: fixed_string verification" );
 
     {
-      truncation_controller::set_verify( false );
+      account_name_type::set_verify( false );
 
       transfer_operation op;
       op.from = "abcde-0123456789";
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
     }
 
     {
-      truncation_controller::set_verify( false );
+      account_name_type::set_verify( false );
 
       transfer_operation op;
       op.from = "abcde-0123456789xxx";
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
     }
 
     {
-      truncation_controller::set_verify( true );
+      account_name_type::set_verify( true );
 
       transfer_operation op;
       op.from = "abcde-0123456789";
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
     }
 
     {
-      truncation_controller::set_verify( true );
+      account_name_type::set_verify( true );
 
       transfer_operation op;
 
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
       };
       HIVE_REQUIRE_ASSERT( _assign(), "in_len <= sizeof(data)" );
 
-      truncation_controller::set_verify( false );
+      account_name_type::set_verify( false );
     }
 
   }
