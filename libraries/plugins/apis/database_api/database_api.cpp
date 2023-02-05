@@ -2297,6 +2297,7 @@ void init(hive::chain::database& db)
 
 
 std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
+static volatile bool stop_in_consume_json_block_impl = false;
 
 extern "C" void consume_json_block_impl(const char *json_block, const char* context)
 {
@@ -2305,6 +2306,12 @@ extern "C" void consume_json_block_impl(const char *json_block, const char* cont
     dlog("consume_json_block_impl started mtlk pid= ${pid}", ("pid", getpid()));
 
   show_it_once = false;
+
+  while(stop_in_consume_json_block_impl  )
+  {
+    int a = 0;
+    a=a;
+  }
 
 
   if(haf_database_api_impls.find(context) == haf_database_api_impls.end())
