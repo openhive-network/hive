@@ -197,17 +197,6 @@ database::~database()
 
 void database::open( const open_args& args )
 {
-
-
-
-
-  static int volatile stop11=0;
-  while(stop11)
-  {
-      int a = 0 ;
-      a=a;
-  }
-
   try
   {
     init_schema();
@@ -228,14 +217,9 @@ void database::open( const open_args& args )
 
 void database::initialize_state_independent_data(const open_args& args)
 {
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
   initialize_indexes();
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
   initialize_evaluators();
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
   initialize_irreversible_storage();
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   if(!find< dynamic_global_property_object >())
   {
@@ -244,7 +228,6 @@ void database::initialize_state_independent_data(const open_args& args)
       init_genesis(args.initial_supply, args.hbd_initial_supply);
     });
   }
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   _benchmark_dumper.set_enabled(args.benchmark_is_enabled);
   if( _benchmark_dumper.is_enabled() &&
@@ -252,7 +235,6 @@ void database::initialize_state_independent_data(const open_args& args)
   {
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   if(!args.postgres_not_block_log)
   {
@@ -263,23 +245,18 @@ void database::initialize_state_independent_data(const open_args& args)
       _block_log.set_compression_level(args.block_log_compression_level);
     });
   }
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
   
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
   /// Initialize all static (state independent) specific to hardforks
   init_hardforks();
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 }
 
 void database::load_state_initial_data(const open_args& args)
 {
-
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
-
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   FC_ASSERT(hb >= last_irreversible_block);
 
@@ -289,18 +266,13 @@ void database::load_state_initial_data(const open_args& args)
   with_write_lock([&]() {
     ilog("Attempting to rewind all undo state...");
 
-    wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
     undo_all();
-
-    wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
     ilog("Rewind undo state done.");
 
     uint32_t new_hb = head_block_num();
     notify_switch_fork( new_hb );
 
-    wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
     FC_ASSERT(new_hb >= last_irreversible_block);
 
@@ -309,8 +281,6 @@ void database::load_state_initial_data(const open_args& args)
     ilog("Blockchain state database is AT IRREVERSIBLE state specific to head block: ${hb} and LIB: ${lb}",
          ("hb", decorate_number_with_upticks(head_block_num()))("lb", decorate_number_with_upticks(this->get_last_irreversible_block_num())));
   
-    wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
     if (args.chainbase_flags & chainbase::skip_env_check)
     {
       set_revision(head_block_num());
@@ -326,13 +296,16 @@ void database::load_state_initial_data(const open_args& args)
 
   if (head_block_num())
   {
-    std::shared_ptr<full_block_type> head_block = _block_log.read_block_by_num(head_block_num());
-    // This assertion should be caught and a reindex should occur
-    FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
-    "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
-    ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
+    if(!g_postgres_not_block_log)
+    {
+      std::shared_ptr<full_block_type> head_block = _block_log.read_block_by_num(head_block_num());
+      // This assertion should be caught and a reindex should occur
+      FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
+      "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
+      ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
 
-    _fork_db.start_block(head_block);
+      _fork_db.start_block(head_block);
+    }
   }
 
   with_read_lock([&]() {
@@ -4114,12 +4087,7 @@ void initialize_core_indexes( database& db );
 
 void database::initialize_indexes()
 {
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
   initialize_core_indexes( *this );
-
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
   _plugin_index_signal();
 }
 
@@ -4502,7 +4470,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   block_notification note(full_block);
 
 
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
 
 
     if (block_num == 2726330)
@@ -4546,8 +4513,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   uint32_t skip = get_node_properties().skip_flags;
   _current_block_num    = block_num;
   _current_trx_in_block = 0;
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
 
   if( BOOST_UNLIKELY( block_num == 1 ) )
   {
@@ -4619,27 +4584,23 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
       _benchmark_dumper.end( "block", "merkle check" );
   }
 
+  wlog("mtlk head_block_id()= ${hbi}  next_block_header.previous= ${nbhp} equal?=${eq} ",
+  ("hbi", head_block_id())
+  ("nbhp", full_block->get_block_header().previous)
+  ("eq", head_block_id() == full_block->get_block_header().previous)
+  );
+
+
+
   const witness_object& signing_witness = validate_block_header(skip, full_block);
 
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
   const auto& gprops = get_dynamic_global_properties();
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
   uint32_t block_size = full_block->get_uncompressed_block().raw_size;
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
   if( has_hardfork( HIVE_HARDFORK_0_12 ) )
     FC_ASSERT(block_size <= gprops.maximum_block_size, "Block size is larger than voted on block size", (block_num)(block_size)("max",gprops.maximum_block_size));
 
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
   if( block_size < HIVE_MIN_BLOCK_SIZE )
     elog("Block size is too small", (block_num)(block_size)("min", HIVE_MIN_BLOCK_SIZE));
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
 
   /// modify current witness so transaction evaluators can know who included the transaction,
   /// this is mostly for POW operations which must pay the current_witness
@@ -4647,14 +4608,10 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
     dgp.current_witness = block.witness;
   });
 
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
   required_automated_actions req_actions;
   optional_automated_actions opt_actions;
   /// parse witness version reporting
   process_header_extensions( block, req_actions, opt_actions );
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
 
   if( has_hardfork( HIVE_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
   {
@@ -4664,8 +4621,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
               "Block produced by witness that is not running current hardfork",
               (witness)(block.witness)(hardfork_state));
   }
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
 
   for( const std::shared_ptr<full_transaction_type>& trx : full_block->get_full_transactions() )
   {
@@ -4682,15 +4637,8 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   _current_trx_in_block = -1;
   _current_op_in_trx = 0;
 
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
   update_global_dynamic_data(block);
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
   update_signing_witness(signing_witness, block);
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
 
   uint32_t old_last_irreversible = update_last_irreversible_block(true);
 
@@ -4700,8 +4648,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   clear_expired_delegations();
 
   update_witness_schedule(*this);
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
 
   update_median_feed();
   update_virtual_supply(); //accommodate potentially new price
@@ -4716,8 +4662,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   process_subsidized_accounts();
   pay_liquidity_reward();
   update_virtual_supply(); //cover changes in HBD supply from above processes
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
 
   account_recovery_processing();
   expire_escrow_ratification();
@@ -4735,8 +4679,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   process_optional_actions( opt_actions );
 
   process_hardforks();
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
 
   // notify observers that the block has been applied
   notify_post_apply_block( note );
@@ -5567,13 +5509,8 @@ void database::update_global_dynamic_data( const signed_block& b )
 { try {
   const dynamic_global_property_object& _dgp = get_dynamic_global_properties();
 
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
   uint32_t missed_blocks = get_slot_at_time( b.timestamp );
 ;
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
   assert( missed_blocks != 0 );
   missed_blocks--;
   if( head_block_num() != 0 )
@@ -5583,8 +5520,6 @@ void database::update_global_dynamic_data( const signed_block& b )
       const auto& witness_missed = get_witness( get_scheduled_witness( i + 1 ) );
       if(  witness_missed.owner != b.witness )
       {
-        if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
         modify( witness_missed, [&]( witness_object& w )
         {
           w.total_missed++;
@@ -5604,13 +5539,10 @@ void database::update_global_dynamic_data( const signed_block& b )
 #endif
             push_virtual_operation( producer_missed_operation( w.owner ) );
         } );
-        if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
       }
     }
   }
 
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
   // dynamic global properties updating
   modify( _dgp, [&]( dynamic_global_property_object& dgp )
   {
@@ -5621,28 +5553,14 @@ void database::update_global_dynamic_data( const signed_block& b )
       dgp.recent_slots_filled = ( dgp.recent_slots_filled << 1 ) + ( i == 0 ? 1 : 0 );
       dgp.participation_count += ( i == 0 ? 1 : 0 );
     }
-
-    if (print_enabled) wlog("mtlk b.block_num()= ${block_num}", ("block_num", b.block_num()));
     
     dgp.head_block_number = b.block_num();
     // Following FC_ASSERT should never fail, as _currently_processing_block_id is always set by caller
     FC_ASSERT( _currently_processing_block_id.valid() );
-
-    if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
-    if (print_enabled) wlog("mtlk dgp_head_block_id= ${dgp_head_block_id}", ("dgp_head_block_id", dgp.head_block_id));
-
     dgp.head_block_id = *_currently_processing_block_id;
-
-    if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
-    if (print_enabled) wlog("mtlk dgp_head_block_id= ${dgp_head_block_id}", ("dgp_head_block_id", dgp.head_block_id));
-
     dgp.time = b.timestamp;
     dgp.current_aslot += missed_blocks+1;
   } );
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
 
   if( !(get_node_properties().skip_flags & skip_undo_history_check) )
   {
@@ -5652,9 +5570,6 @@ void database::update_global_dynamic_data( const signed_block& b )
                  ("last_irreversible_block_num", get_last_irreversible_block_num())("head", _dgp.head_block_number)
                  ("max_undo", HIVE_MAX_UNDO_HISTORY) );
   }
-
-  if (print_enabled) wlog("mtlk head_block_id()= ${hbi}", ("hbi", head_block_id()));
-
 } FC_CAPTURE_AND_RETHROW() }
 
 uint16_t database::calculate_HBD_percent()
