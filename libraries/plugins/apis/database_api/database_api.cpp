@@ -2228,11 +2228,11 @@ void init(hive::chain::database& db)
 
 
       hive::chain::open_args db_open_args;
-      db_open_args.data_dir = fs::temp_directory_path().string(); //"/home/dev/mainnet-5m/blockchain"
+      db_open_args.data_dir = "/home/dev/mainnet-5m";
 
       ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
 
-      db_open_args.shared_mem_dir = db_open_args.data_dir ; // "/home/dev/mainnet-5m/blockchain"
+      db_open_args.shared_mem_dir = "/home/dev/mainnet-5m/blockchain"; // "/home/dev/mainnet-5m/blockchain"
       db_open_args.initial_supply = HIVE_INIT_SUPPLY; // 0
       db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;// 0
 
@@ -2244,7 +2244,6 @@ void init(hive::chain::database& db)
       db_open_args.do_validate_invariants = false; // false
       db_open_args.stop_replay_at = 0;//0
       db_open_args.exit_after_replay = false;//false
-      db_open_args.force_replay = true;// false
       db_open_args.validate_during_replay = false;// false
       db_open_args.benchmark_is_enabled = false;//false
       // db_open_args.database_cfg = fc::variant database_config();// empty fc::variant database_config;
@@ -2253,8 +2252,10 @@ void init(hive::chain::database& db)
       db_open_args.enable_block_log_compression = true;// true
       db_open_args.block_log_compression_level = 15;// 15
       db_open_args.postgres_not_block_log = true;
-      g_postgres_not_block_log = true;
 
+      db_open_args.force_replay = false;// false
+      g_postgres_not_block_log = true;
+      
 
 
 
@@ -2299,8 +2300,11 @@ std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl
 
 extern "C" void consume_json_block_impl(const char *json_block, const char* context)
 {
-  
-  //dlog("consume_json_block_impl started mtlk pid=${pid}", ("pid", getpid()));
+  int static show_it_once = true;
+  if(show_it_once)
+    dlog("consume_json_block_impl started mtlk pid= ${pid}", ("pid", getpid()));
+
+  show_it_once = false;
 
 
   if(haf_database_api_impls.find(context) == haf_database_api_impls.end())
@@ -2331,16 +2335,16 @@ extern "C" void consume_json_block_impl(const char *json_block, const char* cont
   std::shared_ptr<hive::chain::full_block_type> fb_ptr = hive::chain::full_block_type::create_from_signed_block(sb);
 
   uint64_t skip_flags = hive::plugins::chain::database::skip_block_log;
-  skip_flags |= hive::plugins::chain::database::skip_validate_invariants;
+  // skip_flags |= hive::plugins::chain::database::skip_validate_invariants;
   
   skip_flags |= hive::plugins::chain::database::skip_witness_signature ;
-  skip_flags |= hive::plugins::chain::database::skip_transaction_signatures;
-  skip_flags |= hive::plugins::chain::database::skip_transaction_dupe_check;
-  skip_flags |= hive::plugins::chain::database::skip_tapos_check;
+  // skip_flags |= hive::plugins::chain::database::skip_transaction_signatures;
+  // skip_flags |= hive::plugins::chain::database::skip_transaction_dupe_check;
+  // skip_flags |= hive::plugins::chain::database::skip_tapos_check;
   skip_flags |= hive::plugins::chain::database::skip_merkle_check;
-  skip_flags |= hive::plugins::chain::database::skip_witness_schedule_check;
+  // skip_flags |= hive::plugins::chain::database::skip_witness_schedule_check;
   skip_flags |= hive::plugins::chain::database::skip_authority_check;
-  skip_flags |= hive::plugins::chain::database::skip_validate;
+  // skip_flags |= hive::plugins::chain::database::skip_validate;
 
   db.set_tx_status( hive::plugins::chain::database::TX_STATUS_BLOCK );
 

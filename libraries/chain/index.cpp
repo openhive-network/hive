@@ -27,17 +27,29 @@ void initialize_core_indexes_11( database& db );
 
 void initialize_core_indexes( database& db )
 {
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_01( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_02( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_03( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_04( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_05( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_06( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_07( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_08( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_09( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_10( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
   initialize_core_indexes_11( db );
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
 }
 
 index_info::index_info() {}
