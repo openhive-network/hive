@@ -37,16 +37,32 @@ struct index_info_impl
 template< typename MultiIndexType >
 void _add_index_impl( database& db )
 {
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
+
   db.add_index< MultiIndexType >();
+
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
+
   std::shared_ptr< chainbase::index_extension > ext =
     std::make_shared< index_info_impl< MultiIndexType > >();
+
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
+
   db.add_index_extension< MultiIndexType >( ext );
+
+  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
+
 }
 
 template< typename MultiIndexType >
 void add_core_index( database& db )
 {
+   wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
+
   _add_index_impl< MultiIndexType >( db );
+
+   wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
+
 }
 
 template< typename MultiIndexType >
