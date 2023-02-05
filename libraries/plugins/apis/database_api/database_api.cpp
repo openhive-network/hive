@@ -2317,20 +2317,33 @@ extern "C" void consume_json_block_impl(const char *json_block, const char* cont
     a=a;
   }
 
-  expected_block_num++;
 
   if(haf_database_api_impls.find(context) == haf_database_api_impls.end())
   {
     // mtlk todo  ASSERT NOT haf_database_api_impls.has_key(context)
     hive::chain::database* db = new hive::chain::database;
     init(*db);
+
+    expected_block_num = db->head_block_num();
+    expected_block_num++;
+
   
     std::string  s(context);
     haf_database_api_impls.emplace(std::make_pair(s, hive::plugins::database_api::database_api_impl(*db)));
   }
 
-  // if(block_num != expected_block_num)
-  //   return;
+
+  // wlog("consume_json_block_impl before further  mtlk block_num= ${block_num}", ("block_num", block_num));
+
+  if(block_num != expected_block_num)
+     return;
+
+  expected_block_num++;
+
+  // wlog("consume_json_block_impl passed further  mtlk block_num= ${block_num}", ("block_num", block_num));
+
+
+
 
   std::string s(context);
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[s];
