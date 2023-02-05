@@ -4499,7 +4499,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
       _benchmark_dumper.end( "block", "merkle check" );
   }
 
-  wlog("mtlk head_block_id()= ${hbi}  next_block_header.previous= ${nbhp} equal?=${eq} ",
+  if(print_enabled) wlog("mtlk head_block_id()= ${hbi}  next_block_header.previous= ${nbhp} equal?=${eq} ",
   ("hbi", head_block_id())
   ("nbhp", full_block->get_block_header().previous)
   ("eq", head_block_id() == full_block->get_block_header().previous)
