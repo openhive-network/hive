@@ -2297,9 +2297,13 @@ void init(hive::chain::database& db)
 
 
 std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
+int expected_block_num = 0;
+
+
+
 static volatile bool stop_in_consume_json_block_impl = false;
 
-extern "C" void consume_json_block_impl(const char *json_block, const char* context)
+extern "C" void consume_json_block_impl(const char *json_block, const char* context, int block_num)
 {
   int static show_it_once = true;
   if(show_it_once)
@@ -2313,6 +2317,7 @@ extern "C" void consume_json_block_impl(const char *json_block, const char* cont
     a=a;
   }
 
+  expected_block_num++;
 
   if(haf_database_api_impls.find(context) == haf_database_api_impls.end())
   {
@@ -2323,6 +2328,9 @@ extern "C" void consume_json_block_impl(const char *json_block, const char* cont
     std::string  s(context);
     haf_database_api_impls.emplace(std::make_pair(s, hive::plugins::database_api::database_api_impl(*db)));
   }
+
+  // if(block_num != expected_block_num)
+  //   return;
 
   std::string s(context);
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[s];
