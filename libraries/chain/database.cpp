@@ -196,7 +196,7 @@ database::~database()
 }
 
 
-static volatile auto stop_in_database_open = true;
+static volatile auto stop_in_database_open = false;
 void database::open( const open_args& args )
 {
 
@@ -4373,7 +4373,7 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
 
 
 
-  static volatile  int stop_in__apply_block = 1;
+static volatile  auto stop_in__apply_block = false;
 
 bool  print_enabled = false;
 
@@ -4947,7 +4947,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
 
     if(g_postgres_not_block_log)
     {
-      static int stop_in__apply_transaction = 0;
+      static auto stop_in__apply_transaction = false;
       while(stop_in__apply_transaction)
       {
           int a = 0;
