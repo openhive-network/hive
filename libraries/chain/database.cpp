@@ -195,8 +195,20 @@ database::~database()
   clear_pending();
 }
 
+
+static volatile auto stop_in_database_open = true;
 void database::open( const open_args& args )
 {
+
+   if(g_postgres_not_block_log)
+    {
+      while(stop_in_database_open)
+      {
+          int a = 0;
+          a=a;
+      }
+    }
+
   try
   {
     init_schema();
@@ -4459,7 +4471,7 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
 
 
 
-  static volatile  int stop_here = 1;
+  static volatile  int stop_in__apply_block = 1;
 
 bool  print_enabled = false;
 
@@ -4472,12 +4484,13 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
 
 
-    if (block_num == 2726330)
+    // if (block_num == 2726330)
+    if (block_num > 29997)
     {
       print_enabled = true;
       if(g_postgres_not_block_log)
       {
-          while(stop_here)
+          while(stop_in__apply_block)
           {
             int a = 0;
             a=a;
@@ -5032,8 +5045,8 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
 
     if(g_postgres_not_block_log)
     {
-      static int stop8 = 0;
-      while(stop8)
+      static int stop_in__apply_transaction = 0;
+      while(stop_in__apply_transaction)
       {
           int a = 0;
           a=a;
