@@ -961,12 +961,7 @@ namespace chainbase {
       {
         virtual void add_index( database& db ) override
         {
-          wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
-
           db.add_index_helper< IndexType >();
-
-          wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
-
         }
       };
 
@@ -1324,24 +1319,15 @@ namespace chainbase {
     private:
       template<typename MultiIndexType>
       void add_index_helper() {
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
         const uint16_t type_id = generic_index<MultiIndexType>::value_type::type_id;
         typedef generic_index<MultiIndexType>          index_type;
         typedef typename index_type::allocator_type    index_alloc;
 
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
         std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
-
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
         if( !( _index_map.size() <= type_id || _index_map[ type_id ] == nullptr ) ) {
           CHAINBASE_THROW_EXCEPTION( std::logic_error( type_name + "::type_id is already in use" ) );
         }
-
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
         index_type* idx_ptr =  nullptr;
         bool _is_index_new = false;
 #ifdef ENABLE_STD_ALLOCATOR
@@ -1359,11 +1345,8 @@ namespace chainbase {
         }
 #endif
 
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
         idx_ptr->validate();
-
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
         if( _is_index_new )
           _at_least_one_index_is_created_now = true;
@@ -1378,28 +1361,13 @@ namespace chainbase {
             CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is found in `shared_memory_file` file, but other indexes are created. A replay is needed. Problem with: " + type_name ) );
         }
 
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
         if( type_id >= _index_map.size() )
           _index_map.resize( type_id + 1 );
 
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
         auto new_index = new index<index_type>( *idx_ptr );
 
-        wlog("mtlk revision()= ${new_index}", ("new_index", new_index->revision()));
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
         _index_map[ type_id ].reset( new_index );
-
-        wlog("mtlk revision()= ${new_index}", ("new_index", new_index->revision()));
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
         _index_list.push_back( new_index );
-
-        wlog("mtlk revision()= ${new_index}", ("new_index", new_index->revision()));
-        wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
       }
 
       read_write_mutex                                            _rw_lock;
