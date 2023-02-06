@@ -27,9 +27,7 @@
 #include <string>
 #include <mutex>
 
-#include "conversion_plugin.hpp"
-
-#include "converter.hpp"
+#include "../base/conversion_plugin.hpp"
 
 //#define HIVE_CONVERTER_POST_DETAILED_LOGGING // Uncomment or define if you want to enable detailed logging along with the standard response message on error
 //#define HIVE_CONVERTER_POST_SUPPRESS_WARNINGS // Uncomment or define if you want to suppress converter warnings

@@ -24,9 +24,7 @@
 #include <string>
 #include <memory>
 
-#include "conversion_plugin.hpp"
-
-#include "converter.hpp"
+#include "../base/conversion_plugin.hpp"
 
 namespace hive {namespace converter { namespace plugins { namespace block_log_conversion {
 
