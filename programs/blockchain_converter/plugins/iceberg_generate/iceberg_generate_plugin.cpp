@@ -117,8 +117,9 @@ namespace detail {
           boost::container::flat_set<hp::account_name_type> new_accounts;
 
           hive::app::operation_get_impacted_accounts( op, new_accounts );
-          on_new_accounts_collected(new_accounts);
-          all_accounts.merge(std::move(new_accounts));
+          for( const auto& acc : new_accounts )
+            if( all_accounts.insert(acc).second )
+              on_new_accounts_collected(new_accounts);
         }
 
       auto fb = converter.convert_signed_block( block, last_block_id, head_block_time, false );
