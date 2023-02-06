@@ -12,9 +12,9 @@
 
 #include <fc/exception/exception.hpp>
 
-#include "block_log_conversion_plugin.hpp"
-#include "node_based_conversion_plugin.hpp"
-#include "iceberg_generate_plugin.hpp"
+#include "plugins/block_log_conversion/block_log_conversion_plugin.hpp"
+#include "plugins/node_based_conversion/node_based_conversion_plugin.hpp"
+#include "plugins/iceberg_generate/iceberg_generate_plugin.hpp"
 
 namespace bpo = boost::program_options;
 
