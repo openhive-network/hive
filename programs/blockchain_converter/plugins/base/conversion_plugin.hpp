@@ -5,7 +5,7 @@
 
 #include <string>
 
-#include "converter.hpp"
+#include "../../converter.hpp"
 
 namespace hive { namespace converter { namespace plugins {
 

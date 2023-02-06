@@ -27,10 +27,7 @@
 #include <memory>
 #include <functional>
 
-#include "conversion_plugin.hpp"
-
-#include "converter.hpp"
-#include "hive/protocol/hive_operations.hpp"
+#include "../base/conversion_plugin.hpp"
 
 #include "ops_strip_content_visitor.hpp"
 
