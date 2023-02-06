@@ -2303,7 +2303,7 @@ int expected_block_num = 0;
 
 static volatile bool stop_in_consume_json_block_impl = false;
 
-extern "C" void consume_json_block_impl(const char *json_block, const char* context, int block_num)
+extern "C" int consume_json_block_impl(const char *json_block, const char* context, int block_num)
 {
   int static show_it_once = true;
   if(show_it_once)
@@ -2336,7 +2336,7 @@ extern "C" void consume_json_block_impl(const char *json_block, const char* cont
   // wlog("consume_json_block_impl before further  mtlk block_num= ${block_num}", ("block_num", block_num));
 
   if(block_num != expected_block_num)
-     return;
+     return expected_block_num;
 
   expected_block_num++;
 
@@ -2380,6 +2380,8 @@ extern "C" void consume_json_block_impl(const char *json_block, const char* cont
   db.apply_block(fb_ptr, skip_flags);
 
   db.clear_tx_status();
+
+  return expected_block_num;
 }
 
 

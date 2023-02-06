@@ -4487,7 +4487,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
     // if (block_num == 2726330)
     if (block_num > 29997)
     {
-      print_enabled = true;
+      //print_enabled = true;
       if(g_postgres_not_block_log)
       {
           while(stop_in__apply_block)
