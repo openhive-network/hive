@@ -212,50 +212,6 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-#ifdef HIVE_ENABLE_SMT
-    result_type operator()( hp::smt_create_operation& op )const
-    {
-      op.extensions.clear();
-
-      return op;
-    }
-
-    result_type operator()( hp::smt_setup_operation& op )const
-    {
-      op.extensions.clear();
-
-      return op;
-    }
-
-    result_type operator()( hp::smt_setup_emissions_operation& op )const
-    {
-      op.extensions.clear();
-
-      return op;
-    }
-
-    result_type operator()( hp::smt_set_setup_parameters_operation& op )const
-    {
-      op.extensions.clear();
-
-      return op;
-    }
-
-    result_type operator()( hp::smt_set_runtime_parameters_operation& op )const
-    {
-      op.extensions.clear();
-
-      return op;
-    }
-
-    result_type operator()( hp::smt_contribute_operation& op )const
-    {
-      op.extensions.clear();
-
-      return op;
-    }
-#endif
-
     // No signatures modification ops
     template< typename T >
     result_type operator()( const T& op )const
