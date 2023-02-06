@@ -17,10 +17,12 @@
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/block.hpp>
 #include <hive/protocol/hardfork_block.hpp>
+#include <hive/protocol/forward_impacted.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 
 #include <boost/program_options.hpp>
+#include <boost/container/flat_set.hpp>
 
 #include <string>
 #include <memory>
@@ -31,7 +33,6 @@
 #include "converter.hpp"
 #include "hive/protocol/hive_operations.hpp"
 
-#include "account_name_type_visitor.hpp"
 #include "ops_strip_content_visitor.hpp"
 
 namespace hive {namespace converter { namespace plugins { namespace iceberg_generate {
@@ -58,7 +59,7 @@ namespace detail {
     void open( const fc::path& input, const fc::path& output );
     void close();
 
-    void on_new_account_collected( const hp::account_name_type& acc );
+    void on_new_accounts_collected( const boost::container::flat_set<hp::account_name_type>& acc );
   };
 
   void iceberg_generate_plugin_impl::open( const fc::path& input, const fc::path& output )
@@ -74,7 +75,8 @@ namespace detail {
     } FC_CAPTURE_AND_RETHROW( (output) )
   }
 
-  void iceberg_generate_plugin_impl::on_new_account_collected( const hp::account_name_type& acc ) {
+  void iceberg_generate_plugin_impl::on_new_accounts_collected( const boost::container::flat_set<hp::account_name_type>& accs ) {
+    for( const auto& acc : accs )
       ilog("Collected new account: ${acc}", ("acc", acc));
   }
 
@@ -86,8 +88,6 @@ namespace detail {
 
     fc::time_point_sec head_block_time = HIVE_GENESIS_TIME;
 
-    accounts_from_operations_collector acc_op_collector{ [this]( const auto& acc ) { this->on_new_account_collected( acc ); } };
-
     FC_ASSERT( !log_out.head() && start_block_num,
       HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " plugin currently does not currently support conversion continue" );
 
@@ -95,6 +95,8 @@ namespace detail {
 
     if( !stop_block_num || stop_block_num > log_in.head()->get_block_num() )
       stop_block_num = log_in.head()->get_block_num();
+
+    boost::container::flat_set<hp::account_name_type> all_accounts;
 
     // Pre-init: Detect required iceberg operations
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
@@ -115,7 +117,11 @@ namespace detail {
           if( enable_op_content_strip )
             op = op.visit( ops_strip_content_visitor{} );
 
-          acc_op_collector.collect( op );
+          boost::container::flat_set<hp::account_name_type> new_accounts;
+
+          hive::app::operation_get_impacted_accounts( op, new_accounts );
+          on_new_accounts_collected(new_accounts);
+          all_accounts.merge(std::move(new_accounts));
         }
 
       auto fb = converter.convert_signed_block( block, last_block_id, head_block_time, false );
