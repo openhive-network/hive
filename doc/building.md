@@ -4,7 +4,7 @@ Building Hive requires at least 16GB of RAM.
 
 Hive project is described using CMake. By default it uses a Ninja tool as a build executor.
 
-Only Linux based systems are supported as build and runtime platform. Nowadays Ubuntu 20.04 LTS is chosen as base OS supported by build and runtime processes (Ubuntu 18.04 LTS is not supported anymore). Build process requires tools available in default Ubuntu package repository.
+Only Linux based systems are supported as build and runtime platform. Nowadays Ubuntu 22.04 LTS is chosen as base OS supported by build and runtime processes (Ubuntu 18.04 LTS is not supported anymore, Ubuntu 20.04 LTS does not have `liburing-dev`, which should be installed for performance boost in RocksDB). Build process requires tools available in default Ubuntu package repository.
 
 ## Getting sources
 
@@ -48,9 +48,9 @@ Above example call will create the image: `registry.gitlab.syncad.com/hive/hive/
 
 To run given image you can use a helper script: `../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:my-local-tag --name=hived-instance --data-dir=../datadir --shared-file-dir../datadir/ #[<other regular hived options>]`
 
-## Building on Ubuntu 20.04 LTS
+## Building on Ubuntu 22.04 LTS
 
-For Ubuntu 20.04 LTS users, after installing the right packages with `apt` Hive should build out of the box without further effort:
+For Ubuntu 22.04 LTS users, after installing the right packages with `apt` Hive should build out of the box without further effort:
 
     # workdir directory is assumed as cwd, like also already cloned repository using command line described earlier
 

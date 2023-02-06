@@ -42,7 +42,7 @@ The technical development of the Hive blockchain itself is carried out by the fo
 
 # Installation
 
-Getting started with Hive is fairly simple. You can either choose to use docker-images, build with docker manually or build from source directly. All steps have been documented and while many different OS are supported, the easiest one is Ubuntu 20.04 LTS.
+Getting started with Hive is fairly simple. You can either choose to use docker-images, build with docker manually or build from source directly. All steps have been documented and while many different OS are supported, the easiest one is Ubuntu 22.04 LTS.
 
 ## Quickstart
 
