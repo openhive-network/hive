@@ -207,7 +207,7 @@ void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_pr
     fc::uint128_t a = vests.amount.value;
     a *= (alpha_x - alpha_y).value;
     a /= alpha_y.value;
-    vest_modifier = hive::protocol::asset(a.to_int64(), VESTS_SYMBOL);
+    vest_modifier = hive::protocol::asset(fc::uint128_to_int64(a), VESTS_SYMBOL);
   }
   else
   {
@@ -215,7 +215,7 @@ void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_pr
     fc::uint128_t b = hive.amount.value;
     b *= (alpha_y - alpha_x).value;
     b /= alpha_x.value;
-    hive_modifier = hive::protocol::asset(b.to_int64(), HIVE_SYMBOL);
+    hive_modifier = hive::protocol::asset(fc::uint128_to_int64(b), HIVE_SYMBOL);
   }
 
   ilog("vest_modifier=${vest_modifier}, hive_modifier=${hive_modifier}", (vest_modifier)(hive_modifier));

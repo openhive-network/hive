@@ -57,9 +57,9 @@ using namespace hive::protocol;
 namespace std
 {
 
-std::ostream& operator << (std::ostream& o, const fc::uint128_t& u)
+ostream& operator << (ostream& o, const fc::uint128_t& u)
   {
-  return o << std::to_string(u);
+  return o << to_string(u);
   }
 
 } // namespace std
@@ -593,7 +593,6 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( price ), 32u );
   BOOST_CHECK_EQUAL( sizeof( t_vector< char > ), 32u ); //it has dynamic component as well, all vectors have the same static size
   BOOST_CHECK_EQUAL( sizeof( public_key_type ), 33u );
-  BOOST_CHECK_EQUAL( sizeof( fc::fixed_string<> ), 16u );
   BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<16> ), 16u );
   BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<24> ), 24u );
   BOOST_CHECK_EQUAL( sizeof( hive::protocol::fixed_string<32> ), 32u );
