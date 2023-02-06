@@ -30,6 +30,7 @@
 
 #include "../base/conversion_plugin.hpp"
 
+#include "ops_permlink_tracker.hpp"
 #include "ops_strip_content_visitor.hpp"
 
 namespace hive {namespace converter { namespace plugins { namespace iceberg_generate {
@@ -56,7 +57,8 @@ namespace detail {
     void open( const fc::path& input, const fc::path& output );
     void close();
 
-    void on_new_accounts_collected( const boost::container::flat_set<hp::account_name_type>& acc );
+    void on_new_account_collected( const hp::account_name_type& acc );
+    void on_new_permlink_collected( const std::string& link );
   };
 
   void iceberg_generate_plugin_impl::open( const fc::path& input, const fc::path& output )
@@ -72,9 +74,12 @@ namespace detail {
     } FC_CAPTURE_AND_RETHROW( (output) )
   }
 
-  void iceberg_generate_plugin_impl::on_new_accounts_collected( const boost::container::flat_set<hp::account_name_type>& accs ) {
-    for( const auto& acc : accs )
-      ilog("Collected new account: ${acc}", ("acc", acc));
+  void iceberg_generate_plugin_impl::on_new_account_collected( const hp::account_name_type& acc ) {
+    ilog("Collected new account: ${acc}", ("acc", acc));
+  }
+
+  void iceberg_generate_plugin_impl::on_new_permlink_collected( const std::string& link ) {
+    ilog("Collected new permlink: ${link}", ("link", link));
   }
 
   void iceberg_generate_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
@@ -94,6 +99,7 @@ namespace detail {
       stop_block_num = log_in.head()->get_block_num();
 
     boost::container::flat_set<hp::account_name_type> all_accounts;
+    boost::container::flat_set<std::string> all_permlinks;
 
     // Pre-init: Detect required iceberg operations
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
@@ -111,15 +117,23 @@ namespace detail {
       for( auto& tx : block.transactions )
         for( auto& op : tx.operations )
         {
+          // Stripping operations content
           if( enable_op_content_strip )
             op = op.visit( ops_strip_content_visitor{} );
 
+          // Collecting impacted accounts
           boost::container::flat_set<hp::account_name_type> new_accounts;
 
           hive::app::operation_get_impacted_accounts( op, new_accounts );
           for( const auto& acc : new_accounts )
             if( all_accounts.insert(acc).second )
-              on_new_accounts_collected(new_accounts);
+              on_new_account_collected(acc);
+
+          // Collecting permlinks
+          const auto permlinks = op.visit(ops_permlink_tracker_visitor{});
+          for( const auto& plink : permlinks )
+            if( all_permlinks.insert(plink).second )
+              on_new_permlink_collected(plink);
         }
 
       auto fb = converter.convert_signed_block( block, last_block_id, head_block_time, false );
