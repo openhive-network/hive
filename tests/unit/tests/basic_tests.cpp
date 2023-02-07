@@ -729,6 +729,9 @@ BOOST_AUTO_TEST_CASE( fc_static_variant_alignment )
 
   using test_static_variant = static_variant<int, char, __test_for_alignment>;
 
+  BOOST_CHECK_EQUAL( alignof(test_static_variant), 16u );
+  BOOST_CHECK_EQUAL( alignof(static_variant<int, char>), 8u ); //we could actually make it 4
+
   test_static_variant t[2];
   t[0] = __test_for_alignment();
   t[1] = __test_for_alignment();
@@ -741,6 +744,9 @@ BOOST_AUTO_TEST_CASE( fc_static_variant_alignment )
 BOOST_AUTO_TEST_CASE( fc_optional_alignment )
 {
   using test_optional = fc::optional<__test_for_alignment>;
+
+  BOOST_CHECK_EQUAL( alignof(test_optional), 16u );
+  BOOST_CHECK_EQUAL( alignof(fc::optional<int>), 4u );
 
   test_optional t[2];
   t[0] = __test_for_alignment();
