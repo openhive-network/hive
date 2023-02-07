@@ -50,6 +50,32 @@ struct get_impacted_account_visitor
       _impacted.insert( op.parent_author );
   }
 
+  struct comment_options_impacted_visitor
+  {
+    comment_options_impacted_visitor(){}
+
+    typedef const vector<beneficiary_route_type>& result_type;
+
+    template< typename Ext >
+    result_type operator()( const Ext& )const
+    {
+      return {};
+    }
+
+    result_type operator()( const comment_payout_beneficiaries& ext )const
+    {
+      return ext.beneficiaries;
+    }
+  };
+
+  void operator()( const comment_options_operation& op )
+  {
+    _impacted.insert( op.author );
+    for( const auto& ext : op.extensions )
+      for( const auto& route : ext.visit( comment_options_impacted_visitor{} ) )
+        _impacted.insert( route.account );
+  }
+
   void operator()( const vote_operation& op )
   {
     _impacted.insert( op.voter );
