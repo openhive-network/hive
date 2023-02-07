@@ -2,7 +2,7 @@
 #define HIVE_HARDFORK_1_28 28
 #define HIVE_SMT_HARDFORK HIVE_HARDFORK_1_28
 
-#define HIVE_HARDFORK_1_28_TIME 1654084800 // Wednesday, 1 June 2022 12:00:00
+#define HIVE_HARDFORK_1_28_TIME 1672833600 // Wednesday, 04 January 2023 12:00:00
 
 #define HIVE_HARDFORK_1_28_VERSION hive::protocol::hardfork_version( 1, 28 )
 

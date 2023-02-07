@@ -57,20 +57,20 @@
 
 long next_hf_time()
 {
-  // current "next hardfork" is HF27
+  // current "next hardfork" is HF28
   long hfTime =
 
-#ifdef IS_TEST_NET
-    1665532800; // Wednesday, October 12, 2022 0:00:00 GMT
+#ifdef IS_TEST_NET \
+    1672833600; // Wednesday, 04 January 2023 12:00:00 GMT
 #else
-    1666612800; // Monday, 24 October 2022 12:00:00 GMT
+    1680696000; // Wednesday, 5 April 2023 12:00:00 GMT
 #endif /// IS_TEST_NET
 
-  const char* value = getenv("HIVE_HF27_TIME");
+  const char* value = getenv("HIVE_HF28_TIME");
   if (value)
   {
     hfTime = atol(value);
-    ilog("HIVE_HF27_TIME has been specified through environment variable as ${value}, long value: ${hfTime}", (value)(hfTime));
+    ilog("HIVE_HF28_TIME has been specified through environment variable as ${value}, long value: ${hfTime}", (value)(hfTime));
   }
 
   return hfTime;
@@ -6454,10 +6454,13 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_1_27 == 27, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_27 ] = fc::time_point_sec( HIVE_HARDFORK_1_27_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_27 ] = HIVE_HARDFORK_1_27_VERSION;
-#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
   FC_ASSERT( HIVE_HARDFORK_1_28 == 28, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_28 ] = fc::time_point_sec( HIVE_HARDFORK_1_28_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_28 ] = HIVE_HARDFORK_1_28_VERSION;
+#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
+  FC_ASSERT( HIVE_HARDFORK_1_29 == 29, "Invalid hardfork configuration" );
+  _hardfork_versions.times[ HIVE_HARDFORK_1_29 ] = fc::time_point_sec( HIVE_HARDFORK_1_29_TIME );
+  _hardfork_versions.versions[ HIVE_HARDFORK_1_29 ] = HIVE_HARDFORK_1_29_VERSION;
 #endif
 }
 
