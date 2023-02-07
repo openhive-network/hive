@@ -2853,8 +2853,8 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
         if( token == a->get_vest_rewards() )
           reward_vesting_hive_to_move = a->get_vest_rewards_as_hive();
         else
-          reward_vesting_hive_to_move = asset( ( ( uint128_t( token.amount.value ) * uint128_t( a->get_vest_rewards_as_hive().amount.value ) )
-            / uint128_t( a->get_vest_rewards().amount.value ) ).to_uint64(), HIVE_SYMBOL );
+          reward_vesting_hive_to_move = asset( fc::uint128_to_uint64( ( uint128_t( token.amount.value ) * uint128_t( a->get_vest_rewards_as_hive().amount.value ) )
+            / uint128_t( a->get_vest_rewards().amount.value ) ), HIVE_SYMBOL );
 
         _db.modify( *a, [&]( account_object& a )
         {
