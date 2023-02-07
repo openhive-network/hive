@@ -61,7 +61,7 @@ long next_hf_time()
   long hfTime =
 
 #ifdef IS_TEST_NET \
-    1672833600; // Wednesday, 04 January 2023 12:00:00 GMT
+    1672833600; // Wednesday, 4 January 2023 12:00:00 GMT
 #else
     1680696000; // Wednesday, 5 April 2023 12:00:00 GMT
 #endif /// IS_TEST_NET
