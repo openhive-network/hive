@@ -1,0 +1,9 @@
+#ifndef HIVE_HARDFORK_1_29
+#define HIVE_HARDFORK_1_29 29
+#define HIVE_SMT_HARDFORK HIVE_HARDFORK_1_29
+
+#define HIVE_HARDFORK_1_29_TIME 1694001600 // Wednesday, 6 september 2023 12:00:00
+
+#define HIVE_HARDFORK_1_29_VERSION hive::protocol::hardfork_version( 1, 29 )
+
+#endif
