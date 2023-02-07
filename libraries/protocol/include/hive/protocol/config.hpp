@@ -35,9 +35,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #ifdef IS_TEST_NET
 
 #ifdef HIVE_ENABLE_SMT
-  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 28, 0) )
+  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 29, 0) )
 #else
-  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 27, 0) )
+  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 28, 0) )
 #endif
 
 #define OLD_CHAIN_ID                          (fc::sha256::hash("testnet"))
@@ -89,7 +89,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 ///                               LIVE HIVE NETWORK (MainNet)                                   ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 27, 3) )
+#define HIVE_BLOCKCHAIN_VERSION               ( version(1, 28, 0) )
 
 #ifndef HIVE_INIT_PUBLIC_KEY_STR
 # define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
