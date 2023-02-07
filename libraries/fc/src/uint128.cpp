@@ -171,6 +171,40 @@ uint8_t uint128_popcount( const uint128_t& u )
   return _popcount_64( uint128_low_bits(u) ) + _popcount_64( uint128_high_bits(u) );
 }
 
+uint8_t uint128_find_msb( const uint128_t& u )
+{
+  uint64_t x = uint128_high_bits( u );
+  uint8_t places = 0;
+  if( x )
+    places = 64;
+  else
+    x = uint128_low_bits( u );
+  if( x == 0 )
+    x = 1;
+  return uint8_t( boost::multiprecision::detail::find_msb( x ) + places );
+}
+
+uint64_t uint128_approx_sqrt( const uint128_t& x )
+{
+  if( x == 0 )
+    return 0;
+
+  uint8_t msb_x = uint128_find_msb( x );
+  uint8_t msb_z = msb_x >> 1;
+
+  uint128_t msb_x_bit = uint128_t( 1 ) << msb_x;
+  uint64_t  msb_z_bit = uint64_t( 1 ) << msb_z;
+
+  uint128_t mantissa_mask = msb_x_bit - 1;
+  uint128_t mantissa_x = x & mantissa_mask;
+  uint64_t mantissa_z_hi = ( msb_x & 1 ) ? msb_z_bit : 0;
+  uint64_t mantissa_z_lo = uint128_low_bits( mantissa_x >> ( msb_x - msb_z ) );
+  uint64_t mantissa_z = ( mantissa_z_hi | mantissa_z_lo ) >> 1;
+  uint64_t result = msb_z_bit | mantissa_z;
+
+  return result;
+}
+
 void to_variant( const uint128_t& var,  variant& vo )  { vo = std::to_string(var);                }
 void from_variant( const variant& var,  uint128_t& vo ){ vo = string_to_uint128(var.as_string()); }
 

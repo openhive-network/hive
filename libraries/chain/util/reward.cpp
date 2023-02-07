@@ -4,37 +4,6 @@
 
 namespace hive { namespace chain { namespace util {
 
-uint8_t find_msb( const uint128_t& u )
-{
-  uint64_t x;
-  uint8_t places;
-  x      = (fc::uint128_low_bits(u) ? fc::uint128_low_bits(u) : 1);
-  places = (fc::uint128_high_bits(u) ?   64 : 0);
-  x      = (fc::uint128_high_bits(u) ? fc::uint128_high_bits(u) : x);
-  return uint8_t( boost::multiprecision::detail::find_msb(x) + places );
-}
-
-uint64_t approx_sqrt( const uint128_t& x )
-{
-  if( x == 0 )
-    return 0;
-
-  uint8_t msb_x = find_msb(x);
-  uint8_t msb_z = msb_x >> 1;
-
-  uint128_t msb_x_bit = uint128_t(1) << msb_x;
-  uint64_t  msb_z_bit = uint64_t (1) << msb_z;
-
-  uint128_t mantissa_mask = msb_x_bit - 1;
-  uint128_t mantissa_x = x & mantissa_mask;
-  uint64_t mantissa_z_hi = (msb_x & 1) ? msb_z_bit : 0;
-  uint64_t mantissa_z_lo = fc::uint128_low_bits(mantissa_x >> (msb_x - msb_z));
-  uint64_t mantissa_z = (mantissa_z_hi | mantissa_z_lo) >> 1;
-  uint64_t result = msb_z_bit | mantissa_z;
-
-  return result;
-}
-
 uint64_t get_rshare_reward( const comment_reward_context& ctx )
 {
   try
@@ -89,7 +58,7 @@ uint128_t evaluate_reward_curve( const uint128_t& rshares, const protocol::curve
       result = rshares;
       break;
     case protocol::square_root:
-      result = approx_sqrt( rshares );
+      result = fc::uint128_approx_sqrt( rshares );
       break;
     case protocol::convergent_linear:
       {
@@ -100,7 +69,7 @@ uint128_t evaluate_reward_curve( const uint128_t& rshares, const protocol::curve
     case protocol::convergent_square_root:
       {
         const uint128_t& s = var1;
-        result = rshares / approx_sqrt( rshares + 2 * s );
+        result = rshares / fc::uint128_approx_sqrt( rshares + 2 * s );
       }
       break;
   }

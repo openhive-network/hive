@@ -10,16 +10,6 @@
 
 using fc::uint128_t;
 
-uint8_t find_msb( const uint128_t& u )
-{
-  uint64_t x;
-  uint8_t places;
-  x      = (fc::uint128_low_bits(u) ? fc::uint128_low_bits(u) : 1);
-  places = (fc::uint128_high_bits(u) ?   64 : 0);
-  x      = (fc::uint128_high_bits(u) ? fc::uint128_high_bits(u) : x);
-  return uint8_t( boost::multiprecision::detail::find_msb(x) + places );
-}
-
 uint64_t maybe_sqrt( uint64_t x )
 {
   if( x <= 1 )
@@ -33,33 +23,12 @@ uint64_t maybe_sqrt( uint64_t x )
   return y;
 }
 
-uint64_t approx_sqrt( const uint128_t& x )
-{
-  if( x == 0 )
-    return 0;
-
-  uint8_t msb_x = find_msb(x);
-  uint8_t msb_z = msb_x >> 1;
-
-  uint128_t msb_x_bit = uint128_t(1) << msb_x;
-  uint64_t  msb_z_bit = uint64_t (1) << msb_z;
-
-  uint128_t mantissa_mask = msb_x_bit - 1;
-  uint128_t mantissa_x = x & mantissa_mask;
-  uint64_t mantissa_z_hi = (msb_x & 1) ? msb_z_bit : 0;
-  uint64_t mantissa_z_lo = fc::uint128_low_bits(mantissa_x >> (msb_x - msb_z));
-  uint64_t mantissa_z = (mantissa_z_hi | mantissa_z_lo) >> 1;
-  uint64_t result = msb_z_bit | mantissa_z;
-
-  return result;
-}
-
 int main( int argc, char** argv, char** envp )
 {
   uint128_t x = 0;
   while( true )
   {
-    uint64_t y = approx_sqrt(x);
+    uint64_t y = fc::uint128_approx_sqrt(x);
     std::cout << std::to_string(x) << " " << y << std::endl;
     //uint128_t new_x = x + (x >> 10) + 1;
     uint128_t new_x = x + (x / 1000) + 1;
