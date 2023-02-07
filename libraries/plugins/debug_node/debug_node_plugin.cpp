@@ -182,29 +182,23 @@ void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool
 }
 */
 
-void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_price)
+void debug_node_plugin::calculate_modifiers_according_to_new_price(const hive::protocol::price& new_price,
+                                                                    const hive::protocol::asset& total_hive, const hive::protocol::asset& total_vests,
+                                                                    hive::protocol::asset& hive_modifier, hive::protocol::asset& vest_modifier ) const
 {
   FC_ASSERT(new_price.base.symbol == HIVE_SYMBOL);
   FC_ASSERT(new_price.quote.symbol == VESTS_SYMBOL);
 
-  chain::database& db = database();
+  hive_modifier = hive::protocol::asset(0, HIVE_SYMBOL);
+  vest_modifier = hive::protocol::asset(0, VESTS_SYMBOL);
 
-  const auto& dgpo = db.get_dynamic_global_properties();
-
-  hive::protocol::asset vests = dgpo.total_vesting_shares;
-  hive::protocol::asset hive = dgpo.total_vesting_fund_hive;
-
-
-  auto alpha_x = new_price.quote.amount * hive.amount;
-  auto alpha_y = new_price.base.amount * vests.amount;
-
-  hive::protocol::asset hive_modifier(0, HIVE_SYMBOL);
-  hive::protocol::asset vest_modifier(0, VESTS_SYMBOL);
+  auto alpha_x = new_price.quote.amount * total_hive.amount;
+  auto alpha_y = new_price.base.amount * total_vests.amount;
 
   if (alpha_x >= alpha_y)
   {
     /// Means that alpha is >= 1, so we will be increasing vests pool
-    fc::uint128_t a = vests.amount.value;
+    fc::uint128_t a = total_vests.amount.value;
     a *= (alpha_x - alpha_y).value;
     a /= alpha_y.value;
     vest_modifier = hive::protocol::asset(fc::uint128_to_int64(a), VESTS_SYMBOL);
@@ -212,11 +206,23 @@ void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_pr
   else
   {
     /// Means that alpha is < 1, so we will be increasing Hive pool
-    fc::uint128_t b = hive.amount.value;
+    fc::uint128_t b = total_hive.amount.value;
     b *= (alpha_y - alpha_x).value;
     b /= alpha_x.value;
     hive_modifier = hive::protocol::asset(fc::uint128_to_int64(b), HIVE_SYMBOL);
   }
+}
+
+void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_price)
+{
+  hive::protocol::asset vest_modifier;
+  hive::protocol::asset hive_modifier;
+
+  chain::database& db = database();
+
+  const auto& dgpo = db.get_dynamic_global_properties();
+
+  calculate_modifiers_according_to_new_price( new_price, dgpo.total_vesting_fund_hive, dgpo.total_vesting_shares, hive_modifier, vest_modifier );
 
   ilog("vest_modifier=${vest_modifier}, hive_modifier=${hive_modifier}", (vest_modifier)(hive_modifier));
 
