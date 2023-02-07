@@ -64,6 +64,9 @@ void uint128_full_product( const uint128_t& a, const uint128_t& b, uint128_t& re
 
 uint8_t uint128_popcount( const uint128_t& u );
 
+uint8_t uint128_find_msb( const uint128_t& u );
+uint64_t uint128_approx_sqrt( const uint128_t& x );
+
 class variant;
 
 void to_variant( const uint128_t& var,  variant& vo );

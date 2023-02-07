@@ -464,49 +464,18 @@ BOOST_AUTO_TEST_CASE( adjust_balance_test )
   BOOST_REQUIRE( db->get_balance( "alice", HBD_SYMBOL ) == asset( 0, HBD_SYMBOL ) );
 }
 
-uint8_t find_msb( const uint128_t& u )
-{
-  uint64_t x;
-  uint8_t places;
-  x      = (fc::uint128_low_bits(u) ? fc::uint128_low_bits(u) : 1);
-  places = (fc::uint128_high_bits(u) ?   64 : 0);
-  x      = (fc::uint128_high_bits(u) ? fc::uint128_high_bits(u) : x);
-  return uint8_t( boost::multiprecision::detail::find_msb(x) + places );
-}
-
-uint64_t approx_sqrt( const uint128_t& x )
-{
-  if( x == 0 )
-    return 0;
-
-  uint8_t msb_x = find_msb(x);
-  uint8_t msb_z = msb_x >> 1;
-
-  uint128_t msb_x_bit = uint128_t(1) << msb_x;
-  uint64_t  msb_z_bit = uint64_t (1) << msb_z;
-
-  uint128_t mantissa_mask = msb_x_bit - 1;
-  uint128_t mantissa_x = x & mantissa_mask;
-  uint64_t mantissa_z_hi = (msb_x & 1) ? msb_z_bit : 0;
-  uint64_t mantissa_z_lo = fc::uint128_low_bits(mantissa_x >> (msb_x - msb_z));
-  uint64_t mantissa_z = (mantissa_z_hi | mantissa_z_lo) >> 1;
-  uint64_t result = msb_z_bit | mantissa_z;
-
-  return result;
-}
-
 BOOST_AUTO_TEST_CASE( curation_weight_test )
 {
   fc::uint128_t rshares = 856158;
   fc::uint128_t s = fc::to_uint128( 0, 2000000000000ull );
-  fc::uint128_t sqrt = approx_sqrt( rshares + 2 * s );
+  fc::uint128_t sqrt = fc::uint128_approx_sqrt( rshares + 2 * s );
   uint64_t result = fc::uint128_to_uint64( rshares / sqrt );
 
   BOOST_REQUIRE( fc::uint128_to_uint64(sqrt) == 2002250 );
   BOOST_REQUIRE( result == 0 );
 
   rshares = 0;
-  sqrt = approx_sqrt( rshares + 2 * s );
+  sqrt = fc::uint128_approx_sqrt( rshares + 2 * s );
   result = fc::uint128_to_uint64( rshares / sqrt );
 
   BOOST_REQUIRE( fc::uint128_to_uint64(sqrt) == 2002250 );
