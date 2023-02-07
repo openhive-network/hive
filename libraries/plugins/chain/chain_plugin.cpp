@@ -204,7 +204,13 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_processing_transactions;
     fc::microseconds cumulative_time_waiting_for_work;
 
-    fc::optional<fc::time_point> last_myriad_time; // for sync progress
+    struct sync_progress_data
+    {
+      fc::time_point last_myriad_time;
+      uint64_t       total_block_size;
+      uint64_t       total_tx_count;
+    };
+    fc::optional<sync_progress_data> sync_progress;
 
     class write_request_visitor;
 };
@@ -1022,26 +1028,34 @@ void chain_plugin::connection_count_changed(uint32_t peer_count)
 
 bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >& block_ctrl, bool currently_syncing )
 {
-  const signed_block& block = block_ctrl->get_full_block()->get_block();
+  const full_block_type* full_block = block_ctrl->get_full_block().get();
+  const signed_block& block = full_block->get_block();
+  if( my->sync_progress )
+  {
+    my->sync_progress->total_block_size += full_block->get_uncompressed_block_size();
+    my->sync_progress->total_tx_count += block.transactions.size();
+  }
   if (currently_syncing && block.block_num() % 10000 == 0)
   {
     fc::time_point now = fc::time_point::now();
-    if (my->last_myriad_time)
+    if (my->sync_progress)
     {
-      fc::microseconds duration = now - *my->last_myriad_time;
+      fc::microseconds duration = now - my->sync_progress->last_myriad_time;
       float microseconds_per_block = (float)duration.count() / 10000.f;
       std::ostringstream microseconds_per_block_stream;
       microseconds_per_block_stream << std::setprecision(2) << std::fixed << microseconds_per_block;
-      ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p} --- ${microseconds_per_block}µs/block",
-           ("t", block.timestamp)("n", block.block_num())("p", block.witness)
-           ("microseconds_per_block", microseconds_per_block_stream.str()));
+      ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p} --- ${microseconds_per_block}µs/block, avg. size ${s}, avg. tx count ${c}",
+           ("t", block.timestamp)("n", block.block_num())("p", block.witness)("microseconds_per_block", microseconds_per_block_stream.str())
+           ("s", (my->sync_progress->total_block_size+5000)/10000)("c", (my->sync_progress->total_tx_count+5000)/10000));
     }
     else
+    {
       ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p}",
            ("t", block.timestamp)("n", block.block_num())("p", block.witness));
+    }
 #define DISPLAY_SYNC_SPEED
 #ifdef DISPLAY_SYNC_SPEED
-    my->last_myriad_time = now;
+    my->sync_progress = detail::chain_plugin_impl::sync_progress_data{ now, 0, 0 };
 #endif
   }
 
