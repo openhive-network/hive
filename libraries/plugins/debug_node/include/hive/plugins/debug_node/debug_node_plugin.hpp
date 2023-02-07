@@ -118,6 +118,10 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     void save_debug_updates( fc::mutable_variant_object& target );
     void load_debug_updates( const fc::variant_object& target );
 
+    void calculate_modifiers_according_to_new_price(const hive::protocol::price& new_price,
+                                                    const hive::protocol::asset& total_hive, const hive::protocol::asset& total_vests,
+                                                    hive::protocol::asset& hive_modifier, hive::protocol::asset& vest_modifier ) const;
+
     bool logging = true;
 
     bool allow_throw_exception = false;
