@@ -1776,7 +1776,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   _db.modify( voter, [&]( account_object& a )
   {
-    util::update_manabar( dgpo, a, _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ), _db.head_block_num() > HIVE_HF_21_STALL_BLOCK );
+    util::update_manabar( dgpo, a );
   });
 
   if ( _db.has_hardfork( HIVE_HARDFORK_0_21__3004 ) )
@@ -2800,7 +2800,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
     {
-      util::update_manabar( _db.get_dynamic_global_properties(), a, _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ), _db.head_block_num() > HIVE_HF_21_STALL_BLOCK, op.reward_vests.amount.value );
+      util::update_manabar( _db.get_dynamic_global_properties(), a, op.reward_vests.amount.value );
     }
 
     a.vesting_shares += op.reward_vests;
@@ -2909,7 +2909,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
     _db.modify( delegator, [&]( account_object& a )
     {
-      util::update_manabar( gpo, a, _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ), _db.head_block_num() > HIVE_HF_21_STALL_BLOCK );
+      util::update_manabar( gpo, a );
     });
 
     available_shares = asset( delegator.voting_manabar.current_mana, VESTS_SYMBOL );
@@ -3012,7 +3012,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        util::update_manabar( gpo, a, _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ), _db.head_block_num() > HIVE_HF_21_STALL_BLOCK, op.vesting_shares.amount.value );
+        util::update_manabar( gpo, a, op.vesting_shares.amount.value );
       }
 
       a.received_vesting_shares += op.vesting_shares;
@@ -3054,7 +3054,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        util::update_manabar( gpo, a, _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ), _db.head_block_num() > HIVE_HF_21_STALL_BLOCK, delta.amount.value );
+        util::update_manabar( gpo, a, delta.amount.value );
       }
 
       a.received_vesting_shares += delta;
@@ -3087,7 +3087,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
       {
-        util::update_manabar( gpo, a, _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ), _db.head_block_num() > HIVE_HF_21_STALL_BLOCK );
+        util::update_manabar( gpo, a );
       }
 
       a.received_vesting_shares -= delta;

@@ -1750,12 +1750,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
       {
         modify( to_account, [&]( account_object& a )
         {
-          util::update_manabar(
-            cprops,
-            a,
-            has_hardfork( HIVE_HARDFORK_0_21__3336 ),
-            head_block_num() > HIVE_HF_21_STALL_BLOCK,
-            new_vesting.amount.value );
+          util::update_manabar( cprops, a, new_vesting.amount.value );
         });
       }
 
@@ -2327,7 +2322,7 @@ void database::clear_account( const account_object& account )
 
       modify( delegatee, [&]( account_object& a )
       {
-        util::update_manabar( cprops, a, true, true );
+        util::update_manabar( cprops, a );
         a.received_vesting_shares -= delegation.get_vesting();
         freed_delegations += delegation.get_vesting();
 
@@ -2366,7 +2361,7 @@ void database::clear_account( const account_object& account )
 
     modify( account, [&]( account_object& a )
     {
-      util::update_manabar( cprops, a, true, true );
+      util::update_manabar( cprops, a );
       a.voting_manabar.current_mana = 0;
       a.downvote_manabar.current_mana = 0;
       a.vesting_shares = asset( 0, VESTS_SYMBOL );
@@ -5965,12 +5960,7 @@ void database::clear_expired_delegations()
     {
       if( has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        util::update_manabar(
-          gpo,
-          a,
-          has_hardfork( HIVE_HARDFORK_0_21__3336 ),
-          head_block_num() > HIVE_HF_21_STALL_BLOCK,
-          itr->get_vesting().amount.value );
+        util::update_manabar( gpo, a, itr->get_vesting().amount.value );
       }
 
       a.delegated_vesting_shares -= itr->get_vesting();

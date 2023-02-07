@@ -123,7 +123,7 @@ int64_t get_effective_vesting_shares( const T& account )
 }
 
 template< typename PropType, typename AccountType >
-void update_manabar( const PropType& gpo, AccountType& account, bool downvote_mana = false, bool check_overflow = true, int64_t new_mana = 0 )
+void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana = 0 )
 {
   auto effective_vests = util::get_effective_vesting_shares( account );
   try {
@@ -132,24 +132,25 @@ void update_manabar( const PropType& gpo, AccountType& account, bool downvote_ma
   account.voting_manabar.use_mana( -new_mana );
   } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
 
-  FC_TODO( "This hardfork check should not be needed. Remove after HF21 if that is the case." );
-  // This is used as a hardfork check. Can be replaced with if( gpo.downvote_pool_percent ). Leaving as a hard check to be safe until after HF 21
   try{
-  if( downvote_mana )
+  if( gpo.downvote_pool_percent )
   {
     manabar_params params;
     params.regen_time = HIVE_VOTING_MANA_REGENERATION_SECONDS;
 
-    if( check_overflow )
+#ifdef IS_TEST_NET //will be needed for ICEBERG as well
+    if( true )
+#else //mainnet and regular mirrornet
+    if( gpo.head_block_number > HIVE_HF_21_STALL_BLOCK )
+#endif
     {
       params.max_mana = fc::uint128_to_int64( ( uint128_t( effective_vests ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
     }
     else
     {
-      FC_TODO( "Cleanup once we have verified the overflow has not permanently made it in to the chain" );
-      uint128_t numerator = effective_vests * gpo.downvote_pool_percent;
+      uint128_t numerator = uint128_t( effective_vests ) * gpo.downvote_pool_percent;
       if( fc::uint128_high_bits(numerator) != 0 )
-        elog( "NOTIFYALERT! max mana overflow made it in to the chain" );
+        dlog( "NOTIFYALERT! max mana overflow made it in to the chain at block ${b}", ( "b", gpo.head_block_number ) );
 
       params.max_mana = ( effective_vests * gpo.downvote_pool_percent ) / HIVE_100_PERCENT;
     }
