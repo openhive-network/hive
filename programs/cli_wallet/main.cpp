@@ -324,10 +324,10 @@ int main( int argc, char** argv )
         c->set_session_data( wsc );
       });
       _websocket_server->on_message([&]( fc::future<void>& f ){
-          ++rpc_server_transactions;
-          f.wait();
-          --rpc_server_transactions;
-          rpc_server_connections.notify_all();
+        ++rpc_server_transactions;
+        f.wait();
+        --rpc_server_transactions;
+        rpc_server_connections.notify_all();
       });
       ilog( "Listening for incoming RPC requests on ${p}", ("p", options.at("rpc-endpoint").as<string>() ));
       _websocket_server->listen( fc::ip::endpoint::from_string(options.at("rpc-endpoint").as<string>()) );
@@ -347,10 +347,10 @@ int main( int argc, char** argv )
         c->set_session_data( wsc );
       });
       _websocket_tls_server->on_message([&]( fc::future<void>& f ){
-          ++rpc_server_transactions;
-          f.wait();
-          --rpc_server_transactions;
-          rpc_server_connections.notify_all();
+        ++rpc_server_transactions;
+        f.wait();
+        --rpc_server_transactions;
+        rpc_server_connections.notify_all();
       });
       ilog( "Listening for incoming TLS RPC requests on ${p}", ("p", options.at("rpc-tls-endpoint").as<string>() ));
       _websocket_tls_server->listen( fc::ip::endpoint::from_string(options.at("rpc-tls-endpoint").as<string>()) );

@@ -866,7 +866,7 @@ struct impacted_balance_collector
     exclude_from_used_operations<T>(used_operations);
   }
 
-  hive::app::stringset used_operations;  
+  hive::app::stringset used_operations;
 };
 
 

@@ -441,7 +441,7 @@ struct api_comment_object
   account_name_type root_author;
   string            root_permlink;
 
-  asset             max_accepted_payout = HBD_asset(); 
+  asset             max_accepted_payout = HBD_asset();
   uint16_t          percent_hbd = 0;
   bool              allow_replies = false;
   bool              allow_votes = false;
