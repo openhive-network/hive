@@ -83,15 +83,6 @@ template<> struct get_typename<uint128_t> { static const char* name() { return "
 
 namespace std
 {
-  template<>
-  struct hash<fc::uint128_t>
-  {
-    size_t operator()( const fc::uint128_t& s )const
-    {
-      return fc::city_hash_size_t((char*)&s, sizeof(s));
-    }
-  };
-
   string to_string( const fc::uint128_t& u );
 }
 
