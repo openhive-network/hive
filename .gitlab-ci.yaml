@@ -710,14 +710,28 @@ functional_api_tests:
   tags:
     - public-runner-docker
 
-build_and_publish_image:
+# as long as the instance image adds nothing more than
+# exposed ports we might as well build it for every pipeline
+prepare_docker_image_for_publishing:
   stage: publish
   extends: .docker_image_builder_job
   # Image specified in .docker_image_builder_job has a bug that prevents full access to BuildKit capabilities
   image: registry.gitlab.syncad.com/hive/common-ci-configuration/docker-builder:0a8b4a4d6098c3e4087a58a61622ffb0817ecb39
-  dependencies: []
+  needs: 
+    - prepare_hived_image
   script:
-    - scripts/ci-helpers/build_and_publish_instance.sh
+    - scripts/ci-helpers/build_instance4publishing.sh
+  tags:
+    - public-runner-docker  
+
+publish_docker_image:
+  stage: publish
+  extends: .docker_image_builder_job
+  needs: 
+    - prepare_hived_image
+    - prepare_docker_image_for_publishing
+  script:
+    - scripts/ci-helpers/publish_instance.sh
   tags:
     - public-runner-docker  
   rules:
