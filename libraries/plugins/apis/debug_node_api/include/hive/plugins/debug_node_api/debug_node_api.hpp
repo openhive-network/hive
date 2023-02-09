@@ -36,9 +36,9 @@ struct debug_generate_blocks_until_args
 
 typedef debug_push_blocks_return debug_generate_blocks_until_return;
 
-typedef void_type debug_pop_block_args;
+typedef void_type debug_get_head_block_args;
 
-struct debug_pop_block_return
+struct debug_get_head_block_return
 {
   fc::optional< protocol::signed_block > block;
 };
@@ -162,10 +162,7 @@ class debug_node_api
       */
       (debug_generate_blocks_until)
 
-      /*
-      * Pop a block from the blockchain, returning it
-      */
-      (debug_pop_block)
+      (debug_get_head_block)
       (debug_get_witness_schedule)
       (debug_get_future_witness_schedule)
       (debug_get_hardfork_property_object)
@@ -192,7 +189,7 @@ FC_REFLECT( hive::plugins::debug_node::debug_push_blocks_return,
 FC_REFLECT( hive::plugins::debug_node::debug_generate_blocks_until_args,
         (debug_key)(head_block_time)(generate_sparsely) )
 
-FC_REFLECT( hive::plugins::debug_node::debug_pop_block_return,
+FC_REFLECT( hive::plugins::debug_node::debug_get_head_block_return,
         (block) )
 
 FC_REFLECT( hive::plugins::debug_node::api_witness_schedule_object,
