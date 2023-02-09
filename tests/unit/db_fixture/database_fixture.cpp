@@ -43,7 +43,16 @@ autoscope set_mainnet_cashout_values( bool auto_reset )
   configuration_data.set_cashout_related_values(
     0, 60 * 60 * 24, 60 * 60 * 24 * 2, 60 * 60 * 24 * 7, 60 * 60 * 12 );
   if( auto_reset )
-    return autoscope([](){ configuration_data.reset(); });
+    return autoscope([](){ configuration_data.reset_cashout_values(); });
+  else
+    return autoscope([](){});
+}
+
+autoscope set_mainnet_feed_values( bool auto_reset )
+{
+  configuration_data.set_feed_related_values( 60*60/3, 60*60*24*7 );
+  if( auto_reset )
+    return autoscope([](){ configuration_data.reset_feed_values(); });
   else
     return autoscope([](){});
 }
@@ -242,7 +251,7 @@ curation_database_fixture::curation_database_fixture( uint16_t shared_file_size_
 
 curation_database_fixture::~curation_database_fixture()
 {
-  configuration_data.reset();
+  configuration_data.reset_cashout_values();
 }
 
 cluster_database_fixture::cluster_database_fixture( uint16_t _shared_file_size_in_mb )
@@ -253,7 +262,7 @@ cluster_database_fixture::cluster_database_fixture( uint16_t _shared_file_size_i
 
 cluster_database_fixture::~cluster_database_fixture()
 {
-  configuration_data.reset();
+  configuration_data.reset_cashout_values();
 }
 
 live_database_fixture::live_database_fixture()
