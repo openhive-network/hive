@@ -5,7 +5,7 @@
 
 #define HIVE_HARDFORK_1_27_VERSION hive::protocol::hardfork_version( 1, 27 )
 
-// fix scheduling of timeshare witnesses to restore pre-hf26 behavior 
+// fix scheduling of timeshare witnesses to restore pre-hf26 behavior
 #define HIVE_HARDFORK_1_27_FIX_TIMESHARE_WITNESS_SCHEDULING (HIVE_HARDFORK_1_27)
 
 #endif
