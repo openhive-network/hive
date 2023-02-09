@@ -27,7 +27,7 @@ class debug_node_api_impl
       (debug_push_blocks)
       (debug_generate_blocks)
       (debug_generate_blocks_until)
-      (debug_pop_block)
+      (debug_get_head_block)
       (debug_get_witness_schedule)
       (debug_get_future_witness_schedule)
       (debug_get_hardfork_property_object)
@@ -109,7 +109,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks_until )
   return { _debug_node.debug_generate_blocks_until( args.debug_key, args.head_block_time, args.generate_sparsely, chain::database::skip_nothing, false ) };
 }
 
-DEFINE_API_IMPL( debug_node_api_impl, debug_pop_block )
+DEFINE_API_IMPL( debug_node_api_impl, debug_get_head_block )
 {
   return { _db.fetch_block_by_number(_db.head_block_num())->get_block() }; 
 }
@@ -181,7 +181,7 @@ DEFINE_LOCKLESS_APIS( debug_node_api,
   (debug_push_blocks)
   (debug_generate_blocks)
   (debug_generate_blocks_until)
-  (debug_pop_block)
+  (debug_get_head_block)
   (debug_get_witness_schedule)
   (debug_get_future_witness_schedule)
   (debug_get_hardfork_property_object)
