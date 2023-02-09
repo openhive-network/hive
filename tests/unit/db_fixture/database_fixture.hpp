@@ -227,10 +227,15 @@ struct autoscope
   autoscope( const std::function< void() >& f ) : finalizer( f ) {}
   ~autoscope() { finalizer(); }
 };
-//applies HF25 values related to comment cashout instead those default (short) for testnet
-//call configuration_data.reset() manually at the end of test (f.e. in fixture destructor) if
+//applies HF25 values related to comment cashout instead of those default (short) for testnet
+//call configuration_data.reset_cashout_values() manually at the end of test (f.e. in fixture destructor) if
 //you pass false to auto_reset, otherwise the setting will persist influencing other tests
 autoscope set_mainnet_cashout_values( bool auto_reset = true );
+
+//applies HF25 values related to witness feed instead of those default (short) for testnet
+//call configuration_data.reset_feed_values() manually at the end of test (f.e. in fixture destructor) if
+//you pass false to auto_reset, otherwise the setting will persist influencing other tests
+autoscope set_mainnet_feed_values( bool auto_reset = true );
 
 //common code for preparing arguments and data path
 //caller needs to register plugins and call initialize() on given application object

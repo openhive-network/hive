@@ -3494,6 +3494,10 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: collateralized_convert_apply" );
+    
+    // Testing mainnet convert values here, which are dependent on feed values.
+    auto auto_reset( set_mainnet_feed_values() );
+
     ACTORS( (alice)(bob) );
 
     generate_block();
