@@ -59,87 +59,63 @@ BOOST_AUTO_TEST_CASE( debug_node_plugin_vests_hive_evaluation )
 
 BOOST_AUTO_TEST_CASE( debug_node_plugin_state_modification )
 {
-  auto _dgpo_preparation = [ this ](  share_type total_hive, share_type total_vests,
-                                      hive::protocol::asset& current_supply, hive::protocol::asset& virtual_supply )
+  auto _check_state = [ this ]( share_type price_hive_base, share_type price_vests_quote )
   {
     generate_block();
-
     validate_database();
 
-    auto& dgpo = db->get_dynamic_global_properties();
+    auto& _old_dgpo = db->get_dynamic_global_properties();
 
     char _buffer[500];
 
-    sprintf( _buffer, "dgpo.total_vesting_fund_hive (%ld) dgpo.total_vesting_shares (%ld)", dgpo.total_vesting_fund_hive.amount.value, dgpo.total_vesting_shares.amount.value );
+    sprintf( _buffer, "dgpo.total_vesting_fund_hive (%ld) dgpo.total_vesting_shares (%ld)", _old_dgpo.total_vesting_fund_hive.amount.value, _old_dgpo.total_vesting_shares.amount.value );
     BOOST_TEST_MESSAGE( _buffer );
 
-    db_plugin->debug_update( [&]( database& db )
-    {
-      db.modify( dgpo, [ total_hive, total_vests ]( hive::chain::dynamic_global_property_object& p )
-      {
-        auto _total_hive  = hive::protocol::asset( total_hive, HIVE_SYMBOL );
-        auto _total_vests = hive::protocol::asset( total_vests, VESTS_SYMBOL );
+    hive::protocol::asset _old_current_supply = _old_dgpo.current_supply;
+    hive::protocol::asset _old_virtual_supply = _old_dgpo.virtual_supply;
 
-        p.total_vesting_fund_hive  += _total_hive;
-        p.total_vesting_shares     += _total_vests;
-
-        p.current_supply  += _total_hive;
-        p.virtual_supply  += _total_hive;
-      } );
-    } );
-
-    validate_database();
-
-    current_supply  = dgpo.current_supply;
-    virtual_supply  = dgpo.virtual_supply;
-  };
-
-  auto _check_state = [ this ]( share_type price_hive_base, share_type price_vests_quote,
-                                const hive::protocol::asset& current_supply, const hive::protocol::asset& virtual_supply )
-  {
-    auto& dgpo = db->get_dynamic_global_properties();
-
-    hive::protocol::asset _old_total_hive  = dgpo.total_vesting_fund_hive;
-    hive::protocol::asset _old_total_vests = dgpo.total_vesting_shares;
+    hive::protocol::asset _old_total_hive  = _old_dgpo.total_vesting_fund_hive;
+    hive::protocol::asset _old_total_vests = _old_dgpo.total_vesting_shares;
     hive::protocol::asset _hive_modifier;
     hive::protocol::asset _vest_modifier;
     hive::protocol::price _new_price = hive::protocol::price( hive::protocol::asset( price_hive_base, HIVE_SYMBOL ), hive::protocol::asset( price_vests_quote, VESTS_SYMBOL ) );
 
-    db_plugin->calculate_modifiers_according_to_new_price( _new_price, dgpo.total_vesting_fund_hive, dgpo.total_vesting_shares, _hive_modifier, _vest_modifier );
+    db_plugin->calculate_modifiers_according_to_new_price( _new_price, _old_dgpo.total_vesting_fund_hive, _old_dgpo.total_vesting_shares, _hive_modifier, _vest_modifier );
 
     db_plugin->debug_set_vest_price( _new_price );
 
-    char _buffer[500];
+    auto& _dgpo = db->get_dynamic_global_properties();
 
-    sprintf( _buffer, "dgpo.current_supply (%ld) == current_supply (%ld) + _hive_modifier (%ld)", dgpo.current_supply.amount.value, current_supply.amount.value, _hive_modifier.amount.value );
+    sprintf( _buffer, "dgpo.current_supply (%ld) == _old_current_supply (%ld) + _hive_modifier (%ld)", _dgpo.current_supply.amount.value, _old_current_supply.amount.value, _hive_modifier.amount.value );
     BOOST_TEST_MESSAGE( _buffer );
 
-    sprintf( _buffer, "dgpo.virtual_supply (%ld) == virtual_supply (%ld) + _hive_modifier (%ld)", dgpo.virtual_supply.amount.value, virtual_supply.amount.value, _hive_modifier.amount.value );
+    sprintf( _buffer, "dgpo.virtual_supply (%ld) == _old_virtual_supply (%ld) + _hive_modifier (%ld)", _dgpo.virtual_supply.amount.value, _old_virtual_supply.amount.value, _hive_modifier.amount.value );
     BOOST_TEST_MESSAGE( _buffer );
 
-    sprintf( _buffer, "dgpo.total_vesting_fund_hive (%ld) == _old_total_hive (%ld) + _hive_modifier (%ld)", dgpo.total_vesting_fund_hive.amount.value, _old_total_hive.amount.value, _hive_modifier.amount.value );
+    sprintf( _buffer, "dgpo.total_vesting_fund_hive (%ld) == _old_total_hive (%ld) + _hive_modifier (%ld)", _dgpo.total_vesting_fund_hive.amount.value, _old_total_hive.amount.value, _hive_modifier.amount.value );
     BOOST_TEST_MESSAGE( _buffer );
 
-    sprintf( _buffer, "dgpo.total_vesting_shares (%ld) == _old_total_vests (%ld) + _vest_modifier (%ld)", dgpo.total_vesting_shares.amount.value, _old_total_vests.amount.value, _vest_modifier.amount.value );
+    sprintf( _buffer, "dgpo.total_vesting_shares (%ld) == _old_total_vests (%ld) + _vest_modifier (%ld)", _dgpo.total_vesting_shares.amount.value, _old_total_vests.amount.value, _vest_modifier.amount.value );
     BOOST_TEST_MESSAGE( _buffer );
 
-    BOOST_CHECK( dgpo.current_supply          == current_supply + _hive_modifier );
-    BOOST_CHECK( dgpo.virtual_supply          == virtual_supply + _hive_modifier );
+    BOOST_CHECK( _dgpo.current_supply          == _old_current_supply + _hive_modifier );
+    BOOST_CHECK( _dgpo.virtual_supply          == _old_virtual_supply + _hive_modifier );
 
-    BOOST_CHECK( dgpo.total_vesting_fund_hive == _old_total_hive + _hive_modifier );
-    BOOST_CHECK( dgpo.total_vesting_shares    == _old_total_vests + _vest_modifier );
+    BOOST_CHECK( _dgpo.total_vesting_fund_hive == _old_total_hive + _hive_modifier );
+    BOOST_CHECK( _dgpo.total_vesting_shares    == _old_total_vests + _vest_modifier );
 
     generate_block();
-
     validate_database();
   };
 
   {
-    hive::protocol::asset _current_supply;
-    hive::protocol::asset _virtual_supply;
+    BOOST_TEST_MESSAGE("hive_modifier == 0 and vest_modifier > 0");
+    _check_state( 1/*price_hive_base*/, 2'000'000'000/*price_vests_quote*/ );
+  }
 
-    _dgpo_preparation(0/*total_hive*/, 0/*total_vests*/, _current_supply, _virtual_supply );
-    _check_state( 1/*price_hive_base*/, 2'000'000'000/*price_vests_quote*/, _current_supply, _virtual_supply );
+  {
+    BOOST_TEST_MESSAGE("hive_modifier > 0 and vest_modifier == 0");
+    _check_state( 1/*price_hive_base*/, 10'000/*price_vests_quote*/ );
   }
 
 }
