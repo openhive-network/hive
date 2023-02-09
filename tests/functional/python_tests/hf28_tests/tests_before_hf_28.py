@@ -1,10 +1,14 @@
+"""
+Tests showing bugs. Each test has an equivalent after fix - there is currently a skip.
+After the repair, remove the @pytest.mark.skip marks.
+"""
 from hive_local_tools import run_for
 from hive_local_tools.functional.python.hf28 import create_proposal
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT, TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 
 
 @run_for("testnet")
-def test_if_proposal_votes_were_removed_after_declining_voting_rights(prepare_environment):
+def test_if_proposal_votes_were_removed_after_declining_voting_rights_before_hf_28(prepare_environment):
     node, wallet = prepare_environment
     create_proposal(wallet)
 
@@ -17,7 +21,7 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights(prepare_en
 
 
 @run_for("testnet")
-def test_update_proposal_votes_with_the_account_that_has_declining_voting_rights(prepare_environment):
+def test_update_proposal_votes_with_the_account_that_has_declining_voting_rights_before_hf_28(prepare_environment):
     node, wallet = prepare_environment
     create_proposal(wallet)
 
@@ -29,7 +33,7 @@ def test_update_proposal_votes_with_the_account_that_has_declining_voting_rights
 
 
 @run_for("testnet")
-def test_vote_for_proposal_when_decline_voting_rights_is_being_executed(prepare_environment):
+def test_vote_for_proposal_when_decline_voting_rights_is_being_executed_before_before_hf_28(prepare_environment):
     node, wallet = prepare_environment
     create_proposal(wallet)
 
@@ -43,7 +47,7 @@ def test_vote_for_proposal_when_decline_voting_rights_is_being_executed(prepare_
 
 
 @run_for("testnet")
-def test_declining_voting_rights_more_than_once(prepare_environment):
+def test_declining_voting_rights_more_than_once_before_hf_28(prepare_environment):
     node, wallet = prepare_environment
 
     wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)

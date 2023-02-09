@@ -116,7 +116,7 @@ def get_head_block_time(node):
 
 
 @run_for("testnet")
-def test_wypłaty_za_komentarz (node):
+def test_wyplaty_za_komentarz (node):
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=100_000_000)
     wallet.api.set_voting_proxy("alice", "initminer")
