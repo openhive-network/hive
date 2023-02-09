@@ -7,7 +7,7 @@
 set -e
 
 docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-#docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
+docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
 
 # pull the instance image for appropriate commit
 INSTANCE_TAG="${CI_REGISTRY_IMAGE}/instance:instance-${HIVED_IMAGE_NAME_COMMIT}"
@@ -20,4 +20,4 @@ docker tag "$INSTANCE_TAG" "hiveio/hive:${CI_COMMIT_TAG}"
 docker images
 
 docker push "${CI_REGISTRY_IMAGE}/instance:instance-${CI_COMMIT_TAG}"
-#docker push "hiveio/hive:${CI_COMMIT_TAG}"
+docker push "hiveio/hive:${CI_COMMIT_TAG}"
