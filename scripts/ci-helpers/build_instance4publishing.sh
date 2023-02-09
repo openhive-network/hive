@@ -24,6 +24,8 @@ docker buildx build --progress=plain --target=instance \
   --build-arg BUILD_HIVE_TESTNET="OFF" \
   --build-arg HIVE_CONVERTER_BUILD="OFF" \
   --build-arg BUILD_IMAGE_TAG="$HIVED_IMAGE_NAME_COMMIT" \
+  --cache-from=type=registry,ref="$TAG" \
+  --cache-to=type=inline \
   --tag "$TAG" \
   --file "Dockerfile.$HIVED_IMAGE_NAME_COMMIT" .
 
