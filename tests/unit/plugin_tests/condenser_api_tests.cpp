@@ -366,6 +366,12 @@ void do_the_testing( condenser_api_fixture& caf, tag_set_t& expected_operations 
       BOOST_REQUIRE_EQUAL( op_tx.transaction_id, ah_op_tx.transaction_id );
       BOOST_REQUIRE_EQUAL( op_tx.block_num, ah_op_tx.block_num );
       BOOST_REQUIRE_EQUAL( op_tx.transaction_num, ah_op_tx.transaction_num );
+
+      // Do additional checks of condenser variant
+      // Too few arguments
+      BOOST_REQUIRE_THROW( caf.condenser_api->get_transaction( condenser_api::get_transaction_args() ), fc::assert_exception );
+      // Too many arguments
+      BOOST_REQUIRE_THROW( caf.condenser_api->get_transaction( condenser_api::get_transaction_args(2, fc::variant(tx_hash)) ), fc::assert_exception );
     }
   };
 
