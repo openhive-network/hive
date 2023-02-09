@@ -1,6 +1,7 @@
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
 #include <hive/plugins/witness/block_producer.hpp>
+#include <hive/plugins/rc/rc_plugin.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/witness_objects.hpp>
@@ -228,13 +229,19 @@ void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_pr
 
   debug_update([&dgpo, &vest_modifier, &hive_modifier](chain::database& db)
     {
-      /// If we increased vests pool, we need to put them to initminer account to avoid validate_invariants failure 
-      const hive::chain::account_object& miner_account = db.get_account(HIVE_INIT_MINER_NAME);
+      auto _initminer_account_name = HIVE_INIT_MINER_NAME;
+      auto _update_initminer = [ &db, &vest_modifier, &_initminer_account_name ]()
+      {
+        /// If we increased vests pool, we need to put them to initminer account to avoid validate_invariants failure 
+        const hive::chain::account_object& miner_account = db.get_account( _initminer_account_name );
 
-      db.modify(miner_account, [&vest_modifier](hive::chain::account_object& account)
+        db.modify(miner_account, [&vest_modifier](hive::chain::account_object& account)
         {
           account.vesting_shares += vest_modifier;
         });
+      };
+      const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
+      rc_plugin.update_rc_for_custom_action( _update_initminer, _initminer_account_name );
 
       db.modify(dgpo, [&vest_modifier, &hive_modifier](hive::chain::dynamic_global_property_object& p)
         {

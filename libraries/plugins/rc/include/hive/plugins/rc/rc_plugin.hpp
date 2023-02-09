@@ -51,6 +51,8 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 
     void validate_database();
 
+    void update_rc_for_custom_action( std::function<void()>&& callback, const protocol::account_name_type& account_name ) const;
+
     enum class report_type
     {
       NONE, //no report

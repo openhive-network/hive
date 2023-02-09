@@ -100,6 +100,8 @@ class rc_plugin_impl
     bool has_expired_delegation() const;
     void handle_expired_delegations();
 
+    void update_rc_for_custom_action( std::function<void()>&& callback, const account_name_type& account_name ) const;
+
     database&                     _db;
     rc_plugin&                    _self;
 
@@ -1409,6 +1411,17 @@ void rc_plugin_impl::handle_expired_delegations()
   while( !obj_perf.done() && expired_it != expired_idx.end() );
 }
 
+void rc_plugin_impl::update_rc_for_custom_action( std::function<void()>&& callback, const protocol::account_name_type& account_name ) const
+{
+  pre_apply_operation_visitor _pre_vtor( _db );
+  _pre_vtor.regenerate( account_name );
+
+  callback();
+
+  post_apply_operation_visitor _post_vtor( _db );
+  _post_vtor.update_after_vest_change( account_name );
+}
+
 } // detail
 
 rc_plugin::rc_plugin() {}
@@ -1545,6 +1558,11 @@ bool rc_plugin::is_rc_stats_enabled() const
 void rc_plugin::validate_database()
 {
   my->validate_database();
+}
+
+void rc_plugin::update_rc_for_custom_action( std::function<void()>&& callback, const protocol::account_name_type& account_name ) const
+{
+  my->update_rc_for_custom_action( std::move( callback ), account_name );
 }
 
 fc::variant_object rc_plugin::get_report( report_type rt, bool pending ) const
