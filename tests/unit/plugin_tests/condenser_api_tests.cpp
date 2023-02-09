@@ -335,16 +335,20 @@ void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_retu
   }
 }
 
-void do_the_testing( condenser_api_fixture& caf, tag_set_t& expected_operations )
+void do_the_testing( condenser_api_fixture& caf, tag_set_t& expected_operations, fc::optional<uint32_t> specific_block )
 {
-  // The tested operations will go into next head block.
-  uint32_t block_num = caf.db->head_block_num() +1;
-  ilog("block #${num}", ("num", block_num));
+  uint32_t current_block_num = caf.db->head_block_num();
+  uint32_t tested_block_num = specific_block.valid() ?
+    *specific_block : // Operations are expected to show up in specific block, or ...
+    current_block_num + 1; // ... recently inserted operations will go into next head block.
 
-  // Let's make the block irreversible (see below why).
-  // Note that producer_reward_operation is put in every generated block.
-  for(int i = 0; i<= 21; ++i)
+  // Let's make the block irreversible
+  uint32_t reversibility_gap = 22;
+  for( ; current_block_num <= tested_block_num + reversibility_gap ; ++current_block_num )
     caf.generate_block();
+
+  uint32_t block_num = tested_block_num;
+  ilog("block #${num}", ("num", block_num));
 
   // Compare operations & their transactions.
   auto transaction_comparator = [&](const hive::protocol::transaction_id_type& trx_id) {
@@ -435,7 +439,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
     OP_TAG(account_created_operation), // ditto
     OP_TAG(producer_reward_operation) }; // attached to every block
 
-  do_the_testing( *this, expected_operations ); // clears the container nominally
+  do_the_testing( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
 
   db->set_hardfork( HIVE_HARDFORK_0_13 );
   generate_block();
@@ -466,7 +470,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   expected_operations.insert( OP_TAG(delete_comment_operation) );
   expected_operations.insert( OP_TAG(ineffective_delete_comment_operation) );
 
-  do_the_testing( *this, expected_operations ); // clears the container nominally
+  do_the_testing( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
 
   // Set current hardfork for easier testing of current operations
   db->set_hardfork( HIVE_NUM_HARDFORKS );
@@ -588,6 +592,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   create_claimed_account( "edgar0ah", "bob0ah", bob0ah_public_key, bob0ah_post_key.get_public_key(), "", edgar0ah_private_key );
   expected_operations.insert( OP_TAG(create_claimed_account_operation) );
 
+  vest( HIVE_INIT_MINER_NAME, "bob0ah", ASSET( "1000.000 TESTS" ) );
+
   change_recovery_account( "bob0ah", HIVE_INIT_MINER_NAME, bob0ah_private_key );
   expected_operations.insert( OP_TAG(change_recovery_account_operation) );
 
@@ -627,7 +633,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   transfer("alice0ah", "bob0ah", asset(1234, HIVE_SYMBOL));
   expected_operations.insert( OP_TAG(transfer_operation) );
 
-  do_the_testing( *this, expected_operations ); // clears the container nominally
+  do_the_testing( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
 
 
 } FC_LOG_AND_RETHROW() }
