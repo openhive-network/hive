@@ -692,7 +692,7 @@ prepare_docker_image_for_publishing:
   needs: 
     - prepare_hived_image
   script:
-    - scripts/ci-helpers/publish_instance.sh
+    - scripts/ci-helpers/build_instance4publishing.sh
   tags:
     - public-runner-docker  
 
@@ -703,7 +703,7 @@ publish_docker_image:
     - prepare_hived_image
     - prepare_docker_image_for_publishing
   script:
-    - scripts\ci-helpers\build_instance4publishing.sh
+    - scripts/ci-helpers/publish_instance.sh
   tags:
     - public-runner-docker  
   rules:
