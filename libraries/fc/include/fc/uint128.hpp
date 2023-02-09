@@ -50,7 +50,7 @@ inline uint64_t uint128_high_bits( const uint128_t& u ) { return static_cast<uin
 
 inline int64_t uint128_to_int64( const uint128_t& u )
 {
-  FC_ASSERT( u <= std::numeric_limits<int64_t>::max() );
+  FC_ASSERT( u <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) );
   return static_cast<int64_t>(u);
 }
 
