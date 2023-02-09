@@ -336,7 +336,7 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
     _block_log.for_each_block(start_block_number + 1, last_block_num, process_block, block_log::for_each_purpose::replay);
 
   if (appbase::app().is_interrupt_request())
-    ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})", 
+    ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})",
          ("n", last_applied_block->get_block_num())("id", last_applied_block->get_block_id()));
 
   fc::enable_record_assert_trip = rat; //restore flag
@@ -1147,7 +1147,7 @@ void database::switch_forks(const item_ptr new_head)
 
       // our fork switch has failed.  That could mean that we are now on a shorter fork than we started on,
       // and we should switch back to the original fork because longer == good.  But it's also possible that
-      // the bad block was late in the fork, and even without the bad blocks the new fork is longer so we 
+      // the bad block was late in the fork, and even without the bad blocks the new fork is longer so we
       // should stay.  And a third possibility is that the fork is shorter, but one of the blocks on the fork
       // became irreversible, so switching back is no longer an option.
       if (get_last_irreversible_block_num() < common_block_number && head_block_num() < original_head_block_number)
@@ -1208,7 +1208,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
     // if the new head block is at a lower height than our head block,
     // it is on a shorter fork, so don't validate it
     if (new_head->get_block_num() <= head_block_num())
-    { 
+    {
       block_ctrl.on_fork_ignore();
       return false;
     }
@@ -4351,7 +4351,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
     try
     {
-      FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed", 
+      FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
                 (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
     }
     catch( fc::assert_exception& e )
@@ -5404,7 +5404,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   // so we need to explicitly call validation here.
   // Skip the tapos check for these transactions -- a witness could be on a different fork from
   // ours (so their tapos would reference a block not in our chain), but we still want to know.
-  // If we have that block in our fork database and a supermajority of witnesses approve it, we 
+  // If we have that block in our fork database and a supermajority of witnesses approve it, we
   // want to try to switch to it.
   validate_transaction(full_transaction, skip_tapos_check);
 
@@ -5414,7 +5414,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   // dlog("Processing fast-confirm transaction from witness ${witness}", ("witness", block_approve_op.witness));
 
   const witness_schedule_object& wso_for_irreversibility = get_witness_schedule_object_for_irreversibility();
-  bool witness_is_scheduled = std::any_of(wso_for_irreversibility.current_shuffled_witnesses.begin(), 
+  bool witness_is_scheduled = std::any_of(wso_for_irreversibility.current_shuffled_witnesses.begin(),
                                           wso_for_irreversibility.current_shuffled_witnesses.begin() + wso_for_irreversibility.num_scheduled_witnesses,
                                           [&](const account_name_type& witness_account_name) {
                                             return block_approve_op.witness == get_witness(witness_account_name).owner;
@@ -5424,7 +5424,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
     ilog("Received a fast-confirm from witness ${witness} who is not on the schedule, ignoring", ("witness", block_approve_op.witness));
     return;
   }
-  
+
   const uint32_t new_approved_block_number = block_header::num_from_id( block_approve_op.block_id );
   if (auto iter = _my->_last_fast_approved_block_by_witness.find(block_approve_op.witness);
       iter != _my->_last_fast_approved_block_by_witness.end())
@@ -5456,7 +5456,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
     */
   if (head_block_num() < HIVE_START_MINER_VOTING_BLOCK)
   {
-    if (head_block_num() > HIVE_MAX_WITNESSES) 
+    if (head_block_num() > HIVE_MAX_WITNESSES)
     {
       uint32_t new_last_irreversible_block_num = head_block_num() - HIVE_MAX_WITNESSES;
 
@@ -5478,7 +5478,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
   // the only ones that matter
   std::vector<const witness_object*> scheduled_witness_objects;
   const witness_schedule_object& wso_for_irreversibility = get_witness_schedule_object_for_irreversibility();
-  std::transform(wso_for_irreversibility.current_shuffled_witnesses.begin(), 
+  std::transform(wso_for_irreversibility.current_shuffled_witnesses.begin(),
                  wso_for_irreversibility.current_shuffled_witnesses.begin() + wso_for_irreversibility.num_scheduled_witnesses,
                  std::back_inserter(scheduled_witness_objects),
                  [&](const account_name_type& witness_account_name) {
@@ -5508,7 +5508,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
                  });
   const unsigned witnesses_required_for_irreversiblity = scheduled_witnesses.size() - offset;
 
-  // during our search for a new irreversible block, if we find a 
+  // during our search for a new irreversible block, if we find a
   // candidate better than the current last_irreversible_block,
   // store it here:
   item_ptr new_last_irreversible_block;
@@ -5533,7 +5533,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
     if (fast_approval_iter != _my->_last_fast_approved_block_by_witness.end())
     {
       if (last_block_iter != last_block_generated_by_witness.end()) // they have cast a fast-confirm vote and produced a block, choose the most recent
-        best_block_id_for_this_witness = block_header::num_from_id(fast_approval_iter->second) > block_header::num_from_id(last_block_iter->second) ? 
+        best_block_id_for_this_witness = block_header::num_from_id(fast_approval_iter->second) > block_header::num_from_id(last_block_iter->second) ?
                                          fast_approval_iter->second : last_block_iter->second;
       else // no generated blocks, but they have cast votes
         best_block_id_for_this_witness = fast_approval_iter->second;
@@ -5554,7 +5554,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
     item_ptr this_block = possible_head;
 
     // walk backwards over blocks on this fork
-    while (this_block && 
+    while (this_block &&
            this_block->get_block_num() > old_last_irreversible &&
            (!new_last_irreversible_block || // we don't yet have a candidate
             this_block == new_last_irreversible_block || // this is our candidate, but we're coming at it from a different fork
@@ -5566,9 +5566,9 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
 
       if (number_of_witnesses_approving_this_block >= witnesses_required_for_irreversiblity)
       {
-        // dlog("Block ${num} can be made irreversible, ${number_of_witnesses_approving_this_block} witnesses approve it", 
+        // dlog("Block ${num} can be made irreversible, ${number_of_witnesses_approving_this_block} witnesses approve it",
         //      ("num", this_block->get_block_num())(number_of_witnesses_approving_this_block));
-        if (!new_last_irreversible_block || 
+        if (!new_last_irreversible_block ||
             possible_head->get_block_num() > new_head_block->get_block_num())
         {
           new_head_block = possible_head;
@@ -5578,7 +5578,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
       }
       else
       {
-        // dlog("Can't make block ${num} irreversible, only ${witnesses_approving_this_block} out of a required ${witnesses_required_for_irreversiblity} approve it", 
+        // dlog("Can't make block ${num} irreversible, only ${witnesses_approving_this_block} out of a required ${witnesses_required_for_irreversiblity} approve it",
         //      ("num", this_block->get_block_num())(number_of_witnesses_approving_this_block)(witnesses_required_for_irreversiblity));
       }
       this_block = this_block->prev.lock();
@@ -5598,10 +5598,10 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
     // we found a new last irreversible block on another fork
     if (new_head_block->get_block_num() < head_block_num())
     {
-      // we need to switch to the fork containing our new last irreversible block candidate, but 
+      // we need to switch to the fork containing our new last irreversible block candidate, but
       // that fork is shorter than our current head block, so our head block number would decrease
-      // as a result.  There may be other places in the code that assume the head block number 
-      // never decreases.  Since we're not sure, just postpone the fork switch until we get 
+      // as a result.  There may be other places in the code that assume the head block number
+      // never decreases.  Since we're not sure, just postpone the fork switch until we get
       // enough blocks on the candidate fork to at least equal our current head block
       return old_last_irreversible;
     }
@@ -7424,7 +7424,7 @@ std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type
 std::deque<block_id_type>::const_iterator database::find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received)
 {
   return _fork_db.with_read_lock([&](){
-    return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) { 
+    return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) {
       return is_known_block_unlocked(block_id);
     });
   });
@@ -7448,7 +7448,7 @@ bool database::is_included_block_unlocked(const block_id_type& block_id)
   return block_id == read_block_id;
 } FC_CAPTURE_AND_RETHROW() }
 
-// used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and generates 
+// used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and generates
 // a sequential list of block ids that builds off of the last item in the synopsis that we have in
 // common
 // no chainbase lock required
@@ -7471,7 +7471,7 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
     head_block_num = head->get_block_num();
 
     block_id_type last_known_block_id;
-    if (blockchain_synopsis.empty() || 
+    if (blockchain_synopsis.empty() ||
         (blockchain_synopsis.size() == 1 && blockchain_synopsis[0] == block_id_type()))
     {
       // peer has sent us an empty synopsis meaning they have no blocks.
@@ -7495,7 +7495,7 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
     }
 
     // the list will be composed of block ids from the block_log first, followed by ones from the fork database.
-    // when building our reply, we'll fill in the ones from the fork_database first, so we can release the 
+    // when building our reply, we'll fill in the ones from the fork_database first, so we can release the
     // fork_db lock, then we'll grab the ids from the block_log at our leisure.
     first_block_num_in_reply = block_header::num_from_id(last_known_block_id);
     if (first_block_num_in_reply == 0)
@@ -7511,7 +7511,7 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
     uint32_t first_block_num_from_fork_db_in_reply = std::max(oldest_block_num_in_forkdb, first_block_num_in_reply);
     //idump((first_block_num_in_reply)(last_block_from_block_log_in_reply)(first_block_num_from_fork_db_in_reply)(last_block_num_in_reply));
 
-    for (uint32_t block_num = first_block_num_from_fork_db_in_reply; 
+    for (uint32_t block_num = first_block_num_from_fork_db_in_reply;
          block_num <= last_block_num_in_reply;
          ++block_num)
     {
@@ -7520,7 +7520,7 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
       uint32_t index_in_result = block_num - first_block_num_in_reply;
       result[index_in_result] = item_from_forkdb->get_block_id();
     }
-  }); // drop the forkdb lock   
+  }); // drop the forkdb lock
 
   if (!head)
   {
@@ -7536,7 +7536,7 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
     result[index_in_result] = _block_log.read_block_id_by_num(block_num);
   }
 
-  if (!result.empty() && block_header::num_from_id(result.back()) < head_block_num) 
+  if (!result.empty() && block_header::num_from_id(result.back()) < head_block_num)
     remaining_item_count = head_block_num - last_block_num_in_reply;
   else
     remaining_item_count = 0;
