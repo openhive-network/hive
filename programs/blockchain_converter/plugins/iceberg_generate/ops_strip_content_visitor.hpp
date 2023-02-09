@@ -7,9 +7,9 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
   class ops_strip_content_visitor
   {
   public:
-    typedef hp::operation result_type;
+    typedef hive::protocol::operation result_type;
 
-    result_type operator()( hp::account_create_operation& op )const
+    result_type operator()( hive::protocol::account_create_operation& op )const
     {
       op.owner.clear();
       op.active.clear();
@@ -19,7 +19,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::account_create_with_delegation_operation& op )const
+    result_type operator()( hive::protocol::account_create_with_delegation_operation& op )const
     {
       op.owner.clear();
       op.active.clear();
@@ -30,7 +30,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::account_update_operation& op )const
+    result_type operator()( hive::protocol::account_update_operation& op )const
     {
       op.owner.reset();
       op.active.reset();
@@ -40,7 +40,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::account_update2_operation& op )const
+    result_type operator()( hive::protocol::account_update2_operation& op )const
     {
       op.owner.reset();
       op.active.reset();
@@ -53,7 +53,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::comment_operation& op )const
+    result_type operator()( hive::protocol::comment_operation& op )const
     {
       op.title.clear();
       op.body.clear();
@@ -62,7 +62,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::create_claimed_account_operation& op )const
+    result_type operator()( hive::protocol::create_claimed_account_operation& op )const
     {
       op.owner.clear();
       op.active.clear();
@@ -73,35 +73,35 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::transfer_operation& op )const
+    result_type operator()( hive::protocol::transfer_operation& op )const
     {
       op.memo.clear();
 
       return op;
     }
 
-    result_type operator()( hp::escrow_transfer_operation& op )const
+    result_type operator()( hive::protocol::escrow_transfer_operation& op )const
     {
       op.json_meta.clear();
 
       return op;
     }
 
-    result_type operator()( hp::witness_update_operation& op )const
+    result_type operator()( hive::protocol::witness_update_operation& op )const
     {
       op.url.clear();
 
       return op;
     }
 
-    result_type operator()( hp::witness_set_properties_operation& op )const
+    result_type operator()( hive::protocol::witness_set_properties_operation& op )const
     {
       op.extensions.clear();
 
       return op;
     }
 
-    result_type operator()( hp::custom_operation& op )const
+    result_type operator()( hive::protocol::custom_operation& op )const
     {
       op.required_auths.clear();
       op.data.clear();
@@ -109,7 +109,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::custom_json_operation& op )const
+    result_type operator()( hive::protocol::custom_json_operation& op )const
     {
       op.required_auths.clear();
       op.required_posting_auths.clear();
@@ -118,7 +118,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::custom_binary_operation& op )const
+    result_type operator()( hive::protocol::custom_binary_operation& op )const
     {
       op.required_owner_auths.clear();
       op.required_active_auths.clear();
@@ -129,7 +129,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::request_account_recovery_operation& op )const
+    result_type operator()( hive::protocol::request_account_recovery_operation& op )const
     {
       op.new_owner_authority.clear();
       op.extensions.clear();
@@ -137,7 +137,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::recover_account_operation& op )const
+    result_type operator()( hive::protocol::recover_account_operation& op )const
     {
       op.new_owner_authority.clear();
       op.recent_owner_authority.clear();
@@ -146,35 +146,35 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::reset_account_operation& op )const
+    result_type operator()( hive::protocol::reset_account_operation& op )const
     {
       op.new_owner_authority.clear();
 
       return op;
     }
 
-    result_type operator()( hp::change_recovery_account_operation& op )const
+    result_type operator()( hive::protocol::change_recovery_account_operation& op )const
     {
       op.extensions.clear();
 
       return op;
     }
 
-    result_type operator()( hp::transfer_to_savings_operation& op )const
+    result_type operator()( hive::protocol::transfer_to_savings_operation& op )const
     {
       op.memo.clear();
 
       return op;
     }
 
-    result_type operator()( hp::transfer_from_savings_operation& op )const
+    result_type operator()( hive::protocol::transfer_from_savings_operation& op )const
     {
       op.memo.clear();
 
       return op;
     }
 
-    result_type operator()( hp::recurrent_transfer_operation& op )const
+    result_type operator()( hive::protocol::recurrent_transfer_operation& op )const
     {
       op.memo.clear();
       op.extensions.clear();
@@ -182,7 +182,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::create_proposal_operation& op )const
+    result_type operator()( hive::protocol::create_proposal_operation& op )const
     {
       op.subject.clear();
       op.extensions.clear();
@@ -190,7 +190,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::update_proposal_operation& op )const
+    result_type operator()( hive::protocol::update_proposal_operation& op )const
     {
       op.subject.clear();
       op.extensions.clear();
@@ -198,14 +198,14 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hp::update_proposal_votes_operation& op )const
+    result_type operator()( hive::protocol::update_proposal_votes_operation& op )const
     {
       op.extensions.clear();
 
       return op;
     }
 
-    result_type operator()( hp::remove_proposal_operation& op )const
+    result_type operator()( hive::protocol::remove_proposal_operation& op )const
     {
       op.extensions.clear();
 
