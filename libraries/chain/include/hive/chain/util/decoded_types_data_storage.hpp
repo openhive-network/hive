@@ -4,7 +4,6 @@
 #include <fc/exception/exception.hpp>
 #include <fc/reflect/reflect.hpp>
 
-#include <shared_mutex>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -236,7 +235,6 @@ class decoded_types_data_storage final
     {
       static_assert(is_defined);
       register_new_type<T>();
-      std::shared_lock<std::shared_mutex> read_lock(mutex);
       auto it = decoded_types_data_map.find(fc::get_typename<T>::name());
 
       if (it == decoded_types_data_map.end())
@@ -256,7 +254,6 @@ class decoded_types_data_storage final
   private:
     std::unordered_set<std::string_view> decoded_types_set; // we store typeid(T).name() here
     std::unordered_map<std::string_view, decoded_type_data> decoded_types_data_map;
-    std::shared_mutex mutex;
 };
 
 } } } // hive::chain::util
