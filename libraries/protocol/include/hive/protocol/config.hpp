@@ -32,6 +32,14 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_INIT_PUBLIC_KEY (hive::protocol::public_key_type(HIVE_INIT_PUBLIC_KEY_STR))
 
+#define HIVE_BLOCK_INTERVAL                   3
+#define HIVE_BLOCKS_PER_YEAR                  (365*24*60*60/HIVE_BLOCK_INTERVAL)
+#define HIVE_BLOCKS_PER_DAY                   (24*60*60/HIVE_BLOCK_INTERVAL)
+#define HIVE_BLOCKS_PER_HOUR                  (60*60/HIVE_BLOCK_INTERVAL)
+#define HIVE_START_VESTING_BLOCK              (HIVE_BLOCKS_PER_DAY * 7)
+
+#define HIVE_MAX_WITNESSES                    21
+
 #ifdef IS_TEST_NET
 
 #ifdef HIVE_ENABLE_SMT
@@ -82,6 +90,18 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25 (configuration_data.get_hive_reverse_auction_window_seconds())
 #define HIVE_EARLY_VOTING_SECONDS_HF25           (configuration_data.get_hive_early_voting_seconds())
 #define HIVE_MID_VOTING_SECONDS_HF25             (configuration_data.get_hive_mid_voting_seconds())
+
+#define HIVE_FEED_INTERVAL_BLOCKS             (configuration_data.get_hive_feed_interval_blocks())
+#define HIVE_FEED_HISTORY_WINDOW_PRE_HF_16    (24*7) /// expressed in number of intervals
+#define HIVE_FEED_HISTORY_WINDOW              (12*7) /// expressed in number of intervals
+#define HIVE_MAX_FEED_AGE_SECONDS             (configuration_data.get_hive_max_feed_age_seconds())
+#define HIVE_MIN_FEEDS                        (HIVE_MAX_WITNESSES/3) /// protects the network from conversions before price has been established
+
+#define HIVE_CONVERSION_DELAY_PRE_HF_16       (fc::seconds(2 * HIVE_FEED_HISTORY_WINDOW * HIVE_FEED_INTERVAL_BLOCKS * HIVE_BLOCK_INTERVAL)) //7 days conversion
+#define HIVE_CONVERSION_DELAY                 (fc::seconds(HIVE_FEED_HISTORY_WINDOW * HIVE_FEED_INTERVAL_BLOCKS * HIVE_BLOCK_INTERVAL)) //3.5 day conversion
+#define HIVE_COLLATERALIZED_CONVERSION_DELAY  HIVE_CONVERSION_DELAY
+#define HIVE_CONVERSION_COLLATERAL_RATIO      (2 * HIVE_100_PERCENT) //has to be at least 100%
+#define HIVE_COLLATERALIZED_CONVERSION_FEE    (5 * HIVE_1_PERCENT) //has to be positive
 
 #else // IS LIVE HIVE NETWORK
 
@@ -136,6 +156,18 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_EARLY_VOTING_SECONDS_HF25           (24 * 60 * 60) /// 24 hours
 #define HIVE_MID_VOTING_SECONDS_HF25             (48 * 60 * 60) /// 48 hours
 
+#define HIVE_FEED_INTERVAL_BLOCKS             (HIVE_BLOCKS_PER_HOUR)
+#define HIVE_FEED_HISTORY_WINDOW_PRE_HF_16    (24*7) /// 7 days * 24 hours per day
+#define HIVE_FEED_HISTORY_WINDOW              (12*7) // 3.5 days
+#define HIVE_MAX_FEED_AGE_SECONDS             (60*60*24*7) // 7 days
+#define HIVE_MIN_FEEDS                        (HIVE_MAX_WITNESSES/3) /// protects the network from conversions before price has been established
+
+#define HIVE_CONVERSION_DELAY_PRE_HF_16       (fc::seconds(2 * HIVE_FEED_HISTORY_WINDOW * HIVE_FEED_INTERVAL_BLOCKS * HIVE_BLOCK_INTERVAL)) //7 days conversion
+#define HIVE_CONVERSION_DELAY                 (fc::seconds(HIVE_FEED_HISTORY_WINDOW * HIVE_FEED_INTERVAL_BLOCKS * HIVE_BLOCK_INTERVAL)) //3.5 day conversion
+#define HIVE_COLLATERALIZED_CONVERSION_DELAY  HIVE_CONVERSION_DELAY
+#define HIVE_CONVERSION_COLLATERAL_RATIO      (2 * HIVE_100_PERCENT) //has to be at least 100%
+#define HIVE_COLLATERALIZED_CONVERSION_FEE    (5 * HIVE_1_PERCENT) //has to be positive
+
 #endif
 
 #define VESTS_SYMBOL  (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS ) )
@@ -148,16 +180,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_1_PERCENT                        (HIVE_100_PERCENT/100)
 #define HIVE_1_BASIS_POINT                    (HIVE_100_PERCENT/10000) // 0.01%
 
-#define HIVE_BLOCK_INTERVAL                   3
-#define HIVE_BLOCKS_PER_YEAR                  (365*24*60*60/HIVE_BLOCK_INTERVAL)
-#define HIVE_BLOCKS_PER_DAY                   (24*60*60/HIVE_BLOCK_INTERVAL)
-#define HIVE_START_VESTING_BLOCK              (HIVE_BLOCKS_PER_DAY * 7)
-
 #define HIVE_INIT_MINER_NAME                  "initminer"
 #define HIVE_NUM_INIT_MINERS                  1
 #define HIVE_INIT_TIME                        (fc::time_point_sec())
-
-#define HIVE_MAX_WITNESSES                    21
 
 #define HIVE_MAX_VOTED_WITNESSES_HF0          19
 #define HIVE_MAX_MINER_WITNESSES_HF0          1
@@ -323,17 +348,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MIN_BLOCK_SIZE_LIMIT             (HIVE_MAX_TRANSACTION_SIZE)
 #define HIVE_MAX_BLOCK_SIZE              (2*1024*1024)
 #define HIVE_MIN_BLOCK_SIZE                   115
-#define HIVE_BLOCKS_PER_HOUR                  (60*60/HIVE_BLOCK_INTERVAL)
-#define HIVE_FEED_INTERVAL_BLOCKS             (HIVE_BLOCKS_PER_HOUR)
-#define HIVE_FEED_HISTORY_WINDOW_PRE_HF_16    (24*7) /// 7 days * 24 hours per day
-#define HIVE_FEED_HISTORY_WINDOW              (12*7) // 3.5 days
-#define HIVE_MAX_FEED_AGE_SECONDS             (60*60*24*7) // 7 days
-#define HIVE_MIN_FEEDS                        (HIVE_MAX_WITNESSES/3) /// protects the network from conversions before price has been established
-#define HIVE_CONVERSION_DELAY_PRE_HF_16       (fc::days(7))
-#define HIVE_CONVERSION_DELAY                 (fc::hours(HIVE_FEED_HISTORY_WINDOW)) //3.5 day conversion
-#define HIVE_COLLATERALIZED_CONVERSION_DELAY  HIVE_CONVERSION_DELAY
-#define HIVE_CONVERSION_COLLATERAL_RATIO      (2 * HIVE_100_PERCENT) //has to be at least 100%
-#define HIVE_COLLATERALIZED_CONVERSION_FEE    (5 * HIVE_1_PERCENT) //has to be positive
 
 #define HIVE_MIN_UNDO_HISTORY                 10
 #define HIVE_MAX_UNDO_HISTORY                 10000

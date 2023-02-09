@@ -25,6 +25,10 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     // time before cashout when vote uses less power;
     // the more severe penalty the closer to comment cashout the vote is
     uint32_t hive_upvote_lockout_seconds = 60 * 5; // 5 minutes
+    // number of blocks between feed updates
+    uint32_t hive_feed_interval_blocks = 20; // blocks, originally 60*60/3
+    // time before feed expires
+    uint32_t hive_max_feed_age_seconds = 60*24*7; // originally 60*60*24*7, see comment to set_feed_related_values
     
     std::string hive_hf9_compromised_key;
     hive::protocol::private_key_type hive_initminer_key;
@@ -32,7 +36,21 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     public:
       configuration();
 
-      void reset() { *this = configuration(); }
+      uint32_t get_hive_reverse_auction_window_seconds() const { return hive_reverse_auction_window_seconds; }
+      uint32_t get_hive_early_voting_seconds() const { return hive_early_voting_seconds; }
+      uint32_t get_hive_mid_voting_seconds() const { return hive_mid_voting_seconds; }
+      uint32_t get_hive_cashout_window_seconds() const { return hive_cashout_window_seconds; }
+      uint32_t get_hive_upvote_lockout_seconds() const { return hive_upvote_lockout_seconds; }
+
+      uint32_t get_hive_feed_interval_blocks() const { return hive_feed_interval_blocks; }
+      uint32_t get_hive_max_feed_age_seconds() const { return hive_max_feed_age_seconds; }
+
+      std::string get_HF9_compromised_accounts_key() const { return hive_hf9_compromised_key; }
+
+      hive::protocol::private_key_type get_default_initminer_private_key() const;
+
+      hive::protocol::private_key_type get_initminer_private_key() const { return hive_initminer_key; }
+      hive::protocol::public_key_type get_initminer_public_key() const;
 
       /** Sets cashout related values (relative to comment creation time):
       * [0 .. reverse auction)
@@ -53,25 +71,29 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
         hive_upvote_lockout_seconds = upvote_lockout;
       }
 
-      uint32_t get_hive_reverse_auction_window_seconds() const { return hive_reverse_auction_window_seconds; }
-      uint32_t get_hive_early_voting_seconds() const { return hive_early_voting_seconds; }
-      uint32_t get_hive_mid_voting_seconds() const { return hive_mid_voting_seconds; }
-      uint32_t get_hive_cashout_window_seconds() const { return hive_cashout_window_seconds; }
-      uint32_t get_hive_upvote_lockout_seconds() const { return hive_upvote_lockout_seconds; }
-
-      std::string get_HF9_compromised_accounts_key() const
-      {
-        return hive_hf9_compromised_key;
+      void reset_cashout_values() 
+      { 
+        configuration clear;
+        set_cashout_related_values( clear.get_hive_reverse_auction_window_seconds(), clear.get_hive_early_voting_seconds(),
+                                    clear.get_hive_mid_voting_seconds(), clear.get_hive_cashout_window_seconds(),
+                                    clear.get_hive_upvote_lockout_seconds() );
       }
 
-      hive::protocol::private_key_type get_default_initminer_private_key() const;
-
-      hive::protocol::private_key_type get_initminer_private_key() const
+      /** Sets wintess feed related values:
+       * [1 .. HIVE_BLOCKS_PER_HOUR]
+       * [3*24*7 .. 60*60*24*7] recommended to be in 504:1 ratio with feed_interval_blocks
+       */
+      void set_feed_related_values( uint32_t feed_interval_blocks, uint32_t max_feed_age_seconds )
       {
-        return hive_initminer_key;
+        hive_feed_interval_blocks = feed_interval_blocks;
+        hive_max_feed_age_seconds = max_feed_age_seconds;
       }
 
-      hive::protocol::public_key_type get_initminer_public_key() const;
+      void reset_feed_values()
+      {
+        configuration clear;
+        set_feed_related_values( clear.get_hive_feed_interval_blocks(), clear.get_hive_max_feed_age_seconds() );
+      }
 
       void set_skeleton_key(const hive::protocol::private_key_type& private_key);
   };
