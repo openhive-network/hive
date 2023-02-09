@@ -1349,6 +1349,9 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
 {
   try
   {
+    // Testing mainnet feed values here.
+    auto auto_reset( set_mainnet_feed_values() );
+
     resize_shared_mem( 1024 * 1024 * 32 );
 
     ACTORS( (alice0)(alice1)(alice2)(alice3)(alice4)(alice5)(alice6) )
