@@ -127,12 +127,8 @@ namespace detail {
 
     check_url(this->input_url);
 
-    for( size_t i = 0; i < output_urls.size(); ++i )
-    {
-      // XXX: Replace with one-liner in C++17
-      this->output_urls.emplace_back(output_urls.at(i));
-      check_url( this->output_urls.at(i) );
-    }
+    for( const auto& url : output_urls )
+      check_url( this->output_urls.emplace_back(url) );
   }
 
   void node_based_conversion_plugin_impl::open( fc::http::connection& con, const fc::url& url )

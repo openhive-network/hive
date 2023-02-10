@@ -8,6 +8,7 @@
 #include <fc/io/json.hpp>
 #include <fc/log/logger.hpp>
 #include <fc/variant.hpp>
+#include <fc/network/url.hpp>
 
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/full_block.hpp>
@@ -27,10 +28,12 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <vector>
 
 #include "../base/conversion_plugin.hpp"
 
 #include "ops_permlink_tracker.hpp"
+#include "ops_required_asset_transfer_visitor.hpp"
 #include "ops_strip_content_visitor.hpp"
 
 namespace hive {namespace converter { namespace plugins { namespace iceberg_generate {
@@ -47,50 +50,70 @@ namespace detail {
 
   class iceberg_generate_plugin_impl final : public conversion_plugin_impl {
   public:
-    block_log log_in, log_out;
+    block_log log_in;
+    std::vector< fc::url > output_urls;
     bool enable_op_content_strip;
 
-    iceberg_generate_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, bool enable_op_content_strip = false, size_t signers_size = 1 )
-      : conversion_plugin_impl( _private_key, chain_id, signers_size, true ) {}
+    iceberg_generate_plugin_impl( const std::vector< std::string >& output_urls, const hp::private_key_type& _private_key,
+        const hp::chain_id_type& chain_id, bool enable_op_content_strip = false, size_t signers_size = 1 );
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
-    void open( const fc::path& input, const fc::path& output );
+    void open( const fc::path& input );
     void close();
 
     void on_new_account_collected( const hp::account_name_type& acc );
     void on_comment_collected( const hp::account_name_type& acc, const std::string& link );
+    void transfer_required_asset( const hp::account_name_type& acc, const hp::asset& bal );
   };
 
-  void iceberg_generate_plugin_impl::open( const fc::path& input, const fc::path& output )
+
+  iceberg_generate_plugin_impl::iceberg_generate_plugin_impl( const std::vector< std::string >& output_urls, const hp::private_key_type& _private_key,
+      const hp::chain_id_type& chain_id, bool enable_op_content_strip, size_t signers_size )
+    :  conversion_plugin_impl( _private_key, chain_id, signers_size, true )
+  {
+    idump((output_urls));
+
+    static const auto check_url = []( const auto& url ) {
+      FC_ASSERT( url.proto() == "http", "Currently only http protocol is supported", ("out_proto", url.proto()) );
+      FC_ASSERT( url.host().valid(), "You have to specify the host in url", ("url",url) );
+      FC_ASSERT( url.port().valid(), "You have to specify the port in url", ("url",url) );
+    };
+
+    for( const auto& url : output_urls )
+      check_url( this->output_urls.emplace_back(url) );
+  }
+
+  void iceberg_generate_plugin_impl::open( const fc::path& input )
   {
     try
     {
       log_in.open( input );
-    } FC_CAPTURE_AND_RETHROW( (input) )
-
-    try
-    {
-      log_out.open( output );
-    } FC_CAPTURE_AND_RETHROW( (output) )
+    } FC_CAPTURE_AND_RETHROW( (input) );
   }
 
-  void iceberg_generate_plugin_impl::on_new_account_collected( const hp::account_name_type& acc ) {
+  void iceberg_generate_plugin_impl::on_new_account_collected( const hp::account_name_type& acc )
+  {
     ilog("Collected new account: ${acc}", ("acc", acc));
   }
 
-  void iceberg_generate_plugin_impl::on_comment_collected( const hp::account_name_type& acc, const std::string& link ) {
+  void iceberg_generate_plugin_impl::on_comment_collected( const hp::account_name_type& acc, const std::string& link )
+  {
     ilog("Collected new permlink: /@${acc}/${link}", ("acc", acc)("link", link));
+  }
+
+  void iceberg_generate_plugin_impl::transfer_required_asset( const hp::account_name_type& acc, const hp::asset& bal )
+  {
+    ilog("Collected required asset for account ${acc}: ${bal}", ("acc", acc)("bal", bal));
   }
 
   void iceberg_generate_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
   {
     FC_ASSERT( log_in.is_open(), "Input block log should be opened before the conversion" );
-    FC_ASSERT( log_out.is_open(), "Output block log should be opened before the conversion" );
     FC_ASSERT( log_in.head(), "Your input block log is empty" );
 
     fc::time_point_sec head_block_time = HIVE_GENESIS_TIME;
 
-    FC_ASSERT( !log_out.head() && start_block_num,
+    FC_ASSERT( start_block_num,
       HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " plugin currently does not currently support conversion continue" );
 
     hp::block_id_type last_block_id;
@@ -114,6 +137,10 @@ namespace detail {
 
       block.extensions.clear();
 
+      auto fb = converter.convert_signed_block( block, last_block_id, head_block_time, false );
+      last_block_id = fb->get_block_id();
+      converter.on_tapos_change();
+
       for( auto& tx : block.transactions )
         for( auto& op : tx.operations )
         {
@@ -136,25 +163,24 @@ namespace detail {
           const auto& dependent_permlink_data = op.visit(dependent_permlinks_visitor{});
           if( dependent_permlink_data.first.size() && all_permlinks.insert( compute_author_and_permlink_hash( dependent_permlink_data ) ).second )
             on_comment_collected(dependent_permlink_data.first, dependent_permlink_data.second);
+
+          const auto required_assets_accounts = op.visit(ops_required_asset_transfer_visitor{ converter.get_cached_hardfork() });
+          for( const auto& [ account, assets ] : required_assets_accounts )
+            for( const auto& asset : assets )
+              transfer_required_asset(account, asset);
         }
 
-      auto fb = converter.convert_signed_block( block, last_block_id, head_block_time, false );
-      last_block_id = fb->get_block_id();
-      converter.on_tapos_change();
+      // Broadcast transactions here. Ignore creation of OBSOLETE_TREASURY_ACCOUNT and NEW_HIVE_TREASURY_ACCOUNT
 
       if( start_block_num % 1000 == 0 ) // Progress
         ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
           ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
-
-      log_out.append( fb );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("After conversion: ${block}", ("block", block));
 
       head_block_time = block.timestamp;
     }
-
-    // Broadcast transactions here. Ignore creation of OBSOLETE_TREASURY_ACCOUNT and NEW_HIVE_TREASURY_ACCOUNT
 
     if( !appbase::app().is_interrupt_request() )
       appbase::app().generate_interrupt_request();
@@ -164,9 +190,6 @@ namespace detail {
   {
     if( log_in.is_open() )
       log_in.close();
-
-    if( log_out.is_open() )
-      log_out.close();
 
     if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770 ) )
       wlog("Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log");
@@ -187,10 +210,13 @@ namespace detail {
   void iceberg_generate_plugin::plugin_initialize( const bpo::variables_map& options )
   {
     FC_ASSERT( options.count("input"), "You have to specify the input source for the " HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " plugin" );
+    FC_ASSERT( options.count("output"), "You have to specify the output source for the " HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " plugin" );
 
     auto input_v = options["input"].as< std::vector< std::string > >();
+    auto output_v = options["output"].as< std::vector< std::string > >();
 
     FC_ASSERT( input_v.size() == 1, HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " accepts only one input block log" );
+    FC_ASSERT( output_v.size(), HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " requires at least one output node" );
 
     std::string out_file;
     if( options.count("output") && options["output"].as< std::vector< std::string > >().size() )
@@ -199,7 +225,6 @@ namespace detail {
       out_file = input_v.at(0) + "_out";
 
     fc::path block_log_in( input_v.at(0) );
-    fc::path block_log_out( out_file );
 
     hp::chain_id_type _hive_chain_id;
 
@@ -217,14 +242,14 @@ namespace detail {
     const auto private_key = wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
-    my = std::make_unique< detail::iceberg_generate_plugin_impl >( *private_key, _hive_chain_id, options.count("strip-operations-content"), options.at( "jobs" ).as< size_t >() );
+    my = std::make_unique< detail::iceberg_generate_plugin_impl >( output_v, *private_key, _hive_chain_id, options.count("strip-operations-content"), options.at( "jobs" ).as< size_t >() );
 
     my->log_per_block = options["log-per-block"].as< uint32_t >();
     my->log_specific = options["log-specific"].as< uint32_t >();
 
     my->set_wifs( options.count("use-same-key"), options["owner-key"].as< std::string >(), options["active-key"].as< std::string >(), options["posting-key"].as< std::string >() );
 
-    my->open( block_log_in, block_log_out );
+    my->open( block_log_in );
   }
 
   void iceberg_generate_plugin::plugin_startup() {

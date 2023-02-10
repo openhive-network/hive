@@ -300,6 +300,9 @@ namespace hive { namespace converter {
 
   std::shared_ptr< hc::full_block_type > blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time, bool alter_time_in_visitor )
   {
+    if( has_hardfork( cached_hf + 1, _signed_block ) )
+      ++cached_hf;
+
     std::vector< hc::full_transaction_ptr > full_transactions;
     full_transactions.reserve( _signed_block.transactions.size() );
 
@@ -426,6 +429,11 @@ namespace hive { namespace converter {
      * which is in the standard implementation: `num_from_id(id) + 1` (block numbers should be the same in both mainnet and mirrornet)
      */
     return hp::block_header::num_from_id(mainnet_head_block_id) + 1;
+  }
+
+  uint32_t blockchain_converter::get_cached_hardfork()const
+  {
+    return cached_hf;
   }
 
   void blockchain_converter::sign_transaction( hc::full_transaction_type& trx, authority::classification type )const
