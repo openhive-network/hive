@@ -72,6 +72,8 @@ namespace hive { namespace converter {
 
     std::vector< hp::private_key_type > transaction_signing_keys;
 
+    uint32_t cached_hf = 0;
+
   public:
     /// All converted blocks will be signed using given private key
     blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, appbase::application& app, size_t signers_size = 1, bool increase_block_size = true );
@@ -115,6 +117,8 @@ namespace hive { namespace converter {
     bool has_hardfork( uint32_t hf )const;
     static bool has_hardfork( uint32_t hf, uint32_t block_num );
     static bool has_hardfork( uint32_t hf, const hp::signed_block& _signed_block );
+
+    uint32_t get_cached_hardfork()const;
 
     /**
      * @throws if there is no block being currently converted
