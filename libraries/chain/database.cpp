@@ -3614,7 +3614,7 @@ void database::init_genesis()
       auth.active.weight_threshold = 1;
     });
 
-#ifdef IS_TEST_NET
+#if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
     create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
 #endif
@@ -3682,7 +3682,7 @@ void database::init_genesis()
     const auto& dgpo = create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME );
     create< hardfork_property_object >( HIVE_GENESIS_TIME );
 
-#ifdef IS_TEST_NET
+#if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     create< feed_history_object >( [&]( feed_history_object& o )
     {
       o.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
