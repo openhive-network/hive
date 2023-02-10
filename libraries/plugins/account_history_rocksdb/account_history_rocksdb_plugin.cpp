@@ -662,7 +662,7 @@ private:
   template< typename T >
   void importOperation( rocksdb_operation_object& obj, const T& impacted )
   {
-    if(_lastTx != obj.trx_id)
+    if(_lastTx != obj.trx_id && obj.trx_id != transaction_id_type()/*An virtual operation shouldn't increase `_txNo` counter.*/ )
     {
       ++_txNo;
       _lastTx = obj.trx_id;
