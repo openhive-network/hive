@@ -2,6 +2,15 @@
 
 #include <fc/optional.hpp>
 #include <fc/log/logger.hpp>
+#include <fc/exception/exception.hpp>
+#include <fc/io/json.hpp>
+#include <fc/thread/thread.hpp>
+#include <fc/network/resolve.hpp>
+#include <fc/network/url.hpp>
+#include <fc/network/http/connection.hpp>
+#include <fc/network/tcp_socket.hpp>
+#include <fc/variant.hpp>
+#include <fc/variant_object.hpp>
 
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/authority.hpp>
@@ -10,8 +19,221 @@
 
 namespace hive { namespace converter { namespace plugins {
 
+  void conversion_plugin_impl::handle_error_response_from_node( const error_response_from_node& error )
+  {
+#ifndef HIVE_CONVERTER_POST_SUPPRESS_WARNINGS
+# ifdef HIVE_CONVERTER_POST_DETAILED_LOGGING
+    wlog( "${msg}", ("msg",error.to_detail_string()) );
+# else
+    wlog( "${msg}", ("msg",error.to_string()) );
+# endif
+#endif
+  }
+
   using hive::protocol::private_key_type;
   using hive::protocol::authority;
+
+  conversion_plugin_impl::conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id,
+    appbase::application& app, size_t signers_size, bool increase_block_size )
+    : converter( _private_key, chain_id, app, signers_size, increase_block_size ) {}
+
+  void conversion_plugin_impl::check_url( const fc::url& url )const
+  {
+    FC_ASSERT( url.proto() == "http", "Currently only http protocol is supported", ("out_proto", url.proto()) );
+    FC_ASSERT( url.host().valid(), "You have to specify the host in url", ("url",url) );
+    FC_ASSERT( url.port().valid(), "You have to specify the port in url", ("url",url) );
+  }
+
+  void conversion_plugin_impl::display_error_response_data()const
+  {
+    if( total_request_count )
+    {
+#ifdef HIVE_CONVERTER_POST_COUNT_ERRORS
+      wlog("Errors [count]: message");
+      for( const auto& [key, val] : error_types )
+        wlog(" > [${val}]: \t\"${key}\"", (val)(key));
+#endif
+
+      wlog("${errors} (${percent}% of total ${total}) node errors detected",
+        ("errors", error_response_count)("percent", int(float(error_response_count) / total_request_count * 100))("total", total_request_count));
+    }
+
+    ilog("Processed total of ${total_tx_count} transactions", ("total_tx_count", converter.get_total_tx_count()));
+  }
+
+  void conversion_plugin_impl::open( fc::http::connection& con, const fc::url& url )
+  {
+    while( true )
+    {
+      try
+      {
+        con.connect_to( fc::resolve( *url.host(), *url.port() )[0] ); // First try to resolve the domain name
+      }
+      catch( const fc::exception& e )
+      {
+        try
+        {
+          con.connect_to( fc::ip::endpoint( *url.host(), *url.port() ) );
+        } FC_CAPTURE_AND_RETHROW( (url) )
+      }
+
+      if (con.get_socket().is_open())
+        break;
+
+      else
+      {
+        wlog("Error connecting to server RPC endpoint, retrying in 1 second");
+        fc::usleep(fc::seconds(1));
+      }
+    }
+  }
+
+  void conversion_plugin_impl::transmit( const hc::full_transaction_type& trx, const fc::url& using_url )
+  {
+    try
+    {
+      fc::variant v;
+      fc::to_variant( trx.get_transaction(), v );
+
+      fc::http::connection local_output_con;
+      post( local_output_con, using_url, "network_broadcast_api.broadcast_transaction", "{\"trx\":" + fc::json::to_string( v ) + "}" );
+    }
+    catch( const error_response_from_node& error )
+    {
+      handle_error_response_from_node( error );
+    } FC_CAPTURE_AND_RETHROW( (trx.get_transaction_id().str()) )
+  }
+
+  hp::block_id_type conversion_plugin_impl::get_previous_from_block( uint32_t num, const fc::url& using_url )
+  {
+    try
+    {
+      fc::http::connection local_output_con;
+      auto var_obj = post( local_output_con, using_url, "block_api.get_block_header", "{\"block_num\":" + std::to_string( num ) + "}" );
+      FC_ASSERT( var_obj.contains("header"), "No header in JSON response", ("reply", var_obj) );
+
+      return var_obj["header"].get_object()["previous"].as< hp::block_id_type >();
+    } // Note: we do not handle `error_response_from_node` as `get_previous_from_block` result is not required every time the function is called (usually every 1500ms)
+    FC_CAPTURE_AND_RETHROW()
+  }
+
+  variant_object conversion_plugin_impl::post( fc::http::connection& con, const fc::url& url, const std::string& method, const std::string& data )
+  {
+    try
+    {
+      ++total_request_count;
+
+      open( con, url );
+
+      auto reply = con.request( "POST", url,
+          "{\"jsonrpc\":\"2.0\",\"method\":\"" + method + "\",\"params\":" + data +  ",\"id\":1}"
+          /*,{ { "Content-Type", "application/json" } } */
+      );
+      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
+      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
+
+      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when sending request to the endpoint", ("code", reply.status)("reply", str_reply) );
+
+      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
+      if( var_obj.contains( "error" ) )
+      {
+        const auto msg = var_obj["error"].get_object()["message"].get_string();
+
+#ifdef HIVE_CONVERTER_POST_COUNT_ERRORS
+        ++error_types[msg];
+#endif
+
+        try {
+          this->on_node_error_caught( var_obj["error"].get_object() );
+        } catch (...) {}
+
+        FC_THROW_EXCEPTION( error_response_from_node, " ${block_num}: ${msg}",
+                           ("msg", msg)
+                           ("detailed",var_obj["error"].get_object())
+                           ("block_num", hp::block_header::num_from_id(converter.get_mainnet_head_block_id()) + 1)
+                          );
+      }
+
+      // By this point `result` should be present in the response
+      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
+
+      return var_obj["result"].get_object();
+    }
+    catch( const error_response_from_node& error )
+    {
+      ++error_response_count;
+
+      throw error;
+    } FC_CAPTURE_AND_RETHROW( (url)(data) )
+  }
+
+  void conversion_plugin_impl::validate_chain_id( const hp::chain_id_type& chain_id, const fc::url& using_url )
+  {
+    try
+    {
+      fc::http::connection local_output_con;
+      auto var_obj = post( local_output_con, using_url, "database_api.get_config", "{}" );
+
+      FC_ASSERT( var_obj.contains("HIVE_CHAIN_ID"), "No HIVE_CHAIN_ID in JSON response", ("reply", var_obj) );
+
+      const auto chain_id_str = var_obj["HIVE_CHAIN_ID"].as_string();
+      hp::chain_id_type remote_chain_id;
+
+      try
+      {
+        remote_chain_id = hp::chain_id_type( chain_id_str );
+      }
+      catch( fc::exception& )
+      {
+        FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
+      }
+
+      FC_ASSERT( remote_chain_id == chain_id, "Remote chain id does not match the specified one", ("chain_id",chain_id)("remote_chain_id",remote_chain_id) );
+    } // Note: we do not handle `error_response_from_node` as `validate_chain_id` is called only once every program run and it is crucial for the converter to work
+    FC_CAPTURE_AND_RETHROW( (chain_id) )
+  }
+
+  fc::variant_object conversion_plugin_impl::get_dynamic_global_properties( const fc::url& using_url )
+  {
+    try
+    {
+      fc::http::connection local_output_con;
+      auto var_obj = post( local_output_con, using_url, "database_api.get_dynamic_global_properties", "{}" );
+      // Check for example required property
+      FC_ASSERT( var_obj.contains("head_block_number"), "No head_block_number in JSON response", ("reply", var_obj) );
+
+      return var_obj;
+    } // Note: we do not handle `error_response_from_node` as `get_dynamic_global_properties` result is not required every time the function is called (usually every 1500ms)
+    FC_CAPTURE_AND_RETHROW()
+  }
+
+  void conversion_plugin_impl::print_pre_conversion_data( const hp::signed_block& block_to_log )const
+  {
+    uint32_t block_num = block_to_log.block_num();
+
+    if ( ( log_per_block > 0 && block_num % log_per_block == 0 ) || log_specific == block_num )
+      dlog("Processing block: ${block_num}. Data before conversion: ${block}", ("block_num", block_num)("block", block_to_log));
+  }
+
+  void conversion_plugin_impl::print_progress( uint32_t current_block, uint32_t stop_block )const
+  {
+    if( current_block % 1000 == 0 )
+    { // Progress
+      if( stop_block )
+        ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
+          ("progress", int( float(current_block) / stop_block * 100 ))("processed", current_block)("stop_point", stop_block));
+      else
+        ilog("${block_num} blocks rewritten", ("block_num", current_block));
+    }
+  }
+
+  void conversion_plugin_impl::print_post_conversion_data( const hp::signed_block& block_to_log )const
+  {
+    uint32_t block_num = block_to_log.block_num();
+
+    if ( ( log_per_block > 0 && block_num % log_per_block == 0 ) || log_specific == block_num )
+      dlog("Processing block: ${block_num}. Data before conversion: ${block}", ("block_num", block_num)("block", block_to_log));
+  }
 
   void conversion_plugin_impl::set_wifs( bool use_private, const std::string& _owner, const std::string& _active, const std::string& _posting )
   {

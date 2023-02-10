@@ -9,6 +9,7 @@
 #include <fc/log/logger.hpp>
 #include <fc/variant.hpp>
 #include <fc/network/url.hpp>
+#include <fc/thread/thread.hpp>
 
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/full_block.hpp>
@@ -60,24 +61,18 @@ namespace detail {
     void open( const fc::path& input );
     void close();
 
+    void transfer_required_asset( const hp::account_name_type& acc, const hp::asset& bal );
     void on_new_account_collected( const hp::account_name_type& acc );
     void on_comment_collected( hp::transaction& tx, const hp::account_name_type& acc, const std::string& link );
-    void transfer_required_asset( const hp::account_name_type& acc, const hp::asset& bal );
   };
 
 
   iceberg_generate_plugin_impl::iceberg_generate_plugin_impl( const std::vector< std::string >& output_urls, const hp::private_key_type& _private_key,
       const hp::chain_id_type& chain_id, appbase::application& app, bool enable_op_content_strip, size_t signers_size )
-    :  conversion_plugin_impl( _private_key, chain_id, signers_size, app, true ), log_in( app ),
+    :  conversion_plugin_impl( _private_key, chain_id, app, signers_size, true ), log_in( app ),
         enable_op_content_strip(enable_op_content_strip), theApp( app ), thread_pool( hive::chain::blockchain_worker_thread_pool( app ) )
   {
     idump((output_urls));
-
-    static const auto check_url = []( const auto& url ) {
-      FC_ASSERT( url.proto() == "http", "Currently only http protocol is supported", ("out_proto", url.proto()) );
-      FC_ASSERT( url.host().valid(), "You have to specify the host in url", ("url",url) );
-      FC_ASSERT( url.port().valid(), "You have to specify the port in url", ("url",url) );
-    };
 
     for( const auto& url : output_urls )
       check_url( this->output_urls.emplace_back(url) );
@@ -140,9 +135,10 @@ namespace detail {
       FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
 
       hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
+      print_pre_conversion_data( block );
 
-      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", block));
+      if( block.transactions.size() == 0 )
+        continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
       block.extensions.clear();
 
@@ -183,15 +179,13 @@ namespace detail {
 
       // Broadcast transactions here. Ignore creation of OBSOLETE_TREASURY_ACCOUNT and NEW_HIVE_TREASURY_ACCOUNT
 
-      if( start_block_num % 1000 == 0 ) // Progress
-        ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
-          ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
-
-      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("After conversion: ${block}", ("block", block));
+      print_progress( start_block_num, stop_block_num );
+      print_post_conversion_data( block );
 
       head_block_time = block.timestamp;
     }
+
+    display_error_response_data();
 
     if( !theApp.is_interrupt_request() )
       theApp.generate_interrupt_request();

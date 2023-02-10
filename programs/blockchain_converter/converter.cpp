@@ -408,7 +408,14 @@ namespace hive { namespace converter {
 
     current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
 
+    total_tx_count += full_transactions.size();
+
     return hc::full_block_type::create_from_block_header_and_transactions( _signed_block, full_transactions, &_private_key );
+  }
+
+  const uint64_t blockchain_converter::get_total_tx_count()const
+  {
+    return total_tx_count;
   }
 
   const hp::block_id_type& blockchain_converter::get_converter_head_block_id()const

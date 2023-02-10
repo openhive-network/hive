@@ -41,8 +41,8 @@ namespace detail {
     block_log log_in, log_out;
 
     block_log_conversion_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, appbase::application& app, size_t signers_size = 1 )
-      : conversion_plugin_impl( _private_key, chain_id, signers_size, app, true ), log_in( app ), log_out( app ), theApp( app ),
-        thread_pool( hive::chain::blockchain_worker_thread_pool( app ) ){}
+      : conversion_plugin_impl( _private_key, chain_id, app, signers_size, true ), log_in( app ), log_out( app ), theApp( app ),
+        thread_pool( hive::chain::blockchain_worker_thread_pool( app ) ) {}
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
     void open( const fc::path& input, const fc::path& output );
@@ -157,22 +157,16 @@ namespace detail {
       FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
 
       hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
-
-      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", block));
+      print_pre_conversion_data( block );
 
       auto fb = converter.convert_signed_block( block, last_block_id, head_block_time, false );
       last_block_id = fb->get_block_id();
       converter.on_tapos_change();
 
-      if( start_block_num % 1000 == 0 ) // Progress
-        ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
-          ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
-
       log_out.append( fb, false );
 
-      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("After conversion: ${block}", ("block", block));
+      print_progress( start_block_num, stop_block_num );
+      print_post_conversion_data( block );
 
       head_block_time = block.timestamp;
     }
