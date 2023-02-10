@@ -276,17 +276,7 @@ namespace detail {
           continue;
         }
 
-        if( start_block_num % 1000 == 0 ) // Progress
-        {
-          if( stop_block_num )
-            ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
-              ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
-          else
-            ilog("${block_num} blocks rewritten", ("block_num", start_block_num));
-        }
-
-        if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-          dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", *block));
+        print_pre_conversion_data( *block );
 
         if( block->transactions.size() == 0 )
           continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
@@ -296,8 +286,8 @@ namespace detail {
           true
         )->get_full_transactions();
 
-        if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-          dlog("After conversion: ${block}", ("block", *block));
+        print_progress( start_block_num, stop_block_num );
+        print_post_conversion_data( *block );
 
         for( size_t i = 0; i < transactions.size(); ++i )
           if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check

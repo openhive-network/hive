@@ -131,9 +131,7 @@ namespace detail {
       FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
 
       hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
-
-      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("Rewritten block: ${block_num}. Data before conversion: ${block}", ("block_num", start_block_num)("block", block));
+      print_pre_conversion_data( block );
 
       block.extensions.clear();
 
@@ -172,12 +170,8 @@ namespace detail {
 
       // Broadcast transactions here. Ignore creation of OBSOLETE_TREASURY_ACCOUNT and NEW_HIVE_TREASURY_ACCOUNT
 
-      if( start_block_num % 1000 == 0 ) // Progress
-        ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
-          ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
-
-      if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
-        dlog("After conversion: ${block}", ("block", block));
+      print_progress( start_block_num, stop_block_num );
+      print_post_conversion_data( block );
 
       head_block_time = block.timestamp;
     }

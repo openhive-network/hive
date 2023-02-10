@@ -17,6 +17,10 @@ namespace hive { namespace converter { namespace plugins {
   protected:
     blockchain_converter converter;
 
+    void print_pre_conversion_data( const hp::signed_block& block_to_log )const;
+    void print_progress( uint32_t current_block, uint32_t stop_block )const;
+    void print_post_conversion_data( const hp::signed_block& block_to_log )const;
+
   public:
     uint32_t log_per_block = 0, log_specific = 0;
 
