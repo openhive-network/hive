@@ -31,3 +31,6 @@ BASE_ACCOUNTS: Final[list] = ['hive.fund', 'initminer', 'miners', 'null', 'steem
 MAX_RECURRENT_TRANSFERS_PER_BLOCK: Final[int] = 1000
 
 MAX_OPEN_RECURRENT_TRANSFERS: Final[int] = 255
+
+# waiting time for approval decline voting rights (60 seconds in testnet / 30 days on mainnet)
+TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS: Final[int] = 21
