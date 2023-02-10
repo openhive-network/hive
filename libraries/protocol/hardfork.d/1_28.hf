@@ -1,6 +1,5 @@
 #ifndef HIVE_HARDFORK_1_28
 #define HIVE_HARDFORK_1_28 28
-#define HIVE_SMT_HARDFORK HIVE_HARDFORK_1_28
 
 long next_hf_time();
 #define HIVE_HARDFORK_1_28_TIME next_hf_time()
