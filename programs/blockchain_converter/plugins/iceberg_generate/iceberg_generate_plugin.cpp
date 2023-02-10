@@ -250,10 +250,14 @@ namespace detail {
   void iceberg_generate_plugin::plugin_startup() {
     try
     {
+#ifdef HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED
       my->convert(
         get_app().get_args().at("resume-block").as< uint32_t >(),
         get_app().get_args().at( "stop-block" ).as< uint32_t >()
       );
+#else
+      FC_THROW("Blockchain converter has been built without the iceberg_generate plugin enabled. Please enable it in order to run it under hived.");
+#endif
     }
     catch( const fc::exception& e )
     {

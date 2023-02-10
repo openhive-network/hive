@@ -117,7 +117,7 @@ void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana
     manabar_params params;
     params.regen_time = HIVE_VOTING_MANA_REGENERATION_SECONDS;
 
-#ifdef IS_TEST_NET //will be needed for ICEBERG as well
+#if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     if( true )
 #else //mainnet and regular mirrornet
     if( gpo.head_block_number > HIVE_HF_21_STALL_BLOCK )
