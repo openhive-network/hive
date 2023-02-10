@@ -154,6 +154,8 @@ namespace detail {
       head_block_time = block.timestamp;
     }
 
+    // Broadcast transactions here. Ignore creation of OBSOLETE_TREASURY_ACCOUNT and NEW_HIVE_TREASURY_ACCOUNT
+
     if( !appbase::app().is_interrupt_request() )
       appbase::app().generate_interrupt_request();
   }
@@ -228,10 +230,14 @@ namespace detail {
   void iceberg_generate_plugin::plugin_startup() {
     try
     {
+#ifdef HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED
       my->convert(
         appbase::app().get_args().at("resume-block").as< uint32_t >(),
         appbase::app().get_args().at( "stop-block" ).as< uint32_t >()
       );
+#else
+      FC_THROW("Blockchain converter has been built without the iceberg_generate plugin enabled. Please enable it in order to run it under hived.");
+#endif
     }
     catch( const fc::exception& e )
     {

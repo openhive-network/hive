@@ -4118,7 +4118,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       auth.active.weight_threshold = 1;
     });
 
-#ifdef IS_TEST_NET
+#if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
     create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
 #endif
