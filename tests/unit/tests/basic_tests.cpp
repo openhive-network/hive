@@ -779,16 +779,16 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::witness_object>().str(), fc::ripemd160("fd970cfd4115cb565f5f9d58a4786db02a1faa14").str() );
 
   #ifdef HIVE_ENABLE_SMT
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_token_object>().str(), fc::ripemd160("33766a0402eb5b98dc22fca7028825249427cb8b").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_token_object>().str(), fc::ripemd160("9a72dc45b62bfb558ca991c336945a167f26a39e").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_regular_balance_object>().str(), fc::ripemd160("66f73d9770b58c753929ca4999eca94ce9d63164").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_rewards_balance_object>().str(), fc::ripemd160("5e7873e9a45aaac0e9be58d496808cf7af99062c").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::nai_pool_object>().str(), fc::ripemd160("89160725fec27b97bf4103b2376344b77e6ab907").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_token_emissions_object>().str(), fc::ripemd160("b438fb23a86a591dd27ddaa68a009aaad50d1a3e").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_contribution_object>().str(), fc::ripemd160("6f78b583257989c260275cfb5e82f141fa447a83").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_contribution_object>().str(), fc::ripemd160("ab5ec5366e6a9c884fd94259d3f9edde2250ce93").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_ico_object>().str(), fc::ripemd160("c13787e44a827b3fafe487ae4d1e3e8219c8ba20").str() );
 
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_cashout_object>().str(), fc::ripemd160("d6fa0377d1cc1f4436e29a25fd9be01f513f8be7").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::dynamic_global_property_object>().str(), fc::ripemd160("d6a50a17c1c3bec5cb9ffadcc86f2b7436b1ead8").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::dynamic_global_property_object>().str(), fc::ripemd160("cf7b7a20e57ab720b1ee8b7bc7520c0e4de8c9a1").str() );
   #else
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_cashout_object>().str(), fc::ripemd160("826b8b0ef2cded94a8e88427642abf0888edacbb").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::dynamic_global_property_object>().str(), fc::ripemd160("1fb1db7e481e4973fb9ea3517d2b379e2a457233").str() );
