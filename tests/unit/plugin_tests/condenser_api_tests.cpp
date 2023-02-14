@@ -635,6 +635,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 
   do_the_testing( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
 
+  expected_operations.insert( OP_TAG(changed_recovery_account_operation) );
+  do_the_testing( *this, expected_operations, 1271 ); // clears the container nominally
 
 } FC_LOG_AND_RETHROW() }
 
