@@ -29,9 +29,6 @@
 
 #include "../base/conversion_plugin.hpp"
 
-//#define HIVE_CONVERTER_POST_DETAILED_LOGGING // Uncomment or define if you want to enable detailed logging along with the standard response message on error
-//#define HIVE_CONVERTER_POST_SUPPRESS_WARNINGS // Uncomment or define if you want to suppress converter warnings
-
 namespace hive { namespace converter { namespace plugins { namespace node_based_conversion {
 
   namespace bpo = boost::program_options;
@@ -40,19 +37,6 @@ namespace hive { namespace converter { namespace plugins { namespace node_based_
 
 namespace detail {
 
-  FC_DECLARE_EXCEPTION( error_response_from_node, 100000, "Got error response from the node while processing input block" );
-
-  void handle_error_response_from_node( const error_response_from_node& error )
-  {
-#ifndef HIVE_CONVERTER_POST_SUPPRESS_WARNINGS
-# ifdef HIVE_CONVERTER_POST_DETAILED_LOGGING
-    wlog( "${msg}", ("msg",error.to_detail_string()) );
-# else
-    wlog( "${msg}", ("msg",error.to_string()) );
-# endif
-#endif
-  }
-
   class node_based_conversion_plugin_impl final : public conversion_plugin_impl {
   public:
 
@@ -60,44 +44,15 @@ namespace detail {
       const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id,
       size_t signers_size, size_t block_buffer_size );
 
-    void open( fc::http::connection& con, const fc::url& url );
     void close();
 
-    /**
-     * @brief Sends a post request to the given hive endpoint with the prepared data
-     *
-     * @param con connection object to be used in order to estabilish connection with the server
-     * @param url hive endpoint URL to connect to
-     * @param method hive method to invoke
-     * @param data data as a stringified JSON to be passed as a `param` property in the request, for example: `[0]`
-     *
-     * @return variant_object JSON object represented as a variant_object parsed from the `result` property from the reponse
-     *
-     * @throws fc::exception on connect error or `error` property present in the response
-     */
-    variant_object post( fc::http::connection& con, const fc::url& url, const std::string& method, const std::string& data );
-
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
-
-    void transmit( const hc::full_transaction_type& trx, const fc::url& using_url );
 
     // Those two functions work with input_url which is always one
     fc::optional< hp::signed_block > receive_uncached( uint32_t num );
     fc::optional< hp::signed_block > receive( uint32_t block_num );
 
     const fc::variants& get_block_buffer()const;
-
-    void validate_chain_id( const hp::chain_id_type& chain_id, const fc::url& using_url );
-
-    /**
-     * @brief Get the dynamic global properties object as variant_object from the output node
-     */
-    fc::variant_object get_dynamic_global_properties( const fc::url& using_url );
-
-    /**
-     * @brief Get the id of the block preceding the one with the given number from the output node
-     */
-    hp::block_id_type get_previous_from_block( uint32_t num, const fc::url& using_url );
 
     fc::url                input_url;
     std::vector< fc::url > output_urls;
@@ -107,9 +62,6 @@ namespace detail {
     uint64_t             last_block_range_start = -1; // initial value to satisfy the `num < last_block_range_start` check to get new blocks on first call
     size_t               block_buffer_size;
     fc::variant_object   block_buffer_obj; // blocks buffer object containing lookup table
-
-    uint64_t             error_response_count = 0;
-    uint64_t             total_request_count = 0;
   };
 
   node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::vector< std::string >& output_urls,
@@ -131,75 +83,10 @@ namespace detail {
       check_url( this->output_urls.emplace_back(url) );
   }
 
-  void node_based_conversion_plugin_impl::open( fc::http::connection& con, const fc::url& url )
-  {
-    while( true )
-    {
-      try
-      {
-        con.connect_to( fc::resolve( *url.host(), *url.port() )[0] ); // First try to resolve the domain name
-      }
-      catch( const fc::exception& e )
-      {
-        try
-        {
-          con.connect_to( fc::ip::endpoint( *url.host(), *url.port() ) );
-        } FC_CAPTURE_AND_RETHROW( (url) )
-      }
-
-      if (con.get_socket().is_open())
-        break;
-
-      else
-      {
-        wlog("Error connecting to server RPC endpoint, retrying in 1 second");
-        fc::usleep(fc::seconds(1));
-      }
-    }
-  }
-
   void node_based_conversion_plugin_impl::close()
   {
     if( !converter.has_hardfork( HIVE_HARDFORK_0_17__770 ) )
       wlog("Conversion interrupted before HF17. Pow authorities can still be added into the blockchain. Resuming the conversion without the saved converter state will result in corrupted block log");
-  }
-
-  variant_object node_based_conversion_plugin_impl::post( fc::http::connection& con, const fc::url& url, const std::string& method, const std::string& data )
-  {
-    try
-    {
-      ++total_request_count;
-
-      open( con, url );
-
-      auto reply = con.request( "POST", url,
-          "{\"jsonrpc\":\"2.0\",\"method\":\"" + method + "\",\"params\":" + data +  ",\"id\":1}"
-          /*,{ { "Content-Type", "application/json" } } */
-      );
-      FC_ASSERT( reply.body.size(), "Reply body expected, but not received. Propably the server did not return the Content-Length header", ("code", reply.status) );
-      std::string str_reply{ &*reply.body.begin(), reply.body.size() };
-
-      FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when sending request to the endpoint", ("code", reply.status)("reply", str_reply) );
-
-      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
-      if( var_obj.contains( "error" ) )
-        FC_THROW_EXCEPTION( error_response_from_node, " ${block_num}: ${msg}",
-                           ("msg", var_obj["error"].get_object()["message"].get_string())
-                           ("detailed",var_obj["error"].get_object())
-                           ("block_num", hp::block_header::num_from_id(converter.get_mainnet_head_block_id()) + 1)
-                          );
-
-      // By this point `result` should be present in the response
-      FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );
-
-      return var_obj["result"].get_object();
-    }
-    catch( const error_response_from_node& error )
-    {
-      ++error_response_count;
-
-      throw error;
-    } FC_CAPTURE_AND_RETHROW( (url)(data) )
   }
 
   void node_based_conversion_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
@@ -325,22 +212,6 @@ namespace detail {
       appbase::app().generate_interrupt_request();
   }
 
-  void node_based_conversion_plugin_impl::transmit( const hc::full_transaction_type& trx, const fc::url& using_url )
-  {
-    try
-    {
-      fc::variant v;
-      fc::to_variant( trx.get_transaction(), v );
-
-      fc::http::connection local_output_con;
-      post( local_output_con, using_url, "network_broadcast_api.broadcast_transaction", "{\"trx\":" + fc::json::to_string( v ) + "}" );
-    }
-    catch( const error_response_from_node& error )
-    {
-      handle_error_response_from_node( error );
-    } FC_CAPTURE_AND_RETHROW( (trx.get_transaction_id().str()) )
-  }
-
   const fc::variants& node_based_conversion_plugin_impl::get_block_buffer()const
   {
     FC_ASSERT( block_buffer_obj.contains("blocks"), "There are no blocks present. It may be caused by either no receive requests"
@@ -416,59 +287,6 @@ namespace detail {
 
       return fc::optional< hp::signed_block >();
     } FC_CAPTURE_AND_RETHROW( (num) )
-  }
-
-  void node_based_conversion_plugin_impl::validate_chain_id( const hp::chain_id_type& chain_id, const fc::url& using_url )
-  {
-    try
-    {
-      fc::http::connection local_output_con;
-      auto var_obj = post( local_output_con, using_url, "database_api.get_config", "{}" );
-
-      FC_ASSERT( var_obj.contains("HIVE_CHAIN_ID"), "No HIVE_CHAIN_ID in JSON response", ("reply", var_obj) );
-
-      const auto chain_id_str = var_obj["HIVE_CHAIN_ID"].as_string();
-      hp::chain_id_type remote_chain_id;
-
-      try
-      {
-        remote_chain_id = hp::chain_id_type( chain_id_str );
-      }
-      catch( fc::exception& )
-      {
-        FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
-      }
-
-      FC_ASSERT( remote_chain_id == chain_id, "Remote chain id does not match the specified one", ("chain_id",chain_id)("remote_chain_id",remote_chain_id) );
-    } // Note: we do not handle `error_response_from_node` as `validate_chain_id` is called only once every program run and it is crucial for the converter to work
-    FC_CAPTURE_AND_RETHROW( (chain_id) )
-  }
-
-  fc::variant_object node_based_conversion_plugin_impl::get_dynamic_global_properties( const fc::url& using_url )
-  {
-    try
-    {
-      fc::http::connection local_output_con;
-      auto var_obj = post( local_output_con, using_url, "database_api.get_dynamic_global_properties", "{}" );
-      // Check for example required property
-      FC_ASSERT( var_obj.contains("head_block_number"), "No head_block_number in JSON response", ("reply", var_obj) );
-
-      return var_obj;
-    } // Note: we do not handle `error_response_from_node` as `get_dynamic_global_properties` result is not required every time the function is called (usually every 1500ms)
-    FC_CAPTURE_AND_RETHROW()
-  }
-
-  hp::block_id_type node_based_conversion_plugin_impl::get_previous_from_block( uint32_t num, const fc::url& using_url )
-  {
-    try
-    {
-      fc::http::connection local_output_con;
-      auto var_obj = post( local_output_con, using_url, "block_api.get_block_header", "{\"block_num\":" + std::to_string( num ) + "}" );
-      FC_ASSERT( var_obj.contains("header"), "No header in JSON response", ("reply", var_obj) );
-
-      return var_obj["header"].get_object()["previous"].as< hp::block_id_type >();
-    } // Note: we do not handle `error_response_from_node` as `get_previous_from_block` result is not required every time the function is called (usually every 1500ms)
-    FC_CAPTURE_AND_RETHROW()
   }
 
 } // detail

@@ -162,10 +162,12 @@ namespace detail {
           if( dependent_permlink_data.first.size() && all_permlinks.insert( compute_author_and_permlink_hash( dependent_permlink_data ) ).second )
             on_comment_collected(dependent_permlink_data.first, dependent_permlink_data.second);
 
+          /* We currently do not use required asset transfer visitor
           const auto required_assets_accounts = op.visit(ops_required_asset_transfer_visitor{ converter.get_cached_hardfork() });
           for( const auto& [ account, assets ] : required_assets_accounts )
             for( const auto& asset : assets )
               transfer_required_asset(account, asset);
+          */
         }
 
       // Broadcast transactions here. Ignore creation of OBSOLETE_TREASURY_ACCOUNT and NEW_HIVE_TREASURY_ACCOUNT
