@@ -1,6 +1,12 @@
 #pragma once
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
+#include <hive/plugins/database_api/database_api_plugin.hpp>
+#include <hive/plugins/block_api/block_api_plugin.hpp>
+#include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
+#include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
+#include <hive/plugins/network_broadcast_api/network_broadcast_api_plugin.hpp>
+#include <hive/plugins/rc_api/rc_api_plugin.hpp>
 #include <appbase/plugin.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
@@ -18,6 +24,12 @@ class wallet_bridge_api_plugin : public plugin< wallet_bridge_api_plugin >
     APPBASE_PLUGIN_REQUIRES(
       (chain::chain_plugin)
       (json_rpc::json_rpc_plugin)
+      (database_api::database_api_plugin)
+      (block_api::block_api_plugin)
+      (account_by_key::account_by_key_api_plugin)
+      (market_history::market_history_api_plugin)
+      (network_broadcast_api::network_broadcast_api_plugin)
+      (rc::rc_api_plugin)
     )
 
     static const std::string& name() { static std::string name = HIVE_WALLET_BRIDGE_API_PLUGIN_NAME; return name; }
