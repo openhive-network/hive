@@ -1,3 +1,13 @@
+"""
+This file contains tests showing abnormalities on hardfork 27, behaviors shown in these tests need to be fixed.
+Each of the tests included here contains an equivalent enabled on the current hardfork has the same name without
+the `_on_hf_27` suffix. e.g:
+    test_decline_voting_rights_more_than_once_on_hf_27 -> test showing an abnormality
+    test_decline_voting_rights_more_than_once -> should pass after repair
+
+Tests enabled on the current hardfork are omitted. After the repairs, the `@pytest.mark.skip` marker should be removed
+Related issue: https://gitlab.syncad.com/hive/hive/-/issues/441
+"""
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
