@@ -137,7 +137,8 @@ int main( int argc, char** argv )
     }
 
     std::cerr << ss.str();
-    std::cerr << "\n\nDecoding time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << " microseconds.\n";
+    std::cerr << "\n\nTotal amount of decoded types: " << dtds_instance.get_decoded_types_data_map().size() << "\n";
+    std::cerr << "Decoding time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << " microseconds.\n";
   }
   catch ( const fc::exception& e )
   {
