@@ -34,23 +34,14 @@ decoded_types_data_storage& decoded_types_data_storage::get_instance()
   return instance;
 }
 
-void decoded_types_data_storage::add_type_to_decoded_types_set(const std::string_view type_name)
+bool decoded_types_data_storage::add_type_to_decoded_types_set(const std::string_view type_name)
 {
-  decoded_types_set.emplace(type_name);
+  return decoded_types_set.emplace(type_name).second;
 }
 
 void decoded_types_data_storage::add_decoded_type_data_to_map(decoded_type_data&& decoded_type)
 {
   decoded_types_data_map.try_emplace(decoded_type.get_type_name(), std::move(decoded_type));
-}
-
-bool decoded_types_data_storage::type_already_decoded(const std::string_view type_name)
-{
-  if (decoded_types_set.find(type_name) != decoded_types_set.end())
-    return true;
-
-  else
-    return false;
 }
 
 } } } // hive::chain::util
