@@ -301,6 +301,8 @@ namespace detail {
     FC_ASSERT( input_v.size() == 1, HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " accepts only one input node" );
     FC_ASSERT( output_v.size(), HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " requires at least one output node" );
 
+    idump((input_v)(output_v));
+
     hp::chain_id_type _hive_chain_id;
 
     const auto& chain_id_str = options["chain-id"].as< std::string >();

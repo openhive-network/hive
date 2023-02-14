@@ -61,9 +61,8 @@ namespace detail {
     void open( const fc::path& input );
     void close();
 
-    void transfer_required_asset( const hp::account_name_type& acc, const hp::asset& bal );
-    void on_new_account_collected( const hp::account_name_type& acc );
-    void on_comment_collected( hp::transaction& tx, const hp::account_name_type& acc, const std::string& link );
+    void on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc );
+    void on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link );
   };
 
 
@@ -86,26 +85,35 @@ namespace detail {
     } FC_CAPTURE_AND_RETHROW( (input) );
   }
 
-  void iceberg_generate_plugin_impl::on_new_account_collected( const hp::account_name_type& acc )
+  void iceberg_generate_plugin_impl::on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc )
   {
-    ilog("Collected new account: ${acc}", ("acc", acc));
+    hp::account_create_operation op;
+    op.fee = hp::asset{ 3000, HIVE_SYMBOL };
+    op.creator = HIVE_INIT_MINER_NAME;
+    op.new_account_name = acc;
+    op.memo_key = converter.get_second_authority_key( hp::authority::classification::owner ).get_public_key();
+
+    hp::signed_transaction tx;
+    tx.signatures.emplace_back(); // null-sign to inform the converter that it should replace null-signature with the actual proper signature
+    tx.operations.emplace_back( op );
+
+    b.transactions.emplace( b.transactions.begin(), tx );
   }
 
-  void iceberg_generate_plugin_impl::on_comment_collected( hp::transaction& tx, const hp::account_name_type& acc, const std::string& link )
+  void iceberg_generate_plugin_impl::on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link )
   {
     hp::comment_operation op;
     op.body = "#";
     op.parent_author = HIVE_ROOT_POST_PARENT;
+    op.parent_permlink = "x";
     op.author = acc;
     op.permlink = link;
 
-    tx.operations.emplace( tx.operations.begin(), op );
-    // ilog("Collected new permlink: /@${acc}/${link}", ("acc", acc)("link", link));
-  }
+    hp::signed_transaction tx;
+    tx.signatures.emplace_back(); // null-sign to inform the converter that it should replace null-signature with the actual proper signature
+    tx.operations.emplace_back( op );
 
-  void iceberg_generate_plugin_impl::transfer_required_asset( const hp::account_name_type& acc, const hp::asset& bal )
-  {
-    ilog("Collected required asset for account ${acc}: ${bal}", ("acc", acc)("bal", bal));
+    b.transactions.emplace( b.transactions.begin(), tx );
   }
 
   void iceberg_generate_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
@@ -113,76 +121,129 @@ namespace detail {
     FC_ASSERT( log_in.is_open(), "Input block log should be opened before the conversion" );
     FC_ASSERT( log_in.head(), "Your input block log is empty" );
 
-    fc::time_point_sec head_block_time = HIVE_GENESIS_TIME;
-
     FC_ASSERT( start_block_num,
       HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " plugin currently does not currently support conversion continue" );
-
-    hp::block_id_type last_block_id;
 
     if( !stop_block_num || stop_block_num > log_in.head()->get_block_num() )
       stop_block_num = log_in.head()->get_block_num();
 
+    auto gpo = get_dynamic_global_properties( output_urls.at(0) );
+    // Last irreversible block number and id for tapos generation
+    uint32_t lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
+    hp::block_id_type lib_id = get_previous_from_block( lib_num, output_urls.at(0) );
+
+    const auto update_lib_id = [&]() {
+      try
+      {
+        // Update dynamic global properties object and check if there is a new irreversible block
+        // If so, then update lib id
+        gpo = get_dynamic_global_properties( output_urls.at(0) );
+        uint32_t new_lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
+        if( lib_num != new_lib_num )
+        {
+          lib_num = new_lib_num;
+          lib_id  = get_previous_from_block( lib_num, output_urls.at(0) );
+        }
+      }
+      catch( const error_response_from_node& error )
+      {
+        handle_error_response_from_node( error );
+      }
+    };
+
+    uint32_t gpo_interval = 0;
+
+    hp::asset account_creation_fee = get_account_creation_fee( output_urls.at(0) );
+
     boost::container::flat_set<hp::account_name_type> all_accounts;
     boost::container::flat_set<author_and_permlink_hash_t> all_permlinks;
 
-    ops_strip_content_visitor ops_strip_content{};
+    const auto init_start_block_num = start_block_num;
+    uint32_t last_witness_schedule_block_check = lib_num;
 
-    // Pre-init: Detect required iceberg operations
+    // The actual conversion:
     for( ; start_block_num <= stop_block_num && !theApp.is_interrupt_request(); ++start_block_num )
     {
-      std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
-      FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
-
-      hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
-      print_pre_conversion_data( block );
-
-      if( block.transactions.size() == 0 )
-        continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
-
-      block.extensions.clear();
-
-      auto fb = converter.convert_signed_block( block, last_block_id, head_block_time, false );
-      last_block_id = fb->get_block_id();
-      converter.on_tapos_change();
-
-      for( auto& tx : block.transactions )
-        for( auto& op : tx.operations )
+      try {
+        if( lib_num - last_witness_schedule_block_check >= HIVE_MAX_WITNESSES )
         {
-          // Stripping operations content
-          if( enable_op_content_strip )
-            op = op.visit( ops_strip_content_visitor{} );
+          account_creation_fee = get_account_creation_fee( output_urls.at(0) );
+          last_witness_schedule_block_check = lib_num;
+        }
 
-          // Collecting impacted accounts - should be always before collecting permlinks
+        std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
+        FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
+
+        hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
+        print_pre_conversion_data( block );
+
+        block.extensions.clear();
+
+        for( size_t i = 0; i < block.transactions.size(); ++i )
+        {
+          // Collecting impacted accounts should be always done before collecting permlinks
           boost::container::flat_set<hp::account_name_type> new_accounts;
           std::vector<ops_permlink_tracker_result_t> permlinks;
 
-          hive::app::operation_get_impacted_accounts( op, new_accounts );
+          for( auto& op : block.transactions.at(i).operations )
+          {
+            // Stripping operations content
+            if( enable_op_content_strip )
+              op = op.visit( ops_strip_content_visitor{} );
+
+            hive::app::operation_get_impacted_accounts( op, new_accounts );
+
+            // Collecting permlinks
+            const auto created_permlink_data = op.visit(created_permlinks_visitor{});
+            all_permlinks.insert( compute_author_and_permlink_hash( created_permlink_data ) );
+
+            permlinks.emplace_back( op.visit(dependent_permlinks_visitor{}) );
+          }
+
+          for( const auto& dependent_permlink_data : permlinks )
+            if( dependent_permlink_data.first.size() && all_permlinks.insert( compute_author_and_permlink_hash( dependent_permlink_data ) ).second )
+            {
+              on_comment_collected(block, dependent_permlink_data.first, dependent_permlink_data.second);
+              ++i;
+            }
 
           for( const auto& acc : new_accounts )
             if( all_accounts.insert(acc).second )
-              on_new_account_collected(acc);
-
-          // Collecting permlinks
-          const auto created_permlink_data = op.visit(created_permlinks_visitor{});
-          all_permlinks.insert( compute_author_and_permlink_hash( created_permlink_data ) );
-
-          const auto& dependent_permlink_data = op.visit(dependent_permlinks_visitor{});
-          if( dependent_permlink_data.first.size() && all_permlinks.insert( compute_author_and_permlink_hash( dependent_permlink_data ) ).second )
-            on_comment_collected(tx, dependent_permlink_data.first, dependent_permlink_data.second);
-
-          const auto required_assets_accounts = op.visit(ops_required_asset_transfer_visitor{ converter.get_cached_hardfork() });
-          for( const auto& [ account, assets ] : required_assets_accounts )
-            for( const auto& asset : assets )
-              transfer_required_asset(account, asset);
+            {
+              on_new_account_collected(block, acc);
+              ++i;
+            }
         }
 
-      // Broadcast transactions here. Ignore creation of OBSOLETE_TREASURY_ACCOUNT and NEW_HIVE_TREASURY_ACCOUNT
+        if( block.transactions.size() == 0 )
+          continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
-      print_progress( start_block_num, stop_block_num );
-      print_post_conversion_data( block );
+        auto block_converted = converter.convert_signed_block( block, lib_id,
+          gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
+          true
+        );
 
-      head_block_time = block.timestamp;
+        print_progress( start_block_num - init_start_block_num, stop_block_num - init_start_block_num );
+        print_post_conversion_data( block_converted->get_block() );
+
+        const auto& transactions = block_converted->get_full_transactions();
+
+        for( size_t i = 0; i < transactions.size(); ++i )
+          if( theApp.is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
+            break;
+          else
+            try {
+              transmit( *transactions.at(i), output_urls.at( i % output_urls.size() ) );
+            } ICEBERG_GENERATE_CAPTURE_AND_LOG()
+
+        gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
+
+        if( gpo_interval == 0 )
+        {
+          update_lib_id();
+          converter.on_tapos_change();
+        }
+      } ICEBERG_GENERATE_CAPTURE_AND_LOG()
     }
 
     display_error_response_data();
@@ -222,6 +283,8 @@ namespace detail {
 
     FC_ASSERT( input_v.size() == 1, HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " accepts only one input block log" );
     FC_ASSERT( output_v.size(), HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " requires at least one output node" );
+
+    idump((input_v)(output_v));
 
     std::string out_file;
     if( options.count("output") && options["output"].as< std::vector< std::string > >().size() )

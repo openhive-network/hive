@@ -12,7 +12,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
 
   using hive::protocol::account_name_type;
 
-  using ops_permlink_tracker_result_t = std::pair<const account_name_type&, const std::string&>;
+  using ops_permlink_tracker_result_t = std::pair<account_name_type, std::string>;
 
   using author_and_permlink_hash_t = fc::ripemd160;
 
@@ -64,7 +64,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       // This is usually not a case, but in the hive_evaluator it is allowed for parent_permlink to exist (e.g. firstpost),
       // but when the parent_author is set to HIVE_ROOT_POST_PARENT, the parent_permlink value is ignored, so we can't
       // return it, because there may be something there, and instead we have to return an empty string.
-      return { HIVE_ROOT_POST_PARENT, "" };
+      return { HIVE_ROOT_POST_PARENT, "x" };
     }
 
     result_type operator()( hive::protocol::comment_options_operation& op )const
