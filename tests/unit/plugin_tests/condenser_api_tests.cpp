@@ -638,6 +638,10 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   expected_operations.insert( OP_TAG(changed_recovery_account_operation) );
   do_the_testing( *this, expected_operations, 1271 ); // clears the container nominally
 
+  expected_operations.insert( OP_TAG(fill_convert_request_operation) );
+  expected_operations.insert( OP_TAG(fill_collateralized_convert_request_operation) );
+  do_the_testing( *this, expected_operations, 2931 ); // clears the container nominally
+
 } FC_LOG_AND_RETHROW() }
 
 #undef OP_TAG
