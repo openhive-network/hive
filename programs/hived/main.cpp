@@ -15,7 +15,6 @@
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 #include <hive/plugins/witness/witness_plugin.hpp>
-#include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 
 #include <fc/exception/exception.hpp>
 #include <fc/thread/thread.hpp>
@@ -106,8 +105,7 @@ int main( int argc, char** argv )
     theApp.set_default_plugins<
       hive::plugins::witness::witness_plugin,
       hive::plugins::account_by_key::account_by_key_plugin,
-      hive::plugins::account_by_key::account_by_key_api_plugin,
-      hive::plugins::wallet_bridge_api::wallet_bridge_api_plugin >();
+      hive::plugins::account_by_key::account_by_key_api_plugin >();
 
 
     // These plugins are loaded regardless of the config
