@@ -40,6 +40,13 @@ namespace hive { namespace converter { namespace plugins {
     size_t signers_size, bool increase_block_size )
     : converter( _private_key, chain_id, signers_size, increase_block_size ) {}
 
+  void conversion_plugin_impl::check_url( const fc::url& url )const
+  {
+    FC_ASSERT( url.proto() == "http", "Currently only http protocol is supported", ("out_proto", url.proto()) );
+    FC_ASSERT( url.host().valid(), "You have to specify the host in url", ("url",url) );
+    FC_ASSERT( url.port().valid(), "You have to specify the port in url", ("url",url) );
+  }
+
   void conversion_plugin_impl::open( fc::http::connection& con, const fc::url& url )
   {
     while( true )

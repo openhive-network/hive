@@ -29,10 +29,11 @@ namespace hive { namespace converter { namespace plugins {
 
     void handle_error_response_from_node( const error_response_from_node& error );
 
+    void check_url( const fc::url& url )const;
+
     void print_pre_conversion_data( const hp::signed_block& block_to_log )const;
     void print_progress( uint32_t current_block, uint32_t stop_block )const;
     void print_post_conversion_data( const hp::signed_block& block_to_log )const;
-
 
     void open( fc::http::connection& con, const fc::url& url );
 

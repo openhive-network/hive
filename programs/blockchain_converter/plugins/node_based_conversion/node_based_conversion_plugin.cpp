@@ -69,13 +69,6 @@ namespace detail {
     : conversion_plugin_impl( _private_key, chain_id, signers_size, false ), input_url( input_url ), block_buffer_size( block_buffer_size )
   {
     FC_ASSERT( block_buffer_size && block_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("block_buffer_size",block_buffer_size) );
-    idump((input_url)(output_urls));
-
-    static const auto check_url = []( const auto& url ) {
-      FC_ASSERT( url.proto() == "http", "Currently only http protocol is supported", ("out_proto", url.proto()) );
-      FC_ASSERT( url.host().valid(), "You have to specify the host in url", ("url",url) );
-      FC_ASSERT( url.port().valid(), "You have to specify the port in url", ("url",url) );
-    };
 
     check_url(this->input_url);
 
@@ -315,6 +308,8 @@ namespace detail {
 
     FC_ASSERT( input_v.size() == 1, HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " accepts only one input node" );
     FC_ASSERT( output_v.size(), HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME " requires at least one output node" );
+
+    idump((input_v)(output_v));
 
     hp::chain_id_type _hive_chain_id;
 
