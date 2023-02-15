@@ -179,7 +179,7 @@ struct filtering_visitor
   (account_created_operation)(fill_collateralized_convert_request_operation)(system_warning_operation)
   (fill_recurrent_transfer_operation)(failed_recurrent_transfer_operation)(limit_order_cancelled_operation)
   (producer_missed_operation)(proposal_fee_operation)(collateralized_convert_immediate_conversion_operation)
-  (escrow_approved_operation)(escrow_rejected_operation)(proxy_cleared_operation) )
+  (escrow_approved_operation)(escrow_rejected_operation)(proxy_cleared_operation)(declined_voting_rights) )
 
 private:
   uint64_t _filter = 0;

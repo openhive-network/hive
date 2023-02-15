@@ -476,6 +476,11 @@ struct get_impacted_account_visitor
     _impacted.insert( op.proxy );
   }
 
+  void operator()( const declined_voting_rights& op )
+  {
+    _impacted.insert( op.account );
+  }
+
   //void operator()( const operation& op ){}
 };
 
