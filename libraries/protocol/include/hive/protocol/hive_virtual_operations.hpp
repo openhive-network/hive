@@ -807,6 +807,16 @@ struct proxy_cleared_operation : public virtual_operation
   account_name_type proxy;//proxy user that facilitates voting on witnesses
 };
 
+struct declined_voting_rights : public virtual_operation
+{
+  declined_voting_rights() = default;
+  declined_voting_rights( const account_name_type& account )
+    : account( account )
+  {}
+
+  account_name_type account;//user who decided to decline his voting rights
+};
+
 } } //hive::protocol
 
 FC_REFLECT( hive::protocol::fill_convert_request_operation, (owner)(requestid)(amount_in)(amount_out) )
@@ -851,3 +861,4 @@ FC_REFLECT( hive::protocol::collateralized_convert_immediate_conversion_operatio
 FC_REFLECT( hive::protocol::escrow_approved_operation, (from)(to)(agent)(escrow_id)(fee) )
 FC_REFLECT( hive::protocol::escrow_rejected_operation, (from)(to)(agent)(escrow_id)(hbd_amount)(hive_amount)(fee) )
 FC_REFLECT( hive::protocol::proxy_cleared_operation, (account)(proxy) )
+FC_REFLECT( hive::protocol::declined_voting_rights, (account) )
