@@ -2544,7 +2544,7 @@ BOOST_AUTO_TEST_CASE( proxy_cleared_operation_basic )
       BOOST_REQUIRE( db->get_account( "bob" ).has_proxy() == false );
       BOOST_REQUIRE( db->get_account( "carol" ).has_proxy() == false );
 
-      auto recent_ops = get_last_operations( 1 );
+      auto recent_ops = get_last_operations( 2 );
       auto reject_op = recent_ops.back().get< proxy_cleared_operation >();
       BOOST_REQUIRE( reject_op.account == "bob" );
       BOOST_REQUIRE( reject_op.proxy == "carol" );
