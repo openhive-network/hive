@@ -98,6 +98,7 @@ namespace detail {
   void iceberg_generate_plugin_impl::on_comment_collected( hp::transaction& tx, const hp::account_name_type& acc, const std::string& link )
   {
     hp::comment_operation op;
+    op.body = "#";
     op.parent_author = HIVE_ROOT_POST_PARENT;
     op.author = acc;
     op.permlink = link;
