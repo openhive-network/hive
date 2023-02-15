@@ -128,7 +128,8 @@ namespace hive { namespace protocol {
         collateralized_convert_immediate_conversion_operation, //last_regular + 39
         escrow_approved_operation, //last_regular + 40
         escrow_rejected_operation, //last_regular + 41
-        proxy_cleared_operation //last_regular + 42
+        proxy_cleared_operation, //last_regular + 42
+        declined_voting_rights //last_regular + 43
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,
