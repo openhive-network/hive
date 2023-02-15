@@ -86,6 +86,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   typedef producer_missed_operation              legacy_producer_missed_operation;
   typedef witness_block_approve_operation        legacy_witness_block_approve_operation;
   typedef proxy_cleared_operation                legacy_proxy_cleared_operation;
+  typedef declined_voting_rights                 legacy_declined_voting_rights;
 
   struct legacy_price
   {
@@ -1660,7 +1661,8 @@ namespace hive { namespace plugins { namespace condenser_api {
         legacy_escrow_approved_operation,
         legacy_escrow_rejected_operation,
         legacy_witness_block_approve_operation,
-        legacy_proxy_cleared_operation
+        legacy_proxy_cleared_operation,
+        legacy_declined_voting_rights
       > legacy_operation;
 
   struct legacy_operation_conversion_visitor
@@ -1712,6 +1714,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const producer_missed_operation& op )const                { l_op = op; return true; }
     bool operator()( const witness_block_approve_operation& op )const          { l_op = op; return true; }
     bool operator()( const legacy_proxy_cleared_operation& op )const           { l_op = op; return true; }
+    bool operator()( const legacy_declined_voting_rights& op )const            { l_op = op; return true; }
 
     bool operator()( const transfer_operation& op )const
     {
