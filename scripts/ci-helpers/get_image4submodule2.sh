@@ -31,6 +31,7 @@ print_help () {
 
 
 IMGNAME=base_instance
+IMGNAME_INSTANCE=instance
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -41,9 +42,11 @@ while [ $# -gt 0 ]; do
         case $NETWORK_TYPE in
           "testnet"*)
             IMGNAME=testnet-base_instance
+            IMGNAME_INSTANCE=testnet-base_instance
             ;;
           "mirrornet"*)
             IMGNAME=mirrornet-base_instance
+            IMGNAME_INSTANCE=mirrornet-base_instance
             ;;
           "mainnet"*)
             ;;
@@ -97,6 +100,8 @@ img=$( build_image_name $IMGNAME $commit $REGISTRY )
 img_path=$( build_image_registry_path $IMGNAME $commit $REGISTRY )
 img_tag=$( build_image_registry_tag $IMGNAME $commit $REGISTRY )
 
+img_instance=$( build_image_name $IMGNAME_INSTANCE $commit $REGISTRY )
+
 echo $REGISTRY_PASSWORD | docker login -u $REGISTRY_USER $REGISTRY --password-stdin
 
 image_exists=0
@@ -113,6 +118,7 @@ else
 
   "$SCRIPTPATH/build_instance4commit.sh" $commit $REGISTRY --export-binaries="${BINARY_CACHE_PATH}" --network-type=$NETWORK_TYPE
   time docker push $img
+  time docker push $img_instance
 fi
 
 echo "$DOTENV_VAR_NAME=$img" > docker_image_name.env
