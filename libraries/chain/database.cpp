@@ -3765,8 +3765,7 @@ void database::process_decline_voting_rights()
     if( account.has_proxy() )
       push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
 
-    if( has_hardfork( HIVE_HARDFORK_1_28 ) )
-      push_virtual_operation( declined_voting_rights( itr->account ) );
+    push_virtual_operation( declined_voting_rights( itr->account ) );
 
     modify( account, [&]( account_object& a )
     {
