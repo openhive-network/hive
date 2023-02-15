@@ -169,6 +169,8 @@ namespace hive { namespace converter {
 
     const hp::request_account_recovery_operation& operator()( hp::request_account_recovery_operation& op )const;
 
+    const hp::reset_account_operation& operator()( hp::reset_account_operation& op )const;
+
     const hp::recover_account_operation& operator()( hp::recover_account_operation& op )const;
 
     const hp::witness_update_operation& operator()( hp::witness_update_operation& op )const;
