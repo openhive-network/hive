@@ -185,7 +185,11 @@ namespace detail {
       }
       catch( fc::exception& er )
       {
-        wlog( "Caught an error during the conversion: \'${strerr}\'. Retrying in 1 second", ("strerr",er.to_string()) );
+# ifdef HIVE_CONVERTER_POST_DETAILED_LOGGING
+        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_detail_string()) );
+# else
+        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_string()) );
+# endif
         retry_flag = true;
       }
       catch(...)

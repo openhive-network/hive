@@ -223,7 +223,11 @@ namespace detail {
       }
       catch( fc::exception& er )
       {
+# ifdef HIVE_CONVERTER_POST_DETAILED_LOGGING
+        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_detail_string()) );
+# else
         wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_string()) );
+# endif
       }
       catch(...)
       {
