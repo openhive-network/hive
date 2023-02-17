@@ -2266,7 +2266,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_001 )
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid creator" );
     {
-      create_proposal_data cpd(db->head_block_time());
+      dhf_database::create_proposal_data cpd(db->head_block_time());
       ACTORS( (alice)(bob) )
       generate_block();
       FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2283,7 +2283,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_002 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid receiver" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2298,7 +2298,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_003 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid start date" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2314,7 +2314,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_004 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid end date" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2418,7 +2418,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_008 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid daily payement (negative value)" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2437,7 +2437,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_009 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: insufficient funds for operation" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "15.000 TBD" ) );
@@ -2456,7 +2456,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_000 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (approve true)" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2476,7 +2476,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_001 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (approve false)" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2496,7 +2496,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_002 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (empty array)" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2516,7 +2516,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_003 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (array with negative digits)" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2534,7 +2534,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_004 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - invalid voter" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2554,7 +2554,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_005 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - invalid id array (array with greater number of digits than allowed)" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2606,7 +2606,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_000 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proposal removal (only one)." );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2637,7 +2637,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_001 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proposal removal (one from many)." );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2689,7 +2689,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_002 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proposal removal (n from many in two steps)." );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2736,7 +2736,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_003 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proper proposal deletion check (one at time)." );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2783,7 +2783,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proper proposal deletion check (two at one time)." );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2848,7 +2848,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_005 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proposal with votes removal (only one)." );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2885,7 +2885,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_006 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - remove proposal with votes and one voteless at same time." );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2923,7 +2923,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_007 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - remove proposals with votes at same time." );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob)(carol) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2964,7 +2964,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_008 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - all ok" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2981,7 +2981,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_009 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - invalid deleter" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -2999,7 +2999,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_010 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - invalid array(empty array)" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
@@ -3016,7 +3016,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_011 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - invalid array(array with greater number of digits than allowed)" );
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( (alice)(bob) )
     generate_block();
     FUND( cpd.creator, ASSET( "80.000 TBD" ) );
