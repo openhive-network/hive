@@ -61,7 +61,7 @@ namespace detail {
     void open( const fc::path& input );
     void close();
 
-    void on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc );
+    void on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc, const hp::asset& account_creation_fee );
     void on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link );
   };
 
@@ -85,10 +85,10 @@ namespace detail {
     } FC_CAPTURE_AND_RETHROW( (input) );
   }
 
-  void iceberg_generate_plugin_impl::on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc )
+  void iceberg_generate_plugin_impl::on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc, const hp::asset& account_creation_fee )
   {
     hp::account_create_operation op;
-    op.fee = hp::asset{ 3000, HIVE_SYMBOL };
+    op.fee = account_creation_fee;
     op.creator = HIVE_INIT_MINER_NAME;
     op.new_account_name = acc;
     op.memo_key = converter.get_second_authority_key( hp::authority::classification::owner ).get_public_key();
@@ -161,7 +161,9 @@ namespace detail {
     const auto init_start_block_num = start_block_num;
     uint32_t last_witness_schedule_block_check = lib_num;
 
-    // The actual conversion:
+    uint32_t last_witness_schedule_block_check = lib_num;
+    hp::asset account_creation_fee = get_account_creation_fee( output_urls.at(0) );
+
     for( ; start_block_num <= stop_block_num && !theApp.is_interrupt_request(); ++start_block_num )
     {
       try {
@@ -210,7 +212,7 @@ namespace detail {
           for( const auto& acc : new_accounts )
             if( all_accounts.insert(acc).second )
             {
-              on_new_account_collected(block, acc);
+              on_new_account_collected(block, acc, account_creation_fee);
               ++i;
             }
         }
