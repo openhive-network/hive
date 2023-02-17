@@ -744,53 +744,53 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   hive::chain::util::decoded_types_data_storage& dtds_instance = hive::chain::util::decoded_types_data_storage::get_instance();
 
   /* comparing strings is more human readable if any error occurs */
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_object>().str(), fc::ripemd160("9edf067caa0c1b4937fd367e62cfd45fbc16ac75").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_metadata_object>().str(), fc::ripemd160("09569dbdd124e140fc7e7e5a6c3d1b1355f1a26a").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_authority_object>().str(), fc::ripemd160("532a9294e8cd92ac4ab5c085edf48ba3aca0d109").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::vesting_delegation_object>().str(), fc::ripemd160("8eedd68bc1cb33ae392727a1aa888fc87034ccf7").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::vesting_delegation_expiration_object>().str(), fc::ripemd160("bf17ef2da978f46c803ab43cf38449342b43c9e8").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::owner_authority_history_object>().str(), fc::ripemd160("8bd7a29bf7673162a915c0dac1c531afb803ed01").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_recovery_request_object>().str(), fc::ripemd160("7d5342fa60836aef4ca272cc18b9db0e2b2fc477").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::change_recovery_account_request_object>().str(), fc::ripemd160("24756a5c3c936357776ec9b8755d25e75cbbb2bc").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::block_summary_object>().str(), fc::ripemd160("6c2d3676c9bdbfc81ab70f0bfa8bde8c9ec0d9e3").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_object>().str(), fc::ripemd160("67cd2c24dcc7cf4e446b1f1ae217f6cfa3509a7c").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_cashout_ex_object>().str(), fc::ripemd160("c8565e604fbce0f27a9b17d0e65cce2dec3d9e6b").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_vote_object>().str(), fc::ripemd160("4453a5c3fe302390e78c4b8b116d2d0441be2000").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::proposal_object>().str(), fc::ripemd160("22b1e73fa49cb445df51569565061a3195188142").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::proposal_vote_object>().str(), fc::ripemd160("7b6c5d88f995f72dc64be32710cafad81b3e5f5c").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::hardfork_property_object>().str(), fc::ripemd160("f714e136c1a497c510727de00cac67a0ec34a3aa").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::convert_request_object>().str(), fc::ripemd160("0fe2b09ab79fb29b9ab0667973d4ce49d7d70fa0").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::collateralized_convert_request_object>().str(), fc::ripemd160("4d88c437d3a10c1666519511a2d90eff7d7cf8f4").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::escrow_object>().str(), fc::ripemd160("484bfbc9b556151f92a344a75a5221cf7b3d55d4").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::savings_withdraw_object>().str(), fc::ripemd160("4e7080dea8725be2f41137eedfcee99728b35fc4").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>().str(), fc::ripemd160("56910482a09b2758b16d1deb4fe58ca068f9fe51").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::feed_history_object>().str(), fc::ripemd160("4be2773be237ccb89b0b676e138cfc3fd4033aac").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::limit_order_object>().str(), fc::ripemd160("a268d3f69f344bf7386d3b41afe6bda37ec9daaa").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::withdraw_vesting_route_object>().str(), fc::ripemd160("aee3ea260d706793ff6d47bb9a29af208a56b138").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::decline_voting_rights_request_object>().str(), fc::ripemd160("502cdba836acb5f18cc5240f523ce3835e2faa6b").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::reward_fund_object>().str(), fc::ripemd160("3bdc364231d34331e26ac1fa8b5b890bc7d19566").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::recurrent_transfer_object>().str(), fc::ripemd160("40610af476a030dd605d514797038ccc0f8b371c").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::pending_required_action_object>().str(), fc::ripemd160("030bcbe13b0b95ce23dcf4a13cb5a71ffd1283b9").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::pending_optional_action_object>().str(), fc::ripemd160("bce3e2e4f0bb6f5b6ad84d3e229315ec42d49d15").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::transaction_object>().str(), fc::ripemd160("b9eb5f401d0efd527efe1a3089c68e2064055249").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::witness_vote_object>().str(), fc::ripemd160("a83e61df4eceb1cbb06ed36c70b4379ef52012f4").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::witness_schedule_object>().str(), fc::ripemd160("68ec476ea8d8e106a276694f52d8a6f464021b6f").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::witness_object>().str(), fc::ripemd160("fd970cfd4115cb565f5f9d58a4786db02a1faa14").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_object>().str(), fc::ripemd160("587aea89a3ed83109ade1c4b808ffc1c7d5b96cf").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_metadata_object>().str(), fc::ripemd160("8afa67ed15888d3f927bcb2b986d172da1f34375").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_authority_object>().str(), fc::ripemd160("918c06ba905b0b095aa62df1b432e823790df6ba").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::vesting_delegation_object>().str(), fc::ripemd160("7a6cd5d88139e0c501e52ad5c26b2def2efd07a0").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::vesting_delegation_expiration_object>().str(), fc::ripemd160("6194b9b2563550582ddb573fe52b1e21a4437e3b").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::owner_authority_history_object>().str(), fc::ripemd160("9c5112ba809aecc4f87540ac24409b292fa35fa7").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_recovery_request_object>().str(), fc::ripemd160("cd4d092d7ad8808bdb495fbe7c4f3b5720684ec3").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::change_recovery_account_request_object>().str(), fc::ripemd160("38d9aca36a34fd424be5053c89f989f727ecb5f2").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::block_summary_object>().str(), fc::ripemd160("5894437d8fbfc5b21a6dd12a6a49c88c5be4b9b7").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_object>().str(), fc::ripemd160("4675213b6f61c5050a1669f3202048ea6752169f").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_cashout_ex_object>().str(), fc::ripemd160("5bd998eef24ebee5fe5bf1a935956520ad44f0f2").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_vote_object>().str(), fc::ripemd160("8ebf568ac759d00ee1d53b456e52edaa3791b56e").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::proposal_object>().str(), fc::ripemd160("bfe417071b06c7ea78a1aa42dc54a87e39bced73").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::proposal_vote_object>().str(), fc::ripemd160("045fe6cfecd0e66286a513210a177f0266a2fd69").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::hardfork_property_object>().str(), fc::ripemd160("eccc5f45ebfe5c8f74e5ea16d1251ff9a8d09d0d").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::convert_request_object>().str(), fc::ripemd160("152458a15c66285cd4b040847eb40edbb88a1400").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::collateralized_convert_request_object>().str(), fc::ripemd160("4f7ed0cb6ec3349e3b910c907e49ea70820de399").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::escrow_object>().str(), fc::ripemd160("fdb1ce7097af1cb3af336ff98a4b344131f581be").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::savings_withdraw_object>().str(), fc::ripemd160("2bac6b38b5ffcd66d3222cb76c16f0660b178000").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>().str(), fc::ripemd160("51a39bcd4ac2f6848e5f3c73d36fccbe8bbf5cc0").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::feed_history_object>().str(), fc::ripemd160("0920ae5e3416aa63d93bd183d8b0097a6042c9e0").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::limit_order_object>().str(), fc::ripemd160("c9ecc3d754aa3d6b118ebcc5719dac2089c04c0f").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::withdraw_vesting_route_object>().str(), fc::ripemd160("de94693e25f3f1182c39e77cfaff328098b88ba8").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::decline_voting_rights_request_object>().str(), fc::ripemd160("07a72f6d76870fbab70cd7bbfb8e5b5e92a2bcbc").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::reward_fund_object>().str(), fc::ripemd160("377f79d55fea6d0828d8ac7f22ec6c453b393d2a").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::recurrent_transfer_object>().str(), fc::ripemd160("e2ac0aa6c2023129d32b5ab81db2d25f5a6c0ec3").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::pending_required_action_object>().str(), fc::ripemd160("3d017c3490841bd5b11c552eac030830d8e1642e").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::pending_optional_action_object>().str(), fc::ripemd160("bde29654096d4db8cb4397896685131e50221f5c").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::transaction_object>().str(), fc::ripemd160("34c3f519ba27dedbf0bf95657acd753bb62e469c").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::witness_vote_object>().str(), fc::ripemd160("7fba3dd9aa976deb4b9233ed2a7ad29204c7f991").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::witness_schedule_object>().str(), fc::ripemd160("f942aae63947afa6ff5e60510b49926c72be6fef").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::witness_object>().str(), fc::ripemd160("03e1da5feb5e8d88d4a61449a638f6ec0f63b504").str() );
 
   #ifdef HIVE_ENABLE_SMT
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_token_object>().str(), fc::ripemd160("9a72dc45b62bfb558ca991c336945a167f26a39e").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_regular_balance_object>().str(), fc::ripemd160("66f73d9770b58c753929ca4999eca94ce9d63164").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_rewards_balance_object>().str(), fc::ripemd160("5e7873e9a45aaac0e9be58d496808cf7af99062c").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::nai_pool_object>().str(), fc::ripemd160("89160725fec27b97bf4103b2376344b77e6ab907").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_token_emissions_object>().str(), fc::ripemd160("b438fb23a86a591dd27ddaa68a009aaad50d1a3e").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_contribution_object>().str(), fc::ripemd160("ab5ec5366e6a9c884fd94259d3f9edde2250ce93").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_ico_object>().str(), fc::ripemd160("c13787e44a827b3fafe487ae4d1e3e8219c8ba20").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_token_object>().str(), fc::ripemd160("d0560917541f173f8aa06909e8f718a2d502b39d").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_regular_balance_object>().str(), fc::ripemd160("29676138808502f7a8f16f1df815143dab536814").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_rewards_balance_object>().str(), fc::ripemd160("ec01d2d1a2f207fb68430d645fe4d43f24d578f7").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::nai_pool_object>().str(), fc::ripemd160("de4aac8e6b7f52a1f08e6d8daacdb46275a2bc02").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_token_emissions_object>().str(), fc::ripemd160("5cb6a0a11dc7ca3f85a37105502374ad1dfab806").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_contribution_object>().str(), fc::ripemd160("53a5133aed8fe290feccc31f88c1251c6841d465").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::smt_ico_object>().str(), fc::ripemd160("64caa9ed82fef9b70b246c1e8fd36963a457942b").str() );
 
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_cashout_object>().str(), fc::ripemd160("d6fa0377d1cc1f4436e29a25fd9be01f513f8be7").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::dynamic_global_property_object>().str(), fc::ripemd160("cf7b7a20e57ab720b1ee8b7bc7520c0e4de8c9a1").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_cashout_object>().str(), fc::ripemd160("53daa2994a6ed66b6ba3426b9640a5f372c5d2fa").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::dynamic_global_property_object>().str(), fc::ripemd160("d4e768d340b4704e1948a374449ce984c01d5789").str() );
   #else
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_cashout_object>().str(), fc::ripemd160("826b8b0ef2cded94a8e88427642abf0888edacbb").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::dynamic_global_property_object>().str(), fc::ripemd160("1fb1db7e481e4973fb9ea3517d2b379e2a457233").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::comment_cashout_object>().str(), fc::ripemd160("852b9160388cf2fd59c105d4a27e016206281ef9").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::dynamic_global_property_object>().str(), fc::ripemd160("7d0cd80256810267856bc72e273a360352a00c9b").str() );
   #endif
 }
 
