@@ -447,7 +447,11 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
     OP_TAG(account_created_operation), // ditto
     OP_TAG(producer_reward_operation) }; // attached to every block
 
-  do_the_testing( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
+  do_the_testing( *this, expected_operations, 3 ); // clears the container nominally
+
+  // In block 21 maximum block size is being changed:
+  expected_operations.insert( OP_TAG(system_warning_operation) );
+  do_the_testing( *this, expected_operations, 21 ); // clears the container nominally
 
   db->set_hardfork( HIVE_HARDFORK_0_13 );
   generate_block();
