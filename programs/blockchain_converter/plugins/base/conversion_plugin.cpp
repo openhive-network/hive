@@ -181,6 +181,20 @@ namespace hive { namespace converter { namespace plugins {
     FC_CAPTURE_AND_RETHROW()
   }
 
+  hp::asset conversion_plugin_impl::get_account_creation_fee( const fc::url& using_url )
+  {
+    try
+    {
+      fc::http::connection local_output_con;
+      auto var_obj = post( local_output_con, using_url, "database_api.get_witness_schedule", "{}" );
+      // Check for example required property
+      FC_ASSERT( var_obj.contains("median_props"), "No median_props in JSON response", ("reply", var_obj) );
+
+      return var_obj["median_props"]["account_creation_fee"].template as< hp::asset >();
+    } // Note: we do not handle `error_response_from_node` as `get_dynamic_global_properties` result is not required every time the function is called (usually every 1500ms)
+    FC_CAPTURE_AND_RETHROW()
+  }
+
   void conversion_plugin_impl::print_pre_conversion_data( const hp::signed_block& block_to_log )const
   {
     uint32_t block_num = block_to_log.block_num();
