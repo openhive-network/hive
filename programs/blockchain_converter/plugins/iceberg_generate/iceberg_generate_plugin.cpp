@@ -61,9 +61,8 @@ namespace detail {
     void open( const fc::path& input );
     void close();
 
-    void on_new_account_collected( hp::transaction& tx, const hp::account_name_type& acc );
-    void on_comment_collected( hp::transaction& tx, const hp::account_name_type& acc, const std::string& link );
-    void transfer_required_asset( hp::transaction& tx, const hp::account_name_type& acc, const hp::asset& bal );
+    void on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc );
+    void on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link );
   };
 
 
@@ -83,7 +82,7 @@ namespace detail {
     } FC_CAPTURE_AND_RETHROW( (input) );
   }
 
-  void iceberg_generate_plugin_impl::on_new_account_collected( hp::transaction& tx, const hp::account_name_type& acc )
+  void iceberg_generate_plugin_impl::on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc )
   {
     hp::account_create_operation op;
     op.fee = hp::asset{ 3000, HIVE_SYMBOL };
@@ -91,11 +90,14 @@ namespace detail {
     op.new_account_name = acc;
     op.memo_key = converter.get_second_authority_key( hp::authority::classification::owner ).get_public_key();
 
-    tx.operations.emplace( tx.operations.begin(), op );
-    // ilog("Collected new account: ${acc}", ("acc", acc));
+    hp::signed_transaction tx;
+    tx.signatures.emplace_back(); // null-sign to inform the converter that it should replace null-signature with the actual proper signature
+    tx.operations.emplace_back( op );
+
+    b.transactions.emplace( b.transactions.begin(), tx );
   }
 
-  void iceberg_generate_plugin_impl::on_comment_collected( hp::transaction& tx, const hp::account_name_type& acc, const std::string& link )
+  void iceberg_generate_plugin_impl::on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link )
   {
     hp::comment_operation op;
     op.body = "#";
@@ -103,14 +105,11 @@ namespace detail {
     op.author = acc;
     op.permlink = link;
 
-    tx.operations.emplace( tx.operations.begin(), op );
-    // ilog("Collected new permlink: /@${acc}/${link}", ("acc", acc)("link", link));
-  }
+    hp::signed_transaction tx;
+    tx.signatures.emplace_back(); // null-sign to inform the converter that it should replace null-signature with the actual proper signature
+    tx.operations.emplace_back( op );
 
-  void iceberg_generate_plugin_impl::transfer_required_asset( hp::transaction& tx, const hp::account_name_type& acc, const hp::asset& bal )
-  {
-    // TODO:
-    // ilog("Collected required asset for account ${acc}: ${bal}", ("acc", acc)("bal", bal));
+    b.transactions.emplace( b.transactions.begin(), tx );
   }
 
   void iceberg_generate_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
@@ -165,48 +164,54 @@ namespace detail {
 
         block.extensions.clear();
 
-        for( auto& tx : block.transactions )
-          for( auto& op : tx.operations )
+        for( size_t i = 0; i < block.transactions.size(); ++i )
+        {
+          // Collecting impacted accounts should be always done before collecting permlinks
+          boost::container::flat_set<hp::account_name_type> new_accounts;
+          std::vector<ops_permlink_tracker_result_t> permlinks;
+
+          for( auto& op : block.transactions.at(i).operations )
           {
             // Stripping operations content
             if( enable_op_content_strip )
               op = op.visit( ops_strip_content_visitor{} );
 
-            // Collecting impacted accounts - should be always before collecting permlinks
-            boost::container::flat_set<hp::account_name_type> new_accounts;
-
             hive::app::operation_get_impacted_accounts( op, new_accounts );
-            for( const auto& acc : new_accounts )
-              if( all_accounts.insert(acc).second )
-                on_new_account_collected(tx, acc);
 
             // Collecting permlinks
             const auto created_permlink_data = op.visit(created_permlinks_visitor{});
             all_permlinks.insert( compute_author_and_permlink_hash( created_permlink_data ) );
 
-            const auto& dependent_permlink_data = op.visit(dependent_permlinks_visitor{});
-            if( dependent_permlink_data.first.size() && all_permlinks.insert( compute_author_and_permlink_hash( dependent_permlink_data ) ).second )
-              on_comment_collected(tx, dependent_permlink_data.first, dependent_permlink_data.second);
-
-            // Transactions creating creating OBSOLETE_TREASURY_ACCOUNT and NEW_HIVE_TREASURY_ACCOUNT will be rejected
-            /* We currently do not use required asset transfer visitor
-            const auto required_assets_accounts = op.visit(ops_required_asset_transfer_visitor{ converter.get_cached_hardfork() });
-            for( const auto& [ account, assets ] : required_assets_accounts )
-              for( const auto& asset : assets )
-                transfer_required_asset(tx, account, asset);
-            */
+            permlinks.emplace_back( op.visit(dependent_permlinks_visitor{}) );
           }
+
+          for( const auto& dependent_permlink_data : permlinks )
+            if( dependent_permlink_data.first.size() && all_permlinks.insert( compute_author_and_permlink_hash( dependent_permlink_data ) ).second )
+            {
+              on_comment_collected(block, dependent_permlink_data.first, dependent_permlink_data.second);
+              ++i;
+            }
+
+          for( const auto& acc : new_accounts )
+            if( all_accounts.insert(acc).second )
+            {
+              on_new_account_collected(block, acc);
+              ++i;
+            }
+        }
 
         if( block.transactions.size() == 0 )
           continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
-        auto transactions = converter.convert_signed_block( block, lib_id,
+        auto block_converted = converter.convert_signed_block( block, lib_id,
           gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
           true
-        )->get_full_transactions();
+        );
 
         print_progress( start_block_num, stop_block_num );
-        print_post_conversion_data( block );
+        print_post_conversion_data( block_converted->get_block() );
+
+        const auto& transactions = block_converted->get_full_transactions();
 
         for( size_t i = 0; i < transactions.size(); ++i )
           if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check

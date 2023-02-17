@@ -206,7 +206,7 @@ namespace hive { namespace converter { namespace plugins {
     uint32_t block_num = block_to_log.block_num();
 
     if ( ( log_per_block > 0 && block_num % log_per_block == 0 ) || log_specific == block_num )
-      dlog("Processing block: ${block_num}. Data before conversion: ${block}", ("block_num", block_num)("block", block_to_log));
+      dlog("Processing block: ${block_num}. Data after conversion: ${block}", ("block_num", block_num)("block", block_to_log));
   }
 
   void conversion_plugin_impl::set_wifs( bool use_private, const std::string& _owner, const std::string& _active, const std::string& _posting )

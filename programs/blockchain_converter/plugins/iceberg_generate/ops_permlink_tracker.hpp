@@ -12,7 +12,7 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
 
   using hive::protocol::account_name_type;
 
-  using ops_permlink_tracker_result_t = std::pair<const account_name_type&, const std::string&>;
+  using ops_permlink_tracker_result_t = std::pair<account_name_type, std::string>;
 
   using author_and_permlink_hash_t = fc::ripemd160;
 
