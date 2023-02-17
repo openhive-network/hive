@@ -152,6 +152,8 @@ namespace detail {
     boost::container::flat_set<hp::account_name_type> all_accounts;
     boost::container::flat_set<author_and_permlink_hash_t> all_permlinks;
 
+    const auto init_start_block_num = start_block_num;
+
     // Pre-init: Detect required iceberg operations
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
@@ -208,7 +210,7 @@ namespace detail {
           true
         );
 
-        print_progress( start_block_num, stop_block_num );
+        print_progress( start_block_num - init_start_block_num, stop_block_num - init_start_block_num );
         print_post_conversion_data( block_converted->get_block() );
 
         const auto& transactions = block_converted->get_full_transactions();
