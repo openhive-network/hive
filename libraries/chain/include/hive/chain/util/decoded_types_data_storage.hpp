@@ -122,9 +122,12 @@ class decoded_types_data_storage final
       {
         const std::string field_name(name);
         const std::string type_id(typeid(Member).name());
+        Class* const nullObj = nullptr;
+        const std::string member_offset = std::to_string(size_t(static_cast<void*>(&(nullObj->*member))));
 
         encoder.write(type_id.data(), type_id.size());
         encoder.write(field_name.data(), field_name.size());
+        encoder.write(member_offset.data(), member_offset.size());
         members.push_back({fc::get_typename<Member>::name(), field_name});
       }
       
