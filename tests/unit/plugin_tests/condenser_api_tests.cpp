@@ -424,8 +424,6 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // ineffective_delete_comment_operation < HIVE_HARDFORK_0_19__977
   // account_create_with_delegation_operation < HIVE_HARDFORK_0_20__1760
   
-  // TODO check vesting_shares_split_operation on HF 1 here.
-
   // Set low hardfork to allow testing of obsolete operations
   db->set_hardfork( HIVE_HARDFORK_0_12 );
   generate_block();
@@ -433,6 +431,16 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   PREP_ACTOR( carol0ah )
   
   create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
+
+  // Let's check operations of the first block:
+  expected_operations.insert( OP_TAG(account_created_operation) ); // creation of several accounts (initminter, null, miners etc.)
+  expected_operations.insert( OP_TAG(producer_reward_operation) ); // goes to initminer (in vests)
+  expected_operations.insert( OP_TAG(hardfork_operation) ); // there go hardforks 1 to 12
+  expected_operations.insert( OP_TAG(vesting_shares_split_operation) ); // splitting producer reward
+
+  do_the_testing( *this, expected_operations, 1 ); // clears the container nominally
+
+  // Check the operations spawned by pow (3rd block).
   expected_operations = { 
     OP_TAG(pow_operation),
     OP_TAG(pow_reward_operation), // direct result of pow_operation
