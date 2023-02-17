@@ -489,6 +489,12 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   for( int i = 0; i < 20*60; ++i )
   generate_block();
 
+  // Check virtual operations resulting from above actions some 1200 blocks later:
+  expected_operations.insert( OP_TAG(author_reward_operation) );
+  expected_operations.insert( OP_TAG(comment_reward_operation) );
+  expected_operations.insert( OP_TAG(comment_payout_update_operation) );
+  do_the_testing( *this, expected_operations, 1245 ); // clears the container nominally
+
   claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
   expected_operations.insert( OP_TAG(claim_reward_balance_operation) );
 
@@ -648,11 +654,11 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   do_the_testing( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
 
   expected_operations.insert( OP_TAG(changed_recovery_account_operation) );
-  do_the_testing( *this, expected_operations, 1271 ); // clears the container nominally
+  do_the_testing( *this, expected_operations, 1289 ); // clears the container nominally
 
   expected_operations.insert( OP_TAG(fill_convert_request_operation) );
   expected_operations.insert( OP_TAG(fill_collateralized_convert_request_operation) );
-  do_the_testing( *this, expected_operations, 2931 ); // clears the container nominally
+  do_the_testing( *this, expected_operations, 2949 ); // clears the container nominally
 
 } FC_LOG_AND_RETHROW() }
 
