@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     generate_block();
     
     // create one proposal
-    create_proposal_data cpd(db->head_block_time());
+    dhf_database::create_proposal_data cpd(db->head_block_time());
     cpd.end_date = cpd.start_date + fc::days( 2* NR_INTERVALS_IN_DELAYED_VOTING );
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
     BOOST_REQUIRE(proposal_1 >= 0);
@@ -160,14 +160,14 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     generate_block();
     
     // create one proposal
-    create_proposal_data cpd1(db->head_block_time());
+    dhf_database::create_proposal_data cpd1(db->head_block_time());
     cpd1.end_date = cpd1.start_date + fc::days( 2* NR_INTERVALS_IN_DELAYED_VOTING );
     cpd1.creator = "alice";
     int64_t proposal_1 = create_proposal( cpd1.creator, cpd1.receiver, cpd1.start_date, cpd1.end_date, cpd1.daily_pay, alice_private_key, false/*with_block_generation*/ );
     BOOST_REQUIRE(proposal_1 >= 0);
 
     // create one proposal
-    create_proposal_data cpd2(db->head_block_time());
+    dhf_database::create_proposal_data cpd2(db->head_block_time());
     cpd2.end_date = cpd2.start_date + fc::days( 2* NR_INTERVALS_IN_DELAYED_VOTING );
     cpd2.creator = "bob";
     int64_t proposal_2 = create_proposal( cpd2.creator, cpd2.receiver, cpd2.start_date, cpd2.end_date, cpd2.daily_pay, bob_private_key, false/*with_block_generation*/ );
