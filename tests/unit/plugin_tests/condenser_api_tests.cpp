@@ -315,8 +315,8 @@ void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_retu
 
     // Compare operations in their serialized form with expected patterns:
     const auto expected = expected_operations[index];
-      BOOST_REQUIRE_EQUAL( expected.first, fc::json::to_string(*i_ah) );
-      BOOST_REQUIRE_EQUAL( expected.second, fc::json::to_string(*i_condenser) );
+    BOOST_REQUIRE_EQUAL( expected.first, fc::json::to_string(*i_ah) );
+    BOOST_REQUIRE_EQUAL( expected.second, fc::json::to_string(*i_condenser) );
 
     // Additionally compare transactions of operations.
     tx_compare(i_ah->trx_id);
@@ -391,26 +391,20 @@ void do_the_testing( condenser_api_fixture& caf, const expected_t& expected_oper
   caf.validate_database();
 }
 
-#define OP_TAG( OP_NAME ) \
-  int64_t(operation::tag< OP_NAME >::value)
-
-BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
+BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf12 )
 { try {
 
-  BOOST_TEST_MESSAGE( "get_ops_in_block / get_transaction test" );
+  BOOST_TEST_MESSAGE( "testing operations on HF12" );
+
+  // Following operations need hardfork lower than 13 to be tested:
+  // pow_operation < HIVE_HARDFORK_0_13__256
+  // pow_reward_operation < HIVE_HARDFORK_0_16__551
 
   // The containers for the kinds of operations that we expect to be found in blocks.
   // We'll use it to be sure that all kind of operations have been used during testing.
   expected_t expected_operations;
   expected_t expected_virtual_operations;
 
-  // Following operations need lower hardfork set to be tested:
-  // pow_operation < HIVE_HARDFORK_0_13__256
-  // pow_reward_operation < HIVE_HARDFORK_0_16__551
-  // pow2_operation < HIVE_HARDFORK_0_17__770
-  // ineffective_delete_comment_operation < HIVE_HARDFORK_0_19__977
-  // account_create_with_delegation_operation < HIVE_HARDFORK_0_20__1760
-  
   // Set low hardfork to allow testing of obsolete operations
 
   generate_block();
@@ -435,66 +429,159 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
 
   // Check the operations spawned by pow (3rd block).
-  expected_operations = { 
-    { OP_TAG(pow_operation), fc::optional< expected_operation_result_t >() },
-    { OP_TAG(pow_reward_operation), fc::optional< expected_operation_result_t >() }, // direct result of pow_operation
-    { OP_TAG(account_created_operation), fc::optional< expected_operation_result_t >() }, // ditto
-    { OP_TAG(producer_reward_operation), fc::optional< expected_operation_result_t >() }  // attached to every block
-    };
+  expected_operations.clear();
+  expected_operations.resize(5, fc::optional< pattern_pair_t >() ); // We're expecting 5 operations in the block
+  expected_operations[0] = pattern_pair_t(
+    "{\"trx_id\":\"956eed17475ccab15529691d0e43e61bd83e0167\",\"block\":3,\"trx_in_block\":0,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":{\"type\":\"pow_operation\",\"value\":{\"worker_account\":\"carol0ah\",\"block_id\":\"000000029182c87b08eb70059f4bdc22352cbfdb\",\"nonce\":40,\"work\":{\"worker\":\"TST5Mwq5o6BruTVbCcxkqVKL4eeRm3Jrs5fjRGHshvGUj29FPh7Yr\",\"input\":\"4e4ee151ae1b5317e0fa9835b308163b5fce6ba4b836ecd7dac90acbae5d477a\",\"signature\":\"208e93e1810b5716c9725fb7e487c271d1eb7bd5674cc5bfb79c01a52b581b269777195d5e3d59750cdf3c10353d77373bfcf6393541cfa1411aa196097cdf90ed\",\"work\":\"000bae328972f541f9fb4b8a07c52fe15005117434c597c7b37e320397036586\"},\"props\":{\"account_creation_fee\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\"},\"maximum_block_size\":131072,\"hbd_interest_rate\":1000}}},\"operation_id\":0}",
+    "{\"trx_id\":\"956eed17475ccab15529691d0e43e61bd83e0167\",\"block\":3,\"trx_in_block\":0,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":[\"pow\",{\"worker_account\":\"carol0ah\",\"block_id\":\"000000029182c87b08eb70059f4bdc22352cbfdb\",\"nonce\":40,\"work\":{\"worker\":\"TST5Mwq5o6BruTVbCcxkqVKL4eeRm3Jrs5fjRGHshvGUj29FPh7Yr\",\"input\":\"4e4ee151ae1b5317e0fa9835b308163b5fce6ba4b836ecd7dac90acbae5d477a\",\"signature\":\"208e93e1810b5716c9725fb7e487c271d1eb7bd5674cc5bfb79c01a52b581b269777195d5e3d59750cdf3c10353d77373bfcf6393541cfa1411aa196097cdf90ed\",\"work\":\"000bae328972f541f9fb4b8a07c52fe15005117434c597c7b37e320397036586\"},\"props\":{\"account_creation_fee\":\"0.000 TESTS\",\"maximum_block_size\":131072,\"hbd_interest_rate\":1000}}]}"
+    ); // pow_operation / creating carol0ah account
+  expected_operations[2] = pattern_pair_t(
+    "{\"trx_id\":\"956eed17475ccab15529691d0e43e61bd83e0167\",\"block\":3,\"trx_in_block\":0,\"op_in_trx\":2,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":{\"type\":\"pow_reward_operation\",\"value\":{\"worker\":\"initminer\",\"reward\":{\"amount\":\"21000\",\"precision\":3,\"nai\":\"@@000000021\"}}},\"operation_id\":0}",
+    "{\"trx_id\":\"956eed17475ccab15529691d0e43e61bd83e0167\",\"block\":3,\"trx_in_block\":0,\"op_in_trx\":2,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":[\"pow_reward\",{\"worker\":\"initminer\",\"reward\":\"21.000 TESTS\"}]}"
+    ); // pow_reward_operation / direct result of pow_operation
 
   do_the_testing( *this, expected_operations, 3 ); // clears the container nominally
 
   // In block 21 maximum block size is being changed:
-  expected_operations.insert( { OP_TAG(system_warning_operation), fc::optional< expected_operation_result_t >() } );
+  expected_operations.clear();
+  expected_operations.resize(2, fc::optional< pattern_pair_t >() ); // We're expecting 2 operations in the block
+  expected_operations[0] = pattern_pair_t(
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":21,\"trx_in_block\":4294967295,\"op_in_trx\":1,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:01:03\",\"op\":{\"type\":\"system_warning_operation\",\"value\":{\"message\":\"Changing maximum block size from 2097152 to 131072\"}},\"operation_id\":0}",
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":21,\"trx_in_block\":4294967295,\"op_in_trx\":1,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:01:03\",\"op\":[\"system_warning\",{\"message\":\"Changing maximum block size from 2097152 to 131072\"}]}"
+    );
   do_the_testing( *this, expected_operations, 21 ); // clears the container nominally
 
+} FC_LOG_AND_RETHROW() }
+
+BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf13 )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing operations on HF13" );
+
+  // Following operations need lower hardfork set to be tested:
+  // pow2_operation < HIVE_HARDFORK_0_17__770
+  // ineffective_delete_comment_operation < HIVE_HARDFORK_0_19__977
+  // account_create_with_delegation_operation < HIVE_HARDFORK_0_20__1760
+
+  // The container for the kinds of operations that we expect to be found in blocks.
+  // We'll use it to be sure that all kind of operations have been used during testing.
+  expected_t expected_operations;
+
+  // Set low hardfork to allow testing of obsolete operations
   db->set_hardfork( HIVE_HARDFORK_0_13 );
   generate_block();
   
   PREP_ACTOR( dan0ah )
 
   create_with_pow2( "dan0ah", dan0ah_public_key, dan0ah_private_key );
-  expected_operations.insert( { OP_TAG(pow2_operation), fc::optional< expected_operation_result_t >() } );
+
+  expected_operations.resize(11, fc::optional< pattern_pair_t >() ); // We're expecting 11 operations in the block with following operations.
+  expected_operations[0] = pattern_pair_t(
+    "{\"trx_id\":\"cf568695be04935fb2ff53069f79a6d3d91f6a02\",\"block\":3,\"trx_in_block\":0,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":{\"type\":\"pow2_operation\",\"value\":{\"work\":{\"type\":\"pow2\",\"value\":{\"input\":{\"worker_account\":\"dan0ah\",\"prev_block\":\"0000000238e19be617b2b4b5a5495f07d87a8fb9\",\"nonce\":26},\"pow_summary\":4227023620}},\"new_owner_key\":\"TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV\",\"props\":{\"account_creation_fee\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\"},\"maximum_block_size\":131072,\"hbd_interest_rate\":1000}}},\"operation_id\":0}",
+    "{\"trx_id\":\"cf568695be04935fb2ff53069f79a6d3d91f6a02\",\"block\":3,\"trx_in_block\":0,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":[\"pow2\",{\"work\":[\"pow2\",{\"input\":{\"worker_account\":\"dan0ah\",\"prev_block\":\"0000000238e19be617b2b4b5a5495f07d87a8fb9\",\"nonce\":26},\"pow_summary\":4227023620}],\"new_owner_key\":\"TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV\",\"props\":{\"account_creation_fee\":\"0.000 TESTS\",\"maximum_block_size\":131072,\"hbd_interest_rate\":1000}}]}"
+    ); // pow2_operation / first obsolete operation tested here.
 
   PREP_ACTOR( edgar0ah )
 
   vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
   create_with_delegation( HIVE_INIT_MINER_NAME, "edgar0ah", edgar0ah_public_key, edgar0ah_post_key, ASSET( "100000000.000000 VESTS" ), init_account_priv_key );
-  expected_operations.insert( { OP_TAG(account_create_with_delegation_operation), fc::optional< expected_operation_result_t >() } );
+  expected_operations[6] = pattern_pair_t(
+    "{\"trx_id\":\"14509bc4811afed8b9d5a277ca17223d3e9f8c87\",\"block\":3,\"trx_in_block\":2,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":{\"type\":\"account_create_with_delegation_operation\",\"value\":{\"fee\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\"},\"delegation\":{\"amount\":\"100000000000000\",\"precision\":6,\"nai\":\"@@000000037\"},\"creator\":\"initminer\",\"new_account_name\":\"edgar0ah\",\"owner\":{\"weight_threshold\":1,\"account_auths\":[],\"key_auths\":[[\"TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ\",1]]},\"active\":{\"weight_threshold\":1,\"account_auths\":[],\"key_auths\":[[\"TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ\",1]]},\"posting\":{\"weight_threshold\":1,\"account_auths\":[],\"key_auths\":[[\"TST8ZCsvwKqttXivgPyJ1MYS4q1r3fBZJh3g1SaBxVbfsqNcmnvD3\",1]]},\"memo_key\":\"TST8ZCsvwKqttXivgPyJ1MYS4q1r3fBZJh3g1SaBxVbfsqNcmnvD3\",\"json_metadata\":\"\",\"extensions\":[]}},\"operation_id\":0}",
+    "{\"trx_id\":\"14509bc4811afed8b9d5a277ca17223d3e9f8c87\",\"block\":3,\"trx_in_block\":2,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":[\"account_create_with_delegation\",{\"fee\":\"0.000 TESTS\",\"delegation\":\"100000000.000000 VESTS\",\"creator\":\"initminer\",\"new_account_name\":\"edgar0ah\",\"owner\":{\"weight_threshold\":1,\"account_auths\":[],\"key_auths\":[[\"TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ\",1]]},\"active\":{\"weight_threshold\":1,\"account_auths\":[],\"key_auths\":[[\"TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ\",1]]},\"posting\":{\"weight_threshold\":1,\"account_auths\":[],\"key_auths\":[[\"TST8ZCsvwKqttXivgPyJ1MYS4q1r3fBZJh3g1SaBxVbfsqNcmnvD3\",1]]},\"memo_key\":\"TST8ZCsvwKqttXivgPyJ1MYS4q1r3fBZJh3g1SaBxVbfsqNcmnvD3\",\"json_metadata\":\"\",\"extensions\":[]}]}"
+    ); // account_create_with_delegation_operation / second obsolete operation tested here.
 
   // comment_operation
   post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
-  expected_operations.insert( { OP_TAG(comment_operation), fc::optional< expected_operation_result_t >() } );
+  expected_operations[8] = pattern_pair_t(
+    "{\"trx_id\":\"63807c110bc33695772793f61972ac9d29d7689a\",\"block\":3,\"trx_in_block\":3,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":{\"type\":\"comment_operation\",\"value\":{\"parent_author\":\"\",\"parent_permlink\":\"parentpermlink1\",\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"title\":\"Title 1\",\"body\":\"Body 1\",\"json_metadata\":\"\"}},\"operation_id\":0}",
+    "{\"trx_id\":\"63807c110bc33695772793f61972ac9d29d7689a\",\"block\":3,\"trx_in_block\":3,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":[\"comment\",{\"parent_author\":\"\",\"parent_permlink\":\"parentpermlink1\",\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"title\":\"Title 1\",\"body\":\"Body 1\",\"json_metadata\":\"\"}]}"
+    ); // comment_operation
 
   set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_100_PERCENT, true, true, edgar0ah_private_key );
-  expected_operations.insert( { OP_TAG(comment_options_operation), fc::optional< expected_operation_result_t >() } );
+  expected_operations[9] = pattern_pair_t(
+    "{\"trx_id\":\"a669ed9de84b36a095741fe67b55e9a4a039f5ee\",\"block\":3,\"trx_in_block\":4,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":{\"type\":\"comment_options_operation\",\"value\":{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"max_accepted_payout\":{\"amount\":\"50010\",\"precision\":3,\"nai\":\"@@000000013\"},\"percent_hbd\":10000,\"allow_votes\":true,\"allow_curation_rewards\":true,\"extensions\":[]}},\"operation_id\":0}",
+    "{\"trx_id\":\"a669ed9de84b36a095741fe67b55e9a4a039f5ee\",\"block\":3,\"trx_in_block\":4,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:06\",\"op\":[\"comment_options\",{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"max_accepted_payout\":\"50.010 TBD\",\"percent_hbd\":10000,\"allow_votes\":true,\"allow_curation_rewards\":true,\"extensions\":[]}]}"
+    ); // comment_options_operation
 
-  do_the_testing( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
+  do_the_testing( *this, expected_operations, fc::optional<uint32_t>() );
 
-  vote("edgar0ah", "permlink1", "carol0ah", HIVE_1_PERCENT * 100, carol0ah_private_key);
-  expected_operations.insert( { OP_TAG(vote_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(effective_comment_vote_operation), fc::optional< expected_operation_result_t >() } );
+  expected_operations.clear();
+  expected_operations.resize(5, fc::optional< pattern_pair_t >() ); // We're expecting 2 operations in the block with following operations.
+
+  vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
+  expected_operations[0] = pattern_pair_t(
+    "{\"trx_id\":\"ab11ab41648816bc5dcce4635624f5d1cd849a38\",\"block\":27,\"trx_in_block\":0,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:01:18\",\"op\":{\"type\":\"vote_operation\",\"value\":{\"voter\":\"dan0ah\",\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"weight\":10000}},\"operation_id\":0}",
+    "{\"trx_id\":\"ab11ab41648816bc5dcce4635624f5d1cd849a38\",\"block\":27,\"trx_in_block\":0,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:01:18\",\"op\":[\"vote\",{\"voter\":\"dan0ah\",\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"weight\":10000}]}"
+    ); // vote_operation
+  expected_operations[1] = pattern_pair_t(
+    "{\"trx_id\":\"ab11ab41648816bc5dcce4635624f5d1cd849a38\",\"block\":27,\"trx_in_block\":0,\"op_in_trx\":1,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:01:18\",\"op\":{\"type\":\"effective_comment_vote_operation\",\"value\":{\"voter\":\"dan0ah\",\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"weight\":\"939585975640245\",\"rshares\":\"5100000000\",\"total_vote_weight\":\"23489649391006145\",\"pending_payout\":{\"amount\":\"52000\",\"precision\":3,\"nai\":\"@@000000013\"}}},\"operation_id\":0}",
+    "{\"trx_id\":\"ab11ab41648816bc5dcce4635624f5d1cd849a38\",\"block\":27,\"trx_in_block\":0,\"op_in_trx\":1,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:01:18\",\"op\":[\"effective_comment_vote\",{\"voter\":\"dan0ah\",\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"weight\":\"939585975640245\",\"rshares\":\"5100000000\",\"total_vote_weight\":\"23489649391006145\",\"pending_payout\":\"52.000 TBD\"}]}"
+    ); // effective_comment_vote_operation
   
   delete_comment( "edgar0ah", "permlink1", edgar0ah_private_key );
-  expected_operations.insert( { OP_TAG(delete_comment_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(ineffective_delete_comment_operation), fc::optional< expected_operation_result_t >() } );
+  expected_operations[2] = pattern_pair_t(
+    "{\"trx_id\":\"916d5011441f7925a322c7bc89ec65bfbe6d9fc3\",\"block\":27,\"trx_in_block\":1,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:01:18\",\"op\":{\"type\":\"delete_comment_operation\",\"value\":{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\"}},\"operation_id\":0}",
+    "{\"trx_id\":\"916d5011441f7925a322c7bc89ec65bfbe6d9fc3\",\"block\":27,\"trx_in_block\":1,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:01:18\",\"op\":[\"delete_comment\",{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\"}]}"
+    ); // delete_comment_operation
+  expected_operations[3] = pattern_pair_t(
+    "{\"trx_id\":\"916d5011441f7925a322c7bc89ec65bfbe6d9fc3\",\"block\":27,\"trx_in_block\":1,\"op_in_trx\":1,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:01:18\",\"op\":{\"type\":\"ineffective_delete_comment_operation\",\"value\":{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\"}},\"operation_id\":0}",
+    "{\"trx_id\":\"916d5011441f7925a322c7bc89ec65bfbe6d9fc3\",\"block\":27,\"trx_in_block\":1,\"op_in_trx\":1,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:01:18\",\"op\":[\"ineffective_delete_comment\",{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\"}]}"
+    ); // ineffective_delete_comment_operation / third and last obsolete operation tested here.
 
-  do_the_testing( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
-
-  // Set current hardfork for easier testing of current operations
-  db->set_hardfork( HIVE_NUM_HARDFORKS );
-  for( int i = 0; i < 20*60; ++i )
-  generate_block();
+  do_the_testing( *this, expected_operations, fc::optional<uint32_t>() );
 
   // Check virtual operations resulting from above actions some 1200 blocks later:
-  expected_operations.insert( { OP_TAG(author_reward_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(curation_reward_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(comment_reward_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(comment_payout_update_operation), fc::optional< expected_operation_result_t >() } );
-  do_the_testing( *this, expected_operations, 1269 ); // clears the container nominally
+  expected_operations.clear();
+  expected_operations.resize(4, fc::optional< pattern_pair_t >() ); // We're expecting 4 operations in the block with following operations.
+  expected_operations[1] = pattern_pair_t(
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":2,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":{\"type\":\"curation_reward_operation\",\"value\":{\"curator\":\"dan0ah\",\"reward\":{\"amount\":\"500000000000\",\"precision\":6,\"nai\":\"@@000000037\"},\"comment_author\":\"edgar0ah\",\"comment_permlink\":\"permlink1\",\"payout_must_be_claimed\":false}},\"operation_id\":0}",
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":2,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":[\"curation_reward\",{\"curator\":\"dan0ah\",\"reward\":\"500000.000000 VESTS\",\"comment_author\":\"edgar0ah\",\"comment_permlink\":\"permlink1\",\"payout_must_be_claimed\":false}]}"
+    ); // curation_reward_operation
+  expected_operations[2] = pattern_pair_t(
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":3,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":{\"type\":\"author_reward_operation\",\"value\":{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"hbd_payout\":{\"amount\":\"24755\",\"precision\":3,\"nai\":\"@@000000013\"},\"hive_payout\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\"},\"vesting_payout\":{\"amount\":\"24755000000000\",\"precision\":6,\"nai\":\"@@000000037\"},\"curators_vesting_payout\":{\"amount\":\"500000000000\",\"precision\":6,\"nai\":\"@@000000037\"},\"payout_must_be_claimed\":false}},\"operation_id\":0}",
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":3,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":[\"author_reward\",{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"hbd_payout\":\"24.755 TBD\",\"hive_payout\":\"0.000 TESTS\",\"vesting_payout\":\"24755000.000000 VESTS\",\"curators_vesting_payout\":\"500000.000000 VESTS\",\"payout_must_be_claimed\":false}]}"
+    ); // author_reward_operation
+  expected_operations[3] = pattern_pair_t(
+  "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":4,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":{\"type\":\"comment_reward_operation\",\"value\":{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"payout\":{\"amount\":\"50010\",\"precision\":3,\"nai\":\"@@000000013\"},\"author_rewards\":49510,\"total_payout_value\":{\"amount\":\"49510\",\"precision\":3,\"nai\":\"@@000000013\"},\"curator_payout_value\":{\"amount\":\"500\",\"precision\":3,\"nai\":\"@@000000013\"},\"beneficiary_payout_value\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000013\"}}},\"operation_id\":0}",
+  "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":4,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":[\"comment_reward\",{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"payout\":\"50.010 TBD\",\"author_rewards\":49510,\"total_payout_value\":\"49.510 TBD\",\"curator_payout_value\":\"0.500 TBD\",\"beneficiary_payout_value\":\"0.000 TBD\"}]}"
+    ); // comment_reward_operation
+  do_the_testing( *this, expected_operations, 1226 );
 
-  claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
-  expected_operations.insert( { OP_TAG(claim_reward_balance_operation), fc::optional< expected_operation_result_t >() } );
+} FC_LOG_AND_RETHROW() }
+
+
+BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
+{ try {
+
+  BOOST_TEST_MESSAGE( "get_ops_in_block / get_transaction test" );
+
+  // The container for the kinds of operations that we expect to be found in blocks.
+  // We'll use it to be sure that all kind of operations have been used during testing.
+  expected_t expected_operations;
+
+  db->set_hardfork( HIVE_NUM_HARDFORKS );
+  generate_block();
+  
+  ACTORS( (dan0ah)(edgar0ah) );
+  //vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
+
+  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
+  vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
+
+  // Check virtual operations resulting from above actions some 1200 blocks later:
+  expected_operations.resize(6, fc::optional< pattern_pair_t >() ); // We're expecting 4 operations in the block with following operations.
+  //expected_operations[0] = pattern_pair_t(
+  //  ); // comment_payout_update_operation
+  do_the_testing( *this, expected_operations, 1202 ); // clears the container nominally
+
+/*  claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
+  //expected_operations.insert( { OP_TAG(claim_reward_balance_operation), fc::optional< expected_operation_result_t >() } );
+*/
+
+  // Set current hardfork for easier testing of current operations
+  /*db->set_hardfork( HIVE_NUM_HARDFORKS );
+  for( int i = 0; i < 20*60; ++i )
+  generate_block();
 
   convert_hbd_to_hive( "edgar0ah", 0, ASSET( "11.201 TBD" ), edgar0ah_private_key );
   expected_operations.insert( { OP_TAG(convert_operation), fc::optional< expected_operation_result_t >() } );
@@ -660,8 +747,6 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 */
 
 } FC_LOG_AND_RETHROW() }
-
-#undef OP_TAG
 
 BOOST_AUTO_TEST_SUITE_END()
 #endif
