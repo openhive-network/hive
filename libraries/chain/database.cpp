@@ -3755,27 +3755,40 @@ void database::process_decline_voting_rights()
   int count = 0;
   if( _benchmark_dumper.is_enabled() )
     _benchmark_dumper.begin();
+
+  const auto& proposal_votes = get_index< proposal_vote_index, by_voter_proposal >();
+  remove_guard obj_perf( get_remove_threshold() );
+
   while( itr != request_idx.end() && itr->effective_date <= head_block_time() )
   {
     const auto& account = get< account_object, by_name >( itr->account );
 
-    nullify_proxied_witness_votes( account );
-    clear_witness_votes( account );
-
-    if( account.has_proxy() )
-      push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
-
-    push_virtual_operation( declined_voting_rights( itr->account ) );
-
-    modify( account, [&]( account_object& a )
+    if( !has_hardfork( HIVE_HARDFORK_1_28 ) || dhf_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
     {
-      a.can_vote = false;
-      a.clear_proxy();
-    });
+      nullify_proxied_witness_votes( account );
+      clear_witness_votes( account );
 
-    remove( *itr );
-    itr = request_idx.begin();
-    ++count;
+      if( account.has_proxy() )
+        push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
+
+      push_virtual_operation( declined_voting_rights( itr->account ) );
+
+      modify( account, [&]( account_object& a )
+      {
+        a.can_vote = false;
+        a.clear_proxy();
+      });
+
+      remove( *itr );
+      itr = request_idx.begin();
+      ++count;
+    }
+    else
+    {
+      ilog("Threshold exceeded while deleting proposal votes for account ${account}.",
+        ("account", account.name)); // to be continued in next block
+      break;
+    }
   }
   if( _benchmark_dumper.is_enabled() && count )
     _benchmark_dumper.end( "processing", "hive::protocol::decline_voting_rights_operation", count );
