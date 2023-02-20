@@ -4,7 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ed54eb4a-d3f8-4afd-942d-fa4178b79696" name="Changes" comment="" />
+    <list default="true" id="4c1076e6-2012-4431-bd9b-964bafc13108" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/python-terminal.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/new.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/.python-version" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/functional/python_tests/hived/test_testowy.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/functional/python_tests/hived/testing_blockchain_operations.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/functional/python_tests/test_something.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/hive.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/hive.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/version.py" beforeDir="false" afterPath="$PROJECT_DIR$/version.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -41,7 +53,21 @@
     ]
   }
 }</component>
-  <component name="RunManager" selected="Python tests.pytest for test_testowy.test_keys_import_during_account_creation">
+  <component name="RunManager" selected="Python tests.Python tests for test_testowy.test_transfer_between_initminer_and_user">
+    <configuration name="Python tests for test_testowy.test_transfer_between_initminer_and_user" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+      <module name="hive" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests/functional/python_tests/hived" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_testowy.test_transfer_between_initminer_and_user&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
     <configuration name="pytest for test_testowy.test_count_created_few_accounts" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="hive" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -106,29 +132,13 @@
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
       <method v="2" />
     </configuration>
-    <configuration name="pytest for test_testowy.test_post_comment_by_user" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
-      <module name="hive" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests/functional/python_tests/hived" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="_new_keywords" value="&quot;&quot;" />
-      <option name="_new_parameters" value="&quot;&quot;" />
-      <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;test_testowy.test_post_comment_by_user&quot;" />
-      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python tests.Python tests for test_testowy.test_transfer_between_initminer_and_user" />
         <item itemvalue="Python tests.pytest for test_testowy.test_keys_import_during_account_creation" />
         <item itemvalue="Python tests.pytest for test_testowy.test_multiple_creation_of_accounts" />
         <item itemvalue="Python tests.pytest for test_testowy.test_count_created_few_accounts" />
         <item itemvalue="Python tests.pytest for test_testowy.test_create_comment_by_user" />
-        <item itemvalue="Python tests.pytest for test_testowy.test_post_comment_by_user" />
       </list>
     </recent_temporary>
   </component>
