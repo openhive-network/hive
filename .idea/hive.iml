@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <<<<<<< HEAD
+<<<<<<< HEAD
 <module version="4">
 =======
+=======
+>>>>>>> testy/testow
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
@@ -13,6 +16,9 @@
     <orderEntry type="jdk" jdkName="Python 3.10 (hive-tests)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
+<<<<<<< HEAD
+>>>>>>> testy/testow
+=======
 >>>>>>> testy/testow
   <component name="PyDocumentationSettings">
     <option name="format" value="PLAIN" />
