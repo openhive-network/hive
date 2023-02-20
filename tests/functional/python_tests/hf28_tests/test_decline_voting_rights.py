@@ -18,7 +18,6 @@ def test_decline_voting_rights(prepare_environment):
     assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])['accounts'][0]["can_vote"] == False
 
 
-@pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/441")
 @run_for("testnet")
 def test_decline_voting_rights_more_than_once(prepare_environment):
     node, wallet = prepare_environment

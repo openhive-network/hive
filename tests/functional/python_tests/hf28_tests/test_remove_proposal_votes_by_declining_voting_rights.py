@@ -7,7 +7,6 @@ from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
 
 
-@pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/441")
 @run_for("testnet")
 def test_if_proposal_votes_were_removed_after_declining_voting_rights(prepare_environment):
     node, wallet = prepare_environment
@@ -21,7 +20,6 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights(prepare_en
     assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 0
 
 
-@pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/441")
 @run_for("testnet")
 def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights(prepare_environment):
     node, wallet = prepare_environment
@@ -35,7 +33,6 @@ def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights(prep
         wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
 
 
-@pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/441")
 @run_for("testnet")
 def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed(prepare_environment):
     node, wallet = prepare_environment
