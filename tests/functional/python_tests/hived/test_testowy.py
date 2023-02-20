@@ -17,6 +17,7 @@ def test_transfer_between_initminer_and_user(node):
     wallet.api.create_account("initminer", "alice", "{}")
     wallet.api.transfer("initminer", "alice", tt.Asset.Test(100), "")
 
+
     assert node.api.condenser.get_accounts(["alice"])[0]["balance"] == tt.Asset.Test(100)
 
 
