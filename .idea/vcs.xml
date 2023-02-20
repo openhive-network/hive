@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libraries/chain/compression_dictionaries" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libraries/fc/vendor/secp256k1-zkp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libraries/fc/vendor/websocketpp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libraries/vendor/rocksdb" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libraries/vendor/zstd" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/tests/hive-local-tools/schemas" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/tests/hive-local-tools/test-tools" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/tests/hive-local-tools/tests_api" vcs="Git" />
+  </component>
+</project>
