@@ -69,9 +69,76 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
             It doesn't matter which HF is - since vop `declined_voting_rights` was introduced, it should be always generated.
             Before HF28, a last vop was `proxy_cleared_operation`.
         */
-        BOOST_TEST_MESSAGE( "HF28 enabled" );
         auto recent_op = recent_ops.back().get< declined_voting_rights >();
         BOOST_REQUIRE( recent_op.account == "alice" );
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-27*****" );
+    execute_hardfork<27>( _content );
+
+    is_hf28 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes )
+{
+  try
+  {
+    bool is_hf28 = false;
+
+    auto _content = [ &is_hf28 ]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: create 'decline_voting_rights' before an user casts votes on proposal" );
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+      ACTORS_EXT( (*executor), (alice)(bob) );
+
+      executor->generate_block();
+
+      executor->fund( "alice", 100000 );
+      executor->fund( "bob", 100000 );
+      executor->fund( "alice", ASSET( "200.000 TBD" ) );
+      executor->fund( "bob", ASSET( "200.000 TBD" ) );
+      executor->vest( "alice", 100000 );
+      executor->vest( "bob", 100000 );
+
+      executor->generate_block();
+
+      BOOST_TEST_MESSAGE( "Create 'decline_voting_rights'" );
+      decline_voting_rights_operation op;
+      op.account = "alice";
+      op.decline = true;
+
+      signed_transaction tx;
+      tx.operations.push_back( op );
+      tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+      executor->push_transaction( tx, alice_private_key );
+
+      executor->generate_block();
+
+      dhf_database dhf_db( *executor.get() );
+      dhf_database::create_proposal_data cpd( executor->db->head_block_time() );
+
+      BOOST_TEST_MESSAGE( "Create 'create_proposal_operation'" );
+      int64_t _id_proposal = dhf_db.create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
+
+      BOOST_TEST_MESSAGE( "Create 'update_proposal_votes_operation'" );
+      dhf_db.vote_proposal( "alice", { _id_proposal }, true, alice_private_key );
+      BOOST_REQUIRE( dhf_db.find_vote_for_proposal( "alice", _id_proposal ) == true );
+
+      executor->generate_block();
+
+      executor->generate_blocks( executor->db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD, false );
+
+      if( is_hf28 )
+        BOOST_REQUIRE( dhf_db.find_vote_for_proposal( "alice", _id_proposal ) == false );//Proposal votes should be removed.
+      else
+        BOOST_REQUIRE( dhf_db.find_vote_for_proposal( "alice", _id_proposal ) == true );
     };
 
     BOOST_TEST_MESSAGE( "*****HF-27*****" );
