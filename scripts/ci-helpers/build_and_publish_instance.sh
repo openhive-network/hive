@@ -10,14 +10,11 @@ docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
 
 pushd "$CI_PROJECT_DIR" || exit 1
 
-docker buildx build --progress=plain --target=base_instance \
-  --build-arg CI_REGISTRY_IMAGE="$CI_REGISTRY_IMAGE/" \
-  --build-arg BUILD_HIVE_TESTNET="OFF" \
-  --build-arg HIVE_CONVERTER_BUILD="OFF" \
-  --build-arg BUILD_IMAGE_TAG="$CI_COMMIT_TAG" \
-  --tag "${CI_REGISTRY_IMAGE}/base_instance:base_instance-${CI_COMMIT_TAG}" \
-  --file Dockerfile .
+# Build base_instance image
+scripts/ci-helpers/build_instance.sh "$CI_COMMIT_TAG" \
+  "." "registry.gitlab.syncad.com/hive/hive"
 
+# Build instance image
 docker buildx build --progress=plain --target=instance \
   --build-arg CI_REGISTRY_IMAGE="$CI_REGISTRY_IMAGE/" \
   --build-arg BUILD_HIVE_TESTNET="OFF" \
