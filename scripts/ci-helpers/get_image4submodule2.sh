@@ -42,11 +42,11 @@ while [ $# -gt 0 ]; do
         case $NETWORK_TYPE in
           "testnet"*)
             IMGNAME=testnet-base_instance
-            IMGNAME_INSTANCE=testnet-base_instance
+            IMGNAME_INSTANCE=testnet-instance
             ;;
           "mirrornet"*)
             IMGNAME=mirrornet-base_instance
-            IMGNAME_INSTANCE=mirrornet-base_instance
+            IMGNAME_INSTANCE=mirrornet-instance
             ;;
           "mainnet"*)
             ;;
