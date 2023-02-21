@@ -84,6 +84,60 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( declined_voting_rights_basic_2 )
+{
+  try
+  {
+    bool is_hf28 = false;
+
+    auto _content = [ &is_hf28 ]( ptr_hardfork_database_fixture& executor )
+    {
+        BOOST_TEST_MESSAGE( "Testing: 'declined_voting_rights' is created twice" );
+        BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+        ACTORS_EXT( (*executor), (alice) );
+        executor->fund( "alice", 1000 );
+        executor->vest( "alice", 1000 );
+
+        auto _create_decline_voting_rights_operation = []( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& key )
+        {
+          decline_voting_rights_operation op;
+          op.account = "alice";
+          op.decline = true;
+
+          BOOST_TEST_MESSAGE( "Create 'decline_voting_rights'" );
+          signed_transaction tx;
+          tx.operations.push_back( op );
+          tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+          executor->push_transaction( tx, key );
+        };
+
+        _create_decline_voting_rights_operation( executor, alice_private_key );
+
+        executor->generate_blocks( executor->db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD, false );
+
+        if( is_hf28 )
+        {
+          HIVE_REQUIRE_THROW( _create_decline_voting_rights_operation( executor, alice_private_key ), fc::assert_exception );
+        }
+        else
+        {
+          _create_decline_voting_rights_operation( executor, alice_private_key );
+        }
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-27*****" );
+    execute_hardfork<27>( _content );
+
+    is_hf28 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes )
 {
   try
