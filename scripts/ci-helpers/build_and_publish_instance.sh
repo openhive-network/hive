@@ -6,7 +6,7 @@
 set -e
 
 docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-#docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
+docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
 
 pushd "$CI_PROJECT_DIR" || exit 1
 
@@ -19,6 +19,6 @@ docker tag "${CI_REGISTRY_IMAGE}/instance:instance-${CI_COMMIT_TAG}" "hiveio/hiv
 docker images
 
 docker push "${CI_REGISTRY_IMAGE}/instance:instance-${CI_COMMIT_TAG}"
-#docker push "hiveio/hive:${CI_COMMIT_TAG}"
+docker push "hiveio/hive:${CI_COMMIT_TAG}"
 
 popd || exit 1
