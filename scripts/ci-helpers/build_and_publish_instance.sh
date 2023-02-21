@@ -11,7 +11,7 @@ docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
 pushd "$CI_PROJECT_DIR" || exit 1
 
 # Build instance image
-scripts/ci-helpers/build_instance.sh "$CI_COMMIT_TAG" "." "registry.gitlab.syncad.com/hive/hive"
+scripts/ci-helpers/build_instance.sh "$CI_COMMIT_TAG" "." "${CI_REGISTRY_IMAGE}"
 
 # Tag instance image
 docker tag "${CI_REGISTRY_IMAGE}/instance:instance-${CI_COMMIT_TAG}" "hiveio/hive:${CI_COMMIT_TAG}"
