@@ -111,4 +111,9 @@ def test_convert_hbd_to_hive_operation(node):
 @run_for("testnet")
 def test_recurrent_transfer_operation(node):
     wallet = tt.Wallet(attach_to=node)
-
+    wallet.api.create_account("initminer", "alice", "{}")
+    wallet.api.create_account("initminer", "bob", "{}")
+    wallet.api.transfer("initminer", "alice", tt.Asset.Test(100), "memo")
+    wallet.api.transfer_to_vesting('initminer', "alice", tt.Asset.Test(100))
+    response = node.api.condenser.find_recurrent_transfers('alice')
+    print()
