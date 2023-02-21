@@ -5,17 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4c1076e6-2012-4431-bd9b-964bafc13108" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/python-terminal.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/build" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/new.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/.python-version" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/functional/python_tests/hived/test_testowy.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/functional/python_tests/hived/testing_blockchain_operations.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/functional/python_tests/test_something.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/hive.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/hive.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/version.py" beforeDir="false" afterPath="$PROJECT_DIR$/version.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/functional/python_tests/hived/test_testowy.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/functional/python_tests/hived/test_testowy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/functional/python_tests/hived/testing_blockchain_operations.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/functional/python_tests/hived/testing_blockchain_operations.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/functional/python_tests/test_something.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/functional/python_tests/test_something.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,7 +46,7 @@
     ]
   }
 }</component>
-  <component name="RunManager" selected="Python tests.Python tests for test_testowy.test_transfer_between_initminer_and_user">
+  <component name="RunManager">
     <configuration name="Python tests for test_testowy.test_transfer_between_initminer_and_user" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
       <module name="hive" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -72,9 +65,10 @@
       <module name="hive" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
+      <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/hive-tests/bin/python" />
+      <option name="SDK_NAME" value="Python 3.10 (hive-tests)" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests/functional/python_tests/hived" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="_new_keywords" value="&quot;&quot;" />
@@ -132,6 +126,13 @@
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Python tests.pytest for test_testowy.test_count_created_few_accounts" />
+      <item itemvalue="Python tests.pytest for test_testowy.test_create_comment_by_user" />
+      <item itemvalue="Python tests.pytest for test_testowy.test_keys_import_during_account_creation" />
+      <item itemvalue="Python tests.pytest for test_testowy.test_multiple_creation_of_accounts" />
+      <item itemvalue="Python tests.Python tests for test_testowy.test_transfer_between_initminer_and_user" />
+    </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python tests.Python tests for test_testowy.test_transfer_between_initminer_and_user" />
@@ -145,7 +146,7 @@
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="ed54eb4a-d3f8-4afd-942d-fa4178b79696" name="Changes" comment="" />
+      <changelist id="4c1076e6-2012-4431-bd9b-964bafc13108" name="Changes" comment="" />
       <created>1676458501433</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
