@@ -1,8 +1,6 @@
 import pytest
 
 import test_tools as tt
-<<<<<<< HEAD
-=======
 from hive_local_tools import run_for
 
 
@@ -36,4 +34,3 @@ def test_transfer_operation(node):
     response = node.api.condenser.get_accounts(["alice"])
 
     assert tt.Asset.Test(50) == response[0]["balance"]
->>>>>>> testy/testow
