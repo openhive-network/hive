@@ -561,25 +561,56 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf13 )
 
   do_the_testing( *this, expected_operations, fc::optional<uint32_t>() );
 
+} FC_LOG_AND_RETHROW() }
+
+BOOST_AUTO_TEST_CASE( account_history_by_condenser_comment_and_reward )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing comments, vote & reward operations" );
+
+  // The container for the kinds of operations that we expect to be found in blocks.
+  // We'll use it to be sure that all kind of operations have been used during testing.
+  expected_t expected_operations;
+
+  db->set_hardfork( HIVE_HARDFORK_1_27 );
+  generate_block();
+  
+  ACTORS( (dan0ah)(edgar0ah) );
+
+  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
+  vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
+
   // Check virtual operations resulting from above actions some 1200 blocks later:
-  expected_operations.clear();
-  expected_operations.resize(4, fc::optional< pattern_pair_t >() ); // We're expecting 4 operations in the block with following operations.
+  expected_operations.resize(6, fc::optional< pattern_pair_t >() ); // We're expecting 6 operations in the block with following operations.
   expected_operations[1] = pattern_pair_t(
-    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":2,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":{\"type\":\"curation_reward_operation\",\"value\":{\"curator\":\"dan0ah\",\"reward\":{\"amount\":\"500000000000\",\"precision\":6,\"nai\":\"@@000000037\"},\"comment_author\":\"edgar0ah\",\"comment_permlink\":\"permlink1\",\"payout_must_be_claimed\":false}},\"operation_id\":0}",
-    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":2,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":[\"curation_reward\",{\"curator\":\"dan0ah\",\"reward\":\"500000.000000 VESTS\",\"comment_author\":\"edgar0ah\",\"comment_permlink\":\"permlink1\",\"payout_must_be_claimed\":false}]}"
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1202,\"trx_in_block\":4294967295,\"op_in_trx\":2,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:00:06\",\"op\":{\"type\":\"curation_reward_operation\",\"value\":{\"curator\":\"dan0ah\",\"reward\":{\"amount\":\"20459133335790\",\"precision\":6,\"nai\":\"@@000000037\"},\"comment_author\":\"edgar0ah\",\"comment_permlink\":\"permlink1\",\"payout_must_be_claimed\":true}},\"operation_id\":0}",
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1202,\"trx_in_block\":4294967295,\"op_in_trx\":2,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:00:06\",\"op\":[\"curation_reward\",{\"curator\":\"dan0ah\",\"reward\":\"20459133.335790 VESTS\",\"comment_author\":\"edgar0ah\",\"comment_permlink\":\"permlink1\",\"payout_must_be_claimed\":true}]}"
     ); // curation_reward_operation
   expected_operations[2] = pattern_pair_t(
-    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":3,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":{\"type\":\"author_reward_operation\",\"value\":{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"hbd_payout\":{\"amount\":\"24755\",\"precision\":3,\"nai\":\"@@000000013\"},\"hive_payout\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\"},\"vesting_payout\":{\"amount\":\"24755000000000\",\"precision\":6,\"nai\":\"@@000000037\"},\"curators_vesting_payout\":{\"amount\":\"500000000000\",\"precision\":6,\"nai\":\"@@000000037\"},\"payout_must_be_claimed\":false}},\"operation_id\":0}",
-    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":3,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":[\"author_reward\",{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"hbd_payout\":\"24.755 TBD\",\"hive_payout\":\"0.000 TESTS\",\"vesting_payout\":\"24755000.000000 VESTS\",\"curators_vesting_payout\":\"500000.000000 VESTS\",\"payout_must_be_claimed\":false}]}"
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1202,\"trx_in_block\":4294967295,\"op_in_trx\":3,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:00:06\",\"op\":{\"type\":\"author_reward_operation\",\"value\":{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"hbd_payout\":{\"amount\":\"18515\",\"precision\":3,\"nai\":\"@@000000013\"},\"hive_payout\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\"},\"vesting_payout\":{\"amount\":\"10229566667895\",\"precision\":6,\"nai\":\"@@000000037\"},\"curators_vesting_payout\":{\"amount\":\"20459133335790\",\"precision\":6,\"nai\":\"@@000000037\"},\"payout_must_be_claimed\":true}},\"operation_id\":0}",
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1202,\"trx_in_block\":4294967295,\"op_in_trx\":3,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:00:06\",\"op\":[\"author_reward\",{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"hbd_payout\":\"18.515 TBD\",\"hive_payout\":\"0.000 TESTS\",\"vesting_payout\":\"10229566.667895 VESTS\",\"curators_vesting_payout\":\"20459133.335790 VESTS\",\"payout_must_be_claimed\":true}]}"
     ); // author_reward_operation
   expected_operations[3] = pattern_pair_t(
-  "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":4,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":{\"type\":\"comment_reward_operation\",\"value\":{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"payout\":{\"amount\":\"50010\",\"precision\":3,\"nai\":\"@@000000013\"},\"author_rewards\":49510,\"total_payout_value\":{\"amount\":\"49510\",\"precision\":3,\"nai\":\"@@000000013\"},\"curator_payout_value\":{\"amount\":\"500\",\"precision\":3,\"nai\":\"@@000000013\"},\"beneficiary_payout_value\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000013\"}}},\"operation_id\":0}",
-  "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1226,\"trx_in_block\":4294967295,\"op_in_trx\":4,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:01:18\",\"op\":[\"comment_reward\",{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"payout\":\"50.010 TBD\",\"author_rewards\":49510,\"total_payout_value\":\"49.510 TBD\",\"curator_payout_value\":\"0.500 TBD\",\"beneficiary_payout_value\":\"0.000 TBD\"}]}"
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1202,\"trx_in_block\":4294967295,\"op_in_trx\":4,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:00:06\",\"op\":{\"type\":\"comment_reward_operation\",\"value\":{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"payout\":{\"amount\":\"74060\",\"precision\":3,\"nai\":\"@@000000013\"},\"author_rewards\":37030,\"total_payout_value\":{\"amount\":\"37030\",\"precision\":3,\"nai\":\"@@000000013\"},\"curator_payout_value\":{\"amount\":\"37030\",\"precision\":3,\"nai\":\"@@000000013\"},\"beneficiary_payout_value\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000013\"}}},\"operation_id\":0}",
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1202,\"trx_in_block\":4294967295,\"op_in_trx\":4,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:00:06\",\"op\":[\"comment_reward\",{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\",\"payout\":\"74.060 TBD\",\"author_rewards\":37030,\"total_payout_value\":\"37.030 TBD\",\"curator_payout_value\":\"37.030 TBD\",\"beneficiary_payout_value\":\"0.000 TBD\"}]}"
     ); // comment_reward_operation
+  expected_operations[4] = pattern_pair_t(
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1202,\"trx_in_block\":4294967295,\"op_in_trx\":5,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:00:06\",\"op\":{\"type\":\"comment_payout_update_operation\",\"value\":{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\"}},\"operation_id\":0}",
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1202,\"trx_in_block\":4294967295,\"op_in_trx\":5,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:00:06\",\"op\":[\"comment_payout_update\",{\"author\":\"edgar0ah\",\"permlink\":\"permlink1\"}]}"
+    ); // comment_payout_update_operation
+  do_the_testing( *this, expected_operations, 1202 );
+
+  claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
+
+  expected_operations.clear();
+  expected_operations.resize(2, fc::optional< pattern_pair_t >() ); // We're expecting 2 operations in the block with following operations.
+  expected_operations[0] = pattern_pair_t(
+    "{\"trx_id\":\"413849212d41bd2d923a5c19ae2596985d5266f5\",\"block\":1226,\"trx_in_block\":0,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T01:01:15\",\"op\":{\"type\":\"claim_reward_balance_operation\",\"value\":{\"account\":\"edgar0ah\",\"reward_hive\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\"},\"reward_hbd\":{\"amount\":\"12502\",\"precision\":3,\"nai\":\"@@000000013\"},\"reward_vests\":{\"amount\":\"80000000\",\"precision\":6,\"nai\":\"@@000000037\"}}},\"operation_id\":0}",
+    "{\"trx_id\":\"413849212d41bd2d923a5c19ae2596985d5266f5\",\"block\":1226,\"trx_in_block\":0,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T01:01:15\",\"op\":[\"claim_reward_balance\",{\"account\":\"edgar0ah\",\"reward_hive\":\"0.000 TESTS\",\"reward_hbd\":\"12.502 TBD\",\"reward_vests\":\"80.000000 VESTS\"}]}"
+    ); // claim_reward_balance_operation
   do_the_testing( *this, expected_operations, 1226 );
 
 } FC_LOG_AND_RETHROW() }
-
 
 BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 { try {
@@ -590,25 +621,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   // We'll use it to be sure that all kind of operations have been used during testing.
   expected_t expected_operations;
 
-  db->set_hardfork( HIVE_NUM_HARDFORKS );
+  db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
   
-  ACTORS( (dan0ah)(edgar0ah) );
-  //vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
-
-  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
-  vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
-
-  // Check virtual operations resulting from above actions some 1200 blocks later:
-  expected_operations.resize(6, fc::optional< pattern_pair_t >() ); // We're expecting 4 operations in the block with following operations.
-  //expected_operations[0] = pattern_pair_t(
-  //  ); // comment_payout_update_operation
-  do_the_testing( *this, expected_operations, 1202 ); // clears the container nominally
-
-/*  claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
-  //expected_operations.insert( { OP_TAG(claim_reward_balance_operation), fc::optional< expected_operation_result_t >() } );
-*/
-
   // Set current hardfork for easier testing of current operations
   /*db->set_hardfork( HIVE_NUM_HARDFORKS );
   for( int i = 0; i < 20*60; ++i )
