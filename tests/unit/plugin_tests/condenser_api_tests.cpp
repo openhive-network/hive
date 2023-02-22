@@ -612,6 +612,83 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_comment_and_reward )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( account_history_by_condenser_convert_and_limit_order )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing conversion & limit order operations" );
+
+  // The container for the kinds of operations that we expect to be found in blocks.
+  // We'll use it to be sure that all kind of operations have been used during testing.
+  expected_t expected_operations;
+
+  db->set_hardfork( HIVE_HARDFORK_1_27 );
+  generate_block();
+
+  ACTORS( (edgar3ah)(carol3ah) );
+  generate_block();
+
+  fund( "edgar3ah", ASSET( "300.000 TBD" ) );
+  fund( "carol3ah", ASSET( "300.000 TESTS" ) );
+  generate_block();
+
+  expected_operations.resize(8, fc::optional< pattern_pair_t >() ); // We're expecting 4 operations in the block
+
+  convert_hbd_to_hive( "edgar3ah", 0, ASSET( "11.201 TBD" ), edgar3ah_private_key );
+  expected_operations[0] = pattern_pair_t(
+    "{\"trx_id\":\"6a79f548e62e1013e6fcbc7442f215cd7879f431\",\"block\":5,\"trx_in_block\":0,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":{\"type\":\"convert_operation\",\"value\":{\"owner\":\"edgar3ah\",\"requestid\":0,\"amount\":{\"amount\":\"11201\",\"precision\":3,\"nai\":\"@@000000013\"}}},\"operation_id\":0}",
+    "{\"trx_id\":\"6a79f548e62e1013e6fcbc7442f215cd7879f431\",\"block\":5,\"trx_in_block\":0,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":[\"convert\",{\"owner\":\"edgar3ah\",\"requestid\":0,\"amount\":\"11.201 TBD\"}]}"
+    ); // convert_operation
+
+  collateralized_convert_hive_to_hbd( "carol3ah", 0, ASSET( "22.102 TESTS" ), carol3ah_private_key );
+  expected_operations[1] = pattern_pair_t(
+    "{\"trx_id\":\"9f3d234471e6b053be812e180f8f63a4811f462d\",\"block\":5,\"trx_in_block\":1,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":{\"type\":\"collateralized_convert_operation\",\"value\":{\"owner\":\"carol3ah\",\"requestid\":0,\"amount\":{\"amount\":\"22102\",\"precision\":3,\"nai\":\"@@000000021\"}}},\"operation_id\":0}",
+    "{\"trx_id\":\"9f3d234471e6b053be812e180f8f63a4811f462d\",\"block\":5,\"trx_in_block\":1,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":[\"collateralized_convert\",{\"owner\":\"carol3ah\",\"requestid\":0,\"amount\":\"22.102 TESTS\"}]}"
+    ); // collateralized_convert_operation
+  expected_operations[2] = pattern_pair_t(
+    "{\"trx_id\":\"9f3d234471e6b053be812e180f8f63a4811f462d\",\"block\":5,\"trx_in_block\":1,\"op_in_trx\":1,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":{\"type\":\"collateralized_convert_immediate_conversion_operation\",\"value\":{\"owner\":\"carol3ah\",\"requestid\":0,\"hbd_out\":{\"amount\":\"10524\",\"precision\":3,\"nai\":\"@@000000013\"}}},\"operation_id\":0}",
+    "{\"trx_id\":\"9f3d234471e6b053be812e180f8f63a4811f462d\",\"block\":5,\"trx_in_block\":1,\"op_in_trx\":1,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":[\"collateralized_convert_immediate_conversion\",{\"owner\":\"carol3ah\",\"requestid\":0,\"hbd_out\":\"10.524 TBD\"}]}"
+    ); // collateralized_convert_immediate_conversion_operation
+
+  limit_order_create( "carol3ah", ASSET( "11.400 TESTS" ), ASSET( "11.650 TBD" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 1, carol3ah_private_key );
+  expected_operations[3] = pattern_pair_t(
+    "{\"trx_id\":\"ad19c50dc64931096ca6bd82574f03330c37c7d9\",\"block\":5,\"trx_in_block\":2,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":{\"type\":\"limit_order_create_operation\",\"value\":{\"owner\":\"carol3ah\",\"orderid\":1,\"amount_to_sell\":{\"amount\":\"11400\",\"precision\":3,\"nai\":\"@@000000021\"},\"min_to_receive\":{\"amount\":\"11650\",\"precision\":3,\"nai\":\"@@000000013\"},\"fill_or_kill\":false,\"expiration\":\"2016-01-29T00:00:12\"}},\"operation_id\":0}",
+    "{\"trx_id\":\"ad19c50dc64931096ca6bd82574f03330c37c7d9\",\"block\":5,\"trx_in_block\":2,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":[\"limit_order_create\",{\"owner\":\"carol3ah\",\"orderid\":1,\"amount_to_sell\":\"11.400 TESTS\",\"min_to_receive\":\"11.650 TBD\",\"fill_or_kill\":false,\"expiration\":\"2016-01-29T00:00:12\"}]}"
+    ); // limit_order_create_operation
+
+  limit_order2_create( "carol3ah", ASSET( "22.075 TESTS" ), price( ASSET( "0.010 TESTS" ), ASSET( "0.010 TBD" ) ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 2, carol3ah_private_key );
+  expected_operations[4] = pattern_pair_t(
+    "{\"trx_id\":\"5381fe94856170a97821cf6c1a3518d279111d05\",\"block\":5,\"trx_in_block\":3,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":{\"type\":\"limit_order_create2_operation\",\"value\":{\"owner\":\"carol3ah\",\"orderid\":2,\"amount_to_sell\":{\"amount\":\"22075\",\"precision\":3,\"nai\":\"@@000000021\"},\"exchange_rate\":{\"base\":{\"amount\":\"10\",\"precision\":3,\"nai\":\"@@000000021\"},\"quote\":{\"amount\":\"10\",\"precision\":3,\"nai\":\"@@000000013\"}},\"fill_or_kill\":false,\"expiration\":\"2016-01-29T00:00:12\"}},\"operation_id\":0}",
+    "{\"trx_id\":\"5381fe94856170a97821cf6c1a3518d279111d05\",\"block\":5,\"trx_in_block\":3,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":[\"limit_order_create2\",{\"owner\":\"carol3ah\",\"orderid\":2,\"amount_to_sell\":\"22.075 TESTS\",\"exchange_rate\":{\"base\":\"0.010 TESTS\",\"quote\":\"0.010 TBD\"},\"fill_or_kill\":false,\"expiration\":\"2016-01-29T00:00:12\"}]}"
+    ); // limit_order_create2_operation
+  
+  limit_order_cancel( "carol3ah", 1, carol3ah_private_key );
+  expected_operations[5] = pattern_pair_t(
+    "{\"trx_id\":\"8c57b6cc735c077c0f0e41974e3f74dafab89319\",\"block\":5,\"trx_in_block\":4,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":{\"type\":\"limit_order_cancel_operation\",\"value\":{\"owner\":\"carol3ah\",\"orderid\":1}},\"operation_id\":0}",
+    "{\"trx_id\":\"8c57b6cc735c077c0f0e41974e3f74dafab89319\",\"block\":5,\"trx_in_block\":4,\"op_in_trx\":0,\"virtual_op\":false,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":[\"limit_order_cancel\",{\"owner\":\"carol3ah\",\"orderid\":1}]}"
+    ); // limit_order_cancel_operation
+  expected_operations[6] = pattern_pair_t(
+    "{\"trx_id\":\"8c57b6cc735c077c0f0e41974e3f74dafab89319\",\"block\":5,\"trx_in_block\":4,\"op_in_trx\":1,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":{\"type\":\"limit_order_cancelled_operation\",\"value\":{\"seller\":\"carol3ah\",\"orderid\":1,\"amount_back\":{\"amount\":\"11400\",\"precision\":3,\"nai\":\"@@000000021\"}}},\"operation_id\":0}",
+    "{\"trx_id\":\"8c57b6cc735c077c0f0e41974e3f74dafab89319\",\"block\":5,\"trx_in_block\":4,\"op_in_trx\":1,\"virtual_op\":true,\"timestamp\":\"2016-01-01T00:00:12\",\"op\":[\"limit_order_cancelled\",{\"seller\":\"carol3ah\",\"orderid\":1,\"amount_back\":\"11.400 TESTS\"}]}"
+    ); // limit_order_cancelled_operation
+
+  do_the_testing( *this, expected_operations, fc::optional<uint32_t>() );
+
+  // Check virtual operations spawned by the ones obove:
+  expected_operations.clear();
+  expected_operations.resize(3, fc::optional< pattern_pair_t >() ); // We're expecting 3 operations in the block
+  expected_operations[1] = pattern_pair_t(
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1684,\"trx_in_block\":4294967295,\"op_in_trx\":2,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:24:12\",\"op\":{\"type\":\"fill_convert_request_operation\",\"value\":{\"owner\":\"edgar3ah\",\"requestid\":0,\"amount_in\":{\"amount\":\"11201\",\"precision\":3,\"nai\":\"@@000000013\"},\"amount_out\":{\"amount\":\"11201\",\"precision\":3,\"nai\":\"@@000000021\"}}},\"operation_id\":0}",
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1684,\"trx_in_block\":4294967295,\"op_in_trx\":2,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:24:12\",\"op\":[\"fill_convert_request\",{\"owner\":\"edgar3ah\",\"requestid\":0,\"amount_in\":\"11.201 TBD\",\"amount_out\":\"11.201 TESTS\"}]}"
+    ); // fill_convert_request_operation
+  expected_operations[2] = pattern_pair_t(
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1684,\"trx_in_block\":4294967295,\"op_in_trx\":3,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:24:12\",\"op\":{\"type\":\"fill_collateralized_convert_request_operation\",\"value\":{\"owner\":\"carol3ah\",\"requestid\":0,\"amount_in\":{\"amount\":\"11050\",\"precision\":3,\"nai\":\"@@000000021\"},\"amount_out\":{\"amount\":\"10524\",\"precision\":3,\"nai\":\"@@000000013\"},\"excess_collateral\":{\"amount\":\"11052\",\"precision\":3,\"nai\":\"@@000000021\"}}},\"operation_id\":0}",
+    "{\"trx_id\":\"0000000000000000000000000000000000000000\",\"block\":1684,\"trx_in_block\":4294967295,\"op_in_trx\":3,\"virtual_op\":true,\"timestamp\":\"2016-01-01T01:24:12\",\"op\":[\"fill_collateralized_convert_request\",{\"owner\":\"carol3ah\",\"requestid\":0,\"amount_in\":\"11.050 TESTS\",\"amount_out\":\"10.524 TBD\",\"excess_collateral\":\"11.052 TESTS\"}]}"
+    ); // fill_collateralized_convert_request_operation
+
+  do_the_testing( *this, expected_operations, 1684 );
+
+} FC_LOG_AND_RETHROW() }
+  
 BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
 { try {
 
@@ -628,13 +705,6 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   /*db->set_hardfork( HIVE_NUM_HARDFORKS );
   for( int i = 0; i < 20*60; ++i )
   generate_block();
-
-  convert_hbd_to_hive( "edgar0ah", 0, ASSET( "11.201 TBD" ), edgar0ah_private_key );
-  expected_operations.insert( { OP_TAG(convert_operation), fc::optional< expected_operation_result_t >() } );
-
-  collateralized_convert_hive_to_hbd( "carol0ah", 0, ASSET( "0.100 TESTS" ), carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(collateralized_convert_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(collateralized_convert_immediate_conversion_operation), fc::optional< expected_operation_result_t >() } );
 
   // By now carol0ah should have a neat sum awarded for her comment.
   BOOST_REQUIRE_EQUAL( get_balance( "carol0ah" ).amount.value, 2900 );
@@ -653,14 +723,6 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   expected_operations.insert( { OP_TAG(withdraw_vesting_operation), fc::optional< expected_operation_result_t >() } );
   // TODO generate enough blocks to test fill_vesting_withdraw_operation & return_vesting_delegation_operation.
 
-  limit_order_create( "carol0ah", ASSET( "0.400 TESTS" ), ASSET( "0.650 TBD" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 1, carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(limit_order_create_operation), fc::optional< expected_operation_result_t >() } );
-  limit_order2_create( "carol0ah", ASSET( "0.075 TESTS" ), price( ASSET( "0.010 TESTS" ), ASSET( "0.010 TBD" ) ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 2, carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(limit_order_create2_operation), fc::optional< expected_operation_result_t >() } );
-  
-  limit_order_cancel( "carol0ah", 1, carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(limit_order_cancel_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(limit_order_cancelled_operation), fc::optional< expected_operation_result_t >() } );
 
   witness_create( "carol0ah", carol0ah_private_key, "foo.bar", carol0ah_private_key.get_public_key(), 1000 );
   expected_operations.insert( { OP_TAG(witness_update_operation), fc::optional< expected_operation_result_t >() } );
@@ -787,9 +849,6 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   expected_operations.insert( { OP_TAG(changed_recovery_account_operation), fc::optional< expected_operation_result_t >() } );
   do_the_testing( *this, expected_operations, 1313 ); // clears the container nominally
 
-  expected_operations.insert( { OP_TAG(fill_convert_request_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(fill_collateralized_convert_request_operation), fc::optional< expected_operation_result_t >() } );
-  do_the_testing( *this, expected_operations, 2973 ); // clears the container nominally
 */
 
 } FC_LOG_AND_RETHROW() }
