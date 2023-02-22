@@ -2,6 +2,23 @@
 
 set -xeuo pipefail
 
+env
+
+if [ "$(id -u)" != 0 ] && [ -n "${NEW_UID+x}" ];
+then
+  sudo -En "$0" "$@"
+  exit $?
+fi
+
+if [ "$(id -u)" = 0 ] && [ -n "${NEW_UID+x}" ];
+then
+  sudo -n usermod -o -u "${NEW_UID}" hived
+  unset NEW_UID
+  sudo -Enu hived "$0" "$@"
+  exit $?
+fi
+
+
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTDIR/scripts"
 

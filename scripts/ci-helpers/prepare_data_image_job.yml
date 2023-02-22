@@ -114,10 +114,14 @@
         --data-cache="$DATA_CACHE" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
     - du -h -d 1 /cache
     - cp $DATA_CACHE/datadir/docker_entrypoint.log $CI_PROJECT_DIR
+    - echo "NEW_UID=$(id -u)" > new_uid.env
+    - cat new_uid.env
 
   artifacts:
     reports:
-      dotenv: docker_image_name.env
+      dotenv:
+        - docker_image_name.env
+        - new_uid.env
     paths:
     - docker_entrypoint.log
     expire_in: 6 hours

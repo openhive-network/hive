@@ -70,9 +70,10 @@ echo "Attempting to perform replay basing on image ${IMG}..."
     --docker-option=--volume="$DATA_CACHE":"$DATA_CACHE" \
     --docker-option=--env=DATADIR="$DATA_CACHE/datadir" \
     --docker-option=--env=SHM_DIR="$DATA_CACHE/shm_dir" \
+    --docker-option=--env=NEW_UID="$(id -u)" \
     $IMG --replay-blockchain --stop-replay-at-block=5000000 --exit-before-sync
 
 echo "Logs from container hived_instance:"
-docker logs -f hived_instance || true
+docker logs -f hived_instance &
 
-exit $(docker wait hived_instance || true)
+exit $(docker wait hived_instance)

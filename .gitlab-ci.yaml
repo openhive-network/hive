@@ -487,6 +487,7 @@ patterns_tests:
     PYTHONPATH: "$CI_PROJECT_DIR/tests/hive-local-tools/test-tools/package"
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
     DATA_CACHE: $DATA_CACHE_MAINNET
+    NEW_UID: $NEW_UID
   needs:
     - job: prepare_hived_data
       artifacts: true
@@ -550,6 +551,7 @@ python_pattern_mainnet_tests:
     JUNIT_REPORT: tests/api_tests/python_patterns_tests/report.xml
     BINARY_CACHE_PATH: "hived-binaries"
     DATA_CACHE: $DATA_CACHE_MAINNET
+    NEW_UID: $NEW_UID
   needs:
     - job: prepare_hived_image
       artifacts: true
@@ -613,6 +615,7 @@ message_format_mainnet_5m_tests:
     NODE_ADDRESS: "hived-instance:8090"
     NODE_TYPE: "mainnet_5m"
     DATA_CACHE: $DATA_CACHE_MAINNET
+    NEW_UID: $NEW_UID
   before_script:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
     - !reference [.message_format_tests, before_script]
@@ -670,6 +673,7 @@ witness_tests:
     PYTEST_TIMEOUT_MINUTES: 5
     JUNIT_REPORT: tests/functional/python_tests/witness_tests/report.xml
     DATA_CACHE: $DATA_CACHE_MAINNET
+    NEW_UID: $NEW_UID
   script:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
     - cd tests/functional/python_tests/witness_tests
