@@ -204,6 +204,8 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_processing_transactions;
     fc::microseconds cumulative_time_waiting_for_work;
 
+    std::vector< hardfork_schedule_item_t > hardfork_schedule;
+
     struct sync_progress_data
     {
       fc::time_point last_myriad_time;
@@ -801,6 +803,9 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("blockchain-thread-pool-size", bpo::value<uint32_t>()->default_value(8)->value_name("size"), "Number of worker threads used to pre-validate transactions and blocks")
       ("block-stats-report-type", bpo::value<string>()->default_value("FULL"), "Level of detail of block stat reports: NONE, MINIMAL, REGULAR, FULL. Default FULL (recommended for API nodes)." )
       ("block-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put block stat reports: DLOG, ILOG, NOTIFY. Default ILOG." )
+#ifdef USE_ALTERNATE_CHAIN_ID
+      ("hardfork-schedule", boost::program_options::value<string>(), "JSON array of hardfork: block_num objects to specify in which block a specific hardfork should be applied")
+#endif
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -917,6 +922,28 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       configuration_data.set_skeleton_key(*skeleton_key);
     }
 
+  }
+
+  if( options.count( "hardfork-schedule" ) )
+  {
+    std::string hardfork_schedule_str = options["hardfork-schedule"].as< string >();
+    auto hardfork_schedule = fc::json::from_string( hardfork_schedule_str ).as< std::vector< hardfork_schedule_item_t > >();
+
+    FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork-schedule", ("hardfork-schedule", hardfork_schedule_str) );
+
+    for(uint32_t i = 0; i < HIVE_NUM_HARDFORKS; ++i)
+    {
+      // Apply missing hardfork block numbers
+      if( hardfork_schedule.size() < i + 1 )
+      {
+        hardfork_schedule.emplace_back(i + 1, hardfork_schedule[i-1].block_num);
+        continue;
+      }
+
+      FC_ASSERT( hardfork_schedule[i].hardfork == i + 1, "Invalid hardfork number in hardfork_schedule HF: ${hi}: ${hb}", ("hi",hardfork_schedule[i].hardfork)("hb",hardfork_schedule[i].block_num));
+    }
+
+    my->hardfork_schedule = hardfork_schedule;
   }
 #endif
   uint32_t blockchain_thread_pool_size = options.at("blockchain-thread-pool-size").as<uint32_t>();
