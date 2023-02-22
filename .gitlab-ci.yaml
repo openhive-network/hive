@@ -719,7 +719,14 @@ publish_docker_image:
   before_script:
     - echo "Disabled the default before_script"
   script:
-    - scripts/ci-helpers/build_and_publish_instance.sh
+    - |
+      scripts/ci-helpers/build_and_publish_instance.sh --registry-user="$CI_REGISTRY_USER" \
+        --registry-password="$CI_REGISTRY_PASSWORD" \
+        --registry="$CI_REGISTRY" \
+        --image-tag="$CI_COMMIT_TAG" \
+        --image-name-prefix="$CI_REGISTRY_IMAGE" \
+        --docker-hub-user="$DOCKER_HUB_USER" \
+        --docker-hub-password="$DOCKER_HUB_PASSWORD"
   tags:
     - public-runner-docker 
   rules:
