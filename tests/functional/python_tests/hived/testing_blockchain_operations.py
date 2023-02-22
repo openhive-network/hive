@@ -115,5 +115,12 @@ def test_recurrent_transfer_operation(node):
     wallet.api.create_account("initminer", "bob", "{}")
     wallet.api.transfer("initminer", "alice", tt.Asset.Test(100), "memo")
     wallet.api.transfer_to_vesting('initminer', "alice", tt.Asset.Test(100))
+
+    wallet.api.recurrent_transfer("alice", "bob", tt.Asset.Test(10), "{}", 24, 10)
     response = node.api.condenser.find_recurrent_transfers('alice')
-    print()
+
+    assert all([response[0]["from"] == "alice",
+                response[0]["to"] == "bob",
+                response[0]["amount"] == tt.Asset.Test(10),
+                response[0]["recurrence"] == 24
+                ])
