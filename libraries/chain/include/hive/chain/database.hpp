@@ -75,6 +75,12 @@ namespace chain {
   typedef std::function<void(uint32_t, const chainbase::database::abstract_index_cntr_t&)> TBenchmarkMidReport;
   typedef std::pair<uint32_t, TBenchmarkMidReport> TBenchmark;
 
+  struct hardfork_schedule_item_t
+  {
+    uint32_t hardfork;
+    uint32_t block_num;
+  };
+
   struct open_args
   {
     fc::path data_dir;
@@ -98,6 +104,9 @@ namespace chain {
     bool exit_after_replay = false;
     bool force_replay = false;
     bool validate_during_replay = false;
+
+    // Vector of pairs <hf_num, hf_block> - works only if not empty
+    std::vector<hardfork_schedule_item_t> hardfork_schedule;
   };
 
   /**
@@ -998,3 +1007,6 @@ namespace chain {
     hive::plugins::chain::snapshot_load_helper& load_helper;
   };
 } }
+
+FC_REFLECT( hive::chain::hardfork_schedule_item_t, (hardfork)(block_num) )
+
