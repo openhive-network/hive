@@ -31,7 +31,7 @@
 #include <unordered_map>
 #include <chrono>
 
-int main( int argc, char** argv )
+void do_job()
 {
   try
   {
@@ -115,23 +115,35 @@ int main( int argc, char** argv )
 
     for (const auto& [type_name, type_data] : dtds_instance.get_decoded_types_data_map())
     {
-      
-      ss << "Type: " << type_data.get_type_name() << "\n";
-      ss << "Checksum: " << type_data.get_checksum().str() << "\n";
-      
-      if (type_data.is_enum())
+      if (type_data->is_reflected())
       {
-        ss << "Values [name: value]:" << "\n";
-        for (const auto& [name, value] : type_data.get_enum_values())
-          ss << "  " << name << ": " << value << "\n";
+        hive::chain::util::reflected_decoded_type_data* reflected_type_data = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>(type_data.get());
+        if (!reflected_type_data)
+        {
+          std::cerr << "Cannot cast to reflected_decoded_type_data! Error in type:" << type_data->get_type_id() << "\n";
+          return;
+        }
+        ss << "Type: " << reflected_type_data->get_type_name() << "\n";
+        ss << "Checksum: " << reflected_type_data->get_checksum().str() << "\n";
+
+        if (reflected_type_data->is_enum())
+        {
+          ss << "Values [name: value]:" << "\n";
+          for (const auto& [name, value] : reflected_type_data->get_enum_values())
+            ss << "  " << name << ": " << value << "\n";
+        }
+        else
+        {
+          ss << "Members [type: name]:" << "\n";
+          for (const auto& [type, name] : reflected_type_data->get_members())
+            ss << "  " << type << ": " << name << "\n";
+        }
       }
       else
       {
-        ss << "Members [type: name]:" << "\n";
-        for (const auto& [type, name] : type_data.get_members())
-          ss << "  " << type << ": " << name << "\n";
+        ss << "Type id: " << type_data->get_type_id() << "\n";
+        ss << "Checksum: " << type_data->get_checksum().str() << "\n";
       }
-
       ss << "----- \n\n";
     }
 
@@ -143,6 +155,10 @@ int main( int argc, char** argv )
   {
     edump((e.to_detail_string()));
   }
+}
 
+int main( int argc, char** argv )
+{
+  do_job();
   return 0;
 }

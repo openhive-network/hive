@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chainbase/allocators.hpp>
+
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/reflect/reflect.hpp>
@@ -12,60 +14,62 @@
 
 namespace hive { namespace chain { namespace util {
 
+fc::ripemd160 calculate_checksum_from_string(const std::string_view type_id);
+
 class decoded_type_data
+{
+  public:
+    decoded_type_data(const fc::ripemd160& _checksum, const std::string_view _type_id, const bool _reflected);
+
+    virtual fc::ripemd160 get_checksum() const final { return checksum; }
+    virtual std::string_view get_type_id() const final { return type_id; }
+    virtual bool is_reflected() const final { return reflected; }
+
+  protected:
+    const std::string checksum;
+    const std::string type_id;
+    const bool reflected;
+};
+
+class reflected_decoded_type_data : public decoded_type_data
 {
   public:
     using members_vector = std::vector<std::pair<std::string, std::string>>;
     using enum_values_vector = std::vector<std::pair<std::string, size_t>>;
 
-    decoded_type_data(const fc::ripemd160& _checksum, const std::string_view _name, members_vector&& _members, enum_values_vector _enum_values);
+    reflected_decoded_type_data(const fc::ripemd160& _checksum, const std::string_view _type_id, const std::string_view _fc_name,
+                                members_vector&& _members, enum_values_vector&& _enum_values);
 
-    fc::ripemd160 get_checksum() const { return checksum; }
-    std::string_view get_type_name() const { return name; }
+    std::string_view get_type_name() const { return fc_name; }
     bool is_enum() const { return members.empty(); }
     const members_vector& get_members() const { return members; }
     const enum_values_vector& get_enum_values() const { return enum_values; }
 
   private:
-    members_vector members; // in case of structure
-    enum_values_vector enum_values; // in case of enum
-    fc::ripemd160 checksum;
-    std::string_view name;
+    const members_vector members; // in case of structure
+    const enum_values_vector enum_values; // in case of enum
+    const std::string fc_name;
 };
 
 class decoded_types_data_storage final
 {
   private:
     using decoding_types_set_t = std::unordered_set<std::string_view>;
-    using decoded_types_map_t = std::unordered_map<std::string_view, decoded_type_data>;
+    using decoded_types_map_t = std::unordered_map<std::string_view, std::shared_ptr<decoded_type_data>>;
 
-    /* Private methods & class definitions */
+    /* Private methods */
 
     decoded_types_data_storage();
     ~decoded_types_data_storage();
 
     bool add_type_to_decoded_types_set(const std::string_view type_name);
-    void add_decoded_type_data_to_map(decoded_type_data&& decoded_type);
+    void add_decoded_type_data_to_map(const std::shared_ptr<decoded_type_data>& decoded_type);
 
-    template<typename T, bool is_defined = fc::reflector<T>::is_defined::value, bool is_enum = fc::reflector<T>::is_enum::value>
+    /* Main decoder - distinguish which type is reflected or not. */
+    template<typename T, bool is_defined = fc::reflector<T>::is_defined::value>
     class decoder;
 
-    template<typename T>
-    struct decoder<T, false /* is_defined */, false /* is_enum */>
-    {
-      void decode()
-      {
-      }
-    };
-
-    template<typename T>
-    struct decoder<T, false /* is_defined */, true /* is_enum */>
-    {
-      void decode()
-      {
-      }
-    };
-
+    /* Detector for analysing template arguments. */
     template <typename>
     struct template_types_detector : std::false_type { void analyze_arguments() const {} };
 
@@ -90,6 +94,7 @@ class decoded_types_data_storage final
         }
     };
 
+    /* Tools for decoding reflected types and enums. */
     struct visitor_defined_types_detector
     {
       template <typename Member, class Class, Member(Class::*member)>
@@ -112,7 +117,7 @@ class decoded_types_data_storage final
     class visitor_type_decoder
     {
     public:
-      visitor_type_decoder(decoded_type_data::members_vector& _members, const std::string_view type_name) : members(_members) 
+      visitor_type_decoder(reflected_decoded_type_data::members_vector& _members, const std::string_view type_name) : members(_members)
       {
         encoder.write(type_name.data(), type_name.size());
       }
@@ -135,13 +140,13 @@ class decoded_types_data_storage final
 
     private:
       mutable fc::ripemd160::encoder encoder;
-      decoded_type_data::members_vector& members;
+      reflected_decoded_type_data::members_vector& members;
     };
 
     class visitor_enum_decoder
     {
     public:
-      visitor_enum_decoder(decoded_type_data::enum_values_vector& _enum_values, const std::string_view enum_name) : enum_values(_enum_values)
+      visitor_enum_decoder(reflected_decoded_type_data::enum_values_vector& _enum_values, const std::string_view enum_name) : enum_values(_enum_values)
       {
         encoder.write(enum_name.data(), enum_name.size());
       }
@@ -159,45 +164,93 @@ class decoded_types_data_storage final
 
     private:
       mutable fc::ripemd160::encoder encoder;
-      decoded_type_data::enum_values_vector& enum_values;
+      reflected_decoded_type_data::enum_values_vector& enum_values;
     };
 
+    /* Allows to check if type is specified template type without parsing template arguments. */
+    template<typename U, template<typename...> class Ref>
+    struct is_specialization : std::false_type {};
+
+    template<template<typename...> class Ref, typename... Args>
+    struct is_specialization<Ref<Args...>, Ref>: std::true_type {};
+
+    /* Decoding starting point. */
     template<typename T>
-    struct decoder<T, true /* is_defined */, false /* is_enum */>
+    struct decoder<T, true /* is_defined - type is reflected */>
     {
-      void decode()
+      void decode() const
       {
-        const std::string_view type_id_name = typeid(T).name();
+        if constexpr (fc::reflector<T>::is_enum::value)
+        {
+          const std::string_view enum_id_name = typeid(T).name();
 
-        if (!get_instance().add_type_to_decoded_types_set(type_id_name))
-          return;
+          if (!get_instance().add_type_to_decoded_types_set(enum_id_name))
+            return;
 
-        fc::reflector<T>::visit(visitor_defined_types_detector());
-        decoded_type_data::members_vector members;
-        visitor_type_decoder visitor(members, type_id_name);
-        fc::reflector<T>::visit(visitor);
-        const std::string_view type_name = fc::get_typename<T>::name();
-        get_instance().add_decoded_type_data_to_map(std::move(decoded_type_data(visitor.get_checksum(), type_name, std::move(members), std::move(decoded_type_data::enum_values_vector()))));
+          reflected_decoded_type_data::enum_values_vector enum_values;
+          visitor_enum_decoder visitor(enum_values, enum_id_name);
+          fc::reflector<T>::visit(visitor);
+          const std::string_view type_name = fc::get_typename<T>::name();
+          get_instance().add_decoded_type_data_to_map(std::make_shared<reflected_decoded_type_data>(visitor.get_checksum(), enum_id_name, type_name, std::move(reflected_decoded_type_data::members_vector()), std::move(enum_values)));
+        }
+        else
+        {
+          const std::string_view type_id_name = typeid(T).name();
+
+          if (!get_instance().add_type_to_decoded_types_set(type_id_name))
+            return;
+
+          fc::reflector<T>::visit(visitor_defined_types_detector());
+          reflected_decoded_type_data::members_vector members;
+          visitor_type_decoder visitor(members, type_id_name);
+          fc::reflector<T>::visit(visitor);
+          const std::string_view type_name = fc::get_typename<T>::name();
+          get_instance().add_decoded_type_data_to_map(std::make_shared<reflected_decoded_type_data>(visitor.get_checksum(), type_id_name, type_name, std::move(members), std::move(reflected_decoded_type_data::enum_values_vector())));
+        }
       }
     };
 
     template<typename T>
-    struct decoder<T, true /* is_defined */, true /* is_enum */>
+    struct decoder<T, false /* is_defined - type is not reflected */>
     {
-      void decode()
+      void decode() const
       {
-        const std::string_view enum_id_name = typeid(T).name();
+        /* Type is fundamental - do nothing. */
+        if constexpr (std::is_fundamental<T>::value) {}
+        /* Type is trival. */
+        else if constexpr (std::is_trivial<T>::value)
+        {
+          const std::string_view type_id = typeid(T).name();
+          if (template_types_detector<T>::value &&
+              get_instance().add_type_to_decoded_types_set(type_id))
+          {
+            template_types_detector<T> detector;
+            detector.analyze_arguments();
+          }
+        }
+        /* Type is an index. */
+        else if constexpr (is_specialization<T, boost::multi_index::multi_index_container>::value)
+        {
+          const std::string_view index_type_id = typeid(T).name();
 
-        if (!get_instance().add_type_to_decoded_types_set(enum_id_name))
-          return;
-
-        decoded_type_data::enum_values_vector enum_values;
-        visitor_enum_decoder visitor(enum_values, enum_id_name);
-        fc::reflector<T>::visit(visitor);
-        const std::string_view type_name = fc::get_typename<T>::name();
-        get_instance().add_decoded_type_data_to_map(std::move(decoded_type_data(visitor.get_checksum(), type_name, std::move(decoded_type_data::members_vector()), std::move(enum_values))));
+          if (get_instance().add_type_to_decoded_types_set(index_type_id))
+          {
+            get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(index_type_id), index_type_id, false));
+            decoder<typename T::value_type> decoder;
+            decoder.decode();
+          }
+        }
+        /* Type is an allocator. */
+        else if constexpr (is_specialization<T, boost::interprocess::allocator>::value)
+        {
+          const std::string_view allocator_type_id = typeid(T).name();
+          if (get_instance().add_type_to_decoded_types_set(allocator_type_id))
+            get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(allocator_type_id), allocator_type_id, false));
+        }
+        /* Rest cases */
+        else {}
       }
-    }; 
+    };
 
   public:
     decoded_types_data_storage(const decoded_types_data_storage&) = delete;
@@ -207,23 +260,21 @@ class decoded_types_data_storage final
     
     static decoded_types_data_storage& get_instance();
 
-    template <typename T, bool is_defined = fc::reflector<T>::is_defined::value>
+    template <typename T>
     void register_new_type()
     {
-      static_assert(is_defined);
       decoder<T> decoder;
       decoder.decode();
     }
 
-    template <typename T, bool is_defined = fc::reflector<T>::is_defined::value>
-    decoded_type_data get_decoded_type_data()
+    template <typename T>
+    std::shared_ptr<decoded_type_data> get_decoded_type_data()
     {
-      static_assert(is_defined);
       register_new_type<T>();
-      auto it = decoded_types_data_map.find(fc::get_typename<T>::name());
+      auto it = decoded_types_data_map.find(typeid(T).name());
 
       if (it == decoded_types_data_map.end())
-        FC_THROW_EXCEPTION( fc::key_not_found_exception, "Cound not find decoded type even after decoding it. Type name: ${name} .", ("name", std::string(fc::get_typename<T>::name())) );
+        FC_THROW_EXCEPTION( fc::key_not_found_exception, "Cound not find decoded type even after decoding it. Type id: ${name} .", ("name", std::string(typeid(T).name())) );
       
       return it->second;
     }
@@ -231,14 +282,14 @@ class decoded_types_data_storage final
     template <typename T>
     fc::ripemd160 get_decoded_type_checksum()
     {
-      return get_decoded_type_data<T>().get_checksum();
+      return get_decoded_type_data<T>()->get_checksum();
     }
 
-    const std::unordered_map<std::string_view, decoded_type_data>& get_decoded_types_data_map() const { return decoded_types_data_map; }
+    const std::unordered_map<std::string_view, std::shared_ptr<decoded_type_data>>& get_decoded_types_data_map() const { return decoded_types_data_map; }
 
   private:
     std::unordered_set<std::string_view> decoded_types_set; // we store typeid(T).name() here
-    std::unordered_map<std::string_view, decoded_type_data> decoded_types_data_map;
+    std::unordered_map<std::string_view, std::shared_ptr<decoded_type_data>> decoded_types_data_map; //key - type_id
 };
 
 } } } // hive::chain::util
