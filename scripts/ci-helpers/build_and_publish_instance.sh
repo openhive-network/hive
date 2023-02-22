@@ -90,5 +90,5 @@ docker tag "${CI_REGISTRY_IMAGE}/instance:instance-${CI_COMMIT_TAG}" "hiveio/hiv
 docker images
 
 # Push instance images
-#docker push "${CI_REGISTRY_IMAGE}/instance:instance-${CI_COMMIT_TAG}"
-docker push "hiveio/hive:${CI_COMMIT_TAG}"
+docker push "${CI_REGISTRY_IMAGE}/instance:instance-${CI_COMMIT_TAG}"
+#docker push "hiveio/hive:${CI_COMMIT_TAG}"
