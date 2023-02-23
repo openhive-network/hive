@@ -807,6 +807,13 @@ struct proxy_cleared_operation : public virtual_operation
   account_name_type proxy;//proxy user that facilitates voting on witnesses
 };
 
+/*
+  Before:
+    An account that used the `decline_voting_rights` operation and waited the required time wasn't informed that the operation has been processed.
+
+  Now:
+    It is generated after `HIVE_OWNER_AUTH_RECOVERY_PERIOD` interval and then some actions are done and `declined_voting_rights` is created.
+*/
 struct declined_voting_rights : public virtual_operation
 {
   declined_voting_rights() = default;
