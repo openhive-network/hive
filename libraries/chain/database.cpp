@@ -2327,14 +2327,10 @@ void database::clear_account( const account_object& account )
         freed_delegations += delegation.get_vesting();
 
         a.voting_manabar.use_mana( delegation.get_vesting().amount.value );
-        if( a.voting_manabar.current_mana < 0 )
-          a.voting_manabar.current_mana = 0;
 
         a.downvote_manabar.use_mana(
           fc::uint128_to_int64((uint128_t(delegation.get_vesting().amount.value) * cprops.downvote_pool_percent) /
           HIVE_100_PERCENT));
-        if( a.downvote_manabar.current_mana < 0 )
-          a.downvote_manabar.current_mana = 0;
       } );
 
       remove( delegation );

@@ -1516,7 +1516,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   _db.modify( voter, [&]( account_object& a )
   {
-    a.voting_manabar.current_mana = current_power - used_power;
+    a.voting_manabar.current_mana = current_power - used_power; // always nonnegative
     a.last_vote_time = _now;
     a.voting_manabar.last_update_time = _now.sec_since_epoch();
   } );
@@ -1778,15 +1778,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     util::update_manabar( dgpo, a );
   });
-
-  if ( _db.has_hardfork( HIVE_HARDFORK_0_21__3004 ) )
-  {
-    FC_ASSERT( voter.voting_manabar.current_mana >= 0, "Account does not have enough mana to vote." );
-  }
-  else
-  {
-    FC_ASSERT( voter.voting_manabar.current_mana > 0, "Account does not have enough mana to vote." );
-  }
 
   int16_t abs_weight = abs( o.weight );
   uint128_t used_mana = 0;
@@ -3096,11 +3087,6 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       {
         a.voting_manabar.use_mana( delta.amount.value );
 
-        if( a.voting_manabar.current_mana < 0 )
-        {
-          a.voting_manabar.current_mana = 0;
-        }
-
         if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
           if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
@@ -3110,11 +3096,6 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
           else
           {
             a.downvote_manabar.use_mana( op.vesting_shares.amount.value );
-          }
-
-          if( a.downvote_manabar.current_mana < 0 )
-          {
-            a.downvote_manabar.current_mana = 0;
           }
         }
       }
