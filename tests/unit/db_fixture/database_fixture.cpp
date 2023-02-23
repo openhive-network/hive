@@ -1757,70 +1757,8 @@ void database_fixture::proxy( account_name_type _account, account_name_type _pro
   op.proxy = _proxy;
 
   tx.operations.push_back( op );
-  tx.set_expiration( executor.db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  executor.push_transaction( tx, _key );
-}
-
-void dhf_database_fixture::plugin_prepare()
-{
-  dhf_db.plugin_prepare();
-}
-
-int64_t dhf_database_fixture::create_proposal( std::string creator, std::string receiver,
-                  time_point_sec start_date, time_point_sec end_date,
-                  asset daily_pay, const fc::ecc::private_key& key, bool with_block_generation )
-{
-  return dhf_db.create_proposal( creator, receiver, start_date, end_date, daily_pay, key, with_block_generation );
-}
-
-void dhf_database_fixture::update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, time_point_sec* end_date)
-{
-  dhf_db.update_proposal( proposal_id, creator, daily_pay, subject, permlink, key, end_date );
-}
-
-void dhf_database_fixture::vote_proposal( std::string voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key )
-{
-  dhf_db.vote_proposal( voter, id_proposals, approve, key );
-}
-
-bool dhf_database_fixture::exist_proposal( int64_t id )
-{
-  return dhf_db.exist_proposal( id );
-}
-
-const proposal_object* dhf_database_fixture::find_proposal( int64_t id )
-{
-  return dhf_db.find_proposal( id );
-}
-
-void dhf_database_fixture::remove_proposal(account_name_type _deleter, flat_set<int64_t> _proposal_id, const fc::ecc::private_key& _key)
-{
-  dhf_db.remove_proposal( _deleter, _proposal_id, _key );
-}
-
-bool dhf_database_fixture::find_vote_for_proposal(const std::string& _user, int64_t _proposal_id)
-{
-  return dhf_db.find_vote_for_proposal( _user, _proposal_id );
-}
-
-uint64_t dhf_database_fixture::get_nr_blocks_until_maintenance_block()
-{
-  return dhf_db.get_nr_blocks_until_daily_maintenance_block();
-}
-
-uint64_t dhf_database_fixture::get_nr_blocks_until_daily_maintenance_block()
-{
-  return dhf_db.get_nr_blocks_until_daily_maintenance_block();
-}
-
-void dhf_database_fixture::witness_vote( account_name_type _voter, account_name_type _witness, const fc::ecc::private_key& _key, bool _approve )
-{
-  dhf_db.witness_vote( _voter, _witness, _key, _approve );
-}
-
-void dhf_database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )
-{
-  dhf_db.proxy( _account, _proxy, _key );
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  push_transaction( tx, _key );
 }
 
 delayed_vote_database_fixture::delayed_vote_database_fixture( uint16_t shared_file_size_in_mb )
