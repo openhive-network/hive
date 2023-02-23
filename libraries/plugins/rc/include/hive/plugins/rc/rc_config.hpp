@@ -16,9 +16,5 @@
 // TODO: What should this value be for testnet?
 #define HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT      2020748973
 
-// 1.66% is ~2 hours of regen.
-// 2 / ( 24 * 5 ) = 0.01666...
-#define HIVE_RC_MAX_NEGATIVE_PERCENT 166
-
 #define HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP 100
 

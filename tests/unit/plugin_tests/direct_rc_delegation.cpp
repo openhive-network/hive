@@ -1360,8 +1360,11 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern3_rc.rc_manabar.current_mana );
 
     BOOST_TEST_MESSAGE( "Artificially going negative with RC of delegatees to expose problem" );
-    int64_t full_rc = get_maximum_rc( db->get< account_object, by_name >( "delegatee" ), delegatee_rc );
-    int64_t min_rc = -1 * ( HIVE_RC_MAX_NEGATIVE_PERCENT * full_rc ) / HIVE_100_PERCENT;
+    //NOTE: the problem was fixed and on top of that we can no longer go negative with mana,
+    //so we could probably remove the test, but we keep it as testament of previous bugs
+    //int64_t full_rc = get_maximum_rc( db->get< account_object, by_name >( "delegatee" ), delegatee_rc );
+    //int64_t min_rc = -1 * ( HIVE_RC_MAX_NEGATIVE_PERCENT * full_rc ) / HIVE_100_PERCENT;
+    int64_t min_rc = 0;
     auto rc_set_negative_mana = [&]( const rc_account_object& rca )
     {
       db->modify( rca, [&]( rc_account_object& rc_account )

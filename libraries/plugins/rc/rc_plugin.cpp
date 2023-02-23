@@ -310,10 +310,7 @@ void use_account_rcs(
       }
     }
 
-    fc::uint128_t min_mana( mbparams.max_mana );
-    min_mana *= HIVE_RC_MAX_NEGATIVE_PERCENT;
-    min_mana /= HIVE_100_PERCENT;
-    rca.rc_manabar.use_mana( rc, -fc::uint128_to_int64(min_mana) );
+    rca.rc_manabar.use_mana( rc );
     tx_info.rc = rca.rc_manabar.current_mana;
   } );
   }FC_CAPTURE_AND_RETHROW( (tx_info) )

@@ -105,7 +105,10 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   {
     // Do not give mana back when deleting/reducing rc delegation (note that regular delegations behave differently)
     if (delta_total > 0)
+    {
       rca.rc_manabar.current_mana -= delta_total;
+      // since delta_total is not greater than from_delegable_rc which is not greater than current_mana, we know it can't dive into negative
+    }
     rca.delegated_rc += delta_total;
     rca.last_max_rc = get_maximum_rc( from_account, rca );
   } );
