@@ -204,7 +204,9 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_processing_transactions;
     fc::microseconds cumulative_time_waiting_for_work;
 
+#ifdef USE_ALTERNATE_CHAIN_ID
     std::vector< hardfork_schedule_item_t > hardfork_schedule;
+#endif
 
     struct sync_progress_data
     {
@@ -624,6 +626,9 @@ void chain_plugin_impl::initial_settings()
   db_open_args.replay_memory_indices = replay_memory_indices;
   db_open_args.enable_block_log_compression = enable_block_log_compression;
   db_open_args.block_log_compression_level = block_log_compression_level;
+#ifdef USE_ALTERNATE_CHAIN_ID
+  db_open_args.hardfork_schedule = hardfork_schedule;
+#endif
 }
 
 bool chain_plugin_impl::check_data_consistency()
@@ -936,11 +941,16 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       // Apply missing hardfork block numbers
       if( hardfork_schedule.size() < i + 1 )
       {
-        hardfork_schedule.emplace_back(i + 1, hardfork_schedule[i-1].block_num);
+        hardfork_schedule.push_back({i + 1, hardfork_schedule[i-1].block_num});
         continue;
       }
 
       FC_ASSERT( hardfork_schedule[i].hardfork == i + 1, "Invalid hardfork number in hardfork_schedule HF: ${hi}: ${hb}", ("hi",hardfork_schedule[i].hardfork)("hb",hardfork_schedule[i].block_num));
+
+      // We should ignore the first value as we have nothing to compare
+      if( i )
+        FC_ASSERT( hardfork_schedule[i].block_num >= hardfork_schedule[i - 1].block_num, "Hardfork ${hf1} cannot be scheduled for block ${bn1}, because previous hardfork is set to greater block: ${bn2}",
+          ("hf1",hardfork_schedule[i].hardfork)("bn1",hardfork_schedule[i].block_num)("bn2",hardfork_schedule[i-1].block_num));
     }
 
     my->hardfork_schedule = hardfork_schedule;

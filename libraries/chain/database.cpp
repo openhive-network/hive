@@ -188,6 +188,18 @@ void database::initialize_state_independent_data(const open_args& args)
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
+#ifdef USE_ALTERNATE_CHAIN_ID
+  if( args.hardfork_schedule.size() )
+  {
+    wlog("Custom hardfork schedule enabled: ${hardfork_schedule}", ("hardfork_schedule", args.hardfork_schedule));
+
+    FC_ASSERT(args.hardfork_schedule.size() == HIVE_NUM_HARDFORKS, "Hardfork schedule should be complete");
+
+    for(uint32_t i = 0; i < args.hardfork_schedule.size(); ++i)
+      _hardfork_versions.blocks[i] = args.hardfork_schedule[i].block_num;
+  }
+#endif
+
   /// Initialize all static (state independent) specific to hardforks
   init_hardforks();
 }
@@ -4380,6 +4392,12 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
     if( n > 0 )
     {
       ilog( "Processing ${n} genesis hardforks", ("n", n) );
+#ifdef USE_ALTERNATE_CHAIN_ID
+      // Apply only hardforks scheduled for genesis block
+      while( n > 0 && _hardfork_versions.blocks[n-1].valid() && *_hardfork_versions.blocks[n-1] != 0 )
+        --n;
+#endif
+
       set_hardfork( n, true );
 #ifdef IS_TEST_NET
       if( n < HIVE_NUM_HARDFORKS )
@@ -6533,6 +6551,22 @@ void database::process_hardforks()
     // If there are upcoming hardforks and the next one is later, do nothing
     const auto& hardforks = get_hardfork_property_object();
 
+#ifdef USE_ALTERNATE_CHAIN_ID
+    // If hardfork_schedule is enabled, other apply_hardfork methods should be disabled
+    if( _hardfork_versions.blocks[ 0 ].valid() )
+    {
+      while( _hardfork_versions.blocks[ hardforks.last_hardfork ].valid()
+         && *_hardfork_versions.blocks[ hardforks.last_hardfork ] <= head_block_num()
+      )
+        if( hardforks.last_hardfork < HIVE_NUM_HARDFORKS )
+          apply_hardfork( hardforks.last_hardfork + 1 );
+        else
+          throw unknown_hardfork_exception();
+    }
+    else
+    {
+#endif
+
     if( has_hardfork( HIVE_HARDFORK_0_5__54 ) )
     {
       while( _hardfork_versions.versions[ hardforks.last_hardfork ] < hardforks.next_hardfork
@@ -6554,6 +6588,9 @@ void database::process_hardforks()
         apply_hardfork( hardforks.last_hardfork + 1 );
       }
     }
+#ifdef USE_ALTERNATE_CHAIN_ID
+    }
+#endif
   }
   FC_CAPTURE_AND_RETHROW()
 }
