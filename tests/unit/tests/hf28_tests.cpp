@@ -119,11 +119,13 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic_2 )
 
         if( is_hf28 )
         {
+          //An exception must be thrown because in HF28 is blocked by a condition `_db.is_in_control()` or `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
           HIVE_REQUIRE_THROW( _create_decline_voting_rights_operation( executor, alice_private_key ), fc::assert_exception );
         }
         else
         {
-          _create_decline_voting_rights_operation( executor, alice_private_key );
+          //An exception must be thrown because in HF27 is blocked by a condition `_db.is_in_control()`
+          HIVE_REQUIRE_THROW( _create_decline_voting_rights_operation( executor, alice_private_key ), fc::assert_exception );
         }
     };
 
@@ -254,12 +256,13 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
       BOOST_TEST_MESSAGE( "Create 'update_proposal_votes_operation'" );
       if( is_hf28 )
       {
+        //An exception must be thrown because in HF28 is blocked by a condition `_db.is_in_control()` or `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
         HIVE_REQUIRE_THROW( dhf_db.vote_proposal( "alice", { _id_proposal }, true, alice_private_key ), fc::assert_exception );
       }
       else
       {
-        dhf_db.vote_proposal( "alice", { _id_proposal }, true, alice_private_key );
-        BOOST_REQUIRE( dhf_db.find_vote_for_proposal( "alice", _id_proposal ) == true );
+        //An exception must be thrown because in HF27 is blocked by a condition `_db.is_in_control()`
+        HIVE_REQUIRE_THROW( dhf_db.vote_proposal( "alice", { _id_proposal }, true, alice_private_key ), fc::assert_exception );
       }
     };
 
