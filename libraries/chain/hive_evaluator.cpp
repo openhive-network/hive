@@ -2710,7 +2710,7 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
 
   const auto& account = _db.get_account( o.account );
 
-  if( _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
     FC_ASSERT( account.can_vote, "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
 
   const auto& request_idx = _db.get_index< decline_voting_rights_request_index >().indices().get< by_account >();
