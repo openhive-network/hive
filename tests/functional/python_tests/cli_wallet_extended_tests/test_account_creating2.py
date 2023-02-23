@@ -33,7 +33,6 @@ def test_account_creation_with_exception(wallet):
         response = wallet.api.create_account_delegated('initminer', tt.Asset.Test(3), tt.Asset.Vest(6.123456), 'alicex', '{}')
     except Exception as e:
         message = str(e)
-        found = message.find('Account creation with delegation is deprecated as of Hardfork 20')
         assert found != -1
 
     try:

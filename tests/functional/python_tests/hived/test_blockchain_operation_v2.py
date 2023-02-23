@@ -106,3 +106,15 @@ def test_post_comment_and_vote_operation(node):
     assert vote_added and comment_added
 
 
+@run_for("testnet")
+def test_delegate_vesting_shares_operation(node):
+    wallet = tt.Wallet(attach_to=node)
+    wallet.create_account("alice", vests=tt.Asset.Test(1000))
+    wallet.create_account("bob")
+
+    wallet.api.delegate_vesting_shares("alice", "bob", tt.Asset.Vest(50))
+    response = node.api.condenser.get_accounts(["alice"])[0]["delegated_vesting_shares"]
+
+    assert response == tt.Asset.Vest(50)
+
+
