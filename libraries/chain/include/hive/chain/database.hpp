@@ -689,6 +689,9 @@ namespace chain {
       //Restores balances for some accounts, which were cleared by mistake during HF23
       void restore_accounts( const std::set< std::string >& restored_accounts );
 
+      //Remove proposal votes for accounts that declined voting rights during HF28.
+      void remove_proposal_votes_for_accounts_without_voting_rights();
+
       //Clears all pending operations on account that involve balance, moves tokens to treasury account
       void gather_balance( const std::string& name, const asset& balance, const asset& hbd_balance );
       void clear_accounts( const std::set< std::string >& cleared_accounts );
@@ -737,8 +740,6 @@ namespace chain {
       void process_delayed_voting(const block_notification& note );
 
       void process_recurrent_transfers();
-
-      void remove_proposal_votes_for_accounts_without_voting_rights();
 
       void update_global_dynamic_data( const signed_block& b );
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
