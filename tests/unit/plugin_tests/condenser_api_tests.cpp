@@ -324,12 +324,9 @@ void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_retu
 }
 
 void do_the_testing( condenser_api_fixture& caf, const expected_t& expected_operations, const expected_t& expected_virtual_operations,
-                     fc::optional<uint32_t> specific_block )
+                     uint32_t tested_block_num )
 {
   uint32_t current_block_num = caf.db->head_block_num();
-  uint32_t tested_block_num = specific_block.valid() ?
-    *specific_block : // Operations are expected to show up in specific block, or ...
-    current_block_num + 1; // ... recently inserted operations will go into next head block.
 
   // Let's make the block irreversible
   uint32_t reversibility_gap = 22;
