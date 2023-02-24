@@ -13,30 +13,35 @@ print_help () {
     echo
     echo "Allows to setup this machine for Hived installation"
     echo "OPTIONS:"
-    echo "  --hived-account=NAME      Allows to specify the account name to be used for hived process."
-    echo "  --runtime                 Allows to install all packages required to run already built hived binary."
-    echo "  --dev                     Allows to install all packages required to build and test hived project (additionally to package set specific to runtime)."
-    echo "  --user                    Allows to install all packages being stored in the user's home directory)."
-    echo "  --help                    Display this help screen and exit"
+    echo "  --hived-admin-account=NAME  Allows to specify the account name with sudo privileges."
+    echo "  --hived-account=NAME        Allows to specify the account name to be used for hived process."
+    echo "  --runtime                   Allows to install all packages required to run already built hived binary."
+    echo "  --dev                       Allows to install all packages required to build and test hived project (additionally to package set specific to runtime)."
+    echo "  --user                      Allows to install all packages being stored in the user's home directory)."
+    echo "  --help                      Display this help screen and exit"
     echo
 }
 
+hived_admin_unix_account="hived_admin"
 hived_unix_account="hived"
 
-install_all_runtime_packages() {
+assert_is_root() {
   if [ "$EUID" -ne 0 ]
     then echo "Please run as root"
     exit 1
   fi
+}
+
+install_all_runtime_packages() {
+  echo "Attempting to install all runtime packages..."
+  assert_is_root
 
   apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget && apt-get clean && rm -r /var/lib/apt/lists/*
 }
 
 install_all_dev_packages() {
-  if [ "$EUID" -ne 0 ]
-    then echo "Please run as root"
-    exit 1
-  fi
+  echo "Attempting to install all dev packages..."
+  assert_is_root
 
   apt-get update && apt-get install -y \
   git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libxml2 python3-distutils python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates \
@@ -79,6 +84,29 @@ install_user_packages() {
   curl -sSL https://install.python-poetry.org | python3 -  # install poetry in an isolated environment
 }
 
+create_hived_admin_account() {
+  echo "Attempting to create $hived_admin_unix_account account..."
+  assert_is_root
+
+  # Unfortunetely hived_admin must be able to su as root, because it must be able to modify hived account uid
+  if id "$hived_admin_unix_account" &>/dev/null; then
+      echo "Account $hived_admin_unix_account already exists. Creation skipped."
+  else
+      useradd -ms /bin/bash -g users "$hived_admin_unix_account" && echo "$hived_admin_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+  fi
+}
+
+create_hived_account() {
+  echo "Attempting to create $hived_unix_account account..."
+  assert_is_root
+
+  if id "$hived_unix_account" &>/dev/null; then
+      echo "Account $hived_unix_account already exists. Creation skipped."
+  else
+      useradd -ms /bin/bash -g users "$hived_unix_account"
+  fi
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --runtime)
@@ -90,19 +118,13 @@ while [ $# -gt 0 ]; do
     --user)
         install_user_packages "${HOME}/hive_base_config"
         ;;
+    --hived-admin-account=*)
+        hived_admin_unix_account="${1#*=}"
+        create_hived_admin_account
+        ;;
     --hived-account=*)
-        if [ "$EUID" -ne 0 ]
-          then echo "Please run as root"
-          exit 1
-        fi
-
         hived_unix_account="${1#*=}"
-
-        if id "$hived_unix_account" &>/dev/null; then
-            echo "Account $hived_unix_account already exists. Creation skipped."
-        else
-            useradd -ms /bin/bash "$hived_unix_account" && echo "$hived_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-        fi
+        create_hived_account
         ;;
     --help)
         print_help

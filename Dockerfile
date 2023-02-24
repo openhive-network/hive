@@ -2,7 +2,7 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=:ubuntu22.04-1
+ARG CI_IMAGE_TAG=:ubuntu22.04-2
 ARG BUILD_IMAGE_TAG
 
 FROM phusion/baseimage:jammy-1.0.1 AS runtime
@@ -16,15 +16,15 @@ WORKDIR /usr/local/src
 ADD ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
 
 # Install base runtime packages
-RUN ./scripts/setup_ubuntu.sh --runtime --hived-account="hived"
+RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hived-account="hived"
 
-USER hived
-WORKDIR /home/hived
+USER hived_admin
+WORKDIR /home/hived_admin
 
 FROM ${CI_REGISTRY_IMAGE}runtime$CI_IMAGE_TAG AS ci-base-image
 
 ENV LANG=en_US.UTF-8
-ENV PATH="/home/hived/.local/bin:$PATH"
+ENV PATH="/home/hived_admin/.local/bin:$PATH"
 
 SHELL ["/bin/bash", "-c"] 
 
@@ -36,10 +36,10 @@ COPY scripts/openssl.conf /etc/ssl/hive-openssl.conf
 # Install additionally development packages
 # TODO REMOVE the additional openssl configuaration when OpenSSL 3.0.7 or above will be distributed by Ubuntu.
 RUN echo -e "\n.include /etc/ssl/hive-openssl.conf\n" >> /etc/ssl/openssl.cnf && \
-   ./scripts/setup_ubuntu.sh --dev --hived-account="hived"
+   ./scripts/setup_ubuntu.sh --dev --hived-admin-account="hived_admin" --hived-account="hived"
 
-USER hived
-WORKDIR /home/hived
+USER hived_admin
+WORKDIR /home/hived_admin
 
 # Install additionally packages located in user directory
 RUN /usr/local/src/scripts/setup_ubuntu.sh --user
@@ -47,9 +47,10 @@ RUN /usr/local/src/scripts/setup_ubuntu.sh --user
 #docker build --target=ci-base-image-5m -t registry.gitlab.syncad.com/hive/hive/ci-base-image-5m:ubuntu20.04-xxx -f Dockerfile .
 FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS ci-base-image-5m
 
-RUN sudo -n mkdir -p /home/hived/datadir/blockchain && cd /home/hived/datadir/blockchain && \
-  sudo -n wget -c https://gtg.openhive.network/get/blockchain/block_log.5M && \
-    sudo -n mv block_log.5M block_log && sudo -n chown -Rc hived:hived /home/hived/datadir/
+USER hived
+RUN  mkdir -p /home/hived/datadir/blockchain && \
+  wget -c https://gtg.openhive.network/get/blockchain/block_log.5M --output-document=/home/hived/datadir/blockchain/block_log
+USER hived_admin
 
 FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS build
 
@@ -62,12 +63,12 @@ ENV HIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}
 ARG HIVE_LINT=OFF
 ENV HIVE_LINT=${HIVE_LINT}
 
-USER hived
-WORKDIR /home/hived
+USER hived_admin
+WORKDIR /home/hived_admin
 SHELL ["/bin/bash", "-c"] 
 
 # Get everything from cwd as sources to be built.
-COPY --chown=hived:hived . /home/hived/hive
+COPY --chown=hived_admin:users . /home/hived_admin/hive
 
 RUN \
   mkdir -p ./build/tests/unit/ \
@@ -98,27 +99,30 @@ ENV HTTP_PORT=${HTTP_PORT}
 ARG CLI_WALLET_PORT=8093
 ENV CLI_WALLET_PORT=${CLI_WALLET_PORT}
 
-SHELL ["/bin/bash", "-c"] 
+SHELL ["/bin/bash", "-c"]
 
 USER hived
 WORKDIR /home/hived
 
 COPY --from=build \
-  /home/hived/build/programs/hived/hived \
-  /home/hived/build/programs/cli_wallet/cli_wallet \
-  /home/hived/build/programs/util/compress_block_log \
-  /home/hived/build/programs/util/truncate_block_log \
-  /home/hived/build/programs/util/get_dev_key \
-  /home/hived/build/programs/blockchain_converter/blockchain_converter* \
-  /home/hived/build/tests/unit/* /home/hived/bin/
+  /home/hived_admin/build/programs/hived/hived \
+  /home/hived_admin/build/programs/cli_wallet/cli_wallet \
+  /home/hived_admin/build/programs/util/compress_block_log \
+  /home/hived_admin/build/programs/util/truncate_block_log \
+  /home/hived_admin/build/programs/util/get_dev_key \
+  /home/hived_admin/build/programs/blockchain_converter/blockchain_converter* \
+  /home/hived_admin/build/tests/unit/* /home/hived/bin/
 
-COPY --from=build /home/hived/hive/scripts/common.sh ./scripts/common.sh
-COPY --from=build /home/hived/hive/doc/example_config.ini /home/hived/datadir/example_config.ini
+COPY --from=build /home/hived_admin/hive/doc/example_config.ini /home/hived/datadir/example_config.ini
 
-ADD ./docker/docker_entrypoint.sh .
+USER hived_admin
+WORKDIR /home/hived_admin
 
-RUN sudo -n mkdir -p /home/hived/bin && sudo -n mkdir -p /home/hived/shm_dir && \
-  sudo -n mkdir -p /home/hived/datadir && sudo -n chown -Rc hived:hived /home/hived/
+COPY --from=build /home/hived_admin/hive/scripts/common.sh ./scripts/common.sh
+
+COPY --chown=hived_admin:users ./docker/docker_entrypoint.sh .
+
+VOLUME [ "/home/hived/datadir", "/home/hived/shm_dir" ]
 
 ENV DATADIR=/home/hived/datadir
 ENV SHM_DIR=/home/hived/shm_dir
@@ -128,7 +132,7 @@ STOPSIGNAL SIGINT
 # JSON rpc service
 EXPOSE ${HTTP_PORT}
 
-ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
+ENTRYPOINT [ "/home/hived_admin/docker_entrypoint.sh" ]
 
 FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-${BUILD_IMAGE_TAG} as instance
 
@@ -146,11 +150,11 @@ FROM ${CI_REGISTRY_IMAGE}ci-base-image-5m$CI_IMAGE_TAG AS block_log_5m_source
 FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-$BUILD_IMAGE_TAG as data
 
 COPY --from=block_log_5m_source /home/hived/datadir /home/hived/datadir
-ADD --chown=hived:hived ./docker/config_5M.ini /home/hived/datadir/config.ini
+ADD --chown=hived:users ./docker/config_5M.ini /home/hived/datadir/config.ini
 
-RUN "/home/hived/docker_entrypoint.sh" --force-replay --stop-replay-at-block=5000000 --exit-before-sync
+RUN "/home/hived_admin/docker_entrypoint.sh" --force-replay --stop-replay-at-block=5000000 --exit-before-sync
 
-ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
+ENTRYPOINT [ "/home/hived_admin/docker_entrypoint.sh" ]
 
 # default command line to be passed for this version (which should be stopped at 5M)
 CMD ["--replay-blockchain", "--stop-replay-at-block=5000000"]
