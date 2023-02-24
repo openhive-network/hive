@@ -291,60 +291,17 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
 //  get_account_history -> ditto get_account_history
 //  enum_virtual_ops -> not used
 
-typedef std::function<void(const hive::protocol::transaction_id_type& trx_id)> transaction_comparator_t;
-/// Account history pattern goes first in the pair, condenser version pattern follows.
-typedef std::vector< std::pair< std::string, std::string > > expected_t;
-
-void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_return& block_ops,
-                                      const account_history::get_ops_in_block_return& ah_block_ops,
-                                      uint32_t block_num,
-                                      transaction_comparator_t tx_compare,
-                                      const expected_t& expected_operations )
+// TODO: Improve by comparing get_transaction results against patterns provided as additional argument.
+void test_get_transaction( const condenser_api_fixture& caf, uint32_t block_num )
 {
-  ilog("block #${num}, ${op} operations from condenser, ${ah} operations from account history",
-    ("num", block_num)("op", block_ops.size())("ah", ah_block_ops.ops.size()));
-  BOOST_REQUIRE_EQUAL( block_ops.size(), ah_block_ops.ops.size() );
-  BOOST_REQUIRE( expected_operations.size() == ah_block_ops.ops.size() );
+  auto full_block_ptr = caf.db->fetch_block_by_number( block_num );
+  const signed_block& block = full_block_ptr->get_block();
 
-  auto i_condenser = block_ops.begin();
-  auto i_ah = ah_block_ops.ops.begin();
-  for (size_t index = 0; i_condenser != block_ops.end(); ++i_condenser, ++i_ah, ++index )
+  for( const auto& trx : block.transactions )
   {
-    ilog("result ah is ${result}", ("result", fc::json::to_string(*i_ah)));
-    ilog("result condenser is ${result}", ("result", fc::json::to_string(*i_condenser)));
+    const auto& trx_id = trx.id();
+    BOOST_REQUIRE( trx_id != hive::protocol::transaction_id_type() );
 
-    // Compare operations in their serialized form with expected patterns:
-    const auto expected = expected_operations[index];
-    BOOST_REQUIRE_EQUAL( expected.first, fc::json::to_string(*i_ah) );
-    BOOST_REQUIRE_EQUAL( expected.second, fc::json::to_string(*i_condenser) );
-
-    // Additionally compare transactions of operations.
-    tx_compare(i_ah->trx_id);
-  }
-}
-
-void do_the_testing( condenser_api_fixture& caf, const expected_t& expected_operations, const expected_t& expected_virtual_operations,
-                     uint32_t tested_block_num )
-{
-  uint32_t current_block_num = caf.db->head_block_num();
-
-  // Let's make the block irreversible
-  uint32_t reversibility_gap = 22;
-  for( ; current_block_num <= tested_block_num + reversibility_gap ; ++current_block_num )
-    caf.generate_block();
-
-  uint32_t block_num = tested_block_num;
-  ilog("block #${num}", ("num", block_num));
-
-  // Compare operations & their transactions.
-  auto transaction_comparator = [&](const hive::protocol::transaction_id_type& trx_id) {
-    if( trx_id == hive::protocol::transaction_id_type() )
-    {
-      // We won't get this transaction by tx_hash 
-      ilog("skipping transaction check due to empty hash/id");
-    }
-    else
-    {
       // Call condenser get_transaction and verify results with result of account history variant.
       const auto tx_hash = trx_id.str();
       const auto result = caf.condenser_api->get_transaction( condenser_api::get_transaction_args(1, fc::variant(tx_hash)) );
@@ -363,29 +320,56 @@ void do_the_testing( condenser_api_fixture& caf, const expected_t& expected_oper
       // Too many arguments
       BOOST_REQUIRE_THROW( caf.condenser_api->get_transaction( condenser_api::get_transaction_args(2, fc::variant(tx_hash)) ), fc::assert_exception );
     }
-  };
+}
 
+/// Account history pattern goes first in the pair, condenser version pattern follows.
+typedef std::vector< std::pair< std::string, std::string > > expected_t;
+void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_return& block_ops,
+                                      const account_history::get_ops_in_block_return& ah_block_ops,
+                                      uint32_t block_num,
+                                      const expected_t& expected_operations )
+{
+  ilog("block #${num}, ${op} operations from condenser, ${ah} operations from account history",
+    ("num", block_num)("op", block_ops.size())("ah", ah_block_ops.ops.size()));
+  BOOST_REQUIRE_EQUAL( block_ops.size(), ah_block_ops.ops.size() );
+  BOOST_REQUIRE( expected_operations.size() == ah_block_ops.ops.size() );
+
+  auto i_condenser = block_ops.begin();
+  auto i_ah = ah_block_ops.ops.begin();
+  for (size_t index = 0; i_condenser != block_ops.end(); ++i_condenser, ++i_ah, ++index )
+  {
+    ilog("result ah is ${result}", ("result", fc::json::to_string(*i_ah)));
+    ilog("result condenser is ${result}", ("result", fc::json::to_string(*i_condenser)));
+
+    // Compare operations in their serialized form with expected patterns:
+    const auto expected = expected_operations[index];
+    BOOST_REQUIRE_EQUAL( expected.first, fc::json::to_string(*i_ah) );
+    BOOST_REQUIRE_EQUAL( expected.second, fc::json::to_string(*i_condenser) );
+  }
+}
+
+void test_get_ops_in_block( condenser_api_fixture& caf, const expected_t& expected_operations,
+  const expected_t& expected_virtual_operations, uint32_t block_num )
+{
   // Call condenser get_ops_in_block and verify results with result of account history variant.
   // Note that condenser variant calls ah's one with default value of include_reversible = false.
   // Two arguments, second set to false.
   auto block_ops = caf.condenser_api->get_ops_in_block({block_num, false /*only_virtual*/});
   auto ah_block_ops = caf.account_history_api->get_ops_in_block({block_num, false /*only_virtual*/, false /*include_reversible*/});
-  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator, expected_operations );
+  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, expected_operations );
   // Two arguments, second set to true.
   block_ops = caf.condenser_api->get_ops_in_block({block_num, true /*only_virtual*/});
   ah_block_ops = caf.account_history_api->get_ops_in_block({block_num, true /*only_virtual*/});
-  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator, expected_virtual_operations );
+  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, expected_virtual_operations );
   // Single argument
   block_ops = caf.condenser_api->get_ops_in_block({block_num});
   ah_block_ops = caf.account_history_api->get_ops_in_block({block_num});
-  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, transaction_comparator, expected_operations );
+  compare_get_ops_in_block_results( block_ops, ah_block_ops, block_num, expected_operations );
 
   // Too few arguments
   BOOST_REQUIRE_THROW( caf.condenser_api->get_ops_in_block({}), fc::assert_exception );
   // Too many arguments
   BOOST_REQUIRE_THROW( caf.condenser_api->get_ops_in_block({block_num, false /*only_virtual*/, 0 /*redundant arg*/}), fc::assert_exception );
-
-  caf.validate_database();
 }
 
 BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf1 )
@@ -415,8 +399,11 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf1 )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"vesting_shares_split_operation","value":{"owner":"initminer","vesting_shares_before_split":{"amount":"1000000","precision":6,"nai":"@@000000037"},"vesting_shares_after_split":{"amount":"1000000000000","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["vesting_shares_split",{"owner":"initminer","vesting_shares_before_split":"1.000000 VESTS","vesting_shares_after_split":"1000000.000000 VESTS"}]})~"
     } }; 
+  generate_until_irreversible_block( 2 );
+
   // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
-  do_the_testing( *this, expected_operations, expected_operations, 2 );
+  test_get_ops_in_block( *this, expected_operations, expected_operations, 2 );
+  test_get_transaction( *this, 2 ); // <- TODO: Enhance with patterns and possibly move to separate test.
 
 
   // In block 21 maximum block size is being changed:
@@ -427,8 +414,10 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf1 )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":21,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:03","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":21,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:03","op":["producer_reward",{"producer":"initminer","vesting_shares":"1.000 TESTS"}]})~"
     } };
+  generate_until_irreversible_block( 21 );
   // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
-  do_the_testing( *this, expected_operations, expected_operations, 21 );
+  test_get_ops_in_block( *this, expected_operations, expected_operations, 21 );
+  test_get_transaction( *this, 21 ); // <- TODO: Enhance with patterns and possibly move to separate test.
 
 } FC_LOG_AND_RETHROW() }
 
@@ -472,7 +461,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf12 )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":3,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:09","op":["producer_reward",{"producer":"initminer","vesting_shares":"1.000 TESTS"}]})~"
     } };
   expected_virtual_operations = { expected_operations[1], expected_operations[2], expected_operations[4] };
-  do_the_testing( *this, expected_operations, expected_virtual_operations, 3 );
+  generate_until_irreversible_block( 3 );
+  test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 3 );
+  test_get_transaction( *this, 3 ); // <- TODO: Enhance with patterns and possibly move to separate test.
 
 } FC_LOG_AND_RETHROW() }
 
@@ -534,7 +525,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf13 )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":3,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:09","op":["producer_reward",{"producer":"initminer","vesting_shares":"1.000 TESTS"}]})~"
     } };
   expected_virtual_operations = { expected_operations[1], expected_operations[2], expected_operations[5], expected_operations[8] };
-  do_the_testing( *this, expected_operations, expected_virtual_operations, 3 );
+  generate_until_irreversible_block( 3 );
+  test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 3 );
+  test_get_transaction( *this, 3 ); // <- TODO: Enhance with patterns and possibly move to separate test.
 
   vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
   delete_comment( "edgar0ah", "permlink1", edgar0ah_private_key );
@@ -556,7 +549,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf13 )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":25,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:15","op":["producer_reward",{"producer":"dan0ah","vesting_shares":"1.000 TESTS"}]})~"
     } };
   expected_virtual_operations = { expected_operations[1], expected_operations[3], expected_operations[4] };
-  do_the_testing( *this, expected_operations, expected_virtual_operations, 25 );
+  generate_until_irreversible_block( 25 );
+  test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 25 );
+  test_get_transaction( *this, 25 ); // <- TODO: Enhance with patterns and possibly move to separate test.
 
 } FC_LOG_AND_RETHROW() }
 
@@ -598,8 +593,10 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_comment_and_reward )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":6,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":{"type":"dhf_funding_operation","value":{"treasury":"hive.fund","additional_funds":{"amount":"10800","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":6,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":["dhf_funding",{"treasury":"hive.fund","additional_funds":"10.800 TBD"}]})~"
     } };
+  generate_until_irreversible_block( 1202 );
   // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
-  do_the_testing( *this, expected_operations, expected_operations, 1202 );
+  test_get_ops_in_block( *this, expected_operations, expected_operations, 1202 );
+  test_get_transaction( *this, 1202 ); // <- TODO: Enhance with patterns and possibly move to separate test.
 
   claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
 
@@ -611,7 +608,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_comment_and_reward )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":1203,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:09","op":["producer_reward",{"producer":"initminer","vesting_shares":"127622.114734 VESTS"}]})~"
     } };
   expected_virtual_operations = { expected_operations[1] };
-  do_the_testing( *this, expected_operations, expected_virtual_operations, 1203 );
+  generate_until_irreversible_block( 1203 );
+  test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 1203 );
+  test_get_transaction( *this, 1203 ); // <- TODO: Enhance with patterns and possibly move to separate test.
 
 } FC_LOG_AND_RETHROW() }
 
@@ -667,7 +666,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_convert_and_limit_order )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["producer_reward",{"producer":"initminer","vesting_shares":"8611.634248 VESTS"}]})~"
     } };
   expected_virtual_operations = { expected_operations[2], expected_operations[6], expected_operations[7] };
-  do_the_testing( *this, expected_operations, expected_virtual_operations, 5 );
+  generate_until_irreversible_block( 5 );
+  test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );
+  test_get_transaction( *this, 5 ); // <- TODO: Enhance with patterns and possibly move to separate test.
 
   // Check virtual operations spawned by the ones obove:
   expected_operations = { { // producer_reward_operation
@@ -680,8 +681,10 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_convert_and_limit_order )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":1684,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T01:24:12","op":{"type":"fill_collateralized_convert_request_operation","value":{"owner":"carol3ah","requestid":0,"amount_in":{"amount":"11050","precision":3,"nai":"@@000000021"},"amount_out":{"amount":"10524","precision":3,"nai":"@@000000013"},"excess_collateral":{"amount":"11052","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":1684,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T01:24:12","op":["fill_collateralized_convert_request",{"owner":"carol3ah","requestid":0,"amount_in":"11.050 TESTS","amount_out":"10.524 TBD","excess_collateral":"11.052 TESTS"}]})~"
     } };
+  generate_until_irreversible_block( 1684 );
   // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
-  do_the_testing( *this, expected_operations, expected_operations, 1684 );
+  test_get_ops_in_block( *this, expected_operations, expected_operations, 1684 );
+  test_get_transaction( *this, 1684 ); // <- TODO: Enhance with patterns and possibly move to separate test.
 
 } FC_LOG_AND_RETHROW() }
   
