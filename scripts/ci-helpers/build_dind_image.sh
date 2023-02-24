@@ -9,6 +9,9 @@ export DOCKER_BUILDKIT=1
 docker build -t ${REGISTRY}custom_docker:${DOCKER_VERSION} - << EOF
     FROM docker:${DOCKER_VERSION}
     RUN apk update && apk add --no-cache bash git ca-certificates curl jq
+    RUN adduser -D hived
+    USER hived
+    WORKDIR /home/hived
 EOF
 
 docker build -t ${REGISTRY}custom_dind:${DIND_VERSION} - << EOF
