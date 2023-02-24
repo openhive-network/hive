@@ -3,6 +3,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_objects.hpp>
+#include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/account_object.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 
@@ -263,6 +265,194 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
       {
         //An exception must be thrown because in HF27 is blocked by a condition `_db.is_in_control()`
         HIVE_REQUIRE_THROW( dhf_db.vote_proposal( "alice", { _id_proposal }, true, alice_private_key ), fc::assert_exception );
+      }
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-27*****" );
+    execute_hardfork<27>( _content );
+
+    is_hf28 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+struct request
+{
+  account_name_type   name;
+  fc::time_point_sec  effective_date;
+
+  bool operator==( const request& obj ) const
+  {
+    return name == obj.name && effective_date == obj.effective_date;
+  }
+
+  bool operator<( const request& obj ) const
+  {
+    return name < obj.name;
+  }
+};
+
+bool check_decline_voting_rights_requests( database* db, const std::set<request>& requests )
+{
+  std::set<request> _requests;
+
+  const auto& _request_idx = db->get_index< decline_voting_rights_request_index, by_account >();
+  auto _itr = _request_idx.begin();
+
+  while( _itr != _request_idx.end() )
+  {
+    _requests.insert( { _itr->account, _itr->effective_date } );
+    ++_itr;
+  }
+
+  if( _requests.size() != requests.size() )
+    return false;
+
+  bool _result = std::equal( _requests.begin(), _requests.end(), requests.begin() );
+  return _result;
+}
+
+BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28 )
+{
+  try
+  {
+    bool is_hf28 = false;
+
+    auto _content = [ &is_hf28 ]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: when HF28 occurs then it's necessary to remove proposal votes for accounts that declined voting rights" );
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+      auto _ht = executor->db->head_block_time();
+
+      {
+        executor->db->remove_proposal_votes_for_accounts_without_voting_rights();
+        BOOST_REQUIRE( check_decline_voting_rights_requests( executor->db, {} ) );
+      }
+      {
+        std::vector<account_name_type> _accounts{ "alice0", "alice1", "alice2", "alice3", "alice4", "alice5" };
+
+        BOOST_TEST_MESSAGE("Create accounts.");
+        for( auto& account : _accounts )
+          executor->db->create< account_object >( account );
+      }
+      {
+        executor->db->remove_proposal_votes_for_accounts_without_voting_rights();
+        BOOST_REQUIRE( check_decline_voting_rights_requests( executor->db, {} ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice1", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice2", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice3", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice4", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice5", _ht } } ) );
+      }
+      {
+        executor->db->create< proposal_vote_object >( [&]( proposal_vote_object& proposal_vote )
+        {
+          proposal_vote.voter = "alice0";
+        } );
+        executor->db->create< proposal_vote_object >( [&]( proposal_vote_object& proposal_vote )
+        {
+          proposal_vote.voter = "alice1";
+        } );
+        executor->db->create< proposal_vote_object >( [&]( proposal_vote_object& proposal_vote )
+        {
+          proposal_vote.voter = "alice3";
+        } );
+      }
+      {
+        executor->db->remove_proposal_votes_for_accounts_without_voting_rights();
+        BOOST_REQUIRE( check_decline_voting_rights_requests( executor->db, {} ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice1", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice2", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice3", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice4", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice5", _ht } } ) );
+      }
+      {
+        auto& _account = executor->db->get_account( "alice0" );
+        executor->db->modify( _account, [&]( account_object& account )
+        {
+          account.can_vote = false;
+        } );
+      }
+      {
+        executor->db->remove_proposal_votes_for_accounts_without_voting_rights();
+        BOOST_REQUIRE( !is_hf28 || check_decline_voting_rights_requests( executor->db, { { "alice0", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht + 1 } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice1", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice2", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice3", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice4", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice5", _ht } } ) );
+      }
+      {
+        auto& _account = executor->db->get_account( "alice1" );
+        executor->db->modify( _account, [&]( account_object& account )
+        {
+          account.can_vote = false;
+        } );
+      }
+      {
+        auto& _account = executor->db->get_account( "alice2" );
+        executor->db->modify( _account, [&]( account_object& account )
+        {
+          account.can_vote = false;
+        } );
+      }
+      {
+        executor->db->remove_proposal_votes_for_accounts_without_voting_rights();
+        BOOST_REQUIRE( !is_hf28 || check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice1", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht + 1 }, { "alice1", _ht + 1 } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice1", _ht }, { "alice2", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice1", _ht }, { "alice3", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice1", _ht }, { "alice4", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice1", _ht }, { "alice5", _ht } } ) );
+      }
+      {
+        executor->db->create< proposal_vote_object >( [&]( proposal_vote_object& proposal_vote )
+        {
+          proposal_vote.voter = "alice2";
+        } );
+        executor->db->create< proposal_vote_object >( [&]( proposal_vote_object& proposal_vote )
+        {
+          proposal_vote.voter = "alice4";
+        } );
+        executor->db->create< proposal_vote_object >( [&]( proposal_vote_object& proposal_vote )
+        {
+          proposal_vote.voter = "alice5";
+        } );
+      }
+      {
+        executor->db->remove_proposal_votes_for_accounts_without_voting_rights();
+        BOOST_REQUIRE( !is_hf28 || check_decline_voting_rights_requests( executor->db, { { "alice2", _ht }, { "alice0", _ht }, { "alice1", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice2", _ht }, { "alice0", _ht + 1 }, { "alice1", _ht + 1 } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice1", _ht }, { "alice2", _ht }, { "alice3", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice1", _ht }, { "alice2", _ht }, { "alice4", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice0", _ht }, { "alice1", _ht }, { "alice2", _ht }, { "alice5", _ht } } ) );
+      }
+      {
+        auto& _account = executor->db->get_account( "alice4" );
+        executor->db->modify( _account, [&]( account_object& account )
+        {
+          account.can_vote = false;
+        } );
+      }
+      {
+        auto& _account = executor->db->get_account( "alice5" );
+        executor->db->modify( _account, [&]( account_object& account )
+        {
+          account.can_vote = false;
+        } );
+      }
+      {
+        executor->db->remove_proposal_votes_for_accounts_without_voting_rights();
+        BOOST_REQUIRE( !is_hf28 || check_decline_voting_rights_requests( executor->db, { { "alice2", _ht }, { "alice0", _ht }, { "alice1", _ht }, { "alice5", _ht }, { "alice4", _ht } } ) );
+        BOOST_REQUIRE( !check_decline_voting_rights_requests( executor->db, { { "alice2", _ht }, { "alice0", _ht }, { "alice1", _ht + 1 }, { "alice5", _ht }, { "alice4", _ht } } ) );
       }
     };
 
