@@ -4,18 +4,10 @@ set -xeuo pipefail
 
 env
 
-if [ "$(id -u)" != 0 ] && [ -n "${NEW_UID+x}" ];
+if [ -n "${HIVED_UID+x}" ];
 then
-  sudo -En "$0" "$@"
-  exit $?
-fi
-
-if [ "$(id -u)" = 0 ] && [ -n "${NEW_UID+x}" ];
-then
-  sudo -n usermod -o -u "${NEW_UID}" hived
-  unset NEW_UID
-  sudo -Enu hived "$0" "$@"
-  exit $?
+  echo "setting user hived uid to value ${HIVED_UID}"
+  sudo -n usermod -o -u "${HIVED_UID}" hived
 fi
 
 
@@ -37,7 +29,7 @@ fi
 
 LOG_FILE="${DATADIR}/${LOG_FILE:=docker_entrypoint.log}"
 sudo -n touch "$LOG_FILE"
-sudo -n chown -Rc hived:hived "$LOG_FILE"
+sudo -n chown -Rc hived:users "$LOG_FILE"
 sudo -n chmod a+rw "$LOG_FILE"
 source "$SCRIPTSDIR/common.sh"
 
@@ -61,13 +53,8 @@ cleanup () {
 #trap cleanup EXIT
 trap cleanup INT QUIT TERM
 
-sudo -n chown -Rc hived:hived "$DATADIR"
-sudo -n chown -Rc hived:hived "$SHM_DIR"
-
 # Be sure this directory exists
 sudo -Enu hived mkdir --mode=777 -p "$DATADIR/blockchain"
-
-cd "$DATADIR"
 
 HIVED_ARGS=()
 HIVED_ARGS+=("$@")
@@ -81,7 +68,7 @@ echo "Attempting to execute hived using additional command line arguments: ${HIV
 
 /home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
   --data-dir="$DATADIR" --shared-file-dir="$SHM_DIR"  \
-  ${HIVED_ARGS[@]} 2>&1 | tee -i hived.log
+  ${HIVED_ARGS[@]} 2>&1 | tee -i "$DATADIR"/hived.log
 echo "$? Hived process finished execution."
 EOF
 

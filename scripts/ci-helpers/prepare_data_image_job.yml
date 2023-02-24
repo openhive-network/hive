@@ -115,14 +115,14 @@
     - echo "cache usage:"
     - du -h -d 1 /cache || true
     - cp $DATA_CACHE/datadir/docker_entrypoint.log $CI_PROJECT_DIR
-    - echo "NEW_UID=$(id -u)" > new_uid.env
-    - cat new_uid.env
+    - echo "HIVED_UID=$(id -u)" > hived_uid.env
+    - cat hived_uid.env
 
   artifacts:
     reports:
       dotenv:
         - docker_image_name.env
-        - new_uid.env
+        - hived_uid.env
     paths:
     - docker_entrypoint.log
     expire_in: 6 hours

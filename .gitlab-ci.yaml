@@ -13,11 +13,11 @@ variables:
   CI_DEBUG_SERVICES: "true"
   # pin to specific docker images for build repeatability
   #points registry.gitlab.syncad.com/hive/hive/runtime:ubuntu-22.04-1
-  RUNTIME_IMAGE_TAG: "@sha256:9bc27418dbd27f751d47c75a56bb36434b748e29343964dbcbec9ea0dcb7866d"
+  RUNTIME_IMAGE_TAG: "@sha256:3eb6a39b383111977c707797ae0ced774436a9d7ecb816b411e046143386ced9"
   #points registry.gitlab.syncad.com/hive/hive/builder:ubuntu-20.04-3
   BUILDER_IMAGE_TAG: "@sha256:590750387c74c470ee30910502b4f855122eae9ef9c6e7ad0841985abdc3938c"
   # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu22.04-1
-  TEST_IMAGE_TAG: "@sha256:c6e9f22de034b0d6c6b410a43ec44cfabc42ec57f6604c62a8db0374c495afb8"
+  TEST_IMAGE_TAG: "@sha256:fac3b74dff330d5ec22ecd55cb88e83c359e64b1bf08b9c90f681916c6afd0f6"
 
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
@@ -487,7 +487,7 @@ patterns_tests:
     PYTHONPATH: "$CI_PROJECT_DIR/tests/hive-local-tools/test-tools/package"
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
     DATA_CACHE: $DATA_CACHE_MAINNET
-    NEW_UID: $NEW_UID
+    HIVED_UID: $HIVED_UID
   needs:
     - job: prepare_hived_data
       artifacts: true
@@ -551,7 +551,7 @@ python_pattern_mainnet_tests:
     JUNIT_REPORT: tests/api_tests/python_patterns_tests/report.xml
     BINARY_CACHE_PATH: "hived-binaries"
     DATA_CACHE: $DATA_CACHE_MAINNET
-    NEW_UID: $NEW_UID
+    HIVED_UID: $HIVED_UID
   needs:
     - job: prepare_hived_image
       artifacts: true
@@ -615,7 +615,7 @@ message_format_mainnet_5m_tests:
     NODE_ADDRESS: "hived-instance:8090"
     NODE_TYPE: "mainnet_5m"
     DATA_CACHE: $DATA_CACHE_MAINNET
-    NEW_UID: $NEW_UID
+    HIVED_UID: $HIVED_UID
   before_script:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
     - !reference [.message_format_tests, before_script]
@@ -673,7 +673,7 @@ witness_tests:
     PYTEST_TIMEOUT_MINUTES: 5
     JUNIT_REPORT: tests/functional/python_tests/witness_tests/report.xml
     DATA_CACHE: $DATA_CACHE_MAINNET
-    NEW_UID: $NEW_UID
+    HIVED_UID: $HIVED_UID
   script:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
     - cd tests/functional/python_tests/witness_tests
