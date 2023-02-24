@@ -2656,6 +2656,70 @@ void database::process_recurrent_transfers()
     _benchmark_dumper.end( "processing", "hive::protocol::recurrent_transfer_operation", processed_transfers );
 }
 
+void database::remove_proposal_votes_for_accounts_without_voting_rights()
+{
+  if( !has_hardfork( HIVE_HARDFORK_1_28 ) )
+    return;
+
+  std::vector<account_name_type> _voters;
+
+  const auto& _proposal_votes_idx = get_index< proposal_vote_index, by_voter_proposal >();
+
+  auto _itr = _proposal_votes_idx.begin();
+  while( _itr != _proposal_votes_idx.end() )
+  {
+    _voters.push_back( _itr->voter );
+    ++_itr;
+  }
+
+  //Lack of voters.
+  if( _voters.empty() )
+    return;
+
+  std::vector<account_name_type> _accounts;
+
+  for( auto& voter : _voters )
+  {
+    const auto& _voter = get_account( voter );
+    if( !_voter.can_vote )
+      _accounts.push_back( _voter.get_name() );
+  }
+
+  //Lack of voters who declined voting rights.
+  if( _accounts.empty() )
+    return;
+
+  /*
+    For every account set a request to remove proposal votes.
+    Current time is set, because we want to start removing proposal votes as soon as possible.
+  */
+  const auto& _request_idx = get_index< decline_voting_rights_request_index, by_account >();
+
+  for( auto& account : _accounts )
+  {
+    auto _found = _request_idx.find( account );
+    if( _found !=_request_idx.end() )
+    {
+      /*
+        Before HF28 it was possible to create `decline_voting_rights` operation again, even if an account had `can_vote` set to false.
+        In this case `effective_date` must be changed otherwise a new object is created.
+      */
+      modify( *_found, [&]( decline_voting_rights_request_object& req )
+      {
+        req.effective_date = head_block_time();
+      });
+    }
+    else
+    {
+      create< decline_voting_rights_request_object >( [&]( decline_voting_rights_request_object& req )
+      {
+        req.account = account;
+        req.effective_date = head_block_time();
+      });
+    }
+  }
+}
+
 /**
   * This method updates total_reward_shares2 on DGPO, and children_rshares2 on comments, when a comment's rshares2 changes
   * from old_rshares2 to new_rshares2.  Maintaining invariants that children_rshares2 is the sum of all descendants' rshares2,
@@ -6883,6 +6947,11 @@ void database::apply_hardfork( uint32_t hardfork )
         future_witness_schedule.copy_values_from( get_witness_schedule_object() );
       } );
       FC_ASSERT( fwso.get_id() == 1, "Unexpected id allocated to future witness schedule object" );
+      break;
+    }
+    case HIVE_HARDFORK_1_28:
+    {
+      remove_proposal_votes_for_accounts_without_voting_rights();
       break;
     }
     case HIVE_SMT_HARDFORK:
