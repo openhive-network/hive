@@ -738,6 +738,8 @@ namespace chain {
 
       void process_recurrent_transfers();
 
+      void remove_proposal_votes_for_accounts_without_voting_rights();
+
       void update_global_dynamic_data( const signed_block& b );
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
