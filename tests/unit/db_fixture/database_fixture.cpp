@@ -403,6 +403,12 @@ void database_fixture::generate_days_blocks( uint32_t days, bool skip_interm_blo
   generate_seconds_blocks( days * 24 * 3600, skip_interm_blocks );
 }
 
+void database_fixture::generate_until_irreversible_block( uint32_t block_num )
+{
+  while( db->get_last_irreversible_block_num() < block_num )
+    generate_block();
+}
+
 fc::string database_fixture::get_current_time_iso_string() const
 {
   fc::time_point_sec current_time = db->head_block_time();
