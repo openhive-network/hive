@@ -6,7 +6,6 @@ import re
 import test_tools as tt
 
 
-
 @pytest.fixture()
 def node():
     node = tt.InitNode()
@@ -47,7 +46,7 @@ def test_try_to_vote_by_proxy_after_decline_voting_rights(node):
 
 
 @run_for("testnet")
-def test_escrow_transfer_operation(node):
+def test_start_escrow_transfer_operation_and_approve_by_both_sides(node):
     wallet = tt.Wallet(attach_to=node)
     for name in ["alice", "bob"]:
         wallet.create_account(name, vests=tt.Asset.Test(100))
@@ -63,8 +62,7 @@ def test_escrow_transfer_operation(node):
     if len(response["escrows"]) != 0:
         to_check = [response["escrows"][0][person] for person in ["agent_approved", "to_approved"]]
     else:
-        assert False
-
+        to_check = [False, False]
     assert all(to_check)
 
 
@@ -76,6 +74,7 @@ def test_remove_proposal_and_what_will_happen_with_vote(node):
     wallet.api.post_comment("alice", "test-permlink", "", "parent-test", "test-title", "test-body", "{}")
     wallet.api.create_proposal("alice", "bob", tt.Time.now(), tt.Time.from_now(weeks=2), tt.Asset.Tbd(5),
                                "test-subject", "test-permlink")
+
     wallet.api.update_proposal_votes("bob", [0], True)
     wallet.api.remove_proposal("alice", [0])
 

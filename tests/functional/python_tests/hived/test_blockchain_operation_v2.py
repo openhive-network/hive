@@ -5,8 +5,6 @@ from hive_local_tools import run_for
 from hive_local_tools.api.message_format import create_proposal
 
 
-
-
 @pytest.fixture()
 def node():
     node = tt.InitNode()
@@ -117,4 +115,39 @@ def test_delegate_vesting_shares_operation(node):
 
     assert response == tt.Asset.Vest(50)
 
+
+@run_for("testnet")
+def test_update_proposal_operation(node):
+    wallet = tt.Wallet(attach_to=node)
+    wallet.create_account("alice", vests=tt.Asset.Test(100))
+    wallet.api.post_comment("initminer", "test-permlink", "", "parent-test", "test-title", "test-body", "{}")
+    wallet.api.create_proposal("initminer", "alice", tt.Time.now(), tt.Time.from_now(weeks=2), tt.Asset.Tbd(5),
+                               "test-subject", "test-permlink")
+
+    old_end_date = node.api.condenser.find_proposals([0])[0]["end_date"]
+    wallet.api.update_proposal(0, "initminer", tt.Asset.Tbd(5), "test-subject", "test-permlink",
+                               tt.Time.from_now(weeks=1))
+    new_end_date = node.api.condenser.find_proposals([0])[0]["end_date"]
+
+    assert old_end_date != new_end_date
+
+
+@run_for("testnet")
+def test_update_operation(node):
+    wallet = tt.Wallet(attach_to=node)
+    wallet.api.create_account('initminer', 'alice', '{}')
+    wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(500))
+
+    wallet.api.update_account_auth_account('alice', 'posting', 'initminer', 1)
+    wallet.api.update_account_auth_threshold("alice", "posting", 2)
+    response = wallet.api.get_account('alice')
+
+    key = tt.Account('some key').public_key
+    wallet.api.update_account_auth_key('alice', 'posting', key, 3)
+    response = wallet.api.get_account('alice')
+
+    key = tt.Account('some key').public_key
+    wallet.api.update_account("alice", "{}", key, key, key, key)
+
+    assert True
 
