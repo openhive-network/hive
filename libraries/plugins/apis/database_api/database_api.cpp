@@ -2375,7 +2375,7 @@ extern "C" int consume_json_block_impl(const char *json_block, const char* conte
   skip_flags |= hive::plugins::chain::database::skip_witness_signature ;
   // skip_flags |= hive::plugins::chain::database::skip_transaction_signatures;
   // skip_flags |= hive::plugins::chain::database::skip_transaction_dupe_check;
-  // skip_flags |= hive::plugins::chain::database::skip_tapos_check;
+  skip_flags |= hive::plugins::chain::database::skip_tapos_check;
   skip_flags |= hive::plugins::chain::database::skip_merkle_check;
   // skip_flags |= hive::plugins::chain::database::skip_witness_schedule_check;
   skip_flags |= hive::plugins::chain::database::skip_authority_check;
