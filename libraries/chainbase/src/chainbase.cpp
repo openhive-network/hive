@@ -148,7 +148,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   
   static volatile auto stop_in_chainbase_open = false;
 
-  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file )
+  void database::open(const std::string& context, const bfs::path& shared_mem_dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file)
   {
 
     if(g_postgres_not_block_log)
@@ -162,14 +162,14 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
 
     assert( dir.is_absolute() );
-    bfs::create_directories( dir );
-    if( _data_dir != dir ) close();
-    if( wipe_shared_file ) wipe( dir );
+    bfs::create_directories( shared_mem_dir );
+    if( _data_dir != shared_mem_dir ) close();
+    if( wipe_shared_file ) wipe( shared_mem_dir, context );
 
-    _data_dir = dir;
+    _data_dir = shared_mem_dir;
     _database_cfg = database_cfg;
 #ifndef ENABLE_STD_ALLOCATOR
-    auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
+    auto abs_path = bfs::absolute( shared_mem_dir / (context + "shared_memory.bin") );
     
     if( bfs::exists( abs_path ) )
     {
@@ -269,12 +269,12 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _at_least_one_index_is_created_now      = false;
   }
 
-  void database::wipe( const bfs::path& dir )
+  void database::wipe( const bfs::path& dir , const std::string& context )
   {
     assert( !_is_open );
     _segment.reset();
     _meta.reset();
-    bfs::remove_all( dir / "shared_memory.bin" );
+    bfs::remove_all( dir / (context + "shared_memory.bin" ));
     bfs::remove_all( dir / "shared_memory.meta" );
     _data_dir = bfs::path();
 
@@ -290,7 +290,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _segment.reset();
     _meta.reset();
 
-    open( _data_dir, 0, new_shared_file_size );
+    open("", _data_dir, 0, new_shared_file_size );
 
     wipe_indexes();
 
