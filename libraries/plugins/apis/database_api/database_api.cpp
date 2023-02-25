@@ -2209,8 +2209,8 @@ void init(hive::chain::database& db)
   
   
 
-  static int step6 = 0;
-  while(step6)
+  static auto stop_in_init = false;
+  while(stop_in_init)
   {
     int a = 0;
     a=a;
@@ -2311,10 +2311,13 @@ extern "C" int consume_json_block_impl(const char *json_block, const char* conte
 
   show_it_once = false;
 
-  while(stop_in_consume_json_block_impl  )
+  if(block_num >= 2726330)
   {
-    int a = 0;
-    a=a;
+    while(stop_in_consume_json_block_impl  )
+    {
+      int a = 0;
+      a=a;
+    }
   }
 
 
@@ -2361,6 +2364,10 @@ extern "C" int consume_json_block_impl(const char *json_block, const char* conte
   siz = siz;
 
   std::shared_ptr<hive::chain::full_block_type> fb_ptr = hive::chain::full_block_type::create_from_signed_block(sb);
+
+  //wlog("block_num=${bn}", ("bn", block_num));
+  //wlog("fb_ptr->get_block_id()=${fbdbi}", ("fbdbi", fb_ptr->get_block_id()));
+
 
   uint64_t skip_flags = hive::plugins::chain::database::skip_block_log;
   // skip_flags |= hive::plugins::chain::database::skip_validate_invariants;

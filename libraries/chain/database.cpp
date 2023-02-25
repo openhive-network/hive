@@ -4386,12 +4386,12 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
 
 
-    // if (block_num == 2726330)
-    if (block_num > 29997)
+    if (block_num >= 2726330)
+    //if (block_num > 29997)
     {
-      //print_enabled = true;
       if(g_postgres_not_block_log)
       {
+          print_enabled = true;
           while(stop_in__apply_block)
           {
             int a = 0;
@@ -4424,6 +4424,9 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
     this_->_currently_processing_block_id.reset();
   } BOOST_SCOPE_EXIT_END
   _currently_processing_block_id = full_block->get_block_id();
+   //wlog("block_num=${bn}", ("bn", block_num));
+   //wlog("full_block->get_block_id()=${fbdbi}", ("fbdbi", full_block->get_block_id()));
+   //wlog("_currently_processing_block_id=${cpbi}", ("cpbi", _currently_processing_block_id));
 
   uint32_t skip = get_node_properties().skip_flags;
   _current_block_num    = block_num;
@@ -4499,11 +4502,11 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
       _benchmark_dumper.end( "block", "merkle check" );
   }
 
-  if(print_enabled) wlog("mtlk head_block_id()= ${hbi}  next_block_header.previous= ${nbhp} equal?=${eq} ",
-  ("hbi", head_block_id())
-  ("nbhp", full_block->get_block_header().previous)
-  ("eq", head_block_id() == full_block->get_block_header().previous)
-  );
+  // if(print_enabled) wlog("mtlk head_block_id()= ${hbi}  next_block_header.previous= ${nbhp} equal?=${eq} ",
+  // ("hbi", head_block_id())
+  // ("nbhp", full_block->get_block_header().previous)
+  // ("eq", head_block_id() == full_block->get_block_header().previous)
+  // );
 
 
 
