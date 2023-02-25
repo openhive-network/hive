@@ -2202,7 +2202,7 @@ hive::plugins::database_api::database_api_impl& database_api_impl_init(hive::cha
 }
 
 
-void init(hive::chain::database& db)
+void init(hive::chain::database& db, const char* context)
 {
 
 
@@ -2259,7 +2259,7 @@ void init(hive::chain::database& db)
 
 
 
-      db.open( db_open_args );
+      db.open( db_open_args, context );
   //         init_schema();
   //         initialize_state_independent_data(args);
   //             initialize_indexes();
@@ -2325,7 +2325,7 @@ extern "C" int consume_json_block_impl(const char *json_block, const char* conte
   {
     // mtlk todo  ASSERT NOT haf_database_api_impls.has_key(context)
     hive::chain::database* db = new hive::chain::database;
-    init(*db);
+    init(*db, context);
 
     expected_block_num = db->head_block_num();
     expected_block_num++;
