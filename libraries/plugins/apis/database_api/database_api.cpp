@@ -2224,7 +2224,7 @@ void init(hive::chain::database& db, const char* context)
       db.set_flush_interval( 10'000 );//10 000
   //     db.add_checkpoints( loaded_checkpoints );// empty flat_map<uint32_t,block_id_type> loaded_checkpoints;
       db.set_require_locking( false );// false 
-      const auto& abstract_index_cntr = db.get_abstract_index_cntr();
+      //const auto& abstract_index_cntr = db.get_abstract_index_cntr();
 
 
       hive::chain::open_args db_open_args;
