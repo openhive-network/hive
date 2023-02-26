@@ -161,7 +161,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     }
 
 
-    assert( dir.is_absolute() );
+    assert( shared_mem_dir.is_absolute() );
     bfs::create_directories( shared_mem_dir );
     if( _data_dir != shared_mem_dir ) close();
     if( wipe_shared_file ) wipe( shared_mem_dir, context );

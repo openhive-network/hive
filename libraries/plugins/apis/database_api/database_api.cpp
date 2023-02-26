@@ -2206,7 +2206,7 @@ void init(hive::chain::database& db, const char* context)
 {
 
 
-  
+  wlog("mtlk void init");  
   
 
   static auto stop_in_init = false;
@@ -2396,30 +2396,62 @@ extern "C" int consume_json_block_impl(const char *json_block, const char* conte
 namespace hive { namespace app {
 
 
+static volatile auto stop_in_collect_current_all_accounts_balances = false;
+
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
+  wlog("mtlk inside  pid=${pid}", ("pid", getpid()));
 
   // dlog("collect_current_all_accounts_balances started mtlk pid=${pid}", ("pid", getpid()));
 
+
+  while(stop_in_collect_current_all_accounts_balances)
+  {
+    int a= 0;
+    a =a;
+  }
 
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
 
 
 
   hive::plugins::database_api::list_accounts_args args;
-  args.start = "";
-  args.limit = 10;
-  args.order = hive::plugins::database_api::by_name;
-  hive::plugins::database_api::list_accounts_return db_api_impl_result = db_api_impl.list_accounts(args);
   
   collected_account_balances_collection_t r;
+ 
+  
+  args.start = "";
+  args.limit = 5;
+  args.order = hive::plugins::database_api::by_name;
 
-  for(const auto& a : db_api_impl_result.accounts)
-  {
-    collected_account_balances_t e;
-    e.account_name = a.name;
-    e.balance = a.balance.amount.value;
-    r.emplace_back(e);
+   wlog("mtlk args.start=${start}", ("start", args.start));
+
+  while(true)
+  { 
+    hive::plugins::database_api::list_accounts_return db_api_impl_result = db_api_impl.list_accounts(args);
+    if(db_api_impl_result.accounts.empty())
+      break;
+
+    int cnt = 0;
+    for(const auto& a : db_api_impl_result.accounts)
+    {
+      collected_account_balances_t e;
+      e.account_name = a.name;
+      e.balance = a.balance.amount.value;
+      wlog("mtlk e.account_name=${name} e.balance=${balance}", ("name", e.account_name)("balance" , e.balance) );
+      r.emplace_back(e);
+      cnt++;
+    }
+
+
+
+    args.start = db_api_impl_result.accounts[db_api_impl_result.accounts.size() - 1].name;
+
+    wlog("mtlk args.start=${start} ${cnt}", ("start", args.start)("cnt", cnt));
+
+    if(cnt < args.limit)
+      break;
+
   }
 
   // const auto& account_idx = get_index< chain::account_index >().indices().get< chain::by_id >();
