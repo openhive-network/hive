@@ -229,9 +229,14 @@ void database::open( const open_args& args, const std::string& context )
 
 void database::initialize_state_independent_data(const open_args& args)
 {
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
+
   initialize_indexes();
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
   initialize_evaluators();
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
   initialize_irreversible_storage();
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   if(!find< dynamic_global_property_object >())
   {
@@ -240,6 +245,7 @@ void database::initialize_state_independent_data(const open_args& args)
       init_genesis(args.initial_supply, args.hbd_initial_supply);
     });
   }
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   _benchmark_dumper.set_enabled(args.benchmark_is_enabled);
   if( _benchmark_dumper.is_enabled() &&
@@ -247,6 +253,7 @@ void database::initialize_state_independent_data(const open_args& args)
   {
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   if(!args.postgres_not_block_log)
   {
@@ -257,18 +264,23 @@ void database::initialize_state_independent_data(const open_args& args)
       _block_log.set_compression_level(args.block_log_compression_level);
     });
   }
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
   
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
   /// Initialize all static (state independent) specific to hardforks
   init_hardforks();
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 }
 
 void database::load_state_initial_data(const open_args& args)
 {
+
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
+
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   FC_ASSERT(hb >= last_irreversible_block);
 
@@ -278,13 +290,18 @@ void database::load_state_initial_data(const open_args& args)
   with_write_lock([&]() {
     ilog("Attempting to rewind all undo state...");
 
+    wlog("mtlk revision()= ${rev}", ("rev", revision()));
+
     undo_all();
+
+    wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
     ilog("Rewind undo state done.");
 
     uint32_t new_hb = head_block_num();
     notify_switch_fork( new_hb );
 
+    wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
     FC_ASSERT(new_hb >= last_irreversible_block);
 
@@ -293,6 +310,8 @@ void database::load_state_initial_data(const open_args& args)
     ilog("Blockchain state database is AT IRREVERSIBLE state specific to head block: ${hb} and LIB: ${lb}",
          ("hb", decorate_number_with_upticks(head_block_num()))("lb", decorate_number_with_upticks(this->get_last_irreversible_block_num())));
   
+    wlog("mtlk revision()= ${rev}", ("rev", revision()));
+
     if (args.chainbase_flags & chainbase::skip_env_check)
     {
       set_revision(head_block_num());
@@ -4032,7 +4051,12 @@ void initialize_core_indexes( database& db );
 
 void database::initialize_indexes()
 {
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
+
   initialize_core_indexes( *this );
+
+  wlog("mtlk revision()= ${rev}", ("rev", revision()));
+
   _plugin_index_signal();
 }
 
@@ -4046,6 +4070,8 @@ void database::initialize_irreversible_storage()
 void database::resetState(const open_args& args)
 {
   wipe(args.data_dir, args.shared_mem_dir, false);
+int * a =0;
+    *a =7;
   open(args, "");
 }
 

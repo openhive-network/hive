@@ -2202,6 +2202,8 @@ hive::plugins::database_api::database_api_impl& database_api_impl_init(hive::cha
 }
 
 
+static volatile auto stop_in_init = false;
+
 void init(hive::chain::database& db, const char* context)
 {
 
@@ -2209,7 +2211,6 @@ void init(hive::chain::database& db, const char* context)
   wlog("mtlk void init");  
   
 
-  static auto stop_in_init = false;
   while(stop_in_init)
   {
     int a = 0;
