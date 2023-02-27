@@ -2389,6 +2389,8 @@ extern "C" int consume_json_block_impl(const char *json_block, const char* conte
 
   db.clear_tx_status();
 
+  db.mtlk_chainbase_check_dynamic_global_property_index();
+
   return expected_block_num;
 }
 

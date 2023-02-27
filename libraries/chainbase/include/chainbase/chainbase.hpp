@@ -1321,6 +1321,8 @@ namespace chainbase {
       bool get_is_open() const
         { return _is_open; }
 
+    public:
+      void mtlk_chainbase_check_dynamic_global_property_index();
     private:
       template<typename MultiIndexType>
       void add_index_helper() {
