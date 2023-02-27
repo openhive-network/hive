@@ -18,7 +18,7 @@
 
 namespace fs = std::filesystem;
 
-bool g_postgres_not_block_log = false;
+extern bool g_postgres_not_block_log;
 
 
 namespace hive { namespace plugins { namespace database_api {
