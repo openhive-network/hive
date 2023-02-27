@@ -8,7 +8,7 @@
 bool g_postgres_not_block_log = false;
 
 
-void mtlk_check_dynamic_global_property_index(std::unique_ptr<boost::interprocess::managed_mapped_file>& _segment);
+//void mtlk_check_dynamic_global_property_index(std::unique_ptr<boost::interprocess::managed_mapped_file>& _segment);
 
 namespace chainbase {
 
@@ -151,7 +151,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   
   void database::mtlk_chainbase_check_dynamic_global_property_index()
   {
-          mtlk_check_dynamic_global_property_index(_segment);
+          //mtlk_check_dynamic_global_property_index(_segment);
   }
 
   static volatile auto stop_in_chainbase_open = false;
