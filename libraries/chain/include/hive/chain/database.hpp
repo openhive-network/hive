@@ -185,7 +185,7 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      void open( const open_args& args, const std::string& context  );
+      void open( const open_args& args, const std::string& context = "" );
 
     private:
 
