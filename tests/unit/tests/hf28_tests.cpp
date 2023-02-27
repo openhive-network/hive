@@ -465,6 +465,106 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28 )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
+{
+  try
+  {
+    /*
+      Following test has stages:
+      a) create some `update_proposal_votes_operation`
+      b) create some `decline_voting_rights`
+      c) change MANUALLY(!) `can_vote` in some `decline_voting_rights_request_object` objects
+      c) call MANUALLY(!) `db.remove_proposal_votes_for_accounts_without_voting_rights`
+      d) wait for removing proposal votes in the same block
+    */
+    auto _content = []( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: It's necessary to remove proposal votes for accounts that declined voting rights" );
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+      ACTORS_EXT( (*executor), (alice)(bob)(carol)(diana) );
+      executor->generate_block();
+
+      struct account_data
+      {
+        std::string           name;
+        fc::ecc::private_key  key;
+      };
+      std::vector<account_data> _actors = { { "alice", alice_private_key }, { "bob", bob_private_key }, { "carol", carol_private_key }, { "diana", diana_private_key } };
+      for( auto& actor : _actors )
+      {
+        executor->fund( actor.name, 100000 );
+        executor->fund( actor.name, ASSET( "200.000 TBD" ) );
+        executor->vest( actor.name, 100000 );
+      }
+      executor->generate_block();
+
+      dhf_database dhf_db( *executor.get() );
+      dhf_database::create_proposal_data cpd( executor->db->head_block_time() );
+
+      BOOST_TEST_MESSAGE( "Create 'create_proposal_operation'" );
+      int64_t _id_proposal = dhf_db.create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
+      executor->generate_block();
+
+      BOOST_TEST_MESSAGE( "Create some `update_proposal_votes_operation`" );
+      for( auto& actor : _actors )
+      {
+        dhf_db.vote_proposal( actor.name, { _id_proposal }, true, actor.key );
+        executor->generate_block();
+      }
+
+      BOOST_TEST_MESSAGE( "Create some 'decline_voting_rights'" );
+      for( auto& actor : _actors )
+      {
+        decline_voting_rights_operation op;
+        op.account = actor.name;
+        op.decline = true;
+
+        signed_transaction tx;
+        tx.operations.push_back( op );
+        tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+        executor->push_transaction( tx, actor.key );
+
+        executor->generate_blocks( 2 );
+      }
+      BOOST_TEST_MESSAGE( "Change `can_vote` in some `decline_voting_rights_request_object` objects" );
+      {
+        auto& _account = executor->db->get_account( _actors[0].name );
+        executor->db->modify( _account, [&]( account_object& account )
+        {
+          account.can_vote = false;
+        } );
+      }
+      {
+        auto& _account = executor->db->get_account( _actors[2].name );
+        executor->db->modify( _account, [&]( account_object& account )
+        {
+          account.can_vote = false;
+        } );
+      }
+
+      BOOST_TEST_MESSAGE( "Call `db.remove_proposal_votes_for_accounts_without_voting_rights`" );
+      executor->db->remove_proposal_votes_for_accounts_without_voting_rights();
+
+      BOOST_TEST_MESSAGE( "All actors must have proposal votes" );
+      for( auto& actor : _actors )
+        BOOST_REQUIRE( dhf_db.find_vote_for_proposal( actor.name, _id_proposal ) == true );
+
+      executor->generate_block();
+
+      BOOST_TEST_MESSAGE( "Some actors have proposal votes some don't" );
+      BOOST_REQUIRE( dhf_db.find_vote_for_proposal( _actors[0].name, _id_proposal ) == false );
+      BOOST_REQUIRE( dhf_db.find_vote_for_proposal( _actors[1].name, _id_proposal ) == true );
+      BOOST_REQUIRE( dhf_db.find_vote_for_proposal( _actors[2].name, _id_proposal ) == false );
+      BOOST_REQUIRE( dhf_db.find_vote_for_proposal( _actors[3].name, _id_proposal ) == true );
+    };
+
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
