@@ -808,16 +808,13 @@ struct proxy_cleared_operation : public virtual_operation
 };
 
 /*
-  Before:
-    An account that used the `decline_voting_rights` operation and waited the required time wasn't informed that the operation has been processed.
-
-  Now:
-    It is generated after `HIVE_OWNER_AUTH_RECOVERY_PERIOD` interval and then some actions are done and `declined_voting_rights` is created.
+  It's related to `decline_voting_rights_operation` and generated after `HIVE_OWNER_AUTH_RECOVERY_PERIOD` interval.
+  Then some actions are done and after that `declined_voting_rights_operation` is created.
 */
-struct declined_voting_rights : public virtual_operation
+struct declined_voting_rights_operation : public virtual_operation
 {
-  declined_voting_rights() = default;
-  declined_voting_rights( const account_name_type& account )
+  declined_voting_rights_operation() = default;
+  declined_voting_rights_operation( const account_name_type& account )
     : account( account )
   {}
 
@@ -868,4 +865,4 @@ FC_REFLECT( hive::protocol::collateralized_convert_immediate_conversion_operatio
 FC_REFLECT( hive::protocol::escrow_approved_operation, (from)(to)(agent)(escrow_id)(fee) )
 FC_REFLECT( hive::protocol::escrow_rejected_operation, (from)(to)(agent)(escrow_id)(hbd_amount)(hive_amount)(fee) )
 FC_REFLECT( hive::protocol::proxy_cleared_operation, (account)(proxy) )
-FC_REFLECT( hive::protocol::declined_voting_rights, (account) )
+FC_REFLECT( hive::protocol::declined_voting_rights_operation, (account) )

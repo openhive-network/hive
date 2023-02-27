@@ -21,7 +21,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
 
     auto _content = [&is_hf28]( ptr_hardfork_database_fixture& executor )
     {
-        BOOST_TEST_MESSAGE( "Testing: 'declined_voting_rights' virtual operation" );
+        BOOST_TEST_MESSAGE( "Testing: 'declined_voting_rights_operation'" );
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
         ACTORS_EXT( (*executor), (alice)(bob) );
@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
         executor->vest( "alice", 1000 );
         executor->vest( "bob", 1000 );
 
-        BOOST_TEST_MESSAGE( "--- Generating 'declined_voting_rights' virtual operation" );
+        BOOST_TEST_MESSAGE( "--- Generating 'declined_voting_rights_operation'" );
 
         account_witness_proxy_operation op;
         op.account = "alice";
@@ -68,10 +68,10 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
         auto recent_ops = executor->get_last_operations( 1 );
 
         /*
-            It doesn't matter which HF is - since vop `declined_voting_rights` was introduced, it should be always generated.
+            It doesn't matter which HF is - since vop `declined_voting_rights_operation` was introduced, it should be always generated.
             Before HF28, a last vop was `proxy_cleared_operation`.
         */
-        auto recent_op = recent_ops.back().get< declined_voting_rights >();
+        auto recent_op = recent_ops.back().get< declined_voting_rights_operation >();
         BOOST_REQUIRE( recent_op.account == "alice" );
     };
 
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic_2 )
 
     auto _content = [ &is_hf28 ]( ptr_hardfork_database_fixture& executor )
     {
-        BOOST_TEST_MESSAGE( "Testing: 'declined_voting_rights' is created twice" );
+        BOOST_TEST_MESSAGE( "Testing: 'declined_voting_rights_operation' is created twice" );
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
         ACTORS_EXT( (*executor), (alice) );
@@ -217,7 +217,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
 
     auto _content = [ &is_hf28 ]( ptr_hardfork_database_fixture& executor )
     {
-      BOOST_TEST_MESSAGE( "Testing: create 'decline_voting_rights'. When 'declined_voting_rights' is generated, an user tries to cast a vote on proposal" );
+      BOOST_TEST_MESSAGE( "Testing: create 'decline_voting_rights'. When 'declined_voting_rights_operation' is generated, an user tries to cast a vote on proposal" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
       ACTORS_EXT( (*executor), (alice)(bob) );
