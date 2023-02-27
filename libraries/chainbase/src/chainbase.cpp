@@ -156,7 +156,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   static volatile auto stop_in_chainbase_open = false;
 
-  void database::open(const std::string& context, const bfs::path& shared_mem_dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file)
+  void database::open(const bfs::path& shared_mem_dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, const std::string& context)
   {
 
     if(g_postgres_not_block_log)
@@ -301,7 +301,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _segment.reset();
     _meta.reset();
 
-    open("", _data_dir, 0, new_shared_file_size );
+    open(_data_dir, 0, new_shared_file_size );
 
     wipe_indexes();
 
