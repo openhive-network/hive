@@ -7,6 +7,9 @@
 
 extern bool g_postgres_not_block_log;
 
+
+void mtlk_check_dynamic_global_property_index(std::unique_ptr<boost::interprocess::managed_mapped_file>& _segment);
+
 namespace chainbase {
 
 size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache_max_size() const
@@ -146,6 +149,11 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   };
 
   
+  void database::mtlk_chainbase_check_dynamic_global_property_index()
+  {
+          mtlk_check_dynamic_global_property_index(_segment);
+  }
+
   static volatile auto stop_in_chainbase_open = false;
 
   void database::open(const std::string& context, const bfs::path& shared_mem_dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file)
@@ -226,6 +234,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                       ) );
       _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
     }
+
+    mtlk_chainbase_check_dynamic_global_property_index();
+
 
     auto env = _segment->find< environment_check >( "environment" );
     if( environment_extension )
