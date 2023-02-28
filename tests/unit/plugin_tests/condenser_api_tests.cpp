@@ -84,6 +84,122 @@ struct condenser_api_fixture : database_fixture
 
   hive::plugins::condenser_api::condenser_api* condenser_api = nullptr;
   hive::plugins::account_history::account_history_api* account_history_api = nullptr;
+
+  // Below are testing scenarios that trigger pushing different operations in the block(s).
+  // Each scenario is intended to be used by several tests (e.g. tests on get_ops_in_block/get_transaction/get_account_history)
+
+  typedef std::function < void() > check_point_tester_t;
+
+  /** 
+   * Tests the operations that happen only on hardfork 1 - vesting_shares_split_operation & system_warning_operation (block 21)
+   * Also tests: hardfork_operation & producer_reward_operation
+  */
+  void hf1_scenario( check_point_tester_t check_point_tester )
+  {
+    generate_block();
+    
+    // Set first hardfork to test virtual operations that happen only there.
+    db->set_hardfork( HIVE_HARDFORK_0_1 );
+    generate_block();
+
+    check_point_tester();
+  }
+
+  /** 
+   * Tests pow_operation that needs hardfork lower than 13.
+   * Also tests: pow_reward_operation, account_created_operation, comment_operation (see database_fixture::create_with_pow) & producer_reward_operation.
+  */
+  void hf12_scenario( check_point_tester_t check_point_tester )
+  {
+    db->set_hardfork( HIVE_HARDFORK_0_12 );
+    generate_block();
+
+    PREP_ACTOR( carol0ah )
+    create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
+
+    check_point_tester();
+  }
+
+  /**
+   * Tests operations that need hardfork lower than 20:
+   *  pow2_operation (< hf17), ineffective_delete_comment_operation (< hf19) & account_create_with_delegation_operation (< hf20)
+   * Also tests: 
+   *  account_created_operation, pow_reward_operation, transfer_operation, comment_operation, comment_options_operation,
+   *  vote_operation, effective_comment_vote_operation, delete_comment_operation & producer_reward_operation
+   */
+  void hf13_scenario( check_point_tester_t check_point_1_tester, check_point_tester_t check_point_2_tester )
+  {
+  db->set_hardfork( HIVE_HARDFORK_0_13 );
+  vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
+  generate_block();
+  
+  PREP_ACTOR( dan0ah )
+  create_with_pow2( "dan0ah", dan0ah_public_key, dan0ah_private_key );
+
+  PREP_ACTOR( edgar0ah )
+  create_with_delegation( HIVE_INIT_MINER_NAME, "edgar0ah", edgar0ah_public_key, edgar0ah_post_key, ASSET( "100000000.000000 VESTS" ), init_account_priv_key );
+
+  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
+  set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_100_PERCENT, true, true, edgar0ah_private_key );
+
+  check_point_1_tester();
+
+  vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
+  delete_comment( "edgar0ah", "permlink1", edgar0ah_private_key );
+
+  check_point_2_tester();
+  }
+
+  /**
+   * Operations tested here:
+   *  curation_reward_operation, author_reward_operation, comment_reward_operation, comment_payout_update_operation, dhf_funding_operation,
+   *  claim_reward_balance_operation, producer_reward_operation
+   */  
+  void comment_and_reward_scenario( check_point_tester_t check_point_1_tester, check_point_tester_t check_point_2_tester )
+  {
+    db->set_hardfork( HIVE_HARDFORK_1_27 );
+    generate_block();
+    
+    ACTORS( (dan0ah)(edgar0ah) );
+
+    post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
+    vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
+
+    check_point_1_tester();
+
+    claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
+
+    check_point_2_tester();
+  }
+
+  /**
+   * Operations tested here:
+   *  convert_operation, collateralized_convert_operation, collateralized_convert_immediate_conversion_operation,
+   *  limit_order_create_operation, limit_order_create2_operation, limit_order_cancel_operation, limit_order_cancelled_operation,
+   *  producer_reward_operation,
+   *  fill_convert_request_operation, fill_collateralized_convert_request_operation
+   */  
+  void convert_and_limit_order_scenario( check_point_tester_t check_point_tester )
+  {
+    db->set_hardfork( HIVE_HARDFORK_1_27 );
+    generate_block();
+
+    ACTORS( (edgar3ah)(carol3ah) );
+    generate_block();
+
+    fund( "edgar3ah", ASSET( "300.000 TBD" ) );
+    fund( "carol3ah", ASSET( "300.000 TESTS" ) );
+    generate_block();
+
+    convert_hbd_to_hive( "edgar3ah", 0, ASSET( "11.201 TBD" ), edgar3ah_private_key );
+    collateralized_convert_hive_to_hbd( "carol3ah", 0, ASSET( "22.102 TESTS" ), carol3ah_private_key );
+    limit_order_create( "carol3ah", ASSET( "11.400 TESTS" ), ASSET( "11.650 TBD" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 1, carol3ah_private_key );
+    limit_order2_create( "carol3ah", ASSET( "22.075 TESTS" ), price( ASSET( "0.010 TESTS" ), ASSET( "0.010 TBD" ) ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 2, carol3ah_private_key );
+    limit_order_cancel( "carol3ah", 1, carol3ah_private_key );
+
+    check_point_tester();
+  }
+
 };
 
 BOOST_FIXTURE_TEST_SUITE( condenser_api_tests, condenser_api_fixture );
@@ -410,24 +526,15 @@ void test_get_ops_in_block( condenser_api_fixture& caf, const expected_t& expect
   BOOST_REQUIRE_THROW( caf.condenser_api->get_ops_in_block({block_num, false /*only_virtual*/, 0 /*redundant arg*/}), fc::assert_exception );
 }
 
-BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf1 )
+BOOST_AUTO_TEST_CASE( get_ops_in_block_hf1 )
 { try {
 
-  BOOST_TEST_MESSAGE( "testing operations on HF1" );
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block on operations of HF1" );
 
-  // The containers for the kinds of operations that we expect to be found in blocks.
-  // We'll use it to be sure that all kind of operations have been used during testing.
-  expected_t expected_operations;
-  expected_t expected_virtual_operations;
-
-  generate_block();
-  
-  // Set first hardfork to test virtual operations that happen only there.
-  db->set_hardfork( HIVE_HARDFORK_0_1 );
-  generate_block();
-
+  auto check_point_tester = [ this ]()
+  {
   // Let's check operation that happens only on first hardfork:
-  expected_operations = { { // producer_reward_operation / goes to initminer (in vests)
+    expected_t expected_operations = { { // producer_reward_operation / goes to initminer (in vests)
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["producer_reward",{"producer":"initminer","vesting_shares":"1.000 TESTS"}]})~"
     }, { // hardfork_operation / HF1
@@ -438,11 +545,8 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf1 )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["vesting_shares_split",{"owner":"initminer","vesting_shares_before_split":"1.000000 VESTS","vesting_shares_after_split":"1000000.000000 VESTS"}]})~"
     } }; 
   generate_until_irreversible_block( 2 );
-
   // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
   test_get_ops_in_block( *this, expected_operations, expected_operations, 2 );
-  test_get_transaction( *this, 2 ); // <- TODO: Enhance with patterns and possibly move to separate test.
-
 
   // In block 21 maximum block size is being changed:
   expected_operations = { { // system_warning_operation
@@ -455,34 +559,42 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf1 )
   generate_until_irreversible_block( 21 );
   // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
   test_get_ops_in_block( *this, expected_operations, expected_operations, 21 );
-  test_get_transaction( *this, 21 ); // <- TODO: Enhance with patterns and possibly move to separate test.
+  };
+
+  hf1_scenario( check_point_tester );
 
 } FC_LOG_AND_RETHROW() }
 
-
-BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf12 )
+BOOST_AUTO_TEST_CASE( get_transaction_hf1 )
 { try {
 
-  BOOST_TEST_MESSAGE( "testing operations on HF12" );
+  BOOST_TEST_MESSAGE( "testing get_transaction on operations of HF1" );
 
-  // Following operations need hardfork lower than 13 to be tested:
-  // pow_operation < HIVE_HARDFORK_0_13__256
-  // pow_reward_operation < HIVE_HARDFORK_0_16__551
+  auto check_point_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 2 );
+    test_get_transaction( *this, 2 ); // <- TODO: Enhance with patterns
 
-  // The containers for the kinds of operations that we expect to be found in blocks.
-  // We'll use it to be sure that all kind of operations have been used during testing.
-  expected_t expected_operations;
-  expected_t expected_virtual_operations;
+    // In block 21 maximum block size is being changed:
+    generate_until_irreversible_block( 21 );
+    test_get_transaction( *this, 21 ); // <- TODO: Enhance with patterns
+  };
 
-  // Set low hardfork to allow testing of obsolete operations
-  db->set_hardfork( HIVE_HARDFORK_0_12 );
-  generate_block();
+  hf1_scenario( check_point_tester );
 
-  PREP_ACTOR( carol0ah )
-  create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
+} FC_LOG_AND_RETHROW() }
 
+// TODO create get_account_history_hf1 test here
+
+BOOST_AUTO_TEST_CASE( get_ops_in_block_hf12 )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with hf12_scenario" );
+
+  auto check_point_tester = [ this ]()
+  {
   // Check the operations spawned by pow (3rd block).
-  expected_operations = { { // pow_operation / creating carol0ah account
+    expected_t expected_operations = { { // pow_operation / creating carol0ah account
     R"~({"trx_id":"956eed17475ccab15529691d0e43e61bd83e0167","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"pow_operation","value":{"worker_account":"carol0ah","block_id":"000000029182c87b08eb70059f4bdc22352cbfdb","nonce":40,"work":{"worker":"TST5Mwq5o6BruTVbCcxkqVKL4eeRm3Jrs5fjRGHshvGUj29FPh7Yr","input":"4e4ee151ae1b5317e0fa9835b308163b5fce6ba4b836ecd7dac90acbae5d477a","signature":"208e93e1810b5716c9725fb7e487c271d1eb7bd5674cc5bfb79c01a52b581b269777195d5e3d59750cdf3c10353d77373bfcf6393541cfa1411aa196097cdf90ed","work":"000bae328972f541f9fb4b8a07c52fe15005117434c597c7b37e320397036586"},"props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}},"operation_id":0})~",
     R"~({"trx_id":"956eed17475ccab15529691d0e43e61bd83e0167","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["pow",{"worker_account":"carol0ah","block_id":"000000029182c87b08eb70059f4bdc22352cbfdb","nonce":40,"work":{"worker":"TST5Mwq5o6BruTVbCcxkqVKL4eeRm3Jrs5fjRGHshvGUj29FPh7Yr","input":"4e4ee151ae1b5317e0fa9835b308163b5fce6ba4b836ecd7dac90acbae5d477a","signature":"208e93e1810b5716c9725fb7e487c271d1eb7bd5674cc5bfb79c01a52b581b269777195d5e3d59750cdf3c10353d77373bfcf6393541cfa1411aa196097cdf90ed","work":"000bae328972f541f9fb4b8a07c52fe15005117434c597c7b37e320397036586"},"props":{"account_creation_fee":"0.000 TESTS","maximum_block_size":131072,"hbd_interest_rate":1000}}]})~"
     }, { // account_created_operation
@@ -498,43 +610,40 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf12 )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":3,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:09","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":3,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:09","op":["producer_reward",{"producer":"initminer","vesting_shares":"1.000 TESTS"}]})~"
     } };
-  expected_virtual_operations = { expected_operations[1], expected_operations[2], expected_operations[4] };
+    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[2], expected_operations[4] };
   generate_until_irreversible_block( 3 );
   test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 3 );
-  test_get_transaction( *this, 3 ); // <- TODO: Enhance with patterns and possibly move to separate test.
+  };
+
+  hf12_scenario( check_point_tester );
 
 } FC_LOG_AND_RETHROW() }
 
-BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf13 )
+BOOST_AUTO_TEST_CASE( get_transaction_hf12 )
 { try {
 
-  BOOST_TEST_MESSAGE( "testing operations on HF13" );
+  BOOST_TEST_MESSAGE( "testing get_transaction with hf12_scenario" );
 
-  // Following operations need lower hardfork set to be tested:
-  // pow2_operation < HIVE_HARDFORK_0_17__770
-  // ineffective_delete_comment_operation < HIVE_HARDFORK_0_19__977
-  // account_create_with_delegation_operation < HIVE_HARDFORK_0_20__1760
+  auto check_point_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 3 );
+    test_get_transaction( *this, 3 ); // <- TODO: Enhance with patterns
+  };
 
-  // The containers for the kinds of operations that we expect to be found in blocks.
-  // We'll use it to be sure that all kind of operations have been used during testing.
-  expected_t expected_operations;
-  expected_t expected_virtual_operations;
+  hf12_scenario( check_point_tester );
 
-  // Set low hardfork to allow testing of obsolete operations
-  db->set_hardfork( HIVE_HARDFORK_0_13 );
-  vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
-  generate_block();
-  
-  PREP_ACTOR( dan0ah )
-  create_with_pow2( "dan0ah", dan0ah_public_key, dan0ah_private_key );
+} FC_LOG_AND_RETHROW() }
 
-  PREP_ACTOR( edgar0ah )
-  create_with_delegation( HIVE_INIT_MINER_NAME, "edgar0ah", edgar0ah_public_key, edgar0ah_post_key, ASSET( "100000000.000000 VESTS" ), init_account_priv_key );
+// TODO create get_account_history_hf12 test here
 
-  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
-  set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_100_PERCENT, true, true, edgar0ah_private_key );
+BOOST_AUTO_TEST_CASE( get_ops_in_block_hf13 )
+{ try {
 
-  expected_operations = { { // pow2_operation / first obsolete operation tested here.
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with hf13_scenario" );
+
+  auto check_point_1_tester = [ this ]()
+  {
+    expected_t expected_operations = { { // pow2_operation / first obsolete operation tested here.
     R"~({"trx_id":"c649b3841e8fa1e6d5f1a6874348d82fb56c5e73","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"pow2_operation","value":{"work":{"type":"pow2","value":{"input":{"worker_account":"dan0ah","prev_block":"00000002d94d15f9cc478a673e0122183f10f09b","nonce":9},"pow_summary":4132180148}},"new_owner_key":"TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}},"operation_id":0})~",
     R"~({"trx_id":"c649b3841e8fa1e6d5f1a6874348d82fb56c5e73","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["pow2",{"work":["pow2",{"input":{"worker_account":"dan0ah","prev_block":"00000002d94d15f9cc478a673e0122183f10f09b","nonce":9},"pow_summary":4132180148}],"new_owner_key":"TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","props":{"account_creation_fee":"0.000 TESTS","maximum_block_size":131072,"hbd_interest_rate":1000}}]})~"
     }, { // account_created_operation
@@ -562,15 +671,14 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf13 )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":3,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:09","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":3,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:09","op":["producer_reward",{"producer":"initminer","vesting_shares":"1.000 TESTS"}]})~"
     } };
-  expected_virtual_operations = { expected_operations[1], expected_operations[2], expected_operations[5], expected_operations[8] };
+    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[2], expected_operations[5], expected_operations[8] };
   generate_until_irreversible_block( 3 );
   test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 3 );
-  test_get_transaction( *this, 3 ); // <- TODO: Enhance with patterns and possibly move to separate test.
+  };
 
-  vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
-  delete_comment( "edgar0ah", "permlink1", edgar0ah_private_key );
-
-  expected_operations = { { // vote_operation
+  auto check_point_2_tester = [ this ]()
+  {
+    expected_t expected_operations = { { // vote_operation
     R"~({"trx_id":"a9fcfc9ce8dabd6e47e7f2e0ce0b24ab03aa1611","block":25,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:12","op":{"type":"vote_operation","value":{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":10000}},"operation_id":0})~",
     R"~({"trx_id":"a9fcfc9ce8dabd6e47e7f2e0ce0b24ab03aa1611","block":25,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:12","op":["vote",{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":10000}]})~"
     }, { // effective_comment_vote_operation
@@ -586,33 +694,47 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_hf13 )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":25,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:15","op":{"type":"producer_reward_operation","value":{"producer":"dan0ah","vesting_shares":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":25,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:15","op":["producer_reward",{"producer":"dan0ah","vesting_shares":"1.000 TESTS"}]})~"
     } };
-  expected_virtual_operations = { expected_operations[1], expected_operations[3], expected_operations[4] };
+    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[3], expected_operations[4] };
   generate_until_irreversible_block( 25 );
   test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 25 );
-  test_get_transaction( *this, 25 ); // <- TODO: Enhance with patterns and possibly move to separate test.
+  };
+
+  hf13_scenario( check_point_1_tester, check_point_2_tester );
 
 } FC_LOG_AND_RETHROW() }
 
-BOOST_AUTO_TEST_CASE( account_history_by_condenser_comment_and_reward )
+BOOST_AUTO_TEST_CASE( get_transaction_hf13 )
 { try {
 
-  BOOST_TEST_MESSAGE( "testing comments, vote & reward operations" );
+  BOOST_TEST_MESSAGE( "testing get_transaction with hf13_scenario" );
 
-  // The containers for the kinds of operations that we expect to be found in blocks.
-  // We'll use it to be sure that all kind of operations have been used during testing.
-  expected_t expected_operations;
-  expected_t expected_virtual_operations;
+  auto check_point_1_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 3 );
+    test_get_transaction( *this, 3 ); // <- TODO: Enhance with patterns
+  };
 
-  db->set_hardfork( HIVE_HARDFORK_1_27 );
-  generate_block();
-  
-  ACTORS( (dan0ah)(edgar0ah) );
+  auto check_point_2_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 25 );
+    test_get_transaction( *this, 25 ); // <- TODO: Enhance with patterns
+  };
 
-  post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
-  vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
+  hf13_scenario( check_point_1_tester, check_point_2_tester );
 
-  // Check virtual operations resulting from above actions some 1200 blocks later:
-  expected_operations = { { // producer_reward_operation
+} FC_LOG_AND_RETHROW() }
+
+// TODO Create get_account_history_hf13 here
+
+BOOST_AUTO_TEST_CASE( get_ops_in_block_comment_and_reward )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with comment_and_reward_scenario" );
+
+  // Check virtual operations resulting from scenario's 1st set of actions some blocks later:
+  auto check_point_1_tester = [ this ]()
+  {
+    expected_t expected_operations = { { // producer_reward_operation
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"127627863909","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":["producer_reward",{"producer":"initminer","vesting_shares":"127627.863909 VESTS"}]})~"
     }, { // curation_reward_operation
@@ -634,51 +756,60 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_comment_and_reward )
   generate_until_irreversible_block( 1202 );
   // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
   test_get_ops_in_block( *this, expected_operations, expected_operations, 1202 );
-  test_get_transaction( *this, 1202 ); // <- TODO: Enhance with patterns and possibly move to separate test.
+  };
 
-  claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
-
-  expected_operations = { { // claim_reward_balance_operation
+  // Check operations resulting from 2nd set of actions:
+  auto check_point_2_tester = [ this ]()
+  { 
+    expected_t expected_operations = { { // claim_reward_balance_operation
     R"~({"trx_id":"c4b7652419fa28a0de75c0f4ca4490f29b3f2148","block":1203,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T01:00:06","op":{"type":"claim_reward_balance_operation","value":{"account":"edgar0ah","reward_hive":{"amount":"0","precision":3,"nai":"@@000000021"},"reward_hbd":{"amount":"12502","precision":3,"nai":"@@000000013"},"reward_vests":{"amount":"80000000","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
     R"~({"trx_id":"c4b7652419fa28a0de75c0f4ca4490f29b3f2148","block":1203,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T01:00:06","op":["claim_reward_balance",{"account":"edgar0ah","reward_hive":"0.000 TESTS","reward_hbd":"12.502 TBD","reward_vests":"80.000000 VESTS"}]})~"
     }, { // producer_reward_operation
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":1203,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:09","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"127622114734","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":1203,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:09","op":["producer_reward",{"producer":"initminer","vesting_shares":"127622.114734 VESTS"}]})~"
     } };
-  expected_virtual_operations = { expected_operations[1] };
+    expected_t expected_virtual_operations = { expected_operations[1] };
   generate_until_irreversible_block( 1203 );
   test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 1203 );
-  test_get_transaction( *this, 1203 ); // <- TODO: Enhance with patterns and possibly move to separate test.
+  };
+
+  comment_and_reward_scenario( check_point_1_tester, check_point_2_tester );
 
 } FC_LOG_AND_RETHROW() }
 
-BOOST_AUTO_TEST_CASE( account_history_by_condenser_convert_and_limit_order )
+BOOST_AUTO_TEST_CASE( get_transaction_comment_and_reward )
 { try {
 
-  BOOST_TEST_MESSAGE( "testing conversion & limit order operations" );
+  BOOST_TEST_MESSAGE( "testing get_transaction with comment_and_reward_scenario" );
 
-  // The containers for the kinds of operations that we expect to be found in blocks.
-  // We'll use it to be sure that all kind of operations have been used during testing.
-  expected_t expected_operations;
-  expected_t expected_virtual_operations;
+  // Check virtual operations resulting from scenario's 1st set of actions some blocks later:
+  auto check_point_1_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 1202 );
+    test_get_transaction( *this, 1202 ); // <- TODO: Enhance with patterns
+  };
 
-  db->set_hardfork( HIVE_HARDFORK_1_27 );
-  generate_block();
+  // Check operations resulting from 2nd set of actions:
+  auto check_point_2_tester = [ this ]()
+  { 
+    generate_until_irreversible_block( 1203 );
+    test_get_transaction( *this, 1203 ); // <- TODO: Enhance with patterns
+  };
 
-  ACTORS( (edgar3ah)(carol3ah) );
-  generate_block();
+  comment_and_reward_scenario( check_point_1_tester, check_point_2_tester );
 
-  fund( "edgar3ah", ASSET( "300.000 TBD" ) );
-  fund( "carol3ah", ASSET( "300.000 TESTS" ) );
-  generate_block();
+} FC_LOG_AND_RETHROW() }
 
-  convert_hbd_to_hive( "edgar3ah", 0, ASSET( "11.201 TBD" ), edgar3ah_private_key );
-  collateralized_convert_hive_to_hbd( "carol3ah", 0, ASSET( "22.102 TESTS" ), carol3ah_private_key );
-  limit_order_create( "carol3ah", ASSET( "11.400 TESTS" ), ASSET( "11.650 TBD" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 1, carol3ah_private_key );
-  limit_order2_create( "carol3ah", ASSET( "22.075 TESTS" ), price( ASSET( "0.010 TESTS" ), ASSET( "0.010 TBD" ) ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 2, carol3ah_private_key );
-  limit_order_cancel( "carol3ah", 1, carol3ah_private_key );
+// TODO create get_account_history_comment_and_reward test here
 
-  expected_operations = { { // convert_operation
+BOOST_AUTO_TEST_CASE( get_ops_in_block_convert_and_limit_order )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with convert_and_limit_order_scenario" );
+
+  auto check_point_tester = [ this ]()
+  {
+    expected_t expected_operations = { { // convert_operation
     R"~({"trx_id":"6a79f548e62e1013e6fcbc7442f215cd7879f431","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"convert_operation","value":{"owner":"edgar3ah","requestid":0,"amount":{"amount":"11201","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
     R"~({"trx_id":"6a79f548e62e1013e6fcbc7442f215cd7879f431","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["convert",{"owner":"edgar3ah","requestid":0,"amount":"11.201 TBD"}]})~"
     }, { // collateralized_convert_operation
@@ -703,10 +834,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_convert_and_limit_order )
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8611634248","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
     R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["producer_reward",{"producer":"initminer","vesting_shares":"8611.634248 VESTS"}]})~"
     } };
-  expected_virtual_operations = { expected_operations[2], expected_operations[6], expected_operations[7] };
+    expected_t expected_virtual_operations = { expected_operations[2], expected_operations[6], expected_operations[7] };
   generate_until_irreversible_block( 5 );
   test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );
-  test_get_transaction( *this, 5 ); // <- TODO: Enhance with patterns and possibly move to separate test.
 
   // Check virtual operations spawned by the ones obove:
   expected_operations = { { // producer_reward_operation
@@ -722,7 +852,38 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_convert_and_limit_order )
   generate_until_irreversible_block( 1684 );
   // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
   test_get_ops_in_block( *this, expected_operations, expected_operations, 1684 );
-  test_get_transaction( *this, 1684 ); // <- TODO: Enhance with patterns and possibly move to separate test.
+  };
+
+  convert_and_limit_order_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
+BOOST_AUTO_TEST_CASE( get_transaction_convert_and_limit_order )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_transaction with convert_and_limit_order_scenario" );
+
+  auto check_point_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 5 );
+    test_get_transaction( *this, 5 ); // <- TODO: Enhance with patterns
+
+    generate_until_irreversible_block( 1684 );
+    test_get_transaction( *this, 1684 ); // <- TODO: Enhance with patterns
+  };
+
+  convert_and_limit_order_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
+BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_account_history with convert_and_limit_order_scenario" );
+
+  auto check_point_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 1684 );
 
   expected_t expected_carol3ah_history = { {
     R"~([0,{"trx_id":"99b3d543d8dbd7da66dc4939cea81138e9171073","block":3,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"carol3ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7jcq47bH93zcuTCdP394BYJLrhGWzyGwqkukB46zyFsghQPeoz",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7jcq47bH93zcuTCdP394BYJLrhGWzyGwqkukB46zyFsghQPeoz",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5kavbaHAVwb9mANYyUEubtGybsJ4zySnVrpdmpDM8pDRhKzyN3",1]]},"memo_key":"TST7jcq47bH93zcuTCdP394BYJLrhGWzyGwqkukB46zyFsghQPeoz","json_metadata":""}},"operation_id":0}])~",
@@ -778,6 +939,9 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_convert_and_limit_order )
     R"~([5,{"trx_id":"0000000000000000000000000000000000000000","block":1684,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:24:12","op":["fill_convert_request",{"owner":"edgar3ah","requestid":0,"amount_in":"11.201 TBD","amount_out":"11.201 TESTS"}]}])~"
     } };
   test_get_account_history( *this, { "carol3ah", "edgar3ah" }, { expected_carol3ah_history, expected_edgar3ah_history } );
+  };
+
+  convert_and_limit_order_scenario( check_point_tester );
 
 } FC_LOG_AND_RETHROW() }
   
