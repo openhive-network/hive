@@ -4070,8 +4070,6 @@ void database::initialize_irreversible_storage()
 void database::resetState(const open_args& args)
 {
   wipe(args.data_dir, args.shared_mem_dir, false);
-int * a =0;
-    *a =7;
   open(args, "");
 }
 
