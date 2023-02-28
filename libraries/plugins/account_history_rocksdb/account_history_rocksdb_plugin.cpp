@@ -1159,7 +1159,10 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
   uint32_t limit, uint32_t number_of_irreversible_ops, std::function<bool(unsigned int, const rocksdb_operation_object&)> processor) const
 {
   uint32_t count = 0;
-  if(number_of_irreversible_ops < start)
+  // switching from `<` to `<=` cover case when first operation for account is in reversible block
+  // set and user queried for start=0 and limit=1 and because this api returns: <start, start - limit)
+  // this is legit call
+  if(number_of_irreversible_ops <= start)
   {
     uint32_t collectedIrreversibleBlock = 0;
     uint32_t rangeBegin = _cached_irreversible_block;
@@ -1170,6 +1173,9 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
     auto reversibleOps = collectReversibleOps(&rangeBegin, &rangeEnd, &collectedIrreversibleBlock);
 
     std::vector<rocksdb_operation_object> ops_for_this_account;
+    ops_for_this_account.emplace_back(); // push empty, never reachable rocksdb op object, to gently shift index by one
+    const int start_offset = ops_for_this_account.size();
+    ops_for_this_account.reserve(reversibleOps.size() + ops_for_this_account.size());
     for(const auto& obj : reversibleOps)
     {
       hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
@@ -1178,10 +1184,19 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
         ops_for_this_account.push_back(obj);
     };
 
-    if( number_of_irreversible_ops + ops_for_this_account.size() < start )
-      start = number_of_irreversible_ops + ops_for_this_account.size();
+    // -2 is because of `size() - 1` gets last index of reversible ops and
+    // next -1 is because of extra element in vector
+    int64_t signed_start = static_cast<int64_t>(start);
+    const int64_t last_index_of_all_account_operations = std::max<int64_t>(0l, number_of_irreversible_ops + (ops_for_this_account.size() - 1l) - start_offset);
 
-    for(int i = start-number_of_irreversible_ops-1; i>=0; i--)
+    // this if protects from out_of_bound exception (e.x. start = static_cast<uint32_t>(-1))
+    if(start > last_index_of_all_account_operations)
+      signed_start = last_index_of_all_account_operations;
+
+    // offset by one because of one extra item
+    signed_start += start_offset;
+
+    for(int i = signed_start-number_of_irreversible_ops; i>=start_offset; i--)
     {
       rocksdb_operation_object oObj = ops_for_this_account[i];
       if(processor(number_of_irreversible_ops + i, oObj))
