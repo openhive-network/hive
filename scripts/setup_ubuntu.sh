@@ -56,7 +56,7 @@ install_all_dev_packages() {
 }
 
 preconfigure_faketime() {
-  git clone --depth 1 --branch master https://github.com/wolfcw/libfaketime.git
+  git clone --depth 1 --branch v0.9.10 https://github.com/wolfcw/libfaketime.git
   pushd libfaketime && make
 
   sudo make install # install it into default location path.
