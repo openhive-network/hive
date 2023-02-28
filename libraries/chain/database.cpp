@@ -5519,15 +5519,21 @@ const witness_object& database::validate_block_header( uint32_t skip, const std:
 { try {
   const signed_block_header& next_block_header = full_block->get_block_header();
 
-
-  if(head_block_id() != next_block_header.previous)
+  if(g_postgres_not_block_log)
   {
-    wlog(
-      "MTLK ASSERT for block_num=${block_num} head_block_id=${head_block_id} != next_block_header.previous=${next.prev}",
-      ("block_num", full_block->get_block_num() )
-      ("head_block_id", head_block_id())
-      ("next.prev", next_block_header.previous)
-    );
+    if(head_block_id() != next_block_header.previous)
+    {
+      wlog(
+        "MTLK ASSERT for block_num=${block_num} head_block_id=${head_block_id} != next_block_header.previous=${next.prev}",
+        ("block_num", full_block->get_block_num() )
+        ("head_block_id", head_block_id())
+        ("next.prev", next_block_header.previous)
+      );
+    }
+  }
+  else
+  {
+      FC_ASSERT( head_block_id() == next_block_header.previous, "", ("head_block_id", head_block_id())("next.prev", next_block_header.previous) );
   }
   
   // if(full_block->get_block_num() != 2726332 &&
