@@ -401,45 +401,19 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_SUITE_END() // condenser_api_tests
+
 // account history API -> where it's used in condenser API implementation
 //  get_ops_in_block -> get_ops_in_block
 //  get_transaction -> ditto get_transaction
 //  get_account_history -> ditto get_account_history
 //  enum_virtual_ops -> not used
 
-// TODO: Improve by comparing get_transaction results against patterns provided as additional argument.
-void test_get_transaction( const condenser_api_fixture& caf, uint32_t block_num )
-{
-  auto full_block_ptr = caf.db->fetch_block_by_number( block_num );
-  const signed_block& block = full_block_ptr->get_block();
-
-  for( const auto& trx : block.transactions )
-  {
-    const auto& trx_id = trx.id();
-    BOOST_REQUIRE( trx_id != hive::protocol::transaction_id_type() );
-
-      // Call condenser get_transaction and verify results with result of account history variant.
-      const auto tx_hash = trx_id.str();
-      const auto result = caf.condenser_api->get_transaction( condenser_api::get_transaction_args(1, fc::variant(tx_hash)) );
-      const condenser_api::annotated_signed_transaction op_tx = result.value;
-      ilog("operation transaction is ${tx}", ("tx", op_tx));
-      const account_history::annotated_signed_transaction ah_op_tx = 
-        caf.account_history_api->get_transaction( {tx_hash, false /*include_reversible*/} );
-      ilog("operation transaction is ${tx}", ("tx", ah_op_tx));
-      BOOST_REQUIRE_EQUAL( op_tx.transaction_id, ah_op_tx.transaction_id );
-      BOOST_REQUIRE_EQUAL( op_tx.block_num, ah_op_tx.block_num );
-      BOOST_REQUIRE_EQUAL( op_tx.transaction_num, ah_op_tx.transaction_num );
-
-      // Do additional checks of condenser variant
-      // Too few arguments
-      BOOST_REQUIRE_THROW( caf.condenser_api->get_transaction( condenser_api::get_transaction_args() ), fc::assert_exception );
-      // Too many arguments
-      BOOST_REQUIRE_THROW( caf.condenser_api->get_transaction( condenser_api::get_transaction_args(2, fc::variant(tx_hash)) ), fc::assert_exception );
-    }
-}
-
 /// Account history pattern goes first in the pair, condenser version pattern follows.
 typedef std::vector< std::pair< std::string, std::string > > expected_t;
+
+BOOST_FIXTURE_TEST_SUITE( condenser_get_ops_in_block_tests, condenser_api_fixture );
+
 void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_return& block_ops,
                                       const account_history::get_ops_in_block_return& ah_block_ops,
                                       uint32_t block_num,
@@ -461,44 +435,6 @@ void compare_get_ops_in_block_results(const condenser_api::get_ops_in_block_retu
     const auto expected = expected_operations[index];
     BOOST_REQUIRE_EQUAL( expected.first, fc::json::to_string(*i_ah) );
     BOOST_REQUIRE_EQUAL( expected.second, fc::json::to_string(*i_condenser) );
-  }
-}
-
-void test_get_account_history( const condenser_api_fixture& caf, const std::vector< std:: string >& account_names, const std::vector< expected_t >& expected_operations )
-{
-  // For each requested account ...
-  BOOST_REQUIRE( expected_operations.size() == account_names.size() );
-  for( size_t account_index = 0; account_index < account_names.size(); ++account_index)
-  {
-    const auto& account_name = account_names[ account_index ];
-    const auto& expected_for_account = expected_operations[ account_index ];
-
-    auto ah1 = caf.account_history_api->get_account_history( {account_name, 100 /*start*/, 100 /*limit*/, false /*include_reversible*/ /*, filter_low, filter_high*/ } );
-    auto ah2 = caf.condenser_api->get_account_history( condenser_api::get_account_history_args( {account_name, 100 /*start*/, 100 /*limit*/ /*, filter_low, filter_high*/} ) );
-    BOOST_REQUIRE( ah1.history.size() == ah2.size() );
-    BOOST_REQUIRE( expected_for_account.size() == ah2.size() );
-    ilog( "${n} operation(s) in account ${account} history", ("n", ah2.size())("account", account_name) );
-
-    // For each event (operation) in account history ...
-    auto it_ah = ah1.history.begin();
-    auto it_cn = ah2.begin();
-    for( size_t op_index = 0; it_cn != ah2.end(); ++it_ah, ++it_cn, ++op_index )
-    {
-      ilog("ah op: ${op}", ("op", *it_ah));
-      ilog("cn op: ${op}", ("op", *it_cn));
-
-      // Compare operations in their serialized form with expected patterns:
-      const auto expected = expected_for_account[ op_index ];
-      BOOST_REQUIRE_EQUAL( expected.first, fc::json::to_string(*it_ah) );
-      BOOST_REQUIRE_EQUAL( expected.second, fc::json::to_string(*it_cn) );
-    }
-
-    // Do additional checks of condenser variant
-    // Too few arguments
-    BOOST_REQUIRE_THROW( caf.condenser_api->get_account_history( condenser_api::get_account_history_args( {account_name, 100 /*start*/ } ) ), fc::assert_exception );
-    // Too many arguments
-    BOOST_REQUIRE_THROW( caf.condenser_api->get_account_history( condenser_api::get_account_history_args( 
-      {account_name, 100 /*start*/, 100 /*limit*/, 50 /*filter_low*/, 200 /*filter_high*/, 100 /*redundant*/ } ) ), fc::assert_exception );
   }
 }
 
@@ -565,27 +501,6 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_hf1 )
 
 } FC_LOG_AND_RETHROW() }
 
-BOOST_AUTO_TEST_CASE( get_transaction_hf1 )
-{ try {
-
-  BOOST_TEST_MESSAGE( "testing get_transaction on operations of HF1" );
-
-  auto check_point_tester = [ this ]()
-  {
-    generate_until_irreversible_block( 2 );
-    test_get_transaction( *this, 2 ); // <- TODO: Enhance with patterns
-
-    // In block 21 maximum block size is being changed:
-    generate_until_irreversible_block( 21 );
-    test_get_transaction( *this, 21 ); // <- TODO: Enhance with patterns
-  };
-
-  hf1_scenario( check_point_tester );
-
-} FC_LOG_AND_RETHROW() }
-
-// TODO create get_account_history_hf1 test here
-
 BOOST_AUTO_TEST_CASE( get_ops_in_block_hf12 )
 { try {
 
@@ -618,23 +533,6 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_hf12 )
   hf12_scenario( check_point_tester );
 
 } FC_LOG_AND_RETHROW() }
-
-BOOST_AUTO_TEST_CASE( get_transaction_hf12 )
-{ try {
-
-  BOOST_TEST_MESSAGE( "testing get_transaction with hf12_scenario" );
-
-  auto check_point_tester = [ this ]()
-  {
-    generate_until_irreversible_block( 3 );
-    test_get_transaction( *this, 3 ); // <- TODO: Enhance with patterns
-  };
-
-  hf12_scenario( check_point_tester );
-
-} FC_LOG_AND_RETHROW() }
-
-// TODO create get_account_history_hf12 test here
 
 BOOST_AUTO_TEST_CASE( get_ops_in_block_hf13 )
 { try {
@@ -703,29 +601,6 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_hf13 )
 
 } FC_LOG_AND_RETHROW() }
 
-BOOST_AUTO_TEST_CASE( get_transaction_hf13 )
-{ try {
-
-  BOOST_TEST_MESSAGE( "testing get_transaction with hf13_scenario" );
-
-  auto check_point_1_tester = [ this ]()
-  {
-    generate_until_irreversible_block( 3 );
-    test_get_transaction( *this, 3 ); // <- TODO: Enhance with patterns
-  };
-
-  auto check_point_2_tester = [ this ]()
-  {
-    generate_until_irreversible_block( 25 );
-    test_get_transaction( *this, 25 ); // <- TODO: Enhance with patterns
-  };
-
-  hf13_scenario( check_point_1_tester, check_point_2_tester );
-
-} FC_LOG_AND_RETHROW() }
-
-// TODO Create get_account_history_hf13 here
-
 BOOST_AUTO_TEST_CASE( get_ops_in_block_comment_and_reward )
 { try {
 
@@ -776,31 +651,6 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_comment_and_reward )
   comment_and_reward_scenario( check_point_1_tester, check_point_2_tester );
 
 } FC_LOG_AND_RETHROW() }
-
-BOOST_AUTO_TEST_CASE( get_transaction_comment_and_reward )
-{ try {
-
-  BOOST_TEST_MESSAGE( "testing get_transaction with comment_and_reward_scenario" );
-
-  // Check virtual operations resulting from scenario's 1st set of actions some blocks later:
-  auto check_point_1_tester = [ this ]()
-  {
-    generate_until_irreversible_block( 1202 );
-    test_get_transaction( *this, 1202 ); // <- TODO: Enhance with patterns
-  };
-
-  // Check operations resulting from 2nd set of actions:
-  auto check_point_2_tester = [ this ]()
-  { 
-    generate_until_irreversible_block( 1203 );
-    test_get_transaction( *this, 1203 ); // <- TODO: Enhance with patterns
-  };
-
-  comment_and_reward_scenario( check_point_1_tester, check_point_2_tester );
-
-} FC_LOG_AND_RETHROW() }
-
-// TODO create get_account_history_comment_and_reward test here
 
 BOOST_AUTO_TEST_CASE( get_ops_in_block_convert_and_limit_order )
 { try {
@@ -858,6 +708,119 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_convert_and_limit_order )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_SUITE_END() // condenser_get_ops_in_block_tests
+
+BOOST_FIXTURE_TEST_SUITE( condenser_get_transaction_tests, condenser_api_fixture );
+
+// TODO: Improve by comparing get_transaction results against patterns provided as additional argument.
+void test_get_transaction( const condenser_api_fixture& caf, uint32_t block_num )
+{
+  auto full_block_ptr = caf.db->fetch_block_by_number( block_num );
+  const signed_block& block = full_block_ptr->get_block();
+
+  for( const auto& trx : block.transactions )
+  {
+    const auto& trx_id = trx.id();
+    BOOST_REQUIRE( trx_id != hive::protocol::transaction_id_type() );
+
+      // Call condenser get_transaction and verify results with result of account history variant.
+      const auto tx_hash = trx_id.str();
+      const auto result = caf.condenser_api->get_transaction( condenser_api::get_transaction_args(1, fc::variant(tx_hash)) );
+      const condenser_api::annotated_signed_transaction op_tx = result.value;
+      ilog("operation transaction is ${tx}", ("tx", op_tx));
+      const account_history::annotated_signed_transaction ah_op_tx = 
+        caf.account_history_api->get_transaction( {tx_hash, false /*include_reversible*/} );
+      ilog("operation transaction is ${tx}", ("tx", ah_op_tx));
+      BOOST_REQUIRE_EQUAL( op_tx.transaction_id, ah_op_tx.transaction_id );
+      BOOST_REQUIRE_EQUAL( op_tx.block_num, ah_op_tx.block_num );
+      BOOST_REQUIRE_EQUAL( op_tx.transaction_num, ah_op_tx.transaction_num );
+
+      // Do additional checks of condenser variant
+      // Too few arguments
+      BOOST_REQUIRE_THROW( caf.condenser_api->get_transaction( condenser_api::get_transaction_args() ), fc::assert_exception );
+      // Too many arguments
+      BOOST_REQUIRE_THROW( caf.condenser_api->get_transaction( condenser_api::get_transaction_args(2, fc::variant(tx_hash)) ), fc::assert_exception );
+    }
+}
+
+BOOST_AUTO_TEST_CASE( get_transaction_hf1 )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_transaction on operations of HF1" );
+
+  auto check_point_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 2 );
+    test_get_transaction( *this, 2 ); // <- TODO: Enhance with patterns
+
+    // In block 21 maximum block size is being changed:
+    generate_until_irreversible_block( 21 );
+    test_get_transaction( *this, 21 ); // <- TODO: Enhance with patterns
+  };
+
+  hf1_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
+BOOST_AUTO_TEST_CASE( get_transaction_hf12 )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_transaction with hf12_scenario" );
+
+  auto check_point_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 3 );
+    test_get_transaction( *this, 3 ); // <- TODO: Enhance with patterns
+  };
+
+  hf12_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
+BOOST_AUTO_TEST_CASE( get_transaction_hf13 )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_transaction with hf13_scenario" );
+
+  auto check_point_1_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 3 );
+    test_get_transaction( *this, 3 ); // <- TODO: Enhance with patterns
+  };
+
+  auto check_point_2_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 25 );
+    test_get_transaction( *this, 25 ); // <- TODO: Enhance with patterns
+  };
+
+  hf13_scenario( check_point_1_tester, check_point_2_tester );
+
+} FC_LOG_AND_RETHROW() }
+
+BOOST_AUTO_TEST_CASE( get_transaction_comment_and_reward )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_transaction with comment_and_reward_scenario" );
+
+  // Check virtual operations resulting from scenario's 1st set of actions some blocks later:
+  auto check_point_1_tester = [ this ]()
+  {
+    generate_until_irreversible_block( 1202 );
+    test_get_transaction( *this, 1202 ); // <- TODO: Enhance with patterns
+  };
+
+  // Check operations resulting from 2nd set of actions:
+  auto check_point_2_tester = [ this ]()
+  { 
+    generate_until_irreversible_block( 1203 );
+    test_get_transaction( *this, 1203 ); // <- TODO: Enhance with patterns
+  };
+
+  comment_and_reward_scenario( check_point_1_tester, check_point_2_tester );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_CASE( get_transaction_convert_and_limit_order )
 { try {
 
@@ -875,6 +838,53 @@ BOOST_AUTO_TEST_CASE( get_transaction_convert_and_limit_order )
   convert_and_limit_order_scenario( check_point_tester );
 
 } FC_LOG_AND_RETHROW() }
+
+BOOST_AUTO_TEST_SUITE_END() // condenser_get_transaction_tests
+
+BOOST_FIXTURE_TEST_SUITE( condenser_get_account_history_tests, condenser_api_fixture );
+
+void test_get_account_history( const condenser_api_fixture& caf, const std::vector< std:: string >& account_names, const std::vector< expected_t >& expected_operations )
+{
+  // For each requested account ...
+  BOOST_REQUIRE( expected_operations.size() == account_names.size() );
+  for( size_t account_index = 0; account_index < account_names.size(); ++account_index)
+  {
+    const auto& account_name = account_names[ account_index ];
+    const auto& expected_for_account = expected_operations[ account_index ];
+
+    auto ah1 = caf.account_history_api->get_account_history( {account_name, 100 /*start*/, 100 /*limit*/, false /*include_reversible*/ /*, filter_low, filter_high*/ } );
+    auto ah2 = caf.condenser_api->get_account_history( condenser_api::get_account_history_args( {account_name, 100 /*start*/, 100 /*limit*/ /*, filter_low, filter_high*/} ) );
+    BOOST_REQUIRE( ah1.history.size() == ah2.size() );
+    BOOST_REQUIRE( expected_for_account.size() == ah2.size() );
+    ilog( "${n} operation(s) in account ${account} history", ("n", ah2.size())("account", account_name) );
+
+    // For each event (operation) in account history ...
+    auto it_ah = ah1.history.begin();
+    auto it_cn = ah2.begin();
+    for( size_t op_index = 0; it_cn != ah2.end(); ++it_ah, ++it_cn, ++op_index )
+    {
+      ilog("ah op: ${op}", ("op", *it_ah));
+      ilog("cn op: ${op}", ("op", *it_cn));
+
+      // Compare operations in their serialized form with expected patterns:
+      const auto expected = expected_for_account[ op_index ];
+      BOOST_REQUIRE_EQUAL( expected.first, fc::json::to_string(*it_ah) );
+      BOOST_REQUIRE_EQUAL( expected.second, fc::json::to_string(*it_cn) );
+    }
+
+    // Do additional checks of condenser variant
+    // Too few arguments
+    BOOST_REQUIRE_THROW( caf.condenser_api->get_account_history( condenser_api::get_account_history_args( {account_name, 100 /*start*/ } ) ), fc::assert_exception );
+    // Too many arguments
+    BOOST_REQUIRE_THROW( caf.condenser_api->get_account_history( condenser_api::get_account_history_args( 
+      {account_name, 100 /*start*/, 100 /*limit*/, 50 /*filter_low*/, 200 /*filter_high*/, 100 /*redundant*/ } ) ), fc::assert_exception );
+  }
+}
+
+// TODO create get_account_history_hf1 test here
+// TODO create get_account_history_hf12 test here
+// TODO Create get_account_history_hf13 here
+// TODO create get_account_history_comment_and_reward test here
 
 BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order )
 { try {
@@ -945,7 +955,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order )
 
 } FC_LOG_AND_RETHROW() }
   
-BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
+BOOST_AUTO_TEST_CASE( account_history_by_condenser_test ) // To be split into scenarios / triple tests
 { try {
 
   BOOST_TEST_MESSAGE( "get_ops_in_block / get_transaction test" );
@@ -978,6 +988,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   withdraw_vesting( "carol0ah", asset( 123, VESTS_SYMBOL ), carol0ah_private_key );
   expected_operations.insert( { OP_TAG(withdraw_vesting_operation), fc::optional< expected_operation_result_t >() } );
   // TODO generate enough blocks to test fill_vesting_withdraw_operation & return_vesting_delegation_operation.
+  // TODO: Consider testing here delayed_voting_operation, block 28802, indices 2 & 3.
 
 
   witness_create( "carol0ah", carol0ah_private_key, "foo.bar", carol0ah_private_key.get_public_key(), 1000 );
@@ -1064,7 +1075,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   change_recovery_account( "bob0ah", HIVE_INIT_MINER_NAME, bob0ah_private_key );
   expected_operations.insert( { OP_TAG(change_recovery_account_operation), fc::optional< expected_operation_result_t >() } );
 
-  account_update( "bob0ah", bob0ah_private_key.get_public_key(), "{\"success\":true}",
+  account_update( "bob0ah", bob0ah_private_key.get_public_key(), "{"success":true}",
                   authority(1, carol0ah_public_key,1), fc::optional<authority>(), fc::optional<authority>(), bob0ah_private_key );
   expected_operations.insert( { OP_TAG(account_update_operation), fc::optional< expected_operation_result_t >() } );
 
@@ -1077,7 +1088,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   push_custom_operation( { "carol0ah" }, 7, { 'D', 'A', 'T', 'A' }, carol0ah_private_key );
   expected_operations.insert( { OP_TAG(custom_operation), fc::optional< expected_operation_result_t >() } );
 
-  push_custom_json_operation( {}, { "carol0ah" }, "7id", "{\"type\": \"json\"}", carol0ah_private_key );
+  push_custom_json_operation( {}, { "carol0ah" }, "7id", "{"type": "json"}", carol0ah_private_key );
   expected_operations.insert( { OP_TAG(custom_json_operation), fc::optional< expected_operation_result_t >() } );
   // custom_binary_operation, reset_account_operation & set_reset_account_operation have been disabled and do not occur in blockchain
 
@@ -1093,22 +1104,22 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test )
   fund( "alice0ah", 500000000 );
 
   account_update2( "alice0ah", fc::optional<authority>(), fc::optional<authority>(), fc::optional<authority>(),
-                   fc::optional<fc::ecc::public_key>(), "{\"position\":\"top\"}", "{\"winner\":\"me\"}", alice0ah_private_key );
+                   fc::optional<fc::ecc::public_key>(), "{"position":"top"}", "{"winner":"me"}", alice0ah_private_key );
   expected_operations.insert( { OP_TAG(account_update2_operation), fc::optional< expected_operation_result_t >() } );
 
   // transfer_operation from alice0ah
   transfer("alice0ah", "bob0ah", asset(1234, HIVE_SYMBOL));
   expected_operations.insert( { OP_TAG(transfer_operation), fc::optional< expected_operation_result_t >() } );
 
-  do_the_testing( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
+  generate_until_irreversible_block( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
 
   expected_operations.insert( { OP_TAG(changed_recovery_account_operation), fc::optional< expected_operation_result_t >() } );
-  do_the_testing( *this, expected_operations, 1313 ); // clears the container nominally
+  generate_until_irreversible_block( *this, expected_operations, 1313 ); // clears the container nominally
 
 */
 
 } FC_LOG_AND_RETHROW() }
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END() // condenser_get_account_history_tests
 #endif
 
