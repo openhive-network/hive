@@ -6,6 +6,33 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
   configuration configuration_data;
 
+  void configuration::set_genesis_time( const fc::time_point_sec& genesis_time )
+  {
+    this->genesis_time = genesis_time;
+  }
+
+  void configuration::set_hardfork_schedule( const std::vector<hardfork_schedule_item_t>& hardfork_schedule )
+  {
+    ilog("Hardfork schedule applied: ${hf_schedule}", ("hf_schedule", hardfork_schedule));
+
+    // Init genesis
+    blocks[0] = 0;
+
+    for( size_t i = 0; i < hardfork_schedule.size(); ++i )
+      blocks.at( hardfork_schedule[ i ].hardfork ) = hardfork_schedule[ i ].block_num;
+  }
+
+  uint32_t configuration::get_hf_time(uint32_t hf_num, uint32_t default_time_sec)const
+  {
+    FC_ASSERT( hf_num < blocks.size(), "Trying to retrieve hardfork of a non-existing hardfork ${hf}", ("hf", hf_num) );
+
+    return blocks[hf_num].valid() ?
+        // Deduce (calculate) the time based on the genesis time when hardfork schedule is specified:
+        genesis_time.sec_since_epoch() + (blocks[hf_num].value() * HIVE_BLOCK_INTERVAL)
+      : default_time_sec // No hardfork schedule specified, use default time sec
+    ;
+  }
+
   configuration::configuration()
   {
     hive_initminer_key = get_default_initminer_private_key();

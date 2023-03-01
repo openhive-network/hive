@@ -1,13 +1,25 @@
 #pragma once
 
 #include <hive/protocol/types.hpp>
+#include <hive/protocol/hardfork.hpp>
+
+#include <fc/optional.hpp>
+#include <fc/time.hpp>
 
 #include <cstdint>
 #include <string>
+#include <array>
+#include <vector>
 
 #include <assert.h>
 
 namespace hive { namespace protocol { namespace testnet_blockchain_configuration {
+  struct hardfork_schedule_item_t
+  {
+    uint32_t hardfork;
+    uint32_t block_num;
+  };
+
   class configuration
   {
     // time after comment creation when voter receives penalty on effective weight;
@@ -29,12 +41,19 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     uint32_t hive_feed_interval_blocks = 20; // blocks, originally 60*60/3
     // time before feed expires
     uint32_t hive_max_feed_age_seconds = 60*24*7; // originally 60*60*24*7, see comment to set_feed_related_values
-    
+
     std::string hive_hf9_compromised_key;
     hive::protocol::private_key_type hive_initminer_key;
 
+    fc::time_point_sec     genesis_time;
+    std::array<fc::optional<uint32_t>, HIVE_NUM_HARDFORKS + 1> blocks = {};
+
     public:
       configuration();
+
+      void set_genesis_time( const fc::time_point_sec& genesis_time );
+      void set_hardfork_schedule( const std::vector<hardfork_schedule_item_t>& hardfork_schedule );
+      uint32_t get_hf_time(uint32_t hf_num, uint32_t default_time_sec)const;
 
       uint32_t get_hive_reverse_auction_window_seconds() const { return hive_reverse_auction_window_seconds; }
       uint32_t get_hive_early_voting_seconds() const { return hive_early_voting_seconds; }
@@ -101,3 +120,5 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
   extern configuration configuration_data;
 
 } } }// hive::protocol::testnet_blockchain_configuration
+
+FC_REFLECT( hive::protocol::testnet_blockchain_configuration::hardfork_schedule_item_t, (hardfork)(block_num) )

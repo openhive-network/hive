@@ -204,10 +204,6 @@ class chain_plugin_impl
     fc::microseconds cumulative_time_processing_transactions;
     fc::microseconds cumulative_time_waiting_for_work;
 
-#ifdef USE_ALTERNATE_CHAIN_ID
-    std::vector< hardfork_schedule_item_t > hardfork_schedule;
-#endif
-
     struct sync_progress_data
     {
       fc::time_point last_myriad_time;
@@ -626,9 +622,6 @@ void chain_plugin_impl::initial_settings()
   db_open_args.replay_memory_indices = replay_memory_indices;
   db_open_args.enable_block_log_compression = enable_block_log_compression;
   db_open_args.block_log_compression_level = block_log_compression_level;
-#ifdef USE_ALTERNATE_CHAIN_ID
-  db_open_args.hardfork_schedule = hardfork_schedule;
-#endif
 }
 
 bool chain_plugin_impl::check_data_consistency()
@@ -810,6 +803,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("block-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put block stat reports: DLOG, ILOG, NOTIFY. Default ILOG." )
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("hardfork-schedule", boost::program_options::value<string>(), "JSON array of hardfork: block_num objects to specify in which block a specific hardfork should be applied")
+      ("genesis-time", boost::program_options::value<uint32_t>(), "Required for the hardfork schedule to work. Hard fork times are calculated using relative time to this value")
 #endif
       ;
   cli.add_options()
@@ -931,29 +925,41 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
   if( options.count( "hardfork-schedule" ) )
   {
+    using hive::protocol::testnet_blockchain_configuration::hardfork_schedule_item_t;
+
+    FC_ASSERT(options.count("genesis-time"), "You have to specify the 'genesis-time' option for hardfork scheduler to work");
+
     std::string hardfork_schedule_str = options["hardfork-schedule"].as< string >();
     auto hardfork_schedule = fc::json::from_string( hardfork_schedule_str ).as< std::vector< hardfork_schedule_item_t > >();
 
+    std::vector< hardfork_schedule_item_t > result_hardfors;
+
     FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork-schedule", ("hardfork-schedule", hardfork_schedule_str) );
 
-    for(uint32_t i = 0; i < HIVE_NUM_HARDFORKS; ++i)
+    for(uint32_t i = 0, j = 0; i < HIVE_NUM_HARDFORKS; ++i)
     {
-      // Apply missing hardfork block numbers
-      if( hardfork_schedule.size() < i + 1 )
-      {
-        hardfork_schedule.push_back({i + 1, hardfork_schedule[i-1].block_num});
-        continue;
-      }
+      FC_ASSERT( hardfork_schedule[j].hardfork > 0, "You cannot specify the hardfork 0 block. Use 'genesis-time' option instead" );
+      FC_ASSERT( hardfork_schedule[j].hardfork <= HIVE_NUM_HARDFORKS, "You are not allowed to specify future hardfork times" );
+      if( j > 0 )
+        FC_ASSERT( hardfork_schedule[j].hardfork > hardfork_schedule[j - 1].hardfork && hardfork_schedule[j].block_num >= hardfork_schedule[j - 1].block_num,
+          "Hardfork ${hf1} cannot be scheduled for block ${bn1}, because previous hardfork is set to greater block: ${bn2}",
+          ("hf1",hardfork_schedule[j].hardfork)("bn1",hardfork_schedule[j].block_num)("bn2",hardfork_schedule[j-1].block_num));
 
-      FC_ASSERT( hardfork_schedule[i].hardfork == i + 1, "Invalid hardfork number in hardfork_schedule HF: ${hi}: ${hb}", ("hi",hardfork_schedule[i].hardfork)("hb",hardfork_schedule[i].block_num));
+      if( i + 1 > hardfork_schedule[j].hardfork )
+        ++j;
 
-      // We should ignore the first value as we have nothing to compare
-      if( i )
-        FC_ASSERT( hardfork_schedule[i].block_num >= hardfork_schedule[i - 1].block_num, "Hardfork ${hf1} cannot be scheduled for block ${bn1}, because previous hardfork is set to greater block: ${bn2}",
-          ("hf1",hardfork_schedule[i].hardfork)("bn1",hardfork_schedule[i].block_num)("bn2",hardfork_schedule[i-1].block_num));
+      if( j == hardfork_schedule.size() )
+        break;
+
+      result_hardfors.emplace_back(hardfork_schedule_item_t{ i + 1, hardfork_schedule[j].block_num });
     }
 
-    my->hardfork_schedule = hardfork_schedule;
+    configuration_data.set_genesis_time( fc::time_point_sec( options["genesis-time"].as< uint32_t >() ) );
+    configuration_data.set_hardfork_schedule( result_hardfors );
+  }
+  else
+  {
+    FC_ASSERT(!options.count("genesis-time"), "'genesis-time' option is not working without the hardfork schedule specified");
   }
 #endif
   uint32_t blockchain_thread_pool_size = options.at("blockchain-thread-pool-size").as<uint32_t>();
