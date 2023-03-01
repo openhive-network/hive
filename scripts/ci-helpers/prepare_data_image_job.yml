@@ -2,7 +2,7 @@
   variables:
     FF_NETWORK_PER_BUILD: "true"
 
-    # uses registry.gitlab.syncad.com/hive/hive/custom_docker:20.10.10
+    # uses registry.gitlab.syncad.com/hive/hive/custom_docker:20.10.10-1
     DOCKER_IMAGE_TAG: "@sha256:b16efe1217a85f4ed2c7b3768ba60c83d9434679ec91167ff31d77959c629b8f"
 
   image: "registry.gitlab.syncad.com/hive/hive/custom_docker${DOCKER_IMAGE_TAG}"
