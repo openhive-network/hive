@@ -19,7 +19,6 @@
 #include <appbase/plugin.hpp>
 
 #include <fc/signals.hpp>
-#include <fc/optional.hpp>
 
 #include <fc/log/logger.hpp>
 
@@ -55,10 +54,6 @@ namespace chain {
   {
     fc::time_point_sec         times[ HIVE_NUM_HARDFORKS + 1 ];
     protocol::hardfork_version versions[ HIVE_NUM_HARDFORKS + 1 ];
-#ifdef USE_ALTERNATE_CHAIN_ID
-    // Create array of invalid optionals as it is a default behaviour for disabled hardfork-scheduler
-    fc::optional<uint32_t>     blocks[ HIVE_NUM_HARDFORKS + 1 ] = {};
-#endif
   };
 
   class database_impl;
@@ -1003,4 +998,3 @@ namespace chain {
     hive::plugins::chain::snapshot_load_helper& load_helper;
   };
 } }
-

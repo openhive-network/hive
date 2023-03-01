@@ -1,6 +1,10 @@
 #ifndef HIVE_HARDFORK_0_2
 #define HIVE_HARDFORK_0_2 2
 // Tue, 26 Apr 2016 18:00:00 GMT
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_2_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_2, 1461693600))
+#else
 #define HIVE_HARDFORK_0_2_TIME 1461693600
+#endif
 #define HIVE_HARDFORK_0_2_VERSION hive::protocol::hardfork_version( 0, 2 )
 #endif

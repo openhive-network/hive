@@ -9,6 +9,10 @@
 #define HIVE_HARDFORK_0_5__62 ( HIVE_HARDFORK_0_5 )
 
 // May 31 2016 17:00:00 UTC (1:00 PM EDT)
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_5_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_5, 1464714000))
+#else
 #define HIVE_HARDFORK_0_5_TIME 1464714000
+#endif
 #define HIVE_HARDFORK_0_5_VERSION hive::protocol::hardfork_version( 0, 5 )
 #endif

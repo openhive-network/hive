@@ -2,7 +2,12 @@
 #define HIVE_HARDFORK_1_28 28
 
 long next_hf_time();
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_1_28_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_28, next_hf_time()))
+#else
 #define HIVE_HARDFORK_1_28_TIME next_hf_time()
+#endif // Thu, 29 August 2019 15:00:00 UTC (11:00:00 EDT)
 
 #define HIVE_HARDFORK_1_28_VERSION hive::protocol::hardfork_version( 1, 28 )
 

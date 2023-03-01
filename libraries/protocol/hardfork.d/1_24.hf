@@ -14,10 +14,18 @@
 // Note: the "ACTUAL_TIME" below is the timestamp of the block where the hardfork
 // took effect.  The change in signature validation doesn't happen until the next block.
 #ifdef IS_TEST_NET
-  #define HIVE_HARDFORK_1_24_TIME 1588334400 // Friday, 1 May 2020 12:00:00 GMT
+#define HIVE_HARDFORK_1_24_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_24, 1588334400)) // Friday, 1 May 2020 12:00:00 GMT
 #else
-  #define HIVE_HARDFORK_1_24_TIME 1601992800 // Tuesday, 06-Oct-2020 14:00:00 UTC
-  #define HIVE_HARDFORK_1_24_ACTUAL_TIME 1602703884 // Wednesday, October 14, 2020 19:31:24 UTC
+  #ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_1_24_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_24, 1601992800))
+#else
+#define HIVE_HARDFORK_1_24_TIME 1601992800
+#endif // Tuesday, 06-Oct-2020 14:00:00 UTC
+  #ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_1_24_ACTUAL_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_24, 1602703884))
+#else
+#define HIVE_HARDFORK_1_24_ACTUAL_TIME 1602703884
+#endif // Wednesday, October 14, 2020 19:31:24 UTC
 #endif
 
 #define HIVE_HARDFORK_1_24_VERSION hive::protocol::hardfork_version( 1, 24 )

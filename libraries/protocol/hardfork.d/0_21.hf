@@ -2,7 +2,11 @@
 #define HIVE_HARDFORK_0_21 21
 #define HIVE_PROPOSALS_HARDFORK HIVE_HARDFORK_0_21
 
-#define HIVE_HARDFORK_0_21_TIME 1566918000 // Tue, 27 August 2019 15:00:00 UTC (11:00:00 EDT)
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_21_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_21, 1566918000))
+#else
+#define HIVE_HARDFORK_0_21_TIME 1566918000
+#endif // Tue, 27 August 2019 15:00:00 UTC (11:00:00 EDT)
 
 #define HIVE_HARDFORK_0_21__2203 (HIVE_HARDFORK_0_21)
 #define HIVE_HARDFORK_0_21__3004 (HIVE_HARDFORK_0_21)
