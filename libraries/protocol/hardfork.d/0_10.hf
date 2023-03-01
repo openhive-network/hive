@@ -4,6 +4,10 @@
 #define HIVE_HARDFORK_0_10__149 HIVE_HARDFORK_0_10
 
 #define HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10 fc::seconds(60*30) /// 30 min
-#define HIVE_HARDFORK_0_10_TIME 1468584000  //2016-07-15T12:00:00 UTC
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_10_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_10, 1468584000))
+#else
+#define HIVE_HARDFORK_0_10_TIME 1468584000
+#endif  //2016-07-15T12:00:00 UTC
 #define HIVE_HARDFORK_0_10_VERSION hive::protocol::hardfork_version( 0, 10 )
 #endif

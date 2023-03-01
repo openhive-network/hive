@@ -2,7 +2,11 @@
 #define HIVE_HARDFORK_0_9 9
 #define HIVE_HARDFORK_0_9__141 HIVE_HARDFORK_0_9
 
-#define HIVE_HARDFORK_0_9_TIME 1468454400 // 2016-07-14T00:00:00 UTC
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_9_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_9, 1468454400))
+#else
+#define HIVE_HARDFORK_0_9_TIME 1468454400
+#endif // 2016-07-14T00:00:00 UTC
 #define HIVE_HARDFORK_0_9_VERSION hive::protocol::hardfork_version( 0, 9 )
 
 namespace hardfork9

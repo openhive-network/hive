@@ -12,14 +12,22 @@
 
 // Thu Jun 30 14:00:00 UTC 2016
 // Thu Jun 30 10:00:00 EDT 2016
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_6_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_6, 1467295200))
+#else
 #define HIVE_HARDFORK_0_6_TIME 1467295200
+#endif
 
 // Fri Jun 24 14:00:00 UTC 2016
 // Fri Jun 24 10:00:00 EDT 2016
 #ifdef IS_TEST_NET
 #define HIVE_HARDFORK_0_6_REVERSE_AUCTION_TIME (0)
 #else
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_6_REVERSE_AUCTION_TIME (HIVE_HARDFORK_0_6_TIME-(60*60*24*6))
+#else
 #define HIVE_HARDFORK_0_6_REVERSE_AUCTION_TIME (1467295200-(60*60*24*6))
+#endif
 #endif
 #define HIVE_HARDFORK_0_6_VERSION hive::protocol::hardfork_version( 0, 6 )
 #endif

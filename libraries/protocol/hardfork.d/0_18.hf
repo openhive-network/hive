@@ -1,7 +1,11 @@
 #ifndef HIVE_HARDFORK_0_18
 #define HIVE_HARDFORK_0_18 18
 
-#define HIVE_HARDFORK_0_18_TIME  1490886000 // Thu, 30 March 2017 15:00:00 UTC (11:00:00 EDT)
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_18_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_18, 1490886000))
+#else
+#define HIVE_HARDFORK_0_18_TIME 1490886000
+#endif // Thu, 30 March 2017 15:00:00 UTC (11:00:00 EDT)
 
 #define HIVE_HARDFORK_0_18_VERSION hive::protocol::hardfork_version( 0, 18 )
 

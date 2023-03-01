@@ -1,7 +1,11 @@
 #ifndef HIVE_HARDFORK_0_23
 #define HIVE_HARDFORK_0_23 23
 
-#define HIVE_HARDFORK_0_23_TIME 1584712800 // Friday, 20 March 2020 14:00:00 GMT
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_23_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_23, 1584712800))
+#else
+#define HIVE_HARDFORK_0_23_TIME 1584712800
+#endif // Friday, 20 March 2020 14:00:00 GMT
 
 #define HIVE_HARDFORK_0_23_VERSION hive::protocol::hardfork_version( 0, 23 )
 

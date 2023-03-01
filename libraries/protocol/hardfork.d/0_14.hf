@@ -15,7 +15,11 @@
 #define HIVE_HARDFORK_0_14__410 (HIVE_HARDFORK_0_14)
 
 
-#define HIVE_HARDFORK_0_14_TIME  1474383600 // Tue, 20 Sep 2016 15:00:00 GMT
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_14_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_14, 1474383600))
+#else
+#define HIVE_HARDFORK_0_14_TIME 1474383600
+#endif // Tue, 20 Sep 2016 15:00:00 GMT
 
 #define HIVE_HARDFORK_0_14_VERSION hive::protocol::hardfork_version( 0, 14 )
 

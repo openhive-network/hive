@@ -52,7 +52,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_CHAIN_ID                         (fc::sha256::hash("testnet"))
 #define HIVE_ADDRESS_PREFIX                   "TST"
 
-#define HIVE_GENESIS_TIME                     (fc::time_point_sec(1451606400)) // Friday, January 1, 2016 12:00:00 AM UTC
+#define HIVE_GENESIS_TIME                     (fc::time_point_sec(hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(0, 1451606400)))
 #define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400)) // Friday, January 1, 2016 12:00:00 AM UTC
 #define HIVE_CASHOUT_WINDOW_SECONDS           (configuration_data.get_hive_cashout_window_seconds())
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (HIVE_CASHOUT_WINDOW_SECONDS)
@@ -118,7 +118,11 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_CHAIN_ID                         fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000")
 #define HIVE_ADDRESS_PREFIX                   "STM"
 
-#define HIVE_GENESIS_TIME                     (fc::time_point_sec(1458835200)) // Thursday, March 24, 2016 4:00:00 PM UTC
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_GENESIS_TIME                     (fc::time_point_sec(hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(0, 1458835200)))
+#else
+#define HIVE_GENESIS_TIME                     (fc::time_point_sec(1458835200)) // Friday, January 1, 2016 12:00:00 AM UTC
+#endif
 #define HIVE_MINING_TIME                      (fc::time_point_sec(1458838800)) // Thursday, March 24, 2016 4:00:00 PM UTC
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (60*60*24)    /// 1 day
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17  (60*60*12)    /// 12 hours

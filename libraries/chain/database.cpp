@@ -4380,12 +4380,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
     if( n > 0 )
     {
       ilog( "Processing ${n} genesis hardforks", ("n", n) );
-#ifdef USE_ALTERNATE_CHAIN_ID
-      // Apply only hardforks scheduled for genesis block
-      while( n > 0 && _hardfork_versions.blocks[n-1].valid() && *_hardfork_versions.blocks[n-1] != 0 )
-        --n;
-#endif
-
       set_hardfork( n, true );
 #ifdef IS_TEST_NET
       if( n < HIVE_NUM_HARDFORKS )

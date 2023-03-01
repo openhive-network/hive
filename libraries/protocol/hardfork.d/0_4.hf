@@ -1,5 +1,9 @@
 #ifndef HIVE_HARDFORK_0_4
 #define HIVE_HARDFORK_0_4 4
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_0_4_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_4, 1462028400))
+#else
 #define HIVE_HARDFORK_0_4_TIME 1462028400
+#endif
 #define HIVE_HARDFORK_0_4_VERSION hive::protocol::hardfork_version( 0, 4 )
 #endif
