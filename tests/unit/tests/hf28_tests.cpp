@@ -179,24 +179,23 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes )
 
       executor->generate_block();
 
-      dhf_database dhf_db( *executor.get() );
       dhf_database::create_proposal_data cpd( executor->db->head_block_time() );
 
       BOOST_TEST_MESSAGE( "Create 'create_proposal_operation'" );
-      int64_t _id_proposal = dhf_db.create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
+      int64_t _id_proposal = executor->create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
 
       BOOST_TEST_MESSAGE( "Create 'update_proposal_votes_operation'" );
-      dhf_db.vote_proposal( "alice", { _id_proposal }, true, alice_private_key );
-      BOOST_REQUIRE( dhf_db.find_vote_for_proposal( "alice", _id_proposal ) == true );
+      executor->vote_proposal( "alice", { _id_proposal }, true, alice_private_key );
+      BOOST_REQUIRE( executor->find_vote_for_proposal( "alice", _id_proposal ) != nullptr );
 
       executor->generate_block();
 
       executor->generate_blocks( executor->db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD, false );
 
       if( is_hf28 )
-        BOOST_REQUIRE( dhf_db.find_vote_for_proposal( "alice", _id_proposal ) == false );//Proposal votes should be removed.
+        BOOST_REQUIRE( executor->find_vote_for_proposal( "alice", _id_proposal ) == nullptr );//Proposal votes should be removed.
       else
-        BOOST_REQUIRE( dhf_db.find_vote_for_proposal( "alice", _id_proposal ) == true );
+        BOOST_REQUIRE( executor->find_vote_for_proposal( "alice", _id_proposal ) != nullptr );
     };
 
     BOOST_TEST_MESSAGE( "*****HF-27*****" );
@@ -249,22 +248,21 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
 
       executor->generate_blocks( executor->db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD, false );
 
-      dhf_database dhf_db( *executor.get() );
       dhf_database::create_proposal_data cpd( executor->db->head_block_time() );
 
       BOOST_TEST_MESSAGE( "Create 'create_proposal_operation'" );
-      int64_t _id_proposal = dhf_db.create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
+      int64_t _id_proposal = executor->create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
 
       BOOST_TEST_MESSAGE( "Create 'update_proposal_votes_operation'" );
       if( is_hf28 )
       {
         //An exception must be thrown because in HF28 is blocked by a condition `_db.is_in_control()` or `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
-        HIVE_REQUIRE_THROW( dhf_db.vote_proposal( "alice", { _id_proposal }, true, alice_private_key ), fc::assert_exception );
+        HIVE_REQUIRE_THROW( executor->vote_proposal( "alice", { _id_proposal }, true, alice_private_key ), fc::assert_exception );
       }
       else
       {
         //An exception must be thrown because in HF27 is blocked by a condition `_db.is_in_control()`
-        HIVE_REQUIRE_THROW( dhf_db.vote_proposal( "alice", { _id_proposal }, true, alice_private_key ), fc::assert_exception );
+        HIVE_REQUIRE_THROW( executor->vote_proposal( "alice", { _id_proposal }, true, alice_private_key ), fc::assert_exception );
       }
     };
 
@@ -501,17 +499,16 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
       }
       executor->generate_block();
 
-      dhf_database dhf_db( *executor.get() );
       dhf_database::create_proposal_data cpd( executor->db->head_block_time() );
 
       BOOST_TEST_MESSAGE( "Create 'create_proposal_operation'" );
-      int64_t _id_proposal = dhf_db.create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
+      int64_t _id_proposal = executor->create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
       executor->generate_block();
 
       BOOST_TEST_MESSAGE( "Create some `update_proposal_votes_operation`" );
       for( auto& actor : _actors )
       {
-        dhf_db.vote_proposal( actor.name, { _id_proposal }, true, actor.key );
+        executor->vote_proposal( actor.name, { _id_proposal }, true, actor.key );
         executor->generate_block();
       }
 
@@ -551,15 +548,15 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
 
       BOOST_TEST_MESSAGE( "All actors must have proposal votes" );
       for( auto& actor : _actors )
-        BOOST_REQUIRE( dhf_db.find_vote_for_proposal( actor.name, _id_proposal ) == true );
+        BOOST_REQUIRE( executor->find_vote_for_proposal( actor.name, _id_proposal ) != nullptr );
 
       executor->generate_block();
 
       BOOST_TEST_MESSAGE( "Some actors have proposal votes some don't" );
-      BOOST_REQUIRE( dhf_db.find_vote_for_proposal( _actors[0].name, _id_proposal ) == false );
-      BOOST_REQUIRE( dhf_db.find_vote_for_proposal( _actors[1].name, _id_proposal ) == true );
-      BOOST_REQUIRE( dhf_db.find_vote_for_proposal( _actors[2].name, _id_proposal ) == false );
-      BOOST_REQUIRE( dhf_db.find_vote_for_proposal( _actors[3].name, _id_proposal ) == true );
+      BOOST_REQUIRE( executor->find_vote_for_proposal( _actors[0].name, _id_proposal ) == nullptr );
+      BOOST_REQUIRE( executor->find_vote_for_proposal( _actors[1].name, _id_proposal ) != nullptr );
+      BOOST_REQUIRE( executor->find_vote_for_proposal( _actors[2].name, _id_proposal ) == nullptr );
+      BOOST_REQUIRE( executor->find_vote_for_proposal( _actors[3].name, _id_proposal ) != nullptr );
     };
 
     execute_hardfork<28>( _content );
