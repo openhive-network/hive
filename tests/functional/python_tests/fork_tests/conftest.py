@@ -9,7 +9,7 @@ from shared_tools.complex_networks import (allow_generate_block_log,
 
 
 def create_block_log_directory_name(name : str):
-    return str(Path(__file__).parent.absolute()) + '/' + name
+    return Path(__file__).parent.absolute() / name
 
 @pytest.fixture
 def prepare_basic_networks() -> Dict:
