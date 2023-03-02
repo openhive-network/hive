@@ -1,7 +1,5 @@
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
-
-
 namespace hive { namespace chain { namespace util {
 
 fc::ripemd160 calculate_checksum_from_string(const std::string_view str)
