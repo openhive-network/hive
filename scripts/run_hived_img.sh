@@ -21,6 +21,7 @@ print_help () {
     echo "  --data-dir=DIRECTORY_PATH             Allows to specify given directory as hived data directory. This directory should contain a config.ini file to be used by hived"
     echo "  --shared-file-dir=DIRECTORY_PATH      Allows to specify dedicated location for shared_memory_file.bin"
     echo "  --name=CONTAINER_NAME                 Allows to specify a dedicated name to the spawned container instance"
+    echo "  --detach                              Allows to start container instance in detached mode. Otherwise, you can detach using Ctrl+p+q key binding"
     echo "  --docker-option=OPTION                Allows to specify additional docker option, to be passed to underlying docker run spawn."
     echo "  --help                                Display this help screen and exit"
     echo
@@ -73,6 +74,10 @@ while [ $# -gt 0 ]; do
         CONTAINER_NAME="${1#*=}"
         echo "Container name is: $CONTAINER_NAME"
         ;;
+    --detach)
+      add_docker_arg "--detach"
+      ;;
+
     --docker-option=*)
         option="${1#*=}"
         add_docker_arg "$option"
@@ -123,6 +128,6 @@ fi
 #echo "Additional hived args: ${CMD_ARGS[@]}"
 
 docker container rm -f -v "$CONTAINER_NAME" 2>/dev/null || true
-docker run --rm -itd -e HIVED_UID=$(id -u) --name "$CONTAINER_NAME" --stop-timeout=180 ${DOCKER_ARGS[@]} "${IMAGE_NAME}" "${CMD_ARGS[@]}"
+docker run --rm -it -e HIVED_UID=$(id -u) --name "$CONTAINER_NAME" --stop-timeout=180 ${DOCKER_ARGS[@]} "${IMAGE_NAME}" "${CMD_ARGS[@]}"
 
 
