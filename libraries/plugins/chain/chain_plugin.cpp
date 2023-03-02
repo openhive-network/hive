@@ -802,8 +802,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("block-stats-report-type", bpo::value<string>()->default_value("FULL"), "Level of detail of block stat reports: NONE, MINIMAL, REGULAR, FULL. Default FULL (recommended for API nodes)." )
       ("block-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put block stat reports: DLOG, ILOG, NOTIFY. Default ILOG." )
 #ifdef USE_ALTERNATE_CHAIN_ID
-      ("hardfork-schedule", boost::program_options::value<string>(), "JSON array of hardfork: block_num objects to specify in which block a specific hardfork should be applied")
-      ("genesis-time", boost::program_options::value<uint32_t>(), "Required for the hardfork schedule to work. Hard fork times are calculated using relative time to this value")
+      ("alternate-chain-spec", boost::program_options::value<string>(), "Filepath for the alternate chain specification in JSON format")
 #endif
       ;
   cli.add_options()
@@ -923,18 +922,19 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
   }
 
-  if( options.count( "hardfork-schedule" ) )
+  if( options.count( "alternate-chain-spec" ) )
   {
     using hive::protocol::testnet_blockchain_configuration::hardfork_schedule_item_t;
 
-    FC_ASSERT(options.count("genesis-time"), "You have to specify the 'genesis-time' option for hardfork scheduler to work");
+    fc::variant spec = fc::json::from_file( options["alternate-chain-spec"].as< string >() );
 
-    std::string hardfork_schedule_str = options["hardfork-schedule"].as< string >();
-    auto hardfork_schedule = fc::json::from_string( hardfork_schedule_str ).as< std::vector< hardfork_schedule_item_t > >();
+    uint32_t              genesis_time      = spec["genesis_time"].as< uint32_t >();
+    std::vector< string > init_witnesses    = spec["init_witnesses"].as< std::vector< string > >();
+    auto                  hardfork_schedule = spec["hardfork_schedule"].as< std::vector< hardfork_schedule_item_t > >();
 
     std::vector< hardfork_schedule_item_t > result_hardfors;
 
-    FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork-schedule", ("hardfork-schedule", hardfork_schedule_str) );
+    FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork-schedule", ("hardfork-schedule", spec["hardfork_schedule"]) );
 
     for(uint32_t i = 0, j = 0; i < HIVE_NUM_HARDFORKS; ++i)
     {
@@ -954,12 +954,9 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       result_hardfors.emplace_back(hardfork_schedule_item_t{ i + 1, hardfork_schedule[j].block_num });
     }
 
-    configuration_data.set_genesis_time( fc::time_point_sec( options["genesis-time"].as< uint32_t >() ) );
+    configuration_data.set_genesis_time( fc::time_point_sec( genesis_time ) );
     configuration_data.set_hardfork_schedule( result_hardfors );
-  }
-  else
-  {
-    FC_ASSERT(!options.count("genesis-time"), "'genesis-time' option is not working without the hardfork schedule specified");
+    configuration_data.set_init_witnesses( init_witnesses );
   }
 #endif
   uint32_t blockchain_thread_pool_size = options.at("blockchain-thread-pool-size").as<uint32_t>();

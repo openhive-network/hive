@@ -45,12 +45,15 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     std::string hive_hf9_compromised_key;
     hive::protocol::private_key_type hive_initminer_key;
 
+    std::vector<std::string> init_witnesses;
     fc::time_point_sec     genesis_time;
     std::array<fc::optional<uint32_t>, HIVE_NUM_HARDFORKS + 1> blocks = {};
 
     public:
       configuration();
 
+      void set_init_witnesses( const std::vector<std::string>& init_witnesses );
+      const std::vector<std::string>& get_init_witnesses()const;
       void set_genesis_time( const fc::time_point_sec& genesis_time );
       void set_hardfork_schedule( const std::vector<hardfork_schedule_item_t>& hardfork_schedule );
       uint32_t get_hf_time(uint32_t hf_num, uint32_t default_time_sec)const;

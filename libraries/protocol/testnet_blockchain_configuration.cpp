@@ -6,6 +6,16 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
   configuration configuration_data;
 
+  void configuration::set_init_witnesses( const std::vector<std::string>& init_witnesses )
+  {
+    this->init_witnesses = init_witnesses;
+  }
+
+  const std::vector<std::string>& configuration::get_init_witnesses()const
+  {
+    return init_witnesses;
+  }
+
   void configuration::set_genesis_time( const fc::time_point_sec& genesis_time )
   {
     this->genesis_time = genesis_time;
