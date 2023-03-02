@@ -104,7 +104,9 @@ SHELL ["/bin/bash", "-c"]
 USER hived
 WORKDIR /home/hived
 
-COPY --from=build \
+RUN mkdir -p /home/hived/datadir/ && mkdir /home/hived/shm_dir/
+
+COPY --from=build --chown=hived:users \
   /home/hived_admin/build/programs/hived/hived \
   /home/hived_admin/build/programs/cli_wallet/cli_wallet \
   /home/hived_admin/build/programs/util/compress_block_log \
@@ -113,12 +115,12 @@ COPY --from=build \
   /home/hived_admin/build/programs/blockchain_converter/blockchain_converter* \
   /home/hived_admin/build/tests/unit/* /home/hived/bin/
 
-COPY --from=build /home/hived_admin/hive/doc/example_config.ini /home/hived/datadir/example_config.ini
+COPY --from=build --chown=hived:users /home/hived_admin/hive/doc/example_config.ini /home/hived/datadir/example_config.ini
 
 USER hived_admin
 WORKDIR /home/hived_admin
 
-COPY --from=build /home/hived_admin/hive/scripts/common.sh ./scripts/common.sh
+COPY --from=build --chown=hived_admin:users /home/hived_admin/hive/scripts/common.sh ./scripts/common.sh
 
 COPY --chown=hived_admin:users ./docker/docker_entrypoint.sh .
 
@@ -149,7 +151,7 @@ FROM ${CI_REGISTRY_IMAGE}ci-base-image-5m$CI_IMAGE_TAG AS block_log_5m_source
 
 FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-$BUILD_IMAGE_TAG as data
 
-COPY --from=block_log_5m_source /home/hived/datadir /home/hived/datadir
+COPY --from=block_log_5m_source --chown=hived:users /home/hived/datadir /home/hived/datadir
 ADD --chown=hived:users ./docker/config_5M.ini /home/hived/datadir/config.ini
 
 RUN "/home/hived_admin/docker_entrypoint.sh" --force-replay --stop-replay-at-block=5000000 --exit-before-sync
