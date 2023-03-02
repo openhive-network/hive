@@ -4135,13 +4135,13 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       auth.active.weight_threshold = 0;
     });
 
-    for( int i = 0; i < HIVE_NUM_INIT_MINERS; ++i )
+    const auto init_witness = [&]( const account_name_type& account_name )
     {
-      create< account_object >( HIVE_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() ), init_public_key );
+      create< account_object >( account_name, init_public_key );
 
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
-        auth.account = HIVE_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() );
+        auth.account = account_name;
         auth.owner.add_authority( init_public_key, 1 );
         auth.owner.weight_threshold = 1;
         auth.active  = auth.owner;
@@ -4150,11 +4150,19 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
 
       create< witness_object >( [&]( witness_object& w )
       {
-        w.owner        = HIVE_INIT_MINER_NAME + ( i ? fc::to_string(i) : std::string() );
+        w.owner        = account_name;
         w.signing_key  = init_public_key;
         w.schedule = witness_object::miner;
       } );
-    }
+    };
+
+    for( int i = 0; i < HIVE_NUM_INIT_MINERS; ++i )
+      init_witness( HIVE_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() ) );
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+    for( const auto& witness : configuration_data.get_init_witnesses() )
+      init_witness( witness );
+#endif
 
     create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( init_supply, HIVE_SYMBOL ), asset( hbd_init_supply, HBD_SYMBOL ) );
     // feed initial token supply to first miner
