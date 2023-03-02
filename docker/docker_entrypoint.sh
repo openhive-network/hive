@@ -4,7 +4,7 @@ set -xeuo pipefail
 
 env
 
-if [ -n "${HIVED_UID+x}" ];
+if [ "${HIVED_UID}" -ne 0 ];
 then
   echo "setting user hived uid to value ${HIVED_UID}"
   sudo -n usermod -o -u "${HIVED_UID}" hived
@@ -54,7 +54,7 @@ cleanup () {
 trap cleanup INT QUIT TERM
 
 # Be sure this directory exists
-sudo -Enu hived mkdir --mode=777 -p "$DATADIR/blockchain"
+sudo -Enu hived mkdir --mode=775 -p "$DATADIR/blockchain"
 
 HIVED_ARGS=()
 HIVED_ARGS+=("$@")
