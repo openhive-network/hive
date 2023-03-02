@@ -1,7 +1,8 @@
 #! /bin/bash
 
+SRC_DIR_OFFSET="${SRC_DIR_OFFSET:-../..}" #This needs to be defined as a variable that can be overridden if Hive is a submodule
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-SRC_DIR="$SCRIPT_DIR/../.."
+SRC_DIR="$SCRIPT_DIR/$SRC_DIR_OFFSET"
 
 print_help () {
     echo "Usage: $0 OPTION[=VALUE]..."
@@ -78,17 +79,20 @@ done
 [[ -z "$DOCKER_HUB_USER" ]] && echo "Option '--docker-hub-user' must be set" && print_help && exit 1
 [[ -z "$DOCKER_HUB_PASSWORD" ]] && echo "Option '--docker-hub-password' must be set" && print_help && exit 1
 
+CI_PROJECT_NAME="${CI_REGISTRY_IMAGE##*/}"
+
+echo "Logging to Docker Hub and $CI_REGISTRY"
 docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
+#docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
 
-# Build instance image
-"$SRC_DIR/scripts/ci-helpers/build_instance.sh" "$CI_COMMIT_TAG" "$SRC_DIR" "${CI_REGISTRY_IMAGE}"
+echo "Building an instance image in the source directory $SRC_DIR"
+"$SRC_DIR/scripts/ci-helpers/build_instance.sh" "$CI_COMMIT_TAG" "$SRC_DIR" "$CI_REGISTRY_IMAGE"
 
-# Tag instance image
-docker tag "${CI_REGISTRY_IMAGE}/instance:instance-${CI_COMMIT_TAG}" "hiveio/hive:${CI_COMMIT_TAG}"
+echo "Tagging the image built in the previous step as hiveio/$CI_PROJECT_NAME:$CI_COMMIT_TAG"
+docker tag "$CI_REGISTRY_IMAGE/instance:instance-$CI_COMMIT_TAG" "hiveio/$CI_PROJECT_NAME:$CI_COMMIT_TAG"
 
 docker images
 
-# Push instance images
-docker push "${CI_REGISTRY_IMAGE}/instance:instance-${CI_COMMIT_TAG}"
-docker push "hiveio/hive:${CI_COMMIT_TAG}"
+echo "Pushing instance images"
+docker push "$CI_REGISTRY_IMAGE/instance:instance-$CI_COMMIT_TAG"
+#docker push "hiveio/$CI_PROJECT_NAME:$CI_COMMIT_TAG"
