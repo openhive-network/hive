@@ -113,6 +113,8 @@ if [ ! -z "$HIVED_DATADIR" ]; then
 fi
 
 if [ ! -z "$HIVED_SHM_FILE_DIR" ]; then
+  mkdir -p "${HIVED_SHM_FILE_DIR}"
+
   # do not pass this arg to the hived directly - it has already passed path: /home/hived/shm_dir inside docker_entrypoint.sh
   add_docker_arg "-v ${HIVED_SHM_FILE_DIR}:/home/hived/shm_dir"
 fi
