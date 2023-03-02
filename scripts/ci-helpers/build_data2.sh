@@ -67,6 +67,7 @@ rm "$DATA_CACHE" -rf
 echo "Attempting to perform replay basing on image ${IMG}..."
 
 "$SCRIPTSDIR/run_hived_img.sh" --name=hived_instance \
+    --detach \
     --docker-option=--volume="$DATA_CACHE":"$DATA_CACHE" \
     --docker-option=--env=DATADIR="$DATA_CACHE/datadir" \
     --docker-option=--env=SHM_DIR="$DATA_CACHE/shm_dir" \
