@@ -90,7 +90,8 @@ General usage: `run_hived_img.sh <docker_img> [OPTION[=VALUE]]... [<hived_option
     --shared-file-dir=DIRECTORY_PATH - allows to specify a directory where dockerized hived will store its state file (shared_memory.bin). For best performance results, it should be located at ram-disk, inside subdirectory created under /dev/shm resource.
 
     Started container (and hived process) will create a log file: hived.log located in specified data directory (so in examples below: /home/hived/datadir/hived.log).
-    Container is always started in detached mode.
+    By default, container is always started in atached mode. You can detach it by using Ctrl-p Ctrl-q shortcuts as described in docker attach documentation
+    If you would like to start container in detached mode, you can pass --detach option to the run_hived_img.sh script.
 
     Logs can be also examined using docker logs feature:
 
