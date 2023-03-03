@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     udb.undo_begin();
 
     const account_object& obj0 = ao.create( "name00" );
-    BOOST_REQUIRE( std::string( obj0.name ) == "name00" );
+    BOOST_REQUIRE( std::string( obj0.get_name() ) == "name00" );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
@@ -60,9 +60,9 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     udb.undo_begin();
 
     const account_object& obj1 = ao.create( "name00" );
-    BOOST_REQUIRE( std::string( obj1.name ) == "name00" );
-    const account_object& obj2 = ao.modify( obj1, [&]( account_object& obj ){ obj.name = "name01"; } );
-    BOOST_REQUIRE( std::string( obj2.name ) == "name01" );
+    BOOST_REQUIRE( std::string( obj1.get_name() ) == "name00" );
+    const account_object& obj2 = ao.modify( obj1, [&]( account_object& obj ){ obj.set_name( "name01" ); } );
+    BOOST_REQUIRE( std::string( obj2.get_name() ) == "name01" );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
@@ -116,15 +116,15 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     udb.undo_begin();
 
     const account_object& obj_c = ao.create( "name00" );
-    BOOST_REQUIRE( std::string( obj_c.name ) == "name00" );
+    BOOST_REQUIRE( std::string( obj_c.get_name() ) == "name00" );
 
     const account_object& obj_cm = ao.create( "name01" );
-    BOOST_REQUIRE( std::string( obj_cm.name ) == "name01" );
-    ao.modify( obj_cm, [&]( account_object& obj ){ obj.name = "name02"; } );
-    BOOST_REQUIRE( std::string( obj_cm.name ) == "name02" );
+    BOOST_REQUIRE( std::string( obj_cm.get_name() ) == "name01" );
+    ao.modify( obj_cm, [&]( account_object& obj ){ obj.set_name( "name02" ); } );
+    BOOST_REQUIRE( std::string( obj_cm.get_name() ) == "name02" );
 
     const account_object& obj_cr = ao.create( "name03" );
-    BOOST_REQUIRE( std::string( obj_cr.name ) == "name03" );
+    BOOST_REQUIRE( std::string( obj_cr.get_name() ) == "name03" );
     ao.remove( obj_cr );
 
     udb.undo_end();
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE( undo_object_disappear )
       Status:
         Done
     */
-    HIVE_REQUIRE_THROW( ao.modify( obj1, [&]( account_object& obj ){ obj.name = "name00"; obj.set_proxy(pxy0); } ), boost::exception );
+    HIVE_REQUIRE_THROW( ao.modify( obj1, [&]( account_object& obj ){ obj.set_name( "name00" ); obj.set_proxy(pxy0); } ), boost::exception );
 
     udb.undo_end();
     BOOST_REQUIRE( old_size + 2 == ao.size< account_index >() );
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     uint32_t old_size = ao.size< account_index >();
 
     ao.modify( obj0, [&]( account_object& obj ){ obj.post_count = 1; } );
-    ao.modify( obj0, [&]( account_object& obj ){ obj.name = "name01"; } );
+    ao.modify( obj0, [&]( account_object& obj ){ obj.set_name( "name01" ); } );
 
     /*
       Important!!!
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     udb.undo_begin();
 
     const account_object& obja0 = ao.create( "name00" );
-    BOOST_REQUIRE( std::string( obja0.name ) == "name00" );
+    BOOST_REQUIRE( std::string( obja0.get_name() ) == "name00" );
     BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
 
     const comment_object& objc0 = co.create( fake_account_object, "11", fake_parent_comment );
@@ -387,7 +387,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     for( int32_t i=1; i<=5; ++i )
     {
       co_cashout.modify( co1_cashout, [&]( comment_cashout_object& obj ){} );
-      ao.modify( ao1, [&]( account_object& obj ){ obj.name = std::to_string(0); } );
+      ao.modify( ao1, [&]( account_object& obj ){ obj.set_name( std::to_string(0) ); } );
 
       BOOST_REQUIRE( old_size_ao == ao.size< account_index >() );
       BOOST_REQUIRE( old_size_co_cashout = co_cashout.size< comment_cashout_index >() );

@@ -387,11 +387,11 @@ namespace detail
 
         if(_reputation_api)
         {
-          results.back().reputation = _reputation_api->get_account_reputations({ itr->name, 1 }).reputations.at(0).reputation;
+          results.back().reputation = _reputation_api->get_account_reputations({ itr->get_name(), 1 }).reputations.at(0).reputation;
         }
 
-        auto vitr = vidx.lower_bound( boost::make_tuple( itr->name, account_name_type() ) );
-        while( vitr != vidx.end() && vitr->account == itr->name ) {
+        auto vitr = vidx.lower_bound( boost::make_tuple( itr->get_name(), account_name_type() ) );
+        while( vitr != vidx.end() && vitr->account == itr->get_name() ) {
           results.back().witness_votes.insert( _db.get< witness_object, by_name >( vitr->witness ).owner );
           ++vitr;
         }
@@ -449,7 +449,7 @@ namespace detail
         limit-- && itr != accounts_by_name.end();
         ++itr )
     {
-      result.insert( itr->name );
+      result.insert( itr->get_name() );
     }
 
     return result;
@@ -813,7 +813,7 @@ namespace detail
     {
       const auto& vo = _db.get( itr->get_voter() );
       vote_state vstate;
-      vstate.voter = vo.name;
+      vstate.voter = vo.get_name();
       vstate.weight = itr->get_weight();
       vstate.rshares = itr->get_rshares();
       vstate.percent = itr->get_vote_percent();

@@ -105,9 +105,7 @@ namespace hive { namespace chain {
 
     private:
       account_id_type   proxy;
-    public:
       account_name_type name;
-    private:
       account_name_type recovery_account; //cannot be changed to id because there are plenty of accounts with "steem" recovery created before it was created in b.1097
                                           //ABW: actually we could create "steem" account at genesis, just fake some of its properties to keep history intact
 
@@ -257,6 +255,11 @@ namespace hive { namespace chain {
                         share_type() );
       }
 
+#ifdef IS_TEST_NET
+      //ABW: it is needed for some low level tests (they would need to be rewritten)
+      void set_name( const account_name_type& new_name ) { name = new_name; }
+#endif
+
     CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (delayed_votes));
   };
 
@@ -359,7 +362,7 @@ namespace hive { namespace chain {
       template< typename Allocator >
       owner_authority_history_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _account, const shared_authority& _previous_owner, const time_point_sec& _creation_time )
-        : id( _id ), account( _account.name ), previous_owner_authority( allocator< shared_authority >( a ) ),
+        : id( _id ), account( _account.get_name() ), previous_owner_authority( allocator< shared_authority >( a ) ),
         last_valid_time( _creation_time )
       {
         previous_owner_authority = _previous_owner;
@@ -414,7 +417,7 @@ namespace hive { namespace chain {
       template< typename Allocator >
       change_recovery_account_request_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _account_to_recover, const account_object& _recovery_account, const time_point_sec& _effect_time )
-        : id( _id ), effective_on( _effect_time ), account_to_recover( _account_to_recover.name ), recovery_account( _recovery_account.name )
+        : id( _id ), effective_on( _effect_time ), account_to_recover( _account_to_recover.get_name() ), recovery_account( _recovery_account.get_name() )
       {}
 
       //account whos recovery account is being modified
@@ -425,7 +428,7 @@ namespace hive { namespace chain {
       //sets different new recovery account (also moves time when actual change will take place)
       void set_recovery_account( const account_object& new_recovery_account, const time_point_sec& _new_effect_time )
       {
-        recovery_account = new_recovery_account.name;
+        recovery_account = new_recovery_account.get_name();
         effective_on = _new_effect_time;
       }
 
@@ -453,17 +456,17 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< account_object, account_object::id_type, &account_object::get_id > >,
       ordered_unique< tag< by_name >,
-        member< account_object, account_name_type, &account_object::name > >,
+        const_mem_fun< account_object, const account_name_type&, &account_object::get_name > >,
       ordered_unique< tag< by_proxy >,
         composite_key< account_object,
           const_mem_fun< account_object, account_id_type, &account_object::get_proxy >,
-          member< account_object, account_name_type, &account_object::name >
+          const_mem_fun< account_object, const account_name_type&, &account_object::get_name >
         > /// composite key by proxy
       >,
       ordered_unique< tag< by_next_vesting_withdrawal >,
         composite_key< account_object,
           member< account_object, time_point_sec, &account_object::next_vesting_withdrawal >,
-          member< account_object, account_name_type, &account_object::name >
+          const_mem_fun< account_object, const account_name_type&, &account_object::get_name >
         > /// composite key by_next_vesting_withdrawal
       >,
       ordered_unique< tag< by_delayed_voting >,

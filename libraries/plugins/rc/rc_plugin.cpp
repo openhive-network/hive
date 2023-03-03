@@ -174,7 +174,7 @@ void create_rc_account( database& db, uint32_t now, const account_object& accoun
   // ilog( "create_rc_account( ${a} )", ("a", account.name) );
   if( account_may_exist )
   {
-    const rc_account_object* rc_account = db.find< rc_account_object, by_name >( account.name );
+    const rc_account_object* rc_account = db.find< rc_account_object, by_name >( account.get_name() );
     if( rc_account != nullptr )
       return;
   }
@@ -191,13 +191,13 @@ void create_rc_account( database& db, uint32_t now, const account_object& accoun
   }
   else
   {
-    elog( "Encountered unknown max_rc_creation_adjustment creating account ${acct}", ("acct", account.name) );
+    elog( "Encountered unknown max_rc_creation_adjustment creating account ${acct}", ("acct", account.get_name()) );
     max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
   }
 
   db.create< rc_account_object >( [&]( rc_account_object& rca )
   {
-    rca.account = account.name;
+    rca.account = account.get_name();
     rca.rc_manabar.last_update_time = now;
     rca.max_rc_creation_adjustment = max_rc_creation_adjustment;
     int64_t max_rc = get_maximum_rc( account, rca );
@@ -219,7 +219,7 @@ std::vector< std::pair< int64_t, account_name_type > > dump_all_accounts( const 
   const auto& idx = db.get_index< account_index >().indices().get< by_id >();
   for( auto it=idx.begin(); it!=idx.end(); ++it )
   {
-    result.emplace_back( it->get_id(), it->name );
+    result.emplace_back( it->get_id(), it->get_name() );
   }
 
   return result;
@@ -673,12 +673,12 @@ struct pre_apply_operation_visitor
       {
         HIVE_ASSERT( false, plugin_exception,
           "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
-          ("a", account.name)("old", rc_account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
+          ("a", account.get_name())("old", rc_account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
       }
       else
       {
         wlog( "NOTIFYALERT! Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
-          ("a", account.name)("old", rc_account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
+          ("a", account.get_name())("old", rc_account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
       }
     }
 
@@ -778,7 +778,7 @@ struct pre_apply_operation_visitor
       const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
       for( auto it=idx.begin(); it!=idx.end(); ++it )
       {
-        regenerate( it->name );
+        regenerate( it->get_name() );
       }
     }
   }
@@ -1026,7 +1026,7 @@ struct post_apply_operation_visitor
     {
       const auto& idx = _db.get_index< account_index, by_id >();
       for( auto it=idx.begin(); it!=idx.end(); ++it )
-        update_after_vest_change( it->name );
+        update_after_vest_change( it->get_name() );
     }
 
     if( op.hardfork_id == HIVE_HARDFORK_0_20 )
@@ -1279,7 +1279,7 @@ void rc_plugin_impl::validate_database()
     assert( max_rc == rc_account.last_max_rc );
     FC_ASSERT( max_rc == rc_account.last_max_rc,
       "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
-      ("a", account.name)("old", rc_account.last_max_rc)("new", max_rc)("b", _db.head_block_num()) );
+      ("a", account.get_name())("old", rc_account.last_max_rc)("new", max_rc)("b", _db.head_block_num()) );
   }
 }
 

@@ -141,15 +141,15 @@ namespace detail {
     catch( fc::assert_exception& ) {}
 
     // Get possible keys if memo was an account password
-    string owner_seed = account.name + "owner" + memo;
+    string owner_seed = account.get_name() + "owner" + memo;
     auto owner_secret = fc::sha256::hash( owner_seed.c_str(), owner_seed.size() );
     keys.push_back( fc::ecc::private_key::regenerate( owner_secret ).get_public_key() );
 
-    string active_seed = account.name + "active" + memo;
+    string active_seed = account.get_name() + "active" + memo;
     auto active_secret = fc::sha256::hash( active_seed.c_str(), active_seed.size() );
     keys.push_back( fc::ecc::private_key::regenerate( active_secret ).get_public_key() );
 
-    string posting_seed = account.name + "posting" + memo;
+    string posting_seed = account.get_name() + "posting" + memo;
     auto posting_secret = fc::sha256::hash( posting_seed.c_str(), posting_seed.size() );
     keys.push_back( fc::ecc::private_key::regenerate( posting_secret ).get_public_key() );
 

@@ -1802,7 +1802,7 @@ time_point_sec delayed_vote_database_fixture::move_forward_with_update( const fc
   tmp.reserve( items->size() );
 
   for(const votes_update_data& var : *items)
-    tmp.emplace_back(var.account->name, var);
+    tmp.emplace_back(var.account->get_name(), var);
 
   items->clear();
 

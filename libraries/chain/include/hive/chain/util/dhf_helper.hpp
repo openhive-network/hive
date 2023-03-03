@@ -17,8 +17,8 @@ class dhf_helper
     static bool remove_proposal_votes( const account_object& voter, const proposal_vote_index::index<by_voter_proposal>::type& proposal_votes,
       database& db, remove_guard& obj_perf )
     {
-      auto pVoteI = proposal_votes.lower_bound( boost::make_tuple( voter.name, 0 ) );
-      while( pVoteI != proposal_votes.end() && pVoteI->voter == voter.name )
+      auto pVoteI = proposal_votes.lower_bound( boost::make_tuple( voter.get_name(), 0 ) );
+      while( pVoteI != proposal_votes.end() && pVoteI->voter == voter.get_name() )
       {
         const auto& vote = *pVoteI;
         ++pVoteI;

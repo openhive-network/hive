@@ -175,13 +175,13 @@ struct post_operation_visitor
 
         public_key_type new_key (HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR);
 
-        auto existing_key = db.find< key_lookup_object, by_key >(boost::make_tuple(new_key, account->name));
+        auto existing_key = db.find< key_lookup_object, by_key >(boost::make_tuple(new_key, account->get_name()));
         if(existing_key == nullptr)
         {
           db.create< key_lookup_object >([&](key_lookup_object& o)
             {
               o.key = new_key;
-              o.account = account->name;
+              o.account = account->get_name();
             });
         }
       }

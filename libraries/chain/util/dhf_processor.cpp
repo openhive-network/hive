@@ -353,7 +353,7 @@ void dhf_processor::convert_funds( const block_notification& note )
   db.adjust_supply( -to_convert );
   db.adjust_supply( converted_hbd );
 
-  operation vop = dhf_conversion_operation( treasury_account.name, to_convert, converted_hbd );
+  operation vop = dhf_conversion_operation( treasury_account.get_name(), to_convert, converted_hbd );
   db.push_virtual_operation( vop );
 }
 

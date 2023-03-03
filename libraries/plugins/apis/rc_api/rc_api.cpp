@@ -153,7 +153,7 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_direct_delegations )
   {
     const rc_direct_delegation_object& rcdd = *itr;
     const account_object &to_account = _db.get<account_object, by_id>(rcdd.to);
-    result.rc_direct_delegations.emplace_back(*itr, delegator->name, to_account.name);
+    result.rc_direct_delegations.emplace_back( *itr, delegator->get_name(), to_account.get_name() );
     ++itr;
   }
 

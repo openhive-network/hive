@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
 
         const auto& request_idx = executor->db->get_index< decline_voting_rights_request_index >().indices().get< by_account >();
 
-        auto itr = request_idx.find( executor->db->get_account( "alice" ).name );
+        auto itr = request_idx.find( "alice" );
         BOOST_REQUIRE( itr != request_idx.end() );
         BOOST_REQUIRE( itr->effective_date == executor->db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
 
@@ -57,12 +57,12 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
 
         executor->generate_blocks( executor->db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD - fc::seconds( HIVE_BLOCK_INTERVAL ) - fc::seconds( HIVE_BLOCK_INTERVAL ), false );
 
-        itr = request_idx.find( executor->db->get_account( "alice" ).name );
+        itr = request_idx.find( "alice" );
         BOOST_REQUIRE( itr != request_idx.end() );
 
         executor->generate_blocks( executor->db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
-        itr = request_idx.find( executor->db->get_account( "alice" ).name );
+        itr = request_idx.find( "alice" );
         BOOST_REQUIRE( itr == request_idx.end() );
 
         auto recent_ops = executor->get_last_operations( 1 );

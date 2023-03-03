@@ -92,7 +92,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
 
     //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", current->name )( "dv", _val )( "time", current->delayed_votes.begin()->time.to_iso_string() ) );
 
-    operation vop = delayed_voting_operation( current->name, _val );
+    operation vop = delayed_voting_operation( current->get_name(), _val );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
     db.push_virtual_operation( vop );
 

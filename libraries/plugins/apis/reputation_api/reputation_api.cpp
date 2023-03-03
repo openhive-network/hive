@@ -33,10 +33,10 @@ DEFINE_API_IMPL( reputation_api_impl, get_account_reputations )
 
   while( acc_itr != acc_idx.end() && result.reputations.size() < args.limit )
   {
-    auto itr = rep_idx.find( acc_itr->name );
+    auto itr = rep_idx.find( acc_itr->get_name() );
     account_reputation rep;
 
-    rep.account = acc_itr->name;
+    rep.account = acc_itr->get_name();
     rep.reputation = itr != rep_idx.end() ? itr->reputation : 0;
 
     result.reputations.push_back( rep );
