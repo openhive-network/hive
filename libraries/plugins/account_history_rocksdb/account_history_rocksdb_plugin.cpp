@@ -2037,13 +2037,13 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
 
       auto account_iter = account_idx.lower_bound(range.first);
       while (account_iter != account_idx.end() &&
-             account_iter->name <= upper)
+             account_iter->get_name() <= upper)
       {
         const account_object& account = *account_iter;
 
-        auto saved_balance_iter = _saved_balances.find(account_iter->name);
+        auto saved_balance_iter = _saved_balances.find(account_iter->get_name());
         bool balances_changed = saved_balance_iter == _saved_balances.end();
-        saved_balances& saved_balance_record = _saved_balances[account_iter->name];
+        saved_balances& saved_balance_record = _saved_balances[account_iter->get_name()];
 
         if (saved_balance_record.hive_balance != account.balance)
         {
@@ -2105,7 +2105,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
 
         if (balances_changed)
         {
-          _balance_csv_file << (string)account.name << ","
+          _balance_csv_file << (string)account.get_name() << ","
                             << bn.block_num << ","
                             << bn.get_block_timestamp().to_iso_string() << ","
                             << get_asset_amount(saved_balance_record.hive_balance) << ","

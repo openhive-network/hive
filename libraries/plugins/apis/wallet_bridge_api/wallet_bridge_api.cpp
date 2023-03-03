@@ -387,7 +387,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_accounts )
   list_accounts_return result;
 
   for( auto itr = accounts_by_name.lower_bound( lowerbound ); limit-- && itr != accounts_by_name.end(); ++itr )
-    result.emplace( itr->name );
+    result.emplace( itr->get_name() );
 
   return result;
 }

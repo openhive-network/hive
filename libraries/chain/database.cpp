@@ -1651,7 +1651,7 @@ std::pair< asset, asset > database::create_hbd( const account_object& to_account
       assets.second = hive;
     }
   }
-  FC_CAPTURE_LOG_AND_RETHROW( (to_account.name)(hive) )
+  FC_CAPTURE_LOG_AND_RETHROW( (to_account.get_name())(hive) )
 
   return assets;
 }
@@ -1773,7 +1773,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
 
     return new_vesting;
   }
-  FC_CAPTURE_AND_RETHROW( (to_account.name)(liquid) )
+  FC_CAPTURE_AND_RETHROW( (to_account.get_name())(liquid) )
 }
 
 // Create vesting, then a caller-supplied callback after determining how many shares to create, but before
@@ -1792,7 +1792,7 @@ asset create_vesting2( database& db, const account_object& to_account, const ass
 
     return new_vesting;
   }
-  FC_CAPTURE_AND_RETHROW( (to_account.name)(liquid) )
+  FC_CAPTURE_AND_RETHROW( (to_account.get_name())(liquid) )
 }
 
 /**
@@ -1894,8 +1894,8 @@ void database::nullify_proxied_witness_votes( const account_object& a )
 void database::adjust_witness_votes( const account_object& a, const share_type& delta )
 {
   const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
-  auto itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
-  while( itr != vidx.end() && itr->account == a.name )
+  auto itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
+  while( itr != vidx.end() && itr->account == a.get_name() )
   {
     adjust_witness_vote( get< witness_object, by_name >(itr->witness), delta );
     ++itr;
@@ -1932,8 +1932,8 @@ void database::adjust_witness_vote( const witness_object& witness, share_type de
 void database::clear_witness_votes( const account_object& a )
 {
   const auto& vidx = get_index< witness_vote_index >().indices().get<by_account_witness>();
-  auto itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
-  while( itr != vidx.end() && itr->account == a.name )
+  auto itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
+  while( itr != vidx.end() && itr->account == a.get_name() )
   {
     const auto& current = *itr;
     ++itr;
@@ -2179,12 +2179,12 @@ void database::consolidate_treasury_balance()
 
 void database::lock_account( const account_object& account )
 {
-  auto* account_auth = find< account_authority_object, by_account >( account.name );
+  auto* account_auth = find< account_authority_object, by_account >( account.get_name() );
   if( account_auth == nullptr )
   {
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
-      auth.account = account.name;
+      auth.account = account.get_name();
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
@@ -2211,11 +2211,11 @@ void database::lock_account( const account_object& account )
     a.memo_key = public_key_type();
   } );
 
-  auto rec_req = find< account_recovery_request_object, by_account >( account.name );
+  auto rec_req = find< account_recovery_request_object, by_account >( account.get_name() );
   if( rec_req )
     remove( *rec_req );
 
-  auto change_request = find< change_recovery_account_request_object, by_account >( account.name );
+  auto change_request = find< change_recovery_account_request_object, by_account >( account.get_name() );
   if( change_request )
     remove( *change_request );
 }
@@ -2606,7 +2606,7 @@ void database::process_recurrent_transfers()
         });
       }
 
-      push_virtual_operation(fill_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo), remaining_executions));
+      push_virtual_operation(fill_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo), remaining_executions));
     }
     else
     {
@@ -2629,14 +2629,14 @@ void database::process_recurrent_transfers()
           });
         }
         // false means the recurrent transfer was not deleted
-        push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, false));
+        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, false));
       }
       else
       {
         // if we had too many consecutive failures, remove the recurrent payment object
         remove_recurrent_transfer = true;
         // true means the recurrent transfer was deleted
-        push_virtual_operation(failed_recurrent_transfer_operation(from_account.name, to_account.name, current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, true));
+        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, true));
       }
     }
 
@@ -2736,10 +2736,10 @@ void database::update_owner_authority( const account_object& account, const auth
 {
   if( head_block_num() >= HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
   {
-    create< owner_authority_history_object >( account, get< account_authority_object, by_account >( account.name ).owner, head_block_time() );
+    create< owner_authority_history_object >( account, get< account_authority_object, by_account >( account.get_name() ).owner, head_block_time() );
   }
 
-  modify( get< account_authority_object, by_account >( account.name ), [&]( account_authority_object& auth )
+  modify( get< account_authority_object, by_account >( account.get_name() ), [&]( account_authority_object& auth )
   {
     auth.owner = owner_authority;
     auth.previous_owner_update = auth.last_owner_update;
@@ -2789,8 +2789,8 @@ void database::process_vesting_withdrawals()
 
     auto process_routing = [ &, this ]( bool auto_vest_mode )
     {
-      for( auto itr = didx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
-        itr != didx.end() && itr->from_account == from_account.name;
+      for( auto itr = didx.upper_bound( boost::make_tuple( from_account.get_name(), account_name_type() ) );
+        itr != didx.end() && itr->from_account == from_account.get_name();
         ++itr )
       {
         if( !( auto_vest_mode ^ itr->auto_vest ) )
@@ -2804,7 +2804,7 @@ void database::process_vesting_withdrawals()
 
             asset vests = asset( to_deposit, VESTS_SYMBOL );
             asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
-            operation vop = fill_vesting_withdraw_operation( from_account.name, to_account.name, vests, routed );
+            operation vop = fill_vesting_withdraw_operation( from_account.get_name(), to_account.get_name(), vests, routed );
 
             pre_push_virtual_operation( vop );
 
@@ -2856,7 +2856,7 @@ void database::process_vesting_withdrawals()
     FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
 
     auto converted_hive = asset( to_convert, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
-    operation vop = fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_convert, VESTS_SYMBOL ), converted_hive );
+    operation vop = fill_vesting_withdraw_operation( from_account.get_name(), from_account.get_name(), asset( to_convert, VESTS_SYMBOL ), converted_hive );
     //note: it has to be generated even if to_convert is zero because we've accumulated change on from_account
     //and only now we are going to update that account's VESTS (see issue #337)
     pre_push_virtual_operation( vop );
@@ -2958,7 +2958,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
         ++itr;
       }
 
-      const auto& comment_author_name = get_account( comment_cashout.get_author_id() ).name;
+      const auto& comment_author_name = get_account( comment_cashout.get_author_id() ).get_name();
       for( auto& item : proxy_set )
       { try {
         uint128_t weight( item->get_weight() );
@@ -2967,7 +2967,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
         {
           unclaimed_rewards -= claim;
           const auto& voter = get( item->get_voter() );
-          operation vop = curation_reward_operation( voter.name, asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+          operation vop = curation_reward_operation( voter.get_name(), asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
           create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const asset& reward )
             {
@@ -3030,7 +3030,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         share_type total_beneficiary = 0;
         claimed_reward = author_tokens + curation_tokens;
         const auto& author = get_account( comment_cashout.get_author_id() );
-        const auto& comment_author = author.name;
+        const auto& comment_author = author.get_name();
 
         for( auto& b : comment_cashout.get_beneficiaries() )
         {
@@ -3157,7 +3157,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
     if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || calculate_discussion_payout_time( comment, comment_cashout ) == fc::time_point_sec::maximum() )
     {
-      push_virtual_operation( comment_payout_update_operation( get_account( comment_cashout.get_author_id() ).name, to_string( comment_cashout.get_permlink() ) ) );
+      push_virtual_operation( comment_payout_update_operation( get_account( comment_cashout.get_author_id() ).get_name(), to_string( comment_cashout.get_permlink() ) ) );
     }
 
     const auto& vote_idx = get_index< comment_vote_index, by_comment_voter >();
@@ -3516,7 +3516,7 @@ asset database::get_producer_reward()
   if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_account.vesting_shares.amount.value == 0) )
   {
     // const auto& witness_obj = get_witness( props.current_witness );
-    operation vop = producer_reward_operation( witness_account.name, asset( 0, VESTS_SYMBOL ) );
+    operation vop = producer_reward_operation( witness_account.get_name(), asset( 0, VESTS_SYMBOL ) );
     create_vesting2( *this, witness_account, pay, false,
       [&]( const asset& vesting_shares )
       {
@@ -3527,11 +3527,11 @@ asset database::get_producer_reward()
   }
   else
   {
-    modify( get_account( witness_account.name), [&]( account_object& a )
+    modify( get_account( witness_account.get_name() ), [&]( account_object& a )
     {
       a.balance += pay;
     } );
-    push_virtual_operation( producer_reward_operation( witness_account.name, pay ) );
+    push_virtual_operation( producer_reward_operation( witness_account.get_name(), pay ) );
   }
 
   return pay;
@@ -3582,7 +3582,7 @@ void database::pay_liquidity_reward()
         obj.weight      = 0;
       } );
 
-      push_virtual_operation( liquidity_reward_operation( get(itr->owner).name, reward ) );
+      push_virtual_operation( liquidity_reward_operation( get(itr->owner).get_name(), reward ) );
     }
   }
 }
@@ -3775,7 +3775,7 @@ void database::account_recovery_processing()
       a.set_recovery_account( new_recovery_account );
     });
 
-    push_virtual_operation(changed_recovery_account_operation( account.name, old_recovery_account_name, new_recovery_account.name ));
+    push_virtual_operation(changed_recovery_account_operation( account.get_name(), old_recovery_account_name, new_recovery_account.get_name() ));
 
     remove( *change_req );
     change_req = change_req_idx.begin();
@@ -3847,7 +3847,7 @@ void database::process_decline_voting_rights()
     else
     {
       ilog("Threshold exceeded while deleting proposal votes for account ${account}.",
-        ("account", account.name)); // to be continued in next block
+        ("account", account.get_name())); // to be continued in next block
       break;
     }
   }
@@ -4634,7 +4634,7 @@ void database::process_genesis_accounts()
     , account_idx.end()
     , [&]( const account_object& obj ){
         push_virtual_operation(
-          account_created_operation(obj.name, obj.name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+          account_created_operation( obj.get_name(), obj.get_name(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
       }
   );
   _current_trx_in_block = trx_in_block_prev;
@@ -6083,7 +6083,7 @@ void database::adjust_smt_balance( const account_object& owner, const asset& del
 
 void database::modify_balance( const account_object& a, const asset& delta, bool check_balance )
 {
-  const bool trace_balance_change = false; //a.name == "X";
+  const bool trace_balance_change = false; //a.get_name() == "X";
   std::string op_context;
 
   if(trace_balance_change)
@@ -6103,7 +6103,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
         auto b = acnt.balance;
         acnt.balance += delta;
         if(trace_balance_change)
-          ilog("${a} HIVE balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.name)("b", b.amount)("nb", acnt.balance.amount)("block", _current_block_num)("c", op_context));
+          ilog("${a} HIVE balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.balance.amount)("block", _current_block_num)("c", op_context));
 
         if( check_balance )
         {
@@ -6130,7 +6130,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
             acnt.hbd_last_interest_payment = head_block_time();
 
             if(interest > 0)
-              push_virtual_operation( interest_operation( a.name, interest_paid, true ) );
+              push_virtual_operation( interest_operation( a.get_name(), interest_paid, true ) );
 
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
             {
@@ -6144,7 +6144,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
         acnt.hbd_balance += delta;
 
         if(trace_balance_change)
-          ilog("${a} HBD balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.name)("b", b.amount)("nb", acnt.hbd_balance.amount)("block", _current_block_num)("c", op_context));
+          ilog("${a} HBD balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.hbd_balance.amount)("block", _current_block_num)("c", op_context));
 
         if( check_balance )
         {
@@ -6211,7 +6211,7 @@ void database::adjust_balance( const account_object& a, const asset& delta )
     asset available = get_balance( a, delta.symbol );
     FC_ASSERT( available >= -delta,
       "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
-        ("acc", a.name)("r", delta)("a", available) );
+        ("acc", a.get_name())("r", delta)("a", available) );
   }
 
   bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
@@ -6277,7 +6277,7 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
             acnt.savings_hbd_last_interest_payment = head_block_time();
 
             if(interest > 0)
-              push_virtual_operation( interest_operation( a.name, interest_paid, false ) );
+              push_virtual_operation( interest_operation( a.get_name(), interest_paid, false ) );
 
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
             {
@@ -6643,7 +6643,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
           update_owner_authority( *account, authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 ) );
 
-          modify( get< account_authority_object, by_account >( account->name ), [&]( account_authority_object& auth )
+          modify( get< account_authority_object, by_account >( account->get_name() ), [&]( account_authority_object& auth )
           {
             auth.active  = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );
             auth.posting = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );
@@ -7074,7 +7074,7 @@ void database::validate_invariants()const
       for( auto& dv : itr->delayed_votes )
         sum_delayed_votes += dv.val;
       FC_ASSERT( sum_delayed_votes == itr->sum_delayed_votes, "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->sum_delayed_votes) );
-      FC_ASSERT( sum_delayed_votes.value <= itr->vesting_shares.amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->vesting_shares.amount)("account",itr->name) );
+      FC_ASSERT( sum_delayed_votes.value <= itr->vesting_shares.amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->vesting_shares.amount)("account",itr->get_name()) );
       ++account_no;
     }
 
@@ -7331,7 +7331,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
           a.proxied_vsf_votes[i] *= magnitude;
       } );
       if (old_vesting_shares != new_vesting_shares)
-        push_virtual_operation( vesting_shares_split_operation(account.name, old_vesting_shares, new_vesting_shares) );
+        push_virtual_operation( vesting_shares_split_operation(account.get_name(), old_vesting_shares, new_vesting_shares) );
     }
 
     const auto& comments = get_index< comment_cashout_index >().indices();
@@ -7384,8 +7384,8 @@ void database::retally_witness_votes()
     const auto& a = *itr;
 
     const auto& vidx = get_index<witness_vote_index>().indices().get<by_account_witness>();
-    auto wit_itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
-    while( wit_itr != vidx.end() && wit_itr->account == a.name )
+    auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
+    while( wit_itr != vidx.end() && wit_itr->account == a.get_name() )
     {
       adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.witness_vote_weight() );
       ++wit_itr;
@@ -7405,8 +7405,8 @@ void database::retally_witness_vote_counts( bool force )
     if( force || a.has_proxy() )
     {
       const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
-      auto wit_itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
-      while( wit_itr != vidx.end() && wit_itr->account == a.name )
+      auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
+      while( wit_itr != vidx.end() && wit_itr->account == a.get_name() )
       {
         ++witnesses_voted_for;
         ++wit_itr;
@@ -7461,12 +7461,12 @@ void database::remove_expired_governance_votes()
         a.clear_proxy();
         a.set_governance_vote_expired();
       } );
-      push_virtual_operation( expired_account_notification_operation( account.name ) );
+      push_virtual_operation( expired_account_notification_operation( account.get_name() ) );
     }
     else
     {
       ilog("Threshold exceeded while processing account ${account} with expired governance vote.",
-        ("account", account.name)); // to be continued in next block
+        ("account", account.get_name())); // to be continued in next block
       break;
     }
   }

@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
       init_account_priv_key, database::skip_nothing );
 
     auto alice_id = db1.get_account( "alice" ).get_id();
-    BOOST_CHECK( db1.get(alice_id).name == "alice" );
+    BOOST_CHECK( db1.get(alice_id).get_name() == "alice" );
 
     b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
@@ -337,8 +337,8 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
       init_account_priv_key, database::skip_nothing );
     PUSH_BLOCK( db1, b );
 
-    BOOST_CHECK( db1.get(alice_id).name == "alice");
-    BOOST_CHECK( db2.get(alice_id).name == "alice");
+    BOOST_CHECK( db1.get(alice_id).get_name() == "alice");
+    BOOST_CHECK( db2.get(alice_id).get_name() == "alice");
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;

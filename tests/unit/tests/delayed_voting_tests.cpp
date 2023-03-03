@@ -1419,7 +1419,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
     {
       const auto& idx = db->get_index< account_index, by_delayed_voting >();
       for(const auto& usr : idx)
-        if(usr.name == name)
+        if(usr.get_name() == name)
           return std::equal(
                 usr.delayed_votes.begin(), 
                 usr.delayed_votes.end(), 

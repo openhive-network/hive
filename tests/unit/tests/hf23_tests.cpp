@@ -161,14 +161,14 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
       auto bob_hbd_balance    = _bob.get_hbd_balance();
 
       {
-        db->gather_balance( _alice.name, _alice.get_balance(), _alice.get_hbd_balance() );
+        db->gather_balance( _alice.get_name(), _alice.get_balance(), _alice.get_hbd_balance() );
         db->adjust_balance( db->get_treasury_name(), _alice.get_balance() );
         db->adjust_balance( db->get_treasury_name(), _alice.get_hbd_balance() );
         db->adjust_balance( "alice", -_alice.get_balance() );
         db->adjust_balance( "alice", -_alice.get_hbd_balance() );
       }
       {
-        db->gather_balance( _bob.name, _bob.get_balance(), _bob.get_hbd_balance() );
+        db->gather_balance( _bob.get_name(), _bob.get_balance(), _bob.get_hbd_balance() );
         db->adjust_balance( db->get_treasury_name(), _bob.get_balance() );
         db->adjust_balance( db->get_treasury_name(), _bob.get_hbd_balance() );
         db->adjust_balance( "bob", -_bob.get_balance() );

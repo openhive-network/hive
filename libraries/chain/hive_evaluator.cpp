@@ -1177,7 +1177,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   }
 
   /// Emit this vop unconditionally, since VESTS balance changed immediately, indepdenent to subsequent updates of account voting power done inside `delayed_voting` mechanism.
-  _db.push_virtual_operation(transfer_to_vesting_completed_operation(from_account.name, to_account.name, o.amount, amount_vested));
+  _db.push_virtual_operation(transfer_to_vesting_completed_operation(from_account.get_name(), to_account.get_name(), o.amount, amount_vested));
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
@@ -1255,7 +1255,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
   const auto& from_account = _db.get_account( o.from_account );
   const auto& to_account = _db.get_account( o.to_account );
   const auto& wd_idx = _db.get_index< withdraw_vesting_route_index >().indices().get< by_withdraw_route >();
-  auto itr = wd_idx.find( boost::make_tuple( from_account.name, to_account.name ) );
+  auto itr = wd_idx.find( boost::make_tuple( from_account.get_name(), to_account.get_name() ) );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
@@ -1269,8 +1269,8 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 
     _db.create< withdraw_vesting_route_object >( [&]( withdraw_vesting_route_object& wvdo )
     {
-      wvdo.from_account = from_account.name;
-      wvdo.to_account = to_account.name;
+      wvdo.from_account = from_account.get_name();
+      wvdo.to_account = to_account.get_name();
       wvdo.percent = o.percent;
       wvdo.auto_vest = o.auto_vest;
     });
@@ -1293,17 +1293,17 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
   {
     _db.modify( *itr, [&]( withdraw_vesting_route_object& wvdo )
     {
-      wvdo.from_account = from_account.name;
-      wvdo.to_account = to_account.name;
+      wvdo.from_account = from_account.get_name();
+      wvdo.to_account = to_account.get_name();
       wvdo.percent = o.percent;
       wvdo.auto_vest = o.auto_vest;
     });
   }
 
-  itr = wd_idx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
+  itr = wd_idx.upper_bound( boost::make_tuple( from_account.get_name(), account_name_type() ) );
   uint16_t total_percent = 0;
 
-  while( itr != wd_idx.end() && itr->from_account == from_account.name )
+  while( itr != wd_idx.end() && itr->from_account == from_account.get_name() )
   {
     total_percent += itr->percent;
     ++itr;
@@ -1378,7 +1378,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
   const auto& witness = _db.get_witness( o.witness );
 
   const auto& by_account_witness_idx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
-  auto itr = by_account_witness_idx.find( boost::make_tuple( voter.name, witness.owner ) );
+  auto itr = by_account_witness_idx.find( boost::make_tuple( voter.get_name(), witness.owner ) );
 
   if( itr == by_account_witness_idx.end() ) {
     FC_ASSERT( o.approve, "Vote doesn't exist, user must indicate a desire to approve witness." );
@@ -1389,7 +1389,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
       _db.create<witness_vote_object>( [&]( witness_vote_object& v ) {
           v.witness = witness.owner;
-          v.account = voter.name;
+          v.account = voter.get_name();
       });
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) ) {
@@ -1403,7 +1403,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
       _db.create<witness_vote_object>( [&]( witness_vote_object& v ) {
           v.witness = witness.owner;
-          v.account = voter.name;
+          v.account = voter.get_name();
       });
       _db.modify( witness, [&]( witness_object& w ) {
           w.votes += voter.witness_vote_weight();
@@ -2129,7 +2129,7 @@ void pow_apply( database& db, Operation o )
       auth.posting = auth.owner;
     });
 
-    db.push_virtual_operation( account_created_operation(new_account.name, o.get_worker_account(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+    db.push_virtual_operation( account_created_operation(new_account.get_name(), o.get_worker_account(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
   }
 
   const auto& worker_account = db.get_account( o.get_worker_account() ); // verify it exists
@@ -2156,7 +2156,7 @@ void pow_apply( database& db, Operation o )
   });
 
 
-  const witness_object* cur_witness = db.find_witness( worker_account.name );
+  const witness_object* cur_witness = db.find_witness( worker_account.get_name() );
   if( cur_witness ) {
     FC_ASSERT( cur_witness->pow_worker == 0, "This account is already scheduled for pow block production." );
     db.modify(*cur_witness, [&]( witness_object& w ){
@@ -2276,7 +2276,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
         w.pow_worker        = dgp.total_pow;
     });
 
-    _db.push_virtual_operation( account_created_operation(new_account.name, worker_account, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+    _db.push_virtual_operation( account_created_operation(new_account.get_name(), worker_account, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
   }
   else
   {
@@ -2531,7 +2531,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
-  _db.push_virtual_operation( account_created_operation(new_account.name, o.creator, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+  _db.push_virtual_operation( account_created_operation(new_account.get_name(), o.creator, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
 }
 
 void request_account_recovery_evaluator::do_apply( const request_account_recovery_operation& o )
@@ -2714,7 +2714,7 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
     FC_ASSERT( account.can_vote, "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
 
   const auto& request_idx = _db.get_index< decline_voting_rights_request_index >().indices().get< by_account >();
-  auto itr = request_idx.find( account.name );
+  auto itr = request_idx.find( account.get_name() );
 
   if( o.decline )
   {
@@ -2722,7 +2722,7 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
 
     _db.create< decline_voting_rights_request_object >( [&]( decline_voting_rights_request_object& req )
     {
-      req.account = account.name;
+      req.account = account.get_name();
       req.effective_date = _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD;
     });
   }
