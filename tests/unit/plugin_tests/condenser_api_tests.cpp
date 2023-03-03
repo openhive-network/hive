@@ -60,6 +60,8 @@ struct condenser_api_fixture : database_fixture
 
     open_database( _data_dir );
 
+    configuration_data.set_cashout_related_values( 0, 2, 4, 12, 1 );
+
     generate_block();
     validate_database();
   }
@@ -67,6 +69,8 @@ struct condenser_api_fixture : database_fixture
   virtual ~condenser_api_fixture()
   {
     try {
+      configuration_data.reset_cashout_values();
+
       // If we're unwinding due to an exception, don't do any more checks.
       // This way, boost test's last checkpoint tells us approximately where the error was.
       if( !std::uncaught_exceptions() )
@@ -160,7 +164,7 @@ struct condenser_api_fixture : database_fixture
 
   /**
    * Operations tested here:
-   *  curation_reward_operation, author_reward_operation, comment_reward_operation, comment_payout_update_operation, dhf_funding_operation,
+   *  curation_reward_operation, author_reward_operation, comment_reward_operation, comment_payout_update_operation,
    *  claim_reward_balance_operation, producer_reward_operation
    */  
   void comment_and_reward_scenario( check_point_tester_t check_point_1_tester, check_point_tester_t check_point_2_tester )
@@ -173,10 +177,10 @@ struct condenser_api_fixture : database_fixture
     post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
     vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
 
-    check_point_1_tester( 1202 ); // generate up to block 1202nd inside
-    verify_and_advance_to_block( 1202 );
+    check_point_1_tester( 27 ); // generate up to block 27th inside
+    verify_and_advance_to_block( 27 );
 
-    claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "12.502 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
+    claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "0.575 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
 
     check_point_2_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
@@ -599,8 +603,8 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_hf13 )
     R"~({"trx_id":"a9fcfc9ce8dabd6e47e7f2e0ce0b24ab03aa1611","block":25,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:12","op":{"type":"vote_operation","value":{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":10000}},"operation_id":0})~",
     R"~({"trx_id":"a9fcfc9ce8dabd6e47e7f2e0ce0b24ab03aa1611","block":25,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:12","op":["vote",{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":10000}]})~"
     }, { // effective_comment_vote_operation
-    R"~({"trx_id":"a9fcfc9ce8dabd6e47e7f2e0ce0b24ab03aa1611","block":25,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:12","op":{"type":"effective_comment_vote_operation","value":{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":"861287144336891","rshares":"5100000000","total_vote_weight":"23489649391006145","pending_payout":{"amount":"48000","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
-    R"~({"trx_id":"a9fcfc9ce8dabd6e47e7f2e0ce0b24ab03aa1611","block":25,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:12","op":["effective_comment_vote",{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":"861287144336891","rshares":"5100000000","total_vote_weight":"23489649391006145","pending_payout":"48.000 TBD"}]})~"
+    R"~({"trx_id":"a9fcfc9ce8dabd6e47e7f2e0ce0b24ab03aa1611","block":25,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:12","op":{"type":"effective_comment_vote_operation","value":{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":0,"rshares":"5100000000","total_vote_weight":0,"pending_payout":{"amount":"48000","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
+    R"~({"trx_id":"a9fcfc9ce8dabd6e47e7f2e0ce0b24ab03aa1611","block":25,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:12","op":["effective_comment_vote",{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":0,"rshares":"5100000000","total_vote_weight":0,"pending_payout":"48.000 TBD"}]})~"
     }, { // delete_comment_operation
     R"~({"trx_id":"8e3e87e3e1adc6a946973834e4c8b79ee4750585","block":25,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:12","op":{"type":"delete_comment_operation","value":{"author":"edgar0ah","permlink":"permlink1"}},"operation_id":0})~",
     R"~({"trx_id":"8e3e87e3e1adc6a946973834e4c8b79ee4750585","block":25,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:12","op":["delete_comment",{"author":"edgar0ah","permlink":"permlink1"}]})~"
@@ -627,47 +631,44 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_comment_and_reward )
   // Check virtual operations resulting from scenario's 1st set of actions some blocks later:
   auto check_point_1_tester = [ this ]( uint32_t generate_no_further_than )
   {
-    generate_until_irreversible_block( 1202 );
+    generate_until_irreversible_block( 6 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
     expected_t expected_operations = { { // producer_reward_operation
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"127627863909","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":["producer_reward",{"producer":"initminer","vesting_shares":"127627.863909 VESTS"}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8525584098","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":["producer_reward",{"producer":"initminer","vesting_shares":"8525.584098 VESTS"}]})~"
     }, { // curation_reward_operation
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":{"type":"curation_reward_operation","value":{"curator":"dan0ah","reward":{"amount":"20459133335790","precision":6,"nai":"@@000000037"},"comment_author":"edgar0ah","comment_permlink":"permlink1","payout_must_be_claimed":true}},"operation_id":0})~",
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":["curation_reward",{"curator":"dan0ah","reward":"20459133.335790 VESTS","comment_author":"edgar0ah","comment_permlink":"permlink1","payout_must_be_claimed":true}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":{"type":"curation_reward_operation","value":{"curator":"dan0ah","reward":{"amount":"1089380190306","precision":6,"nai":"@@000000037"},"comment_author":"edgar0ah","comment_permlink":"permlink1","payout_must_be_claimed":true}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":["curation_reward",{"curator":"dan0ah","reward":"1089380.190306 VESTS","comment_author":"edgar0ah","comment_permlink":"permlink1","payout_must_be_claimed":true}]})~"
     }, { // author_reward_operation
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":{"type":"author_reward_operation","value":{"author":"edgar0ah","permlink":"permlink1","hbd_payout":{"amount":"18515","precision":3,"nai":"@@000000013"},"hive_payout":{"amount":"0","precision":3,"nai":"@@000000021"},"vesting_payout":{"amount":"10229566667895","precision":6,"nai":"@@000000037"},"curators_vesting_payout":{"amount":"20459133335790","precision":6,"nai":"@@000000037"},"payout_must_be_claimed":true}},"operation_id":0})~",
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":["author_reward",{"author":"edgar0ah","permlink":"permlink1","hbd_payout":"18.515 TBD","hive_payout":"0.000 TESTS","vesting_payout":"10229566.667895 VESTS","curators_vesting_payout":"20459133.335790 VESTS","payout_must_be_claimed":true}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":{"type":"author_reward_operation","value":{"author":"edgar0ah","permlink":"permlink1","hbd_payout":{"amount":"575","precision":3,"nai":"@@000000013"},"hive_payout":{"amount":"0","precision":3,"nai":"@@000000021"},"vesting_payout":{"amount":"544690095153","precision":6,"nai":"@@000000037"},"curators_vesting_payout":{"amount":"1089380190306","precision":6,"nai":"@@000000037"},"payout_must_be_claimed":true}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":["author_reward",{"author":"edgar0ah","permlink":"permlink1","hbd_payout":"0.575 TBD","hive_payout":"0.000 TESTS","vesting_payout":"544690.095153 VESTS","curators_vesting_payout":"1089380.190306 VESTS","payout_must_be_claimed":true}]})~"
     }, { // comment_reward_operation
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":4,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":{"type":"comment_reward_operation","value":{"author":"edgar0ah","permlink":"permlink1","payout":{"amount":"74060","precision":3,"nai":"@@000000013"},"author_rewards":37030,"total_payout_value":{"amount":"37030","precision":3,"nai":"@@000000013"},"curator_payout_value":{"amount":"37030","precision":3,"nai":"@@000000013"},"beneficiary_payout_value":{"amount":"0","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":4,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":["comment_reward",{"author":"edgar0ah","permlink":"permlink1","payout":"74.060 TBD","author_rewards":37030,"total_payout_value":"37.030 TBD","curator_payout_value":"37.030 TBD","beneficiary_payout_value":"0.000 TBD"}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":4,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":{"type":"comment_reward_operation","value":{"author":"edgar0ah","permlink":"permlink1","payout":{"amount":"2300","precision":3,"nai":"@@000000013"},"author_rewards":1150,"total_payout_value":{"amount":"1150","precision":3,"nai":"@@000000013"},"curator_payout_value":{"amount":"1150","precision":3,"nai":"@@000000013"},"beneficiary_payout_value":{"amount":"0","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":4,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":["comment_reward",{"author":"edgar0ah","permlink":"permlink1","payout":"2.300 TBD","author_rewards":1150,"total_payout_value":"1.150 TBD","curator_payout_value":"1.150 TBD","beneficiary_payout_value":"0.000 TBD"}]})~"
     }, { // comment_payout_update_operation
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":5,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":{"type":"comment_payout_update_operation","value":{"author":"edgar0ah","permlink":"permlink1"}},"operation_id":0})~",
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":5,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":["comment_payout_update",{"author":"edgar0ah","permlink":"permlink1"}]})~"
-    }, { // dhf_funding_operation
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":6,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":{"type":"dhf_funding_operation","value":{"treasury":"hive.fund","additional_funds":{"amount":"10800","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1202,"trx_in_block":4294967295,"op_in_trx":6,"virtual_op":true,"timestamp":"2016-01-01T01:00:06","op":["dhf_funding",{"treasury":"hive.fund","additional_funds":"10.800 TBD"}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":5,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":{"type":"comment_payout_update_operation","value":{"author":"edgar0ah","permlink":"permlink1"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":5,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":["comment_payout_update",{"author":"edgar0ah","permlink":"permlink1"}]})~"
     } };
     // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
-    test_get_ops_in_block( *this, expected_operations, expected_operations, 1202 );
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 6 );
   };
 
   // Check operations resulting from 2nd set of actions:
   auto check_point_2_tester = [ this ]( uint32_t generate_no_further_than )
   { 
-    generate_until_irreversible_block( 1203 );
+    generate_until_irreversible_block( 28 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
     expected_t expected_operations = { { // claim_reward_balance_operation
-    R"~({"trx_id":"c4b7652419fa28a0de75c0f4ca4490f29b3f2148","block":1203,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T01:00:06","op":{"type":"claim_reward_balance_operation","value":{"account":"edgar0ah","reward_hive":{"amount":"0","precision":3,"nai":"@@000000021"},"reward_hbd":{"amount":"12502","precision":3,"nai":"@@000000013"},"reward_vests":{"amount":"80000000","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
-    R"~({"trx_id":"c4b7652419fa28a0de75c0f4ca4490f29b3f2148","block":1203,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T01:00:06","op":["claim_reward_balance",{"account":"edgar0ah","reward_hive":"0.000 TESTS","reward_hbd":"12.502 TBD","reward_vests":"80.000000 VESTS"}]})~"
+      R"~({"trx_id":"69adf1e346c41e81cab0cc3cb3249ed03a9767c4","block":28,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:21","op":{"type":"claim_reward_balance_operation","value":{"account":"edgar0ah","reward_hive":{"amount":"0","precision":3,"nai":"@@000000021"},"reward_hbd":{"amount":"575","precision":3,"nai":"@@000000013"},"reward_vests":{"amount":"80000000","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"69adf1e346c41e81cab0cc3cb3249ed03a9767c4","block":28,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:21","op":["claim_reward_balance",{"account":"edgar0ah","reward_hive":"0.000 TESTS","reward_hbd":"0.575 TBD","reward_vests":"80.000000 VESTS"}]})~"
     }, { // producer_reward_operation
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1203,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:09","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"127622114734","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
-    R"~({"trx_id":"0000000000000000000000000000000000000000","block":1203,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:09","op":["producer_reward",{"producer":"initminer","vesting_shares":"127622.114734 VESTS"}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":28,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"7076556368","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":28,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":["producer_reward",{"producer":"initminer","vesting_shares":"7076.556368 VESTS"}]})~"
     } };
     expected_t expected_virtual_operations = { expected_operations[1] };
-    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 1203 );
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 28 );
   };
 
   comment_and_reward_scenario( check_point_1_tester, check_point_2_tester );
@@ -841,19 +842,19 @@ BOOST_AUTO_TEST_CASE( get_transaction_comment_and_reward )
   // Check virtual operations resulting from scenario's 1st set of actions some blocks later:
   auto check_point_1_tester = [ this ]( uint32_t generate_no_further_than )
   {
-    generate_until_irreversible_block( 1202 );
+    generate_until_irreversible_block( 6 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
-    test_get_transaction( *this, 1202 ); // <- TODO: Enhance with patterns
+    test_get_transaction( *this, 6 ); // <- TODO: Enhance with patterns
   };
 
   // Check operations resulting from 2nd set of actions:
   auto check_point_2_tester = [ this ]( uint32_t generate_no_further_than )
   { 
-    generate_until_irreversible_block( 1203 );
+    generate_until_irreversible_block( 28 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
-    test_get_transaction( *this, 1203 ); // <- TODO: Enhance with patterns
+    test_get_transaction( *this, 25 ); // <- TODO: Enhance with patterns
   };
 
   comment_and_reward_scenario( check_point_1_tester, check_point_2_tester );
