@@ -488,7 +488,7 @@ struct api_account_object
     proxy( HIVE_PROXY_TO_SELF_ACCOUNT ),
     last_account_update( a.last_account_update ),
     created( a.get_creation_time() ),
-    mined( a.mined ),
+    mined( a.was_mined() ),
     recovery_account( a.get_recovery_account() ),
     reset_account( HIVE_NULL_ACCOUNT ),
     last_account_recovery( a.last_account_recovery ),

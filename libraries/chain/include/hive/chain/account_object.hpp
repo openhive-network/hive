@@ -79,6 +79,8 @@ namespace hive { namespace chain {
       const account_name_type& get_name() const { return name; }
       //account creation time
       time_point_sec get_creation_time() const { return created; }
+      //tells if account was created through pow/pow2 mining operation or is one of builtin accounts created during genesis
+      bool was_mined() const { return mined; }
 
       //tells if account has some other account casting governance votes in its name
       bool has_proxy() const { return proxy != account_id_type(); }
@@ -191,7 +193,8 @@ namespace hive { namespace chain {
 
       uint8_t           savings_withdraw_requests = 0;
       bool              can_vote = true;
-      bool              mined = true;
+    private:
+      bool              mined = true; //(only used by outdated consensus checks)
 
     public:
 

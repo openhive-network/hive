@@ -1195,7 +1195,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   FC_ASSERT( static_cast<asset>(account.vesting_shares) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
 
   FC_TODO( "Remove this entire block after HF 20" )
-  if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1860 ) && !account.mined && _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
+  if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1860 ) && !account.was_mined() && _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
   {
     const auto& props = _db.get_dynamic_global_properties();
     const witness_schedule_object& wso = _db.get_witness_schedule_object();
