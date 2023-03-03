@@ -487,7 +487,7 @@ struct api_account_object
     memo_key( a.memo_key ),
     proxy( HIVE_PROXY_TO_SELF_ACCOUNT ),
     last_account_update( a.last_account_update ),
-    created( a.created ),
+    created( a.get_creation_time() ),
     mined( a.mined ),
     recovery_account( a.get_recovery_account() ),
     reset_account( HIVE_NULL_ACCOUNT ),

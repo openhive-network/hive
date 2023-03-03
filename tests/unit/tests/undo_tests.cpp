@@ -34,10 +34,11 @@ BOOST_AUTO_TEST_CASE( undo_basic )
   try
   {
     BOOST_TEST_MESSAGE( "--- Testing: undo_basic" );
+    auto time = db->head_block_time();
 
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
-    const account_object& pxy = ao.create( "proxy00" );
+    const account_object& pxy = ao.create( "proxy00", time );
 
     BOOST_TEST_MESSAGE( "--- No object added" );
     ao.remember_old_values< account_index >();
@@ -49,7 +50,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj0 = ao.create( "name00" );
+    const account_object& obj0 = ao.create( "name00", time );
     BOOST_REQUIRE( std::string( obj0.get_name() ) == "name00" );
 
     udb.undo_end();
@@ -59,7 +60,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj1 = ao.create( "name00" );
+    const account_object& obj1 = ao.create( "name00", time );
     BOOST_REQUIRE( std::string( obj1.get_name() ) == "name00" );
     const account_object& obj2 = ao.modify( obj1, [&]( account_object& obj ){ obj.set_name( "name01" ); } );
     BOOST_REQUIRE( std::string( obj2.get_name() ) == "name01" );
@@ -71,7 +72,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj3 = ao.create( "name00" );
+    const account_object& obj3 = ao.create( "name00", time );
     ao.remove( obj3 );
 
     udb.undo_end();
@@ -81,7 +82,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj4 = ao.create( "name00" );
+    const account_object& obj4 = ao.create( "name00", time );
     ao.modify( obj4, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
     ao.remove( obj4 );
 
@@ -92,9 +93,9 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj5 = ao.create( "name00" );
+    const account_object& obj5 = ao.create( "name00", time );
     ao.remove( obj5 );
-    ao.create( "name00" );
+    ao.create( "name00", time );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
@@ -103,10 +104,10 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj6 = ao.create( "name00" );
+    const account_object& obj6 = ao.create( "name00", time );
     ao.modify( obj6, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
     ao.remove( obj6 );
-    ao.create( "name00" );
+    ao.create( "name00", time );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
@@ -115,15 +116,15 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj_c = ao.create( "name00" );
+    const account_object& obj_c = ao.create( "name00", time );
     BOOST_REQUIRE( std::string( obj_c.get_name() ) == "name00" );
 
-    const account_object& obj_cm = ao.create( "name01" );
+    const account_object& obj_cm = ao.create( "name01", time );
     BOOST_REQUIRE( std::string( obj_cm.get_name() ) == "name01" );
     ao.modify( obj_cm, [&]( account_object& obj ){ obj.set_name( "name02" ); } );
     BOOST_REQUIRE( std::string( obj_cm.get_name() ) == "name02" );
 
-    const account_object& obj_cr = ao.create( "name03" );
+    const account_object& obj_cr = ao.create( "name03", time );
     BOOST_REQUIRE( std::string( obj_cr.get_name() ) == "name03" );
     ao.remove( obj_cr );
 
@@ -138,19 +139,20 @@ BOOST_AUTO_TEST_CASE( undo_object_disappear )
   try
   {
     BOOST_TEST_MESSAGE( "--- 2 objects. Modifying 1 object - uniqueness of complex index is violated" );
+    auto time = db->head_block_time();
 
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
 
-    const account_object& pxy0 = ao.create( "proxy00" );
-    const account_object& pxy1 = ao.create( "proxy01" );
+    const account_object& pxy0 = ao.create( "proxy00", time );
+    const account_object& pxy1 = ao.create( "proxy01", time );
 
     uint32_t old_size = ao.size< account_index >();
 
-    const account_object& obj0 = ao.create( "name00" ); ao.modify( obj0, [&]( account_object& obj ){ obj.set_proxy(pxy0); } );
+    const account_object& obj0 = ao.create( "name00", time ); ao.modify( obj0, [&]( account_object& obj ){ obj.set_proxy(pxy0); } );
     BOOST_REQUIRE( old_size + 1 == ao.size< account_index >() );
 
-    const account_object& obj1 = ao.create( "name01" ); ao.modify( obj1, [&]( account_object& obj ){ obj.set_proxy(pxy1); } );
+    const account_object& obj1 = ao.create( "name01", time ); ao.modify( obj1, [&]( account_object& obj ){ obj.set_proxy(pxy1); } );
     BOOST_REQUIRE( old_size + 2 == ao.size< account_index >() );
 
     ao.remember_old_values< account_index >();
@@ -179,8 +181,9 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
   try
   {
     BOOST_TEST_MESSAGE( "--- Testing: undo_key_collision" );
+    auto time = db->head_block_time();
 
-    const auto& fake_account_object = db->create< account_object >( "fake" );
+    const auto& fake_account_object = db->create< account_object >( "fake", time );
     const comment_object* fake_parent_comment = nullptr;
 
     undo_db udb( *db );
@@ -190,8 +193,8 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    ao.create( "name00" );
-    HIVE_REQUIRE_THROW( ao.create( "name00" ), boost::exception );
+    ao.create( "name00", time );
+    HIVE_REQUIRE_THROW( ao.create( "name00", time ), boost::exception );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
@@ -200,7 +203,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     BOOST_TEST_MESSAGE( "--- 2 objects. Object 'obj0' is created before 'undo' and has modified key in next step." );
     BOOST_TEST_MESSAGE( "--- Object 'obj1' retrieves old key from object 'obj0'." );
 
-    const account_object& obj0 = ao.create( "name00" );
+    const account_object& obj0 = ao.create( "name00", time );
 
     ao.remember_old_values< account_index >();
     udb.undo_begin();
@@ -220,10 +223,10 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
         Is necessary to write another version of 'undo'?
     */
     //Temporary. After fix, this line should be enabled.
-    //ao.create( "name00" );
+    //ao.create( "name00", time );
 
     //Temporary. After fix, this line should be removed.
-    ao.create( "nameXYZ" );
+    ao.create( "nameXYZ", time );
 
     BOOST_REQUIRE( old_size + 1 == ao.size< account_index >() );
 
@@ -274,7 +277,8 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
 {
   try
   {
-    const auto& fake_account_object = db->create< account_object >( "fake" );
+    auto time = db->head_block_time();
+    const auto& fake_account_object = db->create< account_object >( "fake", time );
     const comment_object* fake_parent_comment = nullptr;
 
     BOOST_TEST_MESSAGE( "--- Testing: undo_different_indexes" );
@@ -295,7 +299,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     old_size_co = co.size< comment_index >();
     udb.undo_begin();
 
-    const account_object& obja0 = ao.create( "name00" );
+    const account_object& obja0 = ao.create( "name00", time );
     BOOST_REQUIRE( std::string( obja0.get_name() ) == "name00" );
     BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
 
@@ -318,9 +322,9 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     old_size_co_cashout = co.size< comment_cashout_index >();
     udb.undo_begin();
 
-    const account_object& pxy = ao.create( "name00" );
-    const account_object& obja1 = ao.create( "name01" );
-    const account_object& obja2 = ao.create( "name02" );
+    const account_object& pxy = ao.create( "name00", time );
+    const account_object& obja1 = ao.create( "name01", time );
+    const account_object& obja2 = ao.create( "name02", time );
     BOOST_REQUIRE( old_size_ao + 3 == ao.size< account_index >() );
     ao.modify( obja1, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
     ao.remove( obja2 );
@@ -350,7 +354,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     old_size_co_cashout = co_cashout.size< comment_cashout_index >();
     udb.undo_begin();
 
-    ao.create( "name01" );
+    ao.create( "name01", time );
     const comment_object& objc2 = co.create( fake_account_object, "12", fake_parent_comment );
     const comment_cashout_object& objc2_cashout = co_cashout.create( objc2, fake_account_object, "12", time_point_sec( 10 ), time_point_sec( 20 ) );
     BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
@@ -374,7 +378,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
 
     const comment_object& co1 = co.create( fake_account_object, "12", fake_parent_comment );
     const comment_cashout_object& co1_cashout = co_cashout.create( co1, fake_account_object, "12", time_point_sec( 10 ), time_point_sec( 20 ) );
-    const account_object& ao1 = ao.create( std::to_string(0) );
+    const account_object& ao1 = ao.create( std::to_string(0), time );
 
     ao.remember_old_values< account_index >();
     co.remember_old_values< comment_index >();

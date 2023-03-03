@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE( acct_auth.active == authority( 2, priv_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
     CHECK_NO_PROXY( acct );
-    BOOST_REQUIRE( acct.created == db->head_block_time() );
+    BOOST_REQUIRE( acct.get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( acct.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( acct.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
     BOOST_REQUIRE( acct.get_id().get_value() == acct_auth.get_id().get_value() );
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE( acct_auth.active == authority( 2, priv_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
     CHECK_NO_PROXY( acct );
-    BOOST_REQUIRE( acct.created == db->head_block_time() );
+    BOOST_REQUIRE( acct.get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( acct.get_balance().amount.value == ASSET( "0.000 TESTS " ).amount.value );
     BOOST_REQUIRE( acct.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
     BOOST_REQUIRE( acct.get_vesting().amount.value == 0 );
@@ -9151,7 +9151,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
 #endif
     CHECK_NO_PROXY( bob );
     BOOST_REQUIRE( bob.get_recovery_account() == "alice" );
-    BOOST_REQUIRE( bob.created == db->head_block_time() );
+    BOOST_REQUIRE( bob.get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( bob.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( bob.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
     BOOST_REQUIRE( bob.get_vesting().amount.value == ASSET( "0.000000 VESTS" ).amount.value );
