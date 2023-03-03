@@ -194,7 +194,7 @@ namespace hive { namespace chain {
       uint8_t           savings_withdraw_requests = 0;
       bool              can_vote = true;
     private:
-      bool              mined = true; //(only used by outdated consensus checks)
+      bool              mined = true; //(not read by consensus code)
 
     public:
 
