@@ -125,7 +125,7 @@ class decoded_types_data_storage final
 
 namespace decoders
 {
-  /* Detector for analysing template arguments. IMPORTANT - doesn't work for types which accepts value, for example array (type, value). */
+  /* Checks if T is a template type. IMPORTANT - doesn't work for template types which accepts value, for example fc::array<type, value>, ::value will return false. */
   template <typename>
   struct template_types_detector : std::false_type { void analyze_arguments() const {} };
 
