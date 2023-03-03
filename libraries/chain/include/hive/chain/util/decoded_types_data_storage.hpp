@@ -4,8 +4,10 @@
 #include <chainbase/chainbase.hpp>
 
 #include <fc/crypto/ripemd160.hpp>
+#include <fc/crypto/sha256.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/reflect/reflect.hpp>
+#include <fc/static_variant.hpp>
 
 #include <hive/protocol/fixed_string.hpp>
 
@@ -333,6 +335,19 @@ namespace decoders
     {
       void decode() const
       {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(chainbase::oid<T>).name();
+        ss << type_id;
+        ss << sizeof(chainbase::oid<T>);
+        ss << alignof(chainbase::oid<T>);
+
+        chainbase::oid<T> oid(0);
+        using oid_value_type = decltype(oid.get_value());
+        ss << sizeof(oid_value_type);
+        ss << alignof(oid_value_type);
+        ss << typeid(oid_value_type).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
         decoder.decode();
       }
@@ -343,6 +358,19 @@ namespace decoders
     {
       void decode() const
       {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(chainbase::oid_ref<T>).name();
+        ss << type_id;
+        ss << sizeof(chainbase::oid_ref<T>);
+        ss << alignof(chainbase::oid_ref<T>);
+
+        chainbase::oid_ref<T> oid_ref;
+        using oid_value_type = decltype(oid_ref.get_value());
+        ss << sizeof(oid_value_type);
+        ss << alignof(oid_value_type);
+        ss << typeid(oid_value_type).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
         decoder.decode();
       }
@@ -353,6 +381,19 @@ namespace decoders
     {
       void decode() const
       {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(fc::time_point_sec).name();
+        ss << type_id;
+        ss << sizeof(fc::time_point_sec);
+        ss << alignof(fc::time_point_sec);
+
+        fc::time_point_sec tps;
+        using sec_since_epoch_type = decltype(tps.sec_since_epoch());
+        ss << sizeof(sec_since_epoch_type);
+        ss << alignof(sec_since_epoch_type);
+        ss << typeid(sec_since_epoch_type).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
       }
     };
 
@@ -361,6 +402,20 @@ namespace decoders
     {
       void decode() const
       {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(fc::erpair<A, B>).name();
+        ss << type_id;
+        ss << sizeof(fc::erpair<A, B>);
+        ss << alignof(fc::erpair<A, B>);
+
+        fc::erpair<A, B>* const nullObj = nullptr;
+        ss << size_t(static_cast<void*>(&(nullObj->first)));
+        ss << typeid(nullObj->first).name();
+        ss << size_t(static_cast<void*>(&(nullObj->second)));
+        ss << typeid(nullObj->second).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+
         main_decoder<A> decoder_A;
         decoder_A.decode();
         main_decoder<B> decoder_B;
@@ -373,6 +428,17 @@ namespace decoders
     {
       void decode() const
       {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(fc::array<T, N>).name();
+        ss << type_id;
+        ss << sizeof(fc::array<T, N>);
+        ss << alignof(fc::array<T, N>);
+
+        fc::array<T, N>* const nullObj = nullptr;
+        ss << size_t(static_cast<void*>(&(nullObj->data)));
+        ss << typeid(nullObj->data).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
         decoder.decode();
       }
@@ -383,6 +449,17 @@ namespace decoders
     {
       void decode() const
       {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(hive::protocol::fixed_string_impl<T>).name();
+        ss << type_id;
+        ss << sizeof(hive::protocol::fixed_string_impl<T>);
+        ss << alignof(hive::protocol::fixed_string_impl<T>);
+
+        hive::protocol::fixed_string_impl<T>* const nullObj = nullptr;
+        ss << size_t(static_cast<void*>(&(nullObj->data)));
+        ss << typeid(nullObj->data).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
         decoder.decode();
       }
@@ -393,6 +470,17 @@ namespace decoders
     {
       void decode() const
       {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(fc::ripemd160).name();
+        ss << type_id;
+        ss << sizeof(fc::ripemd160);
+        ss << alignof(fc::ripemd160);
+
+        fc::ripemd160* const nullObj = nullptr;
+        ss << size_t(static_cast<void*>(&(nullObj->_hash)));
+        ss << typeid(nullObj->_hash).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
       }
     };
 
@@ -401,8 +489,36 @@ namespace decoders
     {
       void decode() const
       {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(fc::static_variant<T>).name();
+        ss << type_id;
+        ss << sizeof(fc::static_variant<T>);
+        ss << alignof(fc::static_variant<T>);
+
+        fc::static_variant<T> sv;
+        ss << typeid(sv.which()).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
         decoder.decode();
+      }
+    };
+
+    template<>
+    struct specific_type_decoder<fc::static_variant<>>
+    {
+      void decode() const
+      {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(fc::static_variant<>).name();
+        ss << type_id;
+        ss << sizeof(fc::static_variant<>);
+        ss << alignof(fc::static_variant<>);
+
+        fc::static_variant<> sv;
+        ss << typeid(sv.which()).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
       }
     };
 
@@ -411,6 +527,17 @@ namespace decoders
     {
       void decode() const
       {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(fc::sha256).name();
+        ss << type_id;
+        ss << sizeof(fc::sha256);
+        ss << alignof(fc::sha256);
+
+        fc::sha256* const nullObj = nullptr;
+        ss << size_t(static_cast<void*>(&(nullObj->_hash)));
+        ss << typeid(nullObj->_hash).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
       }
     };
 
@@ -419,6 +546,17 @@ namespace decoders
     {
       void decode() const
       {
+        std::stringstream ss;
+        const std::string_view type_id = typeid(fc::int_array<T, N>).name();
+        ss << type_id;
+        ss << sizeof(fc::int_array<T, N>);
+        ss << alignof(fc::int_array<T, N>);
+
+        fc::int_array<T, N>* const nullObj = nullptr;
+        ss << size_t(static_cast<void*>(&(nullObj->data)));
+        ss << typeid(nullObj->data).name();
+
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
         decoder.decode();
       }
@@ -435,6 +573,8 @@ namespace decoders
         decoder_B.decode();
       }
     };
+
+    /* End of specific decoders for non reflected types. */
 
   } // hive::chain::util::decoders::non_reflected_types
 } // hive::chain::util::decoders
