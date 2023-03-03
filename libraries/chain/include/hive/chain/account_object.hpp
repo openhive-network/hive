@@ -45,8 +45,8 @@ namespace hive { namespace chain {
       //minimal constructor used for creation of accounts at genesis and in tests
       template< typename Allocator >
       account_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _name, const public_key_type& _memo_key = public_key_type() )
-        : id( _id ), name( _name ), memo_key( _memo_key ), delayed_votes( a )
+        const account_name_type& _name, const time_point_sec& _creation_time, const public_key_type& _memo_key = public_key_type() )
+        : id( _id ), name( _name ), created( _creation_time ), memo_key( _memo_key ), delayed_votes( a )
       {}
 
       //liquid HIVE balance
@@ -77,6 +77,8 @@ namespace hive { namespace chain {
 
       //gives name of the account
       const account_name_type& get_name() const { return name; }
+      //account creation time
+      time_point_sec get_creation_time() const { return created; }
 
       //tells if account has some other account casting governance votes in its name
       bool has_proxy() const { return proxy != account_id_type(); }
@@ -162,7 +164,9 @@ namespace hive { namespace chain {
       time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
       time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
       time_point_sec    last_account_recovery;
-      time_point_sec    created;
+    private:
+      time_point_sec    created; //(not read by consensus code)
+    public:
       time_point_sec    last_account_update;
       time_point_sec    last_post;
       time_point_sec    last_root_post = fc::time_point_sec::min();

@@ -4106,7 +4106,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
     // Create blockchain accounts
     public_key_type      init_public_key(HIVE_INIT_PUBLIC_KEY);
 
-    create< account_object >( HIVE_MINER_ACCOUNT );
+    create< account_object >( HIVE_MINER_ACCOUNT, HIVE_GENESIS_TIME );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_MINER_ACCOUNT;
@@ -4114,7 +4114,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       auth.active.weight_threshold = 1;
     });
 
-    create< account_object >( HIVE_NULL_ACCOUNT );
+    create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_NULL_ACCOUNT;
@@ -4123,11 +4123,11 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
     });
 
 #ifdef IS_TEST_NET
-    create< account_object >( OBSOLETE_TREASURY_ACCOUNT );
-    create< account_object >( NEW_HIVE_TREASURY_ACCOUNT );
+    create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
 #endif
 
-    create< account_object >( HIVE_TEMP_ACCOUNT );
+    create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_TEMP_ACCOUNT;
@@ -4137,7 +4137,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
 
     const auto init_witness = [&]( const account_name_type& account_name )
     {
-      create< account_object >( account_name, init_public_key );
+      create< account_object >( account_name, HIVE_GENESIS_TIME, init_public_key );
 
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
@@ -6889,7 +6889,7 @@ void database::apply_hardfork( uint32_t hardfork )
       // Create the treasury account if it does not exist
       // This may sometimes happen in the mirrornet, when we do not have the account created upon the HF 21 application or any dependent operation
       if( find_account(treasury_name) == nullptr )
-        create< account_object >( treasury_name );
+        create< account_object >( treasury_name, head_block_time() );
 
       lock_account( get_treasury() );
 
@@ -6997,7 +6997,7 @@ void database::apply_hardfork( uint32_t hardfork )
     const auto treasury_name = get_treasury_name();
 
     if( find_account(treasury_name) == nullptr )
-      create< account_object >( treasury_name );
+      create< account_object >( treasury_name, head_block_time() );
 
     lock_account( get_treasury() );
     //the following routine can only be called effectively after hardfork was marked as applied
