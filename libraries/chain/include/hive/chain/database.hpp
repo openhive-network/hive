@@ -191,6 +191,9 @@ namespace chain {
       uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& full_block );
       void remove_expired_governance_votes();
 
+      //Remove proposal votes for accounts that declined voting rights during HF28.
+      void remove_proposal_votes_for_accounts_without_voting_rights();
+
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
       void initialize_state_independent_data(const open_args& args);
 
@@ -688,9 +691,6 @@ namespace chain {
 
       //Restores balances for some accounts, which were cleared by mistake during HF23
       void restore_accounts( const std::set< std::string >& restored_accounts );
-
-      //Remove proposal votes for accounts that declined voting rights during HF28.
-      void remove_proposal_votes_for_accounts_without_voting_rights();
 
       //Clears all pending operations on account that involve balance, moves tokens to treasury account
       void gather_balance( const std::string& name, const asset& balance, const asset& hbd_balance );
