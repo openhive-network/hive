@@ -2658,9 +2658,6 @@ void database::process_recurrent_transfers()
 
 void database::remove_proposal_votes_for_accounts_without_voting_rights()
 {
-  if( !has_hardfork( HIVE_HARDFORK_1_28 ) )
-    return;
-
   std::vector<account_name_type> _voters;
 
   const auto& _proposal_votes_idx = get_index< proposal_vote_index, by_voter_proposal >();
