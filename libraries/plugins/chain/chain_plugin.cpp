@@ -926,15 +926,17 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   {
     using hive::protocol::testnet_blockchain_configuration::hardfork_schedule_item_t;
 
-    fc::variant spec = fc::json::from_file( options["alternate-chain-spec"].as< string >() );
+    fc::variant alternate_chain_spec = fc::json::from_file( options["alternate-chain-spec"].as< string >() );
 
-    uint32_t              genesis_time      = spec["genesis_time"].as< uint32_t >();
-    std::vector< string > init_witnesses    = spec["init_witnesses"].as< std::vector< string > >();
-    auto                  hardfork_schedule = spec["hardfork_schedule"].as< std::vector< hardfork_schedule_item_t > >();
+    idump((alternate_chain_spec));
+
+    uint32_t              genesis_time      = alternate_chain_spec["genesis_time"].as< uint32_t >();
+    std::vector< string > init_witnesses    = alternate_chain_spec["init_witnesses"].as< std::vector< string > >();
+    auto                  hardfork_schedule = alternate_chain_spec["hardfork_schedule"].as< std::vector< hardfork_schedule_item_t > >();
 
     std::vector< hardfork_schedule_item_t > result_hardfors;
 
-    FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork-schedule", ("hardfork-schedule", spec["hardfork_schedule"]) );
+    FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork-schedule", ("hardfork-schedule", alternate_chain_spec["hardfork_schedule"]) );
 
     for(uint32_t i = 0, j = 0; i < HIVE_NUM_HARDFORKS; ++i)
     {
