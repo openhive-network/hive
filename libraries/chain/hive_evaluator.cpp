@@ -291,12 +291,6 @@ const account_object& create_account( database& db, const account_name_type& nam
 
 void account_create_evaluator::do_apply( const account_create_operation& o )
 {
-
-
-        fc::variant opVariant;
-        fc::to_variant(o, opVariant);
-        fc::string deserialized_op = fc::json::to_string(opVariant);
-
   const auto& creator = _db.get_account( o.creator );
 
   const auto& props = _db.get_dynamic_global_properties();
@@ -790,13 +784,6 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
 
 void comment_evaluator::do_apply( const comment_operation& o )
 { try {
-
-
-        fc::variant opVariant;
-        fc::to_variant(o, opVariant);
-        fc::string deserialized_op = fc::json::to_string(opVariant);
-
-
   if( _db.has_hardfork( HIVE_HARDFORK_0_5__55 ) )
     FC_ASSERT( o.title.size() + o.body.size() + o.json_metadata.size(), "Cannot update comment because nothing appears to be changing." );
 

@@ -15,19 +15,9 @@ namespace hive { namespace chain {
 
 void initialize_core_indexes_01( database& db )
 {
-  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
-
   HIVE_ADD_CORE_INDEX(db, dynamic_global_property_index);
-
-  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
-
   HIVE_ADD_CORE_INDEX(db, account_index);
-
-  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
-
   HIVE_ADD_CORE_INDEX(db, account_metadata_index);
-
-  wlog("mtlk revision()= ${rev}", ("rev", db.revision()));
 }
 
 } }

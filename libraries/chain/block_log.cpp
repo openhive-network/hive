@@ -187,8 +187,7 @@ namespace hive { namespace chain {
         */
       if (block_log_size)
       {
-        ilog("block_log_size: ${s}", ("s", decorate_number_with_upticks(block_log_size)));
-
+        idump((block_log_size));
         std::atomic_store(&my->head, read_head());
         head_block_num = std::atomic_load(&my->head)->get_block_num();
       }

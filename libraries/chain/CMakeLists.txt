@@ -18,7 +18,6 @@ endif()
 add_library( hive_chain
 
              # As database takes the longest to compile, start it first
-             json_play.cpp
              database.cpp
              index.cpp
              index-01.cpp

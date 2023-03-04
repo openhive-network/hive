@@ -50,9 +50,5 @@ class block_api
     std::unique_ptr< block_api_impl > my;
 };
 
-
-
-
-
 } } } //hive::plugins::block_api
 

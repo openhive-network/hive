@@ -154,21 +154,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
           //mtlk_check_dynamic_global_property_index(_segment);
   }
 
-  static volatile auto stop_in_chainbase_open = false;
 
   void database::open(const bfs::path& shared_mem_dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, const std::string& context)
   {
-
-    if(g_postgres_not_block_log)
-    {
-      while(stop_in_chainbase_open)
-      {
-          int a = 0;
-          a=a;
-      }
-    }
-
-
     assert( shared_mem_dir.is_absolute() );
     bfs::create_directories( shared_mem_dir );
     if( _data_dir != shared_mem_dir ) close();

@@ -2230,10 +2230,36 @@ void init(hive::chain::database& db, const char* context)
 
       hive::chain::open_args db_open_args;
       db_open_args.data_dir = "/home/dev/mainnet-5m";
+      db_open_args.data_dir = "/home/dev/.consensus_state_provider";
 
       ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
 
-      db_open_args.shared_mem_dir = "/home/dev/mainnet-5m/blockchain"; // "/home/dev/mainnet-5m/blockchain"
+  // //getenv("HAF_DB_STORE");//BLOCK_LOG_DIRECTORY
+
+     fc::path data_dir;
+     char* parent = getenv( "PGDATA" );
+
+     system("env");
+
+      if( parent != nullptr )
+      {
+        data_dir = std::string( parent );
+        data_dir = data_dir.parent_path();
+        data_dir = data_dir.parent_path();
+        db_open_args.data_dir = data_dir;
+      }
+      else
+      {
+        //data_dir = bfs::current_path();
+      }
+      ilog("mtlk data_dir=${dt}",("dt", data_dir));
+
+
+
+
+     ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
+
+      db_open_args.shared_mem_dir =  db_open_args.data_dir /  "blockchain"; // "/home/dev/mainnet-5m/blockchain"
       db_open_args.initial_supply = HIVE_INIT_SUPPLY; // 0
       db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;// 0
 
@@ -2439,7 +2465,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
     if(db_api_impl_result.accounts.empty())
       break;
 
-    int cnt = 0;
+    decltype(args.limit) cnt = 0;
     for(const auto& a : db_api_impl_result.accounts)
     {
       collected_account_balances_t e;

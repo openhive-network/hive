@@ -57,62 +57,6 @@
 
 extern bool g_postgres_not_block_log;
 
-void inside_apply_block_play_json(  const hive::protocol::signed_block& input_block ,   const uint32_t block_num)
-{
-
-  //ilog("MTLK Block: ${block_num}. Data : ${block}", ("block_num", block_num)("block", input_block));
-
-  if(false)//block_num == 209120)
-  {
-
-    // ilog("MTLK Block: ${block_num}. Data : ${block}", ("block_num", block_num)("block", input_block));
-
-    std::string json_filename;
-
-    {
-        std::ostringstream json_filename_stream;
-
-        json_filename_stream << "/home/dev/jsons/block";
-        json_filename_stream << std::setw(6) << std::setfill('0') <<  block_num ;
-        json_filename_stream << ".json";
-        json_filename = json_filename_stream.str();
-
-    }
-
-    {
-        auto write_block = input_block;
-        fc::variant v;
-        fc::to_variant( write_block, v );
-        auto s = fc::json::to_string( v );
-       // ilog("SIZE: ${siz}", ("siz", s.size()));
-        
-        //ilog("MTLK variant: ${s}", ("s", s));
-
-        fc::json::save_to_file( v, json_filename);
-    }
-
-    // {
-
-    //     hive::protocol::signed_block read_block;
-
-    //     {
-    //         fc::variant vr = fc::json::from_file(json_filename);
-    //         fc::from_variant(vr, read_block);
-    //     }
-
-    //     fc::variant wv;
-    //     fc::to_variant( read_block, wv );
-        
-    //     fc::json::save_to_file( wv, json_filename + '2');
-    //     int a = 0;
-    //     a=a;
-    // }
-
-
-  }
-}
-
-
 long next_hf_time()
 {
   // current "next hardfork" is HF28
@@ -195,20 +139,8 @@ database::~database()
   clear_pending();
 }
 
-
-static volatile auto stop_in_database_open = false;
 void database::open( const open_args& args, const std::string& context )
 {
-
-   if(g_postgres_not_block_log)
-    {
-      while(stop_in_database_open)
-      {
-          int a = 0;
-          a=a;
-      }
-    }
-
   try
   {
     init_schema();
@@ -229,14 +161,9 @@ void database::open( const open_args& args, const std::string& context )
 
 void database::initialize_state_independent_data(const open_args& args)
 {
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
   initialize_indexes();
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
   initialize_evaluators();
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
   initialize_irreversible_storage();
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   if(!find< dynamic_global_property_object >())
   {
@@ -245,7 +172,6 @@ void database::initialize_state_independent_data(const open_args& args)
       init_genesis(args.initial_supply, args.hbd_initial_supply);
     });
   }
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   _benchmark_dumper.set_enabled(args.benchmark_is_enabled);
   if( _benchmark_dumper.is_enabled() &&
@@ -253,7 +179,6 @@ void database::initialize_state_independent_data(const open_args& args)
   {
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
   if(!args.postgres_not_block_log)
   {
@@ -264,53 +189,41 @@ void database::initialize_state_independent_data(const open_args& args)
       _block_log.set_compression_level(args.block_log_compression_level);
     });
   }
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
   
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
   /// Initialize all static (state independent) specific to hardforks
   init_hardforks();
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
 }
 
 void database::load_state_initial_data(const open_args& args)
 {
-
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
 
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
   FC_ASSERT(hb >= last_irreversible_block);
 
-  ilog("Loaded a blockchain database holding a state specific to head block: ${hb} and last irreversible block: ${last_irreversible_block}", (hb)("last_irreversible_block", decorate_number_with_upticks(last_irreversible_block)));
+  ilog("Loaded a blockchain database holding a state specific to head block: ${hb} and last irreversible block: ${last_irreversible_block}", (hb)(last_irreversible_block));
 
   // Rewind all undo state. This should return us to the state at the last irreversible block.
   with_write_lock([&]() {
     ilog("Attempting to rewind all undo state...");
 
-    wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
     undo_all();
-
-    wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
     ilog("Rewind undo state done.");
 
     uint32_t new_hb = head_block_num();
     notify_switch_fork( new_hb );
 
-    wlog("mtlk revision()= ${rev}", ("rev", revision()));
 
     FC_ASSERT(new_hb >= last_irreversible_block);
 
     FC_ASSERT(get_last_irreversible_block_num() == last_irreversible_block, "Undo operation should not touch irreversible block value");
 
     ilog("Blockchain state database is AT IRREVERSIBLE state specific to head block: ${hb} and LIB: ${lb}",
-         ("hb", decorate_number_with_upticks(head_block_num()))("lb", decorate_number_with_upticks(this->get_last_irreversible_block_num())));
-  
-    wlog("mtlk revision()= ${rev}", ("rev", revision()));
+         ("hb", head_block_num())("lb", this->get_last_irreversible_block_num()));
 
     if (args.chainbase_flags & chainbase::skip_env_check)
     {
@@ -361,7 +274,6 @@ void database::load_state_initial_data(const open_args& args)
 #endif /// IS_TEST_NET
 }
 
-
 uint32_t database::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
 {
   uint64_t skip_flags = skip_validate_invariants | skip_block_log;
@@ -401,9 +313,8 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
       percent_complete_stream << std::fixed << std::setprecision(2) << double(current_block_num) * 100 / last_block_num;
       ulog("   ${current_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shared memory free)",
            ("percent_complete", percent_complete_stream.str())
-           ("current_block_num", decorate_number_with_upticks(current_block_num))
-           ("last_block_num", decorate_number_with_upticks(last_block_num))
-           ("free_memory_megabytes", decorate_number_with_upticks(get_free_memory() >> 20)));
+           (current_block_num)(last_block_num)
+           ("free_memory_megabytes", get_free_memory() >> 20));
     }
 
     apply_block(full_block, skip_flags);
@@ -420,7 +331,7 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
 
   if (appbase::app().is_interrupt_request())
     ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})", 
-         ("n", decorate_number_with_upticks(last_applied_block->get_block_num()))("id", last_applied_block->get_block_id()));
+         ("n", last_applied_block->get_block_num())("id", last_applied_block->get_block_id()));
 
   fc::enable_record_assert_trip = rat; //restore flag
   fc::enable_assert_stacktrace = as;
@@ -497,29 +408,7 @@ uint32_t database::reindex( const open_args& args )
       if( _head_block_num > 0 )
       {
         if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
-        {
           start_block = _block_log.read_block_by_num( _head_block_num + 1 );
-
-          static auto enable = false;
-          if(enable)
-          {
-            std::ifstream json_file("/home/dev/jsons/block.json");
-            if(json_file)
-            {
-              std::stringstream raw_data_stream;
-              raw_data_stream << json_file.rdbuf();
-              std::string raw_data = raw_data_stream.str();
-
-            fc::variant v = fc::json::from_string( raw_data );
-
-              hive::protocol::operation op;
-              fc::from_variant( v, op );
-              int a = 0;
-              a=a;
-            }
-          }
-
-        }
 
         if( !start_block )
         {
@@ -538,7 +427,7 @@ uint32_t database::reindex( const open_args& args )
       {
         auto _last_block_number = start_block->get_block_num();
         if( _last_block_number && !args.force_replay )
-          ilog("Resume of replaying. Last applied block: ${n}", ( "n", decorate_number_with_upticks(_last_block_number - 1 )) );
+          ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
 
         note.last_block_number = reindex_internal( args, start_block );
       }
@@ -597,7 +486,7 @@ void database::close(bool rewind)
 
     auto lib = this->get_last_irreversible_block_num();
 
-    ilog("Database flushed at last irreversible block: ${b}", ("b", decorate_number_with_upticks(lib)));
+    ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
 
     chainbase::database::close();
 
@@ -1096,9 +985,6 @@ bool database::before_last_checkpoint()const
   *
   * @return true if we switched forks as a result of this push.
   */
-
-//na krotkim blocklogu zobacz jak to push blok chodzi
-
 bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
 {
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
@@ -4118,12 +4004,7 @@ void initialize_core_indexes( database& db );
 
 void database::initialize_indexes()
 {
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
   initialize_core_indexes( *this );
-
-  wlog("mtlk revision()= ${rev}", ("rev", revision()));
-
   _plugin_index_signal();
 }
 
@@ -4493,50 +4374,11 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
   }
 }
 
-
-
-static volatile  auto stop_in__apply_block = false;
-
-bool  print_enabled = false;
-
 void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 {
   const signed_block& block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
   block_notification note(full_block);
-
-
-
-
-    if (block_num >= 2726330)
-    //if (block_num > 29997)
-    {
-      if(g_postgres_not_block_log)
-      {
-          print_enabled = true;
-          while(stop_in__apply_block)
-          {
-            int a = 0;
-            a=a;
-          }
-      }
-    }
-
-   inside_apply_block_play_json(block, block_num);
-
-  // if(block_num % 10000 == 333)
-  // {
-  //   ilog("MTLK Block: ${block_num}. Data : ${block}", ("block_num", block_num)("block", block));
-
-  //   fc::variant v;
-  //   fc::to_variant( block, v );
-  //   auto s = fc::json::to_string( v );
-  //   ilog("MTLK variant: ${s}", ("s", s));
-
-  //   fc::json::save_to_file( v, "temp.json");
-
-  // }
-
 
   try {
   notify_pre_apply_block( note );
@@ -4546,9 +4388,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
     this_->_currently_processing_block_id.reset();
   } BOOST_SCOPE_EXIT_END
   _currently_processing_block_id = full_block->get_block_id();
-   //wlog("block_num=${bn}", ("bn", block_num));
-   //wlog("full_block->get_block_id()=${fbdbi}", ("fbdbi", full_block->get_block_id()));
-   //wlog("_currently_processing_block_id=${cpbi}", ("cpbi", _currently_processing_block_id));
 
   uint32_t skip = get_node_properties().skip_flags;
   _current_block_num    = block_num;
@@ -4623,14 +4462,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
     if( _benchmark_dumper.is_enabled() )
       _benchmark_dumper.end( "block", "merkle check" );
   }
-
-  // if(print_enabled) wlog("mtlk head_block_id()= ${hbi}  next_block_header.previous= ${nbhp} equal?=${eq} ",
-  // ("hbi", head_block_id())
-  // ("nbhp", full_block->get_block_header().previous)
-  // ("eq", head_block_id() == full_block->get_block_header().previous)
-  // );
-
-
 
   const witness_object& signing_witness = validate_block_header(skip, full_block);
 
@@ -5066,23 +4897,10 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 }
 
 void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
-{ 
-  try {
+{ try {
   if( _current_tx_status == TX_STATUS_NONE )
   {
     wlog( "Missing tx processing indicator" );
-
-    if(g_postgres_not_block_log)
-    {
-      static auto stop_in__apply_transaction = false;
-      while(stop_in__apply_transaction)
-      {
-          int a = 0;
-          a=a;
-      }
-
-    }
-
     // make sure to call set_tx_status() with proper status when your call can lead here
   }
 
@@ -5535,15 +5353,6 @@ const witness_object& database::validate_block_header( uint32_t skip, const std:
   {
       FC_ASSERT( head_block_id() == next_block_header.previous, "", ("head_block_id", head_block_id())("next.prev", next_block_header.previous) );
   }
-  
-  // if(full_block->get_block_num() != 2726332 &&
-  //    full_block->get_block_num() != 2730592
-  //    2733424
-  // )
-  // {
-  //   FC_ASSERT( head_block_id() == next_block_header.previous, "", ("head_block_id", head_block_id())("next.prev", next_block_header.previous) );
-  // }
-
   FC_ASSERT( head_block_time() < next_block_header.timestamp, "", ("head_block_time", head_block_time())("next", next_block_header.timestamp)("blocknum", full_block->get_block_num()) );
   const witness_object& witness = get_witness( next_block_header.witness );
 
@@ -6836,7 +6645,7 @@ void database::set_hardfork( uint32_t hardfork, bool apply_now )
 void database::apply_hardfork( uint32_t hardfork )
 {
   if( _log_hardforks )
-    elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", decorate_number_with_upticks(head_block_num())) );
+    elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", head_block_num()) );
   operation hardfork_vop = hardfork_operation( hardfork );
 
   pre_push_virtual_operation( hardfork_vop );
