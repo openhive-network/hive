@@ -1066,6 +1066,18 @@ namespace hive { namespace protocol {
     void validate() const;
   };
 
+  struct recurrent_transfer_pair_id
+  {
+    uint8_t pair_id = 0;
+  };
+
+  typedef static_variant<
+  void_t,
+  recurrent_transfer_pair_id
+  > recurrent_transfer_extension;
+
+  typedef flat_set< recurrent_transfer_extension > recurrent_transfer_extensions_type;
+
   /**
     * @ingroup operations
     *
@@ -1087,8 +1099,9 @@ namespace hive { namespace protocol {
 
     // How many times the recurrent payment will be executed
     uint16_t          executions = 0;
-    /// Extensions. Not currently used.
-    extensions_type   extensions;
+
+    /// Extensions, only recurrent_transfer_pair_id is supported so far
+    recurrent_transfer_extensions_type   extensions;
 
     void              validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
@@ -1261,3 +1274,5 @@ FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extension
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
 FC_REFLECT( hive::protocol::witness_block_approve_operation, (witness)(block_id) );
+FC_REFLECT( hive::protocol::recurrent_transfer_pair_id, (pair_id) );
+

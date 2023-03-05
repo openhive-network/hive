@@ -1086,7 +1086,8 @@ struct api_recurrent_transfer_object
     memo( to_string(o.memo) ),
     recurrence( o.recurrence ),
     consecutive_failures( o.consecutive_failures ),
-    remaining_executions( o.remaining_executions )
+    remaining_executions( o.remaining_executions ),
+    pair_id( o.pair_id )
     {}
 
     recurrent_transfer_id_type id;
@@ -1098,6 +1099,7 @@ struct api_recurrent_transfer_object
     uint16_t          recurrence = 0;
     uint8_t           consecutive_failures = 0;
     uint16_t          remaining_executions = 0;
+    uint8_t          pair_id = 0;
 };
 
 
@@ -1407,4 +1409,4 @@ FC_REFLECT( hive::plugins::database_api::api_proposal_vote_object,
 FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(hive)(hbd)(created) );
 
 FC_REFLECT( hive::plugins::database_api::order_book, (asks)(bids) );
-FC_REFLECT(hive::plugins::database_api::api_recurrent_transfer_object, (id)(trigger_date)(from)(to)(amount)(memo)(recurrence)(consecutive_failures)(remaining_executions))
+FC_REFLECT(hive::plugins::database_api::api_recurrent_transfer_object, (id)(trigger_date)(from)(to)(amount)(memo)(recurrence)(consecutive_failures)(remaining_executions)(pair_id))

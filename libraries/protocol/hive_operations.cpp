@@ -733,7 +733,7 @@ namespace hive { namespace protocol {
       FC_ASSERT( fc::is_utf8( memo ), "Memo is not UTF8" );
       FC_ASSERT( from != to, "Cannot set a transfer to yourself" );
       FC_ASSERT(executions >= 2, "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately and delete itself. You should use a normal transfer operation");
-      FC_ASSERT( fc::hours(recurrence * executions).to_seconds()  < fc::days(HIVE_MAX_RECURRENT_TRANSFER_END_DATE).to_seconds(), "Cannot set a transfer that would last for longer than ${days} days", ("days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE) );
+      FC_ASSERT( fc::hours((recurrence - 1) * executions).to_seconds()  < fc::days(HIVE_MAX_RECURRENT_TRANSFER_END_DATE).to_seconds(), "Cannot set a transfer that would last for longer than ${days} days", ("days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE) );
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }
 

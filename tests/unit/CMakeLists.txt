@@ -180,7 +180,9 @@ add_boost_test( chain_test
    operation_tests/recurrent_transfer_max_open_transfers
    operation_tests/recurrent_transfer_hbd
    operation_tests/recurrent_transfer_apply
-   operation_tests/recurrent_transfer_validate
+   operation_tests/recurrent_transfer_pair_id_basic
+   operation_tests/recurrent_transfer_pair_id_crud
+   operation_tests/recurrent_transfer_same_pair_id_different_receivers
    operation_time_tests/comment_payout_equalize
    operation_time_tests/comment_payout_dust
    operation_time_tests/recent_claims_decay

@@ -68,6 +68,7 @@ def test_create_recurent_transfer(wallet: tt.Wallet, funded_account: funded_acco
   AMOUNT = tt.Asset.Tbd(10)
   RECURRENCE=24
   EXECUTIONS=6
+  PAIR_ID=0
 
   recurrent_transfers_before_count = len(wallet.api.find_recurrent_transfers(from_=creator.name))
   tt.logger.info(f"recurrent_transfers: {recurrent_transfers_before_count}")
@@ -78,7 +79,7 @@ def test_create_recurent_transfer(wallet: tt.Wallet, funded_account: funded_acco
     amount=AMOUNT, 
     memo=MEMO, 
     recurrence=RECURRENCE, 
-    executions=EXECUTIONS
+    executions=EXECUTIONS,
   )
 
   recurrent_transfers = wallet.api.find_recurrent_transfers(from_=creator.name)
@@ -94,3 +95,4 @@ def test_create_recurent_transfer(wallet: tt.Wallet, funded_account: funded_acco
   assert recurrent_transfer['recurrence'] == RECURRENCE
   assert recurrent_transfer['consecutive_failures'] == 0
   assert recurrent_transfer['remaining_executions'] == EXECUTIONS - 1
+  assert recurrent_transfer['pair_id'] == PAIR_ID
