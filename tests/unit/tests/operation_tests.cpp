@@ -7683,8 +7683,6 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     push_transaction( tx, alice_private_key );
     generate_blocks(1);
 
-    idump( (alice_acc.voting_manabar)(old_manabar)(delta) );
-
     BOOST_REQUIRE( delegation != nullptr );
     BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_id() );
     BOOST_REQUIRE( delegation->get_vesting() == ASSET( "20000000.000000 VESTS"));
@@ -9675,20 +9673,25 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_validate )
     op.from = "alice";
 
     BOOST_TEST_MESSAGE( " --- recurrence * executions is too high with recurrence being every day" );
-    op.executions = HIVE_MAX_RECURRENT_TRANSFER_END_DATE + 1; // one day too many
+    op.executions = HIVE_MAX_RECURRENT_TRANSFER_END_DATE * 2 + 1; // one day too many
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
     BOOST_TEST_MESSAGE( " --- recurrence * executions is too high with recurrence being every two days" );
     op.recurrence = 48;
-    op.executions = HIVE_MAX_RECURRENT_TRANSFER_END_DATE / 2 + 1; // one day too many
+    op.executions = HIVE_MAX_RECURRENT_TRANSFER_END_DATE + 1; // one day too many
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
-    op.executions = 10;
+
+    BOOST_TEST_MESSAGE( " --- executions is 2 and recurrence * (execution - 1) leads to a result inferior to HIVE_MAX_RECURRENT_TRANSFER_END_DATE " );
+    op.executions = 2;
+    op.recurrence = (HIVE_MAX_RECURRENT_TRANSFER_END_DATE - 1) * 2;
+    op.validate();
 
     BOOST_TEST_MESSAGE( " --- executions is less than 2" );
     op.executions = 1;
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
     op.executions = 0;
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+
   }
   FC_LOG_AND_RETHROW()
 }
@@ -9731,6 +9734,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     BOOST_REQUIRE( recurrent_transfer_pre_execution->amount == ASSET( "5.000 TESTS" ) );
     BOOST_REQUIRE( recurrent_transfer_pre_execution->remaining_executions == 10 );
     BOOST_REQUIRE( recurrent_transfer_pre_execution->memo == "test" );
+    BOOST_REQUIRE( recurrent_transfer_pre_execution->pair_id == 0 );
     validate_database();
 
     generate_block();
@@ -9758,6 +9762,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     BOOST_REQUIRE( recurrent_transfer_new.amount == ASSET( "2.000 TESTS" ) );
     BOOST_REQUIRE( recurrent_transfer_new.remaining_executions == 20 );
     BOOST_REQUIRE( recurrent_transfer_new.memo == "test_updated" );
+    BOOST_REQUIRE( recurrent_transfer_new.pair_id == 0 );
     validate_database();
 
     generate_block();
@@ -9780,6 +9785,8 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     BOOST_REQUIRE( recurrent_transfer->recurrence == 96 );
     BOOST_REQUIRE( recurrent_transfer->get_trigger_date() != recurrent_transfer_new.get_trigger_date() );
     BOOST_REQUIRE( recurrent_transfer->remaining_executions == 20 );
+    BOOST_REQUIRE( recurrent_transfer->pair_id == 0 );
+
     validate_database();
 
     generate_block();
@@ -10034,6 +10041,213 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
 
  }
   FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( recurrent_transfer_pair_id_basic )
+{
+    BOOST_TEST_MESSAGE( "Recurrent_transfer with two pair_ids" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+
+    fund( "alice", ASSET("200.000 TBD") );
+
+    // First recurrent transfer operation
+    recurrent_transfer_operation op1;
+    op1.from = "alice";
+    op1.to = "bob";
+    op1.memo = "test1";
+    op1.amount = ASSET( "10.000 TBD" );
+    op1.recurrence = 72;
+    op1.executions = 5;
+    recurrent_transfer_pair_id rtpi1;
+    rtpi1.pair_id = 0;
+    op1.extensions.insert(rtpi1);
+    push_transaction(op1, alice_private_key);
+
+    // Second recurrent transfer operation
+    recurrent_transfer_operation op2;
+    op2.from = "alice";
+    op2.to = "bob";
+    op2.memo = "test2";
+    op2.amount = ASSET( "20.000 TBD" );
+    op2.recurrence = 48;
+    op2.executions = 3;
+    recurrent_transfer_pair_id rtpi2;
+    rtpi2.pair_id = 1;
+    op2.extensions.insert(rtpi2);
+    push_transaction(op2, alice_private_key);
+
+
+    // Check initial balances
+    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ASSET( "200.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ASSET( "0.000 TBD" ).amount.value );
+    // Check the number of open recurrent transfers
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 2 );
+
+    // execute both recurrent transfers
+    generate_block();
+
+    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ASSET( "170.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ASSET( "30.000 TBD" ).amount.value );
+
+    validate_database();
+}
+
+BOOST_AUTO_TEST_CASE( recurrent_transfer_pair_id_crud )
+{
+    BOOST_TEST_MESSAGE( "crud operations with recurrent transfers and pair_ids" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+
+    fund( "alice", ASSET("200.000 TBD") );
+
+    // First recurrent transfer operation
+    recurrent_transfer_operation op1;
+    op1.from = "alice";
+    op1.to = "bob";
+    op1.memo = "test1";
+    op1.amount = ASSET( "10.000 TBD" );
+    op1.recurrence = 72;
+    op1.executions = 5;
+    recurrent_transfer_pair_id rtpi1;
+    rtpi1.pair_id = 0;
+    op1.extensions.insert(rtpi1);
+    push_transaction(op1, alice_private_key);
+
+    // Second recurrent transfer operation
+    recurrent_transfer_operation op2;
+    op2.from = "alice";
+    op2.to = "bob";
+    op2.memo = "test2";
+    op2.amount = ASSET( "20.000 TBD" );
+    op2.recurrence = 48;
+    op2.executions = 3;
+    recurrent_transfer_pair_id rtpi2;
+    rtpi2.pair_id = 100;
+    op2.extensions.insert(rtpi2);
+    push_transaction(op2, alice_private_key);
+
+    generate_block();
+
+    // Update the recurrent transfer with pair_id 100
+    op2.memo = "updated_test2";
+    op2.amount = ASSET( "15.000 TBD" );
+    op2.recurrence = 60;
+    op2.executions = 4;
+    push_transaction(op2, alice_private_key);
+
+    generate_block();
+
+    const auto& recurrent_transfer1 = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id, 0 ));
+    const auto& recurrent_transfer2 = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id, 100 ));
+
+    BOOST_REQUIRE( recurrent_transfer1->memo == "test1" );
+    BOOST_REQUIRE( recurrent_transfer1->amount == ASSET( "10.000 TBD" ) );
+    BOOST_REQUIRE( recurrent_transfer1->recurrence == 72 );
+    BOOST_REQUIRE( recurrent_transfer1->remaining_executions == 4 );
+
+    BOOST_REQUIRE( recurrent_transfer2->memo == "updated_test2" );
+    BOOST_REQUIRE( recurrent_transfer2->amount == ASSET( "15.000 TBD" ) );
+    BOOST_REQUIRE( recurrent_transfer2->recurrence == 60 );
+    BOOST_REQUIRE( recurrent_transfer2->remaining_executions == 4 );
+
+    // Delete the recurrent transfer with pair_id 100
+    op2.amount = ASSET( "0.000 TBD" );
+    push_transaction(op2, alice_private_key);
+
+    generate_block();
+
+    // Check that there is only one recurrent transfer that exists
+    const auto& deleted_recurrent_transfer2 = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id, 100 ));
+    BOOST_REQUIRE( deleted_recurrent_transfer2 == nullptr );
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
+
+    // Recreate the recurrent transfer with pair_id 100 and different parameters
+    recurrent_transfer_operation op3;
+    op3.from = "alice";
+    op3.to = "bob";
+    op3.memo = "new_test";
+    op3.amount = ASSET( "8.000 TBD" );
+    op3.recurrence = 36;
+    op3.executions = 6;
+    recurrent_transfer_pair_id rtpi3;
+    rtpi3.pair_id = 100;
+    op3.extensions.insert(rtpi3);
+    push_transaction(op3, alice_private_key);
+
+    generate_block();
+
+    // Check that the recurrent is recreated but different
+    const auto& recurrent_transfer3 = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id, 100 ));
+
+    BOOST_REQUIRE( recurrent_transfer3->memo == "new_test" );
+    BOOST_REQUIRE( recurrent_transfer3->amount == ASSET( "8.000 TBD" ) );
+    BOOST_REQUIRE( recurrent_transfer3->recurrence == 36 );
+    BOOST_REQUIRE( recurrent_transfer3->remaining_executions == 5 );
+
+}
+
+BOOST_AUTO_TEST_CASE( recurrent_transfer_same_pair_id_different_receivers )
+{
+    BOOST_TEST_MESSAGE( "recurrent transfer with the same pair_id but different receivers" );
+
+    ACTORS( (alice)(bob)(dave) )
+    generate_block();
+
+    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+
+    fund( "alice", ASSET("300.000 TBD") );
+
+    // Recurrent transfer operation from Alice to Bob
+    recurrent_transfer_operation op1;
+    op1.from = "alice";
+    op1.to = "bob";
+    op1.memo = "test1";
+    op1.amount = ASSET( "10.000 TBD" );
+    op1.recurrence = 72;
+    op1.executions = 5;
+    recurrent_transfer_pair_id rtpi1;
+    rtpi1.pair_id = 1;
+    op1.extensions.insert(rtpi1);
+    push_transaction(op1, alice_private_key);
+
+    // Recurrent transfer operation from Alice to Dave
+    recurrent_transfer_operation op2;
+    op2.from = "alice";
+    op2.to = "dave";
+    op2.memo = "test2";
+    op2.amount = ASSET( "20.000 TBD" );
+    op2.recurrence = 48;
+    op2.executions = 3;
+    recurrent_transfer_pair_id rtpi2;
+    rtpi2.pair_id = 1;
+    op2.extensions.insert(rtpi2);
+    push_transaction(op2, alice_private_key);
+
+    generate_block();
+
+    // Check that both recurrent transfers with the same pair_id exist
+    const auto& recurrent_transfer1 = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id, 1 ));
+    const auto& recurrent_transfer2 = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, dave_id, 1 ));
+
+    BOOST_REQUIRE( recurrent_transfer1 != nullptr );
+    BOOST_REQUIRE( recurrent_transfer2 != nullptr );
+
+    BOOST_REQUIRE( recurrent_transfer1->memo == "test1" );
+    BOOST_REQUIRE( recurrent_transfer1->amount == ASSET( "10.000 TBD" ) );
+    BOOST_REQUIRE( recurrent_transfer1->recurrence == 72 );
+    BOOST_REQUIRE( recurrent_transfer1->remaining_executions == 4 );
+
+    BOOST_REQUIRE( recurrent_transfer2->memo == "test2" );
+    BOOST_REQUIRE( recurrent_transfer2->amount == ASSET( "20.000 TBD" ) );
+    BOOST_REQUIRE( recurrent_transfer2->recurrence == 48 );
+    BOOST_REQUIRE( recurrent_transfer2->remaining_executions == 2 );
 }
 
 BOOST_AUTO_TEST_CASE( account_witness_block_approve_authorities )

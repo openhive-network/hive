@@ -14,13 +14,19 @@ def check_recurrence_transfer_data( node ):
     assert _op[0] == 'recurrent_transfer'
     return _op[1]
 
-def check_recurrence_transfer( node, _from, to, amount, memo, recurrence, executions_key, executions_number ):
+def check_recurrence_transfer( node, _from, to, amount, memo, recurrence, executions_key, executions_number, pair_id ):
     assert node['from'] == _from
     assert node['to'] == to
     assert node['amount'] == amount
     assert node['memo'] == memo
     assert node['recurrence'] == recurrence
     assert node[executions_key] == executions_number
+
+    # pair_id check
+    if "extensions" in node:
+        for ext in node['extensions']:
+            if ext['type'] == 'recurrent_transfer_pair_id':
+                assert ext['value']['pair_id'] == pair_id
 
 def check_ask( node, base, quote ):
     assert 'order_price' in node

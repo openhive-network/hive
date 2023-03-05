@@ -340,9 +340,9 @@ namespace hive { namespace chain {
       recurrent_transfer_object( allocator< Allocator > a, uint64_t _id,
         const time_point_sec& _trigger_date, const account_object& _from,
         const account_object& _to, const asset& _amount, const string& _memo,
-        const uint16_t _recurrence, const uint16_t _remaining_executions )
+        const uint16_t _recurrence, const uint16_t _remaining_executions, const uint8_t _pair_id )
       : id( _id ), trigger_date( _trigger_date ), from_id( _from.get_id() ), to_id( _to.get_id() ),
-        amount( _amount ), memo( a ), recurrence( _recurrence ), remaining_executions( _remaining_executions )
+        amount( _amount ), memo( a ), recurrence( _recurrence ), remaining_executions( _remaining_executions ), pair_id( _pair_id )
       {
         from_string( memo, _memo );
       }
@@ -376,10 +376,11 @@ namespace hive { namespace chain {
       shared_string     memo;
       /// How often will the payment be triggered, unit: hours
       uint16_t          recurrence = 0;
-      /// How many payment have failed in a row, at HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES the object is deleted
-      uint8_t           consecutive_failures = 0;
       /// How many executions are remaining
       uint16_t          remaining_executions = 0;
+      /// How many payment have failed in a row, at HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES the object is deleted
+      uint8_t           consecutive_failures = 0;
+      uint8_t           pair_id = 0;
 
     CHAINBASE_UNPACK_CONSTRUCTOR(recurrent_transfer_object, (memo));
   };
@@ -627,9 +628,10 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_from_to_id >,
         composite_key< recurrent_transfer_object,
           member< recurrent_transfer_object, account_id_type, &recurrent_transfer_object::from_id >,
-          member< recurrent_transfer_object, account_id_type, &recurrent_transfer_object::to_id >
+          member< recurrent_transfer_object, account_id_type, &recurrent_transfer_object::to_id >,
+          member< recurrent_transfer_object, uint8_t, &recurrent_transfer_object::pair_id >
         >,
-        composite_key_compare< std::less< account_id_type >, std::less< account_id_type > >
+        composite_key_compare< std::less< account_id_type >, std::less< account_id_type >, std::less< uint8_t > >
       >
     >,
     allocator< recurrent_transfer_object >
@@ -693,5 +695,5 @@ FC_REFLECT( hive::chain::reward_fund_object,
       )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::reward_fund_object, hive::chain::reward_fund_index )
 
-FC_REFLECT(hive::chain::recurrent_transfer_object, (id)(trigger_date)(from_id)(to_id)(amount)(memo)(recurrence)(consecutive_failures)(remaining_executions) )
+FC_REFLECT(hive::chain::recurrent_transfer_object, (id)(trigger_date)(from_id)(to_id)(amount)(memo)(recurrence)(remaining_executions)(consecutive_failures)(pair_id) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::recurrent_transfer_object, hive::chain::recurrent_transfer_index )

@@ -1420,6 +1420,28 @@ class wallet_api
             uint16_t executions,
             bool broadcast );
 
+    /**
+      * Creates a recurrent transfer of funds from one account to another while specifying a unique id. HIVE and HBD can be transferred.
+      *
+      * @param from The account the funds are coming from
+      * @param to The account from which the funds are going to
+      * @param amount The funds being transferred. i.e. "100.000 HIVE"
+      * @param memo A memo for the transaction, encrypted with the to account's public memo key
+      * @param recurrence how often the transfer should be executed in hours. eg: 24
+      * @param executions how many times should the recurrent transfer be executed
+      * @param pair_id unique pair id used to differentiate between multiple transfers to the same from/to pair
+      * @param broadcast true if you wish to broadcast the transaction
+      */
+    wallet_signed_transaction recurrent_transfer_with_id(
+            const account_name_type& from,
+            const account_name_type& to,
+            const wallet_serializer_wrapper<hive::protocol::asset>& amount,
+            const string& memo,
+            uint16_t recurrence,
+            uint16_t executions,
+            uint8_t pair_id,
+            bool broadcast );
+
   /**
       * Finds a recurrent transfer
       * @param from The account from which the funds are coming from
@@ -1595,6 +1617,7 @@ FC_API( hive::wallet::wallet_api,
       (decline_voting_rights)
       (claim_reward_balance)
       (recurrent_transfer)
+      (recurrent_transfer_with_id)
 
       /// helper api
       (get_prototype_operation)

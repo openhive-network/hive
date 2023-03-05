@@ -2905,6 +2905,40 @@ wallet_signed_transaction wallet_api::remove_proposal(const account_name_type& d
   return { my->sign_transaction( trx, broadcast ) };
 }
 
+wallet_signed_transaction wallet_api::recurrent_transfer_with_id(
+ const account_name_type& from,
+ const account_name_type& to,
+ const wallet_serializer_wrapper<hive::protocol::asset>& amount,
+ const string& memo,
+ uint16_t recurrence,
+ uint16_t executions,
+ uint8_t pair_id,
+ bool broadcast ) {
+  try {
+    FC_ASSERT( !is_locked() );
+    check_memo( memo, get_account( from ).value );
+    recurrent_transfer_operation op;
+    op.from = from;
+    op.to = to;
+    op.amount = amount.value;
+    op.memo = get_encrypted_memo( from, to, memo );
+    op.recurrence = recurrence;
+    op.executions = executions;
+    if( pair_id != 0 )
+    {
+      recurrent_transfer_pair_id rtpi;
+      rtpi.pair_id = pair_id;
+      op.extensions.insert(rtpi);
+    }
+
+    signed_transaction tx;
+    tx.operations.push_back( op );
+    tx.validate();
+
+    return { my->sign_transaction( tx, broadcast ) };
+  } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(recurrence)(executions)(pair_id)(broadcast) )
+}
+
 wallet_signed_transaction wallet_api::recurrent_transfer(
  const account_name_type& from,
  const account_name_type& to,
