@@ -83,9 +83,8 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
   int count = 0;
   if( db.get_benchmark_dumper().is_enabled() )
     db.get_benchmark_dumper().begin();
-  while( current != idx.end() &&
-        current->get_the_earliest_time() != time_point_sec::maximum() &&
-        head_time >= ( current->get_the_earliest_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
+  while( current != idx.end() && current->has_delayed_votes() &&
+        head_time >= ( current->get_oldest_delayed_vote_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
       )
   {
     const ushare_type _val{ current->delayed_votes.begin()->val };
