@@ -1,8 +1,7 @@
 #! /bin/bash
 
-SRC_DIR_OFFSET="${SRC_DIR_OFFSET:-../..}" #This needs to be defined as a variable that can be overridden if Hive is a submodule
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-SRC_DIR="$SCRIPT_DIR/$SRC_DIR_OFFSET"
+SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit 1; pwd -P )"
+SRC_DIR="$SCRIPT_DIR/../.."
 
 print_help () {
     echo "Usage: $0 OPTION[=VALUE]..."
@@ -83,7 +82,7 @@ CI_PROJECT_NAME="${CI_REGISTRY_IMAGE##*/}"
 
 echo "Logging to Docker Hub and $CI_REGISTRY"
 docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
+#docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD"
 
 echo "Building an instance image in the source directory $SRC_DIR"
 "$SRC_DIR/scripts/ci-helpers/build_instance.sh" "$CI_COMMIT_TAG" "$SRC_DIR" "$CI_REGISTRY_IMAGE"
@@ -95,4 +94,4 @@ docker images
 
 echo "Pushing instance images"
 docker push "$CI_REGISTRY_IMAGE/instance:instance-$CI_COMMIT_TAG"
-docker push "hiveio/$CI_PROJECT_NAME:$CI_COMMIT_TAG"
+#docker push "hiveio/$CI_PROJECT_NAME:$CI_COMMIT_TAG"
