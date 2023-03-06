@@ -1749,7 +1749,7 @@ template smt_capped_generation_policy t_smt_database_fixture< clean_database_fix
 
 #endif
 
-void dhf_database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )
+void database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )
 {
   signed_transaction tx;
   account_witness_proxy_operation op;
@@ -1759,6 +1759,16 @@ void dhf_database_fixture::proxy( account_name_type _account, account_name_type 
   tx.operations.push_back( op );
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   push_transaction( tx, _key );
+}
+
+delayed_vote_database_fixture::delayed_vote_database_fixture( uint16_t shared_file_size_in_mb )
+  : clean_database_fixture( ( set_mainnet_cashout_values( false ), set_mainnet_feed_values( false ), shared_file_size_in_mb ) )
+  {}
+
+delayed_vote_database_fixture::~delayed_vote_database_fixture()
+{
+  configuration_data.reset_cashout_values();
+  configuration_data.reset_feed_values();
 }
 
 void delayed_vote_database_fixture::witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key )
@@ -1802,16 +1812,6 @@ time_point_sec delayed_vote_database_fixture::move_forward_with_update( const fc
 
     return db->head_block_time();
 };
-
-void delayed_vote_database_fixture::proxy( const string& account, const string& proxy, const fc::ecc::private_key& key )
-{
-  account_witness_proxy_operation op;
-  op.account = account;
-  op.proxy = proxy;
-  trx.operations.push_back( op );
-
-  push_transaction( op, key );
-}
 
 share_type delayed_vote_database_fixture::get_votes( const string& witness_name )
 {

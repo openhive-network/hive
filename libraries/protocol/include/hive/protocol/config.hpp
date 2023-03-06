@@ -198,7 +198,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MAX_PROXY_RECURSION_DEPTH        4
 #define HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 104
 #define HIVE_VESTING_WITHDRAW_INTERVALS       13
-#define HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS (60*60*24*7) /// 1 week per interval
+#define HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS (HIVE_CASHOUT_WINDOW_SECONDS) // These intervals should last the same (1 week by default)
 #define HIVE_MAX_WITHDRAW_ROUTES              10
 #define HIVE_MAX_PENDING_TRANSFERS            255
 #define HIVE_MAX_OPEN_RECURRENT_TRANSFERS     255

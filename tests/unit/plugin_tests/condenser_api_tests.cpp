@@ -21,6 +21,9 @@ struct condenser_api_fixture : database_fixture
   {
     auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
     {
+      // Set cashout values to absolute safe minimum to speed up the scenarios and their tests.
+      configuration_data.set_cashout_related_values( 0, 2, 4, 12, 1 );
+
       ah_plugin = &app.register_plugin< ah_plugin_type >();
       ah_plugin->set_destroy_database_on_startup();
       ah_plugin->set_destroy_database_on_shutdown();
@@ -59,8 +62,6 @@ struct condenser_api_fixture : database_fixture
     init_account_pub_key = init_account_priv_key.get_public_key();
 
     open_database( _data_dir );
-
-    configuration_data.set_cashout_related_values( 0, 2, 4, 12, 1 );
 
     generate_block();
     validate_database();
@@ -213,6 +214,36 @@ struct condenser_api_fixture : database_fixture
     check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
 
+  /**
+   * Operations tested here:
+   *  transfer_to_vesting_operation, transfer_to_vesting_completed_operation, set_withdraw_vesting_route_operation,
+   *  delegate_vesting_shares_operation, withdraw_vesting_operation, producer_reward_operation,
+   *  fill_vesting_withdraw_operation & return_vesting_delegation_operation
+   */
+  void vesting_scenario( check_point_tester_t check_point_1_tester, check_point_tester_t check_point_2_tester )
+  {
+    // Set hardfork below HF20, to keep delegation return period short
+    // (see HIVE_DELEGATION_RETURN_PERIOD_HF0 / HIVE_DELEGATION_RETURN_PERIOD_HF20 definitions)
+    db->set_hardfork( HIVE_HARDFORK_0_19 );
+    generate_block();
+
+    ACTORS( (alice4ah)(ben4ah)(carol4ah) );
+    generate_block();
+    fund( "alice4ah", ASSET( "2.900 TESTS" ) );
+    generate_block();
+
+    vest( "alice4ah", "alice4ah", asset(2000, HIVE_SYMBOL), alice4ah_private_key );
+    set_withdraw_vesting_route( "alice4ah", "ben4ah", HIVE_1_PERCENT * 50, true, alice4ah_private_key);
+    delegate_vest( "alice4ah", "carol4ah", asset(3, VESTS_SYMBOL), alice4ah_private_key );
+    withdraw_vesting( "alice4ah", asset( 123, VESTS_SYMBOL ), alice4ah_private_key );
+    
+    check_point_1_tester( 26 ); // generate up to block 26th inside
+    verify_and_advance_to_block( 26 );
+
+    delegate_vest( "alice4ah", "carol4ah", asset(2, VESTS_SYMBOL), alice4ah_private_key );
+
+    check_point_2_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+  }
 };
 
 BOOST_FIXTURE_TEST_SUITE( condenser_api_tests, condenser_api_fixture );
@@ -734,6 +765,56 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_convert_and_limit_order )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( get_ops_in_block_vesting )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with vesting_scenario" );
+
+  auto check_point_tester1 = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 5 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    // TODO Supplement the patterns here
+    /*expected_t expected_operations = { { // transfer_to_vesting_operation
+      }, { // transfer_to_vesting_completed_operation
+      }, { // set_withdraw_vesting_route_operation
+      }, { // delegate_vesting_shares_operation
+      }, { // withdraw_vesting_operation
+      }, { // producer_reward_operation
+      } };
+    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[5] };
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );*/
+  };
+
+  auto check_point_tester2 = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 31 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    // TODO Supplement the patterns here
+    /*expected_t expected_operations = { { // producer_reward_operation
+      }, { // fill_vesting_withdraw_operation
+      }, { // fill_vesting_withdraw_operation
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 28 );*/
+
+    expected_t expected_operations = { { // return_vesting_delegation_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":31,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:33","op":{"type":"return_vesting_delegation_operation","value":{"account":"alice4ah","vesting_shares":{"amount":"1","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":31,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:33","op":["return_vesting_delegation",{"account":"alice4ah","vesting_shares":"0.000001 VESTS"}]})~"
+      }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":31,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:33","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"204708136662","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":31,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:33","op":["producer_reward",{"producer":"initminer","vesting_shares":"204708.136662 VESTS"}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 31 );
+  };
+
+  vesting_scenario( check_point_tester1, check_point_tester2 );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_ops_in_block_tests
 
 BOOST_FIXTURE_TEST_SUITE( condenser_get_transaction_tests, condenser_api_fixture );
@@ -883,6 +964,8 @@ BOOST_AUTO_TEST_CASE( get_transaction_convert_and_limit_order )
 
 } FC_LOG_AND_RETHROW() }
 
+// TODO Create get_transaction_vesting test here.
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_transaction_tests
 
 BOOST_FIXTURE_TEST_SUITE( condenser_get_account_history_tests, condenser_api_fixture );
@@ -929,6 +1012,7 @@ void test_get_account_history( const condenser_api_fixture& caf, const std::vect
 // TODO create get_account_history_hf12 test here
 // TODO Create get_account_history_hf13 here
 // TODO create get_account_history_comment_and_reward test here
+// TODO create get_account_history_vesting test here
 
 BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order )
 { try {
@@ -1012,31 +1096,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test ) // To be split into sc
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
   
-  // Set current hardfork for easier testing of current operations
-  /*db->set_hardfork( HIVE_NUM_HARDFORKS );
-  for( int i = 0; i < 20*60; ++i )
-  generate_block();
-
-  // By now carol0ah should have a neat sum awarded for her comment.
-  BOOST_REQUIRE_EQUAL( get_balance( "carol0ah" ).amount.value, 2900 );
-
-  vest( "carol0ah", "carol0ah", asset(2000, HIVE_SYMBOL), carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(transfer_to_vesting_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(transfer_to_vesting_completed_operation), fc::optional< expected_operation_result_t >() } );
-
-  set_withdraw_vesting_route( "carol0ah", "edgar0ah", HIVE_1_PERCENT * 50, true, carol0ah_private_key);
-  expected_operations.insert( { OP_TAG(set_withdraw_vesting_route_operation), fc::optional< expected_operation_result_t >() } );
-
-  delegate_vest( "carol0ah", "dan0ah", asset(3, VESTS_SYMBOL), carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(delegate_vesting_shares_operation), fc::optional< expected_operation_result_t >() } );
-
-  withdraw_vesting( "carol0ah", asset( 123, VESTS_SYMBOL ), carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(withdraw_vesting_operation), fc::optional< expected_operation_result_t >() } );
-  // TODO generate enough blocks to test fill_vesting_withdraw_operation & return_vesting_delegation_operation.
-  // TODO: Consider testing here delayed_voting_operation, block 28802, indices 2 & 3.
-
-
-  witness_create( "carol0ah", carol0ah_private_key, "foo.bar", carol0ah_private_key.get_public_key(), 1000 );
+  /*witness_create( "carol0ah", carol0ah_private_key, "foo.bar", carol0ah_private_key.get_public_key(), 1000 );
   expected_operations.insert( { OP_TAG(witness_update_operation), fc::optional< expected_operation_result_t >() } );
 
   witness_feed_publish( "carol0ah", price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ), carol0ah_private_key );

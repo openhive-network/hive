@@ -56,7 +56,7 @@ std::string asset_to_string( const asset& a )
 } // namespace
 
 // Tests with combined delayed voting and proposals
-BOOST_FIXTURE_TEST_SUITE( delayed_voting_proposal_tests, delayed_vote_proposal_database_fixture )
+BOOST_FIXTURE_TEST_SUITE( delayed_voting_proposal_tests, delayed_vote_database_fixture )
 
 BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
 {
