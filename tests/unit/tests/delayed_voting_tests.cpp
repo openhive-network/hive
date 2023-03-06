@@ -40,7 +40,7 @@ using fc::string;
 
 constexpr int NR_INTERVALS_IN_DELAYED_VOTING{ (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS) };
 
-#define VOTING_POWER( account ) db->get_account( account ).witness_vote_weight().value
+#define VOTING_POWER( account ) db->get_account( account ).get_governance_vote_power().value
 #define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
 #define DELAYED_VOTES( account ) static_cast<int64_t>( db->get_account( account ).sum_delayed_votes.value )
 #define CAN_VOTE( account ) db->get_account( account ).can_vote

@@ -1885,7 +1885,7 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
 void database::nullify_proxied_witness_votes( const account_object& a )
 {
   std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
-  delta[ 0 ] = -a.get_real_vesting_shares();
+  delta[ 0 ] = -a.get_direct_governance_vote_power();
   for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
     delta[ i + 1 ] = -a.proxied_vsf_votes[ i ];
   adjust_proxied_witness_votes( a, delta );
@@ -7065,10 +7065,10 @@ void database::validate_invariants()const
       total_vesting += itr->get_vest_rewards();
       pending_vesting_hive += itr->get_vest_rewards_as_hive();
       total_vsf_votes += ( !itr->has_proxy() ?
-                      itr->witness_vote_weight() :
+                      itr->get_governance_vote_power() :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
                           itr->proxied_vsf_votes[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
-                          itr->get_real_vesting_shares() ) );
+                          itr->get_direct_governance_vote_power() ) );
       total_delayed_votes += itr->sum_delayed_votes;
       ushare_type sum_delayed_votes{ 0ul };
       for( auto& dv : itr->delayed_votes )
@@ -7387,7 +7387,7 @@ void database::retally_witness_votes()
     auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
     while( wit_itr != vidx.end() && wit_itr->account == a.get_name() )
     {
-      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.witness_vote_weight() );
+      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power() );
       ++wit_itr;
     }
   }
