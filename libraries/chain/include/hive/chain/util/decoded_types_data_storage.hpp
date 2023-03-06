@@ -19,14 +19,14 @@
 
 namespace hive { namespace chain { namespace util {
 
-fc::ripemd160 calculate_checksum_from_string(const std::string_view str);
+std::string calculate_checksum_from_string(const std::string_view str);
 
 class decoded_type_data
 {
   public:
-    decoded_type_data(const fc::ripemd160& _checksum, const std::string_view _type_id, const bool _reflected);
+    decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const bool _reflected);
 
-    virtual fc::ripemd160 get_checksum() const final { return checksum; }
+    virtual std::string_view get_checksum() const final { return checksum; }
     virtual std::string_view get_type_id() const final { return type_id; }
     virtual bool is_reflected() const final { return reflected; }
 
@@ -42,7 +42,7 @@ class reflected_decoded_type_data : public decoded_type_data
     using members_vector = std::vector<std::pair<std::string, std::string>>;
     using enum_values_vector = std::vector<std::pair<std::string, size_t>>;
 
-    reflected_decoded_type_data(const fc::ripemd160& _checksum, const std::string_view _type_id, const std::string_view _fc_name,
+    reflected_decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _fc_name,
                                 members_vector&& _members, enum_values_vector&& _enum_values);
 
     std::string_view get_type_name() const { return fc_name; }
@@ -113,7 +113,7 @@ class decoded_types_data_storage final
     }
 
     template <typename T>
-    fc::ripemd160 get_decoded_type_checksum()
+    std::string_view get_decoded_type_checksum()
     {
       return get_decoded_type_data<T>()->get_checksum();
     }
@@ -256,7 +256,7 @@ namespace decoders
         visitor_enum_decoder visitor(enum_values, type_id_name);
         fc::reflector<T>::visit(visitor);
         const std::string_view type_name = fc::get_typename<T>::name();
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<reflected_decoded_type_data>(visitor.get_checksum(), type_id_name, type_name, std::move(reflected_decoded_type_data::members_vector()), std::move(enum_values)));
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<reflected_decoded_type_data>(visitor.get_checksum().str(), type_id_name, type_name, std::move(reflected_decoded_type_data::members_vector()), std::move(enum_values)));
       }
       else
       {
@@ -265,7 +265,7 @@ namespace decoders
         visitor_type_decoder visitor(members, type_id_name);
         fc::reflector<T>::visit(visitor);
         const std::string_view type_name = fc::get_typename<T>::name();
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<reflected_decoded_type_data>(visitor.get_checksum(), type_id_name, type_name, std::move(members), std::move(reflected_decoded_type_data::enum_values_vector())));
+        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<reflected_decoded_type_data>(visitor.get_checksum().str(), type_id_name, type_name, std::move(members), std::move(reflected_decoded_type_data::enum_values_vector())));
       }
     }
   };

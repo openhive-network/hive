@@ -124,7 +124,7 @@ void do_job()
           return;
         }
         ss << "Type: " << reflected_type_data->get_type_name() << "\n";
-        ss << "Checksum: " << reflected_type_data->get_checksum().str() << "\n";
+        ss << "Checksum: " << reflected_type_data->get_checksum() << "\n";
 
         if (reflected_type_data->is_enum())
         {
@@ -142,7 +142,7 @@ void do_job()
       else
       {
         ss << "Type id: " << type_data->get_type_id() << "\n";
-        ss << "Checksum: " << type_data->get_checksum().str() << "\n";
+        ss << "Checksum: " << type_data->get_checksum() << "\n";
       }
       ss << "----- \n\n";
     }
