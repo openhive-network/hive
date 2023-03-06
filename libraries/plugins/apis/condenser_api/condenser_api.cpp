@@ -1306,7 +1306,10 @@ uint16_t api_account_object::_compute_voting_power( const database_api::api_acco
   if( a.voting_manabar.last_update_time < HIVE_HARDFORK_0_20_TIME )
     return (uint16_t) a.voting_manabar.current_mana;
 
-  auto vests = chain::util::get_effective_vesting_shares( a );
+  int64_t vests = a.vesting_shares.amount.value - a.delegated_vesting_shares.amount.value + a.received_vesting_shares.amount.value;
+  if( a.next_vesting_withdrawal != fc::time_point_sec::maximum() )
+    vests -= std::min( a.vesting_withdraw_rate.amount.value, a.to_withdraw.value - a.withdrawn.value );
+
   if( vests <= 0 )
     return 0;
 

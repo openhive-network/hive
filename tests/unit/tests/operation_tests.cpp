@@ -37,7 +37,7 @@ using fc::string;
 
 inline uint16_t get_voting_power( const account_object& a )
 {
-  return (uint16_t)( a.voting_manabar.current_mana / chain::util::get_effective_vesting_shares( a ) );
+  return (uint16_t)( a.voting_manabar.current_mana / a.get_effective_vesting_shares().value );
 }
 
 BOOST_FIXTURE_TEST_SUITE( operation_tests, clean_database_fixture )
@@ -797,7 +797,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
 
       util::manabar old_manabar = VOTING_MANABAR( "alice" );
-      util::manabar_params params( util::get_effective_vesting_shares( db->get_account( "alice" ) ), HIVE_VOTING_MANA_REGENERATION_SECONDS );
+      util::manabar_params params( db->get_account( "alice" ).get_effective_vesting_shares().value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
       old_manabar.regenerate_mana( params, db->head_block_time() );
 
       comment_op.author = "bob";
@@ -861,7 +861,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       old_net_rshares = new_bob_comment_cashout->get_net_rshares();
 
       old_manabar = VOTING_MANABAR( "sam" );
-      params.max_mana = util::get_effective_vesting_shares( db->get_account( "sam" ) );
+      params.max_mana = db->get_account( "sam" ).get_effective_vesting_shares().value;
       old_manabar.regenerate_mana( params, db->head_block_time() );
 
       op.weight = -1 * HIVE_100_PERCENT / 2;
@@ -875,7 +875,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       itr = vote_idx.find( boost::make_tuple( new_bob_comment.get_id(), new_sam.get_id() ) );
 
       util::manabar old_downvote_manabar;
-      util::manabar_params downvote_params( util::get_effective_vesting_shares( db->get_account( "alice" ) ) / 4, HIVE_VOTING_MANA_REGENERATION_SECONDS );
+      util::manabar_params downvote_params( db->get_account( "alice" ).get_effective_vesting_shares().value / 4, HIVE_VOTING_MANA_REGENERATION_SECONDS );
       old_downvote_manabar.regenerate_mana( downvote_params, db->head_block_time() );
       int64_t sam_weight = old_downvote_manabar.current_mana - DOWNVOTE_MANABAR( "sam" ).current_mana - HIVE_VOTE_DUST_THRESHOLD;
 
@@ -928,7 +928,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       auto alice_voting_power = get_voting_power( new_alice ) - used_power;
 
       old_manabar = VOTING_MANABAR( "alice" );
-      params.max_mana = util::get_effective_vesting_shares( db->get_account( "alice" ) );
+      params.max_mana = db->get_account( "alice" ).get_effective_vesting_shares().value;
       old_manabar.regenerate_mana( params, db->head_block_time() );
 
       op.voter = "alice";
@@ -960,11 +960,11 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       alice_voting_power -= used_power;
 
       old_manabar = VOTING_MANABAR( "alice" );
-      params.max_mana = util::get_effective_vesting_shares( db->get_account( "alice" ) );
+      params.max_mana = db->get_account( "alice" ).get_effective_vesting_shares().value;
       old_manabar.regenerate_mana( params, db->head_block_time() );
 
       old_downvote_manabar = DOWNVOTE_MANABAR( "alice" );
-      downvote_params.max_mana = util::get_effective_vesting_shares( db->get_account( "alice" ) ) / 4;
+      downvote_params.max_mana = db->get_account( "alice" ).get_effective_vesting_shares().value / 4;
       old_downvote_manabar.regenerate_mana( downvote_params, db->head_block_time() );
 
       op.weight = HIVE_1_PERCENT * -75;
@@ -1058,7 +1058,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       generate_blocks( fc::time_point_sec( ( new_bob_comment_cashout->get_cashout_time() - HIVE_UPVOTE_LOCKOUT_HF17 ).sec_since_epoch() + HIVE_BLOCK_INTERVAL ), true );
 
       old_manabar = VOTING_MANABAR( "dave" );
-      params.max_mana = util::get_effective_vesting_shares( db->get_account( "dave" ) );
+      params.max_mana = db->get_account( "dave" ).get_effective_vesting_shares().value;
       old_manabar.regenerate_mana( params, db->head_block_time() );
 
       op.voter = "dave";
@@ -1087,7 +1087,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
       generate_block();
       old_manabar = VOTING_MANABAR( "dave" );
-      params.max_mana = util::get_effective_vesting_shares( db->get_account( "dave" ) );
+      params.max_mana = db->get_account( "dave" ).get_effective_vesting_shares();
       old_manabar.regenerate_mana( params, db->head_block_time() );
 
       op.weight = -1 * HIVE_100_PERCENT;
@@ -7621,19 +7621,19 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     op.delegatee = "bob";
 
     util::manabar old_manabar = VOTING_MANABAR( "alice" );
-    util::manabar_params params( util::get_effective_vesting_shares( db->get_account( "alice" ) ), HIVE_VOTING_MANA_REGENERATION_SECONDS );
+    util::manabar_params params( db->get_account( "alice" ).get_effective_vesting_shares().value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     util::manabar old_downvote_manabar = DOWNVOTE_MANABAR( "alice" );
-    params.max_mana = util::get_effective_vesting_shares( db->get_account( "alice" ) ) / 4;
+    params.max_mana = db->get_account( "alice" ).get_effective_vesting_shares().value / 4;
     old_downvote_manabar.regenerate_mana( params, db->head_block_time() );
 
     util::manabar old_bob_manabar = VOTING_MANABAR( "bob" );
-    params.max_mana = util::get_effective_vesting_shares( db->get_account( "bob" ) );
+    params.max_mana = db->get_account( "bob" ).get_effective_vesting_shares().value;
     old_bob_manabar.regenerate_mana( params, db->head_block_time() );
 
     util::manabar old_bob_downvote_manabar = DOWNVOTE_MANABAR( "bob" );
-    params.max_mana = util::get_effective_vesting_shares( db->get_account( "bob" ) ) / 4;
+    params.max_mana = db->get_account( "bob" ).get_effective_vesting_shares().value / 4;
     old_bob_downvote_manabar.regenerate_mana( params, db->head_block_time() );
 
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -7659,19 +7659,19 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( delegation->get_vesting() == ASSET( "10000000.000000 VESTS"));
 
     old_manabar = VOTING_MANABAR( "alice" );
-    params.max_mana = util::get_effective_vesting_shares( db->get_account( "alice" ) );
+    params.max_mana = db->get_account( "alice" ).get_effective_vesting_shares().value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     old_downvote_manabar = DOWNVOTE_MANABAR( "alice" );
-    params.max_mana = util::get_effective_vesting_shares( db->get_account( "alice" ) ) / 4;
+    params.max_mana = db->get_account( "alice" ).get_effective_vesting_shares().value / 4;
     old_downvote_manabar.regenerate_mana( params, db->head_block_time() );
 
     old_bob_manabar = VOTING_MANABAR( "bob" );
-    params.max_mana = util::get_effective_vesting_shares( db->get_account( "bob" ) );
+    params.max_mana = db->get_account( "bob" ).get_effective_vesting_shares().value;
     old_bob_manabar.regenerate_mana( params, db->head_block_time() );
 
     old_bob_downvote_manabar = DOWNVOTE_MANABAR( "bob" );
-    params.max_mana = util::get_effective_vesting_shares( db->get_account( "bob" ) ) / 4;
+    params.max_mana = db->get_account( "bob" ).get_effective_vesting_shares().value / 4;
     old_bob_downvote_manabar.regenerate_mana( params, db->head_block_time() );
 
     int64_t delta = 10000000000000;
@@ -7709,7 +7709,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     tx.operations.clear();
 
     old_manabar = VOTING_MANABAR( "bob" );
-    params.max_mana = util::get_effective_vesting_shares( db->get_account( "bob" ) );
+    params.max_mana = db->get_account( "bob" ).get_effective_vesting_shares().value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     comment_operation comment_op;
@@ -7792,7 +7792,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.voting_manabar.current_mana = util::get_effective_vesting_shares( a );
+        a.voting_manabar.current_mana = a.get_effective_vesting_shares().value;
         a.voting_manabar.last_update_time = db.head_block_time().sec_since_epoch();
         a.downvote_manabar.current_mana = a.downvote_manabar.current_mana * 3 / 4;
         a.downvote_manabar.last_update_time = db.head_block_time().sec_since_epoch();
@@ -7809,7 +7809,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.downvote_manabar.current_mana = util::get_effective_vesting_shares( a ) / 4;
+        a.downvote_manabar.current_mana = a.get_effective_vesting_shares().value / 4;
         a.downvote_manabar.last_update_time = db.head_block_time().sec_since_epoch();
       });
     });
@@ -7852,8 +7852,8 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     util::manabar old_dave_manabar = VOTING_MANABAR( "dave" );
     util::manabar old_dave_downvote_manabar = DOWNVOTE_MANABAR( "dave" );
 
-    util::manabar_params sam_params( util::get_effective_vesting_shares( db->get_account( "sam" ) ), HIVE_VOTING_MANA_REGENERATION_SECONDS );
-    util::manabar_params dave_params( util::get_effective_vesting_shares( db->get_account( "dave" ) ), HIVE_VOTING_MANA_REGENERATION_SECONDS );
+    util::manabar_params sam_params( db->get_account( "sam" ).get_effective_vesting_shares().value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
+    util::manabar_params dave_params( db->get_account( "dave" ).get_effective_vesting_shares().value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
 
     tx.clear();
     op.vesting_shares = ASSET( "0.000000 VESTS" );
@@ -7893,8 +7893,8 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     old_dave_manabar = VOTING_MANABAR( "dave" );
     old_dave_downvote_manabar = DOWNVOTE_MANABAR( "dave" );
 
-    sam_params.max_mana = util::get_effective_vesting_shares( db->get_account( "sam" ) );
-    dave_params.max_mana = util::get_effective_vesting_shares( db->get_account( "dave" ) );
+    sam_params.max_mana = db->get_account( "sam" ).get_effective_vesting_shares().value;
+    dave_params.max_mana = db->get_account( "dave" ).get_effective_vesting_shares().value;
 
     generate_blocks( exp_obj->get_expiration_time() + HIVE_BLOCK_INTERVAL );
 
