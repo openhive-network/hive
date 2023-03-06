@@ -2,14 +2,14 @@
 
 namespace hive { namespace chain { namespace util {
 
-fc::ripemd160 calculate_checksum_from_string(const std::string_view str)
+std::string calculate_checksum_from_string(const std::string_view str)
 {
   fc::ripemd160::encoder encoder;
   encoder.write(str.data(), str.size());
-  return encoder.result();
+  return std::move(encoder.result().str());
 }
 
-decoded_type_data::decoded_type_data(const fc::ripemd160& _checksum, const std::string_view _type_id, const bool _reflected)
+decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const bool _reflected)
   : checksum(_checksum), type_id(_type_id), reflected(_reflected)
 {
   if (type_id.empty())
@@ -19,7 +19,7 @@ decoded_type_data::decoded_type_data(const fc::ripemd160& _checksum, const std::
     dlog("New non reflected decoded type. Typeid: ${type_id}, checksum: ${checksum}", (type_id)(checksum));
 }
 
-reflected_decoded_type_data::reflected_decoded_type_data(const fc::ripemd160& _checksum, const std::string_view _type_id, const std::string_view _fc_name,
+reflected_decoded_type_data::reflected_decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _fc_name,
                                                          members_vector&& _members, enum_values_vector&& _enum_values)
   : decoded_type_data(_checksum, _type_id, true), members(std::move(_members)), enum_values(std::move(_enum_values)), fc_name(_fc_name)
 {
