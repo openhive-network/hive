@@ -739,11 +739,191 @@ BOOST_AUTO_TEST_CASE( fc_optional_alignment )
   BOOST_CHECK_EQUAL( t[0]->m4, t[1]->m2 );
 }
 
+BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
+{
+  hive::chain::util::decoded_types_data_storage& dtds_instance = hive::chain::util::decoded_types_data_storage::get_instance();
+  /* At the beginning we shouldn't have any decoded type data. */
+  BOOST_CHECK( dtds_instance.get_decoded_types_data_map().empty() );
+
+  /* Fundamental types - these types are not decoded by decoding mechanism, so decoding types data map should be empty. */
+  dtds_instance.register_new_type<int>();
+  dtds_instance.register_new_type<float>();
+  dtds_instance.register_new_type<double>();
+  BOOST_CHECK( dtds_instance.get_decoded_types_data_map().empty() );
+
+  /* Trivial types - like std::less. In this case, we analyse template parameters. In case of fundamental type we again ignore it, but second type should be decoded.*/
+  dtds_instance.register_new_type<std::less<int>>();
+  dtds_instance.register_new_type<std::less<hive::chain::witness_object::witness_schedule_type>>();
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 1 );
+
+  {
+    /* hive::chain::witness_object::witness_schedule_type is a reflected enum, so we can get some data about it. */
+    const hive::chain::util::reflected_decoded_type_data* reflected_enum_ptr = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
+                                                                                (dtds_instance.get_decoded_type_data<hive::chain::witness_object::witness_schedule_type>().get());
+    BOOST_CHECK( reflected_enum_ptr );
+    BOOST_CHECK( reflected_enum_ptr->is_reflected() );
+    BOOST_CHECK( reflected_enum_ptr->is_enum() );
+    BOOST_CHECK( reflected_enum_ptr->get_members().empty() );
+
+    const hive::chain::util::reflected_decoded_type_data::enum_values_vector& enum_values_for_type = reflected_enum_ptr->get_enum_values();
+
+    BOOST_CHECK( !enum_values_for_type.empty() );
+    BOOST_CHECK_EQUAL( reflected_enum_ptr->get_checksum(), "8826d3384e563df375fae0b2e00e23d61dee90d8" );
+    BOOST_CHECK_EQUAL( reflected_enum_ptr->get_type_id(), "N4hive5chain14witness_object21witness_schedule_typeE" );
+    BOOST_CHECK_EQUAL( reflected_enum_ptr->get_type_name(), "hive::chain::witness_object::witness_schedule_type" );
+
+    const hive::chain::util::reflected_decoded_type_data::enum_values_vector specific_enum_values_pattern{{"elected", 0},{"timeshare", 1}, {"miner", 2}, {"none", 3}};
+
+    BOOST_CHECK_EQUAL( enum_values_for_type.size(), specific_enum_values_pattern.size() );
+
+    for (size_t i = 0; i < specific_enum_values_pattern.size(); ++i)
+    {
+      BOOST_CHECK_EQUAL(enum_values_for_type[i].first, specific_enum_values_pattern[i].first);
+      BOOST_CHECK_EQUAL(enum_values_for_type[i].second, specific_enum_values_pattern[i].second);
+    }
+  }
+
+  /*
+    Boost types except index are non reflected which should be added to map. We don't analyse template arguments which are passed to these types.
+    In this case, std::string doesn't have decoder (at the time when this comment was written), so if it would be analysed, build error should occur.
+    fc::array has a decoder, so if it would be analysed, one more type should be in map.
+  */
+  dtds_instance.register_new_type<boost::container::basic_string<char>>();
+  dtds_instance.register_new_type<boost::container::flat_map<int, std::string>>();
+  dtds_instance.register_new_type<boost::container::flat_set<std::string>>();
+  dtds_instance.register_new_type<boost::container::deque<char>>();
+  dtds_instance.register_new_type<boost::container::vector<fc::array<float, 5>>>();
+
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 6 );
+
+  {
+    const hive::chain::util::decoded_type_data* decoded_boost_type = dtds_instance.get_decoded_type_data<boost::container::flat_map<int, std::string>>().get();
+
+    BOOST_CHECK( decoded_boost_type );
+    BOOST_CHECK( !decoded_boost_type->is_reflected() );
+    BOOST_CHECK_EQUAL( decoded_boost_type->get_checksum(), "14ac59e65d8cf4341dc8fb7e6d3404a95ab9f5a0");
+    BOOST_CHECK_EQUAL( decoded_boost_type->get_type_id(), "N5boost9container8flat_mapIiNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4lessIiEvEE");
+
+    //we shouldn't be able to cast decoded data to reflected type data.
+    BOOST_CHECK( !dynamic_cast<hive::chain::util::reflected_decoded_type_data*>(dtds_instance.get_decoded_type_data<boost::container::flat_map<int, std::string>>().get()) );
+  }
+
+  /*
+    Decoding an index - boost::multi_index::multi_index_container.
+    New non reflected type is added to map + we decode the key type of the index. During this process, at least one more type should be added to map.
+    Test case - decode hive::chain::decline_voting_rights_request_index.
+    There should be 6 more decoded types: index, decline_voting_rights_request_object, object's oid, fc::time_point_sec,, fc::erpair, fixed_string_impl.
+  */
+
+  dtds_instance.register_new_type<hive::chain::decline_voting_rights_request_index>();
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 12 );
+  {
+    const hive::chain::util::reflected_decoded_type_data* reflected_type_ptr = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
+                                                                                (dtds_instance.get_decoded_type_data<hive::chain::decline_voting_rights_request_object>().get());
+
+    BOOST_CHECK( reflected_type_ptr );
+    BOOST_CHECK( reflected_type_ptr->is_reflected() );
+    BOOST_CHECK( !reflected_type_ptr->is_enum() );
+    BOOST_CHECK( reflected_type_ptr->get_enum_values().empty() );
+
+    const hive::chain::util::reflected_decoded_type_data::members_vector& type_members = reflected_type_ptr->get_members();
+
+    BOOST_CHECK( !type_members.empty() );
+    BOOST_CHECK_EQUAL( reflected_type_ptr->get_checksum(), "07a72f6d76870fbab70cd7bbfb8e5b5e92a2bcbc" );
+    BOOST_CHECK_EQUAL( reflected_type_ptr->get_type_id(), "N4hive5chain36decline_voting_rights_request_objectE" );
+    BOOST_CHECK_EQUAL( reflected_type_ptr->get_type_name(), "hive::chain::decline_voting_rights_request_object" );
+
+    const hive::chain::util::reflected_decoded_type_data::members_vector type_members_pattern
+      {{"chainbase::oid<hive::chain::decline_voting_rights_request_object>", "id"},{"hive::protocol::account_name_type", "account"}, {"fc::time_point_sec", "effective_date"}};
+
+    BOOST_CHECK_EQUAL( type_members.size(), type_members_pattern.size() );
+
+    for (size_t i = 0; i < type_members_pattern.size(); ++i)
+    {
+      BOOST_CHECK_EQUAL(type_members[i].first, type_members_pattern[i].first);
+      BOOST_CHECK_EQUAL(type_members[i].second, type_members_pattern[i].second);
+    }
+
+    const hive::chain::util::decoded_type_data* decoded_index_data_ptr = dtds_instance.get_decoded_type_data<hive::chain::decline_voting_rights_request_index>().get();
+    BOOST_CHECK( decoded_index_data_ptr );
+    BOOST_CHECK( !decoded_index_data_ptr->is_reflected() );
+
+    const hive::chain::util::decoded_type_data* decoded_type_data_ptr_1 = dtds_instance.get_decoded_type_data<fc::time_point_sec>().get();
+    BOOST_CHECK( decoded_type_data_ptr_1 );
+    BOOST_CHECK( !decoded_type_data_ptr_1->is_reflected() );
+
+    const hive::chain::util::decoded_type_data* decoded_type_data_ptr_2 = dtds_instance.get_decoded_type_data<fc::erpair< uint64_t, uint64_t >>().get();
+    BOOST_CHECK( decoded_type_data_ptr_2 );
+    BOOST_CHECK( !decoded_type_data_ptr_2->is_reflected() );
+
+    BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 12 ); // there should be no new types in map, because object is already decoded because index was decoded.
+  }
+
+  /* Decoding type for which specific decored is defined. For fc::ripemd160, only one decoded type data should be added to map. */
+  dtds_instance.register_new_type<fc::ripemd160>();
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 13 );
+  {
+    const hive::chain::util::decoded_type_data* non_reflected_type_ptr = dtds_instance.get_decoded_type_data<fc::ripemd160>().get();
+    BOOST_CHECK( non_reflected_type_ptr );
+    BOOST_CHECK( !non_reflected_type_ptr->is_reflected() );
+    BOOST_CHECK_EQUAL( non_reflected_type_ptr->get_checksum(), "686344869324c953019f65bef15816ca48c831d4" );
+    BOOST_CHECK_EQUAL( non_reflected_type_ptr->get_type_id(), "N2fc9ripemd160E" );
+
+    //we shouldn't be able to cast decoded data to reflected type data.
+    BOOST_CHECK( !dynamic_cast<hive::chain::util::reflected_decoded_type_data*>(dtds_instance.get_decoded_type_data<fc::ripemd160>().get()) );
+  }
+
+  /*
+    Decoding reflected type - account_object. This type contains other reflected and non reflected object.
+    We should have new types like: hive::protocol::public_key_type (reflected) and hive::chain::account_object (reflected).
+   */
+  dtds_instance.register_new_type<hive::chain::account_object>();
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 28 );
+  {
+    const hive::chain::util::reflected_decoded_type_data* reflected_public_key_type_ptr = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
+                                                                                            (dtds_instance.get_decoded_type_data<hive::protocol::public_key_type>().get());
+
+    BOOST_CHECK( reflected_public_key_type_ptr );
+    BOOST_CHECK( reflected_public_key_type_ptr->is_reflected() );
+    BOOST_CHECK( !reflected_public_key_type_ptr->is_enum() );
+    BOOST_CHECK( reflected_public_key_type_ptr->get_enum_values().empty() );
+
+    const hive::chain::util::reflected_decoded_type_data::members_vector& public_key_members = reflected_public_key_type_ptr->get_members();
+
+    BOOST_CHECK( !public_key_members.empty() );
+    BOOST_CHECK_EQUAL( reflected_public_key_type_ptr->get_checksum(), "8acb3034188086a3630d70c44b1ddb21fe0f8d1f" );
+    BOOST_CHECK_EQUAL( reflected_public_key_type_ptr->get_type_id(), "N4hive8protocol15public_key_typeE" );
+    BOOST_CHECK_EQUAL( reflected_public_key_type_ptr->get_type_name(), "hive::protocol::public_key_type" );
+
+    const hive::chain::util::reflected_decoded_type_data::members_vector public_key_members_pattern {{"fc::array<char,33>", "key_data"}};
+    BOOST_CHECK_EQUAL( public_key_members.size(), public_key_members_pattern.size() );
+
+    for (size_t i = 0; i < public_key_members_pattern.size(); ++i)
+    {
+      BOOST_CHECK_EQUAL(public_key_members_pattern[i].first, public_key_members_pattern[i].first);
+      BOOST_CHECK_EQUAL(public_key_members_pattern[i].second, public_key_members_pattern[i].second);
+    }
+
+    const hive::chain::util::decoded_type_data* non_reflected_array_ptr = dtds_instance.get_decoded_type_data<fc::array<char,33>>().get();
+    BOOST_CHECK( non_reflected_array_ptr );
+    BOOST_CHECK( !non_reflected_array_ptr->is_reflected() );
+
+    const hive::chain::util::reflected_decoded_type_data* reflected_account_object_ptr = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
+                                                                                          (dtds_instance.get_decoded_type_data<hive::chain::account_object>().get());
+    BOOST_CHECK( reflected_account_object_ptr );
+    BOOST_CHECK( reflected_account_object_ptr->is_reflected() );
+    BOOST_CHECK( !reflected_account_object_ptr->is_enum() );
+    BOOST_CHECK( reflected_account_object_ptr->get_enum_values().empty() );
+    BOOST_CHECK_EQUAL( reflected_account_object_ptr->get_members().size(), 53 );
+  }
+
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 28 ); // decoded types map size shouldn't change.
+}
+
 BOOST_AUTO_TEST_CASE( chain_object_checksum )
 {
   hive::chain::util::decoded_types_data_storage& dtds_instance = hive::chain::util::decoded_types_data_storage::get_instance();
 
-  /* comparing strings is more human readable if any error occurs */
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_object>(), "587aea89a3ed83109ade1c4b808ffc1c7d5b96cf" );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_metadata_object>(), "8afa67ed15888d3f927bcb2b986d172da1f34375" );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_authority_object>(), "918c06ba905b0b095aa62df1b432e823790df6ba" );
