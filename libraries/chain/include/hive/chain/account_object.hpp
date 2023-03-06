@@ -228,9 +228,12 @@ namespace hive { namespace chain {
         }
       }
 
-      time_point_sec get_the_earliest_time() const
+      bool has_delayed_votes() const { return !delayed_votes.empty(); }
+
+      // start time of oldest delayed vote bucket (the one closest to activation)
+      time_point_sec get_oldest_delayed_vote_time() const
       {
-        if( !delayed_votes.empty() )
+        if( has_delayed_votes() )
           return ( delayed_votes.begin() )->time;
         else
           return time_point_sec::maximum();
@@ -475,7 +478,7 @@ namespace hive { namespace chain {
       >,
       ordered_unique< tag< by_delayed_voting >,
         composite_key< account_object,
-          const_mem_fun< account_object, time_point_sec, &account_object::get_the_earliest_time >,
+          const_mem_fun< account_object, time_point_sec, &account_object::get_oldest_delayed_vote_time >,
           const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
         >
       >,
