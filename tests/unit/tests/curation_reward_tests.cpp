@@ -451,7 +451,7 @@ struct curation_rewards_handler
     for( auto& item : curve_printers[ comment_idx ].curve_items )
     {
       const auto& acc = db.get_account( item.account );
-      item.reward = static_cast<uint32_t>( acc.curation_rewards.value );
+      item.reward = static_cast<uint32_t>( acc.curation_rewards.amount.value );
 
       uint64_t _seconds = static_cast<uint64_t>( ( item.time - curve_printers[ comment_idx ].start_time ).to_seconds() );
 
@@ -478,7 +478,7 @@ struct curation_rewards_handler
     for( auto& item : curve_printers[ comment_idx ].curve_items )
     {
       const auto& acc = db.get_account( item.account );
-      item.reward = static_cast<uint32_t>( acc.curation_rewards.value );
+      item.reward = static_cast<uint32_t>( acc.curation_rewards.amount.value );
 
       uint64_t _seconds = static_cast<uint64_t>( ( item.time - curve_printers[ comment_idx ].start_time ).to_seconds() );
 
@@ -847,7 +847,7 @@ BOOST_AUTO_TEST_CASE( no_votes )
     auto found_author = crh.authors.find( author_number );
     BOOST_REQUIRE( found_author != crh.authors.end() );
     const auto& creator = db->get_account( found_author->second );
-    BOOST_REQUIRE_EQUAL( creator.posting_rewards.value, 0 );
+    BOOST_REQUIRE_EQUAL( creator.posting_rewards.amount.value, 0 );
 
     auto cmp = []( const reward_stat& item )
     {
