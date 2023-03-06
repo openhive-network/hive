@@ -161,7 +161,7 @@ int64_t get_next_vesting_withdrawal( const account_object& account )
   //and in delegate_vesting_shares_evaluator::do_apply; moreover there are subtle differences (although
   //it looks like as long as there is no bug they should give the same values); the code should be
   //wrapped in account_object method
-  int64_t total_left = account.to_withdraw.value - account.withdrawn.value;
+  int64_t total_left = account.to_withdraw.amount.value - account.withdrawn.amount.value;
   int64_t withdraw_per_period = account.vesting_withdraw_rate.amount.value;
   int64_t next_withdrawal = (withdraw_per_period <= total_left) ? withdraw_per_period : total_left;
   bool is_done = (account.next_vesting_withdrawal == fc::time_point_sec::maximum());

@@ -265,14 +265,16 @@ void database::load_state_initial_data(const open_args& args)
   });
 #endif /// IS_TEST_NET
 
-
+  //ABW: the code below seems outdated - it will only work if you happen to be opening state where that
+  //account executed massively negative power down (because it was legal) and you didn't replay since then
+  //https://peakd.com/imfamy/@ironshield/block-23847548-the-block-which-will-live-in-infamy
   auto account = find< account_object, by_name >("nijeah");
-  if(account != nullptr && account->to_withdraw < 0)
+  if(account != nullptr && account->to_withdraw.amount < 0)
   {
     auto session = start_undo_session();
     modify(*account, [](account_object& a)
       {
-        a.to_withdraw = 0;
+        a.to_withdraw.amount = 0;
         a.next_vesting_withdrawal = fc::time_point_sec::maximum();
       });
     session.squash();
@@ -2365,8 +2367,8 @@ void database::clear_account( const account_object& account )
       a.delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
       a.vesting_withdraw_rate.amount = 0;
       a.next_vesting_withdrawal = fc::time_point_sec::maximum();
-      a.to_withdraw = 0;
-      a.withdrawn = 0;
+      a.to_withdraw.amount = 0;
+      a.withdrawn.amount = 0;
 
       if( has_hardfork( HIVE_HARDFORK_1_24 ) )
       {
@@ -2771,8 +2773,8 @@ void database::process_vesting_withdrawals()
     */
     share_type to_withdraw;
 
-    if ( from_account.to_withdraw - from_account.withdrawn < from_account.vesting_withdraw_rate.amount )
-      to_withdraw = std::min( from_account.vesting_shares.amount, from_account.to_withdraw % from_account.vesting_withdraw_rate.amount ).value;
+    if ( from_account.to_withdraw.amount - from_account.withdrawn.amount < from_account.vesting_withdraw_rate.amount )
+      to_withdraw = std::min( from_account.vesting_shares.amount, from_account.to_withdraw.amount % from_account.vesting_withdraw_rate.amount ).value;
     else
       to_withdraw = std::min( from_account.vesting_shares.amount, from_account.vesting_withdraw_rate.amount ).value;
 
@@ -2876,9 +2878,9 @@ void database::process_vesting_withdrawals()
     {
       a.vesting_shares.amount -= to_withdraw;
       a.balance += converted_hive;
-      a.withdrawn += to_withdraw;
+      a.withdrawn.amount += to_withdraw;
 
-      if( a.withdrawn >= a.to_withdraw || a.vesting_shares.amount == 0 )
+      if( a.withdrawn.amount >= a.to_withdraw.amount || a.vesting_shares.amount == 0 )
       {
         a.vesting_withdraw_rate.amount = 0;
         a.next_vesting_withdrawal = fc::time_point_sec::maximum();
@@ -7321,9 +7323,9 @@ void database::perform_vesting_share_split( uint32_t magnitude )
       {
         a.vesting_shares.amount *= magnitude;
         new_vesting_shares = a.vesting_shares;
-        a.withdrawn             *= magnitude;
-        a.to_withdraw           *= magnitude;
-        a.vesting_withdraw_rate  = asset( a.to_withdraw / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
+        a.withdrawn.amount *= magnitude;
+        a.to_withdraw.amount *= magnitude;
+        a.vesting_withdraw_rate  = asset( a.to_withdraw.amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
         if( a.vesting_withdraw_rate.amount == 0 )
           a.vesting_withdraw_rate.amount = 1;
 
