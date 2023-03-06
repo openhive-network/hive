@@ -1339,7 +1339,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
     /// add all new votes
     std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
-    delta[0] = account.get_real_vesting_shares();
+    delta[0] = account.get_direct_governance_vote_power();
     for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
       delta[i+1] = account.proxied_vsf_votes[i];
     _db.adjust_proxied_witness_votes( account, delta );
@@ -1380,10 +1380,10 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
       });
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) ) {
-        _db.adjust_witness_vote( witness, voter.witness_vote_weight() );
+        _db.adjust_witness_vote( witness, voter.get_governance_vote_power() );
       }
       else {
-        _db.adjust_proxied_witness_votes( voter, voter.witness_vote_weight() );
+        _db.adjust_proxied_witness_votes( voter, voter.get_governance_vote_power() );
       }
 
     } else {
@@ -1393,7 +1393,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
           v.account = voter.get_name();
       });
       _db.modify( witness, [&]( witness_object& w ) {
-          w.votes += voter.witness_vote_weight();
+          w.votes += voter.get_governance_vote_power();
       });
 
     }
@@ -1406,12 +1406,12 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
     if (  _db.has_hardfork( HIVE_HARDFORK_0_2 ) ) {
       if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) )
-        _db.adjust_witness_vote( witness, -voter.witness_vote_weight() );
+        _db.adjust_witness_vote( witness, -voter.get_governance_vote_power() );
       else
-        _db.adjust_proxied_witness_votes( voter, -voter.witness_vote_weight() );
+        _db.adjust_proxied_witness_votes( voter, -voter.get_governance_vote_power() );
     } else  {
       _db.modify( witness, [&]( witness_object& w ) {
-        w.votes -= voter.witness_vote_weight();
+        w.votes -= voter.get_governance_vote_power();
       });
     }
     _db.modify( voter, [&]( account_object& a ) {

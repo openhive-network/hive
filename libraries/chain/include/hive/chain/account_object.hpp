@@ -236,7 +236,8 @@ namespace hive { namespace chain {
           return time_point_sec::maximum();
       }
 
-      share_type get_real_vesting_shares() const
+      // governance vote power of this account does not include "delayed votes"
+      share_type get_direct_governance_vote_power() const
       {
         FC_ASSERT( sum_delayed_votes.value <= vesting_shares.amount, "",
                 ( "sum_delayed_votes",     sum_delayed_votes )
@@ -247,16 +248,15 @@ namespace hive { namespace chain {
       }
 
       /// This function should be used only when the account votes for a witness directly
-      share_type        witness_vote_weight()const {
-        return std::accumulate( proxied_vsf_votes.begin(),
-                        proxied_vsf_votes.end(),
-                        get_real_vesting_shares()
-                        );
+      share_type get_governance_vote_power() const
+      {
+        return std::accumulate( proxied_vsf_votes.begin(), proxied_vsf_votes.end(),
+          get_direct_governance_vote_power() );
       }
-      share_type        proxied_vsf_votes_total()const {
-        return std::accumulate( proxied_vsf_votes.begin(),
-                        proxied_vsf_votes.end(),
-                        share_type() );
+      share_type proxied_vsf_votes_total() const
+      {
+        return std::accumulate( proxied_vsf_votes.begin(), proxied_vsf_votes.end(),
+          share_type() );
       }
 
 #ifdef IS_TEST_NET

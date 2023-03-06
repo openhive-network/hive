@@ -2115,7 +2115,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
 
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( sam_witness.votes == alice.get_real_vesting_shares() );
+    BOOST_REQUIRE( sam_witness.votes == alice.get_direct_governance_vote_power() );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, alice.get_name() ) ) != witness_vote_idx.end() );
     validate_database();
 
@@ -2143,7 +2143,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
 
     push_transaction( tx, bob_private_key );
 
-    BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + bob.get_real_vesting_shares() ) );
+    BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + bob.get_direct_governance_vote_power() ) );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, bob.get_name() ) ) != witness_vote_idx.end() );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, alice.get_name() ) ) == witness_vote_idx.end() );
 
@@ -2153,7 +2153,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key, database::skip_transaction_dupe_check ), fc::exception );
 
-    BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + bob.get_real_vesting_shares() ) );
+    BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + bob.get_direct_governance_vote_power() ) );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, bob.get_name() ) ) != witness_vote_idx.end() );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, alice.get_name() ) ) == witness_vote_idx.end() );
 
@@ -2627,7 +2627,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     CHECK_PROXY( bob, alice );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     CHECK_NO_PROXY( alice );
-    BOOST_REQUIRE( alice.proxied_vsf_votes_total() == bob.get_real_vesting_shares() );
+    BOOST_REQUIRE( alice.proxied_vsf_votes_total() == bob.get_direct_governance_vote_power() );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test changing proxy" );
@@ -2643,7 +2643,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     BOOST_REQUIRE( alice.proxied_vsf_votes_total().value == 0 );
     CHECK_NO_PROXY( sam );
-    BOOST_REQUIRE( sam.proxied_vsf_votes_total().value == bob.get_real_vesting_shares() );
+    BOOST_REQUIRE( sam.proxied_vsf_votes_total().value == bob.get_direct_governance_vote_power() );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when changing proxy to existing proxy" );
@@ -2653,7 +2653,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     CHECK_PROXY( bob, sam );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     CHECK_NO_PROXY( sam );
-    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.get_real_vesting_shares() );
+    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.get_direct_governance_vote_power() );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test adding a grandparent proxy" );
@@ -2669,9 +2669,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     CHECK_PROXY( bob, sam );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     CHECK_PROXY( sam, dave );
-    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.get_real_vesting_shares() );
+    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.get_direct_governance_vote_power() );
     CHECK_NO_PROXY( dave );
-    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_real_vesting_shares() + bob.get_real_vesting_shares() ) );
+    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_direct_governance_vote_power() + bob.get_direct_governance_vote_power() ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test adding a grandchild proxy" );
@@ -2691,9 +2691,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     CHECK_PROXY( bob, sam );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     CHECK_PROXY( sam, dave );
-    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == ( bob.get_real_vesting_shares() + alice.get_real_vesting_shares() ) );
+    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == ( bob.get_direct_governance_vote_power() + alice.get_direct_governance_vote_power() ) );
     CHECK_NO_PROXY( dave );
-    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_real_vesting_shares() + bob.get_real_vesting_shares() + alice.get_real_vesting_shares() ) );
+    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_direct_governance_vote_power() + bob.get_direct_governance_vote_power() + alice.get_direct_governance_vote_power() ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test removing a grandchild proxy" );
@@ -2711,9 +2711,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     CHECK_NO_PROXY( bob );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     CHECK_PROXY( sam, dave );
-    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == alice.get_real_vesting_shares() );
+    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == alice.get_direct_governance_vote_power() );
     CHECK_NO_PROXY( dave );
-    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_real_vesting_shares() + alice.get_real_vesting_shares() ) );
+    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_direct_governance_vote_power() + alice.get_direct_governance_vote_power() ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test votes are transferred when a proxy is added" );
@@ -2732,7 +2732,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( db->get_witness( HIVE_INIT_MINER_NAME ).votes == ( alice.get_real_vesting_shares() + bob.get_real_vesting_shares() ) );
+    BOOST_REQUIRE( db->get_witness( HIVE_INIT_MINER_NAME ).votes == ( alice.get_direct_governance_vote_power() + bob.get_direct_governance_vote_power() ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test votes are removed when a proxy is removed" );
@@ -2742,7 +2742,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( db->get_witness( HIVE_INIT_MINER_NAME ).votes == bob.get_real_vesting_shares() );
+    BOOST_REQUIRE( db->get_witness( HIVE_INIT_MINER_NAME ).votes == bob.get_direct_governance_vote_power() );
     validate_database();
   }
   FC_LOG_AND_RETHROW()

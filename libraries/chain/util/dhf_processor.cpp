@@ -96,7 +96,7 @@ uint64_t dhf_processor::calculate_votes( uint32_t pid )
     //If _voter has set proxy, then his votes aren't taken into consideration
     if( !_voter.has_proxy() )
     {
-      auto sum = _voter.witness_vote_weight();
+      auto sum = _voter.get_governance_vote_power();
       ret += sum.value;
     }
 
