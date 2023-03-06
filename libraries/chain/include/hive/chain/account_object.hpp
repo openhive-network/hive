@@ -69,6 +69,14 @@ namespace hive { namespace chain {
       asset get_delegated_vesting() const { return delegated_vesting_shares; }
       //VESTS that were borrowed from other accounts
       asset get_received_vesting() const { return received_vesting_shares; }
+      //effective balance of VESTS including delegations and optionally excluding active step of pending power down
+      share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
+      {
+        share_type total = vesting_shares.amount - delegated_vesting_shares.amount + received_vesting_shares.amount;
+        if( excludeWeeklyPowerDown && next_vesting_withdrawal != fc::time_point_sec::maximum() )
+          total -= std::min( vesting_withdraw_rate.amount, to_withdraw - withdrawn );
+        return total;
+      }
       //TODO: add routines for specific uses, f.e. get_witness_voting_power, get_proposal_voting_power, get_post_voting_power...
       //unclaimed VESTS rewards
       asset get_vest_rewards() const { return reward_vesting_balance; }

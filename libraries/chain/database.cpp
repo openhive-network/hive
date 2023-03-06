@@ -948,7 +948,7 @@ void database::remove_old_cashouts()
 asset database::get_effective_vesting_shares( const account_object& account, asset_symbol_type vested_symbol )const
 {
   if( vested_symbol == VESTS_SYMBOL )
-    return static_cast<asset>(account.vesting_shares) - account.delegated_vesting_shares + account.received_vesting_shares;
+    return asset( account.get_effective_vesting_shares( false ), VESTS_SYMBOL );
 
 #ifdef HIVE_ENABLE_SMT
   FC_ASSERT( vested_symbol.space() == asset_symbol_type::smt_nai_space );

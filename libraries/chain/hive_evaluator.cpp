@@ -2887,7 +2887,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
   {
-    auto max_mana = util::get_effective_vesting_shares( delegator );
+    auto max_mana = delegator.get_effective_vesting_shares();
 
     _db.modify( delegator, [&]( account_object& a )
     {
