@@ -1803,7 +1803,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
     BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
     BOOST_REQUIRE( alice.vesting_withdraw_rate.amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 2 ) ).value + 1 );
-    BOOST_REQUIRE( alice.to_withdraw.value == op.vesting_shares.amount.value );
+    BOOST_REQUIRE( alice.to_withdraw.amount.value == op.vesting_shares.amount.value );
     BOOST_REQUIRE( alice.next_vesting_withdrawal == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
     validate_database();
 
@@ -1817,7 +1817,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
     BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
     BOOST_REQUIRE( alice.vesting_withdraw_rate.amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 3 ) ).value + 1 );
-    BOOST_REQUIRE( alice.to_withdraw.value == op.vesting_shares.amount.value );
+    BOOST_REQUIRE( alice.to_withdraw.amount.value == op.vesting_shares.amount.value );
     BOOST_REQUIRE( alice.next_vesting_withdrawal == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
     validate_database();
 
@@ -1845,7 +1845,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
     BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
     BOOST_REQUIRE( alice.vesting_withdraw_rate.amount.value == 0 );
-    BOOST_REQUIRE( alice.to_withdraw.value == 0 );
+    BOOST_REQUIRE( alice.to_withdraw.amount.value == 0 );
     BOOST_REQUIRE( alice.next_vesting_withdrawal == fc::time_point_sec::maximum() );
 
 

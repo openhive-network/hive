@@ -389,7 +389,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
           ( "creator.balance", creator.get_balance() )
           ( "required", o.fee ) );
 
-  FC_ASSERT( static_cast<asset>(creator.vesting_shares) - creator.delegated_vesting_shares - asset( creator.to_withdraw - creator.withdrawn, VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
+  FC_ASSERT( static_cast<asset>(creator.vesting_shares) - creator.delegated_vesting_shares - asset( creator.to_withdraw.amount - creator.withdrawn.amount, VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
           ( "creator.vesting_shares", creator.vesting_shares )
           ( "creator.delegated_vesting_shares", creator.delegated_vesting_shares )( "required", o.delegation ) );
 
@@ -1202,8 +1202,8 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     _db.modify( account, [&]( account_object& a ) {
       a.vesting_withdraw_rate = asset( 0, VESTS_SYMBOL );
       a.next_vesting_withdrawal = time_point_sec::maximum();
-      a.to_withdraw = 0;
-      a.withdrawn = 0;
+      a.to_withdraw.amount = 0;
+      a.withdrawn.amount = 0;
     });
   }
   else
@@ -1229,8 +1229,8 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 
       a.vesting_withdraw_rate = new_vesting_withdraw_rate;
       a.next_vesting_withdrawal = _db.head_block_time() + fc::seconds(HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS);
-      a.to_withdraw = o.vesting_shares.amount;
-      a.withdrawn = 0;
+      a.to_withdraw.amount = o.vesting_shares.amount;
+      a.withdrawn.amount = 0;
     });
   }
 }
@@ -2920,14 +2920,14 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     available_downvote_shares.amount = std::min( available_downvote_shares.amount, max_mana - delegator.received_vesting_shares.amount );
 
     if( delegator.next_vesting_withdrawal < fc::time_point_sec::maximum()
-      && delegator.to_withdraw - delegator.withdrawn > delegator.vesting_withdraw_rate.amount )
+      && delegator.to_withdraw.amount - delegator.withdrawn.amount > delegator.vesting_withdraw_rate.amount )
     {
       /*
       current voting mana does not include the current week's power down:
 
       std::min(
-        account.vesting_withdraw_rate.amount.value,           // Weekly amount
-        account.to_withdraw.value - account.withdrawn.value   // Or remainder
+        account.vesting_withdraw_rate,           // Weekly amount
+        account.to_withdraw - account.withdrawn  // Or remainder
         );
 
       But an account cannot delegate **any** VESTS that they are powering down.
@@ -2935,17 +2935,17 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       */
 
       auto weekly_withdraw = asset( std::min(
-        delegator.vesting_withdraw_rate.amount.value,           // Weekly amount
-        delegator.to_withdraw.value - delegator.withdrawn.value   // Or remainder
+        delegator.vesting_withdraw_rate.amount,                   // Weekly amount
+        delegator.to_withdraw.amount - delegator.withdrawn.amount // Or remainder
         ), VESTS_SYMBOL );
 
-      available_shares += weekly_withdraw - asset( delegator.to_withdraw - delegator.withdrawn, VESTS_SYMBOL );
-      available_downvote_shares += weekly_withdraw - asset( delegator.to_withdraw - delegator.withdrawn, VESTS_SYMBOL );
+      available_shares += weekly_withdraw - asset( delegator.to_withdraw.amount - delegator.withdrawn.amount, VESTS_SYMBOL );
+      available_downvote_shares += weekly_withdraw - asset( delegator.to_withdraw.amount - delegator.withdrawn.amount, VESTS_SYMBOL );
     }
   }
   else
   {
-    available_shares = delegator.vesting_shares.to_asset() - delegator.delegated_vesting_shares - asset( delegator.to_withdraw - delegator.withdrawn, VESTS_SYMBOL );
+    available_shares = delegator.vesting_shares.to_asset() - delegator.delegated_vesting_shares - asset( delegator.to_withdraw.amount - delegator.withdrawn.amount, VESTS_SYMBOL );
   }
 
   const auto& wso = _db.get_witness_schedule_object();

@@ -74,7 +74,7 @@ namespace hive { namespace chain {
       {
         share_type total = vesting_shares.amount - delegated_vesting_shares.amount + received_vesting_shares.amount;
         if( excludeWeeklyPowerDown && next_vesting_withdrawal != fc::time_point_sec::maximum() )
-          total -= std::min( vesting_withdraw_rate.amount, to_withdraw - withdrawn );
+          total -= std::min( vesting_withdraw_rate.amount, to_withdraw.amount - withdrawn.amount );
         return total;
       }
       //TODO: add routines for specific uses, f.e. get_witness_voting_power, get_proposal_voting_power, get_post_voting_power...
@@ -159,15 +159,16 @@ namespace hive { namespace chain {
 
       share_type        curation_rewards = 0;
       share_type        posting_rewards = 0;
-      share_type        withdrawn = 0; /// Track how many shares have been withdrawn
-      share_type        to_withdraw = 0; /// Might be able to look this up with operation history.
+
+      VEST_asset        withdrawn = asset( 0, VESTS_SYMBOL ); ///< shares already withdrawn in currently active power down
+      VEST_asset        to_withdraw = asset( 0, VESTS_SYMBOL ); ///< total shares to be withdrawn in currently active power down
       share_type        pending_claimed_accounts = 0;
 
       /*
         Total sum of VESTS from `delayed_votes` collection.
         It's a helper variable needed for better performance.
       */
-      ushare_type       sum_delayed_votes = 0;
+      ushare_type       sum_delayed_votes = 0; //(should be changed to VEST_asset)
 
       time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
       time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
