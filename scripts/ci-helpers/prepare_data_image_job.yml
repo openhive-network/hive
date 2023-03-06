@@ -17,7 +17,7 @@
         DOCKER_TLS_CERTDIR: "/certs"
 
   before_script:
-    - git config --global --add safe.directory $CI_PROJECT_DIR
+    - git config --global --add safe.directory '*'
 
 .docker_image_cleanup_job:
   image: alpine:3.16
