@@ -104,8 +104,6 @@ struct api_account_object
     recovery_account( a.recovery_account ),
     reset_account( a.reset_account ),
     last_account_recovery( a.last_account_recovery ),
-    comment_count( a.comment_count ),
-    lifetime_vote_count( a.lifetime_vote_count ),
     post_count( a.post_count ),
     can_vote( a.can_vote ),
     voting_manabar( a.voting_manabar ),
@@ -177,8 +175,8 @@ struct api_account_object
   account_name_type recovery_account;
   account_name_type reset_account;
   time_point_sec    last_account_recovery;
-  uint32_t          comment_count = 0;
-  uint32_t          lifetime_vote_count = 0;
+  uint32_t          comment_count = 0; //always zero
+  uint32_t          lifetime_vote_count = 0; //always zero
   uint32_t          post_count = 0;
 
   bool              can_vote = false;
