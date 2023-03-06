@@ -1126,6 +1126,8 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
 {
   try
   {
+    auto auto_reset( set_mainnet_cashout_values() ); // Test on mainnet values
+
     ACTORS( (alice) )
     fund( "alice", 100000 );
     vest( "alice", 100000 );
@@ -1214,6 +1216,8 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
 {
   try
   {
+    auto auto_reset( set_mainnet_cashout_values() ); // Test on mainnet values
+
     ACTORS( (alice)(bob)(sam) )
 
     auto original_vesting = alice.get_vesting();

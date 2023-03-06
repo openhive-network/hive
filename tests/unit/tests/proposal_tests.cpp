@@ -87,7 +87,7 @@ struct expired_account_notification_operation_visitor
   }
 };
 
-BOOST_FIXTURE_TEST_SUITE( proposal_tests, dhf_database_fixture )
+BOOST_FIXTURE_TEST_SUITE( proposal_tests, clean_database_fixture )
 
 BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
 {

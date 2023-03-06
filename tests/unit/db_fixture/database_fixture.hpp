@@ -371,6 +371,7 @@ struct database_fixture {
   void set_withdraw_vesting_route(const string& from, const string& to, uint16_t percent, bool auto_vest, const fc::ecc::private_key& key);
   void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
   void proxy( const string& account, const string& proxy );
+  void proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key );
   void set_price_feed( const price& new_price, bool stop_at_update_block = false );
   void set_witness_props( const flat_map< string, vector< char > >& new_props );
   void witness_feed_publish( const string& publisher, const price& exchange_rate, const private_key_type& key );
@@ -399,6 +400,28 @@ struct database_fixture {
                                    const custom_id_type& id, const std::string& json, const fc::ecc::private_key& key );
 
   void decline_voting_rights( const string& account, const bool decline, const fc::ecc::private_key& key );
+
+  struct create_proposal_data
+  {
+    std::string creator    ;
+    std::string receiver   ;
+    fc::time_point_sec start_date ;
+    fc::time_point_sec end_date   ;
+    hive::protocol::asset daily_pay ;
+    std::string subject ;
+    std::string url     ;
+
+    create_proposal_data(fc::time_point_sec _start)
+    {
+      creator    = "alice";
+      receiver   = "bob";
+      start_date = _start     + fc::days( 1 );
+      end_date   = start_date + fc::days( 2 );
+      daily_pay  = asset( 100, HBD_SYMBOL );
+      subject    = "hello";
+      url        = "http:://something.html";
+    }
+  };
 
   int64_t create_proposal( const std::string& creator, const std::string& receiver, const std::string& subject, const std::string& permlink,
                            time_point_sec start_date, time_point_sec end_date, asset daily_pay, const fc::ecc::private_key& key );
@@ -563,45 +586,10 @@ using smt_database_fixture_for_plugin = t_smt_database_fixture< database_fixture
 
 #endif
 
-struct dhf_database_fixture : public virtual clean_database_fixture
-{
-  dhf_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 )
-                  : clean_database_fixture( shared_file_size_in_mb ){}
-  virtual ~dhf_database_fixture(){}
-
-  // Note that all proposal-related operation execution methods have been moved to database_fixture,
-  // to allow using them by unit tests that base on it.
-
-  void proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key );
-
-  struct create_proposal_data
-  {
-    std::string creator    ;
-    std::string receiver   ;
-    fc::time_point_sec start_date ;
-    fc::time_point_sec end_date   ;
-    hive::protocol::asset daily_pay ;
-    std::string subject ;
-    std::string url     ;
-
-    create_proposal_data(fc::time_point_sec _start)
-    {
-      creator    = "alice";
-      receiver   = "bob";
-      start_date = _start     + fc::days( 1 );
-      end_date   = start_date + fc::days( 2 );
-      daily_pay  = asset( 100, HBD_SYMBOL );
-      subject    = "hello";
-      url        = "http:://something.html";
-    }
-  };
-
-};
-
-struct dhf_database_fixture_performance : public dhf_database_fixture
+struct dhf_database_fixture_performance : public clean_database_fixture
 {
   dhf_database_fixture_performance( uint16_t shared_file_size_in_mb = 512 )
-                  : dhf_database_fixture( shared_file_size_in_mb )
+                  : clean_database_fixture( shared_file_size_in_mb )
   {
     db->get_benchmark_dumper().set_enabled( true );
     db_plugin->debug_update( []( database& db )
@@ -627,16 +615,14 @@ struct hf24_database_fixture : public clean_database_fixture
   virtual ~hf24_database_fixture() {}
 };
 
-struct delayed_vote_database_fixture : public virtual clean_database_fixture
+struct delayed_vote_database_fixture : public clean_database_fixture
 {
   public:
 
-    delayed_vote_database_fixture( uint16_t shared_file_size_in_mb = 8 )
-                    : clean_database_fixture( shared_file_size_in_mb ){}
-    virtual ~delayed_vote_database_fixture(){}
+    delayed_vote_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
+    virtual ~delayed_vote_database_fixture();
 
     void witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key );
-    void proxy( const string& account, const string& proxy, const fc::ecc::private_key& key );
 
     share_type get_votes( const string& witness_name );
     int32_t get_user_voted_witness_count( const account_name_type& name );
@@ -652,16 +638,6 @@ struct delayed_vote_database_fixture : public virtual clean_database_fixture
 
     template< typename COLLECTION >
     bool check_collection( const COLLECTION& collection, const bool withdraw_executor, const share_type val, const account_object& obj );
-};
-
-struct delayed_vote_proposal_database_fixture 
-  :  public delayed_vote_database_fixture,
-    public dhf_database_fixture
-{
-  delayed_vote_proposal_database_fixture( uint16_t shared_file_size_in_mb = 8 )
-                    :  delayed_vote_database_fixture( shared_file_size_in_mb ),
-                      dhf_database_fixture( shared_file_size_in_mb ) {}
-  virtual ~delayed_vote_proposal_database_fixture(){}
 };
 
 struct json_rpc_database_fixture : public database_fixture
