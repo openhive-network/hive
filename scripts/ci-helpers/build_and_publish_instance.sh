@@ -1,8 +1,7 @@
 #! /bin/bash
 
-SRC_DIR_OFFSET="${SRC_DIR_OFFSET:-../..}" #This needs to be defined as a variable that can be overridden if Hive is a submodule
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-SRC_DIR="$SCRIPT_DIR/$SRC_DIR_OFFSET"
+SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit 1; pwd -P )"
+SRC_DIR="$SCRIPT_DIR/../.."
 
 print_help () {
     echo "Usage: $0 OPTION[=VALUE]..."
