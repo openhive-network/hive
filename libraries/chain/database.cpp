@@ -2979,7 +2979,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
 
             modify( voter, [&]( account_object& a )
             {
-              a.curation_rewards += claim;
+              a.curation_rewards.amount += claim;
             });
           post_push_virtual_operation( vop );
         }
@@ -3117,7 +3117,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
         modify( author, [&]( account_object& a )
         {
-          a.posting_rewards += author_tokens;
+          a.posting_rewards.amount += author_tokens;
         });
       }
 

@@ -157,8 +157,8 @@ namespace hive { namespace chain {
       VEST_asset        received_vesting_shares = asset( 0, VESTS_SYMBOL );
       VEST_asset        vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
 
-      share_type        curation_rewards = 0;
-      share_type        posting_rewards = 0;
+      HIVE_asset        curation_rewards = asset( 0, HIVE_SYMBOL ); ///< not used by consensus - sum of all curations (value before conversion to VESTS)
+      HIVE_asset        posting_rewards = asset( 0, HIVE_SYMBOL ); ///< not used by consensus - sum of all author rewards (value before conversion to VESTS/HBD)
 
       VEST_asset        withdrawn = asset( 0, VESTS_SYMBOL ); ///< shares already withdrawn in currently active power down
       VEST_asset        to_withdraw = asset( 0, VESTS_SYMBOL ); ///< total shares to be withdrawn in currently active power down
