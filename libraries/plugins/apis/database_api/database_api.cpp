@@ -2327,6 +2327,11 @@ std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl
 int expected_block_num = 0;
 
 
+extern "C" int get_expected_block_num_impl(const char* context)
+{
+  return 4;
+}
+
 
 static volatile bool stop_in_consume_json_block_impl = false;
 
