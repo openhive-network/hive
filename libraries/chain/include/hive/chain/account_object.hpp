@@ -180,9 +180,6 @@ namespace hive { namespace chain {
       time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
 
     public:
-
-      uint32_t          comment_count = 0;
-      uint32_t          lifetime_vote_count = 0;
       uint32_t          post_count = 0;
       uint32_t          post_bandwidth = 0;
 
@@ -627,7 +624,7 @@ FC_REFLECT( hive::chain::account_object,
           (id)(name)(memo_key)(proxy)(last_account_update)
           (created)(mined)
           (recovery_account)(last_account_recovery)
-          (comment_count)(lifetime_vote_count)(post_count)(can_vote)(voting_manabar)(downvote_manabar)
+          (post_count)(can_vote)(voting_manabar)(downvote_manabar)
           (balance)
           (savings_balance)
           (hbd_balance)(hbd_seconds)(hbd_seconds_last_update)(hbd_last_interest_payment)
