@@ -169,6 +169,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     
     if( bfs::exists( abs_path ) )
     {
+
+        bfs::permissions(abs_path, bfs::perms::all_all | bfs::perms::add_perms);
+
       _file_size = bfs::file_size( abs_path );
       if( shared_file_size > _file_size )
       {
@@ -221,6 +224,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                       abs_path.generic_string().c_str(), shared_file_size
                                       ) );
       _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
+      
+        bfs::permissions(abs_path, bfs::perms::all_all | bfs::perms::add_perms);
+
     }
 
     mtlk_chainbase_check_dynamic_global_property_index();

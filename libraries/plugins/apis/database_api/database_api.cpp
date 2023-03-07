@@ -2489,6 +2489,12 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
     {
       collected_account_balances_t e;
       e.account_name = a.name;
+      if (a.name == "bavak")
+      {
+        int a = 0 ;
+        a = a;
+      }
+
       e.balance = a.balance.amount.value;
       e.hbd_balance = a.hbd_balance.amount.value;
       e.vesting_shares = a.vesting_shares.amount.value;
