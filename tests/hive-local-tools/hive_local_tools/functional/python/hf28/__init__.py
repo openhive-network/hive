@@ -1,13 +1,13 @@
 import test_tools as tt
 
 
-def create_proposal(wallet):
+def create_proposal(wallet, head_block_time=None):
     wallet.api.post_comment("initminer", "test-permlink", "", "test-parent-permlink", "test-title", "test-body", "{}")
     # create proposal with permlink pointing to comment
     wallet.api.create_proposal("initminer",
                                "initminer",
-                               tt.Time.now(),
-                               tt.Time.from_now(weeks=1),
+                               tt.Time.now() if head_block_time is None else head_block_time,
+                               tt.Time.from_now(weeks=1) if head_block_time is None else tt.Time.parse(head_block_time)+tt.Time.weeks(1),
                                tt.Asset.Tbd(5),
                                "test subject",
                                "test-permlink")
