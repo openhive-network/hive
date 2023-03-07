@@ -2323,17 +2323,43 @@ void init(hive::chain::database& db, const char* context)
 #include <hive/chain/full_block.hpp>
 
 
-std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
-int expected_block_num = 0;
+static std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
+static int expected_block_num = 0;
 
+
+
+
+
+
+void initialize_context(int &expected_block_num, const char* context)
+{
+  if(haf_database_api_impls.find(context) == haf_database_api_impls.end())
+  {
+    // mtlk todo  ASSERT NOT haf_database_api_impls.has_key(context)
+    hive::chain::database* db = new hive::chain::database;
+    init(*db, context);
+
+    expected_block_num = db->head_block_num();
+    expected_block_num++;
+
+  
+    std::string  s(context);
+    haf_database_api_impls.emplace(std::make_pair(s, hive::plugins::database_api::database_api_impl(*db)));
+  }
+}
 
 extern "C" int get_expected_block_num_impl(const char* context)
 {
-  return 4;
+  initialize_context(expected_block_num, context);
+
+  return expected_block_num;
 }
 
 
 static volatile bool stop_in_consume_json_block_impl = false;
+
+
+
 
 extern "C" int consume_json_block_impl(const char *json_block, const char* context, int block_num)
 {
@@ -2352,20 +2378,8 @@ extern "C" int consume_json_block_impl(const char *json_block, const char* conte
     }
   }
 
+  initialize_context(expected_block_num, context);
 
-  if(haf_database_api_impls.find(context) == haf_database_api_impls.end())
-  {
-    // mtlk todo  ASSERT NOT haf_database_api_impls.has_key(context)
-    hive::chain::database* db = new hive::chain::database;
-    init(*db, context);
-
-    expected_block_num = db->head_block_num();
-    expected_block_num++;
-
-  
-    std::string  s(context);
-    haf_database_api_impls.emplace(std::make_pair(s, hive::plugins::database_api::database_api_impl(*db)));
-  }
 
 
   // wlog("consume_json_block_impl before further  mtlk block_num= ${block_num}", ("block_num", block_num));
