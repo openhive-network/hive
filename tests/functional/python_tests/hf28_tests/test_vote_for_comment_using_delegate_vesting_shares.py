@@ -1,14 +1,14 @@
-import pytest
-
 import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import post_comment
 
 
-@pytest.mark.xfail(reason="issue")
 @run_for("testnet")
 def test_delegate_vesting_shares_without_voting_rights(node):
+    """
+    Problem description: https://gitlab.syncad.com/hive/hive/-/issues/463
+    """
     node.restart(time_offset="+0h x5")
     wallet = tt.Wallet(attach_to=node)
 
@@ -19,8 +19,9 @@ def test_delegate_vesting_shares_without_voting_rights(node):
     wallet.api.decline_voting_rights("alice", True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    with pytest.raises(tt.exceptions.CommunicationError):
-        wallet.api.delegate_vesting_shares("alice", "bob", tt.Asset.Vest(5))
+    wallet.api.delegate_vesting_shares("alice", "bob", tt.Asset.Vest(5))
+
+    assert node.api.condenser.get_accounts(["bob"])[0]["post_voting_power"] == tt.Asset.Vest(5)
 
 
 @run_for("testnet")
