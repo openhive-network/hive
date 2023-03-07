@@ -1,3 +1,4 @@
+from pathlib import Path
 import pytest
 
 import test_tools as tt
@@ -17,11 +18,22 @@ def prepare_environment(node):
 
 @pytest.fixture
 def prepare_environment_on_hf_27(node):
-    node = tt.InitNode()
     # run on a node with a date earlier than the start date of hardfork 28 (february 8, 2023 1:00:00 am)
-    node.run(time_offset='@2023-01-07 10:10:10')
-    wallet = tt.Wallet(attach_to=node)
+    node = tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(0, 20)])
 
+
+    block_log_directory = Path(__file__).parent / "block_log"
+    with open(block_log_directory / "timestamp", encoding="utf-8") as file:
+        absolute_start_time = tt.Time.parse(file.read())
+
+    absolute_start_time -= tt.Time.seconds(5)
+    time_offset = tt.Time.serialize(absolute_start_time, format_=tt.Time.TIME_OFFSET_FORMAT)
+    node.run(
+        replay_from=block_log_directory /"block_log",
+        time_offset=time_offset,
+    )
+
+    wallet = tt.Wallet(attach_to=node)
     wallet.create_account(VOTER_ACCOUNT, vests=tt.Asset.Test(10))
     wallet.create_account(PROXY_ACCOUNT)
 
