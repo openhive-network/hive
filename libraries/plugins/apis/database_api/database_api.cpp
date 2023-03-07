@@ -2490,6 +2490,10 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
       collected_account_balances_t e;
       e.account_name = a.name;
       e.balance = a.balance.amount.value;
+      e.hbd_balance = a.hbd_balance.amount.value;
+      e.vesting_shares = a.vesting_shares.amount.value;
+      e.savings_hbd_balance = a.savings_hbd_balance.amount.value;
+      e.reward_hbd_balance = a.reward_hbd_balance.amount.value;
       wlog("mtlk e.account_name=${name} e.balance=${balance}", ("name", e.account_name)("balance" , e.balance) );
       r.emplace_back(e);
       cnt++;
