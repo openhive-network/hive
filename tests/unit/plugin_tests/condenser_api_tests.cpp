@@ -244,6 +244,39 @@ struct condenser_api_fixture : database_fixture
 
     check_point_2_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
+
+  /**
+   * Operations tested here:
+   *  witness_update_operation, feed_publish_operation, account_witness_proxy_operation, account_witness_vote_operation, witness_set_properties_operation
+   *  
+   * Note that witness_block_approve_operation never appears in block (see its evaluator).
+   */
+  void witness_scenario( check_point_tester_t check_point_tester )
+  {
+    db->set_hardfork( HIVE_HARDFORK_1_27 );
+    generate_block();
+
+    ACTORS( (alice5ah)(ben5ah)(carol5ah) );
+    generate_block();
+    
+    witness_create( "alice5ah", alice5ah_private_key, "foo.bar", alice5ah_private_key.get_public_key(), 1000 );
+    witness_feed_publish( "alice5ah", price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ), alice5ah_private_key );
+    proxy( "ben5ah", "carol5ah" );
+    witness_vote( "carol5ah", "alice5ah", carol5ah_private_key );
+    // Note that we don't use existing database_fixture::set_witness_props function below,
+    // because we don't want "uncontrolled" block generation that happens there. We only
+    // need the operation in block, so we can do our test on it.
+    // witness_set_properties_operation
+    fc::flat_map< std::string, std::vector<char> > props;
+    props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
+    props["key"] = fc::raw::pack_to_vector( alice5ah_private_key.get_public_key() );
+    witness_set_properties_operation op;
+    op.owner = "alice5ah";
+    op.props = props;
+    push_transaction( op, alice5ah_private_key );
+
+    check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+  }
 };
 
 BOOST_FIXTURE_TEST_SUITE( condenser_api_tests, condenser_api_fixture );
@@ -815,6 +848,31 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_vesting )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( get_ops_in_block_witness )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with witness_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 5 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    // TODO Supplement the patterns here
+    /*expected_t expected_operations = { { // 
+      }, { // 
+      }, { // 
+      }, { // 
+      }, { // 
+      }, { // 
+      } };
+    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[5] };
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );*/
+  };
+  
+  witness_scenario( check_point_tester );
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_ops_in_block_tests
 
 BOOST_FIXTURE_TEST_SUITE( condenser_get_transaction_tests, condenser_api_fixture );
@@ -1096,34 +1154,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test ) // To be split into sc
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
   
-  /*witness_create( "carol0ah", carol0ah_private_key, "foo.bar", carol0ah_private_key.get_public_key(), 1000 );
-  expected_operations.insert( { OP_TAG(witness_update_operation), fc::optional< expected_operation_result_t >() } );
-
-  witness_feed_publish( "carol0ah", price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ), carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(feed_publish_operation), fc::optional< expected_operation_result_t >() } );
-  
-  // witness_block_approve_operation - never appears in block (see its evaluator)
-  
-  proxy( "edgar0ah", "dan0ah" );
-  expected_operations.insert( { OP_TAG(account_witness_proxy_operation), fc::optional< expected_operation_result_t >() } );
-
-  witness_vote( "dan0ah", "carol0ah", dan0ah_private_key );
-  expected_operations.insert( { OP_TAG(account_witness_vote_operation), fc::optional< expected_operation_result_t >() } );
-  
-  // Note that we don't use existing database_fixture::set_witness_props function below,
-  // because we don't want "uncontrolled" block generation that happens there. We only
-  // need the operation in block, so we can do our test on it.
-  // witness_set_properties_operation
-  fc::flat_map< std::string, std::vector<char> > props;
-  props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
-  props["key"] = fc::raw::pack_to_vector( carol0ah_private_key.get_public_key() );
-  witness_set_properties_operation op;
-  op.owner = "carol0ah";
-  op.props = props;
-  push_transaction( op, carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(witness_set_properties_operation), fc::optional< expected_operation_result_t >() } );
-
-  escrow_transfer( "carol0ah", "dan0ah", "edgar0ah", ASSET( "0.071 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
+  /*escrow_transfer( "carol0ah", "dan0ah", "edgar0ah", ASSET( "0.071 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
                    fc::seconds( HIVE_BLOCK_INTERVAL * 10 ), fc::seconds( HIVE_BLOCK_INTERVAL * 20 ), carol0ah_private_key );
   expected_operations.insert( { OP_TAG(escrow_transfer_operation), fc::optional< expected_operation_result_t >() } );
 
