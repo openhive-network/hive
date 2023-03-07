@@ -2487,6 +2487,12 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
     decltype(args.limit) cnt = 0;
     for(const auto& a : db_api_impl_result.accounts)
     {
+      if((cnt == 0) && (args.start != ""))
+      {
+        cnt++;
+        continue;
+      }
+
       collected_account_balances_t e;
       e.account_name = a.name;
       if (a.name == "bavak")
