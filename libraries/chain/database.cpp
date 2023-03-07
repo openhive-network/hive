@@ -4191,7 +4191,7 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       a.hbd_balance = asset( hbd_init_supply, HBD_SYMBOL );
     } );
 
-#ifdef IS_TEST_NET
+#if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     create< feed_history_object >( [&]( feed_history_object& o )
     {
       o.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
