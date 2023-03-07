@@ -255,9 +255,12 @@ def prepare_sub_networks(
     return prepare_sub_networks_launch(sub_networks_sizes, block_log_directory_name)
 
 
-def prepare_sub_networks_generation_v2(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None) -> Dict:
+def prepare_sub_networks_generation_v2(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, before_run_network: Callable[[], networks.NetworksBuilder] = None) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
+
+    if before_run_network is not None:
+        before_run_network(builder)
 
     run_networks(builder.networks, None)
 
@@ -287,7 +290,7 @@ def prepare_sub_networks_v2(architecture: networks.NetworksArchitecture, block_l
     if allow_generate_block_log():
         assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
         tt.logger.info(f"New `block_log` generation: {block_log_directory_name}")
-        return prepare_sub_networks_generation_v2(architecture, block_log_directory_name)
+        return prepare_sub_networks_generation_v2(architecture, block_log_directory_name, before_run_network)
 
     return prepare_sub_networks_launch_v2(architecture, block_log_directory_name, time_offsets, before_run_network)
 
