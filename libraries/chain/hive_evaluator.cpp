@@ -2974,6 +2974,9 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
   // If delegation doesn't exist, create it
   if( delegation == nullptr )
   {
+    ilog( "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
+      ("acc", op.delegator)("r", op.vesting_shares)("a", available_shares) );
+
     FC_ASSERT( available_shares >= op.vesting_shares, "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
       ("acc", op.delegator)("r", op.vesting_shares)("a", available_shares) );
     FC_TODO( "This hardfork check should not be needed. Remove after HF21 if that is the case." );
