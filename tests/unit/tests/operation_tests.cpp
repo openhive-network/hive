@@ -6386,7 +6386,7 @@ BOOST_AUTO_TEST_CASE( escrow_limit )
       push_transaction( tx, alice_private_key );
 
       generate_block();
-      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_transfers, i + 1 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_escrow_transfers, i + 1 );
     }
     
     //another escrow transfer from "alice" should fail
@@ -6398,7 +6398,7 @@ BOOST_AUTO_TEST_CASE( escrow_limit )
       HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
       generate_block();
-      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_transfers, i );
+      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_escrow_transfers, i );
     }
 
     escrow_approve_operation bob_approve, sam_approve;
@@ -6450,12 +6450,12 @@ BOOST_AUTO_TEST_CASE( escrow_limit )
       }
 
       generate_block();
-      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_transfers, HIVE_MAX_PENDING_TRANSFERS - declined );
+      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_escrow_transfers, HIVE_MAX_PENDING_TRANSFERS - declined );
     }
 
     generate_block();
     //unratified transfers should expire by now
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_transfers, HIVE_MAX_PENDING_TRANSFERS - declined - expired );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_escrow_transfers, HIVE_MAX_PENDING_TRANSFERS - declined - expired );
 
     //every 4 of remaining transfers (only those with id divisible by 4 remain):
     //0. alice disputes transfer
@@ -6506,7 +6506,7 @@ BOOST_AUTO_TEST_CASE( escrow_limit )
 
       push_transaction( tx, _key );
       generate_block();
-      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_transfers, HIVE_MAX_PENDING_TRANSFERS - declined - expired - released );
+      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_escrow_transfers, HIVE_MAX_PENDING_TRANSFERS - declined - expired - released );
     }
 
     //every 2 of remaining transfers (only those with id divisible by 8 remain):
@@ -6532,7 +6532,7 @@ BOOST_AUTO_TEST_CASE( escrow_limit )
       --remaining;
 
       generate_block();
-      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_transfers, remaining );
+      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).pending_escrow_transfers, remaining );
     }
 
     BOOST_REQUIRE_EQUAL( remaining, 0 );
