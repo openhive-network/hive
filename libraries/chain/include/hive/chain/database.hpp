@@ -186,6 +186,11 @@ namespace chain {
         * @param data_dir Path to open or create database in
         */
       void open( const open_args& args, const std::string& context = "" );
+      
+      void public_apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing )
+      {
+        apply_block(full_block, skip );
+      }
 
     private:
 
@@ -709,13 +714,9 @@ namespace chain {
     private:
       optional< chainbase::database::session > _pending_tx_session;
 
-      public:
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
-      private:
       void switch_forks(item_ptr new_head);
-      public:
       void _apply_block(const std::shared_ptr<full_block_type>& full_block);
-      private:
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
       void apply_operation( const operation& op );

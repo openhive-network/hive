@@ -2429,7 +2429,7 @@ extern "C" int consume_json_block_impl(const char *json_block, const char* conte
   db.set_tx_status( hive::plugins::chain::database::TX_STATUS_BLOCK );
 
 
-  db.apply_block(fb_ptr, skip_flags);
+  db.public_apply_block(fb_ptr, skip_flags);
 
   db.clear_tx_status();
 

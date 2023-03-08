@@ -55,7 +55,6 @@
 
 #include <stdlib.h>
 
-
 long next_hf_time()
 {
   // current "next hardfork" is HF28
