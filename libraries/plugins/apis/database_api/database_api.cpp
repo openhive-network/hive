@@ -2457,11 +2457,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
   // dlog("collect_current_all_accounts_balances started mtlk pid=${pid}", ("pid", getpid()));
 
 
-  while(stop_in_collect_current_all_accounts_balances)
-  {
-    int a= 0;
-    a =a;
-  }
+  while(stop_in_collect_current_all_accounts_balances)  {    int a= 0;    a =a;  }
 
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
 
@@ -2476,7 +2472,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
   args.limit = 5;
   args.order = hive::plugins::database_api::by_name;
 
-   wlog("mtlk args.start=${start}", ("start", args.start));
+   // wlog("mtlk args.start=${start}", ("start", args.start));
 
   while(true)
   { 
@@ -2495,18 +2491,13 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 
       collected_account_balances_t e;
       e.account_name = a.name;
-      if (a.name == "bavak")
-      {
-        int a = 0 ;
-        a = a;
-      }
 
       e.balance = a.balance.amount.value;
       e.hbd_balance = a.hbd_balance.amount.value;
       e.vesting_shares = a.vesting_shares.amount.value;
       e.savings_hbd_balance = a.savings_hbd_balance.amount.value;
       e.reward_hbd_balance = a.reward_hbd_balance.amount.value;
-      wlog("mtlk e.account_name=${name} e.balance=${balance}", ("name", e.account_name)("balance" , e.balance) );
+      //wlog("mtlk e.account_name=${name} e.balance=${balance}", ("name", e.account_name)("balance" , e.balance) );
       r.emplace_back(e);
       cnt++;
     }
@@ -2515,7 +2506,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 
     args.start = db_api_impl_result.accounts[db_api_impl_result.accounts.size() - 1].name;
 
-    wlog("mtlk args.start=${start} ${cnt}", ("start", args.start)("cnt", cnt));
+    //wlog("mtlk args.start=${start} ${cnt}", ("start", args.start)("cnt", cnt));
 
     if(cnt < args.limit)
       break;
