@@ -193,7 +193,7 @@ namespace hive { namespace chain {
       uint32_t          post_bandwidth = 0;
 
       uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
-      uint16_t          pending_transfers = 0; //for now max is 255, but it might change
+      uint16_t          pending_escrow_transfers = 0; //for now max is 255, but it might change
       uint16_t          open_recurrent_transfers = 0; //for now max is 255, but it might change
       uint16_t          witnesses_voted_for = 0; //max 30, why is it 16bit?
 
@@ -644,7 +644,7 @@ FC_REFLECT( hive::chain::account_object,
           (reward_hive_balance)(reward_hbd_balance)(reward_vesting_balance)(reward_vesting_hive)
           (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)
           (vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
-          (pending_transfers)(open_recurrent_transfers)(curation_rewards)
+          (pending_escrow_transfers)(open_recurrent_transfers)(curation_rewards)
           (posting_rewards)
           (proxied_vsf_votes)(witnesses_voted_for)
           (last_post)(last_root_post)(last_post_edit)(last_vote_time)(post_bandwidth)

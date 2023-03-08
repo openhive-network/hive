@@ -521,7 +521,7 @@ struct api_account_object
     withdrawn( a.withdrawn.amount ),
     to_withdraw( a.to_withdraw.amount ),
     withdraw_routes( a.withdraw_routes ),
-    pending_transfers( a.pending_transfers ),
+    pending_transfers( a.pending_escrow_transfers ),
     witnesses_voted_for( a.witnesses_voted_for ),
     last_post( a.last_post ),
     last_root_post( a.last_root_post ),

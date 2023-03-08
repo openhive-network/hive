@@ -2404,7 +2404,7 @@ void database::clear_account( const account_object& account )
 
     modify( account, []( account_object& a )
     {
-      a.pending_transfers--;
+      a.pending_escrow_transfers--;
     } );
 
     remove( escrow );
@@ -3803,7 +3803,7 @@ void database::expire_escrow_ratification()
 
     modify( get_account( old_escrow.from ), []( account_object& a )
     {
-      a.pending_transfers--;
+      a.pending_escrow_transfers--;
     } );
 
     remove( old_escrow );
