@@ -1,13 +1,11 @@
 """
-This file contains tests showing abnormalities on hardfork 27, behaviors shown in these tests need to be fixed.
-Each of the tests included here contains an equivalent enabled on the current hardfork has the same name without
-the `_on_hf_27` suffix. e.g:
-    test_decline_voting_rights_more_than_once_on_hf_27 -> test showing an abnormality
-    test_decline_voting_rights_more_than_once -> should pass after repair
-
-Tests enabled on the current hardfork are omitted. After the repairs, the `@pytest.mark.skip` marker should be removed
+This file contains tests showing abnormalities on hardfork 27, and behavior after hardfork 28.
 Related issue: https://gitlab.syncad.com/hive/hive/-/issues/441
 """
+import pytest
+import time
+
+import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import create_proposal
@@ -22,7 +20,19 @@ def test_decline_voting_rights_more_than_once_on_hf_27(prepare_environment_on_hf
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
     assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])['accounts'][0]["can_vote"] == False
 
-    wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
+    error_message = "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden."
+
+    with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_27:
+        wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
+    response_from_hf_27 = exception_from_hf_27.value.response
+    assert error_message in response_from_hf_27["error"]["message"]
+
+    wait_for_hardfork_28_application(node)
+
+    with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_28:
+        wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
+    response_from_hf_28 = exception_from_hf_28.value.response
+    assert error_message in response_from_hf_28["error"]["message"]
 
 
 @run_for("testnet")
@@ -37,6 +47,10 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights_on_hf_27(p
 
     assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 1
 
+    wait_for_hardfork_28_application(node)
+
+    assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 0
+
 
 @run_for("testnet")
 def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights_on_hf_27(prepare_environment_on_hf_27):
@@ -47,7 +61,18 @@ def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights_on_h
     wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
+    error_message = "Voter declined voting rights, therefore casting votes is forbidden."
+    with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_27:
+        wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
+    response_from_hf_27 = exception_from_hf_27.value.response
+    assert error_message in response_from_hf_27["error"]["message"]
+
+    wait_for_hardfork_28_application(node)
+
+    with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_28:
+        wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
+    response_from_hf_28 = exception_from_hf_28.value.response
+    assert error_message in response_from_hf_28["error"]["message"]
 
 
 @run_for("testnet")
@@ -62,3 +87,18 @@ def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed_
     node.wait_for_block_with_number(head_block_number + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 1
+
+    wait_for_hardfork_28_application(node)
+
+    assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 0
+
+
+def wait_for_hardfork_28_application(node: tt.InitNode, timeout: int=240) -> None:
+    tt.logger.info("Waiting for application hardfork 28")
+    timeout = time.time() + timeout
+    while True:
+        if node.api.wallet_bridge.get_hardfork_version() == "1.28.0":
+            node.wait_number_of_blocks(1)
+            break
+        if time.time() > timeout:
+            raise TimeoutError("hardfork 28 was not applied within expected time")
