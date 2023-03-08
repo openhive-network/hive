@@ -15,18 +15,13 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
 
     # Finally we have 2 connected networks
 
-    sub_networks_data   = prepare_fork_2_sub_networks_02['sub-networks-data']
-    sub_networks        = sub_networks_data[0]
-    assert len(sub_networks) == 2
+    networks_builder   = prepare_fork_2_sub_networks_02
 
-    witness_details     = sub_networks_data[1]
-    witness_details_part  = sh.get_part_of_witness_details(witness_details, 6, 14)
+    witness_details_part  = sh.get_part_of_witness_details(networks_builder.witness_names, 6, 14)
 
-    init_wallet         = sub_networks_data[2]
-
-    minority_api_node       = sub_networks[0].node('ApiNode0')
-    majority_api_node       = sub_networks[1].node('ApiNode1')
-    majority_witness_node   = sub_networks[1].node('WitnessNode1')
+    minority_api_node       = networks_builder.networks[0].node('ApiNode0')
+    majority_api_node       = networks_builder.networks[1].node('ApiNode1')
+    majority_witness_node   = networks_builder.networks[1].node('WitnessNode1')
 
     majority_witness_wallet = tt.Wallet(attach_to = majority_witness_node)
     set_expiration_time = 1000
@@ -76,12 +71,12 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
     last_lib_M  = sh.get_last_irreversible_block_num(_M)
 
     tt.logger.info(f'Disconnect sub networks')
-    sh.disconnect_sub_networks(sub_networks)
+    sh.disconnect_sub_networks(networks_builder.networks)
 
     sh.wait(blocks_after_disconnect, logs, minority_api_node)
 
     tt.logger.info(f'Reconnect sub networks')
-    sh.connect_sub_networks(sub_networks)
+    sh.connect_sub_networks(networks_builder.networks)
 
     sh.wait(blocks_after_reconnect, logs, minority_api_node)
 

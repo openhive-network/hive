@@ -18,18 +18,13 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     # Finally we have 2 connected networks. The 'majority' network is shorter, but contains LIB which is higher than LIB of the 'minority' sub network,
     # so merging sub networks is done as soon as possible.
 
-    sub_networks_data   = prepare_fork_2_sub_networks_03['sub-networks-data']
-    sub_networks        = sub_networks_data[0]
-    assert len(sub_networks) == 2
+    networks_builder = prepare_fork_2_sub_networks_03
 
-    witness_details     = sub_networks_data[1]
-    witness_details_part  = sh.get_part_of_witness_details(witness_details, 4, 16)
+    witness_details_part  = sh.get_part_of_witness_details(networks_builder.witness_names, 4, 16)
 
-    init_wallet         = sub_networks_data[2]
-
-    minority_api_node       = sub_networks[0].node('ApiNode0')
-    majority_api_node       = sub_networks[1].node('ApiNode1')
-    majority_witness_node   = sub_networks[1].node('WitnessNode1')
+    minority_api_node       = networks_builder.networks[0].node('ApiNode0')
+    majority_api_node       = networks_builder.networks[1].node('ApiNode1')
+    majority_witness_node   = networks_builder.networks[1].node('WitnessNode1')
 
     majority_witness_wallet = tt.Wallet(attach_to = majority_witness_node)
     set_expiration_time = 1000
@@ -61,7 +56,7 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
                 break
 
     tt.logger.info(f'Disconnect sub networks')
-    sh.disconnect_sub_networks(sub_networks)
+    sh.disconnect_sub_networks(networks_builder.networks)
 
     sh.wait(blocks_after_disconnect, logs, majority_api_node)
 
@@ -73,7 +68,7 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     sh.wait(blocks_after_disable_witness, logs, minority_api_node)
 
     tt.logger.info(f'Reconnect sub networks')
-    sh.connect_sub_networks(sub_networks)
+    sh.connect_sub_networks(networks_builder.networks)
 
     sleep_seconds = 20
     tt.logger.info(f'Before sleep {sleep_seconds}')

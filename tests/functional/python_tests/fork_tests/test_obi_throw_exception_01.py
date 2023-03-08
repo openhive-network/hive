@@ -45,15 +45,13 @@ def test_obi_throw_exception_01(prepare_obi_throw_exception_01):
     # {"num":123,"lib":121,"type":"gen","id":"0000007b93955ddcaec73914246283bc930c85e1","bp":"witness-1-1"}
     #=====================================================================================================================================
 
-    sub_networks_data   = prepare_obi_throw_exception_01['sub-networks-data']
-    sub_networks        = sub_networks_data[0]
-    assert len(sub_networks) == 2
+    networks_builder = prepare_obi_throw_exception_01
 
-    api_node_0      = sub_networks[0].node('ApiNode0')
-    witness_node_0  = sub_networks[0].node('WitnessNode0')
+    api_node_0      = networks_builder.networks[0].node('ApiNode0')
+    witness_node_0  = networks_builder.networks[0].node('WitnessNode0')
 
-    api_node_1      = sub_networks[1].node('ApiNode1')
-    witness_node_1  = sub_networks[1].node('WitnessNode1')
+    api_node_1      = networks_builder.networks[1].node('ApiNode1')
+    witness_node_1  = networks_builder.networks[1].node('WitnessNode1')
 
     logs = []
 

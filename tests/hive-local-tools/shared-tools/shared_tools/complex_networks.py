@@ -116,7 +116,9 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
         timestamp = get_time_offset_from_file((blocklog_directory / "timestamp"))
         time_offset = get_relative_time_offset_from_timestamp(timestamp)
         block_log = tt.BlockLog(blocklog_directory / "block_log")
-        tt.logger.info(f"block_log directory: {blocklog_directory}")
+        tt.logger.info(f"'block_log' directory: {blocklog_directory} timestamp: {timestamp} time_offset: {time_offset}")
+    else:
+        tt.logger.info(f"'block_log' directory hasn't been defined")
 
     tt.logger.info("Running nodes...")
 
@@ -160,42 +162,6 @@ def display_info(wallet):
     head = result["head_block_num"]
     tt.logger.info(f"Network prepared, irreversible block: {irreversible}, head block: {head}")
 
-
-def prepare_network_with_many_witnesses(block_log_directory_name: Path = None) -> Dict:
-    """
-    Fixture consists of 1 init node, 8 witness nodes and 2 api nodes.
-    After fixture creation there are 21 active witnesses, and last irreversible block
-    is behind head block like in real network.
-    """
-
-    tt.logger.info("Preparing network with many witnesses")
-
-    # Create first network
-    alpha_net = tt.Network()
-    init_node = tt.InitNode(network=alpha_net)
-    tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(0, 3)], network=alpha_net)
-    tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(3, 6)], network=alpha_net)
-    tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(6, 8)], network=alpha_net)
-    tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(8, 10)], network=alpha_net)
-    tt.ApiNode(network=alpha_net)
-
-    # Create second network
-    beta_net = tt.Network()
-    tt.WitnessNode(witnesses=[f"witness{i}-beta" for i in range(0, 3)], network=beta_net)
-    tt.WitnessNode(witnesses=[f"witness{i}-beta" for i in range(3, 6)], network=beta_net)
-    tt.WitnessNode(witnesses=[f"witness{i}-beta" for i in range(6, 8)], network=beta_net)
-    tt.WitnessNode(witnesses=[f"witness{i}-beta" for i in range(8, 10)], network=beta_net)
-    tt.ApiNode(network=beta_net)
-
-    run_networks([alpha_net, beta_net], block_log_directory_name)
-
-    wallet = tt.Wallet(attach_to=init_node)
-
-    display_info(wallet)
-
-    return alpha_net, beta_net
-
-
 def prepare_nodes(sub_networks_sizes: list) -> list:
     assert len(sub_networks_sizes) > 0, "At least 1 sub-network is required"
 
@@ -220,42 +186,7 @@ def prepare_nodes(sub_networks_sizes: list) -> list:
         cnt += 1
     return sub_networks, init_node, all_witness_names
 
-
-def prepare_sub_networks_generation(sub_networks_sizes: list, block_log_directory_name: Path = None) -> Dict:
-    sub_networks, init_node, all_witness_names = prepare_nodes(sub_networks_sizes)
-
-    run_networks(sub_networks, None)
-
-    initminer_public_key = "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
-    init_network(init_node, all_witness_names, initminer_public_key, block_log_directory_name)
-
-    return None, None, None
-
-
-def prepare_sub_networks_launch(sub_networks_sizes: list, block_log_directory_name: Path = None) -> Dict:
-    sub_networks, init_node, all_witness_names = prepare_nodes(sub_networks_sizes)
-
-    run_networks(sub_networks, block_log_directory_name)
-
-    init_wallet = tt.Wallet(attach_to=init_node)
-
-    display_info(init_wallet)
-
-    return sub_networks, all_witness_names, init_wallet
-
-
-def prepare_sub_networks(
-    sub_networks_sizes: list, allow_generate_block_log: bool = False, block_log_directory_name: Path = None
-) -> Dict:
-    assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
-
-    if allow_generate_block_log:
-        return prepare_sub_networks_generation(sub_networks_sizes, block_log_directory_name)
-
-    return prepare_sub_networks_launch(sub_networks_sizes, block_log_directory_name)
-
-
-def prepare_sub_networks_generation_v2(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, before_run_network: Callable[[], networks.NetworksBuilder] = None) -> Dict:
+def prepare_sub_networks_generation(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, before_run_network: Callable[[], networks.NetworksBuilder] = None) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
@@ -270,7 +201,7 @@ def prepare_sub_networks_generation_v2(architecture: networks.NetworksArchitectu
     return None
 
 
-def prepare_sub_networks_launch_v2(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, before_run_network: Callable[[], networks.NetworksBuilder] = None) -> Dict:
+def prepare_sub_networks_launch(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, before_run_network: Callable[[], networks.NetworksBuilder] = None) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
@@ -279,20 +210,20 @@ def prepare_sub_networks_launch_v2(architecture: networks.NetworksArchitecture, 
 
     run_networks(builder.networks, block_log_directory_name, time_offsets)
 
-    init_wallet = tt.Wallet(attach_to=builder.init_node)
+    builder.init_wallet = tt.Wallet(attach_to=builder.init_node)
 
-    display_info(init_wallet)
+    display_info(builder.init_wallet)
 
     return builder
 
 
-def prepare_sub_networks_v2(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, before_run_network: Callable[[], networks.NetworksBuilder] = None) -> Dict:
+def prepare_sub_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, before_run_network: Callable[[], networks.NetworksBuilder] = None) -> Dict:
     if allow_generate_block_log():
         assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
         tt.logger.info(f"New `block_log` generation: {block_log_directory_name}")
-        return prepare_sub_networks_generation_v2(architecture, block_log_directory_name, before_run_network)
+        return prepare_sub_networks_generation(architecture, block_log_directory_name, before_run_network)
 
-    return prepare_sub_networks_launch_v2(architecture, block_log_directory_name, time_offsets, before_run_network)
+    return prepare_sub_networks_launch(architecture, block_log_directory_name, time_offsets, before_run_network)
 
 
 def allow_generate_block_log():

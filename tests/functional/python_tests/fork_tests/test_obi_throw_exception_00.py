@@ -15,15 +15,13 @@ def test_obi_throw_exception_00(prepare_obi_throw_exception_00):
     # A witness from the `A` network has an exception - during `1` block this sub network can't produce.
     # After production resuming, both sub networks link together and LIB increases, because during the exception a block is produced by a witness from `A` network
 
-    sub_networks_data   = prepare_obi_throw_exception_00['sub-networks-data']
-    sub_networks        = sub_networks_data[0]
-    assert len(sub_networks) == 2
+    networks_builder = prepare_obi_throw_exception_00
 
-    api_node_0      = sub_networks[0].node('ApiNode0')
-    witness_node_0  = sub_networks[0].node('WitnessNode0')
+    api_node_0      = networks_builder.networks[0].node('ApiNode0')
+    witness_node_0  = networks_builder.networks[0].node('WitnessNode0')
 
-    api_node_1      = sub_networks[1].node('ApiNode1')
-    witness_node_1  = sub_networks[1].node('WitnessNode1')
+    api_node_1      = networks_builder.networks[1].node('ApiNode1')
+    witness_node_1  = networks_builder.networks[1].node('WitnessNode1')
 
     logs = []
 

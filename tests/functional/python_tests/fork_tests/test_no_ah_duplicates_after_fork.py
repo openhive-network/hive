@@ -2,9 +2,10 @@ import shared_tools.complex_networks_helper_functions as sh
 import test_tools as tt
 
 
-def test_no_duplicates_in_account_history_plugin_after_fork(prepare_basic_networks):
-    alpha_net = prepare_basic_networks['Alpha']
-    beta_net = prepare_basic_networks['Beta']
+def test_no_duplicates_in_account_history_plugin_after_fork(prepare_with_many_witnesses):
+    networks_builder = prepare_with_many_witnesses
+    alpha_net = networks_builder.networks[0]
+    beta_net = networks_builder.networks[1]
 
     alpha_node = alpha_net.node('ApiNode0')
     beta_node = beta_net.node('ApiNode1')
@@ -47,7 +48,10 @@ def trigger_fork(alpha_net, beta_net):
     head_blocks = display_current_head_block_number_in_both_networks('head_block_after_disconnection', [alpha_node, beta_node])
 
     tt.logger.info('Waiting until head block increases in both subnetworks')
+    cnt = 0
     for node in [alpha_node, beta_node]:
+        tt.logger.info(f'Processing {"alpha" if cnt == 0 else "beta"} network')
+        cnt += 1
         while True:
             old_head_block = head_blocks[ str(node) ]
             current_head_block = node.api.database.get_dynamic_global_properties()['head_block_number']
@@ -58,5 +62,6 @@ def trigger_fork(alpha_net, beta_net):
 
             node.wait_number_of_blocks(1)
 
+    tt.logger.info('Before connecting networks')
     alpha_net.connect_with(beta_net)
     tt.logger.info(f'Reconnected {alpha_net} and {beta_net}')
