@@ -39,7 +39,7 @@ namespace hive { namespace chain {
         voting_manabar.last_update_time = _creation_time.sec_since_epoch();
         downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
         if( _fill_mana )
-          voting_manabar.current_mana = HIVE_100_PERCENT;
+          voting_manabar.current_mana = HIVE_100_PERCENT; //nonsense, but that's what was in the original code
       }
 
       //minimal constructor used for creation of accounts at genesis and in tests
@@ -162,7 +162,8 @@ namespace hive { namespace chain {
 
       VEST_asset        withdrawn = asset( 0, VESTS_SYMBOL ); ///< shares already withdrawn in currently active power down
       VEST_asset        to_withdraw = asset( 0, VESTS_SYMBOL ); ///< total shares to be withdrawn in currently active power down
-      share_type        pending_claimed_accounts = 0;
+
+      share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens (could be 32bit)
 
       /*
         Total sum of VESTS from `delayed_votes` collection.
@@ -178,19 +179,19 @@ namespace hive { namespace chain {
     private:
       time_point_sec    created; //(not read by consensus code)
     public:
-      time_point_sec    last_account_update;
-      time_point_sec    last_post;
-      time_point_sec    last_root_post = fc::time_point_sec::min();
-      time_point_sec    last_post_edit;
-      time_point_sec    last_vote_time;
+      time_point_sec    last_account_update; //(only used by outdated consensus checks - up to HF17)
+      time_point_sec    last_post; //(we could probably remove limit on posting replies)
+      time_point_sec    last_root_post = fc::time_point_sec::min(); //influenced root comment reward between HF12 and HF17
+      time_point_sec    last_post_edit; //(we could probably remove limit on post edits)
+      time_point_sec    last_vote_time; //(only used by outdated consensus checks - up to HF26)
       time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
 
     private:
       time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
 
     public:
-      uint32_t          post_count = 0;
-      uint32_t          post_bandwidth = 0;
+      uint32_t          post_count = 0; //(not read by consensus code)
+      uint32_t          post_bandwidth = 0; //influenced root comment reward between HF12 and HF17
 
       uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
       uint16_t          pending_escrow_transfers = 0; //for now max is 255, but it might change

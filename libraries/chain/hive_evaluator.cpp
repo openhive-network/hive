@@ -2620,6 +2620,7 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
 void change_recovery_account_evaluator::do_apply( const change_recovery_account_operation& o )
 {
   const auto& new_recovery_account = _db.get_account( o.new_recovery_account ); // validate account exists
+    //ABW: can't clear existing recovery agent to set it to top voted witness
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
 
   const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index, by_account >();
@@ -2627,10 +2628,12 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
 
   if( request == change_recovery_idx.end() ) // New request
   {
+    //ABW: it is possible to request change to currently set recovery agent (empty operation)
     _db.create< change_recovery_account_request_object >( account_to_recover, new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
   }
   else if( account_to_recover.get_recovery_account() != o.new_recovery_account ) // Change existing request
   {
+    //ABW: it is possible to request change to already requested new recovery agent (operation only resets timer)
     _db.modify( *request, [&]( change_recovery_account_request_object& req )
     {
       req.set_recovery_account( new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
