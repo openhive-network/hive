@@ -586,8 +586,6 @@ struct dhf_database
       url        = "http:://something.html";
     }
   };
-
-  clean_database_fixture& executor;
 };
 
 struct dhf_database_fixture : public virtual clean_database_fixture

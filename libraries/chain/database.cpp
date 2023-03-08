@@ -2658,50 +2658,50 @@ void database::process_recurrent_transfers()
 
 void database::remove_proposal_votes_for_accounts_without_voting_rights()
 {
-  std::vector<account_name_type> _voters;
+  std::vector<account_name_type> voters;
 
-  const auto& _proposal_votes_idx = get_index< proposal_vote_index, by_voter_proposal >();
+  const auto& proposal_votes_idx = get_index< proposal_vote_index, by_voter_proposal >();
 
-  auto _itr = _proposal_votes_idx.begin();
-  while( _itr != _proposal_votes_idx.end() )
+  auto itr = proposal_votes_idx.begin();
+  while( itr != proposal_votes_idx.end() )
   {
-    _voters.push_back( _itr->voter );
-    ++_itr;
+    voters.push_back( itr->voter );
+    ++itr;
   }
 
   //Lack of voters.
-  if( _voters.empty() )
+  if( voters.empty() )
     return;
 
-  std::vector<account_name_type> _accounts;
+  std::vector<account_name_type> accounts;
 
-  for( auto& voter : _voters )
+  for( auto& voter : voters )
   {
-    const auto& _voter = get_account( voter );
-    if( !_voter.can_vote )
-      _accounts.push_back( _voter.get_name() );
+    const auto& account = get_account( voter );
+    if( !account.can_vote )
+      accounts.push_back( account.get_name() );
   }
 
   //Lack of voters who declined voting rights.
-  if( _accounts.empty() )
+  if( accounts.empty() )
     return;
 
   /*
     For every account set a request to remove proposal votes.
     Current time is set, because we want to start removing proposal votes as soon as possible.
   */
-  const auto& _request_idx = get_index< decline_voting_rights_request_index, by_account >();
+  const auto& request_idx = get_index< decline_voting_rights_request_index, by_account >();
 
-  for( auto& account : _accounts )
+  for( auto& account : accounts )
   {
-    auto _found = _request_idx.find( account );
-    if( _found !=_request_idx.end() )
+    auto found = request_idx.find( account );
+    if( found !=request_idx.end() )
     {
       /*
         Before HF28 it was possible to create `decline_voting_rights` operation again, even if an account had `can_vote` set to false.
         In this case `effective_date` must be changed otherwise a new object is created.
       */
-      modify( *_found, [&]( decline_voting_rights_request_object& req )
+      modify( *found, [&]( decline_voting_rights_request_object& req )
       {
         req.effective_date = head_block_time();
       });
