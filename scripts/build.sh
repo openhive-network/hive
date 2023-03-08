@@ -69,6 +69,10 @@ done
 
 abs_src_dir=`realpath -e --relative-base="$SCRIPTPATH" "$HIVED_SOURCE_DIR"`
 abs_build_dir=`realpath -m --relative-base="$SCRIPTPATH" "$HIVED_BINARY_DIR"`
+echo "@@@@ abs_src_dir"
+echo "$abs_src_dir"
+echo "@@@@ abs_build_dir"
+echo "$abs_build_dir"
 
 pwd
 mkdir -vp "$abs_build_dir"
