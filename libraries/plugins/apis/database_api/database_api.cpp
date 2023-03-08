@@ -2347,7 +2347,9 @@ void initialize_context(int &expected_block_num, const char* context)
   }
 }
 
-extern "C" int get_expected_block_num_impl(const char* context)
+namespace hive { namespace app {
+
+int get_expected_block_num_impl(const char* context)
 {
   initialize_context(expected_block_num, context);
 
@@ -2357,10 +2359,7 @@ extern "C" int get_expected_block_num_impl(const char* context)
 
 static volatile bool stop_in_consume_json_block_impl = false;
 
-
-
-
-extern "C" int consume_json_block_impl(const char *json_block, const char* context, int block_num)
+int consume_json_block_impl(const char *json_block, const char* context, int block_num)
 {
   int static show_it_once = true;
   if(show_it_once)
@@ -2441,10 +2440,6 @@ extern "C" int consume_json_block_impl(const char *json_block, const char* conte
 
   return expected_block_num;
 }
-
-
-
-namespace hive { namespace app {
 
 
 static volatile auto stop_in_collect_current_all_accounts_balances = false;
@@ -2534,6 +2529,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 
   return r;
 }
+
 
 }
 }

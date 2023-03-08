@@ -193,6 +193,9 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
 
 typedef std::vector<collected_account_balances_t> collected_account_balances_collection_t;
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context);
+int get_expected_block_num_impl(const char* context);
+int consume_json_block_impl(const char *json_block, const char *context, int block_num);
+
 
 bool is_keyauths_operation( const protocol::operation& op );
 
