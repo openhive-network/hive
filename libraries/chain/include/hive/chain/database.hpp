@@ -869,6 +869,8 @@ namespace chain {
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
 
+      bool _postgres_not_block_log = false;
+
       fc::signal<void(const required_action_notification&)> _pre_apply_required_action_signal;
       fc::signal<void(const required_action_notification&)> _post_apply_required_action_signal;
 

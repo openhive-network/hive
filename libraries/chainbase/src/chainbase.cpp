@@ -5,7 +5,6 @@
 #include <fc/log/logger.hpp>
 
 
-bool g_postgres_not_block_log = false;
 
 //nothing
 //void mtlk_check_dynamic_global_property_index(std::unique_ptr<boost::interprocess::managed_mapped_file>& _segment);

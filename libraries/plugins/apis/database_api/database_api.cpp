@@ -18,7 +18,6 @@
 
 namespace fs = std::filesystem;
 
-extern bool g_postgres_not_block_log;
 
 
 namespace hive { namespace plugins { namespace database_api {
@@ -2278,10 +2277,10 @@ void init(hive::chain::database& db, const char* context)
       // db_open_args.replay_memory_indices = std::vector< std::string >; // ? empty vector
       db_open_args.enable_block_log_compression = true;// true
       db_open_args.block_log_compression_level = 15;// 15
+
       db_open_args.postgres_not_block_log = true;
 
       db_open_args.force_replay = false;// false
-      g_postgres_not_block_log = true;
       
 
 

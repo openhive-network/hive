@@ -55,7 +55,6 @@
 
 #include <stdlib.h>
 
-extern bool g_postgres_not_block_log;
 
 long next_hf_time()
 {
@@ -143,6 +142,8 @@ void database::open( const open_args& args, const std::string& context )
 {
   try
   {
+
+    _postgres_not_block_log = args.postgres_not_block_log;
     init_schema();
 
     helpers::environment_extension_resources environment_extension(
@@ -180,7 +181,7 @@ void database::initialize_state_independent_data(const open_args& args)
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
 
-  if(!args.postgres_not_block_log)
+  if(!_postgres_not_block_log)
   {
     with_write_lock([&]()
     {
@@ -240,7 +241,7 @@ void database::load_state_initial_data(const open_args& args)
 
   if (head_block_num())
   {
-    if(!g_postgres_not_block_log)
+    if(!_postgres_not_block_log)
     {
       std::shared_ptr<full_block_type> head_block = _block_log.read_block_by_num(head_block_num());
       // This assertion should be caught and a reindex should occur
@@ -5337,7 +5338,7 @@ const witness_object& database::validate_block_header( uint32_t skip, const std:
 { try {
   const signed_block_header& next_block_header = full_block->get_block_header();
 
-  if(g_postgres_not_block_log)
+  if(_postgres_not_block_log)
   {
     if(head_block_id() != next_block_header.previous)
     {
@@ -5429,7 +5430,7 @@ void database::update_global_dynamic_data( const signed_block& b )
       dgp.recent_slots_filled = ( dgp.recent_slots_filled << 1 ) + ( i == 0 ? 1 : 0 );
       dgp.participation_count += ( i == 0 ? 1 : 0 );
     }
-    
+
     dgp.head_block_number = b.block_num();
     // Following FC_ASSERT should never fail, as _currently_processing_block_id is always set by caller
     FC_ASSERT( _currently_processing_block_id.valid() );
