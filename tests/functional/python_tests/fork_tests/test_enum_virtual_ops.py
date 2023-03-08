@@ -1,9 +1,10 @@
 import test_tools as tt
 
 
-def test_enum_virtual_ops(prepare_basic_networks):
+def test_enum_virtual_ops(prepare_with_many_witnesses):
     # Test enum_virtual_ops for head block returns only virtual ops
-    api_node = prepare_basic_networks['Alpha'].node('ApiNode0')
+    networks_builder = prepare_with_many_witnesses
+    api_node = networks_builder.networks[0].node('ApiNode0')
     wallet = tt.Wallet(attach_to=api_node)
 
     account_name = 'gamma-1'

@@ -1,6 +1,7 @@
 import json
 
 from typing import List
+from typing import Callable
 
 import test_tools as tt
 
@@ -27,9 +28,12 @@ class WitnessWrapper(NodeWrapper):
         super().__init__(name)
         self.witnesses = []
 
-    def create_witnesses(self, cnt_witness_start: int, witnesses_number: int, network_name: str):
+    def create_witnesses(self, cnt_witness_start: int, witnesses_number: int, network_number: int, processor: Callable[[str],int], legacy_witness_name: bool):
         for i in range(cnt_witness_start, witnesses_number):
-            self.witnesses.append( f"witness{i}-{network_name}" )
+            if legacy_witness_name:
+                self.witnesses.append( f"witness-{network_number}-{i - cnt_witness_start}" ) #"witness-0-0", "witness-0-1", "witness-0-2"
+            else:
+                self.witnesses.append( f"witness{i}-{processor(network_number)}" ) #"witness0-alpha", "witness1-alpha", "witness2-alpha"
 
     def __str__(self) -> str:
         return f'({self.name} {"".join( "(" + witness_name + ")" for witness_name in self.witnesses)})'
@@ -58,9 +62,10 @@ class NetworkWrapper:
         return "\n  ".join( detail for detail in details)
 
 class NetworksArchitecture:
-    def __init__(self) -> None:
-        self.networks       = []
-        self.nodes_number   = 0
+    def __init__(self, legacy_witness_name: bool = False) -> None:
+        self.networks               = []
+        self.nodes_number           = 0
+        self.legacy_witness_name    = legacy_witness_name
 
     def greek(self, idx: int) -> str:
         greek_alphabet = ['alpha',      'beta',     'gamma',    'delta',
@@ -98,7 +103,7 @@ class NetworksArchitecture:
                 self.nodes_number += len(witness_nodes)
                 for witnesses_number in witness_nodes:
                     current_witness = WitnessWrapper(f'WitnessNode-{cnt_witness_node}')
-                    current_witness.create_witnesses(cnt_witness_start, cnt_witness_start + witnesses_number, self.greek(cnt_network))
+                    current_witness.create_witnesses(cnt_witness_start, cnt_witness_start + witnesses_number, cnt_network, self.greek, self.legacy_witness_name)
                     cnt_witness_start += witnesses_number
 
                     current_net.witness_nodes.append(current_witness)
@@ -120,6 +125,7 @@ class NetworksBuilder:
         self.witness_names  = []
         self.networks       = []
         self.nodes          = []
+        self.init_wallet    = None
 
     def build(self, architecture: NetworksArchitecture) -> None:
         for network in architecture.networks:

@@ -11,13 +11,11 @@ def test_fork_3_sub_networks_00(prepare_fork_3_sub_networks_00):
     # - 3 sub networks are merged
     # - wait 'N' blocks( using the 'majority' API node ) until all sub networks have the same last irreversible block
 
-    sub_networks_data   = prepare_fork_3_sub_networks_00['sub-networks-data']
-    sub_networks        = sub_networks_data[0]
-    assert len(sub_networks) == 3
+    networks_builder = prepare_fork_3_sub_networks_00
 
-    minority_api_node_3 = sub_networks[0].node('ApiNode0')
-    minority_api_node_4 = sub_networks[1].node('ApiNode1')
-    majority_api_node   = sub_networks[2].node('ApiNode2')
+    minority_api_node_3 = networks_builder.networks[0].node('ApiNode0')
+    minority_api_node_4 = networks_builder.networks[1].node('ApiNode1')
+    majority_api_node   = networks_builder.networks[2].node('ApiNode2')
 
     logs = []
 
@@ -49,13 +47,13 @@ def test_fork_3_sub_networks_00(prepare_fork_3_sub_networks_00):
     assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m4)
 
     tt.logger.info(f'Disconnect sub networks')
-    sh.disconnect_sub_networks(sub_networks)
+    sh.disconnect_sub_networks(networks_builder.networks)
 
     sh.wait(blocks_after_disconnect, logs, majority_api_node)
 
     last_lib = sh.get_last_irreversible_block_num(_m3)
 
     tt.logger.info(f'Reconnect sub networks')
-    sh.connect_sub_networks(sub_networks)
+    sh.connect_sub_networks(networks_builder.networks)
 
     sh.wait_for_final_block(majority_api_node, logs, [_m3, _m4, _M], True, partial(sh.lib_custom_condition, _M, last_lib), False)
