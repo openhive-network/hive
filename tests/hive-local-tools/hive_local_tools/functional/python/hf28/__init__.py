@@ -1,4 +1,5 @@
 import test_tools as tt
+from hive_local_tools.functional import VestPrice
 
 
 def create_proposal(wallet, head_block_time=None):
@@ -24,3 +25,9 @@ def post_comment(wallet, number_of_comments: int):
         for account in accounts:
             wallet.api.post_comment(f"{account.name}", f"comment-of-{account.name}", "", "someone0",
                                     "test-title", "this is a body", "{}")
+
+
+def stabilize_the_price(node):
+    new_price = VestPrice(quote=tt.Asset.Vest(1800), base=tt.Asset.Test(1))
+    tt.logger.info(f"new vests price {new_price}.")
+    node.api.debug_node.debug_set_vest_price(vest_price=new_price.as_nai())

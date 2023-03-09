@@ -1,7 +1,7 @@
 import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
-from hive_local_tools.functional.python.hf28 import post_comment
+from hive_local_tools.functional.python.hf28 import post_comment, stabilize_the_price
 
 
 @run_for("testnet")
@@ -11,6 +11,8 @@ def test_delegate_vesting_shares_without_voting_rights(node):
     """
     node.restart(time_offset="+0h x5")
     wallet = tt.Wallet(attach_to=node)
+
+    stabilize_the_price(node)
 
     wallet.create_account("alice", vests=100_000)
 
@@ -28,6 +30,8 @@ def test_delegate_vesting_shares_without_voting_rights(node):
 def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_rights(node):
     node.restart(time_offset="+0h x5")
     wallet = tt.Wallet(attach_to=node)
+
+    stabilize_the_price(node)
 
     wallet.create_account("alice", vests=100_000)
     wallet.create_account("bob")
@@ -49,6 +53,8 @@ def test_vote_for_comment_with_vests_from_delegation_when_decline_voting_rights_
     node.restart(time_offset="+0h x5")
     wallet = tt.Wallet(attach_to=node)
 
+    stabilize_the_price(node)
+
     wallet.create_account("alice", vests=100_000)
     wallet.create_account("bob")
     post_comment(wallet, number_of_comments=2)
@@ -68,6 +74,8 @@ def test_vote_for_comment_with_vests_from_delegation_after_creating_a_decline_vo
     node.restart(time_offset="+0h x5")
     wallet = tt.Wallet(attach_to=node)
 
+    stabilize_the_price(node)
+
     wallet.create_account("alice", vests=100_000)
     wallet.create_account("bob")
     post_comment(wallet, number_of_comments=2)
@@ -78,7 +86,6 @@ def test_vote_for_comment_with_vests_from_delegation_after_creating_a_decline_vo
 
     wallet.api.vote("bob", "creator-0", "comment-of-creator-0", 100)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
-    node.wait_for_irreversible_block()
 
     node.restart(time_offset="+60m")
     assert node.api.condenser.get_accounts(["creator-0"])[0]["reward_hbd_balance"] > tt.Asset.Tbd(0)
