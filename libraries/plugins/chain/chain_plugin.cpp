@@ -934,6 +934,12 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     std::vector< string > init_witnesses    = alternate_chain_spec["init_witnesses"].as< std::vector< string > >();
     auto                  hardfork_schedule = alternate_chain_spec["hardfork_schedule"].as< std::vector< hardfork_schedule_item_t > >();
 
+    if( alternate_chain_spec.get_object().contains("init_supply") )
+      configuration_data.set_init_supply( alternate_chain_spec["init_supply"].as< uint64_t >() );
+
+    if( alternate_chain_spec.get_object().contains("hbd_init_supply") )
+      configuration_data.set_hbd_init_supply( alternate_chain_spec["hbd_init_supply"].as< uint64_t >() );
+
     std::vector< hardfork_schedule_item_t > result_hardfors;
 
     FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork-schedule", ("hardfork-schedule", alternate_chain_spec["hardfork_schedule"]) );

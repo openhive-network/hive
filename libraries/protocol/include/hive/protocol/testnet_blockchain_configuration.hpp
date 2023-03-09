@@ -48,9 +48,15 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     std::vector<std::string> init_witnesses;
     fc::time_point_sec     genesis_time;
     std::array<fc::optional<uint32_t>, HIVE_NUM_HARDFORKS + 1> blocks = {};
+    fc::optional<uint64_t> init_supply, hbd_init_supply;
 
     public:
       configuration();
+
+      void set_init_supply( uint64_t init_supply );
+      void set_hbd_init_supply( uint64_t hbd_init_supply );
+      uint64_t get_init_supply( uint64_t default_value )const;
+      uint64_t get_hbd_init_supply( uint64_t default_value )const;
 
       void set_init_witnesses( const std::vector<std::string>& init_witnesses );
       const std::vector<std::string>& get_init_witnesses()const;

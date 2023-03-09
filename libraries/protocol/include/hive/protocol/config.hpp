@@ -72,8 +72,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(6)
 #define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  1
 
-#define HIVE_INIT_SUPPLY                      (int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 ))
-#define HIVE_HBD_INIT_SUPPLY                  (int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 ))
+#define HIVE_INIT_SUPPLY                      (hive::protocol::testnet_blockchain_configuration::configuration_data.get_init_supply(int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 )))
+#define HIVE_HBD_INIT_SUPPLY                  (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hbd_init_supply(int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 )))
 
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD          3600
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
@@ -141,8 +141,13 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_OWNER_UPDATE_LIMIT                           fc::minutes(60)
 #define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  3186477
 
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_INIT_SUPPLY                      (hive::protocol::testnet_blockchain_configuration::configuration_data.get_init_supply(int64_t( 0 )))
+#define HIVE_HBD_INIT_SUPPLY                  (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hbd_init_supply(int64_t( 0 )))
+#else
 #define HIVE_INIT_SUPPLY                      int64_t(0)
 #define HIVE_HBD_INIT_SUPPLY                  int64_t(0)
+#endif
 
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD           3600
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP          (60*60*24*1) /// 1 day
