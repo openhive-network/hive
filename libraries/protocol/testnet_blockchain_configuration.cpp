@@ -6,6 +6,32 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
   configuration configuration_data;
 
+  void configuration::set_init_supply( uint64_t init_supply )
+  {
+    this->init_supply = init_supply;
+  }
+
+  void configuration::set_hbd_init_supply( uint64_t hbd_init_supply )
+  {
+    this->hbd_init_supply = hbd_init_supply;
+  }
+
+  uint64_t configuration::get_init_supply( uint64_t default_value )const
+  {
+    if( init_supply.valid() )
+      return *init_supply;
+
+    return default_value;
+  }
+
+  uint64_t configuration::get_hbd_init_supply( uint64_t default_value )const
+  {
+    if( hbd_init_supply.valid() )
+      return *hbd_init_supply;
+
+    return default_value;
+  }
+
   void configuration::set_init_witnesses( const std::vector<std::string>& init_witnesses )
   {
     this->init_witnesses = init_witnesses;
