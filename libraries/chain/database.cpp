@@ -307,7 +307,7 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
   const auto process_block = [&](const std::shared_ptr<full_block_type>& full_block) {
     const uint32_t current_block_num = full_block->get_block_num();
 
-    if (current_block_num % 10000 == 0)
+    if (current_block_num % 100000 == 0)
     {
       std::ostringstream percent_complete_stream;
       percent_complete_stream << std::fixed << std::setprecision(2) << double(current_block_num) * 100 / last_block_num;
@@ -330,7 +330,7 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
     _block_log.for_each_block(start_block_number + 1, last_block_num, process_block, block_log::for_each_purpose::replay);
 
   if (appbase::app().is_interrupt_request())
-    ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})", 
+    ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})",
          ("n", last_applied_block->get_block_num())("id", last_applied_block->get_block_id()));
 
   fc::enable_record_assert_trip = rat; //restore flag
@@ -4550,8 +4550,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   process_optional_actions( opt_actions );
 
   process_hardforks();
-
-  mtlk_chainbase_check_dynamic_global_property_index();
 
   // notify observers that the block has been applied
   notify_post_apply_block( note );

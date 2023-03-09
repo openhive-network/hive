@@ -16,7 +16,6 @@
 
 #include <hive/utilities/git_revision.hpp>
 
-namespace fs = std::filesystem;
 
 
 
@@ -2460,7 +2459,6 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
 
   db.set_revision( db.head_block_num() );
 
-  db.mtlk_chainbase_check_dynamic_global_property_index();
 
   return expected_block_num;
 }

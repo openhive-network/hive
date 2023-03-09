@@ -4,11 +4,6 @@
 #include <iostream>
 #include <fc/log/logger.hpp>
 
-
-
-//nothing
-//void mtlk_check_dynamic_global_property_index(std::unique_ptr<boost::interprocess::managed_mapped_file>& _segment);
-
 namespace chainbase {
 
 size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache_max_size() const
@@ -147,24 +142,17 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       bool                    created_storage = true;
   };
 
-  
-  void database::mtlk_chainbase_check_dynamic_global_property_index()
+  void database::open(const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, const std::string& context)
   {
-          //mtlk_check_dynamic_global_property_index(_segment);
-  }
+    assert( dir.is_absolute() );
+    bfs::create_directories( dir );
+    if( _data_dir != dir ) close();
+    if( wipe_shared_file ) wipe( dir, context );
 
-
-  void database::open(const bfs::path& shared_mem_dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, const std::string& context)
-  {
-    assert( shared_mem_dir.is_absolute() );
-    bfs::create_directories( shared_mem_dir );
-    if( _data_dir != shared_mem_dir ) close();
-    if( wipe_shared_file ) wipe( shared_mem_dir, context );
-
-    _data_dir = shared_mem_dir;
+    _data_dir = dir;
     _database_cfg = database_cfg;
 #ifndef ENABLE_STD_ALLOCATOR
-    auto abs_path = bfs::absolute( shared_mem_dir / (context + "shared_memory.bin") );
+    auto abs_path = bfs::absolute( dir / (context + "shared_memory.bin") );
     
     if( bfs::exists( abs_path ) )
     {
@@ -227,9 +215,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         bfs::permissions(abs_path, bfs::perms::all_all | bfs::perms::add_perms);
 
     }
-
-    mtlk_chainbase_check_dynamic_global_property_index();
-
 
     auto env = _segment->find< environment_check >( "environment" );
     if( environment_extension )

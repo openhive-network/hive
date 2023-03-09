@@ -1056,7 +1056,7 @@ namespace chainbase {
           CHAINBASE_REQUIRE_WRITE_LOCK( "set_revision", int64_t );
           for( const auto& i : _index_list ) i->set_revision( revision );
       }
-    
+
       template<typename MultiIndexType>
       void add_index()
       {
@@ -1316,8 +1316,6 @@ namespace chainbase {
       bool get_is_open() const
         { return _is_open; }
 
-    public:
-      void mtlk_chainbase_check_dynamic_global_property_index();
     private:
       template<typename MultiIndexType>
       void add_index_helper() {
