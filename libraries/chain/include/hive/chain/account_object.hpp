@@ -50,25 +50,25 @@ namespace hive { namespace chain {
       {}
 
       //liquid HIVE balance
-      asset get_balance() const { return balance; }
+      const HIVE_asset& get_balance() const { return balance; }
       //HIVE balance in savings
-      asset get_savings() const { return savings_balance; }
+      const HIVE_asset& get_savings() const { return savings_balance; }
       //unclaimed HIVE rewards
-      asset get_rewards() const { return reward_hive_balance; }
+      const HIVE_asset& get_rewards() const { return reward_hive_balance; }
 
       //liquid HBD balance
-      asset get_hbd_balance() const { return hbd_balance; }
+      const HBD_asset& get_hbd_balance() const { return hbd_balance; }
       //HBD balance in savings
-      asset get_hbd_savings() const { return savings_hbd_balance; }
+      const HBD_asset& get_hbd_savings() const { return savings_hbd_balance; }
       //unclaimed HBD rewards
-      asset get_hbd_rewards() const { return reward_hbd_balance; }
+      const HBD_asset& get_hbd_rewards() const { return reward_hbd_balance; }
 
       //all VESTS held by the account - use other routines to get active VESTS for specific uses
-      asset get_vesting() const { return vesting_shares; }
+      const VEST_asset& get_vesting() const { return vesting_shares; }
       //VESTS that were delegated to other accounts
-      asset get_delegated_vesting() const { return delegated_vesting_shares; }
+      const VEST_asset& get_delegated_vesting() const { return delegated_vesting_shares; }
       //VESTS that were borrowed from other accounts
-      asset get_received_vesting() const { return received_vesting_shares; }
+      const VEST_asset& get_received_vesting() const { return received_vesting_shares; }
       //effective balance of VESTS including delegations and optionally excluding active step of pending power down
       share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
       {
@@ -79,9 +79,9 @@ namespace hive { namespace chain {
       }
       //TODO: add routines for specific uses, f.e. get_witness_voting_power, get_proposal_voting_power, get_post_voting_power...
       //unclaimed VESTS rewards
-      asset get_vest_rewards() const { return reward_vesting_balance; }
+      const VEST_asset& get_vest_rewards() const { return reward_vesting_balance; }
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
-      asset get_vest_rewards_as_hive() const { return reward_vesting_hive; }
+      const HIVE_asset& get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
       //gives name of the account
       const account_name_type& get_name() const { return name; }
