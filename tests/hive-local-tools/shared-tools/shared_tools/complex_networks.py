@@ -1,28 +1,24 @@
 import os
 from pathlib import Path
-from typing import Dict, Iterable, List, Callable
-
-import datetime
+from typing import Dict, Iterable, List, Callable, Optional
 
 import test_tools as tt
 from .complex_networks_helper_functions import connect_sub_networks
 import shared_tools.networks_architecture as networks
 
-def get_time_offset_from_file(file: Path):
+def get_time_offset_from_file(file: Path) -> str:
     with open(file, "r", encoding="UTF-8") as file:
         return file.read().strip()
-    return None
 
-def get_relative_time_offset_from_timestamp(timestamp: str):
+def get_relative_time_offset_from_timestamp(timestamp: str) -> str:
     delta = tt.Time.now(serialize=False) - tt.Time.parse(timestamp)
     delta += tt.Time.seconds(5)  # Node starting and entering live mode takes some time to complete
-    return f'-{delta.total_seconds():.3f}s'
+    return f"-{delta.total_seconds():.3f}s"
 
 
-def init_network(init_node, all_witness_names: List[str], key: str = None, block_log_directory_name: Path = None):
-
+def init_network(init_node, all_witness_names: List[str], key: Optional[str] = None, block_log_directory_name: Optional[Path] = None, desired_blocklog_length: Optional[int] = None) -> None:
     tt.logger.info("Attaching wallets...")
-    tt.logger.info(f'Witnesses: {", ".join(witness_name for witness_name in all_witness_names)}')
+    tt.logger.info(f"Witnesses: {', '.join(all_witness_names)}")
     wallet = tt.Wallet(attach_to=init_node)
     # We are waiting here for block 43, because witness participation is counting
     # by dividing total produced blocks in last 128 slots by 128. When we were waiting
@@ -50,7 +46,7 @@ def init_network(init_node, all_witness_names: List[str], key: str = None, block
                 tt.Account(name).public_key,
                 {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0},
             )
-    tt.logger.info('Wait 21 blocks to schedule newly created witnesses into future slate')
+    tt.logger.info("Wait 21 blocks to schedule newly created witnesses into future slate")
     init_node.wait_number_of_blocks(21)
 
     future_witnesses = init_node.api.database.get_active_witnesses(include_future=True)["future_witnesses"]
@@ -67,6 +63,22 @@ def init_network(init_node, all_witness_names: List[str], key: str = None, block
     # Reason of this wait is to enable moving forward of irreversible block
     tt.logger.info("Wait 21 blocks (when every witness sign at least one block)")
     init_node.wait_number_of_blocks(21)
+
+    result = wallet.api.info()
+    irreversible = result["last_irreversible_block_num"]
+    head = result["head_block_num"]
+    tt.logger.info(f"Network prepared, irreversible block: {irreversible}, head block: {head}")
+
+    if desired_blocklog_length is not None:
+        while irreversible < desired_blocklog_length:
+            init_node.wait_number_of_blocks(1)
+            result = wallet.api.info()
+            irreversible = result["last_irreversible_block_num"]
+            tt.logger.info(
+                f"Generating block_log of length: {desired_blocklog_length}, "
+                f"current irreversible: {result['last_irreversible_block_num']}, "
+                f"current head block: {result['head_block_num']}"
+            )
 
     result = wallet.api.info()
     head_block_num = result["head_block_number"]
@@ -91,27 +103,15 @@ def init_network(init_node, all_witness_names: List[str], key: str = None, block
         with (block_log_directory_name / "timestamp").open(mode="w", encoding="UTF-8") as file_handle:
             file_handle.write(f"{timestamp}")
 
-    return wallet
-
-def date_to_iso(date):
-    return date.replace(microsecond=0).isoformat()
-
-
-def date_from_iso(date_iso_str):
-    import dateutil.parser
-
-    return dateutil.parser.parse(date_iso_str)
-
-
 def modify_time_offset(old_iso_date: str, offset_in_seconds: int) -> str:
-    new_iso_date = date_to_iso(date_from_iso(old_iso_date) - datetime.timedelta(seconds=offset_in_seconds))
+    new_iso_date = tt.Time.serialize(tt.Time.parse(old_iso_date) - tt.Time.seconds(offset_in_seconds))
     tt.logger.info(f"old date: {old_iso_date} new date(after time offset): {new_iso_date}")
 
     time_offset = get_relative_time_offset_from_timestamp(new_iso_date)
 
     return time_offset
 
-def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_offsets: Iterable[str] = None):
+def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_offsets: Optional[Iterable[str]] = None) -> None:
     if blocklog_directory is not None:
         timestamp = get_time_offset_from_file((blocklog_directory / "timestamp"))
         time_offset = get_relative_time_offset_from_timestamp(timestamp)
@@ -154,7 +154,7 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
         node.wait_for_live_mode(tt.InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT)
 
 
-def display_info(wallet):
+def display_info(wallet) -> None:
     # Network should be set up at this time, with 21 active witnesses, enough participation rate
     # and irreversible block number lagging behind around 15-20 blocks head block number
     result = wallet.api.info()
@@ -186,7 +186,7 @@ def prepare_nodes(sub_networks_sizes: list) -> list:
         cnt += 1
     return sub_networks, init_node, all_witness_names
 
-def prepare_sub_networks_generation(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, before_run_network: Callable[[], networks.NetworksBuilder] = None) -> Dict:
+def prepare_sub_networks_generation(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, before_run_network: Optional[Callable[[], networks.NetworksBuilder]] = None, desired_blocklog_length: Optional[int] = None) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
@@ -201,7 +201,7 @@ def prepare_sub_networks_generation(architecture: networks.NetworksArchitecture,
     return None
 
 
-def prepare_sub_networks_launch(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, before_run_network: Callable[[], networks.NetworksBuilder] = None) -> Dict:
+def prepare_sub_networks_launch(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, before_run_network: Optional[Callable[[], networks.NetworksBuilder]] = None) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
@@ -217,7 +217,7 @@ def prepare_sub_networks_launch(architecture: networks.NetworksArchitecture, blo
     return builder
 
 
-def prepare_sub_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, before_run_network: Callable[[], networks.NetworksBuilder] = None) -> Dict:
+def prepare_sub_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, before_run_network: Optional[Callable[[], networks.NetworksBuilder]] = None) -> Dict:
     if allow_generate_block_log():
         assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
         tt.logger.info(f"New `block_log` generation: {block_log_directory_name}")
@@ -226,7 +226,7 @@ def prepare_sub_networks(architecture: networks.NetworksArchitecture, block_log_
     return prepare_sub_networks_launch(architecture, block_log_directory_name, time_offsets, before_run_network)
 
 
-def allow_generate_block_log():
+def allow_generate_block_log() -> bool:
     status = os.environ.get("GENERATE_NEW_BLOCK_LOG", None)
     if status is None:
         return False
