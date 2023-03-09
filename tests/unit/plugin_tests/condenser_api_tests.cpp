@@ -105,14 +105,17 @@ struct condenser_api_fixture : database_fixture
   /** 
    * Tests the operations that happen only on hardfork 1 - vesting_shares_split_operation & system_warning_operation (block 21)
    * Also tests: hardfork_operation & producer_reward_operation
+   * 
+   * The operations happen in block 2 (vesting_shares_split_operation, when HF1 is set) and block 21 (system_warning_operation),
+   * regardless of configurations settings of the fixture.
   */
   void hf1_scenario( check_point_tester_t check_point_tester )
   {
-    generate_block();
+    generate_block(); // block 1
     
     // Set first hardfork to test virtual operations that happen only there.
     db->set_hardfork( HIVE_HARDFORK_0_1 );
-    generate_block();
+    generate_block(); // block 2
 
     check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
@@ -120,11 +123,13 @@ struct condenser_api_fixture : database_fixture
   /** 
    * Tests pow_operation that needs hardfork lower than 13.
    * Also tests: pow_reward_operation, account_created_operation, comment_operation (see database_fixture::create_with_pow) & producer_reward_operation.
+   * 
+   * All tested operations happen in block 3 (when create_with_pow is called) regardless of configurations settings of the fixture.
   */
   void hf12_scenario( check_point_tester_t check_point_tester )
   {
     db->set_hardfork( HIVE_HARDFORK_0_12 );
-    generate_block();
+    generate_block(); // block 1
 
     PREP_ACTOR( carol0ah )
     create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
@@ -154,12 +159,17 @@ struct condenser_api_fixture : database_fixture
   post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
   set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_100_PERCENT, true, true, edgar0ah_private_key );
 
-  check_point_1_tester( 24 ); // generate up to block 24th inside
-  verify_and_advance_to_block( 24 );
+  // Following operations can be checked now. They all appear in block 3 regardless of configurations settings of the fixture.
+  // pow2_operation, account_created_operation (x2), pow_reward_operation, transfer_operation,
+  // account_create_with_delegation_operation, comment_operation, comment_options_operation & producer_reward_operation.
+  check_point_1_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 
   vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
   delete_comment( "edgar0ah", "permlink1", edgar0ah_private_key );
 
+  // In following block (which number depends on how many were generated in check_point_1_tester) these operations appear
+  // and can be checked: vote_operation, effective_comment_vote_operation, delete_comment_operation,
+  // ineffective_delete_comment_operation & producer_reward_operation.
   check_point_2_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
 
@@ -178,11 +188,16 @@ struct condenser_api_fixture : database_fixture
     post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
     vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
 
-    check_point_1_tester( 27 ); // generate up to block 27th inside
-    verify_and_advance_to_block( 27 );
+    // In check_point_1_tester generate as many blocks as needed for these virtual operations to appear in block:
+    // curation_reward_operation, author_reward_operation, comment_reward_operation, comment_payout_update_operation & producer_reward_operation.
+    // In standard configuration of this fixture it's 6th block.
+    check_point_1_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 
-    claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "0.575 TBD" ), ASSET( "80.000000 VESTS" ), edgar0ah_private_key );
+    // The absolute minimum of claimed values is used here to allow greater flexibility for the tests using this scenario.
+    claim_reward_balance( "edgar0ah", ASSET( "0.000 TESTS" ), ASSET( "0.001 TBD" ), ASSET( "0.000001 VESTS" ), edgar0ah_private_key );
 
+    // In following block (which number depends on how many were generated in check_point_1_tester) these operations appear
+    // and can be checked:  claim_reward_balance_operation & producer_reward_operation.
     check_point_2_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
 
@@ -211,6 +226,9 @@ struct condenser_api_fixture : database_fixture
     limit_order2_create( "carol3ah", ASSET( "22.075 TESTS" ), price( ASSET( "0.010 TESTS" ), ASSET( "0.010 TBD" ) ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 2, carol3ah_private_key );
     limit_order_cancel( "carol3ah", 1, carol3ah_private_key );
 
+    // Now all the operations mentioned above can be checked. All of them will appear in 5th block,
+    // except fill_convert_request_operation, fill_collateralized_convert_request_operation - their block number depends of test configuration.
+    // In standard configuration of this fixture it's 1684th block.
     check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
 
@@ -220,7 +238,7 @@ struct condenser_api_fixture : database_fixture
    *  delegate_vesting_shares_operation, withdraw_vesting_operation, producer_reward_operation,
    *  fill_vesting_withdraw_operation & return_vesting_delegation_operation
    */
-  void vesting_scenario( check_point_tester_t check_point_1_tester, check_point_tester_t check_point_2_tester )
+  void vesting_scenario( check_point_tester_t check_point_tester )
   {
     // Set hardfork below HF20, to keep delegation return period short
     // (see HIVE_DELEGATION_RETURN_PERIOD_HF0 / HIVE_DELEGATION_RETURN_PERIOD_HF20 definitions)
@@ -236,18 +254,20 @@ struct condenser_api_fixture : database_fixture
     set_withdraw_vesting_route( "alice4ah", "ben4ah", HIVE_1_PERCENT * 50, true, alice4ah_private_key);
     delegate_vest( "alice4ah", "carol4ah", asset(3, VESTS_SYMBOL), alice4ah_private_key );
     withdraw_vesting( "alice4ah", asset( 123, VESTS_SYMBOL ), alice4ah_private_key );
-    
-    check_point_1_tester( 26 ); // generate up to block 26th inside
-    verify_and_advance_to_block( 26 );
-
+    // Now decrease delegation to trigger return_vesting_delegation_operation
     delegate_vest( "alice4ah", "carol4ah", asset(2, VESTS_SYMBOL), alice4ah_private_key );
 
-    check_point_2_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+    // Now all the operations mentioned above can be checked. The immediate ones will appear in 5th block.
+    // The delayed ones will appear in blocks, which number depends of test configuration.
+    // In standard configuration of this fixture they are 8th (fill_vesting_withdraw_operation) & 9th (return_vesting_delegation_operation) blocks.
+    check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
 
   /**
    * Operations tested here:
    *  witness_update_operation, feed_publish_operation, account_witness_proxy_operation, account_witness_vote_operation, witness_set_properties_operation
+   * Also tested here: 
+   *  producer_reward_operation
    *  
    * Note that witness_block_approve_operation never appears in block (see its evaluator).
    */
@@ -275,6 +295,7 @@ struct condenser_api_fixture : database_fixture
     op.props = props;
     push_transaction( op, alice5ah_private_key );
 
+    // Now all the operations mentioned above can be checked. All of them will appear in 4th block,
     check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
 };
@@ -725,11 +746,11 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_comment_and_reward )
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
     expected_t expected_operations = { { // claim_reward_balance_operation
-      R"~({"trx_id":"69adf1e346c41e81cab0cc3cb3249ed03a9767c4","block":28,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:21","op":{"type":"claim_reward_balance_operation","value":{"account":"edgar0ah","reward_hive":{"amount":"0","precision":3,"nai":"@@000000021"},"reward_hbd":{"amount":"575","precision":3,"nai":"@@000000013"},"reward_vests":{"amount":"80000000","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
-      R"~({"trx_id":"69adf1e346c41e81cab0cc3cb3249ed03a9767c4","block":28,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:21","op":["claim_reward_balance",{"account":"edgar0ah","reward_hive":"0.000 TESTS","reward_hbd":"0.575 TBD","reward_vests":"80.000000 VESTS"}]})~"
+      R"~({"trx_id":"daa9aa439e8af76a93cf4b539c3337b1bc303466","block":28,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:21","op":{"type":"claim_reward_balance_operation","value":{"account":"edgar0ah","reward_hive":{"amount":"0","precision":3,"nai":"@@000000021"},"reward_hbd":{"amount":"1","precision":3,"nai":"@@000000013"},"reward_vests":{"amount":"1","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"daa9aa439e8af76a93cf4b539c3337b1bc303466","block":28,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:01:21","op":["claim_reward_balance",{"account":"edgar0ah","reward_hive":"0.000 TESTS","reward_hbd":"0.001 TBD","reward_vests":"0.000001 VESTS"}]})~"
     }, { // producer_reward_operation
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":28,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"7076556368","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":28,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":["producer_reward",{"producer":"initminer","vesting_shares":"7076.556368 VESTS"}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":28,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"7076153007","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":28,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":["producer_reward",{"producer":"initminer","vesting_shares":"7076.153007 VESTS"}]})~"
     } };
     expected_t expected_virtual_operations = { expected_operations[1] };
     test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 28 );
@@ -803,48 +824,61 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_vesting )
 
   BOOST_TEST_MESSAGE( "testing get_ops_in_block with vesting_scenario" );
 
-  auto check_point_tester1 = [ this ]( uint32_t generate_no_further_than )
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
-    generate_until_irreversible_block( 5 );
+    generate_until_irreversible_block( 9 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
-    // TODO Supplement the patterns here
-    /*expected_t expected_operations = { { // transfer_to_vesting_operation
+    expected_t expected_operations = { { // transfer_to_vesting_operation
+      R"~({"trx_id":"0ace3d6e57043dfde1daf6c00d5d7a6c1e556126","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"transfer_to_vesting_operation","value":{"from":"alice4ah","to":"alice4ah","amount":{"amount":"2000","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
+      R"~({"trx_id":"0ace3d6e57043dfde1daf6c00d5d7a6c1e556126","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["transfer_to_vesting",{"from":"alice4ah","to":"alice4ah","amount":"2.000 TESTS"}]})~"
       }, { // transfer_to_vesting_completed_operation
+      R"~({"trx_id":"0ace3d6e57043dfde1daf6c00d5d7a6c1e556126","block":5,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"transfer_to_vesting_completed_operation","value":{"from_account":"alice4ah","to_account":"alice4ah","hive_vested":{"amount":"2000","precision":3,"nai":"@@000000021"},"vesting_shares_received":{"amount":"1936378093693","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0ace3d6e57043dfde1daf6c00d5d7a6c1e556126","block":5,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["transfer_to_vesting_completed",{"from_account":"alice4ah","to_account":"alice4ah","hive_vested":"2.000 TESTS","vesting_shares_received":"1936378.093693 VESTS"}]})~"
       }, { // set_withdraw_vesting_route_operation
+      R"~({"trx_id":"f836d85674c299b307b8168bd3c18d9018de4bb6","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"set_withdraw_vesting_route_operation","value":{"from_account":"alice4ah","to_account":"ben4ah","percent":5000,"auto_vest":true}},"operation_id":0})~",
+      R"~({"trx_id":"f836d85674c299b307b8168bd3c18d9018de4bb6","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["set_withdraw_vesting_route",{"from_account":"alice4ah","to_account":"ben4ah","percent":5000,"auto_vest":true}]})~"
       }, { // delegate_vesting_shares_operation
+      R"~({"trx_id":"64261f6d3e997f3e9c7846712bde0b5d7da983fb","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"delegate_vesting_shares_operation","value":{"delegator":"alice4ah","delegatee":"carol4ah","vesting_shares":{"amount":"3","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"64261f6d3e997f3e9c7846712bde0b5d7da983fb","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["delegate_vesting_shares",{"delegator":"alice4ah","delegatee":"carol4ah","vesting_shares":"0.000003 VESTS"}]})~"
       }, { // withdraw_vesting_operation
+      R"~({"trx_id":"f5db21d976c5d7281e3c09838c6b14a8d78e9913","block":5,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"withdraw_vesting_operation","value":{"account":"alice4ah","vesting_shares":{"amount":"123","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"f5db21d976c5d7281e3c09838c6b14a8d78e9913","block":5,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["withdraw_vesting",{"account":"alice4ah","vesting_shares":"0.000123 VESTS"}]})~"
+      }, { // delegate_vesting_shares_operation
+      R"~({"trx_id":"650e7569d7c96f825886f04b4b53168e27c5707a","block":5,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"delegate_vesting_shares_operation","value":{"delegator":"alice4ah","delegatee":"carol4ah","vesting_shares":{"amount":"2","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"650e7569d7c96f825886f04b4b53168e27c5707a","block":5,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["delegate_vesting_shares",{"delegator":"alice4ah","delegatee":"carol4ah","vesting_shares":"0.000002 VESTS"}]})~"
       }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8680177266","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["producer_reward",{"producer":"initminer","vesting_shares":"8680.177266 VESTS"}]})~"
       } };
-    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[5] };
-    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );*/
-  };
+    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[6] };
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );
 
-  auto check_point_tester2 = [ this ]( uint32_t generate_no_further_than )
-  {
-    generate_until_irreversible_block( 31 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
-
-    // TODO Supplement the patterns here
-    /*expected_t expected_operations = { { // producer_reward_operation
+    expected_operations = { { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8581651955","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":["producer_reward",{"producer":"initminer","vesting_shares":"8581.651955 VESTS"}]})~"
       }, { // fill_vesting_withdraw_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":{"type":"fill_vesting_withdraw_operation","value":{"from_account":"alice4ah","to_account":"ben4ah","withdrawn":{"amount":"4","precision":6,"nai":"@@000000037"},"deposited":{"amount":"4","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":["fill_vesting_withdraw",{"from_account":"alice4ah","to_account":"ben4ah","withdrawn":"0.000004 VESTS","deposited":"0.000004 VESTS"}]})~"
       }, { // fill_vesting_withdraw_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":{"type":"fill_vesting_withdraw_operation","value":{"from_account":"alice4ah","to_account":"alice4ah","withdrawn":{"amount":"5","precision":6,"nai":"@@000000037"},"deposited":{"amount":"0","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":["fill_vesting_withdraw",{"from_account":"alice4ah","to_account":"alice4ah","withdrawn":"0.000005 VESTS","deposited":"0.000 TESTS"}]})~"
       } };
     // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
-    test_get_ops_in_block( *this, expected_operations, expected_operations, 28 );*/
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 8 );
 
-    expected_t expected_operations = { { // return_vesting_delegation_operation
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":31,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:33","op":{"type":"return_vesting_delegation_operation","value":{"account":"alice4ah","vesting_shares":{"amount":"1","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":31,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:33","op":["return_vesting_delegation",{"account":"alice4ah","vesting_shares":"0.000001 VESTS"}]})~"
+    expected_operations = { { // return_vesting_delegation_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":9,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:27","op":{"type":"return_vesting_delegation_operation","value":{"account":"alice4ah","vesting_shares":{"amount":"1","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":9,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:27","op":["return_vesting_delegation",{"account":"alice4ah","vesting_shares":"0.000001 VESTS"}]})~"
       }, { // producer_reward_operation
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":31,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:33","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"204708136662","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":31,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:33","op":["producer_reward",{"producer":"initminer","vesting_shares":"204708.136662 VESTS"}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":9,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:27","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8549473854","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":9,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:27","op":["producer_reward",{"producer":"initminer","vesting_shares":"8549.473854 VESTS"}]})~"
       } };
     // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
-    test_get_ops_in_block( *this, expected_operations, expected_operations, 31 );
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 9 );
   };
 
-  vesting_scenario( check_point_tester1, check_point_tester2 );
+  vesting_scenario( check_point_tester );
 
 } FC_LOG_AND_RETHROW() }
 
