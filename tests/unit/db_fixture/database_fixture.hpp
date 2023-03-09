@@ -586,6 +586,31 @@ using smt_database_fixture_for_plugin = t_smt_database_fixture< database_fixture
 
 #endif
 
+struct dhf_database
+{
+  struct create_proposal_data
+  {
+    std::string creator    ;
+    std::string receiver   ;
+    fc::time_point_sec start_date ;
+    fc::time_point_sec end_date   ;
+    hive::protocol::asset daily_pay ;
+    std::string subject ;
+    std::string url     ;
+
+    create_proposal_data(fc::time_point_sec _start)
+    {
+      creator    = "alice";
+      receiver   = "bob";
+      start_date = _start     + fc::days( 1 );
+      end_date   = start_date + fc::days( 2 );
+      daily_pay  = asset( 100, HBD_SYMBOL );
+      subject    = "hello";
+      url        = "http:://something.html";
+    }
+  };
+};
+
 struct dhf_database_fixture_performance : public clean_database_fixture
 {
   dhf_database_fixture_performance( uint16_t shared_file_size_in_mb = 512 )
