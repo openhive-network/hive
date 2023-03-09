@@ -2200,6 +2200,34 @@ hive::plugins::database_api::database_api_impl& database_api_impl_init(hive::cha
   return db_api_impl;
 }
 
+namespace hive { namespace app {
+
+auto get_context_shared_data_bin_dir()
+{
+// //getenv("HAF_DB_STORE");//BLOCK_LOG_DIRECTORY
+
+    fc::path data_dir;
+    char* parent = getenv( "PGDATA" );
+
+    system("env");
+
+    if( parent != nullptr )
+    {
+      data_dir = std::string( parent );
+      data_dir = data_dir.parent_path();
+      data_dir = data_dir.parent_path();
+    }
+    else
+    {
+      //data_dir = bfs::current_path();
+    }
+    ilog("mtlk data_dir=${dt}",("dt", data_dir));
+
+    return data_dir;
+}
+
+}
+}
 
 static volatile auto stop_in_init = false;
 
@@ -2233,27 +2261,10 @@ void init(hive::chain::database& db, const char* context)
 
       ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
 
-  // //getenv("HAF_DB_STORE");//BLOCK_LOG_DIRECTORY
-
-     fc::path data_dir;
-     char* parent = getenv( "PGDATA" );
-
-     system("env");
-
-      if( parent != nullptr )
-      {
-        data_dir = std::string( parent );
-        data_dir = data_dir.parent_path();
-        data_dir = data_dir.parent_path();
-        db_open_args.data_dir = data_dir;
-      }
-      else
-      {
-        //data_dir = bfs::current_path();
-      }
-      ilog("mtlk data_dir=${dt}",("dt", data_dir));
 
 
+
+  db_open_args.data_dir = hive::app::get_context_shared_data_bin_dir();
 
 
      ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
@@ -2356,6 +2367,19 @@ int get_expected_block_num_impl(const char* context)
   return expected_block_num;
 }
 
+
+
+void cab_destroy_C_impl(const char* context)
+{
+  if(haf_database_api_impls.find(context) != haf_database_api_impls.end())
+  {
+      hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
+      hive::chain::database& db = db_api_impl._db;
+      db.close();
+      db. chainbase::database::wipe( get_context_shared_data_bin_dir()  /  "blockchain" , context);
+      haf_database_api_impls.erase(context);
+  }
+}
 
 static volatile bool stop_in_consume_json_block_impl = false;
 
@@ -2463,7 +2487,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
  
   
   args.start = "";
-  args.limit = 5;
+  args.limit = 1000;
   args.order = hive::plugins::database_api::by_name;
 
    // wlog("mtlk args.start=${start}", ("start", args.start));
