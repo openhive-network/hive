@@ -196,7 +196,7 @@ def prepare_sub_networks_generation(architecture: networks.NetworksArchitecture,
     run_networks(builder.networks, None)
 
     initminer_public_key = "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
-    init_network(builder.init_node, builder.witness_names, initminer_public_key, block_log_directory_name)
+    init_network(builder.init_node, builder.witness_names, initminer_public_key, block_log_directory_name, desired_blocklog_length)
 
     return None
 
