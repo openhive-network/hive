@@ -195,26 +195,74 @@ namespace hive { namespace protocol {
    *  API responses where performance is essential and trust is a non-issue.
    *  This struct is used primarily to hold asset values in chain objects in places
    *  where use of specific asset is guaranteed.
+   *
+   * NOTE: all conversions between asset and tiny_asset should become explicit because:
+   *  - conversions to asset bring to life more costly object
+   *  - conversions from asset can throw exception
    */
   template< uint32_t _SYMBOL >
   struct tiny_asset
   {
     tiny_asset() {}
-    tiny_asset( const asset& val ) { set( val ); }
-    tiny_asset( asset&& val )      { set( val ); }
+    explicit tiny_asset( share_type _amount ) : amount( _amount ) {}
+    tiny_asset( const asset& val ) { set( val ); } //to be removed
+    tiny_asset( asset&& val )      { set( val ); } //to be removed
 
-    asset operator=( const asset& val )  { set( val ); return *this; }
-    asset operator=( asset&& val )       { set( val ); return *this; }
+    asset operator=( const asset& val )  { set( val ); return *this; } //to be removed
+    asset operator=( asset&& val )       { set( val ); return *this; } //to be removed
 
     share_type amount;
 
+    tiny_asset& operator+=( const asset& val ) { check( val ); amount += val.amount; return *this; } //to be removed
+    tiny_asset& operator-=( const asset& val ) { check( val ); amount -= val.amount; return *this; } //to be removed
 
-    asset operator+=( const asset& val ) { check( val ); amount += val.amount; return *this; }
-    asset operator-=( const asset& val ) { check( val ); amount -= val.amount; return *this; }
+    operator asset() const               { return to_asset(); } //to be removed
 
-    operator asset() const               { return to_asset(); }
+    asset to_asset() const { return asset( amount, get_symbol() ); }
+    static bool is_compatible( const asset& a ) { return a.symbol.asset_num == _SYMBOL; }
+    static asset_symbol_type get_symbol() { return asset_symbol_type::from_asset_num( _SYMBOL ); }
 
-    asset to_asset() const               { return asset( amount, asset_symbol_type::from_asset_num( _SYMBOL ) ); }
+    tiny_asset& operator+=( const tiny_asset& val ) { amount += val.amount; return *this; }
+    tiny_asset& operator-=( const tiny_asset& val ) { amount -= val.amount; return *this; }
+    tiny_asset& operator*=( const share_type& x ) { amount *= x; return *this; }
+    tiny_asset& operator/=( const share_type& x ) { amount /= x; return *this; }
+    tiny_asset& operator%=( const share_type& x ) { amount %= x; return *this; }
+
+    friend bool operator==( const tiny_asset& a, const asset& b ) { return a.to_asset() == b; } //to be removed
+    friend bool operator==( const asset& a, const tiny_asset& b ) { return a == b.to_asset(); } //to be removed
+    friend bool operator!=( const tiny_asset& a, const asset& b ) { return a.to_asset() != b; } //to be removed
+    friend bool operator!=( const asset& a, const tiny_asset& b ) { return a != b.to_asset(); } //to be removed
+    friend bool operator<( const tiny_asset& a, const asset& b ) { return a.to_asset() < b; } //to be removed
+    friend bool operator<( const asset& a, const tiny_asset& b ) { return a < b.to_asset(); } //to be removed
+    friend bool operator<=( const tiny_asset& a, const asset& b ) { return a.to_asset() <= b; } //to be removed
+    friend bool operator<=( const asset& a, const tiny_asset& b ) { return a <= b.to_asset(); } //to be removed
+    friend bool operator>( const tiny_asset& a, const asset& b ) { return a.to_asset() > b; } //to be removed
+    friend bool operator>( const asset& a, const tiny_asset& b ) { return a > b.to_asset(); } //to be removed
+    friend bool operator>=( const tiny_asset& a, const asset& b ) { return a.to_asset() >= b; } //to be removed
+    friend bool operator>=( const asset& a, const tiny_asset& b ) { return a >= b.to_asset(); } //to be removed
+    bool operator==( const tiny_asset& other ) const { return amount == other.amount; }
+    bool operator!=( const tiny_asset& other ) const { return amount != other.amount; }
+    bool operator<( const tiny_asset& other ) const { return amount < other.amount; }
+    bool operator<=( const tiny_asset& other ) const { return amount <= other.amount; }
+    bool operator>( const tiny_asset& other ) const { return amount > other.amount; }
+    bool operator>=( const tiny_asset& other ) const { return amount >= other.amount; }
+
+    tiny_asset operator+() const { return tiny_asset( amount ); }
+    tiny_asset operator-() const { return tiny_asset( -amount ); }
+
+    tiny_asset operator+( const tiny_asset& other ) const { return tiny_asset( amount + other.amount ); }
+    tiny_asset operator-( const tiny_asset& other ) const { return tiny_asset( amount - other.amount ); }
+
+    friend asset operator* ( const tiny_asset& a, const price& p ) { return a.to_asset() * p; } //to be removed
+    friend asset operator* ( const price& p, const tiny_asset& a ) { return a.to_asset() * p; } //to be removed
+    friend asset operator+ ( const tiny_asset& a, const asset& b ) { return a.to_asset() + b; } //to be removed
+    friend asset operator+ ( const asset& a, const tiny_asset& b ) { return a + b.to_asset(); } //to be removed
+    friend asset operator- ( const tiny_asset& a, const asset& b ) { return a.to_asset() - b; } //to be removed
+    friend asset operator- ( const asset& a, const tiny_asset& b ) { return a - b.to_asset(); } //to be removed
+    friend tiny_asset operator* ( const tiny_asset& a, share_type b ) { return tiny_asset( a.amount * b ); }
+    friend tiny_asset operator* ( share_type b, const tiny_asset& a ) { return tiny_asset( a.amount * b ); }
+    friend tiny_asset operator/ ( const tiny_asset& a, share_type b ) { return tiny_asset( a.amount / b ); }
+    friend tiny_asset operator% ( const tiny_asset& a, share_type b ) { return tiny_asset( a.amount % b ); }
 
   private:
 
@@ -222,14 +270,7 @@ namespace hive { namespace protocol {
     void check( const asset& val ) const { FC_ASSERT( val.symbol.asset_num == _SYMBOL ); }
   };
 
-  template< uint32_t _SYMBOL >
-  bool operator==( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2 ) { return obj1.to_asset() == obj2.to_asset(); }
 
-  template< uint32_t _SYMBOL >
-  bool operator!=( const tiny_asset< _SYMBOL >& obj1, const tiny_asset< _SYMBOL >& obj2 ) { return !( obj1.to_asset() == obj2.to_asset() ); }
-
-  template< uint32_t _SYMBOL >
-  asset operator-( const tiny_asset< _SYMBOL >& obj1) { return -static_cast< asset >( obj1 ); }
 } } // hive::protocol
 
 namespace fc {
