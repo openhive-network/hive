@@ -41,7 +41,9 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     uint32_t hive_feed_interval_blocks = 20; // blocks, originally 60*60/3
     // time before feed expires
     uint32_t hive_max_feed_age_seconds = 60*24*7; // originally 60*60*24*7, see comment to set_feed_related_values
-
+    // time before savings are withdrawn
+    uint32_t hive_savings_withdraw_time = 60*60*24*3; // seconds, originally 3 days
+    
     std::string hive_hf9_compromised_key;
     hive::protocol::private_key_type hive_initminer_key;
 
@@ -72,6 +74,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
       uint32_t get_hive_feed_interval_blocks() const { return hive_feed_interval_blocks; }
       uint32_t get_hive_max_feed_age_seconds() const { return hive_max_feed_age_seconds; }
+
+      uint32_t get_hive_savings_withdraw_time() const { return hive_savings_withdraw_time; }
 
       std::string get_HF9_compromised_accounts_key() const { return hive_hf9_compromised_key; }
 
@@ -121,6 +125,20 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       {
         configuration clear;
         set_feed_related_values( clear.get_hive_feed_interval_blocks(), clear.get_hive_max_feed_age_seconds() );
+      }
+
+      /**
+       * [1 .. 60*60*24*3]
+       */
+      void set_savings_related_values( uint32_t savings_withdraw_time )
+      {
+        hive_savings_withdraw_time = savings_withdraw_time;
+      }
+
+      void reset_savings_values()
+      {
+        configuration clear;
+        set_savings_related_values( clear.get_hive_savings_withdraw_time() );
       }
 
       void set_skeleton_key(const hive::protocol::private_key_type& private_key);
