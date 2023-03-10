@@ -2220,7 +2220,6 @@ auto get_context_shared_data_bin_dir()
 }
 }
 
-static volatile auto stop_in_init = false;
 
 void init(hive::chain::database& db, const char* context)
 {
@@ -2228,15 +2227,6 @@ void init(hive::chain::database& db, const char* context)
 
   wlog("mtlk void init");  
   
-
-  while(stop_in_init)
-  {
-    int a = 0;
-    a=a;
-  }
-  
-    
-
 
   // my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
   //     auto chainId = chainPlugin.db().get_chain_id();
@@ -2372,7 +2362,6 @@ void cab_destroy_C_impl(const char* context)
   }
 }
 
-static volatile bool stop_in_consume_json_block_impl = false;
 
 int consume_json_block_impl(const char *json_block, const char* context, int block_num)
 {
@@ -2382,14 +2371,6 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
 
   show_it_once = false;
 
-  if(block_num >= 2726330)
-  {
-    while(stop_in_consume_json_block_impl  )
-    {
-      int a = 0;
-      a=a;
-    }
-  }
 
   initialize_context(expected_block_num, context);
 
@@ -2456,16 +2437,11 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
 }
 
 
-static volatile auto stop_in_collect_current_all_accounts_balances = false;
-
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
   wlog("mtlk inside  pid=${pid}", ("pid", getpid()));
 
   // dlog("collect_current_all_accounts_balances started mtlk pid=${pid}", ("pid", getpid()));
-
-
-  while(stop_in_collect_current_all_accounts_balances)  {    int a= 0;    a =a;  }
 
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
 
