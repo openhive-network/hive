@@ -52,6 +52,67 @@ def test_simply_hardfork_schedule():
         assert is_hardfork_applied(init_node, hf_number=21 + i)
 
 
+@pytest.mark.parametrize(
+    'hardfork_schedule',
+    [
+        pytest.param(
+            [
+                {"hardfork": 2, "block_num": 0},
+                {"hardfork": 27, "block_num": 380},
+                {"hardfork": 20, "block_num": 20},
+            ],
+            id='wrong order'
+        ),
+
+        pytest.param(
+            [
+                {"hardfork": 20, "block_num": 0},
+                {"hardfork": 2, "block_num": 1},
+                {"hardfork": 27, "block_num": 25}
+            ],
+            id='wrong order of hardforks'
+        ),
+
+        pytest.param(
+            [
+                {"hardfork": 2, "block_num": 1},
+                {"hardfork": 20, "block_num": 0},
+                {"hardfork": 27, "block_num": 380}
+            ],
+            id='blocks are not constantly growing'
+        ),
+
+        pytest.param(
+            [
+            ],
+            id='empty hardfork schedule'
+        ),
+
+        pytest.param(
+            [
+                {"hardfork": 50, "block_num": 0},
+            ],
+            id='nonexistent hardfork'
+        ),
+
+        pytest.param(
+            [
+                {"hardfork": 0, "block_num": 0},
+            ],
+            id='hf_00 is forbidden in hardfork schedule'
+        ),
+    ],
+)
+def test_incorrect_hardfork_schedules(hardfork_schedule):
+    alternate_chain_spec = build_alternate_chain_spec(hardfork_schedule)
+
+    init_node = tt.InitNode()
+    write_to_json(alternate_chain_spec)
+    with pytest.raises(TimeoutError):
+        init_node.run(
+            arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
+
+
 def build_alternate_chain_spec(hardfork_schedule: list, init_witnesses: list = None, init_supply: int = None,
                                hbd_init_supply: int = None) -> dict:
     return {
