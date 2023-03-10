@@ -29,6 +29,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <queue>
+#include <algorithm>
 
 namespace hive { namespace plugins { namespace chain {
 
@@ -944,14 +945,20 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
     FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork-schedule", ("hardfork-schedule", alternate_chain_spec["hardfork_schedule"]) );
 
+    bool is_sorted_hardfork = std::is_sorted(hardfork_schedule.begin(), hardfork_schedule.end(), [&](const auto& __lhs, const auto& __rhs){
+        return __lhs.hardfork < __rhs.hardfork;
+    });
+
+    bool is_sorted_block_num = std::is_sorted(hardfork_schedule.begin(), hardfork_schedule.end(), [&](const auto& __lhs, const auto& __rhs){
+        return __lhs.block_num < __rhs.block_num;
+    });
+
+    FC_ASSERT( is_sorted_hardfork && is_sorted_block_num, "hardfork schedule obects should be ascending in hardfork and block numbers", ("hardfork-schedule", alternate_chain_spec["hardfork_schedule"]) );
+
     for(uint32_t i = 0, j = 0; i < HIVE_NUM_HARDFORKS; ++i)
     {
       FC_ASSERT( hardfork_schedule[j].hardfork > 0, "You cannot specify the hardfork 0 block. Use 'genesis-time' option instead" );
       FC_ASSERT( hardfork_schedule[j].hardfork <= HIVE_NUM_HARDFORKS, "You are not allowed to specify future hardfork times" );
-      if( j > 0 )
-        FC_ASSERT( hardfork_schedule[j].hardfork > hardfork_schedule[j - 1].hardfork && hardfork_schedule[j].block_num >= hardfork_schedule[j - 1].block_num,
-          "Hardfork ${hf1} cannot be scheduled for block ${bn1}, because previous hardfork is set to greater block: ${bn2}",
-          ("hf1",hardfork_schedule[j].hardfork)("bn1",hardfork_schedule[j].block_num)("bn2",hardfork_schedule[j-1].block_num));
 
       if( i + 1 > hardfork_schedule[j].hardfork )
         ++j;
