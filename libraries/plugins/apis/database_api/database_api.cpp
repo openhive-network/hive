@@ -2188,9 +2188,8 @@ DEFINE_READ_APIS( database_api,
 
 
 
-#include <chainbase/chainbase.hpp>
 #include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
-#include <hive/chain/full_block.hpp>
+
 
 
 namespace hive { namespace app {
