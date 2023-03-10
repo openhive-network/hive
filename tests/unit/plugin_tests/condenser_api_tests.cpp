@@ -297,7 +297,7 @@ struct condenser_api_fixture : database_fixture
     op.props = props;
     push_transaction( op, alice5ah_private_key );
 
-    // Now all the operations mentioned above can be checked. All of them will appear in 4th block,
+    // Now all the operations mentioned above can be checked. All of them will appear in 4th block, regardless of the fixture configuration.
     check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
 };
@@ -892,22 +892,34 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_witness )
 
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
-    generate_until_irreversible_block( 5 );
+    generate_until_irreversible_block( 4 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
-    // TODO Supplement the patterns here
-    /*expected_t expected_operations = { { // 
-      }, { // 
-      }, { // 
-      }, { // 
-      }, { // 
-      }, { // 
+    expected_t expected_operations = { { // witness_update_operation
+      R"~({"trx_id":"68dc811e40bbf5298cc49906ac0b07f2b8d91d50","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"witness_update_operation","value":{"owner":"alice5ah","url":"foo.bar","block_signing_key":"TST5x2Aroso4sW7B7wp191Zvzs4mV7vH12g9yccbb2rV7kVUwTC5D","props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000},"fee":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
+      R"~({"trx_id":"68dc811e40bbf5298cc49906ac0b07f2b8d91d50","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["witness_update",{"owner":"alice5ah","url":"foo.bar","block_signing_key":"TST5x2Aroso4sW7B7wp191Zvzs4mV7vH12g9yccbb2rV7kVUwTC5D","props":{"account_creation_fee":"0.000 TESTS","maximum_block_size":131072,"hbd_interest_rate":1000},"fee":"1.000 TESTS"}]})~"
+      }, { // feed_publish_operation
+      R"~({"trx_id":"515f87df80219a8bc5aee9950e3c0f9db74262a8","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"feed_publish_operation","value":{"publisher":"alice5ah","exchange_rate":{"base":{"amount":"1000","precision":3,"nai":"@@000000013"},"quote":{"amount":"1000","precision":3,"nai":"@@000000021"}}}},"operation_id":0})~",
+      R"~({"trx_id":"515f87df80219a8bc5aee9950e3c0f9db74262a8","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["feed_publish",{"publisher":"alice5ah","exchange_rate":{"base":"1.000 TBD","quote":"1.000 TESTS"}}]})~"
+      }, { // account_witness_proxy_operation
+      R"~({"trx_id":"e3fe9799b02e6ed6bee030ab7e1315f2a6e6a6d4","block":4,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"account_witness_proxy_operation","value":{"account":"ben5ah","proxy":"carol5ah"}},"operation_id":0})~",
+      R"~({"trx_id":"e3fe9799b02e6ed6bee030ab7e1315f2a6e6a6d4","block":4,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["account_witness_proxy",{"account":"ben5ah","proxy":"carol5ah"}]})~"
+      }, { // account_witness_vote_operation
+      R"~({"trx_id":"a0d6ca658067cfeefb822933ae04a1687c5d235d","block":4,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0})~",
+      R"~({"trx_id":"a0d6ca658067cfeefb822933ae04a1687c5d235d","block":4,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["account_witness_vote",{"account":"carol5ah","witness":"alice5ah","approve":true}]})~"
+      }, { // witness_set_properties_operation
+      R"~({"trx_id":"3e7106641de9e1cc93a415ad73169dc62b3fa89c","block":4,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"witness_set_properties_operation","value":{"owner":"alice5ah","props":[["hbd_interest_rate","00000000"],["key","028bb6e3bfd8633279430bd6026a1178e8e311fe4700902f647856a9f32ae82a8b"]],"extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"3e7106641de9e1cc93a415ad73169dc62b3fa89c","block":4,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["witness_set_properties",{"owner":"alice5ah","props":[["hbd_interest_rate","00000000"],["key","028bb6e3bfd8633279430bd6026a1178e8e311fe4700902f647856a9f32ae82a8b"]],"extensions":[]}]})~"
+      }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":4,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8713701421","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":4,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["producer_reward",{"producer":"initminer","vesting_shares":"8713.701421 VESTS"}]})~"
       } };
-    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[5] };
-    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );*/
+    expected_t expected_virtual_operations = { expected_operations[5] };
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 4 );
   };
   
   witness_scenario( check_point_tester );
+  
 } FC_LOG_AND_RETHROW() }
 
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_ops_in_block_tests
