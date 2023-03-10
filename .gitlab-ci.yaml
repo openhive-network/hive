@@ -730,3 +730,17 @@ publish_docker_image:
     - scripts/ci-helpers/build_and_publish_instance.sh
   tags:
     - public-runner-docker
+
+hardfork_schedule_tests:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 3
+    JUNIT_REPORT: tests/functional/python_tests/hardfork_schedule_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/hardfork_schedule_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
