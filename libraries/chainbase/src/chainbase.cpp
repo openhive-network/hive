@@ -156,6 +156,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   }
   }
 
+
   void database::open(const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, const std::string& context)
   {
     assert( dir.is_absolute() );
