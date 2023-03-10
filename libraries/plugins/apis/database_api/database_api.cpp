@@ -2189,13 +2189,14 @@ DEFINE_READ_APIS( database_api,
 
 
 #include <chainbase/chainbase.hpp>
+#include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
+#include <hive/chain/full_block.hpp>
 
 
 namespace hive { namespace app {
 
 auto get_context_shared_data_bin_dir()
 {
-// //getenv("HAF_DB_STORE");//BLOCK_LOG_DIRECTORY
 
     fc::path data_dir;
     char* parent = getenv( "PGDATA" );
@@ -2208,12 +2209,6 @@ auto get_context_shared_data_bin_dir()
       data_dir = data_dir.parent_path();
       data_dir = data_dir.parent_path();
     }
-    else
-    {
-      //data_dir = bfs::current_path();
-    }
-    ilog("mtlk data_dir=${dt}",("dt", data_dir));
-
     return data_dir;
 }
 
@@ -2225,117 +2220,62 @@ void init(hive::chain::database& db, const char* context)
 {
 
 
-  wlog("mtlk void init");  
-  
-
-  // my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
-  //     auto chainId = chainPlugin.db().get_chain_id();
-      db.set_flush_interval( 10'000 );//10 000
-  //     db.add_checkpoints( loaded_checkpoints );// empty flat_map<uint32_t,block_id_type> loaded_checkpoints;
-      db.set_require_locking( false );// false 
-      //const auto& abstract_index_cntr = db.get_abstract_index_cntr();
+  db.set_flush_interval( 10'000 );//10 000
+  db.set_require_locking( false );// false 
 
 
-      hive::chain::open_args db_open_args;
-      db_open_args.data_dir = "/home/dev/mainnet-5m";
-      db_open_args.data_dir = "/home/dev/.consensus_state_provider";
+  hive::chain::open_args db_open_args;
+  db_open_args.data_dir = "/home/dev/mainnet-5m";
+  db_open_args.data_dir = "/home/dev/.consensus_state_provider";
 
-      ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
-
-
-
+  ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
 
   db_open_args.data_dir = hive::app::get_context_shared_data_bin_dir();
 
+  db_open_args.shared_mem_dir =  db_open_args.data_dir /  "blockchain"; // "/home/dev/mainnet-5m/blockchain"
+  db_open_args.initial_supply = HIVE_INIT_SUPPLY; // 0
+  db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;// 0
 
-     ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
+  db_open_args.shared_file_size = 25769803776;  //my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
 
-      db_open_args.shared_mem_dir =  db_open_args.data_dir /  "blockchain"; // "/home/dev/mainnet-5m/blockchain"
-      db_open_args.initial_supply = HIVE_INIT_SUPPLY; // 0
-      db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;// 0
+  db_open_args.shared_file_full_threshold = 0;// 0
+  db_open_args.shared_file_scale_rate = 0;// 0
+  db_open_args.chainbase_flags = 0;// 0
+  db_open_args.do_validate_invariants = false; // false
+  db_open_args.stop_replay_at = 0;//0
+  db_open_args.exit_after_replay = false;//false
+  db_open_args.validate_during_replay = false;// false
+  db_open_args.benchmark_is_enabled = false;//false
+  db_open_args.replay_in_memory = false;// false
+  db_open_args.enable_block_log_compression = true;// true
+  db_open_args.block_log_compression_level = 15;// 15
 
-      db_open_args.shared_file_size = 25769803776;  //my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
+  db_open_args.postgres_not_block_log = true;
 
-      db_open_args.shared_file_full_threshold = 0;// 0
-      db_open_args.shared_file_scale_rate = 0;// 0
-      db_open_args.chainbase_flags = 0;// 0
-      db_open_args.do_validate_invariants = false; // false
-      db_open_args.stop_replay_at = 0;//0
-      db_open_args.exit_after_replay = false;//false
-      db_open_args.validate_during_replay = false;// false
-      db_open_args.benchmark_is_enabled = false;//false
-      // db_open_args.database_cfg = fc::variant database_config();// empty fc::variant database_config;
-      db_open_args.replay_in_memory = false;// false
-      // db_open_args.replay_memory_indices = std::vector< std::string >; // ? empty vector
-      db_open_args.enable_block_log_compression = true;// true
-      db_open_args.block_log_compression_level = 15;// 15
+  db_open_args.force_replay = false;// false
 
-      db_open_args.postgres_not_block_log = true;
-
-      db_open_args.force_replay = false;// false
-      
-
-
-
-      db.open( db_open_args, context );
-  //         init_schema();
-  //         initialize_state_independent_data(args);
-  //             initialize_indexes();
-  //             initialize_evaluators();
-  //             initialize_irreversible_storage();
-  //             with_write_lock([&]()
-  //             {
-  //             init_genesis(args.initial_supply, args.hbd_initial_supply);
-  //                 auth_inhibitor(database& db) : db(db), old_flags(db.node_properties().skip_flags)
-  //                 modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
-  //                 { db.node_properties().skip_flags = old_flags; }
-  //         init_hardforks();
-  //     load_state_initial_data(args);
-  //         head_block_num();
-  //             get_dynamic_global_properties().head_block_number;
-  //         get_last_irreversible_block_num();
-  //         with_read_lock([&]() {
-  //             const auto& hardforks = get_hardfork_property_object();
-  //                 bool operator <= ( const version& o )const { return _operator< operator_type::less_equal >(     o.v_num, []( uint32_t val ){ return val & 0xFFFF0000; } ); }
-
-
-
-  // db.reindex( db_open_args );
-  //     reindex_internal( args, start_block );
-  //         apply_block(full_block, skip_flags);
-  //           _apply_block(full_block);
-
-      
-  
+  db.open( db_open_args, context );
 
 }
 
-#include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
-#include <hive/chain/full_block.hpp>
 
-
-static std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
-static int expected_block_num = 0;
-
-
-
-
+namespace{
+ std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
+ int expected_block_num = 0;
+}
 
 
 void initialize_context(int &expected_block_num, const char* context)
 {
   if(haf_database_api_impls.find(context) == haf_database_api_impls.end())
   {
-    // mtlk todo  ASSERT NOT haf_database_api_impls.has_key(context)
     hive::chain::database* db = new hive::chain::database;
     init(*db, context);
 
     expected_block_num = db->head_block_num();
     expected_block_num++;
-
   
-    std::string  s(context);
-    haf_database_api_impls.emplace(std::make_pair(s, hive::plugins::database_api::database_api_impl(*db)));
+    haf_database_api_impls.emplace(std::make_pair(std::string(context), hive::plugins::database_api::database_api_impl(*db)));
   }
 }
 
@@ -2365,35 +2305,19 @@ void cab_destroy_C_impl(const char* context)
 
 int consume_json_block_impl(const char *json_block, const char* context, int block_num)
 {
-  int static show_it_once = true;
-  if(show_it_once)
-    dlog("consume_json_block_impl started mtlk pid= ${pid}", ("pid", getpid()));
-
-  show_it_once = false;
-
 
   initialize_context(expected_block_num, context);
-
-
-
-  // wlog("consume_json_block_impl before further  mtlk block_num= ${block_num}", ("block_num", block_num));
 
   if(block_num != expected_block_num)
      return expected_block_num;
 
   expected_block_num++;
 
-  // wlog("consume_json_block_impl passed further  mtlk block_num= ${block_num}", ("block_num", block_num));
-
-
-
 
   std::string s(context);
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[s];
   hive::chain::database& db = db_api_impl._db;
   
-
-
   fc::variant v = fc::json::from_string( std::string{ json_block } );
 
   hive::plugins::block_api::api_signed_block_object sb;
@@ -2404,9 +2328,6 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
   siz = siz;
 
   std::shared_ptr<hive::chain::full_block_type> fb_ptr = hive::chain::full_block_type::create_from_signed_block(sb);
-
-  //wlog("block_num=${bn}", ("bn", block_num));
-  //wlog("fb_ptr->get_block_id()=${fbdbi}", ("fbdbi", fb_ptr->get_block_id()));
 
 
   uint64_t skip_flags = hive::plugins::chain::database::skip_block_log;
@@ -2428,8 +2349,6 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
 
   db.clear_tx_status();
 
-
-
   db.set_revision( db.head_block_num() );
 
 
@@ -2441,7 +2360,6 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 {
   wlog("mtlk inside  pid=${pid}", ("pid", getpid()));
 
-  // dlog("collect_current_all_accounts_balances started mtlk pid=${pid}", ("pid", getpid()));
 
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
 
@@ -2456,7 +2374,6 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
   args.limit = 1000;
   args.order = hive::plugins::database_api::by_name;
 
-   // wlog("mtlk args.start=${start}", ("start", args.start));
 
   while(true)
   { 
@@ -2481,7 +2398,6 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
       e.vesting_shares = a.vesting_shares.amount.value;
       e.savings_hbd_balance = a.savings_hbd_balance.amount.value;
       e.reward_hbd_balance = a.reward_hbd_balance.amount.value;
-      //wlog("mtlk e.account_name=${name} e.balance=${balance}", ("name", e.account_name)("balance" , e.balance) );
       r.emplace_back(e);
       cnt++;
     }
@@ -2490,32 +2406,11 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 
     args.start = db_api_impl_result.accounts[db_api_impl_result.accounts.size() - 1].name;
 
-    //wlog("mtlk args.start=${start} ${cnt}", ("start", args.start)("cnt", cnt));
 
     if(cnt < args.limit)
       break;
 
   }
-
-  // const auto& account_idx = get_index< chain::account_index >().indices().get< chain::by_id >();
-  // std::for_each(
-  //     account_idx.begin()
-  //   , account_idx.end()
-  //   , [&]( const account_object& obj ){
-  //       push_virtual_operation(
-  //         account_created_operation(obj.name, obj.name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
-  //     }
-
-
-  //   hive::plugins::database_api::iterate_results< chain::account_index, chain::by_name >(
-  //   args.start.as< protocol::account_name_type >(),
-  //   result.accounts,
-  //   args.limit,
-  //   [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },
-  //   &database_api_impl::filter_default< account_object > );
-
-
-  // dlog("collect_current_all_accounts_balances finished mtlk pid=${pid}", ("pid", getpid()));
 
   return r;
 }
