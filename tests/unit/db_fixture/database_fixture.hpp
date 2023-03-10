@@ -383,11 +383,11 @@ struct database_fixture {
                             const fc::microseconds& expiration_shift, uint32_t orderid, const fc::ecc::private_key& key );
   void escrow_transfer( const string& from, const string& to, const string& agent, const asset& hive_amount, 
                         const asset& hbd_amount, const asset& fee, const std::string& json_meta, const fc::microseconds& ratification_shift,
-                        const fc::microseconds& expiration_shift, const fc::ecc::private_key& key );
-  void escrow_approve( const string& from, const string& to, const string& agent, const string& who, const fc::ecc::private_key& key );
+                        const fc::microseconds& expiration_shift, uint32_t escrow_id, const fc::ecc::private_key& key );
+  void escrow_approve( const string& from, const string& to, const string& agent, const string& who, bool approve, uint32_t escrow_id, const fc::ecc::private_key& key );
   void escrow_release( const string& from, const string& to, const string& agent, const string& who, const string& receiver,
-                       const asset& hive_amount, const asset& hbd_amount, const fc::ecc::private_key& key );
-  void escrow_dispute( const string& from, const string& to, const string& agent, const string& who, const fc::ecc::private_key& key );
+                       const asset& hive_amount, const asset& hbd_amount, uint32_t escrow_id, const fc::ecc::private_key& key );
+  void escrow_dispute( const string& from, const string& to, const string& agent, const string& who, uint32_t escrow_id, const fc::ecc::private_key& key );
   void transfer_to_savings( const string& from, const string& to, const asset& amount, const string& memo, const fc::ecc::private_key& key );
   void transfer_from_savings( const string& from, const string& to, const asset& amount, uint32_t request_id,
                               const fc::ecc::private_key& key );

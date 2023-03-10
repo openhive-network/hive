@@ -24,6 +24,7 @@ struct condenser_api_fixture : database_fixture
       // Set cashout values to absolute safe minimum to speed up the scenarios and their tests.
       configuration_data.set_cashout_related_values( 0, 2, 4, 12, 1 );
       configuration_data.set_feed_related_values( 1, 3*24*7 ); // see comment to set_feed_related_values
+      configuration_data.set_savings_related_values( 20 );
 
       ah_plugin = &app.register_plugin< ah_plugin_type >();
       ah_plugin->set_destroy_database_on_startup();
@@ -73,6 +74,7 @@ struct condenser_api_fixture : database_fixture
     try {
       configuration_data.reset_cashout_values();
       configuration_data.reset_feed_values();
+      configuration_data.reset_savings_values();
 
       // If we're unwinding due to an exception, don't do any more checks.
       // This way, boost test's last checkpoint tells us approximately where the error was.
@@ -300,6 +302,45 @@ struct condenser_api_fixture : database_fixture
     // Now all the operations mentioned above can be checked. All of them will appear in 4th block, regardless of the fixture configuration.
     check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
+
+  /**
+   * Operations tested here:
+   *  escrow_transfer_operation, escrow_approve_operation, escrow_approved_operation, escrow_release_operation, escrow_dispute_operation,
+   *  transfer_to_savings_operation, transfer_from_savings_operation, cancel_transfer_from_savings_operation & fill_transfer_from_savings_operation
+   */
+  void escrow_and_savings_scenario( check_point_tester_t check_point_tester )
+  {
+    db->set_hardfork( HIVE_HARDFORK_1_27 );
+    generate_block();
+
+    ACTORS( (alice6ah)(ben6ah)(carol6ah) );
+    generate_block();
+    fund( "alice6ah", ASSET( "1.111 TESTS" ) );
+    generate_block();
+    
+    escrow_transfer( "alice6ah", "ben6ah", "carol6ah", ASSET( "0.071 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
+                    fc::seconds( HIVE_BLOCK_INTERVAL * 10 ), fc::seconds( HIVE_BLOCK_INTERVAL * 20 ), 30, alice6ah_private_key );
+    escrow_transfer( "alice6ah", "ben6ah", "carol6ah", ASSET( "0.007 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
+                    fc::seconds( HIVE_BLOCK_INTERVAL * 10 ), fc::seconds( HIVE_BLOCK_INTERVAL * 20 ), 31, alice6ah_private_key );
+
+    escrow_approve( "alice6ah", "ben6ah", "carol6ah", "carol6ah", true, 30, carol6ah_private_key );
+    escrow_approve( "alice6ah", "ben6ah", "carol6ah", "ben6ah", true, 30, ben6ah_private_key );
+    escrow_release( "alice6ah", "ben6ah", "carol6ah", "alice6ah", "ben6ah", ASSET( "0.013 TESTS" ), ASSET( "0.000 TBD" ), 30, alice6ah_private_key );
+    escrow_dispute( "alice6ah", "ben6ah", "carol6ah", "ben6ah", 30, ben6ah_private_key );
+
+    escrow_approve( "alice6ah", "ben6ah", "carol6ah", "carol6ah", false, 31, carol6ah_private_key );
+
+    transfer_to_savings( "alice6ah", "alice6ah", ASSET( "0.009 TESTS" ), "ah savings", alice6ah_private_key );
+    transfer_from_savings( "alice6ah", "alice6ah", ASSET( "0.006 TESTS" ), 0, alice6ah_private_key );
+    transfer_from_savings( "alice6ah", "alice6ah", ASSET( "0.003 TESTS" ), 1, alice6ah_private_key );
+    cancel_transfer_from_savings( "alice6ah", 0, alice6ah_private_key );
+
+    // Now all the operations mentioned above can be checked. All of them will appear in 5th block,
+    // except fill_transfer_from_savings_operation - its block number depends on test configuration.
+    // In standard configuration of this fixture it's 11th block.
+    check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+  }
+
 };
 
 BOOST_FIXTURE_TEST_SUITE( condenser_api_tests, condenser_api_fixture );
@@ -922,6 +963,78 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_witness )
   
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( get_ops_in_block_escrow_and_savings )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with escrow_and_savings_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 5 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_t expected_operations = { { // escrow_transfer_operation
+      R"~({"trx_id":"d991732e509c73b78ef79873cded63346f6c0201","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"escrow_transfer_operation","value":{"from":"alice6ah","to":"ben6ah","hbd_amount":{"amount":"0","precision":3,"nai":"@@000000013"},"hive_amount":{"amount":"71","precision":3,"nai":"@@000000021"},"escrow_id":30,"agent":"carol6ah","fee":{"amount":"1","precision":3,"nai":"@@000000021"},"json_meta":"","ratification_deadline":"2016-01-01T00:00:42","escrow_expiration":"2016-01-01T00:01:12"}},"operation_id":0})~",
+      R"~({"trx_id":"d991732e509c73b78ef79873cded63346f6c0201","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["escrow_transfer",{"from":"alice6ah","to":"ben6ah","hbd_amount":"0.000 TBD","hive_amount":"0.071 TESTS","escrow_id":30,"agent":"carol6ah","fee":"0.001 TESTS","json_meta":"","ratification_deadline":"2016-01-01T00:00:42","escrow_expiration":"2016-01-01T00:01:12"}]})~"
+      }, { // escrow_transfer_operation
+      R"~({"trx_id":"25dac8f4f0d88ae7e88d1b58d58eca00bb7124fa","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"escrow_transfer_operation","value":{"from":"alice6ah","to":"ben6ah","hbd_amount":{"amount":"0","precision":3,"nai":"@@000000013"},"hive_amount":{"amount":"7","precision":3,"nai":"@@000000021"},"escrow_id":31,"agent":"carol6ah","fee":{"amount":"1","precision":3,"nai":"@@000000021"},"json_meta":"","ratification_deadline":"2016-01-01T00:00:42","escrow_expiration":"2016-01-01T00:01:12"}},"operation_id":0})~",
+      R"~({"trx_id":"25dac8f4f0d88ae7e88d1b58d58eca00bb7124fa","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["escrow_transfer",{"from":"alice6ah","to":"ben6ah","hbd_amount":"0.000 TBD","hive_amount":"0.007 TESTS","escrow_id":31,"agent":"carol6ah","fee":"0.001 TESTS","json_meta":"","ratification_deadline":"2016-01-01T00:00:42","escrow_expiration":"2016-01-01T00:01:12"}]})~"
+      }, { // escrow_approve_operation
+      R"~({"trx_id":"b10e747da05fe4b9c28106e965bb48c152f13e6b","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"escrow_approve_operation","value":{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","who":"carol6ah","escrow_id":30,"approve":true}},"operation_id":0})~",
+      R"~({"trx_id":"b10e747da05fe4b9c28106e965bb48c152f13e6b","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["escrow_approve",{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","who":"carol6ah","escrow_id":30,"approve":true}]})~"
+      }, { // escrow_approve_operation
+      R"~({"trx_id":"5697a8fe6d4e3e2b367443d0e4cc2e0df60306c5","block":5,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"escrow_approve_operation","value":{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","who":"ben6ah","escrow_id":30,"approve":true}},"operation_id":0})~",
+      R"~({"trx_id":"5697a8fe6d4e3e2b367443d0e4cc2e0df60306c5","block":5,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["escrow_approve",{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","who":"ben6ah","escrow_id":30,"approve":true}]})~"
+      }, { // escrow_approved_operation
+      R"~({"trx_id":"5697a8fe6d4e3e2b367443d0e4cc2e0df60306c5","block":5,"trx_in_block":3,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"escrow_approved_operation","value":{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","escrow_id":30,"fee":{"amount":"1","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
+      R"~({"trx_id":"5697a8fe6d4e3e2b367443d0e4cc2e0df60306c5","block":5,"trx_in_block":3,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["escrow_approved",{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","escrow_id":30,"fee":"0.001 TESTS"}]})~"
+      }, { // escrow_release_operation
+      R"~({"trx_id":"b151c38de8ba594a5a53a648ce03d49890ce4cf9","block":5,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"escrow_release_operation","value":{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","who":"alice6ah","receiver":"ben6ah","escrow_id":30,"hbd_amount":{"amount":"0","precision":3,"nai":"@@000000013"},"hive_amount":{"amount":"13","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
+      R"~({"trx_id":"b151c38de8ba594a5a53a648ce03d49890ce4cf9","block":5,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["escrow_release",{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","who":"alice6ah","receiver":"ben6ah","escrow_id":30,"hbd_amount":"0.000 TBD","hive_amount":"0.013 TESTS"}]})~"
+      }, { // escrow_dispute_operation
+      R"~({"trx_id":"0e98dacbf33b7454b6928abe85638fac6ee86e00","block":5,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"escrow_dispute_operation","value":{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","who":"ben6ah","escrow_id":30}},"operation_id":0})~",
+      R"~({"trx_id":"0e98dacbf33b7454b6928abe85638fac6ee86e00","block":5,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["escrow_dispute",{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","who":"ben6ah","escrow_id":30}]})~"
+      }, { // escrow_approve_operation
+      R"~({"trx_id":"25f39679ea1a87ab8cc879ecdb46ea253252cdb6","block":5,"trx_in_block":6,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"escrow_approve_operation","value":{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","who":"carol6ah","escrow_id":31,"approve":false}},"operation_id":0})~",
+      R"~({"trx_id":"25f39679ea1a87ab8cc879ecdb46ea253252cdb6","block":5,"trx_in_block":6,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["escrow_approve",{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","who":"carol6ah","escrow_id":31,"approve":false}]})~"
+      }, { // escrow_rejected_operation
+      R"~({"trx_id":"25f39679ea1a87ab8cc879ecdb46ea253252cdb6","block":5,"trx_in_block":6,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"escrow_rejected_operation","value":{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","escrow_id":31,"hbd_amount":{"amount":"0","precision":3,"nai":"@@000000013"},"hive_amount":{"amount":"7","precision":3,"nai":"@@000000021"},"fee":{"amount":"1","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
+      R"~({"trx_id":"25f39679ea1a87ab8cc879ecdb46ea253252cdb6","block":5,"trx_in_block":6,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["escrow_rejected",{"from":"alice6ah","to":"ben6ah","agent":"carol6ah","escrow_id":31,"hbd_amount":"0.000 TBD","hive_amount":"0.007 TESTS","fee":"0.001 TESTS"}]})~"
+      }, { // transfer_to_savings_operation
+      R"~({"trx_id":"e86269bf580980032b0bff352b8a4af19e0e4b0d","block":5,"trx_in_block":7,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"transfer_to_savings_operation","value":{"from":"alice6ah","to":"alice6ah","amount":{"amount":"9","precision":3,"nai":"@@000000021"},"memo":"ah savings"}},"operation_id":0})~",
+      R"~({"trx_id":"e86269bf580980032b0bff352b8a4af19e0e4b0d","block":5,"trx_in_block":7,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["transfer_to_savings",{"from":"alice6ah","to":"alice6ah","amount":"0.009 TESTS","memo":"ah savings"}]})~"
+      }, { // transfer_from_savings_operation
+      R"~({"trx_id":"82bd5c9e139fb35709039a0d63c364c78962220e","block":5,"trx_in_block":8,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"transfer_from_savings_operation","value":{"from":"alice6ah","request_id":0,"to":"alice6ah","amount":{"amount":"6","precision":3,"nai":"@@000000021"},"memo":""}},"operation_id":0})~",
+      R"~({"trx_id":"82bd5c9e139fb35709039a0d63c364c78962220e","block":5,"trx_in_block":8,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["transfer_from_savings",{"from":"alice6ah","request_id":0,"to":"alice6ah","amount":"0.006 TESTS","memo":""}]})~"
+      }, { // transfer_from_savings_operation
+      R"~({"trx_id":"e173506f76a3c9b2b878ccade0c86b2eaee07ac4","block":5,"trx_in_block":9,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"transfer_from_savings_operation","value":{"from":"alice6ah","request_id":1,"to":"alice6ah","amount":{"amount":"3","precision":3,"nai":"@@000000021"},"memo":""}},"operation_id":0})~",
+      R"~({"trx_id":"e173506f76a3c9b2b878ccade0c86b2eaee07ac4","block":5,"trx_in_block":9,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["transfer_from_savings",{"from":"alice6ah","request_id":1,"to":"alice6ah","amount":"0.003 TESTS","memo":""}]})~"
+      }, { // cancel_transfer_from_savings_operation
+      R"~({"trx_id":"cd620d856a4e6dced656d3efad334cca8a7d3012","block":5,"trx_in_block":10,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"cancel_transfer_from_savings_operation","value":{"from":"alice6ah","request_id":0}},"operation_id":0})~",
+      R"~({"trx_id":"cd620d856a4e6dced656d3efad334cca8a7d3012","block":5,"trx_in_block":10,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["cancel_transfer_from_savings",{"from":"alice6ah","request_id":0}]})~"
+      }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8631556303","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["producer_reward",{"producer":"initminer","vesting_shares":"8631.556303 VESTS"}]})~"
+    } };
+
+    generate_until_irreversible_block( 11 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_operations = { { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":11,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:33","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8179054903","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":11,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:33","op":["producer_reward",{"producer":"initminer","vesting_shares":"8179.054903 VESTS"}]})~"
+      }, { // fill_transfer_from_savings_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":11,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:33","op":{"type":"fill_transfer_from_savings_operation","value":{"from":"alice6ah","to":"alice6ah","amount":{"amount":"3","precision":3,"nai":"@@000000021"},"request_id":1,"memo":""}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":11,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:33","op":["fill_transfer_from_savings",{"from":"alice6ah","to":"alice6ah","amount":"0.003 TESTS","request_id":1,"memo":""}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 11 );
+  };
+
+  escrow_and_savings_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_ops_in_block_tests
 
 BOOST_FIXTURE_TEST_SUITE( condenser_get_transaction_tests, condenser_api_fixture );
@@ -1203,32 +1316,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test ) // To be split into sc
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
   
-  /*escrow_transfer( "carol0ah", "dan0ah", "edgar0ah", ASSET( "0.071 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
-                   fc::seconds( HIVE_BLOCK_INTERVAL * 10 ), fc::seconds( HIVE_BLOCK_INTERVAL * 20 ), carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(escrow_transfer_operation), fc::optional< expected_operation_result_t >() } );
-
-  escrow_approve( "carol0ah", "dan0ah", "edgar0ah", "edgar0ah", edgar0ah_private_key );
-  expected_operations.insert( { OP_TAG(escrow_approve_operation), fc::optional< expected_operation_result_t >() } );
-
-  escrow_approve( "carol0ah", "dan0ah", "edgar0ah", "dan0ah", dan0ah_private_key );
-  expected_operations.insert( { OP_TAG(escrow_approved_operation), fc::optional< expected_operation_result_t >() } );
-
-  escrow_release( "carol0ah", "dan0ah", "edgar0ah", "carol0ah", "dan0ah", ASSET( "0.013 TESTS" ), ASSET( "0.000 TBD" ), carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(escrow_release_operation), fc::optional< expected_operation_result_t >() } );
-
-  escrow_dispute( "carol0ah", "dan0ah", "edgar0ah", "dan0ah", dan0ah_private_key );
-  expected_operations.insert( { OP_TAG(escrow_dispute_operation), fc::optional< expected_operation_result_t >() } );
-
-  transfer_to_savings( "carol0ah", "carol0ah", ASSET( "0.009 TESTS" ), "ah savings", carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(transfer_to_savings_operation), fc::optional< expected_operation_result_t >() } );
-  
-  transfer_from_savings( "carol0ah", "carol0ah", ASSET( "0.006 TESTS" ), 0, carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(transfer_from_savings_operation), fc::optional< expected_operation_result_t >() } );
-  
-  cancel_transfer_from_savings( "carol0ah", 0, carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(cancel_transfer_from_savings_operation), fc::optional< expected_operation_result_t >() } );
-
-  fund( "carol0ah", ASSET( "800.000 TBD" ) );
+  /*fund( "carol0ah", ASSET( "800.000 TBD" ) );
   dhf_database_fixture::create_proposal_data cpd(db->head_block_time());
   cpd.end_date = cpd.start_date + fc::days( 2 );
 *///  int64_t proposal_id = 
