@@ -7675,39 +7675,3 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
 
 } } //hive::chain
 
-
-#include <boost/interprocess/managed_mapped_file.hpp>
-
-
-
-
-void mtlk_check_dynamic_global_property_index(std::unique_ptr<boost::interprocess::managed_mapped_file>& _segment)
-{
-          typedef chainbase::generic_index<hive::chain::dynamic_global_property_index>          index_type;
-
-        std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
-
-       auto _found = _segment->find< index_type >( type_name.c_str() );
-
-
-        index_type* idx_ptr =  nullptr;
-
-        if( !_found.first )
-        {
-          _found = _found;
-          // _is_index_new = true;
-          // idx_ptr = _segment->construct< index_type >( type_name.c_str() )( index_alloc( _segment->get_segment_manager() ) );
-          wlog("mtlk idx_ptr.revision not found");
-        }
-        else
-        {
-          idx_ptr = _found.first;
-          //wlog("mtlk revision()= ${rev}", ("rev", revision()));
-           wlog("mtlk idx_ptr.revision= ${rev}", ("rev", idx_ptr->revision()));
-        }
-
-
-
-}
-
-
