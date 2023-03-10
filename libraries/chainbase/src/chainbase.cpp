@@ -295,7 +295,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _segment.reset();
     _meta.reset();
 
-    open(_data_dir, 0, new_shared_file_size );
+    open( _data_dir, 0, new_shared_file_size );
 
     wipe_indexes();
 
