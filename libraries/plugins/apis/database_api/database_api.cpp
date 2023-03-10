@@ -2191,12 +2191,6 @@ DEFINE_READ_APIS( database_api,
 #include <chainbase/chainbase.hpp>
 
 
-hive::plugins::database_api::database_api_impl& database_api_impl_init(hive::chain::database& a_db)
-{
-  static hive::plugins::database_api::database_api_impl db_api_impl(a_db);
-  return db_api_impl;
-}
-
 namespace hive { namespace app {
 
 auto get_context_shared_data_bin_dir()
