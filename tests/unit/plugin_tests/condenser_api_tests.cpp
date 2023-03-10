@@ -341,6 +341,39 @@ struct condenser_api_fixture : database_fixture
     check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
 
+  /**
+   * Operations tested here:
+   *  dhf_funding_operation, dhf_conversion_operation, transfer_operation,
+   *  create_proposal_operation, proposal_fee_operation, update_proposal_operation, update_proposal_votes_operation & remove_proposal_operation
+   */
+  void proposal_scenario( check_point_tester_t check_point_tester )
+  {
+    db->set_hardfork( HIVE_HARDFORK_1_27 );
+    generate_block();
+
+    ACTORS( (alice7ah)(ben7ah)(carol7ah) );
+    generate_block();
+    fund( "alice7ah", ASSET( "800.000 TBD" ) );
+    fund( "carol7ah", ASSET( "10.000 TESTS") );
+    generate_block();
+
+    transfer( "carol7ah", db->get_treasury_name(), ASSET( "3.333 TESTS" ) ); // <- trigger dhf_conversion_operation
+
+    int64_t proposal_id = 
+      create_proposal( "alice7ah", "ben7ah", db->head_block_time() + fc::days( 1 ), db->head_block_time() + fc::days( 2 ),
+                       asset( 100, HBD_SYMBOL ), alice7ah_private_key, false/*with_block_generation*/ );
+    const proposal_object* proposal = find_proposal( proposal_id );
+    BOOST_REQUIRE_NE( proposal, nullptr );
+
+    update_proposal( proposal_id, "alice7ah", asset( 80, HBD_SYMBOL ), "new subject", proposal->permlink, alice7ah_private_key);
+    vote_proposal( "carol7ah", { proposal_id }, true/*approve*/, carol7ah_private_key);
+    remove_proposal( "alice7ah", { proposal_id }, alice7ah_private_key );
+
+    // All operations mentioned above can be checked now in 5th block except dhf_funding_operation (2nd block),
+    // regardless of the fixture configuration.
+    check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+  }
+
 };
 
 BOOST_FIXTURE_TEST_SUITE( condenser_api_tests, condenser_api_fixture );
@@ -1035,6 +1068,63 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_escrow_and_savings )
 
 } FC_LOG_AND_RETHROW() }
 
+
+BOOST_AUTO_TEST_CASE( get_ops_in_block_proposal )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with proposal_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 5 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_t expected_operations = { { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8884501480","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["producer_reward",{"producer":"initminer","vesting_shares":"8884.501480 VESTS"}]})~"
+      }, { // dhf_funding_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"dhf_funding_operation","value":{"treasury":"hive.fund","additional_funds":{"amount":"9","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["dhf_funding",{"treasury":"hive.fund","additional_funds":"0.009 TBD"}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 2 );
+
+    expected_operations = { { // transfer_operation
+      R"~({"trx_id":"909b8d77940011e1496d49d73f19282ce0d19cef","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"transfer_operation","value":{"from":"carol7ah","to":"hive.fund","amount":{"amount":"3333","precision":3,"nai":"@@000000021"},"memo":""}},"operation_id":0})~",
+      R"~({"trx_id":"909b8d77940011e1496d49d73f19282ce0d19cef","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["transfer",{"from":"carol7ah","to":"hive.fund","amount":"3.333 TESTS","memo":""}]})~"
+      }, { // dhf_conversion_operation
+      R"~({"trx_id":"909b8d77940011e1496d49d73f19282ce0d19cef","block":5,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"dhf_conversion_operation","value":{"treasury":"hive.fund","hive_amount_in":{"amount":"3333","precision":3,"nai":"@@000000021"},"hbd_amount_out":{"amount":"3333","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
+      R"~({"trx_id":"909b8d77940011e1496d49d73f19282ce0d19cef","block":5,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["dhf_conversion",{"treasury":"hive.fund","hive_amount_in":"3.333 TESTS","hbd_amount_out":"3.333 TBD"}]})~"
+      }, { // comment_operation
+      R"~({"trx_id":"3a20708685a9510a1a03a58499cc2a0cd42985d8","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"comment_operation","value":{"parent_author":"","parent_permlink":"test","author":"alice7ah","permlink":"permlink0","title":"title","body":"body","json_metadata":""}},"operation_id":0})~",
+      R"~({"trx_id":"3a20708685a9510a1a03a58499cc2a0cd42985d8","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["comment",{"parent_author":"","parent_permlink":"test","author":"alice7ah","permlink":"permlink0","title":"title","body":"body","json_metadata":""}]})~"
+      }, { // create_proposal_operation
+      R"~({"trx_id":"2309ebc61f5580e870fcbc982f03acc4614335a8","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2016-01-02T00:00:12","end_date":"2016-01-03T00:00:12","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"2309ebc61f5580e870fcbc982f03acc4614335a8","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2016-01-02T00:00:12","end_date":"2016-01-03T00:00:12","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]})~"
+      }, { // proposal_fee_operation
+      R"~({"trx_id":"2309ebc61f5580e870fcbc982f03acc4614335a8","block":5,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"proposal_fee_operation","value":{"creator":"alice7ah","treasury":"hive.fund","proposal_id":0,"fee":{"amount":"10000","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
+      R"~({"trx_id":"2309ebc61f5580e870fcbc982f03acc4614335a8","block":5,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["proposal_fee",{"creator":"alice7ah","treasury":"hive.fund","proposal_id":0,"fee":"10.000 TBD"}]})~"
+      }, { // update_proposal_operation
+      R"~({"trx_id":"4aa8d1fc867bfaf9c50f3272f5899a2b153d4500","block":5,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"update_proposal_operation","value":{"proposal_id":0,"creator":"alice7ah","daily_pay":{"amount":"80","precision":3,"nai":"@@000000013"},"subject":"new subject","permlink":"permlink0","extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"4aa8d1fc867bfaf9c50f3272f5899a2b153d4500","block":5,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["update_proposal",{"proposal_id":0,"creator":"alice7ah","daily_pay":"0.080 TBD","subject":"new subject","permlink":"permlink0","extensions":[]}]})~"
+      }, { // update_proposal_votes_operation
+      R"~({"trx_id":"edcfd57ce210cf5afd1227c63f9135de69b4e35e","block":5,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"update_proposal_votes_operation","value":{"voter":"carol7ah","proposal_ids":[0],"approve":true,"extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"edcfd57ce210cf5afd1227c63f9135de69b4e35e","block":5,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["update_proposal_votes",{"voter":"carol7ah","proposal_ids":[0],"approve":true,"extensions":[]}]})~"
+      }, { // remove_proposal_operation
+      R"~({"trx_id":"e7a3be6db61976dcb884009a0aad7b01ae5c5221","block":5,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"remove_proposal_operation","value":{"proposal_owner":"alice7ah","proposal_ids":[0],"extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"e7a3be6db61976dcb884009a0aad7b01ae5c5221","block":5,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["remove_proposal",{"proposal_owner":"alice7ah","proposal_ids":[0],"extensions":[]}]})~"
+      }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8631556303","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["producer_reward",{"producer":"initminer","vesting_shares":"8631.556303 VESTS"}]})~"
+      } };
+    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[4], expected_operations[8] };
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );
+  };
+
+  proposal_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_ops_in_block_tests
 
 BOOST_FIXTURE_TEST_SUITE( condenser_get_transaction_tests, condenser_api_fixture );
@@ -1316,26 +1406,7 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test ) // To be split into sc
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
   
-  /*fund( "carol0ah", ASSET( "800.000 TBD" ) );
-  dhf_database_fixture::create_proposal_data cpd(db->head_block_time());
-  cpd.end_date = cpd.start_date + fc::days( 2 );
-*///  int64_t proposal_id = 
-//    create_proposal( "carol0ah", "dan0ah", cpd.start_date, cpd.end_date, cpd.daily_pay, carol0ah_private_key, false/*with_block_generation*/ );
-/*  const proposal_object* proposal = find_proposal( proposal_id );
-  BOOST_REQUIRE_NE( proposal, nullptr );
-  expected_operations.insert( { OP_TAG(create_proposal_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(proposal_fee_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(dhf_funding_operation), fc::optional< expected_operation_result_t >() } );
-
-  update_proposal( proposal_id, "carol0ah", asset( 80, HBD_SYMBOL ), "new subject", proposal->permlink, carol0ah_private_key);
-  expected_operations.insert( { OP_TAG(update_proposal_operation), fc::optional< expected_operation_result_t >() } );
-*/
-//  vote_proposal( "edgar0ah", { proposal_id }, true/*approve*/, edgar0ah_private_key);
-/*  expected_operations.insert( { OP_TAG(update_proposal_votes_operation), fc::optional< expected_operation_result_t >() } );
-
-  remove_proposal( "carol0ah", { proposal_id }, carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(remove_proposal_operation), fc::optional< expected_operation_result_t >() } );
-
+  /*
   claim_account( "edgar0ah", ASSET( "0.000 TESTS" ), edgar0ah_private_key );
   expected_operations.insert( { OP_TAG(claim_account_operation), fc::optional< expected_operation_result_t >() } );
 
