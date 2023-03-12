@@ -15,8 +15,6 @@ set( GUI_CLIENT_EXECUTABLE_NAME Hive )
 set( CUSTOM_URL_SCHEME "gcs" )
 set( INSTALLER_APP_ID "68ad7005-8eee-49c9-95ce-9eed97e5b347" )
 
-list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules" )
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 
 #set (ENABLE_INSTALLER 1)
@@ -28,24 +26,10 @@ endif(USE_PCH)
 
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libraries/fc/CMakeModules" )
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libraries/fc/GitVersionGen" )
-
-SET( Boost_NO_BOOST_CMAKE ON CACHE STRING "ON or OFF" FORCE )
-SET(BOOST_COMPONENTS)
-LIST(APPEND BOOST_COMPONENTS thread
-                             date_time
-                             system
-                             filesystem
-                             program_options
-                             serialization
-                             chrono
-                             unit_test_framework
-                             context
-                             locale
-                             coroutine)
-SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
-
 list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
+
 include( hive_options )
+include( hive_targets )
 
 IF( WIN32 )
   SET(BOOST_ROOT $ENV{BOOST_ROOT})
@@ -54,11 +38,6 @@ IF( WIN32 )
 ENDIF(WIN32)
 
 cmake_policy(SET CMP0057 NEW)
-FIND_PACKAGE(Boost 1.58 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-
-if( NOT Boost_VERSION_MACRO ) # FindBoost in CMake version >=3.15 reports Boost_VERSION in x.y.z format
-  set( Boost_VERSION_MACRO Boost_VERSION )
-endif()
 
 if( WIN32 )
 
