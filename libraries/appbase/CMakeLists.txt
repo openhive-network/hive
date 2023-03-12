@@ -5,19 +5,6 @@ cmake_minimum_required( VERSION 2.8.12 )
 file(GLOB HEADERS "include/appbase/*.hpp")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
-SET(BOOST_COMPONENTS)
-LIST(APPEND BOOST_COMPONENTS thread
-                             date_time
-                             system
-                             filesystem
-                             chrono
-                             program_options
-                             unit_test_framework
-                             locale)
-
-cmake_policy(SET CMP0057 NEW)
-FIND_PACKAGE(Boost 1.58 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-set( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
 
 if( APPLE )
   # Apple Specific Options Here
@@ -39,15 +26,15 @@ if(ENABLE_COVERAGE_TESTING)
     SET(CMAKE_CXX_FLAGS "--coverage ${CMAKE_CXX_FLAGS}")
 endif()
 
-add_library( appbase
+add_library( appbase STATIC
              application.cpp
              ${HEADERS}
            )
 
-target_link_libraries( appbase hive_utilities ${Boost_LIBRARIES})
+target_link_libraries( appbase PUBLIC hive_utilities )
 
 target_include_directories( appbase
-                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" ${Boost_INCLUDE_DIR})
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 INSTALL( TARGETS
    appbase
