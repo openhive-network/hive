@@ -52,10 +52,20 @@ SET( SOURCES testnet_blockchain_configuration.cpp
    "${CMAKE_CURRENT_BINARY_DIR}/include/hive/protocol/hardfork.hpp"
 )
 
+cmake_policy(SET CMP0041 NEW)
+
 ## SORT .cpp by most likely to change / break compile
 add_library( hive_protocol STATIC ${SOURCES} )
 
-target_link_libraries( hive_protocol hive_schema fc )
+target_link_libraries( hive_protocol PUBLIC hive_schema_core fc_core )
+
+target_link_libraries ( hive_protocol PUBLIC
+  $<IF:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>, hive_schema_shared_boost, hive_schema>
+)
+
+target_link_libraries ( hive_protocol PUBLIC
+  $<IF:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>, fc_shared_boost, fc>
+)
 
 target_include_directories( hive_protocol
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
