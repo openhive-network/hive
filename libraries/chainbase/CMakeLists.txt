@@ -6,25 +6,12 @@ cmake_minimum_required( VERSION 2.8.12 )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 
-SET(BOOST_COMPONENTS)
-LIST(APPEND BOOST_COMPONENTS thread
-                             date_time
-                             system
-                             filesystem
-                             chrono
-                             unit_test_framework
-                             locale)
-
-SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
 
 IF( WIN32 )
   SET(BOOST_ROOT $ENV{BOOST_ROOT})
   set(Boost_USE_MULTITHREADED ON)
   set(BOOST_ALL_DYN_LINK OFF) # force dynamic linking for all libraries
 ENDIF(WIN32)
-
-cmake_policy(SET CMP0057 NEW)
-FIND_PACKAGE(Boost 1.57 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
 if( APPLE )
   # Apple Specific Options Here
@@ -63,9 +50,11 @@ endif()
 
 
 file(GLOB HEADERS "include/chainbase/*.hpp" "include/chainbase/util/*.hpp")
-add_library( chainbase src/chainbase.cpp ${HEADERS} )
-target_link_libraries( chainbase  ${Boost_LIBRARIES} hive_protocol fc)
-target_include_directories( chainbase PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"  ${Boost_INCLUDE_DIR} )
+add_library( chainbase STATIC src/chainbase.cpp ${HEADERS} )
+
+target_link_libraries( chainbase PUBLIC hive_protocol fc)
+
+target_include_directories( chainbase PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"  )
 
 if( CLANG_TIDY_EXE )
    set_target_properties(
