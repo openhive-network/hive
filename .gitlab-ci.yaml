@@ -347,7 +347,7 @@ hived_tests:
 
   variables:
     JUNIT_REPORT: tests/functional/python_tests/hived/report.xml
-    PYTEST_TIMEOUT_MINUTES: 21
+    PYTEST_TIMEOUT_MINUTES: 30
     PYTEST_NUMBER_OF_PROCESSES: 1
   script:
     - cd tests/functional/python_tests/hived
