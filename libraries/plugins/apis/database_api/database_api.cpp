@@ -2269,20 +2269,14 @@ int initialize_context(const char* context)
   {
     hive::chain::database* db = new hive::chain::database;
     init(*db, context);
-
-    int expected_block_num = db->head_block_num();
-    expected_block_num++;
-  
     haf_database_api_impls.emplace(std::make_pair(std::string(context), hive::plugins::database_api::database_api_impl(*db)));
-    return expected_block_num;
+    return db->head_block_num() + 1;
   }
   else
   {
     hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
     hive::chain::database& db = db_api_impl._db;
-    int expected_block_num = db.head_block_num();
-    expected_block_num++;
-    return expected_block_num;
+    return db.head_block_num() + 1;
   }
 }
 
@@ -2290,8 +2284,7 @@ namespace hive { namespace app {
 
 int get_expected_block_num_impl(const char* context)
 {
-  int expected_block_num = initialize_context(context);
-  return expected_block_num;
+  return initialize_context(context);
 }
 
 
