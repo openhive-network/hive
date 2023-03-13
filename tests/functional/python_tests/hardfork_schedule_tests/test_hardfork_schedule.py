@@ -113,6 +113,60 @@ def test_incorrect_hardfork_schedules(hardfork_schedule):
             arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
 
 
+@pytest.mark.parametrize(
+    'keys_to_drop', [
+        ['hardfork_schedule'],
+        ['genesis_time'],
+    ]
+)
+def test_alternate_chain_spec_necessary_keys(keys_to_drop):
+    hardfork_schedule = [
+        {"hardfork": 2, "block_num": 0},
+    ]
+
+    alternate_chain_spec = build_alternate_chain_spec(hardfork_schedule)
+    drop_keys_from(alternate_chain_spec, *keys_to_drop)
+
+    init_node = tt.InitNode()
+    write_to_json(alternate_chain_spec)
+    with pytest.raises(TimeoutError):
+        init_node.run(
+            arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
+
+
+@pytest.mark.parametrize(
+    'keys_to_drop', [
+        ['init_witnesses', 'hbd_init_supply', 'init_supply'],
+        ['hbd_init_supply', 'init_supply'],
+        ['init_witnesses', 'init_supply'],
+        ['init_witnesses', 'hbd_init_supply'],
+        ['init_witnesses'],
+        ['init_supply'],
+        ['hbd_init_supply']
+    ]
+)
+def test_alternate_chain_spec_optional_keys(keys_to_drop):
+    init_supply = 1000000
+    hbd_init_supply = 2000000
+    hardfork_schedule = [
+        {"hardfork": 2, "block_num": 0},
+    ]
+    witnesses_required_for_hf06_and_later = [f'witness-{witness_num}' for witness_num in range(16)]
+    alternate_chain_spec = build_alternate_chain_spec(hardfork_schedule, witnesses_required_for_hf06_and_later,
+                                                      init_supply, hbd_init_supply)
+    drop_keys_from(alternate_chain_spec, *keys_to_drop)
+
+    init_node = tt.InitNode()
+    write_to_json(alternate_chain_spec)
+    init_node.run(
+        arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
+
+
+def drop_keys_from(container: dict, *keys_to_drop) -> None:
+    for key in keys_to_drop:
+        del container[key]
+
+
 def build_alternate_chain_spec(hardfork_schedule: list, init_witnesses: list = None, init_supply: int = None,
                                hbd_init_supply: int = None) -> dict:
     return {
