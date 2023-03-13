@@ -374,6 +374,27 @@ struct condenser_api_fixture : database_fixture
     check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
 
+  /**
+   * Operations tested here:
+   *  custom_operation, custom_json_operation & producer_reward_operation
+   * 
+   * Note that custom_binary_operation has been disabled and does not occur in blockchain.
+   */
+  void custom_scenario( check_point_tester_t check_point_tester )
+  {
+    db->set_hardfork( HIVE_HARDFORK_1_27 );
+    generate_block();
+
+    ACTORS( (alice9ah) );
+    generate_block();
+
+    push_custom_operation( { "alice9ah" }, 7, { 'D', 'A', 'T', 'A' }, alice9ah_private_key );
+    push_custom_json_operation( {}, { "alice9ah" }, "7id", R"~("{"type": "json"}")~", alice9ah_private_key );
+
+    // All operations mentioned above can be checked now in 4th block, regardless of the fixture configuration.
+    check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+  }
+
 };
 
 BOOST_FIXTURE_TEST_SUITE( condenser_api_tests, condenser_api_fixture );
@@ -1125,6 +1146,34 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_proposal )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( get_ops_in_block_custom )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with custom_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 4 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_t expected_operations = { { // custom_operation
+      R"~({"trx_id":"3e44a79c011431391ccb98dff11a0025ee25ecbf","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"custom_operation","value":{"required_auths":["alice9ah"],"id":7,"data":"44415441"}},"operation_id":0})~",
+      R"~({"trx_id":"3e44a79c011431391ccb98dff11a0025ee25ecbf","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["custom",{"required_auths":["alice9ah"],"id":7,"data":"44415441"}]})~"
+      }, { // custom_json_operation
+      R"~({"trx_id":"79b98c81b10d32c2e284cb4b0d62ff609a14ed90","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"custom_json_operation","value":{"required_auths":[],"required_posting_auths":["alice9ah"],"id":"7id","json":"\"{\"type\": \"json\"}\""}},"operation_id":0})~",
+      R"~({"trx_id":"79b98c81b10d32c2e284cb4b0d62ff609a14ed90","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["custom_json",{"required_auths":[],"required_posting_auths":["alice9ah"],"id":"7id","json":"\"{\"type\": \"json\"}\""}]})~"
+      }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":4,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8684058191","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":4,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["producer_reward",{"producer":"initminer","vesting_shares":"8684.058191 VESTS"}]})~"
+      } };
+    expected_t expected_virtual_operations = { expected_operations[2] };
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 4 );
+  };
+
+  custom_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_ops_in_block_tests
 
 BOOST_FIXTURE_TEST_SUITE( condenser_get_transaction_tests, condenser_api_fixture );
@@ -1429,12 +1478,6 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test ) // To be split into sc
   recover_account( "bob0ah", edgar0ah_private_key, bob0ah_private_key );
   expected_operations.insert( { OP_TAG(recover_account_operation), fc::optional< expected_operation_result_t >() } );
 
-  push_custom_operation( { "carol0ah" }, 7, { 'D', 'A', 'T', 'A' }, carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(custom_operation), fc::optional< expected_operation_result_t >() } );
-
-  push_custom_json_operation( {}, { "carol0ah" }, "7id", "{"type": "json"}", carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(custom_json_operation), fc::optional< expected_operation_result_t >() } );
-  // custom_binary_operation, reset_account_operation & set_reset_account_operation have been disabled and do not occur in blockchain
 
   decline_voting_rights( "dan0ah", true, dan0ah_private_key );
   expected_operations.insert( { OP_TAG(decline_voting_rights_operation), fc::optional< expected_operation_result_t >() } );
