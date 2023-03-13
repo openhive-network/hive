@@ -264,21 +264,19 @@ void verify_authority_accounts_exist(
 }
 
 const account_object& create_account( database& db, const account_name_type& name, const public_key_type& key,
-  const time_point_sec& time, bool mined, const account_name_type& recovery_account, asset initial_delegation = asset( 0, VESTS_SYMBOL ) )
+  const time_point_sec& time, bool mined, const account_object* recovery_account = nullptr, asset initial_delegation = asset( 0, VESTS_SYMBOL ) )
 {
-  account_name_type actual_recovery_account;
   if( db.has_hardfork( HIVE_HARDFORK_0_11 ) )
   {
-    FC_TODO( "If after HF 20, there are no temp account creations, the HF check can be removed." )
-    if( !db.has_hardfork( HIVE_HARDFORK_0_20__1782 ) || ( recovery_account != HIVE_TEMP_ACCOUNT ) )
-      actual_recovery_account = recovery_account;
+    if( recovery_account && recovery_account->get_name() == HIVE_TEMP_ACCOUNT )
+      recovery_account = nullptr;
   }
   else
   {
-    actual_recovery_account = "steem";
+    recovery_account = &db.get_account( "steem" ); //not using find_account to make sure "steem" already exists
   }
 
-  return db.create< account_object >( name, key, time, mined, actual_recovery_account,
+  return db.create< account_object >( name, key, time, mined, recovery_account,
     !db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) /*voting mana 100%*/, initial_delegation );
 }
 
@@ -337,7 +335,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
     _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o.fee );
   }
 
-  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, o.creator );
+  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, &creator );
 
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
@@ -442,7 +440,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o.fee );
   }
 
-  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, o.creator, o.delegation );
+  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, &creator, o.delegation );
 
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
@@ -2096,7 +2094,7 @@ void pow_apply( database& db, Operation o )
   auto itr = accounts_by_name.find(o.get_worker_account());
   if(itr == accounts_by_name.end())
   {
-    const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp.time, true /*mined*/, account_name_type() );
+    const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp.time, true /*mined*/ );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
 #ifdef COLLECT_ACCOUNT_METADATA
@@ -2234,7 +2232,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   if(itr == accounts_by_name.end())
   {
     FC_ASSERT( o.new_owner_key.valid(), "New owner key is not valid." );
-    const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, true /*mined*/, account_name_type() );
+    const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, true /*mined*/ );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
 #ifdef COLLECT_ACCOUNT_METADATA
@@ -2496,7 +2494,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
     a.pending_claimed_accounts--;
   });
 
-  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, o.creator );
+  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, &creator );
 
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
@@ -2525,14 +2523,17 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 {
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
 
-  if ( account_to_recover.has_recovery_account() )   // Make sure recovery matches expected recovery account
+  if ( account_to_recover.has_recovery_account() ) // Make sure recovery matches expected recovery account
   {
-    FC_ASSERT( account_to_recover.get_recovery_account() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
+    const auto& recovery_account = _db.get_account( account_to_recover.get_recovery_account() );
+    FC_ASSERT( recovery_account.get_name() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
     if( o.recovery_account == HIVE_TEMP_ACCOUNT )
       wlog( "Recovery by temp account" );
   }
-  else                                                  // Empty string recovery account defaults to top witness
+  else // Empty recovery account defaults to top witness
+  {
     FC_ASSERT( (_db.get_index< witness_index, by_vote_name >().begin()->owner == o.recovery_account), "Top witness must recover an account with no recovery partner." );
+  }
 
   const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
@@ -2588,7 +2589,7 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   const auto& account = _db.get_account( o.account_to_recover );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
-    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), account.last_account_recovery ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
+    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), account.get_last_account_recovery_time() ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
 
   const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
@@ -2613,7 +2614,7 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   _db.update_owner_authority( account, o.new_owner_authority );
   _db.modify( account, [&]( account_object& a )
   {
-    a.last_account_recovery = _db.head_block_time();
+    a.set_last_account_recovery_time( _db.head_block_time() );
   });
 }
 
@@ -2631,7 +2632,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
     //ABW: it is possible to request change to currently set recovery agent (empty operation)
     _db.create< change_recovery_account_request_object >( account_to_recover, new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
   }
-  else if( account_to_recover.get_recovery_account() != o.new_recovery_account ) // Change existing request
+  else if( account_to_recover.get_recovery_account() != new_recovery_account.get_id() ) // Change existing request
   {
     //ABW: it is possible to request change to already requested new recovery agent (operation only resets timer)
     _db.modify( *request, [&]( change_recovery_account_request_object& req )

@@ -3770,7 +3770,9 @@ void database::account_recovery_processing()
   while( change_req != change_req_idx.end() && change_req->get_execution_time() <= head_block_time() )
   {
     const auto& account = get_account( change_req->get_account_to_recover() );
-    const auto& old_recovery_account_name = account.get_recovery_account();
+    account_name_type old_recovery_account_name;
+    if( account.has_recovery_account() )
+      old_recovery_account_name = get_account( account.get_recovery_account() ).get_name();
     const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
     modify( account, [&]( account_object& a )
     {
@@ -4165,6 +4167,25 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
     for( const auto& witness : configuration_data.get_init_witnesses() )
       init_witness( witness );
 #endif
+
+    // "steem" account was used as system account even before it was officially created; that bug
+    // didn't have effect on the blockchain by chance, but caused problems during optimizations, so
+    // now the account is officially created as system account (with all the same features it had -
+    // there is not much difference between mined account and genesis one, just creation time);
+    // the following transaction mined that account officially:
+    // https://hiveblocks.com/tx/46ddcba847f2297d13e32be07d72d15c530a7271
+    {
+      const char* STEEM_ACCOUNT_NAME = "steem";
+      auto STEEM_PUBLIC_KEY = public_key_type( HIVE_ADDRESS_PREFIX"65wH1LZ7BfSHcK69SShnqCAH5xdoSZpGkUjmzHJ5GCuxEK9V5G" );
+      create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, true, nullptr, true, asset( 0, VESTS_SYMBOL ) );
+      create< account_authority_object >( [&]( account_authority_object& auth )
+      {
+        auth.account = STEEM_ACCOUNT_NAME;
+        auth.owner = authority( 1, STEEM_PUBLIC_KEY, 1 );
+        auth.active = auth.owner;
+        auth.posting = auth.owner;
+      } );
+    }
 
     create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( init_supply, HIVE_SYMBOL ), asset( hbd_init_supply, HBD_SYMBOL ) );
     // feed initial token supply to first miner

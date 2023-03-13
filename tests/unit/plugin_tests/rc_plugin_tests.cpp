@@ -52,50 +52,11 @@ BOOST_AUTO_TEST_CASE( account_creation )
 
     generate_block();
 
-    PREP_ACTOR( steem )
-    //ABW: there was this idea to create "steem" account in genesis block but with fake data (so it has
-    //the same as today creation time etc.) so it is available when it is used as recovery account;
-    //this test guards creation of rc_account_object for that account in case we actually implement
-    //such "hack"
-    {
-      pow_operation op;
-      op.worker_account = "steem";
-      op.block_id = db->head_block_id();
-      op.work.worker = steem_public_key;
-      //note: we cannot compute nonce once and hardcode it in the test because HIVE_BLOCKCHAIN_VERSION
-      //becomes part of first block as extension, which means when version changes (because we have new
-      //hardfork coming or just because of HIVE_ENABLE_SMT) the nonces will have to change as well
-      op.nonce = -1;
-      do
-      {
-        ++op.nonce;
-        op.work.create( steem_private_key, op.work_input() );
-      }
-      while( op.work.work >= db->get_pow_target() );
-      //default props
-
-      //pow_operation does not need signature - signing it anyway leads to superfluous signature error
-      //on the other hand current RC mechanism needs to decide who pays for the transaction and when there is
-      //no signature no one is paying which is also an error; therefore we need some other operation that
-      //actually needs a signature; moreover we cannot sign transaction with "steem" account because signature
-      //is verified before operations are executed, so there is no "steem" authority object yet
-      comment_operation comment;
-      comment.author = "initminer"; //cannot be "steem"
-      comment.permlink = "test";
-      comment.body = "Hello world!";
-
-      signed_transaction tx;
-      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-      tx.operations.push_back( op );
-      tx.operations.push_back( comment );
-      push_transaction( tx, init_account_priv_key ); //cannot be steem_private_key
-    }
-    generate_block();
-
+    //ABW: the idea/hack to fix problem of "steem" account being used (as recovery) before it was actually
+    //created was executed - it is now created in genesis block
     auto* rc_steem = db->find< rc_account_object, by_name >( "steem" );
     BOOST_REQUIRE( rc_steem != nullptr );
 
-    //now the same with "normal" account
     PREP_ACTOR( alice )
     create_with_pow( "alice", alice_public_key, alice_private_key );
     generate_block();

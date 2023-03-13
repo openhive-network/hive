@@ -280,13 +280,14 @@ BOOST_AUTO_TEST_CASE( save_test_02 )
 
     {
       db->gather_balance( "alice", get_balance( "alice" ), get_hbd_balance( "alice" ) );
+      //there is also "steem" - genesis account that is affected by HF23
     }
     {
-      BOOST_REQUIRE_EQUAL( db->get_hardfork_property_object().h23_balances.size(), 1u );
+      BOOST_REQUIRE_EQUAL( db->get_hardfork_property_object().h23_balances.size(), 2u );
 
       auto alice_balances = get_balances( db->get_account( "alice" ) );
 
-      BOOST_REQUIRE_EQUAL( db->get_hardfork_property_object().h23_balances.size(), 1u );
+      BOOST_REQUIRE_EQUAL( db->get_hardfork_property_object().h23_balances.size(), 2u );
       BOOST_REQUIRE( cmp_hf23_item( db->get_hardfork_property_object().h23_balances.begin()->second, alice_balances ) );
     }
 
@@ -320,12 +321,13 @@ BOOST_AUTO_TEST_CASE( save_test_01 )
 
       db->gather_balance( "alice", get_balance( "alice" ), get_hbd_balance( "alice" ) );
       db->gather_balance( "bob", get_balance( "bob" ), get_hbd_balance( "bob" ) );
+      //there is also "steem" - genesis account that is affected by HF23
     }
     {
       auto alice_balances = get_balances( db->get_account( "alice" ) );
       auto bob_balances = get_balances( db->get_account( "bob" ) );
 
-      BOOST_REQUIRE_EQUAL( db->get_hardfork_property_object().h23_balances.size(), 2u );
+      BOOST_REQUIRE_EQUAL( db->get_hardfork_property_object().h23_balances.size(), 3u );
 
       auto iter = db->get_hardfork_property_object().h23_balances.begin();
 
