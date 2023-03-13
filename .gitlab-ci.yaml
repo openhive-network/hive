@@ -102,14 +102,32 @@ mirrornet_node_build:
     REGISTRY_URL: "$CI_REGISTRY_IMAGE"
     BINARIES_DIR: "hived-mirrornet-binaries"
   script:
-    - echo "Building hived in mirrornet mode"
-    - ./scripts/ci-helpers/build_instance.sh
-      "$IMAGE_TAG"
-      "$SOURCES_DIR"
-      "$REGISTRY_URL"
-      --network-type="mirrornet"
-      --export-binaries="$BINARIES_DIR"
-    - chmod -Rc a+rwx "$BINARIES_DIR"
+    - |
+      echo "Building hived in mirrornet mode"
+      docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+      ./scripts/ci-helpers/build_instance.sh \
+        "$IMAGE_TAG" \
+        "$SOURCES_DIR" \
+        "$REGISTRY_URL" \
+        --network-type="mirrornet" \
+        --export-binaries="$BINARIES_DIR"
+      docker images
+      IMAGE_NAME_PREFIX="$CI_REGISTRY_IMAGE/mirrornet-instance:mirrornet-instance"
+      docker push $IMAGE_NAME_PREFIX-$CI_COMMIT_SHA
+      if [[ "$CI_COMMIT_BRANCH" == "develop" ]];
+      then
+        docker tag $IMAGE_NAME_PREFIX-$CI_COMMIT_SHA $IMAGE_NAME_PREFIX-latest
+        docker push $IMAGE_NAME_PREFIX-latest
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]];
+      then
+        docker tag $IMAGE_NAME_PREFIX-$CI_COMMIT_SHA $IMAGE_NAME_PREFIX-stable
+        docker push $IMAGE_NAME_PREFIX-stable
+      elif [[ -n "$CI_COMMIT_TAG" ]];
+      then
+        docker tag $IMAGE_NAME_PREFIX-$CI_COMMIT_SHA $IMAGE_NAME_PREFIX-$CI_COMMIT_TAG
+        docker push $IMAGE_NAME_PREFIX-$CI_COMMIT_TAG
+      fi
+      chmod -Rc a+rwx "$BINARIES_DIR"
   artifacts:
     paths:
       - "$BINARIES_DIR"
