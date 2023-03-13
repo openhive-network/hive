@@ -69,6 +69,31 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name )
 
 ENDMACRO()
 
+MACRO( ADD_TARGET_OPENSSL_LIBRARIES target_name use_static_libs )
+
+  IF ( ${use_static_libs} )
+    MESSAGE( STATUS "Setting up OpenSSL STATIC libraries for target: ${target_name}" )
+    SET( OPENSSL_USE_STATIC_LIBS TRUE )
+  ELSE() 
+    MESSAGE( STATUS "Setting up OpenSSL SHARED libraries for target: ${target_name}" )
+  ENDIF ()
+
+  FIND_PACKAGE( OpenSSL REQUIRED )
+
+  TARGET_LINK_LIBRARIES( ${target_name} INTERFACE ${OPENSSL_LIBRARIES} )
+
+  MESSAGE ( STATUS "Detected OpenSSL libs: ${OPENSSL_LIBRARIES}" )
+
+  UNSET ( OPENSSL_USE_STATIC_LIBS )
+  UNSET (OPENSSL_DIR CACHE  )
+  UNSET (OPENSSL_LIBRARIES CACHE)
+  UNSET (OPENSSL_VERSION CACHE)
+  UNSET (OPENSSL_CRYPTO_LIBRARY CACHE )
+  UNSET (OPENSSL_SSL_LIBRARY CACHE )
+  UNSET (OPENSSL_FOUND CACHE )
+
+ENDMACRO()
+
 # Allows to define Hive project specific executable target.
 # By default, this target depends on Boost libraries defined in ADD_TARGET_BOOST_LIBRARIES.
 # In very rare cases when this is not needed, linker will skip such libraries...
