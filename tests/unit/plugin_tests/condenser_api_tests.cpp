@@ -376,6 +376,50 @@ struct condenser_api_fixture : database_fixture
 
   /**
    * Operations tested here:
+   *  claim_account_operation, create_claimed_account_operation,
+   *  change_recovery_account_operation, changed_recovery_account_operation,
+   *  request_account_recovery_operation, recover_account_operation,
+   *  account_update_operation & account_update2_operation
+   * 
+   * Note that reset_account_operation & set_reset_account_operation have been disabled and do not occur in blockchain.
+   */
+  void account_scenario( check_point_tester_t check_point_tester )
+  {
+    db->set_hardfork( HIVE_HARDFORK_1_27 );
+    generate_block();
+
+    ACTORS( (alice8ah)(carol8ah) );
+    // We need elected witness for claim_account_operation to succeed.
+    fund( "alice8ah", 5000 );
+    vest( "alice8ah", 5000 );
+    generate_block();
+    witness_vote( "alice8ah", "initminer", alice8ah_private_key );
+    // Generate number of blocks sufficient for the witness to be elected & scheduled (and get a subsidized account).
+    for( int i = 0; i < 42; ++i)
+      generate_block();
+
+    account_update( "alice8ah", alice8ah_private_key.get_public_key(), R"~("{"position":"top"}")~",
+                    fc::optional<authority>(), fc::optional<authority>(), fc::optional<authority>(), alice8ah_private_key );
+
+    claim_account( "alice8ah", ASSET( "0.000 TESTS" ), alice8ah_private_key );
+    PREP_ACTOR( ben8ah )
+    create_claimed_account( "alice8ah", "ben8ah", ben8ah_public_key, ben8ah_post_key.get_public_key(), "", alice8ah_private_key );
+
+    vest( HIVE_INIT_MINER_NAME, "ben8ah", ASSET( "1000.000 TESTS" ) );
+    change_recovery_account( "ben8ah", HIVE_INIT_MINER_NAME, ben8ah_private_key );
+    account_update2( "ben8ah", authority(1, carol8ah_public_key,1), fc::optional<authority>(), fc::optional<authority>(),
+                     ben8ah_private_key.get_public_key(), R"~("{"success":true}")~", "", ben8ah_private_key );
+    request_account_recovery( "alice8ah", "ben8ah", authority( 1, alice8ah_private_key.get_public_key(), 1 ), alice8ah_private_key );
+    recover_account( "ben8ah", alice8ah_private_key, ben8ah_private_key );
+
+    // Now all the operations mentioned above can be checked. All of them will appear in 46th block,
+    // except changed_recovery_account_operation - its block number depends on test configuration.
+    // In standard configuration of this fixture it's 65th block.
+    check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+  }
+
+  /**
+   * Operations tested here:
    *  custom_operation, custom_json_operation & producer_reward_operation
    * 
    * Note that custom_binary_operation has been disabled and does not occur in blockchain.
@@ -1146,6 +1190,68 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_proposal )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( get_ops_in_block_account )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with account_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 65 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_t expected_operations = { { // account_update_operation
+      R"~({"trx_id":"c585a5c5811c8a0a9bbbdcccaf9fdd25d2cf4f2d","block":46,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_update_operation","value":{"account":"alice8ah","memo_key":"TST6gpma8a74jnePfFaR5AeAncusvfEkKLQ6webzKdRLrxcuEsDDx","json_metadata":"\"{\"position\":\"top\"}\""}},"operation_id":0})~",
+      R"~({"trx_id":"c585a5c5811c8a0a9bbbdcccaf9fdd25d2cf4f2d","block":46,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":["account_update",{"account":"alice8ah","memo_key":"TST6gpma8a74jnePfFaR5AeAncusvfEkKLQ6webzKdRLrxcuEsDDx","json_metadata":"\"{\"position\":\"top\"}\""}]})~"
+      }, { // claim_account_operation
+      R"~({"trx_id":"3e760e26dd8837a42b37f79b1e91ad015b20cf5e","block":46,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"claim_account_operation","value":{"creator":"alice8ah","fee":{"amount":"0","precision":3,"nai":"@@000000021"},"extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"3e760e26dd8837a42b37f79b1e91ad015b20cf5e","block":46,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":["claim_account",{"creator":"alice8ah","fee":"0.000 TESTS","extensions":[]}]})~"
+      }, { // create_claimed_account_operation
+      R"~({"trx_id":"ef27e26c2043a1c9a74700284e65670ec0e4ab23","block":46,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"create_claimed_account_operation","value":{"creator":"alice8ah","new_account_name":"ben8ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7NVJSvcpYMSVkt1mzJ7uo8Ema7uwsuSypk9wjNjEK9cDyN6v3S",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7NVJSvcpYMSVkt1mzJ7uo8Ema7uwsuSypk9wjNjEK9cDyN6v3S",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7F7N2n8RYwoBkS3rCtwDkaTdnbkctCm3V3fn2cDvdx988XMNZv",1]]},"memo_key":"TST7F7N2n8RYwoBkS3rCtwDkaTdnbkctCm3V3fn2cDvdx988XMNZv","json_metadata":"","extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"ef27e26c2043a1c9a74700284e65670ec0e4ab23","block":46,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":["create_claimed_account",{"creator":"alice8ah","new_account_name":"ben8ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7NVJSvcpYMSVkt1mzJ7uo8Ema7uwsuSypk9wjNjEK9cDyN6v3S",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7NVJSvcpYMSVkt1mzJ7uo8Ema7uwsuSypk9wjNjEK9cDyN6v3S",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7F7N2n8RYwoBkS3rCtwDkaTdnbkctCm3V3fn2cDvdx988XMNZv",1]]},"memo_key":"TST7F7N2n8RYwoBkS3rCtwDkaTdnbkctCm3V3fn2cDvdx988XMNZv","json_metadata":"","extensions":[]}]})~"
+      }, { // account_created_operation
+      R"~({"trx_id":"ef27e26c2043a1c9a74700284e65670ec0e4ab23","block":46,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_created_operation","value":{"new_account_name":"ben8ah","creator":"alice8ah","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"ef27e26c2043a1c9a74700284e65670ec0e4ab23","block":46,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:15","op":["account_created",{"new_account_name":"ben8ah","creator":"alice8ah","initial_vesting_shares":"0.000000 VESTS","initial_delegation":"0.000000 VESTS"}]})~"
+      }, { // transfer_to_vesting_operation
+      R"~({"trx_id":"58912caa28fd404f51c087d19700847341f98314","block":46,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"transfer_to_vesting_operation","value":{"from":"initminer","to":"ben8ah","amount":{"amount":"1000000","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
+      R"~({"trx_id":"58912caa28fd404f51c087d19700847341f98314","block":46,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":["transfer_to_vesting",{"from":"initminer","to":"ben8ah","amount":"1000.000 TESTS"}]})~"
+      }, { // transfer_to_vesting_completed_operation
+      R"~({"trx_id":"58912caa28fd404f51c087d19700847341f98314","block":46,"trx_in_block":3,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:15","op":{"type":"transfer_to_vesting_completed_operation","value":{"from_account":"initminer","to_account":"ben8ah","hive_vested":{"amount":"1000000","precision":3,"nai":"@@000000021"},"vesting_shares_received":{"amount":"908200580279667","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"58912caa28fd404f51c087d19700847341f98314","block":46,"trx_in_block":3,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:15","op":["transfer_to_vesting_completed",{"from_account":"initminer","to_account":"ben8ah","hive_vested":"1000.000 TESTS","vesting_shares_received":"908200580.279667 VESTS"}]})~"
+      }, { // change_recovery_account_operation
+      R"~({"trx_id":"049b20d348ac2a9aa04c58db40de22269b04cce5","block":46,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"change_recovery_account_operation","value":{"account_to_recover":"ben8ah","new_recovery_account":"initminer","extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"049b20d348ac2a9aa04c58db40de22269b04cce5","block":46,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":["change_recovery_account",{"account_to_recover":"ben8ah","new_recovery_account":"initminer","extensions":[]}]})~"
+      }, { // account_update2_operation
+      R"~({"trx_id":"1e39af2a1265a8a658e1c0bb610e5e29bb31e030","block":46,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_update2_operation","value":{"account":"ben8ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5Wteiod1TC7Wraux73AZvMsjrA5b3E1LTsv1dZa3CB9V4LhXTN",1]]},"memo_key":"TST7NVJSvcpYMSVkt1mzJ7uo8Ema7uwsuSypk9wjNjEK9cDyN6v3S","json_metadata":"\"{\"success\":true}\"","posting_json_metadata":"","extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"1e39af2a1265a8a658e1c0bb610e5e29bb31e030","block":46,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":["account_update2",{"account":"ben8ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5Wteiod1TC7Wraux73AZvMsjrA5b3E1LTsv1dZa3CB9V4LhXTN",1]]},"memo_key":"TST7NVJSvcpYMSVkt1mzJ7uo8Ema7uwsuSypk9wjNjEK9cDyN6v3S","json_metadata":"\"{\"success\":true}\"","posting_json_metadata":"","extensions":[]}]})~"
+      }, { // request_account_recovery_operation
+      R"~({"trx_id":"2a1f4e331c8d3451837dd4445e5310ce37a4a2b0","block":46,"trx_in_block":6,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"request_account_recovery_operation","value":{"recovery_account":"alice8ah","account_to_recover":"ben8ah","new_owner_authority":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6gpma8a74jnePfFaR5AeAncusvfEkKLQ6webzKdRLrxcuEsDDx",1]]},"extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"2a1f4e331c8d3451837dd4445e5310ce37a4a2b0","block":46,"trx_in_block":6,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":["request_account_recovery",{"recovery_account":"alice8ah","account_to_recover":"ben8ah","new_owner_authority":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6gpma8a74jnePfFaR5AeAncusvfEkKLQ6webzKdRLrxcuEsDDx",1]]},"extensions":[]}]})~"
+      }, { // recover_account_operation
+      R"~({"trx_id":"2b9456a25d3e86df2cde6cfd3c77f445358b143b","block":46,"trx_in_block":7,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"recover_account_operation","value":{"account_to_recover":"ben8ah","new_owner_authority":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6gpma8a74jnePfFaR5AeAncusvfEkKLQ6webzKdRLrxcuEsDDx",1]]},"recent_owner_authority":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7NVJSvcpYMSVkt1mzJ7uo8Ema7uwsuSypk9wjNjEK9cDyN6v3S",1]]},"extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"2b9456a25d3e86df2cde6cfd3c77f445358b143b","block":46,"trx_in_block":7,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":["recover_account",{"account_to_recover":"ben8ah","new_owner_authority":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6gpma8a74jnePfFaR5AeAncusvfEkKLQ6webzKdRLrxcuEsDDx",1]]},"recent_owner_authority":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7NVJSvcpYMSVkt1mzJ7uo8Ema7uwsuSypk9wjNjEK9cDyN6v3S",1]]},"extensions":[]}]})~"
+      }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":46,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:18","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"209791628548","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":46,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:18","op":["producer_reward",{"producer":"initminer","vesting_shares":"209791.628548 VESTS"}]})~"
+      } };
+    expected_t expected_virtual_operations = { expected_operations[3], expected_operations[5], expected_operations[10] };
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 46 );
+
+    expected_operations = { { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":65,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:03:15","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"209740354761","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":65,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:03:15","op":["producer_reward",{"producer":"initminer","vesting_shares":"209740.354761 VESTS"}]})~"
+      }, { // changed_recovery_account_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":65,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:03:15","op":{"type":"changed_recovery_account_operation","value":{"account":"ben8ah","old_recovery_account":"initminer","new_recovery_account":"initminer"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":65,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:03:15","op":["changed_recovery_account",{"account":"ben8ah","old_recovery_account":"initminer","new_recovery_account":"initminer"}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 65 );
+  };
+
+  account_scenario( check_point_tester);
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_CASE( get_ops_in_block_custom )
 { try {
 
@@ -1456,52 +1562,12 @@ BOOST_AUTO_TEST_CASE( account_history_by_condenser_test ) // To be split into sc
   generate_block();
   
   /*
-  claim_account( "edgar0ah", ASSET( "0.000 TESTS" ), edgar0ah_private_key );
-  expected_operations.insert( { OP_TAG(claim_account_operation), fc::optional< expected_operation_result_t >() } );
-
-  PREP_ACTOR( bob0ah )
-  create_claimed_account( "edgar0ah", "bob0ah", bob0ah_public_key, bob0ah_post_key.get_public_key(), "", edgar0ah_private_key );
-  expected_operations.insert( { OP_TAG(create_claimed_account_operation), fc::optional< expected_operation_result_t >() } );
-
-  vest( HIVE_INIT_MINER_NAME, "bob0ah", ASSET( "1000.000 TESTS" ) );
-
-  change_recovery_account( "bob0ah", HIVE_INIT_MINER_NAME, bob0ah_private_key );
-  expected_operations.insert( { OP_TAG(change_recovery_account_operation), fc::optional< expected_operation_result_t >() } );
-
-  account_update( "bob0ah", bob0ah_private_key.get_public_key(), "{"success":true}",
-                  authority(1, carol0ah_public_key,1), fc::optional<authority>(), fc::optional<authority>(), bob0ah_private_key );
-  expected_operations.insert( { OP_TAG(account_update_operation), fc::optional< expected_operation_result_t >() } );
-
-  request_account_recovery( "edgar0ah", "bob0ah", authority( 1, edgar0ah_private_key.get_public_key(), 1 ), edgar0ah_private_key );
-  expected_operations.insert( { OP_TAG(request_account_recovery_operation), fc::optional< expected_operation_result_t >() } );
-
-  recover_account( "bob0ah", edgar0ah_private_key, bob0ah_private_key );
-  expected_operations.insert( { OP_TAG(recover_account_operation), fc::optional< expected_operation_result_t >() } );
-
-
   decline_voting_rights( "dan0ah", true, dan0ah_private_key );
   expected_operations.insert( { OP_TAG(decline_voting_rights_operation), fc::optional< expected_operation_result_t >() } );
 
   recurrent_transfer( "carol0ah", "dan0ah", ASSET( "0.037 TESTS" ), "With love", 24, 2, carol0ah_private_key );
   expected_operations.insert( { OP_TAG(recurrent_transfer_operation), fc::optional< expected_operation_result_t >() } );
   expected_operations.insert( { OP_TAG(fill_recurrent_transfer_operation), fc::optional< expected_operation_result_t >() } );
-
-  ACTORS((alice0ah))
-  expected_operations.insert( { OP_TAG(account_create_operation), fc::optional< expected_operation_result_t >() } );
-  fund( "alice0ah", 500000000 );
-
-  account_update2( "alice0ah", fc::optional<authority>(), fc::optional<authority>(), fc::optional<authority>(),
-                   fc::optional<fc::ecc::public_key>(), "{"position":"top"}", "{"winner":"me"}", alice0ah_private_key );
-  expected_operations.insert( { OP_TAG(account_update2_operation), fc::optional< expected_operation_result_t >() } );
-
-  // transfer_operation from alice0ah
-  transfer("alice0ah", "bob0ah", asset(1234, HIVE_SYMBOL));
-  expected_operations.insert( { OP_TAG(transfer_operation), fc::optional< expected_operation_result_t >() } );
-
-  generate_until_irreversible_block( *this, expected_operations, fc::optional<uint32_t>() ); // clears the container nominally
-
-  expected_operations.insert( { OP_TAG(changed_recovery_account_operation), fc::optional< expected_operation_result_t >() } );
-  generate_until_irreversible_block( *this, expected_operations, 1313 ); // clears the container nominally
 
 */
 
