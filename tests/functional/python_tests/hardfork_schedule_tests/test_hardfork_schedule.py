@@ -162,6 +162,26 @@ def test_alternate_chain_spec_optional_keys(keys_to_drop):
         arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
 
 
+@pytest.mark.parametrize(
+    'witnesses', [
+        [1324, 123456],
+        ['1234', '123456'],
+        ['ABC', '.abcde'],
+        ['a', 'ab'],
+    ]
+)
+def test_invalid_witness_names(witnesses):
+    hardfork_schedule = [
+        {"hardfork": 2, "block_num": 0},
+    ]
+    alternate_chain_spec = build_alternate_chain_spec(hardfork_schedule, witnesses)
+    init_node = tt.InitNode()
+    write_to_json(alternate_chain_spec)
+    with pytest.raises(TimeoutError):
+        init_node.run(
+            arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
+
+
 def drop_keys_from(container: dict, *keys_to_drop) -> None:
     for key in keys_to_drop:
         del container[key]
