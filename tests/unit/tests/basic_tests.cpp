@@ -745,7 +745,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   hive::chain::util::decoded_types_data_storage& dtds_instance = hive::chain::util::decoded_types_data_storage::get_instance();
 
   /* comparing strings is more human readable if any error occurs */
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_object>().str(), fc::ripemd160("0d547bb377ce779610a5e5d71c64ffcffacd46e2").str() );
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_object>().str(), fc::ripemd160("f99932d25f555674051979e9b520b12341a5c173").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_metadata_object>().str(), fc::ripemd160("09569dbdd124e140fc7e7e5a6c3d1b1355f1a26a").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::account_authority_object>().str(), fc::ripemd160("532a9294e8cd92ac4ab5c085edf48ba3aca0d109").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::chain::vesting_delegation_object>().str(), fc::ripemd160("8eedd68bc1cb33ae392727a1aa888fc87034ccf7").str() );
