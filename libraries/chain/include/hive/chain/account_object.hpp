@@ -30,11 +30,13 @@ namespace hive { namespace chain {
       account_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _name, const public_key_type& _memo_key,
         const time_point_sec& _creation_time, bool _mined,
-        const account_name_type& _recovery_account,
+        const account_object* _recovery_account,
         bool _fill_mana, const asset& incoming_delegation )
-        : id( _id ), name( _name ), recovery_account( _recovery_account ), created( _creation_time ),
+      : id( _id ), name( _name ), created( _creation_time ),
         mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
       {
+        if( _recovery_account != nullptr )
+          recovery_account = _recovery_account->get_id();
         received_vesting_shares += incoming_delegation;
         voting_manabar.last_update_time = _creation_time.sec_since_epoch();
         downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
@@ -104,22 +106,31 @@ namespace hive { namespace chain {
       }
 
       //tells if account has some designated account that can initiate recovery (if not, top witness can)
-      bool has_recovery_account() const { return recovery_account.length(); }
+      bool has_recovery_account() const { return recovery_account != account_id_type(); }
       //account's recovery account (if any), that is, an account that can authorize request_account_recovery_operation
-      const account_name_type& get_recovery_account() const { return recovery_account; }
+      account_id_type get_recovery_account() const { return recovery_account; }
       //sets new recovery account
       void set_recovery_account(const account_object& new_recovery_account)
       {
-        recovery_account = new_recovery_account.name;
+        recovery_account = new_recovery_account.get_id();
+      }
+      //timestamp of last time account owner authority was successfully recovered
+      time_point_sec get_last_account_recovery_time() const { return last_account_recovery; }
+      //sets time of owner authority recovery
+      void set_last_account_recovery_time( time_point_sec recovery_time )
+      {
+        last_account_recovery = recovery_time;
       }
 
       //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
 
     private:
       account_id_type   proxy;
+
+      account_id_type   recovery_account;
+      time_point_sec    last_account_recovery;
+
       account_name_type name;
-      account_name_type recovery_account; //cannot be changed to id because there are plenty of accounts with "steem" recovery created before it was created in b.1097
-                                          //ABW: actually we could create "steem" account at genesis, just fake some of its properties to keep history intact
 
     public:
       uint128_t         hbd_seconds = 0; ///< total HBD * how long it has been held
@@ -175,7 +186,6 @@ namespace hive { namespace chain {
       time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
       time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
       time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
-      time_point_sec    last_account_recovery;
     private:
       time_point_sec    created; //(not read by consensus code)
     public:

@@ -489,9 +489,8 @@ struct api_account_object
     last_account_update( a.last_account_update ),
     created( a.get_creation_time() ),
     mined( a.was_mined() ),
-    recovery_account( a.get_recovery_account() ),
     reset_account( HIVE_NULL_ACCOUNT ),
-    last_account_recovery( a.last_account_recovery ),
+    last_account_recovery( a.get_last_account_recovery_time() ),
     post_count( a.post_count ),
     can_vote( a.can_vote ),
     voting_manabar( a.voting_manabar ),
@@ -534,6 +533,8 @@ struct api_account_object
   {
     if( a.has_proxy() )
       proxy = db.get_account( a.get_proxy() ).get_name();
+    if( a.has_recovery_account() )
+      recovery_account = db.get_account( a.get_recovery_account() ).get_name();
 
     size_t n = a.proxied_vsf_votes.size();
     proxied_vsf_votes.reserve( n );
