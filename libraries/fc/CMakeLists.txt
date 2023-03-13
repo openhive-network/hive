@@ -143,9 +143,6 @@ IF(NOT "$ENV{OPENSSL_ROOT_DIR}" STREQUAL "")
   message(STATUS "Setting up OpenSSL root and include vars to ${OPENSSL_ROOT_DIR}, ${OPENSSL_INCLUDE_DIR}")
 ENDIF()
 
-
-find_package(OpenSSL REQUIRED)
-
 set( CMAKE_FIND_LIBRARY_SUFFIXES ${ORIGINAL_LIB_SUFFIXES} )
 
 option( UNITY_BUILD OFF )
@@ -249,7 +246,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/git_revision.cpp.in" "${CMAKE_CU
 list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
 list(APPEND sources ${fc_headers})
 
-add_subdirectory( vendor/websocketpp )
+#add_subdirectory( vendor/websocketpp )
 add_subdirectory( vendor/equihash )
 
 setup_library( fc_core SOURCES ${sources} LIBRARY_TYPE OBJECT DONT_INSTALL_LIBRARY )
@@ -371,12 +368,7 @@ SET( private_includes
 
 target_include_directories(fc_core PUBLIC ${public_includes} PRIVATE ${private_includes})
 
-#target_link_libraries( fc_core PUBLIC ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
-IF(NOT WIN32)
-  set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
-ENDIF()
-
-target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
+target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -486,11 +478,17 @@ ADD_LIBRARY( STATIC_BOOST INTERFACE )
 SET_TARGET_PROPERTIES( STATIC_BOOST PROPERTIES POSITION_INDEPENDENT_CODE OFF )
 ADD_TARGET_BOOST_LIBRARIES( STATIC_BOOST )
 
+ADD_LIBRARY ( SHARED_OPENSSL INTERFACE )
+ADD_TARGET_OPENSSL_LIBRARIES (SHARED_OPENSSL FALSE)
+
+ADD_LIBRARY ( STATIC_OPENSSL INTERFACE )
+ADD_TARGET_OPENSSL_LIBRARIES (STATIC_OPENSSL TRUE)
+
 add_library ( fc STATIC )
-target_link_libraries ( fc PUBLIC fc_core STATIC_BOOST)
+target_link_libraries ( fc PUBLIC fc_core STATIC_BOOST STATIC_OPENSSL )
 
 add_library ( fc_shared_boost STATIC )
-target_link_libraries ( fc_shared_boost PUBLIC fc_core SHARED_BOOST)
+target_link_libraries ( fc_shared_boost PUBLIC fc_core SHARED_BOOST SHARED_OPENSSL )
 
 SET(OPENSSL_CONF_TARGET )
 IF(DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
