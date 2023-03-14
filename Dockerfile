@@ -57,6 +57,9 @@ FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS build
 ARG BUILD_HIVE_TESTNET=OFF
 ENV BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}
 
+ARG ENABLE_SMT_SUPPORT=OFF
+ENV ENABLE_SMT_SUPPORT=${ENABLE_SMT_SUPPORT}
+
 ARG HIVE_CONVERTER_BUILD=OFF
 ENV HIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}
 
@@ -74,7 +77,7 @@ RUN \
   mkdir -p ./build/tests/unit/ \
   && ./hive/scripts/build.sh --source-dir="./hive" --binary-dir="./build" \
   --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
-  --cmake-arg="-DENABLE_SMT_SUPPORT=${BUILD_HIVE_TESTNET}" \
+  --cmake-arg="-DENABLE_SMT_SUPPORT=${ENABLE_SMT_SUPPORT}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
   --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
   && \
