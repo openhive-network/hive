@@ -77,25 +77,29 @@ cleanup_hived_cache_manual:
 
 testnet_node_build:
   stage: build
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  interruptible: true
+  extends: .docker_image_builder_job
+
+  variables:
+    IMAGE_TAG: "$CI_COMMIT_SHA"
+    SOURCES_DIR: "."
+    REGISTRY_URL: "$CI_REGISTRY_IMAGE"
+    BINARIES_DIR: "testnet_node_build/install-root/bin"
   script:
-    # TESTNET=ON HIVE_LINT=OFF
-    - ./ciscripts/build.sh ON OFF
-    - mkdir -p "$CI_JOB_NAME"/tests/unit
-    - mv build/install-root "$CI_JOB_NAME"
-    - mv contrib/hived.run "$CI_JOB_NAME"
-    - mv contrib/config-for-docker.ini "$CI_JOB_NAME"
-    - mv build/tests/unit/chain_test build/tests/unit/plugin_test "$CI_JOB_NAME"/tests/unit
+    - echo "Building hived in testnet mode"
+    - mkdir -p testnet_node_build/install-root/bin
+    - ./scripts/ci-helpers/build_instance.sh
+      "$IMAGE_TAG"
+      "$SOURCES_DIR"
+      "$REGISTRY_URL"
+      --network-type="testnet"
+      --export-binaries="$BINARIES_DIR"
+    - chmod -Rc a+rwx "$BINARIES_DIR"
   artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
-    - "$CI_JOB_NAME"
-    expire_in: 6 hours
+      - "$BINARIES_DIR"
   tags:
-     - public-runner-docker
-     - hived-for-tests
-     - hived
+    - public-runner-docker
+    - hived-for-tests
 
 mirrornet_node_build:
   stage: build
@@ -186,7 +190,7 @@ chain_test:
   variables:
     GIT_STRATEGY: none
   script:
-    - timeout 23m ./testnet_node_build/tests/unit/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
+    - timeout 23m ./testnet_node_build/install-root/bin/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
   artifacts:
     reports:
       junit: chain_test_results.xml
@@ -208,7 +212,7 @@ plugin_test:
     GIT_STRATEGY: none
   script:
     # note: consider using --result_code=no to force exit code 0 even when tests fail because they currently fail and I want a nice green checkmark
-    - timeout 6m ./testnet_node_build/tests/unit/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
+    - timeout 6m ./testnet_node_build/install-root/bin/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
   artifacts:
     reports:
       junit: plugin_test_results.xml
