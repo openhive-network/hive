@@ -9,7 +9,7 @@
           "value": {
             "account": "barrie",
             "new_recovery_account": "boombastic",
-            "old_recovery_account": "boombastic"
+            "old_recovery_account": "steem"
           }
         },
         "op_in_trx": 2,
