@@ -478,6 +478,12 @@ if(WIN32)
 
 endif(WIN32)
 
+add_library ( fc STATIC )
+target_link_libraries ( fc PUBLIC fc_core STATIC_BOOST)
+
+add_library ( fc_shared_boost STATIC )
+target_link_libraries ( fc_shared_boost PUBLIC fc_core SHARED_BOOST)
+
 SET(OPENSSL_CONF_TARGET )
 IF(DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
   SET (OPENSSL_CONF_TARGET ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
@@ -497,7 +503,11 @@ ENDIF()
            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_CONF_SOURCE}" "${OPENSSL_CONF_TARGET}/openssl.cnf")
     ENDIF(WIN32)
 
-ADD_CUSTOM_COMMAND(TARGET fc_core POST_BUILD ${POST_BUILD_STEP_COMMANDS}
+ADD_CUSTOM_COMMAND(TARGET fc POST_BUILD ${POST_BUILD_STEP_COMMANDS}
+  COMMENT "Copying OpenSSL/ssl/openssl.cnf into target directory."
+)
+
+ADD_CUSTOM_COMMAND(TARGET fc_shared_boost POST_BUILD ${POST_BUILD_STEP_COMMANDS}
   COMMENT "Copying OpenSSL/ssl/openssl.cnf into target directory."
 )
 
