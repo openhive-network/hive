@@ -47,7 +47,7 @@ def verify_generated_transaction_with_json_pattern(wallet, pattern_name):
         actual_json = json.load(file)
     with open(target_path_file) as file:
         pattern_json = json.load(file)
-    assert actual_json == pattern_json
+    assert actual_json == pattern_json, f'{actual_json} does not match expected {pattern_json}'
 
 
 @__able_to_generate_pattern

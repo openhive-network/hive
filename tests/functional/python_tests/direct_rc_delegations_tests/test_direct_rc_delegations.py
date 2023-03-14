@@ -107,11 +107,12 @@ def test_direct_rc_delegations(wallet):
     assert (accounts[1]['account'] == 'hive.fund')
 
     accounts_all = wallet.api.list_rc_accounts('aaa', 100)
-    assert (len(accounts_all) == 9)
+    assert (len(accounts_all) == 10) # miners, null, steem.dao, hive.fund, temp, initminer, steem, delegator, receiver, zzz
 
     accounts_offset = wallet.api.list_rc_accounts('receiver', 3)
     assert (len(accounts_offset) == 3)
     assert (accounts_offset[0]['account'] == 'receiver')
     assert (accounts_offset[0]['rc_manabar']['current_mana'] == 0)
-    assert (accounts_offset[1]['account'] == 'steem.dao')
+    assert (accounts_offset[1]['account'] == 'steem')
+    assert (accounts_offset[2]['account'] == 'steem.dao')
 
