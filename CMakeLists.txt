@@ -1,6 +1,6 @@
 # Defines Hive library target.
 project( Hive )
-cmake_minimum_required( VERSION 3.2 )
+cmake_minimum_required( VERSION 3.22.1 )
 
 set( BLOCKCHAIN_NAME "Hive" )
 
