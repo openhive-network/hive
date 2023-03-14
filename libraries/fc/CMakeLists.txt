@@ -46,6 +46,8 @@ ELSE( ECC_IMPL STREQUAL openssl )
   ENDIF( ECC_IMPL STREQUAL mixed )
 ENDIF( ECC_IMPL STREQUAL openssl )
 
+SET( SECP256K1_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp" )
+
 # Configure secp256k1-zkp
 if ( MSVC )
     # autoconf won't work here, hard code the defines
@@ -71,8 +73,8 @@ else ( MSVC )
     if ( MINGW )
     ExternalProject_Add( project_secp256k1
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
-     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure CPPFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --host=x86_64-w64-mingw32
+     SOURCE_DIR ${SECP256K1_SRC_DIR}
+     CONFIGURE_COMMAND ${SECP256K1_SRC_DIR}/configure CPPFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --host=x86_64-w64-mingw32
      BUILD_COMMAND make
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.so
@@ -80,16 +82,16 @@ else ( MSVC )
     else ( MINGW )
     ExternalProject_Add( project_secp256k1
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
-     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure CPPFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --enable-module-recovery --enable-experimental --enable-module-generator --enable-module-rangeproof
+     SOURCE_DIR ${SECP256K1_SRC_DIR}
+     CONFIGURE_COMMAND ${SECP256K1_SRC_DIR}/configure CPPFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --enable-module-recovery --enable-experimental --enable-module-generator --enable-module-rangeproof
      BUILD_COMMAND make
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.so
     )
     endif ( MINGW )
     ExternalProject_Add_Step(project_secp256k1 autogen
-     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/autogen.sh
+     WORKING_DIRECTORY ${SECP256K1_SRC_DIR}
+     COMMAND ${SECP256K1_SRC_DIR}/autogen.sh
      DEPENDERS configure
     )
 
