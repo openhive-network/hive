@@ -34,8 +34,6 @@ endif()
 SET (ORIGINAL_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 cmake_policy(SET CMP0054 NEW)
-SET(BOOST_COMPONENTS)
-LIST(APPEND BOOST_COMPONENTS thread date_time system filesystem program_options serialization chrono unit_test_framework context locale iostreams)
 
 IF( ECC_IMPL STREQUAL openssl )
   SET( ECC_REST src/crypto/elliptic_impl_pub.cpp )
@@ -119,34 +117,11 @@ IF( WIN32 )
   set(Boost_USE_MULTITHREADED ON)
   set(BOOST_ALL_DYN_LINK OFF) # force dynamic linking for all libraries
 
-  SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
-  FIND_PACKAGE(Boost 1.53 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-  # For Boost 1.53 on windows, coroutine was not in BOOST_LIBRARYDIR and do not need it to build,  but if boost versin >= 1.54, find coroutine otherwise will cause link errors
-  IF(NOT "${Boost_VERSION}" MATCHES "1.53(.*)")
-    SET(BOOST_LIBRARIES_TEMP ${Boost_LIBRARIES})
-    FIND_PACKAGE(Boost 1.54 REQUIRED COMPONENTS coroutine)
-    LIST(APPEND BOOST_COMPONENTS coroutine)
-    SET(Boost_LIBRARIES ${BOOST_LIBRARIES_TEMP} ${Boost_LIBRARIES})
-  ENDIF()
-
   set( PLATFORM_SPECIFIC_LIBS wsock32.lib ws2_32.lib userenv.lib)
   # iphlpapi.lib
 
 ELSE(WIN32)
   MESSAGE(STATUS "Configuring fc to build on Unix/Apple")
-
-  LIST(APPEND BOOST_COMPONENTS coroutine)
-
-  cmake_policy(SET CMP0057 NEW)
-  SET( ORIGINAL_BOOST_DYNAMIC_FLAG ${Boost_USE_STATIC_LIBS})
-  SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" FORCE )
-  FIND_PACKAGE(Boost 1.53 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-  SET( BOOST_LIBRARIS_DYNAMIC ${Boost_LIBRARIES} )
-
-  SET( Boost_USE_STATIC_LIBS ${ORIGINAL_BOOST_DYNAMIC_FLAG} CACHE STRING "ON or OFF" FORCE )
-  FIND_PACKAGE(Boost 1.53 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-
-  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
 
   IF(NOT APPLE)
     # Linux or other unix
@@ -396,7 +371,7 @@ IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
 
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
