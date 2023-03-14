@@ -25,6 +25,7 @@ struct condenser_api_fixture : database_fixture
       configuration_data.set_cashout_related_values( 0, 2, 4, 12, 1 );
       configuration_data.set_feed_related_values( 1, 3*24*7 ); // see comment to set_feed_related_values
       configuration_data.set_savings_related_values( 20 );
+      configuration_data.set_min_recurrent_transfers_recurrence( 1 );
 
       ah_plugin = &app.register_plugin< ah_plugin_type >();
       ah_plugin->set_destroy_database_on_startup();
@@ -75,6 +76,7 @@ struct condenser_api_fixture : database_fixture
       configuration_data.reset_cashout_values();
       configuration_data.reset_feed_values();
       configuration_data.reset_savings_values();
+      configuration_data.reset_recurrent_transfers_values();
 
       // If we're unwinding due to an exception, don't do any more checks.
       // This way, boost test's last checkpoint tells us approximately where the error was.
@@ -438,6 +440,34 @@ struct condenser_api_fixture : database_fixture
     // All operations mentioned above can be checked now in 4th block, regardless of the fixture configuration.
     check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
+
+  /**
+   * Operations tested here:
+   *  recurrent_transfer_operation, fill_recurrent_transfer_operation, failed_recurrent_transfer_operation
+   *  & producer_reward_operation
+   */
+  void recurrent_transfer_scenario( check_point_tester_t check_point_tester )
+  {
+    db->set_hardfork( HIVE_HARDFORK_1_27 );
+    generate_block();
+
+    ACTORS( (alice10ah)(ben10ah) );
+    generate_block();
+    fund( "alice10ah", 40 );
+    generate_block();
+
+    recurrent_transfer( "alice10ah", "ben10ah", ASSET( "0.037 TESTS" ), "With love", 1, 2, alice10ah_private_key );
+
+    // The operations mentioned above can be checked now in 5th block, except 
+    // failed_recurrent_transfer_operation - its block number depends on test configuration.
+    // In standard configuration of this fixture it's 1204th block.
+    check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+  }
+
+/*
+  decline_voting_rights( "dan0ah", true, dan0ah_private_key );
+  expected_operations.insert( { OP_TAG(decline_voting_rights_operation), fc::optional< expected_operation_result_t >() } );
+*/
 
 };
 
@@ -1308,6 +1338,44 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_custom )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( get_ops_in_block_recurrent_transfer )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with recurrent_transfer_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 1204 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_t expected_operations = { { // recurrent_transfer_operation
+      R"~({"trx_id":"93e35087c9401f6fa910684a849008cca1f85124","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","recurrence":1,"executions":2,"extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"93e35087c9401f6fa910684a849008cca1f85124","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","recurrence":1,"executions":2,"extensions":[]}]})~"
+      }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8611634248","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["producer_reward",{"producer":"initminer","vesting_shares":"8611.634248 VESTS"}]})~"
+      }, { // fill_recurrent_transfer_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"fill_recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","remaining_executions":1}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["fill_recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","remaining_executions":1}]})~"
+      } };
+    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[2] };
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );
+
+    expected_operations = { { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":1204,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:12","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"127616241278","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":1204,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:12","op":["producer_reward",{"producer":"initminer","vesting_shares":"127616.241278 VESTS"}]})~"
+      }, { // failed_recurrent_transfer_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":1204,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:00:12","op":{"type":"failed_recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","consecutive_failures":1,"remaining_executions":0,"deleted":false}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":1204,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:00:12","op":["failed_recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","consecutive_failures":1,"remaining_executions":0,"deleted":false}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 1204 );
+  };
+
+  recurrent_transfer_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_ops_in_block_tests
 
 BOOST_FIXTURE_TEST_SUITE( condenser_get_transaction_tests, condenser_api_fixture );
@@ -1458,6 +1526,12 @@ BOOST_AUTO_TEST_CASE( get_transaction_convert_and_limit_order )
 } FC_LOG_AND_RETHROW() }
 
 // TODO Create get_transaction_vesting test here.
+// TODO Create get_transaction_witness test here.
+// TODO Create get_transaction_escrow_and_savings test here.
+// TODO Create get_transaction_proposal test here.
+// TODO Create get_transaction_account test here.
+// TODO Create get_transaction_custom test here.
+// TODO Create get_transaction_recurrent_transfer test here.
 
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_transaction_tests
 
@@ -1506,6 +1580,12 @@ void test_get_account_history( const condenser_api_fixture& caf, const std::vect
 // TODO Create get_account_history_hf13 here
 // TODO create get_account_history_comment_and_reward test here
 // TODO create get_account_history_vesting test here
+// TODO create get_account_history_witness test here
+// TODO create get_account_history_escrow_and_savings test here
+// TODO create get_account_history_proposal test here
+// TODO create get_account_history_account test here
+// TODO create get_account_history_custom test here
+// TODO create get_account_history_recurrent_transfer test here
 
 BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order )
 { try {
@@ -1577,30 +1657,6 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order )
 
 } FC_LOG_AND_RETHROW() }
   
-BOOST_AUTO_TEST_CASE( account_history_by_condenser_test ) // To be split into scenarios / triple tests
-{ try {
-
-  BOOST_TEST_MESSAGE( "get_ops_in_block / get_transaction test" );
-
-  // The container for the kinds of operations that we expect to be found in blocks.
-  // We'll use it to be sure that all kind of operations have been used during testing.
-  expected_t expected_operations;
-
-  db->set_hardfork( HIVE_HARDFORK_1_27 );
-  generate_block();
-  
-  /*
-  decline_voting_rights( "dan0ah", true, dan0ah_private_key );
-  expected_operations.insert( { OP_TAG(decline_voting_rights_operation), fc::optional< expected_operation_result_t >() } );
-
-  recurrent_transfer( "carol0ah", "dan0ah", ASSET( "0.037 TESTS" ), "With love", 24, 2, carol0ah_private_key );
-  expected_operations.insert( { OP_TAG(recurrent_transfer_operation), fc::optional< expected_operation_result_t >() } );
-  expected_operations.insert( { OP_TAG(fill_recurrent_transfer_operation), fc::optional< expected_operation_result_t >() } );
-
-*/
-
-} FC_LOG_AND_RETHROW() }
-
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_account_history_tests
 #endif
 

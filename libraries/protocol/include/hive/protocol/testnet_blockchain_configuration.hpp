@@ -43,6 +43,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     uint32_t hive_max_feed_age_seconds = 60*24*7; // originally 60*60*24*7, see comment to set_feed_related_values
     // time before savings are withdrawn
     uint32_t hive_savings_withdraw_time = 60*60*24*3; // seconds, originally 3 days
+    // Minimum number of hours between recurrent transfers.
+    uint16_t hive_min_recurrent_transfers_recurrence = 24; // hours, originally 24
     
     std::string hive_hf9_compromised_key;
     hive::protocol::private_key_type hive_initminer_key;
@@ -76,6 +78,7 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       uint32_t get_hive_max_feed_age_seconds() const { return hive_max_feed_age_seconds; }
 
       uint32_t get_hive_savings_withdraw_time() const { return hive_savings_withdraw_time; }
+      uint16_t get_hive_min_recurrent_transfers_recurrence() const { return hive_min_recurrent_transfers_recurrence; }
 
       std::string get_HF9_compromised_accounts_key() const { return hive_hf9_compromised_key; }
 
@@ -139,6 +142,20 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       {
         configuration clear;
         set_savings_related_values( clear.get_hive_savings_withdraw_time() );
+      }
+
+      /**
+       * [1 .. 24]
+       */
+      void set_min_recurrent_transfers_recurrence( uint16_t min_recurrent_transfers_recurrence )
+      {
+        hive_min_recurrent_transfers_recurrence = min_recurrent_transfers_recurrence;
+      }
+
+      void reset_recurrent_transfers_values()
+      {
+        configuration clear;
+        set_min_recurrent_transfers_recurrence( clear.get_hive_min_recurrent_transfers_recurrence() );
       }
 
       void set_skeleton_key(const hive::protocol::private_key_type& private_key);

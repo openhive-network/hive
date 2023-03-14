@@ -106,6 +106,10 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_SAVINGS_WITHDRAW_TIME            (fc::seconds(configuration_data.get_hive_savings_withdraw_time()))
 #define HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT   100
 
+#define HIVE_MAX_RECURRENT_TRANSFER_END_DATE   730 /// 2 years in days
+#define HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK 1000
+#define HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE (configuration_data.get_hive_min_recurrent_transfers_recurrence())
+
 #else // IS LIVE HIVE NETWORK
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -183,6 +187,10 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_SAVINGS_WITHDRAW_TIME            (fc::days(3))
 #define HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT   100
 
+#define HIVE_MAX_RECURRENT_TRANSFER_END_DATE   730 /// 2 years in days
+#define HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK 1000
+#define HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE 24
+
 #endif
 
 #define VESTS_SYMBOL  (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS ) )
@@ -218,9 +226,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MAX_PENDING_TRANSFERS            255
 #define HIVE_MAX_OPEN_RECURRENT_TRANSFERS     255
 #define HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES     10
-#define HIVE_MAX_RECURRENT_TRANSFER_END_DATE   730 /// 2 years in days
-#define HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK 1000
-#define HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE 24
 #define HIVE_VOTING_MANA_REGENERATION_SECONDS (5*60*60*24) // 5 day
 #define HIVE_MAX_VOTE_CHANGES                 5
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6 (60*30) /// 30 minutes
