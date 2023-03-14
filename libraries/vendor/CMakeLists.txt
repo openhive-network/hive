@@ -32,6 +32,8 @@ if (NOT DEFINED BZIP2_ROOT_DIR)
    endif()
 endif()
 
+find_package( Snappy CONFIG )
+
 # file( GLOB children RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} * )
 # foreach( child ${children} )
 #    if( IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${child}" )
@@ -42,6 +44,16 @@ endif()
 # endforeach()
 
 add_subdirectory(rocksdb)
+
+GET_TARGET_PROPERTY( prop Snappy::snappy IMPORTED_LOCATION_RELWITHDEBINFO )
+
+MESSAGE ( STATUS "Snappy::snappy (IMPORTED_LOCATION): ${prop}" )
+
+GET_TARGET_PROPERTY( prop Snappy::snappy-static IMPORTED_LOCATION_RELWITHDEBINFO )
+
+MESSAGE ( STATUS "Snappy::snappy-static (IMPORTED_LOCATION): ${prop}" )
+
+SET_TARGET_PROPERTIES( Snappy::snappy PROPERTIES IMPORTED_LOCATION ${prop} IMPORTED_LOCATION_RELWITHDEBINFO ${prop} )
 
 SET(ZSTD_BUILD_SHARED OFF)
 SET(ZSTD_BUILD_STATIC ON)
