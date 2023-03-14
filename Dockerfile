@@ -112,9 +112,7 @@ RUN mkdir -p /home/hived/datadir/ && mkdir /home/hived/shm_dir/
 COPY --from=build --chown=hived:users \
   /home/hived_admin/build/programs/hived/hived \
   /home/hived_admin/build/programs/cli_wallet/cli_wallet \
-  /home/hived_admin/build/programs/util/compress_block_log \
-  /home/hived_admin/build/programs/util/truncate_block_log \
-  /home/hived_admin/build/programs/util/get_dev_key \
+  /home/hived_admin/build/programs/util/* \
   /home/hived_admin/build/programs/blockchain_converter/blockchain_converter* \
   /home/hived_admin/build/tests/unit/* /home/hived/bin/
 
