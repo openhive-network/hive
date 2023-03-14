@@ -59,13 +59,16 @@ struct get_impacted_account_visitor
     template< typename Ext >
     result_type operator()( const Ext& )const
     {
-      return {};
+      return _empty_routes;
     }
 
     result_type operator()( const comment_payout_beneficiaries& ext )const
     {
       return ext.beneficiaries;
     }
+
+  private:
+    const vector<beneficiary_route_type> _empty_routes;
   };
 
   void operator()( const comment_options_operation& op )
