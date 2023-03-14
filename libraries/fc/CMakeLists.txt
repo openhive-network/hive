@@ -252,7 +252,7 @@ list(APPEND sources ${fc_headers})
 add_subdirectory( vendor/websocketpp )
 add_subdirectory( vendor/equihash )
 
-setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC DONT_INSTALL_LIBRARY )
+setup_library( fc_core SOURCES ${sources} LIBRARY_TYPE OBJECT DONT_INSTALL_LIBRARY )
 
 # begin readline stuff
 find_package(Curses)
@@ -263,19 +263,19 @@ find_package(Readline)
 file(GLOB HEADERS "include/bts/cli/*.hpp")
 
 if (READLINE_FOUND)
-  target_compile_definitions (fc PRIVATE HAVE_READLINE)
+  target_compile_definitions (fc_core PRIVATE HAVE_READLINE)
   if (CURSES_FOUND)
     list(APPEND Readline_LIBRARIES ${CURSES_LIBRARY})
   endif()
   set(readline_includes ${Readline_INCLUDE_DIR})
 endif()
 if(WIN32)
-  target_compile_definitions( fc PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
+  target_compile_definitions( fc_core PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
 endif(WIN32)
 # end readline stuff
 
 IF(WIN32)
-  target_compile_definitions(fc PUBLIC WIN32 NOMINMAX _WIN32_WINNT=0x0501 _CRT_SECURE_NO_WARNINGS
+  target_compile_definitions(fc_core PUBLIC WIN32 NOMINMAX _WIN32_WINNT=0x0501 _CRT_SECURE_NO_WARNINGS
     _SCL_SERCURE_NO_WARNINGS
     # Needed to disable MSVC autolinking feature (#pragma comment)
     BOOST_ALL_NO_LIB
@@ -287,7 +287,7 @@ IF(WIN32)
   if( MSVC )
     # Activate C++ exception handling, assume extern C calls don't throw
     # Add /U options to be sure settings specific to dynamic boost link are ineffective
-    target_compile_options(fc PUBLIC /EHsc /UBOOST_ALL_DYN_LINK /UBOOST_LINKING_PYTHON /UBOOST_DEBUG_PYTHON)
+    target_compile_options(fc_core PUBLIC /EHsc /UBOOST_ALL_DYN_LINK /UBOOST_LINKING_PYTHON /UBOOST_DEBUG_PYTHON)
   elseif( MINGW )
      # Put MinGW specific compiler settings here
   endif()
@@ -298,7 +298,7 @@ ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall")
   ELSE()
     if( NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
-      target_compile_options(fc PUBLIC -Wall -fnon-call-exceptions)
+      target_compile_options(fc_core PUBLIC -Wall -fnon-call-exceptions)
     endif()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fnon-call-exceptions")
   ENDIF()
@@ -369,14 +369,14 @@ SET( private_includes
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/bitcoin/src
 )
 
-target_include_directories(fc PUBLIC ${public_includes} PRIVATE ${private_includes})
+target_include_directories(fc_core PUBLIC ${public_includes} PRIVATE ${private_includes})
 
-#target_link_libraries( fc PUBLIC ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
+#target_link_libraries( fc_core PUBLIC ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
 IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
 
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
+target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -398,7 +398,7 @@ add_subdirectory(tests)
 
 if(WIN32)
    # add addtional import library on windows platform
-   target_link_libraries( fc PUBLIC crypt32.lib)
+   target_link_libraries( fc_core PUBLIC crypt32.lib)
 
    # now generate a list of the DLLs we're using to use during the install process
    include (ParseLibraryList)
@@ -471,10 +471,10 @@ if(WIN32)
       endif()
    endforeach()
 
-   set_property(TARGET fc PROPERTY INTERFACE_LINK_PDB_RELEASE ${INTERFACE_LINK_PDB_RELEASE})
-   set_property(TARGET fc PROPERTY INTERFACE_LINK_PDB_DEBUG ${INTERFACE_LINK_PDB_DEBUG})
-   set_property(TARGET fc PROPERTY SHARED_LIBRARIES_DEBUG ${SHARED_LIBRARIES_DEBUG})
-   set_property(TARGET fc PROPERTY SHARED_LIBRARIES_RELEASE ${SHARED_LIBRARIES_RELEASE})
+   set_property(TARGET fc_core PROPERTY INTERFACE_LINK_PDB_RELEASE ${INTERFACE_LINK_PDB_RELEASE})
+   set_property(TARGET fc_core PROPERTY INTERFACE_LINK_PDB_DEBUG ${INTERFACE_LINK_PDB_DEBUG})
+   set_property(TARGET fc_core PROPERTY SHARED_LIBRARIES_DEBUG ${SHARED_LIBRARIES_DEBUG})
+   set_property(TARGET fc_core PROPERTY SHARED_LIBRARIES_RELEASE ${SHARED_LIBRARIES_RELEASE})
 
 endif(WIN32)
 
@@ -497,7 +497,7 @@ ENDIF()
            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_CONF_SOURCE}" "${OPENSSL_CONF_TARGET}/openssl.cnf")
     ENDIF(WIN32)
 
-ADD_CUSTOM_COMMAND(TARGET fc POST_BUILD ${POST_BUILD_STEP_COMMANDS}
+ADD_CUSTOM_COMMAND(TARGET fc_core POST_BUILD ${POST_BUILD_STEP_COMMANDS}
   COMMENT "Copying OpenSSL/ssl/openssl.cnf into target directory."
 )
 
