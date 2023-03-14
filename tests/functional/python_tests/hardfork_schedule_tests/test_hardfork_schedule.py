@@ -1,8 +1,12 @@
+import json
 import time
+from typing import Final
+
 import pytest
+
 import test_tools as tt
 
-import json
+ALTERNATE_CHAIN_JSON_FILENAME: Final[str] = "alternate-chain-spec.json"
 
 
 def test_simply_hardfork_schedule():
@@ -30,7 +34,7 @@ def test_simply_hardfork_schedule():
         init_node.config.witness.append(witness)
     write_to_json(alternate_chain_spec)
     init_node.run(time_offset="+0 x20", arguments=['--alternate-chain-spec',
-                                                   str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
+                                                   str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
 
     # verify are hardforks 0-2 were applied correctly
     assert is_hardfork_applied(init_node, hf_number=2)
@@ -110,7 +114,8 @@ def test_incorrect_hardfork_schedules(hardfork_schedule):
     write_to_json(alternate_chain_spec)
     with pytest.raises(TimeoutError):
         init_node.run(
-            arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
+            arguments=['--alternate-chain-spec',
+                       str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
 
 
 @pytest.mark.parametrize(
@@ -131,7 +136,8 @@ def test_alternate_chain_spec_necessary_keys(keys_to_drop):
     write_to_json(alternate_chain_spec)
     with pytest.raises(TimeoutError):
         init_node.run(
-            arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
+            arguments=['--alternate-chain-spec',
+                       str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
 
 
 @pytest.mark.parametrize(
@@ -159,7 +165,7 @@ def test_alternate_chain_spec_optional_keys(keys_to_drop):
     init_node = tt.InitNode()
     write_to_json(alternate_chain_spec)
     init_node.run(
-        arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
+        arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
 
 
 @pytest.mark.parametrize(
@@ -179,7 +185,8 @@ def test_invalid_witness_names(witnesses):
     write_to_json(alternate_chain_spec)
     with pytest.raises(TimeoutError):
         init_node.run(
-            arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / 'alternate-chain-spec.json')])
+            arguments=['--alternate-chain-spec',
+                       str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
 
 
 def drop_keys_from(container: dict, *keys_to_drop) -> None:
@@ -201,7 +208,7 @@ def build_alternate_chain_spec(hardfork_schedule: list, init_witnesses: list = N
 def write_to_json(alternate_chain_spec_content: dict) -> None:
     directory = tt.context.get_current_directory()
     directory.mkdir(parents=True, exist_ok=True)
-    with open(directory / 'alternate-chain-spec.json', 'w') as json_file:
+    with open(directory / ALTERNATE_CHAIN_JSON_FILENAME, 'w') as json_file:
         json.dump(alternate_chain_spec_content, json_file)
 
 
