@@ -1,5 +1,5 @@
 #! /bin/bash
-set -xeuo pipefail
+set -euo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTPATH/.."
