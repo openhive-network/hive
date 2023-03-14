@@ -76,7 +76,7 @@ else ( MSVC )
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
      SOURCE_DIR ${SECP256K1_SRC_DIR}
      BINARY_DIR ${SEC256K1_BINARY_DIR}
-     CONFIGURE_COMMAND ${SECP256K1_SRC_DIR}/configure CPPFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --host=x86_64-w64-mingw32
+     CONFIGURE_COMMAND ${SECP256K1_SRC_DIR}/configure CFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --host=x86_64-w64-mingw32
      BUILD_COMMAND make
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${SEC256K1_BINARY_DIR}/.libs/libsecp256k1.a ${SEC256K1_BINARY_DIR}/.libs/libsecp256k1.so
@@ -86,7 +86,7 @@ else ( MSVC )
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
      SOURCE_DIR ${SECP256K1_SRC_DIR}
      BINARY_DIR ${SEC256K1_BINARY_DIR}
-     CONFIGURE_COMMAND ${SECP256K1_SRC_DIR}/configure CPPFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --enable-module-recovery --enable-experimental --enable-module-generator --enable-module-rangeproof
+     CONFIGURE_COMMAND ${SECP256K1_SRC_DIR}/configure CFLAGS=${FPIC_FLAG} --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --enable-module-recovery --enable-experimental --enable-module-generator --enable-module-rangeproof
      BUILD_COMMAND make
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${SEC256K1_BINARY_DIR}/.libs/libsecp256k1.a ${SEC256K1_BINARY_DIR}/.libs/libsecp256k1.so
