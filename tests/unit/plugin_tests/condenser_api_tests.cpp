@@ -464,10 +464,24 @@ struct condenser_api_fixture : database_fixture
     check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
   }
 
-/*
-  decline_voting_rights( "dan0ah", true, dan0ah_private_key );
-  expected_operations.insert( { OP_TAG(decline_voting_rights_operation), fc::optional< expected_operation_result_t >() } );
+  /**
+   * Operations tested here:
+   *  decline_voting_rights_operation, declined_voting_rights_operation & producer_reward_operation
 */
+  void decline_voting_rights_scenario( check_point_tester_t check_point_tester )
+  {
+    db->set_hardfork( HIVE_HARDFORK_1_28 );
+    generate_block();
+
+    ACTORS( (alice11ah) );
+    generate_block();
+
+    decline_voting_rights( "alice11ah", true, alice11ah_private_key );
+
+    // decline_voting_rights_operation can be checked in 5th block and declined_voting_rights_operation in the 23rd,
+    // regardless of the fixture configuration.
+    check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+  }
 
 };
 
@@ -1376,6 +1390,41 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_recurrent_transfer )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( get_ops_in_block_decline_voting_rights )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with decline_voting_rights_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 23 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_t expected_operations = { { // decline_voting_rights_operation
+      R"~({"trx_id":"b725c37b755848a67161d30050eda164da5bd2a9","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"decline_voting_rights_operation","value":{"account":"alice11ah","decline":true}},"operation_id":0})~",
+      R"~({"trx_id":"b725c37b755848a67161d30050eda164da5bd2a9","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["decline_voting_rights",{"account":"alice11ah","decline":true}]})~"
+      }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":4,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8684058191","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":4,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["producer_reward",{"producer":"initminer","vesting_shares":"8684.058191 VESTS"}]})~"
+      } };
+    expected_t expected_virtual_operations = { expected_operations[1] };
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 4 );
+
+    expected_operations = { { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"7241645516","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":["producer_reward",{"producer":"initminer","vesting_shares":"7241.645516 VESTS"}]})~"
+      }, { // declined_voting_rights_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":{"type":"declined_voting_rights_operation","value":{"account":"alice11ah"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":["declined_voting_rights",{"account":"alice11ah"}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 23 );
+  };
+
+  decline_voting_rights_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_ops_in_block_tests
 
 BOOST_FIXTURE_TEST_SUITE( condenser_get_transaction_tests, condenser_api_fixture );
@@ -1532,6 +1581,7 @@ BOOST_AUTO_TEST_CASE( get_transaction_convert_and_limit_order )
 // TODO Create get_transaction_account test here.
 // TODO Create get_transaction_custom test here.
 // TODO Create get_transaction_recurrent_transfer test here.
+// TODO Create get_transaction_decline_voting_rights here.
 
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_transaction_tests
 
@@ -1586,6 +1636,7 @@ void test_get_account_history( const condenser_api_fixture& caf, const std::vect
 // TODO create get_account_history_account test here
 // TODO create get_account_history_custom test here
 // TODO create get_account_history_recurrent_transfer test here
+// TODO create get_account_history_decline_voting_rights test here
 
 BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order )
 { try {
