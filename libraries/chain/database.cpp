@@ -6884,6 +6884,13 @@ void database::apply_hardfork( uint32_t hardfork )
         gpo.reverse_auction_seconds = HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21;
       });
 
+      const auto treasury_name = get_treasury_name();
+
+      // Create the treasury account if it does not exist
+      // This may sometimes happen in the mirrornet, when we do not have the account created upon the HF 21 application or any dependent operation
+      if( find_account(treasury_name) == nullptr )
+        create< account_object >( treasury_name );
+
       lock_account( get_treasury() );
 
       modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
@@ -6987,6 +6994,11 @@ void database::apply_hardfork( uint32_t hardfork )
 
   if( hardfork == HIVE_HARDFORK_1_24_TREASURY_RENAME )
   {
+    const auto treasury_name = get_treasury_name();
+
+    if( find_account(treasury_name) == nullptr )
+      create< account_object >( treasury_name );
+
     lock_account( get_treasury() );
     //the following routine can only be called effectively after hardfork was marked as applied
     //we could wait for regular call in _apply_block(), however it could hinder future changes, most notably use of treasury in future
