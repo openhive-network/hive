@@ -47,6 +47,13 @@ namespace hive { namespace converter { namespace plugins {
     FC_ASSERT( url.port().valid(), "You have to specify the port in url", ("url",url) );
   }
 
+  void conversion_plugin_impl::display_error_response_data()const
+  {
+    if( error_response_count )
+      wlog("${errors} (${percent}% of total ${total}) node errors detected",
+        ("errors", error_response_count)("percent", int(float(error_response_count) / total_request_count * 100))("total", total_request_count));
+  }
+
   void conversion_plugin_impl::open( fc::http::connection& con, const fc::url& url )
   {
     while( true )

@@ -201,9 +201,7 @@ namespace detail {
 
     dlog("In order to resume your live conversion pass the \'-R ${block_num}\' option to the converter next time", ("block_num", start_block_num - 1));
 
-    if( error_response_count )
-      wlog("${errors} (${percent}% of total ${total}) node errors detected",
-        ("errors", error_response_count)("percent", int(float(error_response_count) / total_request_count * 100))("total", total_request_count));
+    display_error_response_data();
 
     if( !appbase::app().is_interrupt_request() )
       appbase::app().generate_interrupt_request();

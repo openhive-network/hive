@@ -29,6 +29,8 @@ namespace hive { namespace converter { namespace plugins {
 
     void handle_error_response_from_node( const error_response_from_node& error );
 
+    void display_error_response_data()const;
+
     void check_url( const fc::url& url )const;
 
     void print_pre_conversion_data( const hp::signed_block& block_to_log )const;

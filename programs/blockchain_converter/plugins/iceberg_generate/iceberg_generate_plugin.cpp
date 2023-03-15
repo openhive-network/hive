@@ -253,6 +253,8 @@ namespace detail {
       }
     }
 
+    display_error_response_data();
+
     if( !appbase::app().is_interrupt_request() )
       appbase::app().generate_interrupt_request();
   }
