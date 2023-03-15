@@ -479,6 +479,7 @@ datagen_api_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
+    PYTEST_NUMBER_OF_PROCESSES: 16
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
     JUNIT_REPORT: tests/functional/python_tests/datagen_tests/report.xml
 
