@@ -2,7 +2,7 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=:ubuntu22.04-2
+ARG CI_IMAGE_TAG=:ubuntu22.04-3
 ARG BUILD_IMAGE_TAG
 
 FROM phusion/baseimage:jammy-1.0.1 AS runtime
@@ -148,7 +148,8 @@ EXPOSE ${HTTP_PORT}
 # Port specific to HTTP cli_wallet server
 EXPOSE ${CLI_WALLET_PORT}
 
-FROM ${CI_REGISTRY_IMAGE}ci-base-image-5m$CI_IMAGE_TAG AS block_log_5m_source
+# Hardcoded as not supported yet (to be eliminated at all together with data image target)
+FROM registry.gitlab.syncad.com/hive/hive/ci-base-image-5m:ubuntu22.04-2 AS block_log_5m_source
 
 FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-$BUILD_IMAGE_TAG as data
 
