@@ -64,6 +64,10 @@ preconfigure_faketime() {
   popd
 }
 
+preconfigure_git_safe_direcories() {
+  git config --global --add safe.directory '*'
+}
+
 install_user_packages() {
   base_dir=${1}
   echo "Attempting to install user packages in directory: ${base_dir}"
@@ -72,6 +76,7 @@ install_user_packages() {
   pushd "${base_dir}"
 
   preconfigure_faketime
+  preconfigure_git_safe_direcories
 
   # update path once it will be invalidated (hopefully not): https://github.com/vi/websocat/releases
   wget https://github.com/vi/websocat/releases/download/v1.11.0/websocat.x86_64-unknown-linux-musl
@@ -92,7 +97,7 @@ create_hived_admin_account() {
   if id "$hived_admin_unix_account" &>/dev/null; then
       echo "Account $hived_admin_unix_account already exists. Creation skipped."
   else
-      useradd -ms /bin/bash -g users "$hived_admin_unix_account" && echo "$hived_admin_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      useradd -ms /bin/bash -g users -u 2000 "$hived_admin_unix_account" && echo "$hived_admin_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
   fi
 }
 
@@ -103,7 +108,8 @@ create_hived_account() {
   if id "$hived_unix_account" &>/dev/null; then
       echo "Account $hived_unix_account already exists. Creation skipped."
   else
-      useradd -ms /bin/bash -g users "$hived_unix_account"
+      useradd -ms /bin/bash -u 2001 -U "$hived_unix_account"
+      usermod -a -G users -c "Hived daemon account" "$hived_unix_account"
   fi
 }
 
