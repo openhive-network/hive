@@ -102,6 +102,7 @@ namespace detail {
     hp::comment_operation op;
     op.body = "#";
     op.parent_author = HIVE_ROOT_POST_PARENT;
+    op.parent_permlink = "x";
     op.author = acc;
     op.permlink = link;
 
