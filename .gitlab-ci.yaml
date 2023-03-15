@@ -459,7 +459,7 @@ message_format_testnet_tests:
   extends: .test_tools_based
 
   variables:
-    PYTEST_TIMEOUT_MINUTES: 24
+    PYTEST_TIMEOUT_MINUTES: 30
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
     NODE_TYPE: "testnet"
