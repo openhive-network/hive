@@ -1384,7 +1384,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     power_down.account = "delegator1";
     power_down.vesting_shares = asset( full_vest, VESTS_SYMBOL );
     push_transaction( power_down, delegator1_private_key );
-    int64_t undelegated = hive::plugins::rc::detail::get_next_vesting_withdrawal( db->get< account_object, by_name >( "delegator1" ) );
+    int64_t undelegated = db->get_account( "delegator1" ).get_next_vesting_withdrawal().value;
     rc_delegate( "delegator3", "pattern3", full_vest - undelegated, delegator3_private_key );
     generate_block();
     //pattern2 RC regeneration is triggered by author_reward_operation, but it doesn't modify RC because rewards go to separate balance until claimed

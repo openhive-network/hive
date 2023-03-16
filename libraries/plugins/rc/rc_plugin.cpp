@@ -155,19 +155,6 @@ void rc_plugin_impl::set_auto_report( const std::string& _option_type, const std
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report output" );
 }
 
-int64_t get_next_vesting_withdrawal( const account_object& account )
-{
-  //ABW: it is very bad that "the same" computations are here, in database::process_vesting_withdrawals
-  //and in delegate_vesting_shares_evaluator::do_apply; moreover there are subtle differences (although
-  //it looks like as long as there is no bug they should give the same values); the code should be
-  //wrapped in account_object method
-  int64_t total_left = account.to_withdraw.amount.value - account.withdrawn.amount.value;
-  int64_t withdraw_per_period = account.vesting_withdraw_rate.amount.value;
-  int64_t next_withdrawal = (withdraw_per_period <= total_left) ? withdraw_per_period : total_left;
-  bool is_done = (account.next_vesting_withdrawal == fc::time_point_sec::maximum());
-  return is_done ? 0 : next_withdrawal;
-}
-
 template< bool account_may_exist = false >
 void create_rc_account( database& db, uint32_t now, const account_object& account, asset max_rc_creation_adjustment )
 {
@@ -1653,7 +1640,7 @@ int64_t get_maximum_rc( const account_object& account, const rc_account_object& 
   result = fc::signed_sat_add( result, account.received_vesting_shares.amount.value );
   if( only_delegable_rc == false ) //cannot rc delegate virtual vests coming from account creation fee
     result = fc::signed_sat_add( result, rc_account.max_rc_creation_adjustment.amount.value );
-  result = fc::signed_sat_sub( result, detail::get_next_vesting_withdrawal( account ) );
+  result = fc::signed_sat_sub( result, account.get_next_vesting_withdrawal().value );
   result = fc::signed_sat_sub( result, (int64_t) rc_account.delegated_rc );
   if( only_delegable_rc == false ) //cannot redelegate rc received from other accounts
     result = fc::signed_sat_add( result, (int64_t) rc_account.received_delegated_rc );

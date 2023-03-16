@@ -12,9 +12,6 @@ namespace detail {
 
 class rc_plugin_impl;
 
-//ABW: temporarily exposed for unit tests - that functionality should become part of account_object
-int64_t get_next_vesting_withdrawal( const hive::chain::account_object& account );
-
 }
 
 using namespace appbase;

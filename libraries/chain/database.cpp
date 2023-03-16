@@ -264,22 +264,6 @@ void database::load_state_initial_data(const open_args& args)
     }
   });
 #endif /// IS_TEST_NET
-
-  //ABW: the code below seems outdated - it will only work if you happen to be opening state where that
-  //account executed massively negative power down (because it was legal) and you didn't replay since then
-  //https://peakd.com/imfamy/@ironshield/block-23847548-the-block-which-will-live-in-infamy
-  auto account = find< account_object, by_name >("nijeah");
-  if(account != nullptr && account->to_withdraw.amount < 0)
-  {
-    auto session = start_undo_session();
-    modify(*account, [](account_object& a)
-      {
-        a.to_withdraw.amount = 0;
-        a.next_vesting_withdrawal = fc::time_point_sec::maximum();
-      });
-    session.squash();
-  }
-
 }
 
 uint32_t database::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
@@ -2771,12 +2755,13 @@ void database::process_vesting_withdrawals()
     *
     *  The user may withdraw  vT / V tokens
     */
-    share_type to_withdraw;
-
-    if ( from_account.to_withdraw.amount - from_account.withdrawn.amount < from_account.vesting_withdraw_rate.amount )
-      to_withdraw = std::min( from_account.get_vesting().amount, from_account.to_withdraw.amount % from_account.vesting_withdraw_rate.amount ).value;
-    else
-      to_withdraw = std::min( from_account.get_vesting().amount, from_account.vesting_withdraw_rate.amount ).value;
+    share_type to_withdraw = from_account.get_next_vesting_withdrawal();
+    if( to_withdraw > from_account.get_vesting().amount )
+    {
+      elog( "NOTIFYALERT! somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
+        ( "s", to_withdraw )( "h", from_account.get_vesting().amount ) );
+      to_withdraw = from_account.get_vesting().amount;
+    }
 
     optional< delayed_voting > dv;
     delayed_voting::opt_votes_update_data_items _votes_update_data_items;
@@ -2880,10 +2865,11 @@ void database::process_vesting_withdrawals()
       a.balance += converted_hive;
       a.withdrawn.amount += to_withdraw;
 
-      if( a.withdrawn.amount >= a.to_withdraw.amount || a.get_vesting().amount == 0 )
+      if( a.get_total_vesting_withdrawal() <= 0 || a.get_vesting().amount == 0 )
       {
         a.vesting_withdraw_rate.amount = 0;
         a.next_vesting_withdrawal = fc::time_point_sec::maximum();
+        //to_withdraw/withdrawn should also be reset here
       }
       else
       {

@@ -387,9 +387,9 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
           ( "creator.balance", creator.get_balance() )
           ( "required", o.fee ) );
 
-  FC_ASSERT( static_cast<asset>(creator.get_vesting()) - creator.delegated_vesting_shares - asset( creator.to_withdraw.amount - creator.withdrawn.amount, VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
+  FC_ASSERT( creator.get_vesting().to_asset() - creator.get_delegated_vesting() - asset( creator.get_total_vesting_withdrawal(), VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
           ( "creator.vesting_shares", creator.get_vesting() )
-          ( "creator.delegated_vesting_shares", creator.delegated_vesting_shares )( "required", o.delegation ) );
+          ( "creator.delegated_vesting_shares", creator.get_delegated_vesting() )( "required", o.delegation ) );
 
   auto target_delegation = asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER * HIVE_CREATE_ACCOUNT_DELEGATION_RATIO, HIVE_SYMBOL ) * props.get_vesting_share_price();
 
@@ -1186,6 +1186,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   {
     FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_20 ), "Cannot withdraw negative VESTS. account: ${account}, vests:${vests}",
       ("account", o.account)("vests", o.vesting_shares) );
+    //see https://peakd.com/imfamy/@ironshield/block-23847548-the-block-which-will-live-in-infamy
     return;
   }
 
@@ -1215,7 +1216,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
       auto new_vesting_withdraw_rate = asset( o.vesting_shares.amount / vesting_withdraw_intervals, VESTS_SYMBOL );
 
       if( new_vesting_withdraw_rate.amount == 0 )
-          new_vesting_withdraw_rate.amount = 1;
+        new_vesting_withdraw_rate.amount = 1;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_21 ) && new_vesting_withdraw_rate.amount * vesting_withdraw_intervals < o.vesting_shares.amount )
       {
@@ -2924,32 +2925,24 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     available_downvote_shares.amount = std::min( available_downvote_shares.amount, max_mana - delegator.received_vesting_shares.amount );
 
     if( delegator.next_vesting_withdrawal < fc::time_point_sec::maximum()
-      && delegator.to_withdraw.amount - delegator.withdrawn.amount > delegator.vesting_withdraw_rate.amount )
+      && delegator.get_total_vesting_withdrawal() > delegator.vesting_withdraw_rate.amount )
     {
       /*
-      current voting mana does not include the current week's power down:
-
-      std::min(
-        account.vesting_withdraw_rate,           // Weekly amount
-        account.to_withdraw - account.withdrawn  // Or remainder
-        );
-
-      But an account cannot delegate **any** VESTS that they are powering down.
-      The remaining withdrawal needs to be added in but then the current week is double counted.
+      Account cannot delegate **any** VESTS that they are powering down. Therefore we have to reduce
+      available shares by whole remaining power down. However current voting mana does not include current
+      week's power down, so we have to add it, otherwise it would be effectively subtracted twice. We can
+      skip that step when power down is in last week, because then whole power down (subtracting) equals
+      current week's power down (adding).
       */
-
-      auto weekly_withdraw = asset( std::min(
-        delegator.vesting_withdraw_rate.amount,                   // Weekly amount
-        delegator.to_withdraw.amount - delegator.withdrawn.amount // Or remainder
-        ), VESTS_SYMBOL );
-
-      available_shares += weekly_withdraw - asset( delegator.to_withdraw.amount - delegator.withdrawn.amount, VESTS_SYMBOL );
-      available_downvote_shares += weekly_withdraw - asset( delegator.to_withdraw.amount - delegator.withdrawn.amount, VESTS_SYMBOL );
+      auto weekly_withdraw = delegator.get_next_vesting_withdrawal();
+      auto remaining_withdraw = delegator.get_total_vesting_withdrawal();
+      available_shares += asset( weekly_withdraw - remaining_withdraw, VESTS_SYMBOL );
+      available_downvote_shares += asset( weekly_withdraw - remaining_withdraw, VESTS_SYMBOL );
     }
   }
   else
   {
-    available_shares = delegator.get_vesting().to_asset() - delegator.delegated_vesting_shares - asset( delegator.to_withdraw.amount - delegator.withdrawn.amount, VESTS_SYMBOL );
+    available_shares = delegator.get_vesting().to_asset() - delegator.get_delegated_vesting() - asset( delegator.get_total_vesting_withdrawal(), VESTS_SYMBOL );
   }
 
   const auto& wso = _db.get_witness_schedule_object();

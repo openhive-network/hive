@@ -71,15 +71,24 @@ namespace hive { namespace chain {
       const VEST_asset& get_delegated_vesting() const { return delegated_vesting_shares; }
       //VESTS that were borrowed from other accounts
       const VEST_asset& get_received_vesting() const { return received_vesting_shares; }
+      //whole remainder of active power down (zero when not active)
+      share_type get_total_vesting_withdrawal() const { return to_withdraw.amount - withdrawn.amount; }
+      //value of active step of pending power down (or zero)
+      share_type get_next_vesting_withdrawal() const
+      {
+        if( next_vesting_withdrawal != fc::time_point_sec::maximum() )
+          return std::min( vesting_withdraw_rate.amount, get_total_vesting_withdrawal() );
+        else
+          return 0;
+      }
       //effective balance of VESTS including delegations and optionally excluding active step of pending power down
       share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
       {
         share_type total = vesting_shares.amount - delegated_vesting_shares.amount + received_vesting_shares.amount;
         if( excludeWeeklyPowerDown && next_vesting_withdrawal != fc::time_point_sec::maximum() )
-          total -= std::min( vesting_withdraw_rate.amount, to_withdraw.amount - withdrawn.amount );
+          total -= get_next_vesting_withdrawal();
         return total;
       }
-      //TODO: add routines for specific uses, f.e. get_witness_voting_power, get_proposal_voting_power, get_post_voting_power...
       //unclaimed VESTS rewards
       const VEST_asset& get_vest_rewards() const { return reward_vesting_balance; }
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
