@@ -1648,7 +1648,7 @@ void rc_stats_object::add_stats( const rc_info& tx_info )
 
 int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account, bool only_delegable_rc )
 {
-  int64_t result = account.vesting_shares.amount.value;
+  int64_t result = account.get_vesting().amount.value;
   result = fc::signed_sat_sub( result, account.delegated_vesting_shares.amount.value );
   result = fc::signed_sat_add( result, account.received_vesting_shares.amount.value );
   if( only_delegable_rc == false ) //cannot rc delegate virtual vests coming from account creation fee

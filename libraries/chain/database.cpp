@@ -1954,9 +1954,9 @@ bool database::collect_account_total_balance( const account_object& account, ass
 {
   const auto& gpo = get_dynamic_global_properties();
 
-  *vesting_shares_hive_value = account.vesting_shares * gpo.get_vesting_share_price();
+  *vesting_shares_hive_value = account.get_vesting() * gpo.get_vesting_share_price();
   *total_hive = *vesting_shares_hive_value;
-  *total_vests = account.vesting_shares;
+  *total_vests = account.get_vesting();
   *total_hive += account.get_vest_rewards_as_hive();
   *total_vests += account.get_vest_rewards();
 
@@ -2013,13 +2013,13 @@ void database::clear_null_account_balance()
     adjust_savings_balance( null_account, -null_account.get_hbd_savings() );
   }
 
-  if( null_account.vesting_shares.amount > 0 )
+  if( null_account.get_vesting().amount > 0 )
   {
     const auto& gpo = get_dynamic_global_properties();
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
-      g.total_vesting_shares -= null_account.vesting_shares;
+      g.total_vesting_shares -= null_account.get_vesting();
       g.total_vesting_fund_hive -= vesting_shares_hive_value;
     });
 
@@ -2122,7 +2122,7 @@ void database::consolidate_treasury_balance()
     adjust_savings_balance( old_treasury_account, -old_treasury_account.get_hbd_savings() );
   }
 
-  if( old_treasury_account.vesting_shares.amount > 0 )
+  if( old_treasury_account.get_vesting().amount > 0 )
   {
     //note that if we wanted to move vests in vested form it would complicate delayed_votes part;
     //not that treasury could gain anything from vests anyway, so it is better to liquify them
@@ -2131,7 +2131,7 @@ void database::consolidate_treasury_balance()
     const auto& gpo = get_dynamic_global_properties();
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
-      g.total_vesting_shares -= old_treasury_account.vesting_shares;
+      g.total_vesting_shares -= old_treasury_account.get_vesting();
       g.total_vesting_fund_hive -= vesting_shares_hive_value;
     } );
 
@@ -2297,7 +2297,7 @@ void database::clear_account( const account_object& account )
   asset total_converted_vests = asset( 0, VESTS_SYMBOL );
   asset total_hive_from_vests = asset( 0, HIVE_SYMBOL );
 
-  if( account.vesting_shares.amount > 0 )
+  if( account.get_vesting().amount > 0 )
   {
     // Collect delegations and their delegatees to capture all affected accounts before delegations are deleted
     std::vector< std::pair< const vesting_delegation_object&, const account_object& > > delegations;
@@ -2350,12 +2350,12 @@ void database::clear_account( const account_object& account )
       remove( delegation );
     }
 
-    auto vests_to_convert = account.vesting_shares;
+    auto vests_to_convert = account.get_vesting();
     auto converted_hive = vests_to_convert * cprops.get_vesting_share_price();
-    total_converted_vests += account.vesting_shares;
+    total_converted_vests += account.get_vesting();
     total_hive_from_vests += asset( converted_hive, HIVE_SYMBOL );
 
-    adjust_proxied_witness_votes( account, -account.vesting_shares.amount );
+    adjust_proxied_witness_votes( account, -account.get_vesting().amount );
 
     modify( account, [&]( account_object& a )
     {
@@ -2774,9 +2774,9 @@ void database::process_vesting_withdrawals()
     share_type to_withdraw;
 
     if ( from_account.to_withdraw.amount - from_account.withdrawn.amount < from_account.vesting_withdraw_rate.amount )
-      to_withdraw = std::min( from_account.vesting_shares.amount, from_account.to_withdraw.amount % from_account.vesting_withdraw_rate.amount ).value;
+      to_withdraw = std::min( from_account.get_vesting().amount, from_account.to_withdraw.amount % from_account.vesting_withdraw_rate.amount ).value;
     else
-      to_withdraw = std::min( from_account.vesting_shares.amount, from_account.vesting_withdraw_rate.amount ).value;
+      to_withdraw = std::min( from_account.get_vesting().amount, from_account.vesting_withdraw_rate.amount ).value;
 
     optional< delayed_voting > dv;
     delayed_voting::opt_votes_update_data_items _votes_update_data_items;
@@ -2880,7 +2880,7 @@ void database::process_vesting_withdrawals()
       a.balance += converted_hive;
       a.withdrawn.amount += to_withdraw;
 
-      if( a.withdrawn.amount >= a.to_withdraw.amount || a.vesting_shares.amount == 0 )
+      if( a.withdrawn.amount >= a.to_withdraw.amount || a.get_vesting().amount == 0 )
       {
         a.vesting_withdraw_rate.amount = 0;
         a.next_vesting_withdrawal = fc::time_point_sec::maximum();
@@ -3515,7 +3515,7 @@ asset database::get_producer_reward()
   const auto& witness_account = get_account( props.current_witness );
 
   /// pay witness in vesting shares
-  if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_account.vesting_shares.amount.value == 0) )
+  if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_account.get_vesting().amount.value == 0) )
   {
     // const auto& witness_obj = get_witness( props.current_witness );
     operation vop = producer_reward_operation( witness_account.get_name(), asset( 0, VESTS_SYMBOL ) );
@@ -6179,7 +6179,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
         acnt.vesting_shares += delta;
         if( check_balance )
         {
-          FC_ASSERT( acnt.vesting_shares.amount.value >= 0, "Insufficient VESTS funds" );
+          FC_ASSERT( acnt.get_vesting().amount.value >= 0, "Insufficient VESTS funds" );
         }
         break;
       default:
@@ -7097,7 +7097,7 @@ void database::validate_invariants()const
       for( auto& dv : itr->delayed_votes )
         sum_delayed_votes += dv.val;
       FC_ASSERT( sum_delayed_votes == itr->sum_delayed_votes, "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->sum_delayed_votes) );
-      FC_ASSERT( sum_delayed_votes.value <= itr->vesting_shares.amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->vesting_shares.amount)("account",itr->get_name()) );
+      FC_ASSERT( sum_delayed_votes.value <= itr->get_vesting().amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->get_vesting().amount)("account",itr->get_name()) );
       ++account_no;
     }
 
@@ -7338,12 +7338,12 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
     for( const auto& account : get_index< account_index, by_id >() )
     {
-      asset old_vesting_shares = account.vesting_shares;
-      asset new_vesting_shares = account.vesting_shares;
+      asset old_vesting_shares = account.get_vesting();
+      asset new_vesting_shares = old_vesting_shares;
       modify( account, [&]( account_object& a )
       {
         a.vesting_shares.amount *= magnitude;
-        new_vesting_shares = a.vesting_shares;
+        new_vesting_shares = a.get_vesting();
         a.withdrawn.amount *= magnitude;
         a.to_withdraw.amount *= magnitude;
         a.vesting_withdraw_rate  = asset( a.to_withdraw.amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );

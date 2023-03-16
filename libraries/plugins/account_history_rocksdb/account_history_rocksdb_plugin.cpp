@@ -2087,9 +2087,9 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
           balances_changed = true;
         }
 
-        if (saved_balance_record.vesting_shares != account.vesting_shares)
+        if (saved_balance_record.vesting_shares != account.get_vesting())
         {
-          saved_balance_record.vesting_shares = account.vesting_shares;
+          saved_balance_record.vesting_shares = account.get_vesting();
           balances_changed = true;
         }
         if (saved_balance_record.delegated_vesting_shares != account.delegated_vesting_shares)
