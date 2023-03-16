@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_single to a single account" );
     ACTORS( (alice)(bob)(dave) )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
-    int64_t alice_vests = alice.vesting_shares.amount.value;
+    int64_t alice_vests = alice.get_vesting().amount.value;
 
     // Delegating more rc than I have should fail
     delegate_rc_operation op;
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan) )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
-    int64_t alice_vests = alice.vesting_shares.amount.value;
+    int64_t alice_vests = alice.get_vesting().amount.value;
 
     // Delegating more rc than alice has should fail
     delegate_rc_operation op;
@@ -402,7 +402,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many_different to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan)(carol) )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
-    uint64_t alice_vests = alice.vesting_shares.amount.value;
+    uint64_t alice_vests = alice.get_vesting().amount.value;
 
     std::string json = "[";
     delegate_rc_operation op;
@@ -756,7 +756,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
 
     // We delegate all our vests and we don't have enough to sustain any of our remaining delegations
     const account_object& acct = db->get_account( "alice" );
-    dvso.vesting_shares = acct.vesting_shares;
+    dvso.vesting_shares = acct.get_vesting();
     dvso.delegator = "alice";
     dvso.delegatee = "bob";
     push_transaction(dvso, alice_private_key);

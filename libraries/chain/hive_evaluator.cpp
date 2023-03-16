@@ -387,8 +387,8 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
           ( "creator.balance", creator.get_balance() )
           ( "required", o.fee ) );
 
-  FC_ASSERT( static_cast<asset>(creator.vesting_shares) - creator.delegated_vesting_shares - asset( creator.to_withdraw.amount - creator.withdrawn.amount, VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
-          ( "creator.vesting_shares", creator.vesting_shares )
+  FC_ASSERT( static_cast<asset>(creator.get_vesting()) - creator.delegated_vesting_shares - asset( creator.to_withdraw.amount - creator.withdrawn.amount, VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
+          ( "creator.vesting_shares", creator.get_vesting() )
           ( "creator.delegated_vesting_shares", creator.delegated_vesting_shares )( "required", o.delegation ) );
 
   auto target_delegation = asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER * HIVE_CREATE_ACCOUNT_DELEGATION_RATIO, HIVE_SYMBOL ) * props.get_vesting_share_price();
@@ -1189,8 +1189,8 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     return;
   }
 
-  FC_ASSERT( account.vesting_shares >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Hive Power for withdraw." );
-  FC_ASSERT( static_cast<asset>(account.vesting_shares) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
+  FC_ASSERT( account.get_vesting() >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Hive Power for withdraw." );
+  FC_ASSERT( static_cast<asset>(account.get_vesting()) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
 
   if( o.vesting_shares.amount == 0 )
   {
@@ -2949,7 +2949,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
   }
   else
   {
-    available_shares = delegator.vesting_shares.to_asset() - delegator.delegated_vesting_shares - asset( delegator.to_withdraw.amount - delegator.withdrawn.amount, VESTS_SYMBOL );
+    available_shares = delegator.get_vesting().to_asset() - delegator.delegated_vesting_shares - asset( delegator.to_withdraw.amount - delegator.withdrawn.amount, VESTS_SYMBOL );
   }
 
   const auto& wso = _db.get_witness_schedule_object();
@@ -3052,7 +3052,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     });
   }
   // Else the delegation is decreasing
-  else /* delegation->vesting_shares > op.vesting_shares */
+  else
   {
     auto delta = delegation->get_vesting() - op.vesting_shares;
 
