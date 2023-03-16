@@ -37,3 +37,12 @@ TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS: Final[int] = 21
 MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES: Final[int] = 10
 
 MAX_RECURRENT_TRANSFER_END_DATE: Final[int] = 730
+
+# time required to expiration of account recovery request (12 second in testnet / 1 day on mainnet)
+ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD: Final[int] = 4
+
+# time required to change account recovery (60 seconds in testnet / 30 days on mainnet)
+OWNER_AUTH_RECOVERY_PERIOD: Final[int] = 21
+
+# minimum time to reconfirm recovery account operation (6 seconds on testnet /  60 minutes on the mainnet)
+OWNER_UPDATE_LIMIT: Final[int] = 2
