@@ -114,6 +114,59 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_hf1 )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( get_ops_in_block_hf8 )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block on operations of HF8" );
+  BOOST_TEST_MESSAGE( (db->liquidity_rewards_enabled ? std::string("true") : std::string("false")) );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 65 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    // Let's check operations resulting from matched orders: interest_operation & fill_order_operation
+    expected_t expected_operations = { { // limit_order_create_operation
+      R"~({"trx_id":"d5253238722878b027edb688590275ab3432bacf","block":65,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:03:12","op":{"type":"limit_order_create_operation","value":{"owner":"hf8ben","orderid":1,"amount_to_sell":{"amount":"650","precision":3,"nai":"@@000000013"},"min_to_receive":{"amount":"400","precision":3,"nai":"@@000000021"},"fill_or_kill":false,"expiration":"2016-01-29T00:03:12"}},"operation_id":0})~",
+      R"~({"trx_id":"d5253238722878b027edb688590275ab3432bacf","block":65,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:03:12","op":["limit_order_create",{"owner":"hf8ben","orderid":1,"amount_to_sell":"0.650 TBD","min_to_receive":"0.400 TESTS","fill_or_kill":false,"expiration":"2016-01-29T00:03:12"}]})~"
+      }, { // interest_operation
+      R"~({"trx_id":"d5253238722878b027edb688590275ab3432bacf","block":65,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:03:12","op":{"type":"interest_operation","value":{"owner":"hf8ben","interest":{"amount":"1","precision":3,"nai":"@@000000013"},"is_saved_into_hbd_balance":true}},"operation_id":0})~",
+      R"~({"trx_id":"d5253238722878b027edb688590275ab3432bacf","block":65,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:03:12","op":["interest",{"owner":"hf8ben","interest":"0.001 TBD","is_saved_into_hbd_balance":true}]})~"
+      }, { // fill_order_operation
+      R"~({"trx_id":"d5253238722878b027edb688590275ab3432bacf","block":65,"trx_in_block":0,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:03:12","op":{"type":"fill_order_operation","value":{"current_owner":"hf8ben","current_orderid":1,"current_pays":{"amount":"650","precision":3,"nai":"@@000000013"},"open_owner":"hf8alice","open_orderid":3,"open_pays":{"amount":"625","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
+      R"~({"trx_id":"d5253238722878b027edb688590275ab3432bacf","block":65,"trx_in_block":0,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:03:12","op":["fill_order",{"current_owner":"hf8ben","current_orderid":1,"current_pays":"0.650 TBD","open_owner":"hf8alice","open_orderid":3,"open_pays":"0.625 TESTS"}]})~"
+      }, { // limit_order_create_operation
+      R"~({"trx_id":"0640f0e2b2c18de66407fbcd2f163814520ed923","block":65,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:03:12","op":{"type":"limit_order_create_operation","value":{"owner":"hf8ben","orderid":3,"amount_to_sell":{"amount":"11650","precision":3,"nai":"@@000000021"},"min_to_receive":{"amount":"11400","precision":3,"nai":"@@000000013"},"fill_or_kill":false,"expiration":"2016-01-29T00:03:12"}},"operation_id":0})~",
+      R"~({"trx_id":"0640f0e2b2c18de66407fbcd2f163814520ed923","block":65,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:03:12","op":["limit_order_create",{"owner":"hf8ben","orderid":3,"amount_to_sell":"11.650 TESTS","min_to_receive":"11.400 TBD","fill_or_kill":false,"expiration":"2016-01-29T00:03:12"}]})~"
+      }, { // fill_order_operation
+      R"~({"trx_id":"0640f0e2b2c18de66407fbcd2f163814520ed923","block":65,"trx_in_block":1,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:03:12","op":{"type":"fill_order_operation","value":{"current_owner":"hf8ben","current_orderid":3,"current_pays":{"amount":"11650","precision":3,"nai":"@@000000021"},"open_owner":"hf8alice","open_orderid":4,"open_pays":{"amount":"11923","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
+      R"~({"trx_id":"0640f0e2b2c18de66407fbcd2f163814520ed923","block":65,"trx_in_block":1,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:03:12","op":["fill_order",{"current_owner":"hf8ben","current_orderid":3,"current_pays":"11.650 TESTS","open_owner":"hf8alice","open_orderid":4,"open_pays":"11.923 TBD"}]})~"
+      }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":65,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:03:15","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"1000000000000","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":65,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:03:15","op":["producer_reward",{"producer":"initminer","vesting_shares":"1000000.000000 VESTS"}]})~"
+    } };
+    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[2], expected_operations[4], expected_operations[5] };
+    test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 65 );
+
+    generate_until_irreversible_block( 1200 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    // In block 1200 (see HIVE_LIQUIDITY_REWARD_BLOCKS) liquidity_reward_operation appears.
+    expected_operations = { { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":1200,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:00","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"1000000000000","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":1200,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T01:00:00","op":["producer_reward",{"producer":"initminer","vesting_shares":"1000000.000000 VESTS"}]})~"
+      }, { // liquidity_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":1200,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:00:00","op":{"type":"liquidity_reward_operation","value":{"owner":"hf8alice","payout":{"amount":"1200000","precision":3,"nai":"@@000000021"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":1200,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:00:00","op":["liquidity_reward",{"owner":"hf8alice","payout":"1200.000 TESTS"}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 1200 );
+  };
+
+  hf8_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_CASE( get_ops_in_block_hf12 )
 { try {
 

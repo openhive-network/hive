@@ -62,6 +62,7 @@ void test_get_account_history( const condenser_api_fixture& caf, const std::vect
 }
 
 // TODO create get_account_history_hf1 test here
+// TODO create get_account_history_hf8_test here
 // TODO create get_account_history_hf12 test here
 // TODO Create get_account_history_hf13 here
 // TODO create get_account_history_comment_and_reward test here

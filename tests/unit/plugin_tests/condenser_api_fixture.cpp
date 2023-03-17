@@ -97,6 +97,35 @@ void condenser_api_fixture::hf1_scenario( check_point_tester_t check_point_teste
   check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 }
 
+void condenser_api_fixture::hf8_scenario( check_point_tester_t check_point_tester )
+{
+  db->set_hardfork( HIVE_HARDFORK_0_8 );
+  generate_block(); // block 1
+  
+  ACTORS( (hf8alice)(hf8ben) );
+  generate_block();
+
+  fund( "hf8alice", ASSET( "2000.000 TESTS" ) );
+  fund( "hf8ben", ASSET( "2000.000 TBD" ) );
+  fund( "hf8alice", ASSET( "2000.000 TBD" ) );
+  fund( "hf8ben", ASSET( "2000.000 TESTS" ) );
+  generate_block();
+
+  limit_order_create( "hf8alice", ASSET( "12.800 TESTS" ), ASSET( "13.300 TBD" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 3, hf8alice_private_key );
+  limit_order_create( "hf8alice", ASSET( "21.800 TBD" ), ASSET( "21.300 TESTS" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 4, hf8alice_private_key );
+
+  for( int i = 0; i<60; ++i ) // <- The number reduced by moving from HF11 back to HF8
+    generate_block();
+
+  limit_order_create( "hf8ben", ASSET( "0.650 TBD" ), ASSET( "0.400 TESTS" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 1, hf8ben_private_key );
+  limit_order_create( "hf8ben", ASSET( "11.650 TESTS" ), ASSET( "11.400 TBD" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 3, hf8ben_private_key );
+
+  // Regardless of the fixture configuration interest_operation & fill_order_operation appear in block 65 now.
+  // liquidity_reward_operation shows up in block 1200, see HIVE_LIQUIDITY_REWARD_BLOCKS and
+  // assertion in database::get_liquidity_reward().
+  check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+}
+
 void condenser_api_fixture::hf12_scenario( check_point_tester_t check_point_tester )
 {
   db->set_hardfork( HIVE_HARDFORK_0_12 );
