@@ -1,14 +1,34 @@
 import os
+import sys
 from pathlib import Path
-from typing import Dict, Iterable, List, Callable, Optional
+from typing import Dict, Iterable, List, Callable, Optional, Tuple, Any
+from functools import partial
 
 import test_tools as tt
 from .complex_networks_helper_functions import connect_sub_networks
 import shared_tools.networks_architecture as networks
 
+class sql_preparer:
+    def __init__(self, network_under_test: int, node_under_test_name: str, session: Any = None) -> None:
+        self.network_under_test     = network_under_test
+        self.node_under_test_name   = node_under_test_name
+        self.session                = session
+
+    def prepare(self, builder: networks.NetworksBuilder):
+        node_under_test = builder.networks[self.network_under_test].node(self.node_under_test_name)
+        node_under_test.config.plugin.append('sql_serializer')
+        node_under_test.config.psql_url = str(self.db_name())
+
+    def db_name(self) -> Any:
+        return None if self.session == None else self.session.get_bind().url
+
+    def node(self, builder) -> Any:
+        return builder.networks[self.network_under_test].node(self.node_under_test_name)
+
 def get_time_offset_from_file(file: Path) -> str:
     with open(file, "r", encoding="UTF-8") as file:
         return file.read().strip()
+
 
 def get_relative_time_offset_from_timestamp(timestamp: str) -> str:
     delta = tt.Time.now(serialize=False) - tt.Time.parse(timestamp)
@@ -103,6 +123,7 @@ def init_network(init_node, all_witness_names: List[str], key: Optional[str] = N
         with (block_log_directory_name / "timestamp").open(mode="w", encoding="UTF-8") as file_handle:
             file_handle.write(f"{timestamp}")
 
+
 def modify_time_offset(old_iso_date: str, offset_in_seconds: int) -> str:
     new_iso_date = tt.Time.serialize(tt.Time.parse(old_iso_date) - tt.Time.seconds(offset_in_seconds))
     tt.logger.info(f"old date: {old_iso_date} new date(after time offset): {new_iso_date}")
@@ -110,6 +131,7 @@ def modify_time_offset(old_iso_date: str, offset_in_seconds: int) -> str:
     time_offset = get_relative_time_offset_from_timestamp(new_iso_date)
 
     return time_offset
+
 
 def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_offsets: Optional[Iterable[str]] = None) -> None:
     if blocklog_directory is not None:
@@ -162,6 +184,7 @@ def display_info(wallet) -> None:
     head = result["head_block_num"]
     tt.logger.info(f"Network prepared, irreversible block: {irreversible}, head block: {head}")
 
+
 def prepare_nodes(sub_networks_sizes: list) -> list:
     assert len(sub_networks_sizes) > 0, "At least 1 sub-network is required"
 
@@ -185,6 +208,7 @@ def prepare_nodes(sub_networks_sizes: list) -> list:
 
         cnt += 1
     return sub_networks, init_node, all_witness_names
+
 
 def prepare_sub_networks_generation(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, before_run_network: Optional[Callable[[], networks.NetworksBuilder]] = None, desired_blocklog_length: Optional[int] = None) -> Dict:
     builder = networks.NetworksBuilder()
@@ -231,3 +255,63 @@ def allow_generate_block_log() -> bool:
     if status is None:
         return False
     return int(status) == 1
+
+
+def before_run_network(builder: networks.NetworksBuilder, preparers: Iterable[sql_preparer]):
+    for preparer in preparers:
+        preparer.prepare(builder)
+
+    for node in builder.nodes:
+        node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr,p2p"} '\
+                                 '{"name":"user","level":"debug","appender":"stderr,p2p"} '\
+                                 '{"name":"chainlock","level":"debug","appender":"p2p"} '\
+                                 '{"name":"sync","level":"debug","appender":"p2p"} '\
+                                 '{"name":"p2p","level":"debug","appender":"p2p"}'
+
+
+def prepare_database( database, name: str = "haf_block_log") -> Any:
+    return database(f"postgresql:///{name}")
+
+
+def prepare_basic_networks_internal(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparers: Iterable[sql_preparer] = None) -> Tuple[networks.NetworksBuilder, Any]:
+    builder = prepare_sub_networks(architecture, block_log_directory_name, time_offsets, partial( before_run_network, preparers=preparers))
+
+    if builder == None:
+        tt.logger.info(f"Generating 'block_log' enabled. Exiting...")
+        sys.exit(1)
+
+    return builder
+
+
+def prepare_basic_networks(database, architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparer: sql_preparer = None) -> Tuple[networks.NetworksBuilder, Any]:
+    preparer.session = prepare_database(database)
+    return prepare_basic_networks_internal(architecture, block_log_directory_name, time_offsets, [preparer]), preparer.session
+
+
+def prepare_basic_networks_with_2_sessions(database, architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparers: Iterable[sql_preparer] = None) -> Tuple[networks.NetworksBuilder, Any]:
+    preparers[0].session = prepare_database(database)
+    preparers[1].session = prepare_database(database, "haf_block_log_ref")
+    return prepare_basic_networks_internal(architecture, block_log_directory_name, time_offsets, preparers), [preparers[0].session, preparers[1].session]
+
+
+def prepare_node_with_database(database) -> Tuple[tt.ApiNode, Any, Any]:
+    config = {
+        "networks": [
+                        {
+                            "ApiNode"   : True,
+                        }
+                    ]
+    }
+    architecture = networks.NetworksArchitecture()
+    architecture.load(config)
+
+    builder = networks.NetworksBuilder()
+    builder.build(architecture, True)
+
+    network_under_test      = 0
+    node_under_test_name    = "ApiNode0"
+
+    preparer = sql_preparer(network_under_test, node_under_test_name, prepare_database(database))
+    preparer.prepare(builder)
+
+    return preparer.node(builder), preparer.session, preparer.db_name()
