@@ -105,7 +105,7 @@ class NetworksBuilder:
         self.nodes          = []
         self.init_wallet    = None
 
-    def build(self, architecture: NetworksArchitecture) -> None:
+    def build(self, architecture: NetworksArchitecture, init_node_can_be_empty: bool = False) -> None:
         for network in architecture.networks:
             tt_network = tt.Network()
 
@@ -122,7 +122,7 @@ class NetworksBuilder:
                 self.nodes.append(tt.ApiNode(network=tt_network))
 
             self.networks.append(tt_network)
-        assert self.init_node is not None
+        assert init_node_can_be_empty or self.init_node is not None
 
 #=================Example=================
 
