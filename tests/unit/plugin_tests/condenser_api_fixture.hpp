@@ -41,6 +41,13 @@ struct condenser_api_fixture : database_fixture
   */
   void hf1_scenario( check_point_tester_t check_point_tester );
 
+  /**
+   * Operations tested here:
+   *  liquidity_reward_operation appears (needs HF < 12), interest_operation, fill_order_operation,
+   *  limit_order_create_operation & producer_reward_operation.
+   */
+  void hf8_scenario( check_point_tester_t check_point_tester );
+
   /** 
    * Tests pow_operation that needs hardfork lower than 13.
    * Also tests: pow_reward_operation, account_created_operation, comment_operation (see database_fixture::create_with_pow) & producer_reward_operation.
