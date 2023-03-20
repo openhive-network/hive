@@ -13,6 +13,8 @@
 
 #include <hive/chain/dhf_objects.hpp>
 
+#include <hive/protocol/testnet_blockchain_configuration.hpp>
+
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/resource_count.hpp>
 
@@ -38,7 +40,10 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-constexpr int NR_INTERVALS_IN_DELAYED_VOTING{ (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS) };
+uint32_t nr_intervals_in_delayed_voting()
+{
+  return configuration_data.get_hive_delayed_voting_total_interval_seconds() / configuration_data.get_hive_delayed_voting_interval_seconds();
+}
 
 #define VOTING_POWER( account ) db->get_account( account ).get_governance_vote_power().value
 #define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
@@ -92,7 +97,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     
     // create one proposal
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    cpd.end_date = cpd.start_date + fc::days( 2* NR_INTERVALS_IN_DELAYED_VOTING );
+    cpd.end_date = cpd.start_date + fc::days( 2* nr_intervals_in_delayed_voting() );
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, false/*with_block_generation*/ );
     BOOST_REQUIRE(proposal_1 >= 0);
 
@@ -105,7 +110,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     const int cycle = 24;
     const int time_offset = HIVE_DELAYED_VOTING_INTERVAL_SECONDS / cycle;
     // check
-    for(int i = 0; i < (cycle*NR_INTERVALS_IN_DELAYED_VOTING) - 1; i++)
+    for(int i = 0; i < (cycle*nr_intervals_in_delayed_voting()) - 1; i++)
     {
       generate_blocks( db->head_block_time() + fc::seconds( time_offset ).to_seconds());
       auto * ptr = find_proposal(proposal_1);
@@ -161,14 +166,14 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     
     // create one proposal
     dhf_database::create_proposal_data cpd1(db->head_block_time());
-    cpd1.end_date = cpd1.start_date + fc::days( 2* NR_INTERVALS_IN_DELAYED_VOTING );
+    cpd1.end_date = cpd1.start_date + fc::days( 2* nr_intervals_in_delayed_voting() );
     cpd1.creator = "alice";
     int64_t proposal_1 = create_proposal( cpd1.creator, cpd1.receiver, cpd1.start_date, cpd1.end_date, cpd1.daily_pay, alice_private_key, false/*with_block_generation*/ );
     BOOST_REQUIRE(proposal_1 >= 0);
 
     // create one proposal
     dhf_database::create_proposal_data cpd2(db->head_block_time());
-    cpd2.end_date = cpd2.start_date + fc::days( 2* NR_INTERVALS_IN_DELAYED_VOTING );
+    cpd2.end_date = cpd2.start_date + fc::days( 2* nr_intervals_in_delayed_voting() );
     cpd2.creator = "bob";
     int64_t proposal_2 = create_proposal( cpd2.creator, cpd2.receiver, cpd2.start_date, cpd2.end_date, cpd2.daily_pay, bob_private_key, false/*with_block_generation*/ );
     BOOST_REQUIRE(proposal_2 >= 0);
@@ -185,20 +190,20 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     // check
     const int cycle = 24;
     const int time_offset = HIVE_DELAYED_VOTING_INTERVAL_SECONDS / cycle;
-    for(int i = 0; i < (cycle*NR_INTERVALS_IN_DELAYED_VOTING) - 1; i++)
+    for(int i = 0; i < (cycle*nr_intervals_in_delayed_voting()) - 1; i++)
     {
       generate_blocks( db->head_block_time() + fc::seconds(time_offset).to_seconds());
       ptr = find_proposal(proposal_1);
       BOOST_REQUIRE( ptr != nullptr );
       BOOST_REQUIRE( ptr->total_votes == 0ul );
 
-      if( i == (12 * NR_INTERVALS_IN_DELAYED_VOTING))
+      if( i == (12 * nr_intervals_in_delayed_voting()))
       {
         vest("carol", "carol", ASSET("10.000 TESTS"), carol_private_key);
         vote_proposal("carol", { proposal_1, proposal_2 }, true, carol_private_key);
       }
 
-      if(i > (12 * NR_INTERVALS_IN_DELAYED_VOTING))
+      if(i > (12 * nr_intervals_in_delayed_voting()))
       {
         ptr = find_proposal(proposal_2);
         BOOST_REQUIRE( ptr != nullptr );
@@ -216,7 +221,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     BOOST_REQUIRE( ptr != nullptr );
     BOOST_REQUIRE( static_cast<long>(ptr->total_votes) == carol_power_1 );
 
-    for(int i = 0; i < ( 12 * ( NR_INTERVALS_IN_DELAYED_VOTING / 2 ) ) - 1; i++)
+    for(int i = 0; i < ( 12 * ( nr_intervals_in_delayed_voting() / 2 ) ) - 1; i++)
     {
       generate_blocks( db->head_block_time() + fc::seconds(time_offset).to_seconds());
       ptr = find_proposal(proposal_2);
@@ -1207,10 +1212,10 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
     BOOST_REQUIRE( basic_votes_1 == votes_01_1 );
     BOOST_REQUIRE( basic_votes_2 == votes_01_2 );
 
-    for(int i = 1; i < NR_INTERVALS_IN_DELAYED_VOTING - 1; i++)
+    for(int i = 1; i < nr_intervals_in_delayed_voting() - 1; i++)
     {
       generate_blocks( start_time + (i * HIVE_DELAYED_VOTING_INTERVAL_SECONDS) , true );
-      if( i == static_cast<int>( NR_INTERVALS_IN_DELAYED_VOTING/2 )) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
+      if( i == static_cast<int>( nr_intervals_in_delayed_voting()/2 )) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
       BOOST_REQUIRE( get_votes( "witness1" ) == votes_01_1 );
       BOOST_REQUIRE( get_votes( "witness2" ) == votes_01_2 );
     }
@@ -1467,7 +1472,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
 
     // check everyday for month
     bool s = false;
-    for(int i = 1; i < NR_INTERVALS_IN_DELAYED_VOTING - 1; i++)
+    for(int i = 1; i < nr_intervals_in_delayed_voting() - 1; i++)
     {
       // 1 day
       generate_blocks( start_time + (i * HIVE_DELAYED_VOTING_INTERVAL_SECONDS) , true );
@@ -2286,7 +2291,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
     share_type votes_01 = get_votes( "witness" );
     BOOST_REQUIRE( votes_01 == basic_votes );
 
-    generate_blocks( start_time + fc::seconds( (NR_INTERVALS_IN_DELAYED_VOTING - 1) * HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) , true );
+    generate_blocks( start_time + fc::seconds( (nr_intervals_in_delayed_voting() - 1) * HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) , true );
     generate_block();
 
     // just before lock down alice vests huge amount of TESTs
