@@ -84,7 +84,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       uint32_t get_hive_savings_withdraw_time() const { return hive_savings_withdraw_time; }
       uint16_t get_hive_min_recurrent_transfers_recurrence() const { return hive_min_recurrent_transfers_recurrence; }
 
-      uint64_t get_hive_delayed_voting_total_interval_seconds() const { return hive_delayed_voting_total_interval_seconds; }
+      uint32_t get_hive_delayed_voting_total_interval_seconds() const { return hive_delayed_voting_total_interval_seconds; }
+      uint32_t get_hive_delayed_voting_interval_seconds() const { return get_hive_delayed_voting_total_interval_seconds() / 30; }
 
       uint32_t get_hive_proposal_maintenance_period() const { return hive_proposal_maintenance_period; }
 
