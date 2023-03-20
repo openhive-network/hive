@@ -45,6 +45,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     uint32_t hive_savings_withdraw_time = 60*60*24*3; // seconds, originally 3 days
     // Minimum number of hours between recurrent transfers.
     uint16_t hive_min_recurrent_transfers_recurrence = 24; // hours, originally 24
+    // Delay between funds vesting and its usage in governance voting.
+    uint64_t hive_delayed_voting_total_interval_seconds = 60*60*24*1; // 1 day, originally 30 days
     
     std::string hive_hf9_compromised_key;
     hive::protocol::private_key_type hive_initminer_key;
@@ -79,6 +81,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
       uint32_t get_hive_savings_withdraw_time() const { return hive_savings_withdraw_time; }
       uint16_t get_hive_min_recurrent_transfers_recurrence() const { return hive_min_recurrent_transfers_recurrence; }
+
+      uint64_t get_hive_delayed_voting_total_interval_seconds() const { return hive_delayed_voting_total_interval_seconds; }
 
       std::string get_HF9_compromised_accounts_key() const { return hive_hf9_compromised_key; }
 
@@ -156,6 +160,20 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       {
         configuration clear;
         set_min_recurrent_transfers_recurrence( clear.get_hive_min_recurrent_transfers_recurrence() );
+      }
+
+      /**
+       * [30 .. 60*60*24*30]
+       */
+      void set_delayed_voting_related_values( uint64_t delayed_voting_total_interval_seconds )
+      {
+        hive_delayed_voting_total_interval_seconds = delayed_voting_total_interval_seconds;
+      }
+
+      void reset_delayed_voting_values()
+      {
+        configuration clear;
+        set_delayed_voting_related_values( clear.get_hive_delayed_voting_total_interval_seconds() );
       }
 
       void set_skeleton_key(const hive::protocol::private_key_type& private_key);
