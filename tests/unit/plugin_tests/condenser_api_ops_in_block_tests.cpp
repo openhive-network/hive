@@ -587,12 +587,14 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_escrow_and_savings )
 
 BOOST_AUTO_TEST_CASE( get_ops_in_block_proposal )
 { try {
+  configuration_data.set_delayed_voting_related_values( 90 );
+  configuration_data.set_proposal_related_values( 30 );
 
   BOOST_TEST_MESSAGE( "testing get_ops_in_block with proposal_scenario" );
 
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
-    generate_until_irreversible_block( 5 );
+    generate_until_irreversible_block( 42 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
     expected_t expected_operations = { { // producer_reward_operation
@@ -606,20 +608,20 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_proposal )
     test_get_ops_in_block( *this, expected_operations, expected_operations, 2 );
 
     expected_operations = { { // transfer_operation
-      R"~({"trx_id":"909b8d77940011e1496d49d73f19282ce0d19cef","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"transfer_operation","value":{"from":"carol7ah","to":"hive.fund","amount":{"amount":"3333","precision":3,"nai":"@@000000021"},"memo":""}},"operation_id":0})~",
-      R"~({"trx_id":"909b8d77940011e1496d49d73f19282ce0d19cef","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["transfer",{"from":"carol7ah","to":"hive.fund","amount":"3.333 TESTS","memo":""}]})~"
+      R"~({"trx_id":"5c9221cfc5835c86be71425d55cdee6e334d6967","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"transfer_operation","value":{"from":"carol7ah","to":"hive.fund","amount":{"amount":"30000333","precision":3,"nai":"@@000000021"},"memo":""}},"operation_id":0})~",
+      R"~({"trx_id":"5c9221cfc5835c86be71425d55cdee6e334d6967","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["transfer",{"from":"carol7ah","to":"hive.fund","amount":"30000.333 TESTS","memo":""}]})~"
       }, { // dhf_conversion_operation
-      R"~({"trx_id":"909b8d77940011e1496d49d73f19282ce0d19cef","block":5,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"dhf_conversion_operation","value":{"treasury":"hive.fund","hive_amount_in":{"amount":"3333","precision":3,"nai":"@@000000021"},"hbd_amount_out":{"amount":"3333","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
-      R"~({"trx_id":"909b8d77940011e1496d49d73f19282ce0d19cef","block":5,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["dhf_conversion",{"treasury":"hive.fund","hive_amount_in":"3.333 TESTS","hbd_amount_out":"3.333 TBD"}]})~"
+      R"~({"trx_id":"5c9221cfc5835c86be71425d55cdee6e334d6967","block":5,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"dhf_conversion_operation","value":{"treasury":"hive.fund","hive_amount_in":{"amount":"30000333","precision":3,"nai":"@@000000021"},"hbd_amount_out":{"amount":"30000333","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
+      R"~({"trx_id":"5c9221cfc5835c86be71425d55cdee6e334d6967","block":5,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["dhf_conversion",{"treasury":"hive.fund","hive_amount_in":"30000.333 TESTS","hbd_amount_out":"30000.333 TBD"}]})~"
       }, { // comment_operation
       R"~({"trx_id":"3a20708685a9510a1a03a58499cc2a0cd42985d8","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"comment_operation","value":{"parent_author":"","parent_permlink":"test","author":"alice7ah","permlink":"permlink0","title":"title","body":"body","json_metadata":""}},"operation_id":0})~",
       R"~({"trx_id":"3a20708685a9510a1a03a58499cc2a0cd42985d8","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["comment",{"parent_author":"","parent_permlink":"test","author":"alice7ah","permlink":"permlink0","title":"title","body":"body","json_metadata":""}]})~"
       }, { // create_proposal_operation
-      R"~({"trx_id":"2309ebc61f5580e870fcbc982f03acc4614335a8","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2016-01-02T00:00:12","end_date":"2016-01-03T00:00:12","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0})~",
-      R"~({"trx_id":"2309ebc61f5580e870fcbc982f03acc4614335a8","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2016-01-02T00:00:12","end_date":"2016-01-03T00:00:12","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]})~"
+      R"~({"trx_id":"3984630fffc862924860434b613595a3ef6f4925","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:12","end_date":"2016-01-03T00:00:12","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"3984630fffc862924860434b613595a3ef6f4925","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:12","end_date":"2016-01-03T00:00:12","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]})~"
       }, { // proposal_fee_operation
-      R"~({"trx_id":"2309ebc61f5580e870fcbc982f03acc4614335a8","block":5,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"proposal_fee_operation","value":{"creator":"alice7ah","treasury":"hive.fund","proposal_id":0,"fee":{"amount":"10000","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
-      R"~({"trx_id":"2309ebc61f5580e870fcbc982f03acc4614335a8","block":5,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["proposal_fee",{"creator":"alice7ah","treasury":"hive.fund","proposal_id":0,"fee":"10.000 TBD"}]})~"
+      R"~({"trx_id":"3984630fffc862924860434b613595a3ef6f4925","block":5,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"proposal_fee_operation","value":{"creator":"alice7ah","treasury":"hive.fund","proposal_id":0,"fee":{"amount":"10000","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
+      R"~({"trx_id":"3984630fffc862924860434b613595a3ef6f4925","block":5,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["proposal_fee",{"creator":"alice7ah","treasury":"hive.fund","proposal_id":0,"fee":"10.000 TBD"}]})~"
       }, { // update_proposal_operation
       R"~({"trx_id":"4aa8d1fc867bfaf9c50f3272f5899a2b153d4500","block":5,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"update_proposal_operation","value":{"proposal_id":0,"creator":"alice7ah","daily_pay":{"amount":"80","precision":3,"nai":"@@000000013"},"subject":"new subject","permlink":"permlink0","extensions":[]}},"operation_id":0})~",
       R"~({"trx_id":"4aa8d1fc867bfaf9c50f3272f5899a2b153d4500","block":5,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["update_proposal",{"proposal_id":0,"creator":"alice7ah","daily_pay":"0.080 TBD","subject":"new subject","permlink":"permlink0","extensions":[]}]})~"
@@ -635,10 +637,44 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_proposal )
       } };
     expected_t expected_virtual_operations = { expected_operations[1], expected_operations[4], expected_operations[8] };
     test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );
+
+    expected_operations = { { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":32,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:36","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"6989046794","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":32,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:36","op":["producer_reward",{"producer":"initminer","vesting_shares":"6989.046794 VESTS"}]})~"
+      }, { // dhf_funding_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":32,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:36","op":{"type":"dhf_funding_operation","value":{"treasury":"hive.fund","additional_funds":{"amount":"90","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":32,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:36","op":["dhf_funding",{"treasury":"hive.fund","additional_funds":"0.090 TBD"}]})~"
+      }, { // delayed_voting_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":32,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:01:36","op":{"type":"delayed_voting_operation","value":{"voter":"alice7ah","votes":"98716683119"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":32,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:01:36","op":["delayed_voting",{"voter":"alice7ah","votes":"98716683119"}]})~"
+      }, { // delayed_voting_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":32,"trx_in_block":4294967295,"op_in_trx":4,"virtual_op":true,"timestamp":"2016-01-01T00:01:36","op":{"type":"delayed_voting_operation","value":{"voter":"ben7ah","votes":"98716683119"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":32,"trx_in_block":4294967295,"op_in_trx":4,"virtual_op":true,"timestamp":"2016-01-01T00:01:36","op":["delayed_voting",{"voter":"ben7ah","votes":"98716683119"}]})~"
+      }, { // delayed_voting_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":32,"trx_in_block":4294967295,"op_in_trx":5,"virtual_op":true,"timestamp":"2016-01-01T00:01:36","op":{"type":"delayed_voting_operation","value":{"voter":"carol7ah","votes":"98716683119"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":32,"trx_in_block":4294967295,"op_in_trx":5,"virtual_op":true,"timestamp":"2016-01-01T00:01:36","op":["delayed_voting",{"voter":"carol7ah","votes":"98716683119"}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 32 );
+
+    expected_operations = { { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":42,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:06","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"168545291237","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":42,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:06","op":["producer_reward",{"producer":"initminer","vesting_shares":"168545.291237 VESTS"}]})~"
+      }, { // dhf_funding_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":42,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:02:06","op":{"type":"dhf_funding_operation","value":{"treasury":"hive.fund","additional_funds":{"amount":"90","precision":3,"nai":"@@000000013"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":42,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:02:06","op":["dhf_funding",{"treasury":"hive.fund","additional_funds":"0.090 TBD"}]})~"
+      }, { // proposal_pay_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":42,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:02:06","op":{"type":"proposal_pay_operation","value":{"proposal_id":1,"receiver":"ben7ah","payer":"hive.fund","payment":{"amount":"0","precision":3,"nai":"@@000000013"},"trx_id":"0000000000000000000000000000000000000000","op_in_trx":2}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":42,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:02:06","op":["proposal_pay",{"proposal_id":1,"receiver":"ben7ah","payer":"hive.fund","payment":"0.000 TBD","trx_id":"0000000000000000000000000000000000000000","op_in_trx":2}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 42 );
   };
 
   proposal_scenario( check_point_tester );
 
+  configuration_data.reset_delayed_voting_values();
+  configuration_data.reset_proposal_values();
 } FC_LOG_AND_RETHROW() }
 
 BOOST_AUTO_TEST_CASE( get_ops_in_block_account )

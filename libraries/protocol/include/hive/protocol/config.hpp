@@ -75,7 +75,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_INIT_SUPPLY                      (hive::protocol::testnet_blockchain_configuration::configuration_data.get_init_supply(int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 )))
 #define HIVE_HBD_INIT_SUPPLY                  (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hbd_init_supply(int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 )))
 
-#define HIVE_PROPOSAL_MAINTENANCE_PERIOD          3600
+#define HIVE_PROPOSAL_MAINTENANCE_PERIOD          (configuration_data.get_hive_proposal_maintenance_period())
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
 #define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD    (60*60) /// 1 hour
 #define HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD    (fc::days(5))

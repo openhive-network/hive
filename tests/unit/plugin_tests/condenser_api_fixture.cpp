@@ -307,23 +307,35 @@ void condenser_api_fixture::proposal_scenario( check_point_tester_t check_point_
   ACTORS( (alice7ah)(ben7ah)(carol7ah) );
   generate_block();
   fund( "alice7ah", ASSET( "800.000 TBD" ) );
-  fund( "carol7ah", ASSET( "10.000 TESTS") );
+  fund( "carol7ah", ASSET( "100000.000 TESTS") );
   generate_block();
 
-  transfer( "carol7ah", db->get_treasury_name(), ASSET( "3.333 TESTS" ) ); // <- trigger dhf_conversion_operation
+  // Fill treasury handsomely so that the payout occurres early.
+  transfer( "carol7ah", db->get_treasury_name(), ASSET( "30000.333 TESTS" ) ); // <- trigger dhf_conversion_operation
 
+  // Create the proposal for the first time to be updated and removed.
   int64_t proposal_id = 
-    create_proposal( "alice7ah", "ben7ah", db->head_block_time() + fc::days( 1 ), db->head_block_time() + fc::days( 2 ),
+    create_proposal( "alice7ah", "ben7ah", db->head_block_time() - fc::days( 1 ), db->head_block_time() + fc::days( 2 ),
                       asset( 100, HBD_SYMBOL ), alice7ah_private_key, false/*with_block_generation*/ );
   const proposal_object* proposal = find_proposal( proposal_id );
+  std::string subject( proposal->subject );
+  std::string permlink( proposal->permlink );
   BOOST_REQUIRE_NE( proposal, nullptr );
-
   update_proposal( proposal_id, "alice7ah", asset( 80, HBD_SYMBOL ), "new subject", proposal->permlink, alice7ah_private_key);
   vote_proposal( "carol7ah", { proposal_id }, true/*approve*/, carol7ah_private_key);
   remove_proposal( "alice7ah", { proposal_id }, alice7ah_private_key );
 
-  // All operations mentioned above can be checked now in 5th block except dhf_funding_operation (2nd block),
+  generate_block();
+
+  // Create the same proposal again to be paid from treasury.
+  proposal_id = create_proposal( "alice7ah", "ben7ah", subject, permlink, db->head_block_time() - fc::days( 1 ),
+    db->head_block_time() + fc::days( 2 ), asset( 100, HBD_SYMBOL ), alice7ah_private_key );
+  vote_proposal( "carol7ah", { proposal_id }, true/*approve*/, carol7ah_private_key);
+
+  // All operations related to first proposal can be checked now in 5th block except dhf_funding_operation (2nd block),
   // regardless of the fixture configuration.
+  // The virtual operations related to second proposal may occur as early as 32nd block (delayed_voting_operation) and
+  // 42nd block (proposal_pay_operation), depending on test configuration.
   check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 }
 
