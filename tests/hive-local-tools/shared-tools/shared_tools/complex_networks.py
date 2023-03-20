@@ -315,3 +315,21 @@ def prepare_node_with_database(database) -> Tuple[tt.ApiNode, Any, Any]:
     preparer.prepare(builder)
 
     return preparer.node(builder), preparer.session, preparer.db_name()
+
+
+def prepare_time_offsets(limit: int):
+    time_offsets = []
+
+    cnt = 0
+    for i in range(limit):
+        time_offsets.append(cnt % 3 + 1)
+        cnt += 1
+
+    result = ",".join(str(time_offset) for time_offset in time_offsets)
+    tt.logger.info( f"Generated: {result}" )
+
+    return time_offsets
+
+
+def create_block_log_directory_name(block_log_directory_name: str):
+    return Path(__file__).parent.absolute() / "block_logs" / block_log_directory_name
