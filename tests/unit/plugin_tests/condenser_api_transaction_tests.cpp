@@ -155,10 +155,10 @@ BOOST_AUTO_TEST_CASE( get_transaction_convert_and_limit_order )
 
     test_get_transaction( *this, 5 ); // <- TODO: Enhance with patterns
 
-    generate_until_irreversible_block( 1684 );
+    generate_until_irreversible_block( 88 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
-    test_get_transaction( *this, 1684 ); // <- TODO: Enhance with patterns
+    test_get_transaction( *this, 88 ); // <- TODO: Enhance with patterns
   };
 
   convert_and_limit_order_scenario( check_point_tester );

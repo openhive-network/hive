@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order )
 
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
-    generate_until_irreversible_block( 1684 );
+    generate_until_irreversible_block( 88 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
     expected_t expected_carol3ah_history = { {

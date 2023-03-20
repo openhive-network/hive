@@ -47,6 +47,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     uint16_t hive_min_recurrent_transfers_recurrence = 24; // hours, originally 24
     // Delay between funds vesting and its usage in governance voting.
     uint64_t hive_delayed_voting_total_interval_seconds = 60*60*24*1; // 1 day, originally 30 days
+    // How often proposals are taken care of.
+    uint32_t hive_proposal_maintenance_period = 60*60; // 1 hour
     
     std::string hive_hf9_compromised_key;
     hive::protocol::private_key_type hive_initminer_key;
@@ -83,6 +85,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       uint16_t get_hive_min_recurrent_transfers_recurrence() const { return hive_min_recurrent_transfers_recurrence; }
 
       uint64_t get_hive_delayed_voting_total_interval_seconds() const { return hive_delayed_voting_total_interval_seconds; }
+
+      uint32_t get_hive_proposal_maintenance_period() const { return hive_proposal_maintenance_period; }
 
       std::string get_HF9_compromised_accounts_key() const { return hive_hf9_compromised_key; }
 
@@ -163,7 +167,7 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       }
 
       /**
-       * [30 .. 60*60*24*30]
+       * [30*3 .. 60*60*24*30]
        */
       void set_delayed_voting_related_values( uint64_t delayed_voting_total_interval_seconds )
       {
@@ -174,6 +178,20 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       {
         configuration clear;
         set_delayed_voting_related_values( clear.get_hive_delayed_voting_total_interval_seconds() );
+      }
+
+      /**
+       * [3 .. 3600]
+       */
+      void set_proposal_related_values( uint32_t proposal_maintenance_period )
+      {
+        hive_proposal_maintenance_period = proposal_maintenance_period;
+      }
+
+      void reset_proposal_values()
+      {
+        configuration clear;
+        set_proposal_related_values( clear.get_hive_proposal_maintenance_period() );
       }
 
       void set_skeleton_key(const hive::protocol::private_key_type& private_key);

@@ -109,7 +109,8 @@ struct condenser_api_fixture : database_fixture
   /**
    * Operations tested here:
    *  dhf_funding_operation, dhf_conversion_operation, transfer_operation,
-   *  create_proposal_operation, proposal_fee_operation, update_proposal_operation, update_proposal_votes_operation & remove_proposal_operation
+   *  create_proposal_operation, proposal_fee_operation, update_proposal_operation, update_proposal_votes_operation, remove_proposal_operation,
+   *  delayed_voting_operation & proposal_pay_operation
    */
   void proposal_scenario( check_point_tester_t check_point_tester );
 
