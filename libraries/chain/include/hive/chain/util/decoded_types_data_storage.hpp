@@ -6,6 +6,7 @@
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/crypto/sha256.hpp>
 #include <fc/exception/exception.hpp>
+#include <fc/io/json.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/static_variant.hpp>
 
@@ -26,14 +27,20 @@ class decoded_type_data
   public:
     decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const bool _reflected);
 
+    // json pattern: "[is_reflected,type_id,checksum]"
+    decoded_type_data(const std::vector<fc::variant>& json);
+    virtual ~decoded_type_data() = default;
+
+    virtual std::string to_json_string() const;
+
     virtual std::string_view get_checksum() const final { return checksum; }
     virtual std::string_view get_type_id() const final { return type_id; }
     virtual bool is_reflected() const final { return reflected; }
 
   protected:
-    const std::string checksum;
-    const std::string type_id;
-    const bool reflected;
+    std::string checksum;
+    std::string type_id;
+    bool reflected;
 };
 
 class reflected_decoded_type_data : public decoded_type_data
@@ -45,15 +52,20 @@ class reflected_decoded_type_data : public decoded_type_data
     reflected_decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _fc_name,
                                 members_vector&& _members, enum_values_vector&& _enum_values);
 
+    // json pattern: "[is_reflected,type_id,checksum,fc_name,is_enum,{members or enum values}]"
+    reflected_decoded_type_data(const std::vector<fc::variant>& json);
+
+    std::string to_json_string() const override;
+
     std::string_view get_type_name() const { return fc_name; }
     bool is_enum() const { return members.empty(); }
     const members_vector& get_members() const { return members; }
     const enum_values_vector& get_enum_values() const { return enum_values; }
 
   private:
-    const members_vector members; // in case of structure
-    const enum_values_vector enum_values; // in case of enum
-    const std::string fc_name;
+    members_vector members; // in case of structure
+    enum_values_vector enum_values; // in case of enum
+    std::string fc_name;
 };
 
 namespace decoders
@@ -70,12 +82,12 @@ namespace decoders
     }
 }
 
+using decoding_types_set_t = std::unordered_set<std::string_view>;
+using decoded_types_map_t = std::unordered_map<std::string_view, std::shared_ptr<decoded_type_data>>;
+
 class decoded_types_data_storage final
 {
   private:
-    using decoding_types_set_t = std::unordered_set<std::string_view>;
-    using decoded_types_map_t = std::unordered_map<std::string_view, std::shared_ptr<decoded_type_data>>;
-
     decoded_types_data_storage();
     ~decoded_types_data_storage();
 
@@ -119,6 +131,11 @@ class decoded_types_data_storage final
     }
 
     const std::unordered_map<std::string_view, std::shared_ptr<decoded_type_data>>& get_decoded_types_data_map() const { return decoded_types_data_map; }
+
+    std::string generate_decoded_types_data_json_string() const;
+
+    // bool - comparing result, string - details of detected differences.
+    std::pair<bool, std::string> check_if_decoded_types_data_json_matches_with_current_decoded_data(const std::string& decoded_types_data_json) const;
 
   private:
     std::unordered_set<std::string_view> decoded_types_set; // we store typeid(T).name() here

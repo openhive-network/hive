@@ -30,6 +30,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <chrono>
+#include <fc/io/json.hpp>
 
 void do_job()
 {
@@ -148,6 +149,11 @@ void do_job()
     }
 
     std::cerr << ss.str();
+
+    const std::string json = dtds_instance.generate_decoded_types_data_json_string();
+    std::cerr << "\nFINAL JSON:\n" << json << "\n\n";
+    std::cerr << "size of json: " << json.size() << "\n";
+
     std::cerr << "\n\nTotal amount of decoded types: " << dtds_instance.get_decoded_types_data_map().size() << "\n";
     std::cerr << "Decoding time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << " microseconds.\n";
   }
