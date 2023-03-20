@@ -5,12 +5,9 @@ from typing import Dict
 import pytest
 
 import test_tools as tt
-from shared_tools.complex_networks import prepare_sub_networks
+from shared_tools.complex_networks import prepare_sub_networks, create_block_log_directory_name
 
 import shared_tools.networks_architecture as networks
-
-def create_block_log_directory_name(name : str):
-    return Path(__file__).parent.absolute() / name
 
 def prepare_basic_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None) -> networks.NetworksBuilder:
     builder = prepare_sub_networks(architecture, block_log_directory_name)
