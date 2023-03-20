@@ -876,7 +876,7 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
   /*
     Decoding reflected type - account_object. This type contains other reflected and non reflected object.
     We should have new types like: hive::protocol::public_key_type (reflected) and hive::chain::account_object (reflected).
-   */
+  */
   dtds_instance.register_new_type<hive::chain::account_object>();
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 28 );
   {
@@ -918,6 +918,102 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
   }
 
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 28 ); // decoded types map size shouldn't change.
+}
+
+BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
+{
+  hive::chain::util::decoded_types_data_storage& dtds_instance = hive::chain::util::decoded_types_data_storage::get_instance();
+
+  {
+    // 1. reflected enum.
+    const hive::chain::util::reflected_decoded_type_data* decoded_witness_schedule_type = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
+                                                                                            (dtds_instance.get_decoded_type_data<hive::chain::witness_object::witness_schedule_type>().get());
+
+    const std::string decoded_witness_schedule_type_str = decoded_witness_schedule_type->to_json_string();
+    hive::chain::util::reflected_decoded_type_data created_decoded_witness_schedule_type(fc::json::from_string(decoded_witness_schedule_type_str).get_array());
+
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.get_checksum(), decoded_witness_schedule_type->get_checksum());
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.get_type_id(), decoded_witness_schedule_type->get_type_id());
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.get_type_name(), decoded_witness_schedule_type->get_type_name());
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.is_enum(), decoded_witness_schedule_type->is_enum());
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.is_reflected(), decoded_witness_schedule_type->is_reflected());
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.get_enum_values().size(), decoded_witness_schedule_type->get_enum_values().size());
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.get_members().size(), decoded_witness_schedule_type->get_members().size());
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.to_json_string(), decoded_witness_schedule_type_str);
+  }
+  {
+    // 2. reflected type.
+    const hive::chain::util::reflected_decoded_type_data* decoded_decline_voting_rights_request_object = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
+                                                                                                          (dtds_instance.get_decoded_type_data<hive::chain::decline_voting_rights_request_object>().get());
+    const std::string decoded_decline_voting_rights_request_object_str = decoded_decline_voting_rights_request_object->to_json_string();
+    hive::chain::util::reflected_decoded_type_data created_decoded_decline_voting_rights_request_object(fc::json::from_string(decoded_decline_voting_rights_request_object_str).get_array());
+
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.get_checksum(), decoded_decline_voting_rights_request_object->get_checksum());
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.get_type_id(), decoded_decline_voting_rights_request_object->get_type_id());
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.get_type_name(), decoded_decline_voting_rights_request_object->get_type_name());
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.is_enum(), decoded_decline_voting_rights_request_object->is_enum());
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.is_reflected(), decoded_decline_voting_rights_request_object->is_reflected());
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.get_enum_values().size(), decoded_decline_voting_rights_request_object->get_enum_values().size());
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.get_members().size(), decoded_decline_voting_rights_request_object->get_members().size());
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.to_json_string(), decoded_decline_voting_rights_request_object_str);
+  }
+  {
+    // 3. Non reflected type.
+    const hive::chain::util::decoded_type_data* decoded_time_point_sec = dtds_instance.get_decoded_type_data<fc::time_point_sec>().get();
+    const std::string decoded_time_point_sec_str = decoded_time_point_sec->to_json_string();
+    hive::chain::util::decoded_type_data created_decoded_time_point_sec(fc::json::from_string(decoded_time_point_sec_str).get_array());
+
+    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.get_checksum(), decoded_time_point_sec->get_checksum());
+    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.get_type_id(), decoded_time_point_sec->get_type_id());
+    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.is_reflected(), decoded_time_point_sec->is_reflected());
+    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.to_json_string(), decoded_time_point_sec_str);
+  }
+  {
+    // 4. Error while creating  reflected or nonreflected decoded type.
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(std::vector<fc::variant>{}), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(std::vector<fc::variant>{"qwer","asdf", "qwer"}), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(std::vector<fc::variant>{true, "asdf", "qwer"}), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(std::vector<fc::variant>{false, "asdf", "qwer", "zxcv"}), fc::invalid_arg_exception);
+
+    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{}), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{true, "asdf", "qwer", "zxcv", "asdf", fc::variant_object("asdf", 1)}), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{"qwer", "asdf", "qwer", "zxcv", false, fc::variant_object("asdf", 1)}), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{true, "asdf", "qwer", "zxcv", false, "asdf"}), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{true, "asdf", "qwer", "zxcv", false, fc::variant_object("asdf", 1), "asd"}), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{true, "asdf", "qwer", "zxcv", false}), fc::invalid_arg_exception);
+  }
+  {
+    // 5. Generate json by decoded_types_data_storage. Comparing method should return true - data generated by json is the same data which is kept in map.
+    const std::string current_decoded_types_data_in_json = dtds_instance.generate_decoded_types_data_json_string();
+    const std::string json_pattern = "[[1,\"N4hive5chain36decline_voting_rights_request_objectE\",\"07a72f6d76870fbab70cd7bbfb8e5b5e92a2bcbc\",\"hive::chain::decline_voting_rights_request_object\",0,{\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\":\"id\",\"hive::protocol::account_name_type\":\"account\",\"fc::time_point_sec\":\"effective_date\"}],[0,\"N2fc14time_point_secE\",\"caf66a3ac4e50b6f285ada8954de203a54ac98cf\"],[0,\"N2fc6erpairImmEE\",\"00b25a6ab8226db3a31e2582dc70e0b8f508ba21\"],[0,\"N4hive8protocol17fixed_string_implIN2fc6erpairImmEEEE\",\"e7a2f4780f492fef01378693217d9e7358757dcd\"],[0,\"N9chainbase3oidIN4hive5chain36decline_voting_rights_request_objectEEE\",\"cd1883f4c4665b69da64199ce965393405513f21\"],[1,\"N4hive5chain14witness_object21witness_schedule_typeE\",\"8826d3384e563df375fae0b2e00e23d61dee90d8\",\"hive::chain::witness_object::witness_schedule_type\",1,{\"elected\":0,\"timeshare\":1,\"miner\":2,\"none\":3}]]";
+    BOOST_CHECK_EQUAL(current_decoded_types_data_in_json, json_pattern);
+    const auto response = dtds_instance.check_if_decoded_types_data_json_matches_with_current_decoded_data(current_decoded_types_data_in_json);
+    BOOST_CHECK(response.first);
+    BOOST_CHECK(response.second.empty());
+  }
+  {
+    // 6. passing json with should not match to current decoded types map data.
+    const std::string wrong_json_pattern = "[[1,\"N4hive5chain14witness_object21witness_schedule_typeE\",\"8826d3384e563df375fae0b2e00e23d61dee90d5\",\"hive::chain::witness_object::witness_schedule_type\",1,{\"elected\":0,\"timeshare\":1,\"miner\":2,\"none\":3}],[0,\"N9chainbase3oidIN4hive5chain29withdraw_vesting_route_objectEEE\",\"9f9a4d9defc72dbc8bdcdbba04e02e4bd136c3b6\"]]";
+    const auto response = dtds_instance.check_if_decoded_types_data_json_matches_with_current_decoded_data(wrong_json_pattern);
+    BOOST_CHECK(!response.first);
+    const std::string response_pattern =
+    "Amount of decoded types differs from amount of loaded decoded types. Current amount of decoded types: 6, loaded amount of decoded types: 2\n"
+    "Type is in current decoded types map but not in loaded decoded types map: hive::chain::decline_voting_rights_request_object\n"
+    "Type is in current decoded types map but not in loaded decoded types map: N2fc14time_point_secE\n"
+    "Type is in current decoded types map but not in loaded decoded types map: N2fc6erpairImmEE\n"
+    "Type is in current decoded types map but not in loaded decoded types map: N4hive8protocol17fixed_string_implIN2fc6erpairImmEEEE\n"
+    "Type is in current decoded types map but not in loaded decoded types map: N9chainbase3oidIN4hive5chain36decline_voting_rights_request_objectEEE\n"
+    "Reflected type: hive::chain::witness_object::witness_schedule_type has checksum: 8826d3384e563df375fae0b2e00e23d61dee90d8, which diffs from loaded type: 8826d3384e563df375fae0b2e00e23d61dee90d5\n"
+    "Type is in loaded decoded types map but not in current decoded types map:N9chainbase3oidIN4hive5chain29withdraw_vesting_route_objectEEE\n";
+    BOOST_CHECK_EQUAL(response.second, response_pattern);
+  }
+  {
+    // 7. Pass wrong json or something else than json. Exception should be thrown.
+    BOOST_CHECK_THROW(dtds_instance.check_if_decoded_types_data_json_matches_with_current_decoded_data("asdf"), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(dtds_instance.check_if_decoded_types_data_json_matches_with_current_decoded_data(""), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(dtds_instance.check_if_decoded_types_data_json_matches_with_current_decoded_data("[[2,\"N9chainbase3oidIN4hive5chain29withdraw_vesting_route_objectEEE\",\"9f9a4d9defc72dbc8bdcdbba04e02e4bd136c3b6\"]]"), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(dtds_instance.check_if_decoded_types_data_json_matches_with_current_decoded_data("[[1,\"ASDFG\",\"QWERTY\",\"ZXCVBN\",2,{\"ZXCVB\":0}]]"), fc::invalid_arg_exception);
+  }
 }
 
 BOOST_AUTO_TEST_CASE( chain_object_checksum )
