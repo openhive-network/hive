@@ -297,7 +297,7 @@ const compressed_block_data& full_block_type::get_alternate_compressed_block() c
 char to_hex_digit(int c)
 {
     if(c < 10)
-      return c;
+      return c+'0';
     return 'A' + c -10;
 }
 
@@ -330,7 +330,7 @@ bool czy_printowac(int block_num)
       std::string ou;
       for(size_t i = 0; i < signed_block_header_size; ++i)
       {
-        int c = (signed_block_header_size +i);
+        int c = *(signed_block_header_begin +i);
         char hex_digit = to_hex_digit((c >> 4) & 0xf);
         ou += hex_digit;
         hex_digit = to_hex_digit(c & 0xf);
