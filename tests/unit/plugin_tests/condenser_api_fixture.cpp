@@ -150,7 +150,7 @@ void condenser_api_fixture::hf13_scenario( check_point_tester_t check_point_1_te
   create_with_delegation( HIVE_INIT_MINER_NAME, "edgar0ah", edgar0ah_public_key, edgar0ah_post_key, ASSET( "100000000.000000 VESTS" ), init_account_priv_key );
 
   post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
-  set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_100_PERCENT, true, true, edgar0ah_private_key );
+  set_comment_options( "edgar0ah", "permlink1", ASSET( "50.010 TBD" ), HIVE_100_PERCENT, true, true, comment_options_extensions_type(), edgar0ah_private_key );
 
   // Following operations can be checked now. They all appear in block 3 regardless of configurations settings of the fixture.
   // pow2_operation, account_created_operation (x2), pow_reward_operation, transfer_operation,
@@ -201,11 +201,18 @@ void condenser_api_fixture::comment_and_reward_scenario( check_point_tester_t ch
   
   ACTORS( (dan0ah)(edgar0ah) );
 
+  beneficiary_route_type beneficiary( account_name_type( "dan0ah" ), HIVE_1_PERCENT*50 );
+  comment_payout_beneficiaries beneficiaries;
+  beneficiaries.beneficiaries = { beneficiary };
+  comment_options_extensions_type extensions = { beneficiaries };
+
   post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_private_key);
+  set_comment_options( "edgar0ah", "permlink1", ASSET( "10000.000 TBD" ), HIVE_100_PERCENT, true, true, extensions, edgar0ah_private_key );
   vote("edgar0ah", "permlink1", "dan0ah", HIVE_1_PERCENT * 100, dan0ah_private_key);
 
   // In check_point_1_tester generate as many blocks as needed for these virtual operations to appear in block:
-  // curation_reward_operation, author_reward_operation, comment_reward_operation, comment_payout_update_operation & producer_reward_operation.
+  // curation_reward_operation, author_reward_operation, comment_benefactor_reward_operation,
+  // comment_reward_operation, comment_payout_update_operation & producer_reward_operation.
   // In standard configuration of this fixture it's 6th block.
   check_point_1_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 

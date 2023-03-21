@@ -8394,7 +8394,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     comment.title = "test";
     comment.body = "foobar";
     push_transaction( comment, alice_private_key );
-    set_comment_options( "alice", "test", ASSET( "0.010 TBD" ), HIVE_100_PERCENT, false, false, alice_private_key );
+    set_comment_options( "alice", "test", ASSET( "0.010 TBD" ), HIVE_100_PERCENT, false, false, comment_options_extensions_type(), alice_private_key );
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- Downvoting comment (possible even with voting disabled)" );
