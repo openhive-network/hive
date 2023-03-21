@@ -2303,7 +2303,6 @@ void cab_destroy_C_impl(const char* context)
 
 static auto volatile stop_in_consume_json_block_impl = false;
 
-bool g_printuj = false;
 
 int consume_json_block_impl(const char *json_block, const char* context, int block_num)
 {
@@ -2311,18 +2310,12 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
 
  if(block_num >= 2726330)
   {
-    g_printuj = true;
     while(stop_in_consume_json_block_impl  )
     {
       int a = 0;
       a=a;
     }
   }
-
- if(block_num >= 2726340)
- {
-    g_printuj = false;
- }
 
   int expected_block_num = initialize_context(context);
 
