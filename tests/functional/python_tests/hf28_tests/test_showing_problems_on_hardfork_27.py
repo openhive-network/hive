@@ -44,12 +44,13 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights_on_hf_27(p
     wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
     wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
-
-    assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 1
+    assert len(node.api.database.list_proposal_votes(start=[""], limit=1000, order="by_voter_proposal",
+                                                     order_direction="ascending", status="all")['proposal_votes']) == 1
 
     wait_for_hardfork_28_application(node)
 
-    assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 0
+    assert len(node.api.database.list_proposal_votes(start=[""], limit=1000, order="by_voter_proposal",
+                                                     order_direction="ascending", status="all")['proposal_votes']) == 0
 
 
 @run_for("testnet")
@@ -86,11 +87,17 @@ def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed_
     wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
     node.wait_for_block_with_number(head_block_number + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 1
+    assert (
+            len(node.api.wallet_bridge.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")
+                ['proposal_votes']) == 1
+    )
 
     wait_for_hardfork_28_application(node)
 
-    assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 0
+    assert (
+            len(node.api.wallet_bridge.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")
+                ['proposal_votes']) == 0
+    )
 
 
 def wait_for_hardfork_28_application(node: tt.InitNode, timeout: int=240) -> None:
