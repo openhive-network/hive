@@ -447,9 +447,10 @@ void condenser_api_fixture::decline_voting_rights_scenario( check_point_tester_t
   db->set_hardfork( HIVE_HARDFORK_1_28 );
   generate_block();
 
-  ACTORS( (alice11ah) );
+  ACTORS( (alice11ah)(ben11ah) );
   generate_block();
 
+  proxy( "alice11ah", "ben11ah" );
   decline_voting_rights( "alice11ah", true, alice11ah_private_key );
 
   // decline_voting_rights_operation can be checked in 5th block and declined_voting_rights_operation in the 23rd,

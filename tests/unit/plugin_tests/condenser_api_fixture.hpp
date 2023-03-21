@@ -150,7 +150,9 @@ struct condenser_api_fixture : database_fixture
 
   /**
    * Operations tested here:
-   *  decline_voting_rights_operation, declined_voting_rights_operation & producer_reward_operation
+   *  decline_voting_rights_operation, declined_voting_rights_operation & proxy_cleared_operation
+   * Also tested here:
+   *  producer_reward_operation & account_witness_proxy_operation
    */
   void decline_voting_rights_scenario( check_point_tester_t check_point_tester );
 
