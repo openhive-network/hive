@@ -2340,12 +2340,9 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
 
   if(czy_printowac(block_num))
   {
-    wlog("In block=${block_num} json=${json} signed_block=${signed_block}",
-    ("block_num", block_num)
-    ("json",std::string{ json_block } )
-    ("signed_block", sb)
-    );
-
+    wlog("In block=${block_num}", ("block_num", block_num));
+    wlog("json=${json}", ("json",std::string{ json_block } ));
+    wlog("signed_block=${signed_block}", ("signed_block", sb));
   }
 
   auto siz = sb.transactions.size();
