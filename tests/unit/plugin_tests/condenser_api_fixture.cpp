@@ -166,6 +166,34 @@ void condenser_api_fixture::hf13_scenario( check_point_tester_t check_point_1_te
   check_point_2_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 }
 
+void condenser_api_fixture::hf23_scenario( check_point_tester_t check_point_tester )
+{
+  db->set_hardfork( HIVE_HARDFORK_0_22 );
+  generate_block();
+
+  ACTORS( (steemflower) );
+  generate_block();
+  fund( "steemflower", ASSET( "123456789.012 TESTS" ) );
+  generate_block();
+
+  // Trigger clear_null_account_balance_operation
+  transfer( "steemflower", HIVE_NULL_ACCOUNT, ASSET( "0.012 TESTS" ) );
+  generate_block();
+
+  // Trigger hardfork_hive_operation
+  db->set_hardfork( HIVE_HARDFORK_0_23 );
+  generate_block();
+
+  // Trigger hardfork_hive_restore_operation & consolidate_treasury_balance_operation
+  db->set_hardfork( HIVE_HARDFORK_1_24 );
+  generate_block();
+
+  // clear_null_account_balance_operation & hardfork_hive_operation appear in 5th block, while
+  // hardfork_hive_restore_operation & consolidate_treasury_balance_operation in 6th block,
+  // regardless of fixture or test configuration.
+  check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+}
+
 void condenser_api_fixture::comment_and_reward_scenario( check_point_tester_t check_point_1_tester, check_point_tester_t check_point_2_tester )
 {
   db->set_hardfork( HIVE_HARDFORK_1_27 );

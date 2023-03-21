@@ -66,6 +66,14 @@ struct condenser_api_fixture : database_fixture
   void hf13_scenario( check_point_tester_t check_point_1_tester, check_point_tester_t check_point_2_tester );
 
   /**
+   * Tests operations related to HIVE hardforks (23 & 24):
+   *  hardfork_hive_operation, hardfork_hive_restore_operation, consolidate_treasury_balance_operation & clear_null_account_balance_operation.
+   * Also tests:
+   *  transfer_operation, producer_reward_operation &  hardfork_operation
+   */
+  void hf23_scenario( check_point_tester_t check_point_tester );
+
+  /**
    * Operations tested here:
    *  curation_reward_operation, author_reward_operation, comment_reward_operation, comment_payout_update_operation,
    *  claim_reward_balance_operation, producer_reward_operation

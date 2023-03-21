@@ -166,6 +166,7 @@ BOOST_AUTO_TEST_CASE( get_transaction_convert_and_limit_order )
 } FC_LOG_AND_RETHROW() }
 
 // TODO Create get_transaction_hf8 test here.
+// TODO Create get_transaction_hf23 test here.
 // TODO Create get_transaction_vesting test here.
 // TODO Create get_transaction_witness test here.
 // TODO Create get_transaction_escrow_and_savings test here.
