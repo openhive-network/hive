@@ -9,7 +9,7 @@ def test_debug_generate_blocks(node):
     head_block_number_before_generation_of_blocks = node.api.wallet_bridge.get_dynamic_global_properties()[
         'head_block_number']
     blocks_to_generate = 100
-    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').private_key, count=blocks_to_generate,
+    node.api.debug_node.debug_generate_blocks(debug_key=tt.Account('initminer').keys.private, count=blocks_to_generate,
                                               skip=0, miss_blocks=0, edit_if_needed=True)
     head_block_number_after_generation_of_blocks = node.api.condenser.get_dynamic_global_properties()[
         'head_block_number']

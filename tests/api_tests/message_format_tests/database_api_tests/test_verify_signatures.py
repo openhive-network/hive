@@ -11,6 +11,6 @@ from hive_local_tools.api.message_format.database_api import generate_sig_digest
 def test_verify_signatures_in_testnet(node):
     wallet = tt.Wallet(attach_to=node, additional_arguments=['--transaction-serialization=hf26'])
     transaction = wallet.api.create_account('initminer', 'alice', '{}')
-    sig_digest = generate_sig_digest(transaction, tt.Account('initminer').private_key)
+    sig_digest = generate_sig_digest(transaction, tt.Account('initminer').keys.private)
     node.api.database.verify_signatures(hash=sig_digest, signatures=transaction['signatures'], required_owner=[],
                                         required_active=['initminer'], required_posting=[], required_other=[])

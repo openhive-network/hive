@@ -53,7 +53,7 @@ def prepare_blocklog():
         for name in all_witness_names:
             wallet.api.update_witness(
                 name, "https://" + name,
-                tt.Account(name).public_key,
+                tt.Account(name).keys.public,
                 {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
             )
 

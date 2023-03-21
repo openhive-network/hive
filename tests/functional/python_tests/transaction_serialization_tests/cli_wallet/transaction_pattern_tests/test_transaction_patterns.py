@@ -51,7 +51,7 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
     ('update_account_meta', ('alice', '{ "test" : 4 }', False)),
     ('update_proposal', (0, 'alice', tt.Asset.Tbd(10), 'subject-1', 'permlink', '2031-05-01T00:00:00', False)),
     ('update_proposal_votes', ('alice', [0], True, False)),
-    ('update_witness', ('alice', 'http://url.html', tt.Account('alice').public_key,
+    ('update_witness', ('alice', 'http://url.html', tt.Account('alice').keys.public,
                         {'account_creation_fee': tt.Asset.Test(10)}, False)),
     ('vote', ('initminer', 'alice', 'permlink', 10, False)),
     ('vote_for_witness', ('alice', 'initminer', True, False)),
@@ -79,8 +79,8 @@ def test_create_account_with_keys(replayed_node, wallet_with_pattern_name, verif
     wallet, pattern_name = wallet_with_pattern_name
 
     dan = tt.Account('dan')
-    transaction = wallet.api.create_account_with_keys('initminer', dan.name, '{}', dan.public_key,
-                                                      dan.public_key, dan.public_key, dan.public_key,
+    transaction = wallet.api.create_account_with_keys('initminer', dan.name, '{}', dan.keys.public,
+                                                      dan.keys.public, dan.keys.public, dan.keys.public,
                                                       broadcast=False)
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
@@ -95,8 +95,8 @@ def test_create_funded_account_with_keys(replayed_node, wallet_with_pattern_name
 
     dan = tt.Account('dan')
     transaction = wallet.api.create_funded_account_with_keys('initminer', dan.name, tt.Asset.Test(10),
-                                                             'memo', '{}', dan.public_key, dan.public_key,
-                                                             dan.public_key, dan.public_key, broadcast=False)
+                                                             'memo', '{}', dan.keys.public, dan.keys.public,
+                                                             dan.keys.public, dan.keys.public, broadcast=False)
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
     verify_pattern(wallet, pattern_name)
@@ -122,12 +122,12 @@ def test_publish_feed(replayed_node, wallet_with_pattern_name, verify_pattern):
 def test_recover_account(replayed_node, wallet_with_pattern_name, verify_pattern):
     wallet, pattern_name = wallet_with_pattern_name
 
-    initminer_owner_key = tt.Account('initminer').public_key
+    initminer_owner_key = tt.Account('initminer').keys.public
     authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[initminer_owner_key, 1]]}
 
-    thief_owner_key = tt.Account('thief').public_key
+    thief_owner_key = tt.Account('thief').keys.public
 
-    alice_owner_key = tt.Account('alice').public_key
+    alice_owner_key = tt.Account('alice').keys.public
     recent_authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[alice_owner_key, 1]]}
 
     for transaction in [
@@ -146,7 +146,7 @@ def test_recover_account(replayed_node, wallet_with_pattern_name, verify_pattern
 def test_update_account_auth_key(replayed_node, wallet_with_pattern_name, verify_pattern):
     wallet, pattern_name = wallet_with_pattern_name
 
-    alice_owner_key = tt.Account('alice').public_key
+    alice_owner_key = tt.Account('alice').keys.public
     transaction = wallet.api.update_account_auth_key('alice', 'owner', alice_owner_key, 3, broadcast=False)
 
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
@@ -160,7 +160,7 @@ def test_update_account_auth_key(replayed_node, wallet_with_pattern_name, verify
 def test_request_account_recovery(replayed_node, wallet_with_pattern_name, verify_pattern):
     wallet, pattern_name = wallet_with_pattern_name
 
-    alice_owner_key = tt.Account('alice').public_key
+    alice_owner_key = tt.Account('alice').keys.public
 
     authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[alice_owner_key, 1]]}
 
@@ -190,7 +190,7 @@ def test_remove_proposal(replayed_node, wallet_with_pattern_name, verify_pattern
 def test_update_account(replayed_node, wallet_with_pattern_name, verify_pattern):
     wallet, pattern_name = wallet_with_pattern_name
 
-    key = tt.Account('alice', secret='other_than_previous').public_key
+    key = tt.Account('alice', secret='other_than_previous').keys.public
     transaction = wallet.api.update_account('alice', '{}', key, key, key, key, broadcast=False)
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 
@@ -203,7 +203,7 @@ def test_update_account(replayed_node, wallet_with_pattern_name, verify_pattern)
 def test_update_account_memo_key(replayed_node, wallet_with_pattern_name, verify_pattern):
     wallet, pattern_name = wallet_with_pattern_name
 
-    key = tt.Account('alice', secret='other_than_previous').public_key
+    key = tt.Account('alice', secret='other_than_previous').keys.public
     transaction = wallet.api.update_account_memo_key('alice', key, broadcast=False)
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
 

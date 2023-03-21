@@ -35,7 +35,7 @@ def test_proposal_payment_010(node_client: NodeClientMaker):
         },
     ]
 
-    wif = tt.Account("initminer").private_key
+    wif = tt.Account("initminer").keys.private
     node_client = node_client(accounts=accounts)
 
     test_utils.create_accounts(node_client, CREATOR, accounts)

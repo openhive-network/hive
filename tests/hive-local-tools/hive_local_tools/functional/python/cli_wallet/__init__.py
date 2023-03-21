@@ -81,7 +81,7 @@ def prepare_proposal(input: funded_account_info, prefix: str = "test-", author_i
     from hashlib import md5
 
     creator : tt.Account = input.creator if author_is_creator else input.account
-    hash_input = f'{randint(0, 9999)}{prefix}{creator.private_key}{creator.public_key}{creator.name}'
+    hash_input = f'{randint(0, 9999)}{prefix}{creator.keys.private}{creator.keys.public}{creator.name}'
     PERMLINK = md5(hash_input.encode('utf-8')).hexdigest()
     result = prepared_proposal_data()
 
@@ -130,8 +130,8 @@ def create_funded_account(creator: tt.Account, wallet: tt.Wallet, id: int = 0) -
     result.funded_VESTS = tt.Asset.Test(200)
 
     tt.logger.info('importing key to wallet')
-    wallet.api.import_key(result.account.private_key)
-    tt.logger.info(f"imported key: {result.account.private_key} for account: {result.account.name}")
+    wallet.api.import_key(result.account.keys.private)
+    tt.logger.info(f"imported key: {result.account.keys.private} for account: {result.account.name}")
 
     with wallet.in_single_transaction():
         tt.logger.info('creating actor with keys')
@@ -139,10 +139,10 @@ def create_funded_account(creator: tt.Account, wallet: tt.Wallet, id: int = 0) -
             creator=creator.name,
             newname=result.account.name,
             json_meta='{}',
-            owner=result.account.public_key,
-            active=result.account.public_key,
-            posting=result.account.public_key,
-            memo=result.account.public_key
+            owner=result.account.keys.public,
+            active=result.account.keys.public,
+            posting=result.account.keys.public,
+            memo=result.account.keys.public
         )
 
         tt.logger.info('transferring TESTS')

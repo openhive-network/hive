@@ -42,7 +42,7 @@ def init_network(init_node, all_witness_names: List[str], key: str = None, block
             wallet.api.update_witness(
                 name,
                 "https://" + name,
-                tt.Account(name).public_key,
+                tt.Account(name).keys.public,
                 {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0},
             )
     future_witnesses = init_node.api.database.get_active_witnesses(include_future=True)["future_witnesses"]

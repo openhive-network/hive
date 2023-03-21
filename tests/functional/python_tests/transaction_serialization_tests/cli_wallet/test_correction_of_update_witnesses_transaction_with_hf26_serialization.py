@@ -28,7 +28,7 @@ def test_is_legacy_keyword_TESTS_is_in_legacy_transaction(node, wallet_with_lega
 @run_for('testnet')
 def test_update_witness_serialization(node, wallet, request):
     wallet.create_account('alice', vests=tt.Asset.Test(100))
-    update_witness = wallet.api.update_witness('alice', 'http://url.html', tt.Account('alice').public_key,
+    update_witness = wallet.api.update_witness('alice', 'http://url.html', tt.Account('alice').keys.public,
                                                {'account_creation_fee': tt.Asset.Test(10)})
 
     path = get_path_to_binary_transaction_stored_from_wallet(wallet, request)
@@ -49,7 +49,7 @@ def test_update_witness_serialization(node, wallet, request):
 def create_and_power_account_and_update_witness(wallet):
     wallet.create_account('alice', vests=tt.Asset.Test(100))
 
-    wallet.api.update_witness('alice', 'http://url.html', tt.Account('alice').public_key,
+    wallet.api.update_witness('alice', 'http://url.html', tt.Account('alice').keys.public,
                               {'account_creation_fee': tt.Asset.Test(10)})
 
 

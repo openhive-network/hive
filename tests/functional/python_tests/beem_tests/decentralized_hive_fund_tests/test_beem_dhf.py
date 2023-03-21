@@ -356,7 +356,7 @@ def update_proposal(node, creator, wif):
 def test_beem_dhf(node_client: NodeClientMaker):
     no_erase_proposal = True
 
-    wif = tt.Account("initminer").private_key
+    wif = tt.Account("initminer").keys.private
     node_client = node_client()
 
     subject = str(uuid4())

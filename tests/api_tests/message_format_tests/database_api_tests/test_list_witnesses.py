@@ -9,7 +9,7 @@ def test_list_witnesses(node, should_prepare):
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account('alice', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
         # mark alice as new witness
-        wallet.api.update_witness('alice', 'http://url.html', tt.Account('alice').public_key,
+        wallet.api.update_witness('alice', 'http://url.html', tt.Account('alice').keys.public,
                                   {'account_creation_fee': tt.Asset.Test(28), 'maximum_block_size': 131072,
                                    'hbd_interest_rate': 1000})
     witnesses = node.api.database.list_witnesses(start='', limit=100, order='by_name')['witnesses']

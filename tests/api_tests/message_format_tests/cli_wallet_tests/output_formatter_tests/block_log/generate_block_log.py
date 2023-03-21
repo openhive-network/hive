@@ -42,7 +42,7 @@ def prepare_transactions_for_get_account_history_test(wallet) -> None:
 
     wallet.api.post_comment('alice', 'test-permlink', '', 'someone0', 'test-title', 'this is a body', '{}')
 
-    wallet.api.update_account_auth_key('alice', 'owner', tt.Account('some key').public_key, 1)
+    wallet.api.update_account_auth_key('alice', 'owner', tt.Account('some key').keys.public, 1)
 
 
 def prepare_accounts_for_list_my_accounts_test(wallet) -> None:

@@ -13,14 +13,14 @@ def test_signing_with_authority(node):
         Auth3 = tt.Account('tst-auth3')
 
         for account in [Alice, Auth1, Auth2, Auth3]:
-            wallet.api.create_account_with_keys('initminer', account.name, "", account.public_key, account.public_key, account.public_key, account.public_key )
+            wallet.api.create_account_with_keys('initminer', account.name, "", account.keys.public, account.keys.public, account.keys.public, account.keys.public)
             wallet.api.transfer('initminer', account.name, "1.000 TESTS", "test transfer")
             wallet.api.transfer_to_vesting('initminer', account.name, "1.000 TESTS")
 
-        wallet.api.import_key(Alice.private_key)
-        wallet1.api.import_key(Auth1.private_key)
-        wallet2.api.import_key(Auth2.private_key)
-        wallet3.api.import_key(Auth3.private_key)
+        wallet.api.import_key(Alice.keys.private)
+        wallet1.api.import_key(Auth1.keys.private)
+        wallet2.api.import_key(Auth2.keys.private)
+        wallet3.api.import_key(Auth3.keys.private)
 
         # TRIGGER and VERIFY
         wallet.api.transfer(Alice.name, 'initminer', "0.001 TESTS", "this will work")

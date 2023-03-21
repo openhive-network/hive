@@ -46,7 +46,7 @@ def prepare_node_with_witnesses(witnesses_names):
     for name in witnesses_names:
         witness = tt.Account(name)
         node.config.witness.append(witness.name)
-        node.config.private_key.append(witness.private_key)
+        node.config.private_key.append(witness.keys.private)
 
     node.run(time_offset="+0h x50")
     wallet = tt.Wallet(attach_to=node)
@@ -63,7 +63,7 @@ def prepare_node_with_witnesses(witnesses_names):
         for name in witnesses_names:
             wallet.api.update_witness(
                 name, "https://" + name,
-                tt.Account(name).public_key,
+                tt.Account(name).keys.public,
                 {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
             )
     wallet.close()

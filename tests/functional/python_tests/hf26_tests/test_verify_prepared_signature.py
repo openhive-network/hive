@@ -81,7 +81,7 @@ def test_verify_prepared_signature(serialization_type, expected_signature):
 }
 '''
     sign_transaction_result = sign_transaction(
-        json.loads(prepared_transaction), tt.Account('initminer').private_key, serialization_type
+        json.loads(prepared_transaction), tt.Account('initminer').keys.private, serialization_type
     )
     tt.logger.info(f'sign_transaction_result: {json.dumps(sign_transaction_result)}')
 

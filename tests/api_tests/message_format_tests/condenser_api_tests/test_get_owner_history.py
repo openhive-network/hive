@@ -10,6 +10,6 @@ def test_get_owner_history(node, should_prepare):
         # abramov is a real user existing on a 5m node. For test standardization, it was also created in testnet.
         wallet.api.create_account('initminer', 'abramov', '{}')
         wallet.api.transfer_to_vesting('initminer', 'abramov', tt.Asset.Test(500))
-        key = tt.Account('abramov', secret='other_than_previous').public_key
+        key = tt.Account('abramov', secret='other_than_previous').keys.public
         wallet.api.update_account('abramov', '{}', key, key, key, key)
     node.api.condenser.get_owner_history('abramov')

@@ -23,7 +23,7 @@ def create_proposal(wallet, account_name):
 
 
 def request_account_recovery(wallet, account_name):
-    recovery_account_key = tt.Account('initminer').public_key
+    recovery_account_key = tt.Account('initminer').keys.public
     # 'initminer' account is listed as recovery_account in 'alice' and only he has 'power' to recover account.
     # That's why initminer's key is in new 'alice' authority.
     authority = {"weight_threshold": 1, "account_auths": [], "key_auths": [[recovery_account_key, 1]]}

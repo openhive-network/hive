@@ -96,13 +96,13 @@ def test_list_keys_and_import_key(unconfigured_wallet: tt.Wallet):
     keys = unconfigured_wallet.api.list_keys()
     assert len(keys) == 0
 
-    unconfigured_wallet.api.import_key(tt.Account('initminer').private_key)
-    unconfigured_wallet.api.import_key(tt.Account('alice').private_key)
+    unconfigured_wallet.api.import_key(tt.Account('initminer').keys.private)
+    unconfigured_wallet.api.import_key(tt.Account('alice').keys.private)
 
     keys = unconfigured_wallet.api.list_keys()
     assert len(keys) == 2
-    assert keys[0][1] == tt.Account('alice').private_key
-    assert keys[1][1] == tt.Account('initminer').private_key
+    assert keys[0][1] == tt.Account('alice').keys.private
+    assert keys[1][1] == tt.Account('initminer').keys.private
 
 
 def test_import_keys(unconfigured_wallet: tt.Wallet):
@@ -111,11 +111,11 @@ def test_import_keys(unconfigured_wallet: tt.Wallet):
     keys = unconfigured_wallet.api.list_keys()
     assert len(keys) == 0
 
-    unconfigured_wallet.api.import_keys([tt.Account('initminer').private_key, tt.Account('alice').private_key])
+    unconfigured_wallet.api.import_keys([tt.Account('initminer').keys.private, tt.Account('alice').keys.private])
     keys = unconfigured_wallet.api.list_keys()
     assert len(keys) == 2
-    assert keys[0][1] == tt.Account('alice').private_key
-    assert keys[1][1] == tt.Account('initminer').private_key
+    assert keys[0][1] == tt.Account('alice').keys.private
+    assert keys[1][1] == tt.Account('initminer').keys.private
 
 
 def test_generate_keys(configured_wallet: tt.Wallet):
@@ -127,8 +127,8 @@ def test_generate_keys(configured_wallet: tt.Wallet):
 
 
 def test_get_private_key_related_to_public_key(configured_wallet: tt.Wallet):
-    public_key = tt.Account('initminer').public_key
-    private_key = tt.Account('initminer').private_key
+    public_key = tt.Account('initminer').keys.public
+    private_key = tt.Account('initminer').keys.private
     assert configured_wallet.api.get_private_key(public_key) == private_key
 
 
@@ -150,7 +150,7 @@ def test_set_transaction_expiration():
     node.run()
     node.wait_for_block_with_number(3)
     node.api.debug_node.debug_generate_blocks(
-        debug_key=tt.Account('initminer').private_key,
+        debug_key=tt.Account('initminer').keys.private,
         count=20,
         skip=0,
         miss_blocks=0,

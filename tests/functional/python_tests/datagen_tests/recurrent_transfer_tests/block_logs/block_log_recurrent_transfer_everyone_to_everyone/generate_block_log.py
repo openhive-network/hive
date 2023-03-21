@@ -40,7 +40,7 @@ def prepare_block_log():
 
     # change maximum block size limit to 2 mb
     wallet.api.update_witness('initminer', 'http://url.html',
-                              tt.Account('initminer').public_key,
+                              tt.Account('initminer').keys.public,
                               {'account_creation_fee': tt.Asset.Test(0), 'maximum_block_size': 2097152,
                                'hbd_interest_rate': 1000})
 

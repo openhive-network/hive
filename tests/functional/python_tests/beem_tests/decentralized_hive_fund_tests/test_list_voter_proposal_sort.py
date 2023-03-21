@@ -85,7 +85,7 @@ def test_list_proposals_sort(node_client: NodeClientMaker):
         },
     ]
 
-    wif = tt.Account("initminer").private_key
+    wif = tt.Account("initminer").keys.private
     node_client = node_client(accounts=accounts)
     node_url = node_client.rpc.url
 
