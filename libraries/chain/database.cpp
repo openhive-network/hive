@@ -5335,22 +5335,17 @@ const witness_object& database::validate_block_header( uint32_t skip, const std:
 { try {
   const signed_block_header& next_block_header = full_block->get_block_header();
 
-  if(_postgres_not_block_log)
+  if ((full_block->get_block_num()  >= 2726330 ) && (full_block->get_block_num()  <= 2726340))
   {
-    if(head_block_id() != next_block_header.previous)
-    {
+      
       wlog(
         "MTLK ASSERT for block_num=${block_num} head_block_id=${head_block_id} != next_block_header.previous=${next.prev}",
         ("block_num", full_block->get_block_num() )
         ("head_block_id", head_block_id())
-        ("next.prev", next_block_header.previous)
-      );
-    }
+        ("next.prev", next_block_header.previous));
   }
-  else
-  {
-      FC_ASSERT( head_block_id() == next_block_header.previous, "", ("head_block_id", head_block_id())("next.prev", next_block_header.previous) );
-  }
+
+  FC_ASSERT( head_block_id() == next_block_header.previous, "", ("head_block_id", head_block_id())("next.prev", next_block_header.previous) );
   FC_ASSERT( head_block_time() < next_block_header.timestamp, "", ("head_block_time", head_block_time())("next", next_block_header.timestamp)("blocknum", full_block->get_block_num()) );
   const witness_object& witness = get_witness( next_block_header.witness );
 
