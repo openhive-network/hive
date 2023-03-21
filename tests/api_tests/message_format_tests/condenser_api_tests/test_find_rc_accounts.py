@@ -26,7 +26,7 @@ CORRECT_VALUES = [
 @run_for('testnet')
 def test_find_rc_accounts_with_correct_value(node, wallet, rc_accounts):
     wallet.create_accounts(len(ACCOUNTS))
-    node.api.condenser.find_rc_accounts(rc_accounts)
+    node.api.wallet_bridge.find_rc_accounts(rc_accounts)
 
 
 @pytest.mark.parametrize(

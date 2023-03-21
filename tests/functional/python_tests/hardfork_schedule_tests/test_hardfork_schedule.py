@@ -214,4 +214,4 @@ def write_to_json(alternate_chain_spec_content: dict) -> None:
 
 def is_hardfork_applied(node, hf_number: int) -> bool:
     hf_version = f"{'0' if hf_number < 24 else '1'}.{hf_number}.0"
-    return node.api.condenser.get_hardfork_version() == hf_version
+    return node.api.wallet_bridge.get_hardfork_version() == hf_version

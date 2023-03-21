@@ -37,7 +37,7 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load():
 
     snapshot = first_node.dump_snapshot()
 
-    second_node = tt.ApiNode()
+    second_node = tt.InitNode()
     connect_nodes(first_node, second_node)
     second_node.run(load_snapshot_from=snapshot, wait_for_live=False)
 

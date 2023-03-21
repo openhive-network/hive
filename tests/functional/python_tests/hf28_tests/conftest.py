@@ -37,5 +37,5 @@ def prepare_environment_on_hf_27(node):
     wallet.create_account(VOTER_ACCOUNT, vests=tt.Asset.Test(10))
     wallet.create_account(PROXY_ACCOUNT)
 
-    assert node.api.condenser.get_hardfork_version() == "1.27.0"
+    assert node.api.wallet_bridge.get_hardfork_version() == "1.27.0"
     return node, wallet

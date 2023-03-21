@@ -157,7 +157,7 @@ def test_set_transaction_expiration():
         edit_if_needed=True
     )
 
-    response = node.api.condenser.get_block(23)
+    response = node.api.block.get_block(block_num=23)['block']
     time_format = '%Y-%m-%dT%H:%M:%S'
     last_block_time_point = datetime.strptime(response['timestamp'], time_format).replace(tzinfo=timezone.utc)
 

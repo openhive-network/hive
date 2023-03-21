@@ -75,9 +75,9 @@ def prepare_node_with_witnesses(witnesses_names):
 
 
 def get_transaction_id_from_head_block(node) -> str:
-    if isinstance(node, tt.InitNode) or isinstance(node, tt.RemoteNode):
+    if isinstance(node, (tt.ApiNode, tt.FullApiNode, tt.InitNode, tt.RemoteNode)):
         head_block_number = node.api.database.get_dynamic_global_properties()["head_block_number"]
-        if isinstance(node, tt.InitNode):
+        if not isinstance(node, tt.RemoteNode):
             node.wait_for_irreversible_block()
-        transaction_id = node.api.condenser.get_block(head_block_number)["transaction_ids"][0]
+        transaction_id = node.api.block.get_block(block_num=head_block_number)["block"]["transaction_ids"][0]
         return transaction_id
