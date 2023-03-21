@@ -1352,6 +1352,7 @@ void database_fixture::set_comment_options( const std::string& author, const std
   op.percent_hbd = percent_hbd;
   op.allow_curation_rewards = allow_curation_rewards;
   op.allow_votes = allow_votes;
+  op.extensions = extensions;
 
   push_transaction( op, key );
 }

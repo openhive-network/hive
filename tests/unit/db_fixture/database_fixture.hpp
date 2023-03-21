@@ -459,7 +459,7 @@ public:
   void post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key);
   void delete_comment( std::string _author, std::string _permlink, const fc::ecc::private_key& _key );
   void set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout, uint16_t percent_hbd,
-                            bool allow_curation_rewards, bool allow_votes, const fc::ecc::private_key& key );
+                            bool allow_curation_rewards, bool allow_votes, const comment_options_extensions_type& extensions, const fc::ecc::private_key& key );
   void vote( std::string _author, std::string _permlink, std::string _voter, int16_t _weight, const fc::ecc::private_key& _key );
   void claim_reward_balance( const std::string& account, const asset& reward_hive, const asset& reward_hbd, const asset& reward_vests,
                              const fc::ecc::private_key& key );
