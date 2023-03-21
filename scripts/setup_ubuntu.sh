@@ -97,7 +97,7 @@ create_hived_admin_account() {
   if id "$hived_admin_unix_account" &>/dev/null; then
       echo "Account $hived_admin_unix_account already exists. Creation skipped."
   else
-      useradd -ms /bin/bash -g users -u 2000 "$hived_admin_unix_account" && echo "$hived_admin_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      useradd -ms /bin/bash -u 2000 -g users -c "Hived admin account" "$hived_admin_unix_account" && echo "$hived_admin_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
   fi
 }
 
@@ -108,8 +108,7 @@ create_hived_account() {
   if id "$hived_unix_account" &>/dev/null; then
       echo "Account $hived_unix_account already exists. Creation skipped."
   else
-      useradd -ms /bin/bash -u 2001 -U "$hived_unix_account"
-      usermod -a -G users -c "Hived daemon account" "$hived_unix_account"
+      useradd -ms /bin/bash -u 2001 -g users -c "Hived daemon account" "$hived_unix_account"
   fi
 }
 
