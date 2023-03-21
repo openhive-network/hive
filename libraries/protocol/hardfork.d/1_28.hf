@@ -11,4 +11,7 @@ long next_hf_time();
 
 #define HIVE_HARDFORK_1_28_VERSION hive::protocol::hardfork_version( 1, 28 )
 
+// fix prolonged power down caused by disturbance introduced during HF1 (yes, that long ago)
+#define HIVE_HARDFORK_1_28_FIX_POWER_DOWN (HIVE_HARDFORK_1_28)
+
 #endif

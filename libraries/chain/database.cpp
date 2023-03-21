@@ -2748,14 +2748,15 @@ void database::process_vesting_withdrawals()
   {
     const auto& from_account = *current; ++current; ++count;
 
-    /**
-    *  Let T = total tokens in vesting fund
-    *  Let V = total vesting shares
-    *  Let v = total vesting shares being cashed out
-    *
-    *  The user may withdraw  vT / V tokens
-    */
     share_type to_withdraw = from_account.get_next_vesting_withdrawal();
+    if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_account.vesting_withdraw_rate.amount )
+      to_withdraw = from_account.to_withdraw.amount % from_account.vesting_withdraw_rate.amount;
+    // see history of first (and so far the only) power down of 'gil' account: https://hiveblocks.com/@gil
+    // the situation was caused by HF1, where vesting_withdraw_rate changed from 9615 before split to 9615.384615
+    // (instead of corrrect 9615.000000); that is the source of nonequivalence between taking all the rest of power down
+    // (0.769270 VESTS) and modulo of "all % weekly rate" (0.000040 VESTS);
+    // it is possible that other accounts were also affected in similar way, 'gil' was just the first where the difference
+    // occurred
     if( to_withdraw > from_account.get_vesting().amount )
     {
       elog( "NOTIFYALERT! somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
