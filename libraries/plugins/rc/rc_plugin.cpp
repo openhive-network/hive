@@ -845,7 +845,7 @@ struct post_apply_operation_visitor
 
   void check_for_rc_delegation_overflow( const account_object& from_account, const rc_account_object& from_rc_account ) const
   {
-    if( from_rc_account.delegated_rc <= 0 )
+    if( from_rc_account.get_delegated_rc() <= 0 )
       return; //quick exit for all the times before RC delegations are activated (HF26)
 
     int64_t delegation_overflow = -get_maximum_rc( from_account, from_rc_account, true );

@@ -270,6 +270,13 @@ class rc_account_object : public object< rc_account_object_type, rc_account_obje
   public:
     CHAINBASE_DEFAULT_CONSTRUCTOR( rc_account_object )
 
+    //RC compensation for account creation fee
+    share_type get_rc_adjustment() const { return max_rc_creation_adjustment.amount; }
+    //RC that were delegated to other accounts
+    share_type get_delegated_rc() const { return delegated_rc; }
+    //RC that were borrowed from other accounts
+    share_type get_received_rc() const { return received_delegated_rc; }
+
     account_name_type            account;
     hive::chain::util::manabar   rc_manabar;
     asset                        max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );

@@ -55,9 +55,9 @@ struct rc_account_api_object
   rc_account_api_object( const rc_account_object& rca, const database& db ) :
           account( rca.account ),
           rc_manabar( rca.rc_manabar ),
-          max_rc_creation_adjustment( rca.max_rc_creation_adjustment ),
-          delegated_rc( rca.delegated_rc ),
-          received_delegated_rc( rca.received_delegated_rc )
+          max_rc_creation_adjustment( rca.get_rc_adjustment(), VESTS_SYMBOL ),
+          delegated_rc( rca.get_delegated_rc().value ),
+          received_delegated_rc( rca.get_received_rc().value )
   {
     max_rc = get_maximum_rc( db.get_account( account ), rca );
   }
