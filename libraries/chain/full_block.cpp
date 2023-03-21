@@ -293,8 +293,53 @@ const compressed_block_data& full_block_type::get_alternate_compressed_block() c
   return alternate_compressed_block;
 }
 
+
+char to_hex_digit(int c)
+{
+    if(c < 10)
+      return c;
+    return 'A' + c -10;
+}
+
+
+bool czy_printowac(int block_num)
+{
+  if(block_num >= 2726330 && block_num <= 2726340)
+  {
+    return true;
+  }
+
+  if(block_num >= 1000 && block_num <= 1010)
+  {
+    return true;
+  }
+
+  return false;
+}
+
 /* static */ block_id_type full_block_type::construct_block_id(const char* signed_block_header_begin, size_t signed_block_header_size, uint32_t block_num)
 {
+  
+  if(czy_printowac(block_num))
+  {
+      wlog("MTLK printuj in construct_block_id begin signed_block_header_size=${signed_block_header_size} block_num=${block_num}",
+      ("signed_block_header_size", signed_block_header_size)
+      ("block_num", block_num)
+      );
+
+      std::string ou;
+      for(size_t i = 0; i < signed_block_header_size; ++i)
+      {
+        int c = (signed_block_header_size +i);
+        char hex_digit = to_hex_digit((c >> 4) & 0xf);
+        ou += hex_digit;
+        hex_digit = to_hex_digit(c & 0xf);
+        ou += hex_digit;
+        wlog("{ou}", ("ou", ou));
+      }
+
+  }
+
   // to get the block id, we start by taking the hash of the header
   fc::sha224 block_hash = fc::sha224::hash(signed_block_header_begin, signed_block_header_size);
   // then overwrite the first four bytes of the hash with the block num
@@ -303,6 +348,17 @@ const compressed_block_data& full_block_type::get_alternate_compressed_block() c
   // our block_id is the first 20 bytes of that result (discarding the last 8 bytes of the hash)
   block_id_type block_id;
   memcpy(block_id._hash, block_hash._hash, std::min(sizeof(block_id_type), sizeof(block_hash)));
+
+  if(czy_printowac(block_num))
+  {
+    wlog("MTLK printuj in construct_block_id end signed_block_header_size=${signed_block_header_size} block_num=${block_num} block_id=${block_id}",
+    ("signed_block_header_size", signed_block_header_size)
+    ("block_num", block_num)
+    //("block_id", block_id._hash)
+    ("block_id", block_id)
+    );
+  }
+
   return block_id;
 }
 
