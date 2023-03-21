@@ -871,22 +871,28 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_decline_voting_rights )
     generate_until_irreversible_block( 23 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
-    expected_t expected_operations = { { // decline_voting_rights_operation
-      R"~({"trx_id":"b725c37b755848a67161d30050eda164da5bd2a9","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"decline_voting_rights_operation","value":{"account":"alice11ah","decline":true}},"operation_id":0})~",
-      R"~({"trx_id":"b725c37b755848a67161d30050eda164da5bd2a9","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["decline_voting_rights",{"account":"alice11ah","decline":true}]})~"
+    expected_t expected_operations = { { // account_witness_proxy_operation
+      R"~({"trx_id":"60ebbe2fd041e117a5f24e07767d1686cee6c49a","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"account_witness_proxy_operation","value":{"account":"alice11ah","proxy":"ben11ah"}},"operation_id":0})~",
+      R"~({"trx_id":"60ebbe2fd041e117a5f24e07767d1686cee6c49a","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["account_witness_proxy",{"account":"alice11ah","proxy":"ben11ah"}]})~"
+      }, { // decline_voting_rights_operation
+      R"~({"trx_id":"b725c37b755848a67161d30050eda164da5bd2a9","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"decline_voting_rights_operation","value":{"account":"alice11ah","decline":true}},"operation_id":0})~",
+      R"~({"trx_id":"b725c37b755848a67161d30050eda164da5bd2a9","block":4,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["decline_voting_rights",{"account":"alice11ah","decline":true}]})~"
       }, { // producer_reward_operation
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":4,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8684058191","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":4,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["producer_reward",{"producer":"initminer","vesting_shares":"8684.058191 VESTS"}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":4,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8700063351","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":4,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:12","op":["producer_reward",{"producer":"initminer","vesting_shares":"8700.063351 VESTS"}]})~"
       } };
-    expected_t expected_virtual_operations = { expected_operations[1] };
+    expected_t expected_virtual_operations = { expected_operations[2] };
     test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 4 );
 
     expected_operations = { { // producer_reward_operation
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"7241645516","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":["producer_reward",{"producer":"initminer","vesting_shares":"7241.645516 VESTS"}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"7346451563","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":["producer_reward",{"producer":"initminer","vesting_shares":"7346.451563 VESTS"}]})~"
+      }, { // proxy_cleared_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":{"type":"proxy_cleared_operation","value":{"account":"alice11ah","proxy":"ben11ah"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":["proxy_cleared",{"account":"alice11ah","proxy":"ben11ah"}]})~"
       }, { // declined_voting_rights_operation
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":{"type":"declined_voting_rights_operation","value":{"account":"alice11ah"}},"operation_id":0})~",
-      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":["declined_voting_rights",{"account":"alice11ah"}]})~"
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":{"type":"declined_voting_rights_operation","value":{"account":"alice11ah"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":23,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:01:09","op":["declined_voting_rights",{"account":"alice11ah"}]})~"
       } };
     // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
     test_get_ops_in_block( *this, expected_operations, expected_operations, 23 );
