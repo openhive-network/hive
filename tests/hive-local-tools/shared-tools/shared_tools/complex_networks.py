@@ -210,12 +210,12 @@ def prepare_nodes(sub_networks_sizes: list) -> list:
     return sub_networks, init_node, all_witness_names
 
 
-def prepare_sub_networks_generation(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, before_run_network: Optional[Callable[[], networks.NetworksBuilder]] = None, desired_blocklog_length: Optional[int] = None) -> Dict:
+def generate_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, before_action: Optional[Callable[[], networks.NetworksBuilder]] = None, desired_blocklog_length: Optional[int] = None) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
-    if before_run_network is not None:
-        before_run_network(builder)
+    if before_action is not None:
+        before_action(builder)
 
     run_networks(builder.networks, None)
 
@@ -225,12 +225,12 @@ def prepare_sub_networks_generation(architecture: networks.NetworksArchitecture,
     return None
 
 
-def prepare_sub_networks_launch(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, before_run_network: Optional[Callable[[], networks.NetworksBuilder]] = None) -> Dict:
+def launch_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, before_action: Optional[Callable[[], networks.NetworksBuilder]] = None) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
-    if before_run_network is not None:
-        before_run_network(builder)
+    if before_action is not None:
+        before_action(builder)
 
     run_networks(builder.networks, block_log_directory_name, time_offsets)
 
@@ -241,13 +241,13 @@ def prepare_sub_networks_launch(architecture: networks.NetworksArchitecture, blo
     return builder
 
 
-def prepare_sub_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, before_run_network: Optional[Callable[[], networks.NetworksBuilder]] = None) -> Dict:
+def generate_or_launch(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, before_action: Optional[Callable[[], networks.NetworksBuilder]] = None) -> Dict:
     if allow_generate_block_log():
         assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
         tt.logger.info(f"New `block_log` generation: {block_log_directory_name}")
-        return prepare_sub_networks_generation(architecture, block_log_directory_name, before_run_network)
+        return generate_networks(architecture, block_log_directory_name, before_action)
 
-    return prepare_sub_networks_launch(architecture, block_log_directory_name, time_offsets, before_run_network)
+    return launch_networks(architecture, block_log_directory_name, time_offsets, before_action)
 
 
 def allow_generate_block_log() -> bool:
@@ -273,8 +273,12 @@ def prepare_database( database, name: str = "haf_block_log") -> Any:
     return database(f"postgresql:///{name}")
 
 
-def prepare_basic_networks_internal(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparers: Iterable[sql_preparer] = None) -> Tuple[networks.NetworksBuilder, Any]:
-    builder = prepare_sub_networks(architecture, block_log_directory_name, time_offsets, partial( before_run_network, preparers=preparers))
+def run_whole_network(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparers: Iterable[sql_preparer] = None) -> Tuple[networks.NetworksBuilder, Any]:
+    before_action = None
+    if preparers is not None:
+        before_action = partial( before_run_network, preparers = preparers)
+
+    builder = generate_or_launch(architecture, block_log_directory_name, time_offsets, before_action)
 
     if builder == None:
         tt.logger.info(f"Generating 'block_log' enabled. Exiting...")
@@ -283,15 +287,19 @@ def prepare_basic_networks_internal(architecture: networks.NetworksArchitecture,
     return builder
 
 
-def prepare_basic_networks(database, architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparer: sql_preparer = None) -> Tuple[networks.NetworksBuilder, Any]:
+def prepare_network(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None) -> networks.NetworksBuilder:
+    return run_whole_network(architecture, block_log_directory_name, time_offsets)
+
+
+def prepare_network_with_1_session(database, architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparer: sql_preparer = None) -> Tuple[networks.NetworksBuilder, Any]:
     preparer.session = prepare_database(database)
-    return prepare_basic_networks_internal(architecture, block_log_directory_name, time_offsets, [preparer]), preparer.session
+    return run_whole_network(architecture, block_log_directory_name, time_offsets, [preparer]), preparer.session
 
 
-def prepare_basic_networks_with_2_sessions(database, architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparers: Iterable[sql_preparer] = None) -> Tuple[networks.NetworksBuilder, Any]:
+def prepare_network_with_2_sessions(database, architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparers: Iterable[sql_preparer] = None) -> Tuple[networks.NetworksBuilder, Any]:
     preparers[0].session = prepare_database(database)
     preparers[1].session = prepare_database(database, "haf_block_log_ref")
-    return prepare_basic_networks_internal(architecture, block_log_directory_name, time_offsets, preparers), [preparers[0].session, preparers[1].session]
+    return run_whole_network(architecture, block_log_directory_name, time_offsets, preparers), [preparers[0].session, preparers[1].session]
 
 
 def prepare_node_with_database(database) -> Tuple[tt.ApiNode, Any, Any]:
