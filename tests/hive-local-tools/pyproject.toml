@@ -16,7 +16,7 @@ packages = [
 
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.10"
 pytest = "7.1.2"
 pytest-rerunfailures = "10.2"
 pytest-timeout = "2.1.0"
