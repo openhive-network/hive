@@ -335,8 +335,8 @@ bool czy_printowac(int block_num)
         ou += hex_digit;
         hex_digit = to_hex_digit(c & 0xf);
         ou += hex_digit;
-        wlog("{ou}", ("ou", ou));
       }
+        wlog("${ou}", ("ou", ou));
 
   }
 

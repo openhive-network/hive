@@ -2310,6 +2310,8 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
 
  if(block_num >= 2726330)
   {
+    wlog("mtlk inside  block_num >= 2726330 pid= ${pid}", ("pid", getpid()));
+
     while(stop_in_consume_json_block_impl  )
     {
       int a = 0;
