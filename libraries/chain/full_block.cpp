@@ -4,6 +4,22 @@
 
 #include <fc/io/json.hpp>
 
+bool czy_printowac(int block_num)
+{
+  if(block_num >= 2726330 && block_num <= 2726340)
+  {
+    return true;
+  }
+
+  if(block_num >= 1000 && block_num <= 1010)
+  {
+    return true;
+  }
+
+  return false;
+}
+
+
 namespace hive { namespace chain {
 
 /* static */ std::atomic<uint32_t> full_block_type::number_of_instances_created = {0};
@@ -301,21 +317,6 @@ char to_hex_digit(int c)
     return 'A' + c -10;
 }
 
-
-bool czy_printowac(int block_num)
-{
-  if(block_num >= 2726330 && block_num <= 2726340)
-  {
-    return true;
-  }
-
-  if(block_num >= 1000 && block_num <= 1010)
-  {
-    return true;
-  }
-
-  return false;
-}
 
 /* static */ block_id_type full_block_type::construct_block_id(const char* signed_block_header_begin, size_t signed_block_header_size, uint32_t block_num)
 {

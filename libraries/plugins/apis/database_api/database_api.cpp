@@ -15,6 +15,7 @@
 #include <hive/utilities/git_revision.hpp>
 
 
+bool czy_printowac(int block_num);
 
 
 namespace hive { namespace plugins { namespace database_api {
@@ -2336,6 +2337,16 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
   hive::plugins::block_api::api_signed_block_object sb;
 
   fc::from_variant( v, sb );
+
+  if(czy_printowac(block_num))
+  {
+    wlog("In block=${block_num} json=${json} signed_block=${signed_block}",
+    ("block_num", block_num)
+    ("json",std::string{ json_block } )
+    ("signed_block", sb)
+    );
+
+  }
 
   auto siz = sb.transactions.size();
   siz = siz;
