@@ -142,54 +142,36 @@ namespace hive { namespace chain {
       account_name_type name;
 
     public:
-      uint128_t         hbd_seconds = 0; ///< total HBD * how long it has been held
-      uint128_t         savings_hbd_seconds = 0; ///< total HBD * how long it has been held
+      uint128_t         hbd_seconds = 0; ///< liquid HBD * how long it has been held
+      uint128_t         savings_hbd_seconds = 0; ///< savings HBD * how long it has been held
 
       util::manabar     voting_manabar;
       util::manabar     downvote_manabar;
 
-      /**
-        *  HBD Deposits pay interest based upon the interest rate set by witnesses. The purpose of these
-        *  fields is to track the total (time * hbd_balance) that it is held. Then at the appointed time
-        *  interest can be paid using the following equation:
-        *
-        *  interest = interest_rate * hbd_seconds / seconds_per_year
-        *
-        *  Every time the hbd_balance is updated the hbd_seconds is also updated. If at least
-        *  HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC has passed since hbd_last_interest_payment then
-        *  interest is added to hbd_balance.
-        *
-        *  @defgroup hbd_data HBD Balance Data
-        */
+      HBD_asset         hbd_balance; ///< HBD liquid balance
+      HBD_asset         savings_hbd_balance; ///< HBD balance guarded by 3 day withdrawal (also earns interest)
+      HBD_asset         reward_hbd_balance; ///< HBD balance author rewards that can be claimed
 
-      HBD_asset         hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
-      HBD_asset         savings_hbd_balance = asset( 0, HBD_SYMBOL ); /// total HBD balance
-      HBD_asset         reward_hbd_balance = asset( 0, HBD_SYMBOL );
+      HIVE_asset        reward_hive_balance; ///< HIVE balance author rewards that can be claimed
+      HIVE_asset        reward_vesting_hive; ///< HIVE counterweight to reward_vesting_balance
+      HIVE_asset        balance;  ///< HIVE liquid balance
+      HIVE_asset        savings_balance;  ///< HIVE balance guarded by 3 day withdrawal
 
-      HIVE_asset        reward_hive_balance = asset( 0, HIVE_SYMBOL );
-      HIVE_asset        reward_vesting_hive = asset( 0, HIVE_SYMBOL );
-      HIVE_asset        balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
-      HIVE_asset        savings_balance = asset( 0, HIVE_SYMBOL );  ///< total liquid shares held by this account
+      VEST_asset        reward_vesting_balance; ///< VESTS balance author/curation rewards that can be claimed
+      VEST_asset        vesting_shares; ///< VESTS balance, controls governance voting power
+      VEST_asset        delegated_vesting_shares; ///< VESTS delegated out to other accounts
+      VEST_asset        received_vesting_shares; ///< VESTS delegated to this account
+      VEST_asset        vesting_withdraw_rate; ///< weekly power down rate
 
-      VEST_asset        reward_vesting_balance = asset( 0, VESTS_SYMBOL );
-      VEST_asset        vesting_shares = asset( 0, VESTS_SYMBOL ); ///< total vesting shares held by this account, controls its voting power
-      VEST_asset        delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
-      VEST_asset        received_vesting_shares = asset( 0, VESTS_SYMBOL );
-      VEST_asset        vesting_withdraw_rate = asset( 0, VESTS_SYMBOL ); ///< at the time this is updated it can be at most vesting_shares/104
+      HIVE_asset        curation_rewards; ///< not used by consensus - sum of all curations (value before conversion to VESTS)
+      HIVE_asset        posting_rewards; ///< not used by consensus - sum of all author rewards (value before conversion to VESTS/HBD)
 
-      HIVE_asset        curation_rewards = asset( 0, HIVE_SYMBOL ); ///< not used by consensus - sum of all curations (value before conversion to VESTS)
-      HIVE_asset        posting_rewards = asset( 0, HIVE_SYMBOL ); ///< not used by consensus - sum of all author rewards (value before conversion to VESTS/HBD)
-
-      VEST_asset        withdrawn = asset( 0, VESTS_SYMBOL ); ///< shares already withdrawn in currently active power down
-      VEST_asset        to_withdraw = asset( 0, VESTS_SYMBOL ); ///< total shares to be withdrawn in currently active power down
+      VEST_asset        withdrawn; ///< VESTS already withdrawn in currently active power down (why do we even need this?)
+      VEST_asset        to_withdraw; ///< VESTS yet to be withdrawn in currently active power down (withdown should just be subtracted from this)
 
       share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens (could be 32bit)
 
-      /*
-        Total sum of VESTS from `delayed_votes` collection.
-        It's a helper variable needed for better performance.
-      */
-      ushare_type       sum_delayed_votes = 0; //(should be changed to VEST_asset)
+      ushare_type       sum_delayed_votes = 0; ///< sum of delayed_votes (should be changed to VEST_asset)
 
       time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
       time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
@@ -200,7 +182,7 @@ namespace hive { namespace chain {
     public:
       time_point_sec    last_account_update; //(only used by outdated consensus checks - up to HF17)
       time_point_sec    last_post; //(we could probably remove limit on posting replies)
-      time_point_sec    last_root_post = fc::time_point_sec::min(); //influenced root comment reward between HF12 and HF17
+      time_point_sec    last_root_post; //influenced root comment reward between HF12 and HF17
       time_point_sec    last_post_edit; //(we could probably remove limit on post edits)
       time_point_sec    last_vote_time; //(only used by outdated consensus checks - up to HF26)
       time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
@@ -223,10 +205,9 @@ namespace hive { namespace chain {
       bool              mined = true; //(not read by consensus code)
 
     public:
+      public_key_type   memo_key; //33 bytes with alignment of 1; (it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't COLLECT_ACCOUNT_METADATA)
 
-      public_key_type   memo_key;   //public_key_type - 33 bytes; ABW: it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't COLLECT_ACCOUNT_METADATA
-
-      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes;// = std::vector<share_type>( HIVE_MAX_PROXY_RECURSION_DEPTH, 0 ); ///< the total VFS votes proxied to this account
+      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes; ///< the total VFS votes proxied to this account
 
       using t_delayed_votes = t_vector< delayed_votes_data >;
       /*
