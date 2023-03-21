@@ -1,0 +1,97 @@
+variables:
+  BLOCK_LOG_SOURCE_DIR: "/cache/blockchain"
+  BLOCK_LOG_OUTPUT_DIR: "/cache/block_log_mirrornet"
+  MIRRORNET_CHAIN_ID: 42
+  MIRRORNET_IMAGE: $CI_REGISTRY_IMAGE/mirrornet-instance:mirrornet-instance-$CI_COMMIT_SHA
+  MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
+  NUMBER_OF_BLOCKS: 5000000
+  NUMBER_OF_PROCESSES: 8
+  SHARED_FILE_SIZE: 24G
+  SHARED_FILE_SIZE_FULL_THRESHOLD: 9500
+  SHARED_FILE_SCALE_RATE: 1000
+  RUN_MIRRORNET_PIPELINE: "true"
+
+.mirrornet-job:
+  timeout: 2 weeks
+  image: 
+    name: $MIRRORNET_IMAGE
+    entrypoint: [""]
+  resource_group: mirrornet-job
+  tags:
+    - mirrornet-runner
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web" && $RUN_MIRRORNET_PIPELINE == "true"
+
+.block-conversion-job-template:
+  extends: .mirrornet-job
+  script:
+    - |
+      echo "Converting block log to mirrornet format"
+      sudo mkdir -p "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
+      sudo chown -Rf $(id -u):$(id -g) "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
+      ls -lah "$BLOCK_LOG_OUTPUT_DIR"
+      ln "$BLOCK_LOG_SOURCE_DIR/block_log" "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/mainnet_block_log"
+      ls -lAh "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
+      time /home/hived/bin/blockchain_converter \
+        --plugin block_log_conversion \
+        --input "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/mainnet_block_log" \
+        --output "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log" \
+        --chain-id $MIRRORNET_CHAIN_ID \
+        --private-key "$MIRRORNET_SKELETON_KEY" \
+        --use-same-key \
+        --stop-block $NUMBER_OF_BLOCKS \
+        --jobs $NUMBER_OF_PROCESSES 2>&1 | tee block-conversion.log
+      ls -lAh "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
+      du -h "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    paths:
+      - "block-conversion.log"
+    when: always
+    expire_in: 1 week
+
+.replay-template:
+  extends: .mirrornet-job
+  script:
+    - |
+      mkdir -p "hive-home/blockchain"
+      scripts/ci-helpers/generate-file-from-template.py \
+        --input-file contrib/config_mirrornet.ini.template \
+        --output-file hive-home/config.ini
+      ln -s $BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log hive-home/blockchain/block_log
+      cd hive-home
+      ls -lAhR
+      /home/hived/bin/hived \
+        -d "$CI_PROJECT_DIR/hive-home" \
+        --chain-id "$MIRRORNET_CHAIN_ID" \
+        --skeleton-key "$MIRRORNET_SKELETON_KEY" \
+        --force-replay \
+        --stop-replay-at-block "$NUMBER_OF_BLOCKS" \
+        --validate-during-replay \
+        --exit-before-sync 2>&1 | tee hived-replay.log
+      /home/hived/bin/hived \
+        -d "$CI_PROJECT_DIR/hive-home" \
+        --chain-id "$MIRRORNET_CHAIN_ID" \
+        --skeleton-key "$MIRRORNET_SKELETON_KEY" \
+        --snapshot-root-dir="$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID" \
+        --dump-snapshot=snapshot \
+        --exit-before-sync 2>&1 | tee hived-snapshot.log
+      ls -lAh "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
+      du -h "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    paths:
+      - "hive-home/hived-*.log"
+      - "hive-home/config.ini"
+    when: always
+    expire_in: 1 week
+
+.data-cleanup-template:
+  extends: .mirrornet-job
+  image: busybox:latest
+  needs: [] # Allow to run cleanup even if the previous jobs failed
+  script:
+    - rm -Rf $BLOCK_LOG_OUTPUT_DIR/*
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web" && $RUN_MIRRORNET_PIPELINE == "true"  
+      when: manual

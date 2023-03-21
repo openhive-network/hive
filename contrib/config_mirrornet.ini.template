@@ -1,0 +1,61 @@
+log-appender = {"appender":"stdout","stream":"std_out"}
+log-logger = {"name":"default","level":"info","appender":"stdout"}
+
+backtrace = yes
+
+plugin = webserver p2p json_rpc
+plugin = database_api condenser_api
+plugin = witness
+plugin = rc
+plugin = block_api network_broadcast_api rc_api
+plugin = state_snapshot
+
+account-history-rocksdb-path = "blockchain/account-history-rocksdb-storage"
+
+shared-file-size = $SHARED_FILE_SIZE
+
+shared-file-full-threshold = $SHARED_FILE_SIZE_FULL_THRESHOLD
+shared-file-scale-rate = $SHARED_FILE_SCALE_RATE
+
+p2p-endpoint = 0.0.0.0:2001
+
+transaction-status-block-depth = 64000
+transaction-status-track-after-block = 54500000
+
+webserver-http-endpoint = 0.0.0.0:8091
+webserver-ws-endpoint = 0.0.0.0:8090
+
+enable-stale-production = 1
+required-participation = 0
+
+witness = "rabbit-70"
+witness = "kushed"
+witness = "delegate.lafona"
+witness = "wackou"
+witness = "complexring"
+witness = "jesta"
+witness = "xeldal"
+witness = "riverhead"
+witness = "clayop"
+witness = "steemed"
+witness = "smooth.witness"
+witness = "ihashfury"
+witness = "joseph"
+witness = "datasecuritynode"
+witness = "boatymcboatface"
+witness = "steemychicken1"
+witness = "roadscape"
+witness = "pharesim"
+witness = "abit"
+witness = "blocktrades"
+witness = "arhag"
+witness = "bitcube"
+witness = "witness.svk"
+witness = "gxt-1080-sc-0003"
+witness = "steve-walschot"
+witness = "bhuz"
+witness = "liondani"
+witness = "rabbit-63"
+witness = "pfunk"
+
+private-key = 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
