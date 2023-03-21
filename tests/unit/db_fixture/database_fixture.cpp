@@ -1345,6 +1345,14 @@ void database_fixture::delete_comment( std::string _author, std::string _permlin
 void database_fixture::set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout,
   uint16_t percent_hbd, bool allow_curation_rewards, bool allow_votes, const fc::ecc::private_key& key )
 {
+  comment_options_extensions_type extensions;
+  set_comment_options( author, permlink, max_accepted_payout, percent_hbd, allow_curation_rewards, allow_votes, extensions, key );
+}
+
+void database_fixture::set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout,
+  uint16_t percent_hbd, bool allow_curation_rewards, bool allow_votes, const comment_options_extensions_type& extensions,
+  const fc::ecc::private_key& key )
+{
   comment_options_operation op;
   op.author = author;
   op.permlink = permlink;
