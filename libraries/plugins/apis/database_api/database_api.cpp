@@ -15,7 +15,6 @@
 #include <hive/utilities/git_revision.hpp>
 
 
-bool czy_printowac(int block_num);
 
 
 namespace hive { namespace plugins { namespace database_api {
@@ -2302,23 +2301,9 @@ void cab_destroy_C_impl(const char* context)
   }
 }
 
-static auto volatile stop_in_consume_json_block_impl = false;
-
 
 int consume_json_block_impl(const char *json_block, const char* context, int block_num)
 {
-
-
- if(block_num >= 2726330)
-  {
-    wlog("mtlk inside  block_num >= 2726330 pid= ${pid}", ("pid", getpid()));
-
-    while(stop_in_consume_json_block_impl  )
-    {
-      int a = 0;
-      a=a;
-    }
-  }
 
   int expected_block_num = initialize_context(context);
 
@@ -2337,13 +2322,6 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
   hive::plugins::block_api::api_signed_block_object sb;
 
   fc::from_variant( v, sb );
-
-  if(czy_printowac(block_num))
-  {
-    wlog("In block=${block_num}", ("block_num", block_num));
-    wlog("json=${json}", ("json",std::string{ json_block } ));
-    wlog("signed_block=${signed_block}", ("signed_block", sb));
-  }
 
   auto siz = sb.transactions.size();
   siz = siz;
