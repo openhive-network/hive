@@ -483,3 +483,14 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #endif /// HIVE_ENABLE_SMT
 
+/// HIVE RC related constants
+
+#define HIVE_RC_REGEN_TIME                             (HIVE_VOTING_MANA_REGENERATION_SECONDS) //5 days
+
+#define HIVE_RC_BUCKET_TIME_LENGTH                     (60*60) //1 hour
+#define HIVE_RC_WINDOW_BUCKET_COUNT 24
+
+#define HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT 2020748973 // 2020.748973 VESTS == 1.000 HIVE when HF20 occurred on mainnet
+
+#define HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP         100
+
