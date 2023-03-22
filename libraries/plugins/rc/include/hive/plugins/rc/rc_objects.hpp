@@ -271,22 +271,22 @@ class rc_account_object : public object< rc_account_object_type, rc_account_obje
     CHAINBASE_DEFAULT_CONSTRUCTOR( rc_account_object )
 
     //RC compensation for account creation fee
-    share_type get_rc_adjustment() const { return max_rc_creation_adjustment.amount; }
+    share_type get_rc_adjustment() const { return rc_adjustment; }
     //RC that were delegated to other accounts
     share_type get_delegated_rc() const { return delegated_rc; }
     //RC that were borrowed from other accounts
-    share_type get_received_rc() const { return received_delegated_rc; }
+    share_type get_received_rc() const { return received_rc; }
 
     account_name_type            account;
     hive::chain::util::manabar   rc_manabar;
-    asset                        max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
+    share_type                   rc_adjustment;
 
     // This is used for bug-catching, to match that the vesting shares in a
     // pre-op are equal to what they were at the last post-op.
-    int64_t                      last_max_rc = 0;
+    share_type                   last_max_rc;
 
-    uint64_t                     delegated_rc = 0;
-    uint64_t                     received_delegated_rc = 0;
+    share_type                   delegated_rc;
+    share_type                   received_rc;
 };
 typedef oid_ref< rc_account_object > rc_account_id_type;
 
@@ -508,10 +508,10 @@ FC_REFLECT( hive::plugins::rc::rc_account_object,
   (id)
   (account)
   (rc_manabar)
-  (max_rc_creation_adjustment)
+  (rc_adjustment)
   (last_max_rc)
   (delegated_rc)
-  (received_delegated_rc)
+  (received_rc)
   )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_account_object, hive::plugins::rc::rc_account_index )
 
