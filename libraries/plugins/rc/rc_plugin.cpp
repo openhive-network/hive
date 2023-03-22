@@ -156,7 +156,7 @@ void rc_plugin_impl::set_auto_report( const std::string& _option_type, const std
 }
 
 template< bool account_may_exist = false >
-void create_rc_account( database& db, uint32_t now, const account_object& account, asset max_rc_creation_adjustment )
+void create_rc_account( database& db, uint32_t now, const account_object& account, asset rc_adjustment )
 {
   // ilog( "create_rc_account( ${a} )", ("a", account.name) );
   if( account_may_exist )
@@ -166,27 +166,27 @@ void create_rc_account( database& db, uint32_t now, const account_object& accoun
       return;
   }
 
-  if( max_rc_creation_adjustment.symbol == HIVE_SYMBOL )
+  if( rc_adjustment.symbol == HIVE_SYMBOL )
   {
     const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
-    max_rc_creation_adjustment = max_rc_creation_adjustment * gpo.get_vesting_share_price();
+    rc_adjustment = rc_adjustment * gpo.get_vesting_share_price();
   }
-  else if( max_rc_creation_adjustment.symbol == VESTS_SYMBOL )
+  else if( rc_adjustment.symbol == VESTS_SYMBOL )
   {
     // This occurs naturally when rc_account is initialized, so don't logspam
-    // wlog( "Encountered max_rc_creation_adjustment.symbol == VESTS_SYMBOL creating account ${acct}", ("acct", account.name) );
+    // wlog( "Encountered rc_adjustment.symbol == VESTS_SYMBOL creating account ${acct}", ("acct", account.name) );
   }
   else
   {
-    elog( "Encountered unknown max_rc_creation_adjustment creating account ${acct}", ("acct", account.get_name()) );
-    max_rc_creation_adjustment = asset( 0, VESTS_SYMBOL );
+    elog( "Encountered unknown rc_adjustment creating account ${acct}", ("acct", account.get_name()) );
+    rc_adjustment = asset( 0, VESTS_SYMBOL );
   }
 
   db.create< rc_account_object >( [&]( rc_account_object& rca )
   {
     rca.account = account.get_name();
     rca.rc_manabar.last_update_time = now;
-    rca.max_rc_creation_adjustment = max_rc_creation_adjustment;
+    rca.rc_adjustment = rc_adjustment;
     int64_t max_rc = get_maximum_rc( account, rca );
     rca.rc_manabar.current_mana = max_rc;
     rca.last_max_rc = max_rc;
@@ -194,10 +194,10 @@ void create_rc_account( database& db, uint32_t now, const account_object& accoun
 }
 
 template< bool account_may_exist = false >
-void create_rc_account( database& db, uint32_t now, const account_name_type& account_name, asset max_rc_creation_adjustment )
+void create_rc_account( database& db, uint32_t now, const account_name_type& account_name, asset rc_adjustment )
 {
   const account_object& account = db.get< account_object, by_name >( account_name );
-  create_rc_account< account_may_exist >( db, now, account, max_rc_creation_adjustment );
+  create_rc_account< account_may_exist >( db, now, account, rc_adjustment );
 }
 
 std::vector< std::pair< int64_t, account_name_type > > dump_all_accounts( const database& db )
