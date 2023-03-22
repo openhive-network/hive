@@ -2,10 +2,6 @@
 #include <fc/reflect/reflect.hpp>
 #include <fc/variant_object.hpp>
 
-
-#pragma GCC push_options
-#pragma GCC optimize("O0")
-
 namespace fc
 {
    template<typename T>
@@ -111,6 +107,3 @@ namespace fc
    }
 
 }
-
-
-#pragma GCC pop_options

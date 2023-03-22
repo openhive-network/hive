@@ -55,9 +55,6 @@
 
 #include <stdlib.h>
 
-
-#pragma GCC optimize("O0")
-
 long next_hf_time()
 {
   // current "next hardfork" is HF28

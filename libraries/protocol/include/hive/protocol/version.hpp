@@ -3,10 +3,6 @@
 #include <fc/string.hpp>
 #include <fc/time.hpp>
 
-
-#pragma GCC push_options
-#pragma GCC optimize("O0")
-
 namespace hive { namespace protocol {
 
 /*
@@ -129,6 +125,3 @@ FC_REFLECT( hive::protocol::version, (v_num) )
 FC_REFLECT_DERIVED( hive::protocol::hardfork_version, (hive::protocol::version), )
 
 FC_REFLECT( hive::protocol::hardfork_version_vote, (hf_version)(hf_time) )
-
-
-#pragma GCC pop_options

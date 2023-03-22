@@ -5,9 +5,6 @@
 #include <boost/container/flat_set.hpp>
 #include <fc/io/raw_fwd.hpp>
 
-#pragma GCC push_options
-#pragma GCC optimize("O0")
-
 namespace fc {
    namespace raw {
        template<typename Stream, typename T>
@@ -137,6 +134,3 @@ namespace fc {
    }
 
 }
-
-#pragma GCC pop_options
-

@@ -2188,10 +2188,10 @@ DEFINE_READ_APIS( database_api,
 
 
 
+
 #include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
 
 
-#pragma GCC optimize("O0")
 
 namespace hive { namespace app {
 
@@ -2302,15 +2302,14 @@ void cab_destroy_C_impl(const char* context)
   }
 }
 
-static auto volatile stop_in_consume_json_block_impl = true;
+static auto volatile stop_in_consume_json_block_impl = false;
 
 
 int consume_json_block_impl(const char *json_block, const char* context, int block_num)
 {
 
 
- //if(block_num >= 2726330)
- if(block_num >= 2500)
+ if(block_num >= 2726330)
   {
     wlog("mtlk inside  block_num >= 2726330 pid= ${pid}", ("pid", getpid()));
 
@@ -2323,16 +2322,9 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
 
   int expected_block_num = initialize_context(context);
 
-
-//if(block_num == 2726331)
-if(block_num == 2500)
-{
-}
-else
-{
   if(block_num != expected_block_num)
      return expected_block_num;
-}
+
   expected_block_num++;
 
 
@@ -2340,39 +2332,7 @@ else
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[s];
   hive::chain::database& db = db_api_impl._db;
   
-  std::string mys = std::string{ json_block };
-mys = R"""(
-{
-  "witness": "steempty",
-  "block_id": "002999bb039c0244db0cab787a1b08ef0e2edcb6",
-  "previous": "002999ba30e9d7af144a05a5341e66458166e004",
-  "timestamp": "2016-06-28T07:37:39",
-  "extensions": [
-    {
-      "type": "version",
-      "value": "0.5.0"
-    },
-    {
-      "type": "hardfork_version_vote",
-      "value": {
-        "hf_time": "1971-04-18T04:59:36",
-        "hf_version": "0.0.489"
-      }
-    }
-  ],
-  "signing_key": "STM7UiohU9S9Rg9ukx5cvRBgwcmYXjikDa4XM4Sy1V9jrBB7JzLmi",
-  "transactions": [],
-  "transaction_ids": [],
-  "witness_signature": "1f1b480eb0680a9ecc1690ea2db5467be5baaa3eea941d0c788db20f43d511aeb974629acda350eafbfa22037451d0f39fbc28723658591caa1d5eb4b55fa1a08d",
-  "transaction_merkle_root": "0000000000000000000000000000000000000000"
-})""";
-
-
-  fc::variant v = fc::json::from_string( mys );
-
-  std::string string_from_v = fc::json::to_string(v);
-  std::string pretty_string_from_v = fc::json::to_pretty_string(v);
-
+  fc::variant v = fc::json::from_string( std::string{ json_block } );
 
   hive::plugins::block_api::api_signed_block_object sb;
 
@@ -2383,10 +2343,6 @@ mys = R"""(
     wlog("In block=${block_num}", ("block_num", block_num));
     wlog("json=${json}", ("json",std::string{ json_block } ));
     wlog("signed_block=${signed_block}", ("signed_block", sb));
-
-    wlog("string_from_v=${string_from_v}", ("string_from_v", string_from_v));
-    wlog("pretty_string_from_v=${pretty_string_from_v}", ("pretty_string_from_v", pretty_string_from_v));
-
   }
 
   auto siz = sb.transactions.size();

@@ -3,9 +3,6 @@
 #include <fc/shared_ptr.hpp>
 #include <fc/unique_ptr.hpp>
 
-#pragma GCC push_options
-#pragma GCC optimize("O0")
-
 namespace fc
 {
    using std::map;
@@ -317,5 +314,3 @@ namespace fc
    };
 } // namespace fc
 FC_REFLECT_TYPENAME(fc::variant_object)
-
-#pragma GCC pop_options

@@ -78,6 +78,6 @@ namespace fc
   {
     hive::protocol::version ver;
     from_variant( var, ver );
-    hv.v_num = ver.v_num & 0xffff0000; //mtlk todo hardfork_version why cut revision ?
+    hv.v_num = ver.v_num & 0xffff0000;
   }
 }
