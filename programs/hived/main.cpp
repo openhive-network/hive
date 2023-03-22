@@ -80,8 +80,45 @@ void info(const hive::protocol::chain_id_type& chainId)
   std::cerr << "hived git_revision: \"" + fc::string(hive::utilities::git_revision_sha) + "\"\n\n";
   }
 
+
+
+#include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
+
 int main( int argc, char** argv )
 {
+
+
+
+
+std::string vj = R"""(
+"2.3.489"
+)""";
+
+fc::variant vv = fc::json::from_string( vj );
+
+hive::protocol::version ver;
+fc::from_variant( vv, ver );
+
+ilog("version=${v}", ("v", ver));
+
+
+/////
+
+
+std::string hvj = R"""(
+{
+  "hf_time": "1971-04-18T04:59:36",
+  "hf_version": "2.3.489"
+}
+)""";
+
+fc::variant hvv = fc::json::from_string( hvj );
+
+hive::protocol::hardfork_version_vote hv;
+fc::from_variant( hvv, hv );
+
+ilog("hardfork_version_vote=${hv}", ("hv", hv));
+
   try
   {
     // Setup logging config
