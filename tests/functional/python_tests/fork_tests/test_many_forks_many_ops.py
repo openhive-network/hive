@@ -14,7 +14,7 @@ memo_cnt            = 0
 break_cnt           = 0
 break_limit         = 250
 
-def generate_break(node, identifier):
+def generate_break(node: tt.ApiNode, identifier: int):
     global break_cnt
     global break_limit
 
@@ -23,7 +23,7 @@ def generate_break(node, identifier):
         break_cnt += 1
     return f'[break {identifier}] Breaking activated...'
 
-def fork_activator(networks: Iterable[tt.Network], logs, majority_api_node, _m, _M, identifier):
+def fork_activator(networks: Iterable[tt.Network], logs: Iterable[sh.NodeLog], majority_api_node: tt.ApiNode, _m: Iterable[sh.info], _M: Iterable[sh.info], identifier: int):
     _cnt = 1
 
     global break_cnt
@@ -47,7 +47,7 @@ def fork_activator(networks: Iterable[tt.Network], logs, majority_api_node, _m, 
         _cnt += 1
     return f'[break {identifier}] Creating forks finished...'
 
-def trx_creator(wallet, identifier):
+def trx_creator(wallet: tt.Wallet, identifier: int):
     global memo_cnt
 
     global break_cnt
