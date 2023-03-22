@@ -2,6 +2,7 @@
 #include <fc/exception/exception.hpp>
 #include <assert.h>
 
+#pragma GCC optimize("O0")
 
 namespace fc
 {

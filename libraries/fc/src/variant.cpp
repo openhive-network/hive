@@ -11,6 +11,8 @@
 #include <fc/reflect/variant.hpp>
 #include <algorithm>
 
+#pragma GCC push_options
+
 namespace fc
 {
 /**

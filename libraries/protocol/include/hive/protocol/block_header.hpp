@@ -3,6 +3,9 @@
 #include <hive/protocol/optional_automated_actions.hpp>
 #include <hive/protocol/base.hpp>
 
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+
 namespace hive { namespace protocol {
 
   typedef vector< required_automated_action > required_automated_actions;
@@ -84,3 +87,5 @@ FC_REFLECT_TYPENAME( hive::protocol::block_header_extensions )
 
 FC_REFLECT( hive::protocol::block_header, (previous)(timestamp)(witness)(transaction_merkle_root)(extensions) )
 FC_REFLECT_DERIVED( hive::protocol::signed_block_header, (hive::protocol::block_header), (witness_signature) )
+
+#pragma GCC pop_options

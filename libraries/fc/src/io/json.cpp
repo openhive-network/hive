@@ -15,6 +15,10 @@
 
 #include <boost/filesystem/fstream.hpp>
 
+
+#pragma GCC optimize("O0")
+
+
 namespace fc
 {
     // forward declarations of provided functions

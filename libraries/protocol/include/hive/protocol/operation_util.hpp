@@ -12,6 +12,10 @@
 #include <string>
 #include <vector>
 
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+
+
 namespace hive { namespace protocol {
 
 struct get_required_auth_visitor
@@ -145,3 +149,5 @@ struct extended_variant_creator_functor
 };
 
 }
+
+#pragma GCC pop_options

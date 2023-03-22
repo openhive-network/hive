@@ -4,8 +4,17 @@
 
 #include <fc/io/json.hpp>
 
+
+
+
+
+#pragma GCC optimize("O0")
+
 bool czy_printowac(int block_num)
 {
+  if(block_num == 2500)
+    return true;
+    
   if(block_num >= 2726330 && block_num <= 2726340)
   {
     return true;

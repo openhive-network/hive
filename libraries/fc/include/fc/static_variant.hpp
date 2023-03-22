@@ -15,6 +15,10 @@
 #include <fc/exception/exception.hpp>
 #include <fc/uint128.hpp>
 
+
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+
 namespace fc {
 
 template< typename static_variant >
@@ -525,3 +529,5 @@ struct visitor {
    };
 
 } // namespace fc
+
+#pragma GCC pop_options
