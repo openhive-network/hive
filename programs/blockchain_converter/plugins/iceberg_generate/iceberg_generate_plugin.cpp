@@ -35,6 +35,7 @@
 #include "ops_permlink_tracker.hpp"
 #include "ops_required_asset_transfer_visitor.hpp"
 #include "ops_strip_content_visitor.hpp"
+#include "ops_impacted_accounts_visitor.hpp"
 
 namespace hive {namespace converter { namespace plugins { namespace iceberg_generate {
 
@@ -174,6 +175,9 @@ namespace detail {
         hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
         print_pre_conversion_data( block );
 
+        if( block.transactions.size() == 0 )
+          continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
+
         block.extensions.clear();
 
         for( size_t i = 0; i < block.transactions.size(); ++i )
@@ -188,7 +192,11 @@ namespace detail {
             if( enable_op_content_strip )
               op = op.visit( ops_strip_content_visitor{} );
 
-            hive::app::operation_get_impacted_accounts( op, new_accounts );
+            size_t old_new_accs_size = new_accounts.size();
+            op.visit( ops_impacted_accounts_visitor{ new_accounts, all_accounts } );
+            // On no account changes, there is no need for signing
+            if( op.which() == 30 && new_accounts.size() == old_new_accs_size)
+              block.transactions.at(i).signatures.clear();
 
             // Collecting permlinks
             const auto created_permlink_data = op.visit(created_permlinks_visitor{});
@@ -211,9 +219,6 @@ namespace detail {
               ++i;
             }
         }
-
-        if( block.transactions.size() == 0 )
-          continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
         auto block_converted = converter.convert_signed_block( block, lib_id,
           gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
