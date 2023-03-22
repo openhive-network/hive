@@ -12,6 +12,7 @@ IMG=""
 DATA_CACHE=""
 CONFIG_INI_SOURCE=""
 BLOCK_LOG_SOURCE_DIR=""
+FAKETIME_TIMESTAMP=""
 
 print_help () {
     echo "Usage: $0 <image> [OPTION[=VALUE]]..."
@@ -21,6 +22,7 @@ print_help () {
     echo "  --data-cache=PATH             Allows to specify a directory where data and shared memory file should be stored."
     echo "  --block-log-source-dir=PATH   Allows to specify a directory of block_log used to perform initial replay."
     echo "  --config-ini-source=PATH      Allows to specify a path of config.ini configuration file used for building data."
+    echo "  --faketime-timestamp=FMT      Faketime in ISO 8601 extended format as in block api. Example: 2016-09-15T19:47:21"
     echo "  --help                        Display this help screen and exit"
     echo
 }
@@ -38,6 +40,10 @@ while [ $# -gt 0 ]; do
     --config-ini-source=*)
         CONFIG_INI_SOURCE="${1#*=}"
         echo "using CONFIG_INI_SOURCE $CONFIG_INI_SOURCE"
+        ;;
+    --faketime-timestamp=*)
+        FAKETIME_TIMESTAMP="${1#*=}"
+        echo "using FAKETIME_TIMESTAMP $FAKETIME_TIMESTAMP"
         ;;
     --help)
         print_help
@@ -62,7 +68,8 @@ done
 echo "Preparing datadir and shm_dir in location ${DATA_CACHE}"
 rm "$DATA_CACHE" -rf
 "$SCRIPTPATH/prepare_data_and_shm_dir.sh" --data-base-dir="$DATA_CACHE" \
-    --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
+    --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE" \
+    --faketime-timestamp="$FAKETIME_TIMESTAMP"
 
 echo "Attempting to perform replay basing on image ${IMG}..."
 
