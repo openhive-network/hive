@@ -12,7 +12,7 @@ memo_cnt            = 0
 break_cnt           = 0
 break_limit         = 250
 
-def generate_break(wallet, node, identifier):
+def generate_break(wallet: tt.Wallet, node: tt.ApiNode, identifier: int):
     global break_cnt
     global break_limit
 
@@ -22,7 +22,7 @@ def generate_break(wallet, node, identifier):
         break_cnt += 1
     return f'[break {identifier}] Breaking activated...'
 
-def trx_creator(wallet, identifier):
+def trx_creator(wallet: tt.Wallet, identifier: int):
     global memo_cnt
 
     global break_cnt

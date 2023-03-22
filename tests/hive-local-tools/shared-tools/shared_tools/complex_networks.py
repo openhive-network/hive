@@ -20,7 +20,7 @@ class sql_preparer:
         node_under_test.config.psql_url = str(self.db_name())
 
     def db_name(self) -> Any:
-        return None if self.session == None else self.session.get_bind().url
+        return None if self.session is None else self.session.get_bind().url
 
     def node(self, builder) -> Any:
         return builder.networks[self.network_under_test].node(self.node_under_test_name)
@@ -280,7 +280,7 @@ def run_whole_network(architecture: networks.NetworksArchitecture, block_log_dir
 
     builder = generate_or_launch(architecture, block_log_directory_name, time_offsets, before_action)
 
-    if builder == None:
+    if builder is None:
         tt.logger.info(f"Generating 'block_log' enabled. Exiting...")
         sys.exit(1)
 
@@ -326,7 +326,7 @@ def prepare_node_with_database(database) -> Tuple[tt.ApiNode, Any, Any]:
 
 
 def prepare_time_offsets(limit: int):
-    time_offsets = []
+    time_offsets: int = []
 
     cnt = 0
     for i in range(limit):

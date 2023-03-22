@@ -1,6 +1,39 @@
-import json
+"""
+***Example***
 
-from typing import List
+config = {
+    "networks": [
+                    {
+                        "InitNode"     : True,
+                        "ApiNode"      : True,
+                        "WitnessNodes" :[ 1, 2, 4 ]
+                    },
+                    {
+                        "InitNode"     : False,
+                        "ApiNode"      : True,
+                        "WitnessNodes" :[ 6, 5 ]
+                    }
+                ]
+}
+
+na = NetworksArchitecture()
+na.load(config)
+print(na)
+
+***Result***
+
+(Network-alpha)
+  (InitNode)
+  (ApiNode)
+  (WitnessNode-0 (witness0-alpha))
+  (WitnessNode-1 (witness1-alpha)(witness2-alpha))
+  (WitnessNode-2 (witness3-alpha)(witness4-alpha)(witness5-alpha)(witness6-alpha))
+(Network-beta)
+  (ApiNode)
+  (WitnessNode-0 (witness7-beta)(witness8-beta)(witness9-beta)(witness10-beta)(witness11-beta)(witness12-beta))
+  (WitnessNode-1 (witness13-beta)(witness14-beta)(witness15-beta)(witness16-beta)(witness17-beta))
+"""
+
 from typing import Callable
 
 from dataclasses import dataclass, field
@@ -17,10 +50,9 @@ class InitNodeWrapper(NodeWrapper): pass
 @dataclass
 class ApiWrapper(NodeWrapper): pass
 
+@dataclass
 class WitnessWrapper(NodeWrapper):
-    def __init__(self, name) -> None:
-        super().__init__(name)
-        self.witnesses = []
+    witnesses : list = field(default_factory = list)
 
     def create_witnesses(self, cnt_witness_start: int, witnesses_number: int, network_number: int, processor: Callable[[str],int], legacy_witness_name: bool) -> None:
         for i in range(cnt_witness_start, witnesses_number):
@@ -29,16 +61,13 @@ class WitnessWrapper(NodeWrapper):
             else:
                 self.witnesses.append( f"witness{i}-{processor(network_number)}" ) #"witness0-alpha", "witness1-alpha", "witness2-alpha"
 
-    def __str__(self) -> str:
-        return f"({self.name} {''.join( '(' + witness_name + ')' for witness_name in self.witnesses)})"
-
 class NetworkWrapper:
     def __init__(self, name) -> None:
         self.name           = name
 
-        self.init_node      = None
-        self.api_node       = None
-        self.witness_nodes  = []
+        self.init_node: InitNodeWrapper | None      = None
+        self.api_node: ApiWrapper | None            = None
+        self.witness_nodes: list[WitnessWrapper]    = []
 
     def __str__(self) -> str:
         details = []
@@ -99,18 +128,18 @@ class NetworksArchitecture:
 
 class NetworksBuilder:
     def __init__(self) -> None:
-        self.init_node      = None
-        self.witness_names  = []
-        self.networks       = []
-        self.nodes          = []
-        self.init_wallet    = None
+        self.init_node: tt.InitNode | None  = None
+        self.witness_names: list[str]       = []
+        self.networks: list[tt.Network]     = []
+        self.nodes: list[tt.AnyNode]        = []
+        self.init_wallet: tt.Wallet | None  = None
 
     def build(self, architecture: NetworksArchitecture, init_node_can_be_empty: bool = False) -> None:
         for network in architecture.networks:
             tt_network = tt.Network()
 
             if network.init_node is not None:
-                assert self.init_node == None, "InitNode already exists"
+                assert self.init_node is None, "InitNode already exists"
                 self.init_node = tt.InitNode(network=tt_network)
                 self.nodes.append(self.init_node)
 
@@ -123,37 +152,3 @@ class NetworksBuilder:
 
             self.networks.append(tt_network)
         assert init_node_can_be_empty or self.init_node is not None
-
-#=================Example=================
-
-# config = {
-#     "networks": [
-#                     {
-#                         "InitNode"     : True,
-#                         "ApiNode"      : True,
-#                         "WitnessNodes" :[ 1, 2, 4 ]
-#                     },
-#                     {
-#                         "InitNode"     : False,
-#                         "ApiNode"      : True,
-#                         "WitnessNodes" :[ 6, 5 ]
-#                     }
-#                 ]
-# }
-
-# na = NetworksArchitecture()
-# na.load(config)
-# print(na)
-
-#=================Result=================
-
-# (Network-alpha)
-#   (InitNode)
-#   (ApiNode)
-#   (WitnessNode-0 (witness0-alpha))
-#   (WitnessNode-1 (witness1-alpha)(witness2-alpha))
-#   (WitnessNode-2 (witness3-alpha)(witness4-alpha)(witness5-alpha)(witness6-alpha))
-# (Network-beta)
-#   (ApiNode)
-#   (WitnessNode-0 (witness7-beta)(witness8-beta)(witness9-beta)(witness10-beta)(witness11-beta)(witness12-beta))
-#   (WitnessNode-1 (witness13-beta)(witness14-beta)(witness15-beta)(witness16-beta)(witness17-beta))
