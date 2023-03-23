@@ -36,7 +36,6 @@ namespace hive {namespace converter { namespace plugins { namespace block_log_co
   namespace hp = hive::protocol;
 
   using hive::utilities::wif_to_key;
-  using hive::utilities::key_to_wif;
 
 namespace detail {
 
@@ -145,7 +144,7 @@ namespace detail {
         --it_block_num;
       }
       FC_ASSERT( chain_id_match, "Previous output block log chain id does not match the specified one or the owner key of the 2nd authority has changed",
-        ("chain_id", converter.get_chain_id())("owner_key", key_to_wif(converter.get_second_authority_key( hp::authority::owner ))) );
+        ("chain_id", converter.get_chain_id())("owner_key", converter.get_second_authority_key( hp::authority::owner ).str()) );
 
       dlog("Chain id match");
     }

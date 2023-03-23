@@ -16,7 +16,6 @@ namespace hive { namespace converter { namespace plugins {
   using hive::protocol::authority;
 
   using hive::utilities::wif_to_key;
-  using hive::utilities::key_to_wif;
 
   void conversion_plugin_impl::set_wifs( bool use_private, const std::string& _owner, const std::string& _active, const std::string& _posting )
   {
@@ -49,9 +48,9 @@ namespace hive { namespace converter { namespace plugins {
   void conversion_plugin_impl::print_wifs()const
   {
     ilog( "Second authority wif private keys:" );
-    dlog( "Owner: ${key}", ("key", key_to_wif( converter.get_second_authority_key( authority::owner ) )) );
-    dlog( "Active: ${key}", ("key", key_to_wif( converter.get_second_authority_key( authority::active ) )) );
-    dlog( "Posting: ${key}", ("key", key_to_wif( converter.get_second_authority_key( authority::posting ) )) );
+    dlog( "Owner: ${key}", ("key", converter.get_second_authority_key( authority::owner ).str() ) );
+    dlog( "Active: ${key}", ("key", converter.get_second_authority_key( authority::active ).str() ) );
+    dlog( "Posting: ${key}", ("key", converter.get_second_authority_key( authority::posting ).str() ) );
   }
 
   const blockchain_converter& conversion_plugin_impl::get_converter()const
