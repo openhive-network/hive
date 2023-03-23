@@ -84,6 +84,7 @@ namespace hive { namespace chain {
   FC_DECLARE_DERIVED_EXCEPTION( plugin_exception,                  hive::chain::chain_exception, 4100000, "plugin exception" )
   FC_DECLARE_DERIVED_EXCEPTION( block_log_exception,               hive::chain::chain_exception, 4110000, "block log exception" )
   FC_DECLARE_DERIVED_EXCEPTION( market_exception,                  hive::chain::chain_exception, 4120000, "market exception" )
+  FC_DECLARE_DERIVED_EXCEPTION( state_object_definitions_mismatch, hive::chain::chain_exception, 4130000, "State objects definitions from shared memory file mismatch current version of app." )
   FC_DECLARE_DERIVED_EXCEPTION( order_match_exception,             hive::chain::market_exception, 4120100, "order match exception" )
   FC_DECLARE_DERIVED_EXCEPTION( order_fill_exception,              hive::chain::market_exception, 4120100, "order fill exception" )
 
