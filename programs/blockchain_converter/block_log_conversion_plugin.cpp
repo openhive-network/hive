@@ -35,8 +35,6 @@ namespace hive {namespace converter { namespace plugins { namespace block_log_co
 
   namespace hp = hive::protocol;
 
-  using hive::utilities::wif_to_key;
-
 namespace detail {
 
   using hive::chain::block_log;
@@ -231,7 +229,7 @@ namespace detail {
       FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
     }
 
-    const auto private_key = wif_to_key( options["private-key"].as< std::string >() );
+    const auto private_key = fc::ecc::private_key::generate_from_base58( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
     my = std::make_unique< detail::block_log_conversion_plugin_impl >( *private_key, _hive_chain_id, options.at( "jobs" ).as< size_t >() );

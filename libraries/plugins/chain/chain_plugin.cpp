@@ -915,7 +915,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
       wlog("Setting custom skeleton key: ${sk}", ("sk", wif_key));
 
-      fc::optional<fc::ecc::private_key> skeleton_key = hive::utilities::wif_to_key(wif_key);
+      fc::optional<fc::ecc::private_key> skeleton_key = fc::ecc::private_key::generate_from_base58(wif_key);
       FC_ASSERT(skeleton_key.valid(), "unable to parse passed skeletpn key: ${sk}", ("sk", wif_key));
 
       configuration_data.set_skeleton_key(*skeleton_key);

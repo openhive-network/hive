@@ -27,29 +27,5 @@
 
 namespace hive { namespace utilities {
 
-fc::optional<fc::ecc::private_key> wif_to_key( const std::string& wif_key )
-{
-  std::vector<char> wif_bytes;
-  try
-  {
-    wif_bytes = fc::from_base58(wif_key);
-  }
-  catch (const fc::parse_error_exception&)
-  {
-    return fc::optional<fc::ecc::private_key>();
-  }
-  if (wif_bytes.size() < 5)
-    return fc::optional<fc::ecc::private_key>();
-  std::vector<char> key_bytes(wif_bytes.begin() + 1, wif_bytes.end() - 4);
-  fc::ecc::private_key key = fc::variant(key_bytes).as<fc::ecc::private_key>();
-  fc::sha256 check = fc::sha256::hash(wif_bytes.data(), wif_bytes.size() - 4);
-  fc::sha256 check2 = fc::sha256::hash(check);
-
-  if( memcmp( (char*)&check, wif_bytes.data() + wif_bytes.size() - 4, 4 ) == 0 ||
-      memcmp( (char*)&check2, wif_bytes.data() + wif_bytes.size() - 4, 4 ) == 0 )
-    return key;
-
-  return fc::optional<fc::ecc::private_key>();
-}
 
 } } // end namespace hive::utilities
