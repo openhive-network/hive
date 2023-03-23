@@ -266,6 +266,23 @@ namespace fc { namespace ecc {
        return sec;
     }
 
+    std::string private_key::str()
+    {
+      auto secret = get_secret();
+
+      const size_t size_of_data_to_hash = sizeof(secret) + 1;
+      const size_t size_of_hash_bytes = 4;
+      char data[size_of_data_to_hash + size_of_hash_bytes];
+
+      data[0] = (char)0x80;
+      memcpy(&data[1], (char*)&secret, sizeof(secret));
+      fc::sha256 digest = fc::sha256::hash(data, size_of_data_to_hash);
+      digest = fc::sha256::hash(digest);
+      memcpy(data + size_of_data_to_hash, (char*)&digest, size_of_hash_bytes);
+
+      return fc::to_base58(data, sizeof(data));
+    }
+
     private_key private_key::generate()
     {
        EC_KEY* k = EC_KEY_new_by_curve_name( NID_secp256k1 );
