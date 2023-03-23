@@ -47,13 +47,21 @@ class decoded_type_data
 class reflected_decoded_type_data : public decoded_type_data
 {
   public:
-    using members_vector = std::vector<std::pair<std::string, std::string>>;
+    struct member_data
+    {
+      std::string type;
+      std::string name;
+      size_t offset;
+    };
+
+    using members_vector = std::vector<member_data>;
     using enum_values_vector = std::vector<std::pair<std::string, size_t>>;
 
     reflected_decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _fc_name,
                                 members_vector&& _members, enum_values_vector&& _enum_values);
 
-    // json pattern: "[is_reflected,type_id,checksum,fc_name,is_enum,{members or enum values}]"
+    // json pattern: "[is_reflected,type_id,checksum,fc_name,is_enum,{"enum":val, ...}]"
+    // json pattern: "[is_reflected,type_id,checksum,fc_name,is_enum,[["type","name", offset], ...]"
     reflected_decoded_type_data(const std::vector<fc::variant>& json);
 
     std::string to_json_string() const override;
@@ -204,12 +212,13 @@ namespace decoders
         const std::string field_name(name);
         const std::string type_id(typeid(Member).name());
         Class* const nullObj = nullptr;
-        const std::string member_offset = std::to_string(size_t(static_cast<void*>(&(nullObj->*member))));
+        const size_t member_offset = size_t(static_cast<void*>(&(nullObj->*member)));
+        const std::string member_offset_str = std::to_string(member_offset);
 
         encoder.write(type_id.data(), type_id.size());
         encoder.write(field_name.data(), field_name.size());
-        encoder.write(member_offset.data(), member_offset.size());
-        members.push_back({fc::get_typename<Member>::name(), field_name});
+        encoder.write(member_offset_str.data(), member_offset_str.size());
+        members.push_back({.type = fc::get_typename<Member>::name(), .name = field_name, .offset = member_offset});
       }
       
       fc::ripemd160 get_checksum() { return encoder.result(); }
