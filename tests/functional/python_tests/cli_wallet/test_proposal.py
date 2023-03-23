@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 
 import test_tools as tt
+from hive_local_tools import run_for
 from hive_local_tools.functional.python.cli_wallet import (prepared_proposal_data_with_id, get_list_proposal_args,
                                                            get_list_proposal_votes_args, funded_account_info,
                                                            find_proposals_by_creator_name, find_proposals_by_voter_name,
@@ -54,6 +55,7 @@ def test_create_proposal_fail_negative_payment(wallet: tt.Wallet, funded_account
 
   assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: funded_account_info):
   from datetime import datetime as date_type
   def check_is_proposal_update_exists(block_number: int, end_date: date_type) -> bool:

@@ -1,6 +1,8 @@
+from hive_local_tools import run_for
 from hive_local_tools.functional.python.datagen.api.transaction_status_api import assert_transaction_status
 
 
+@run_for('testnet', enable_plugins=['transaction_status_api'])
 def test_transaction_status(node, wallet):
     irreversible_transaction = wallet.api.create_account('initminer', 'alice', '{}')
     node.wait_for_irreversible_block()

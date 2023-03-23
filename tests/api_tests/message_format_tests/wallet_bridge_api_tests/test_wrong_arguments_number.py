@@ -68,7 +68,7 @@ def test_run_command_without_arguments_where_arguments_are_required(node, wallet
         ('get_hardfork_version', ()),
     ]
 )
-@run_for("testnet", "mainnet_5m", "live_mainnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=['account_history_api'])
 def test_run_command_with_additional_argument(node, should_prepare, wallet_bridge_api_command, arguments):
     if is_mainnet_5m_node(node) and wallet_bridge_api_command == "get_reward_fund":
         with pytest.raises(tt.exceptions.CommunicationError):

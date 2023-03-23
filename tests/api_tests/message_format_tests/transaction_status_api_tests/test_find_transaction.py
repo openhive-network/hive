@@ -3,7 +3,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 
-@run_for("testnet", "mainnet_5m", "live_mainnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api", "transaction_status_api"])
 def test_find_transaction(node, should_prepare):
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)

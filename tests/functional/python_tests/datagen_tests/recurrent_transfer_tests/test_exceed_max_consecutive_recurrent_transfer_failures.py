@@ -3,7 +3,7 @@ from hive_local_tools import run_for
 from hive_local_tools.constants import MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES
 
 
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["account_history_api"])
 def test_exceed_max_consecutive_recurrent_transfer_failures(node):
     wallet = tt.Wallet(attach_to=node)
 

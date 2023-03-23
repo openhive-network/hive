@@ -3,7 +3,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_get_transaction_in_testnet(node, wallet):
     transaction = wallet.api.create_account('initminer', 'alice', '{}')
 

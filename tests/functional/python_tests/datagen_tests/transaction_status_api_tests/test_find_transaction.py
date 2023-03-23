@@ -1,6 +1,8 @@
 import time
+from hive_local_tools import run_for
 
 
+@run_for('testnet', enable_plugins=['transaction_status_api'])
 def test_find_existing_transaction(node, wallet):
     wallet.api.set_transaction_expiration(90)
     transaction = wallet.api.create_account('initminer', 'alice', '{}', broadcast=False)
@@ -25,6 +27,7 @@ def test_find_existing_transaction(node, wallet):
     assert node.api.database.is_known_transaction(id=transaction_id)['is_known'] is False
 
 
+@run_for('testnet', enable_plugins=['transaction_status_api'])
 def test_find_unknown_transaction(node, wallet):
     response = node.api.transaction_status.find_transaction(transaction_id="0000000000000000000000000000000000000000")
     assert response['status'] == 'unknown'

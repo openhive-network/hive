@@ -11,13 +11,13 @@ def send_transfers_to_vesting_from_initminer_to_alice(wallet: tt.Wallet, *, amou
         wallet.api.transfer_to_vesting('initminer', 'alice', tt.Asset.Test(1))
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_exceed_block_range(node):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.enum_virtual_ops(block_range_begin=1, block_range_end=2002)
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_filter_only_hardfork_operations(node):
     block_to_start = node.get_last_block_number()
     node.wait_number_of_blocks(1)
@@ -31,7 +31,7 @@ def test_filter_only_hardfork_operations(node):
     assert len(response['ops']) == number_of_hardforks
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_find_irreversible_operations(node):
     block_to_start = node.get_last_block_number()
     # wait for the block with the transaction to become irreversible
@@ -44,7 +44,7 @@ def test_find_irreversible_operations(node):
     assert len(response['ops']) > 0
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_find_newly_created_virtual_op(node):
     wallet = tt.Wallet(attach_to=node)
     block_to_start = node.get_last_block_number()
@@ -64,7 +64,7 @@ def test_find_newly_created_virtual_op(node):
     assert response['ops'][0]['trx_id'] == transaction['transaction_id']
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_find_reversible_virtual_operations(node):
     block_to_start = node.get_last_block_number()
     node.wait_number_of_blocks(1)
@@ -76,7 +76,7 @@ def test_find_reversible_virtual_operations(node):
     assert len(response['ops']) > 0
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_grouping_by_block(node):
     node.wait_number_of_blocks(3)
     block_to_start = node.get_last_block_number()
@@ -107,7 +107,7 @@ def test_grouping_by_block(node):
 
 
 @pytest.mark.parametrize('group_by_block, include_reversible', itertools.product((True, False), (True, False)))
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_limit(node, group_by_block: bool, include_reversible: bool):
 
     node.wait_number_of_blocks(1)
@@ -145,7 +145,7 @@ def test_limit(node, group_by_block: bool, include_reversible: bool):
         (False, 'ops'),
         (True, 'ops_by_block')
 ))
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_list_vops_partly_in_irreversible_and_partly_in_reversible_blocks(node, group_by_block, key):
     node.wait_number_of_blocks(1)
     block_to_start = node.get_last_block_number()
@@ -171,7 +171,7 @@ def test_list_vops_partly_in_irreversible_and_partly_in_reversible_blocks(node, 
 
 
 @pytest.mark.parametrize('group_by_block', (False, True))
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_no_virtual_operations(node, group_by_block: bool):
     node.wait_number_of_blocks(5)
     # check default values of block_range_begin/block_range_end too
@@ -184,7 +184,7 @@ def test_no_virtual_operations(node, group_by_block: bool):
     assert response['next_operation_begin'] == 0
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_number_of_producer_reward_ops(node):
     node.wait_number_of_blocks(3)
     block_to_start = node.get_last_block_number()
@@ -199,7 +199,7 @@ def test_number_of_producer_reward_ops(node):
     assert len(response['ops']) == blocks_to_wait
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_pagination(node):
     node.wait_number_of_blocks(1)
     block_to_start = node.get_last_block_number()
@@ -228,7 +228,7 @@ def test_pagination(node):
     assert ops_from_pagination == response['ops']
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_same_block_range_begin_and_end(node):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.enum_virtual_ops(block_range_begin=1, block_range_end=1)

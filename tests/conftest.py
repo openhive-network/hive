@@ -44,6 +44,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
     """
     def __create_init_node() -> tt.InitNode:
         init_node = tt.InitNode()
+        init_node.config.plugin.extend(__get_plugins())
         init_node.run()
         return init_node
 
@@ -53,11 +54,17 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
             raise ValueError("Please specify the http_endpoint of remote node!")
         return tt.RemoteNode(http_endpoint=http_endpoint)
 
+
     def __get_all_supported_marks() -> list[Mark]:
-        return list(filter(lambda mark: mark.name in create_node, all_marks))
+        return list(filter(lambda mark: mark.name in create_node, all_marks)) + list(
+            mark for mark in all_marks if mark.name=="enable_plugins")
 
     def __get_mark_set_by_run_for() -> Mark:
         return next(filter(lambda mark: mark.name == "parametrize" and mark.args[0] == "node", all_marks))
+
+    def __get_plugins() -> List[str]:
+        mark = request.node.get_closest_marker("enable_plugins")
+        return mark.args[0] if mark is not None else []
 
     def __is_test_marked_with_supported_nodes() -> bool:
         return any(filter(request.node.get_closest_marker, create_node))
@@ -99,7 +106,6 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
                 )
 
     all_marks = request.node.own_markers
-
     create_node = {
         "testnet": __create_init_node,
         "mainnet_5m": __create_remote_node,

@@ -1,6 +1,7 @@
 import test_tools as tt
+from hive_local_tools import run_for
 
-
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_getters(node, wallet):
     response = wallet.api.create_account('initminer', 'alice', '{}')
 

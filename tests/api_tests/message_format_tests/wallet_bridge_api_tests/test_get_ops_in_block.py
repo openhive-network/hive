@@ -23,7 +23,7 @@ CORRECT_VALUES = [
         (UINT64_MAX, 2)  # numeric is converted to bool
     ]
 )
-@run_for("testnet", "mainnet_5m", "live_mainnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=['account_history_api'])
 def test_get_ops_in_block_with_correct_value(node, should_prepare, block_number, virtual_operation):
     if should_prepare:
         node.wait_for_block_with_number(22)  # Waiting for next witness schedule
