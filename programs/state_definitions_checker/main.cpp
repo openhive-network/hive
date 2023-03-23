@@ -112,43 +112,7 @@ void do_job()
     auto end = std::chrono::steady_clock::now();
 
     std::cerr << "\n----- Results: ----- \n\n";
-    std::stringstream ss;
-
-    for (const auto& [type_name, type_data] : dtds_instance.get_decoded_types_data_map())
-    {
-      if (type_data->is_reflected())
-      {
-        hive::chain::util::reflected_decoded_type_data* reflected_type_data = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>(type_data.get());
-        if (!reflected_type_data)
-        {
-          std::cerr << "Cannot cast to reflected_decoded_type_data! Error in type:" << type_data->get_type_id() << "\n";
-          return;
-        }
-        ss << "Type: " << reflected_type_data->get_type_name() << "\n";
-        ss << "Checksum: " << reflected_type_data->get_checksum() << "\n";
-
-        if (reflected_type_data->is_enum())
-        {
-          ss << "Values [name: value]:" << "\n";
-          for (const auto& [name, value] : reflected_type_data->get_enum_values())
-            ss << "  " << name << ": " << value << "\n";
-        }
-        else
-        {
-          ss << "Members [type: name]:" << "\n";
-          for (const auto& [type, name] : reflected_type_data->get_members())
-            ss << "  " << type << ": " << name << "\n";
-        }
-      }
-      else
-      {
-        ss << "Type id: " << type_data->get_type_id() << "\n";
-        ss << "Checksum: " << type_data->get_checksum() << "\n";
-      }
-      ss << "----- \n\n";
-    }
-
-    std::cerr << ss.str();
+    std::cerr << dtds_instance.generate_decoded_types_data_pretty_string() << "\n";
 
     const std::string json = dtds_instance.generate_decoded_types_data_json_string();
     std::cerr << "\nFINAL JSON:\n" << json << "\n\n";

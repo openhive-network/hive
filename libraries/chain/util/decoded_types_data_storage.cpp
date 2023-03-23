@@ -92,10 +92,10 @@ reflected_decoded_type_data::reflected_decoded_type_data(const std::vector<fc::v
       FC_THROW_EXCEPTION(fc::invalid_arg_exception, "Expecting 0 or 1 on 5th position of json. (5th element shows if type is an enum)");
 
     const bool is_enum = bool(type_is_enum);
-    const fc::variant_object& variant_obj = json[5].get_object();
 
     if (is_enum)
     {
+      const fc::variant_object& variant_obj = json[5].get_object();
       enum_values.reserve(variant_obj.size());
 
       for(const auto& el : variant_obj)
@@ -105,10 +105,18 @@ reflected_decoded_type_data::reflected_decoded_type_data(const std::vector<fc::v
     }
     else
     {
-      members.reserve(variant_obj.size());
+      const std::vector<fc::variant>& variants = json[5].get_array();
+      members.reserve(variants.size());
 
-      for(const auto& el : variant_obj)
-        members.push_back({el.key(), el.value().as_string()});
+      for(const auto& v : variants)
+      {
+        auto data = v.get_array();
+        member_data md;
+        md.type = data[0].as_string();
+        md.name = data[1].as_string();
+        md.offset = data[2].as_uint64();
+        members.push_back(md);
+      }
 
       members.shrink_to_fit();
     }
@@ -127,9 +135,10 @@ std::string reflected_decoded_type_data::to_json_string() const
 {
   const bool type_is_enum = is_enum();
   std::stringstream ss;
-  ss << "[" << reflected << ",\"" << type_id << "\",\"" << checksum << "\",\"" << fc_name << "\"," << type_is_enum << ",{";
+  ss << "[" << reflected << ",\"" << type_id << "\",\"" << checksum << "\",\"" << fc_name << "\"," << type_is_enum << ",";
   if (type_is_enum)
   {
+    ss << "{";
     for (const auto& [name, value] : enum_values)
       ss << "\"" << name << "\":" << value << ",";
     ss.seekp(-1, std::ios_base::end); // replace , with }
@@ -137,10 +146,11 @@ std::string reflected_decoded_type_data::to_json_string() const
   }
   else
   {
-    for (const auto& [type, name] : members)
-      ss << "\"" << type << "\":\"" << name << "\",";
+    ss << "[";
+    for (const auto& member : members)
+      ss << "[\"" << member.type << "\",\"" << member.name << "\"," << member.offset << "],";
     ss.seekp(-1, std::ios_base::end); // replace , with }
-    ss << "}";
+    ss << "]";
   }
 
   ss << "]";
@@ -172,8 +182,8 @@ std::string reflected_decoded_type_data::to_pretty_string() const
   {
     ss << "Members:\n";
 
-    for (const auto& [type, name] : members)
-      ss << "  " << type << ": " << name << "\n";
+    for (const auto& member : members)
+      ss << "  " << member.type << ": " << member.name << " (offset: " << member.offset << ")\n";
   }
 
   return ss.str();
