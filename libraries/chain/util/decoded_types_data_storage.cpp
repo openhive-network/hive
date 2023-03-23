@@ -14,9 +14,6 @@ decoded_type_data::decoded_type_data(const std::string_view _checksum, const std
 {
   if (type_id.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - name cannot be empty" );
-
-  if (!reflected)
-    dlog("New non reflected decoded type. Typeid: ${type_id}, checksum: ${checksum}", (type_id)(checksum));
 }
 
 decoded_type_data::decoded_type_data(const std::vector<fc::variant>& json)
@@ -73,8 +70,6 @@ reflected_decoded_type_data::reflected_decoded_type_data(const std::string_view 
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members or enum_values vector have to be specified." );
   else if (!members.empty() && !enum_values.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members and enum_values vector cannot be specified together." );
-
-  dlog("New reflected decoded type: ${fc_name}, checksum: ${checksum}", (fc_name)(checksum));
 }
 
 reflected_decoded_type_data::reflected_decoded_type_data(const std::vector<fc::variant>& json) : decoded_type_data(json)
@@ -156,7 +151,7 @@ decoded_types_data_storage::decoded_types_data_storage()
 
 decoded_types_data_storage::~decoded_types_data_storage()
 {
-  dlog("decoded_types_data_storage object has been deleted");
+  dlog("decoded_types_data_storage object has been deleted. Decoded types map size: ${map_size}", ("map_size", decoded_types_data_map.size()));
 }
 
 decoded_types_data_storage& decoded_types_data_storage::get_instance()
