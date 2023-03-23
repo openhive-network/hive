@@ -413,7 +413,7 @@ public:
   {
     auto it = _keys.find(id);
     if( it != _keys.end() )
-      return wif_to_key( it->second );
+      return fc::ecc::private_key::generate_from_base58( it->second );
     return optional<fc::ecc::private_key>();
   }
 
@@ -438,7 +438,7 @@ public:
   // @returns either true or false if the key has been successfully added to the storage
   bool import_key(const string& wif_key)
   {
-    fc::optional<fc::ecc::private_key> optional_private_key = wif_to_key(wif_key);
+    fc::optional<fc::ecc::private_key> optional_private_key = fc::ecc::private_key::generate_from_base58(wif_key);
     if( !optional_private_key )
       FC_THROW("Invalid private key");
     hive::chain::public_key_type wif_pub_key = optional_private_key->get_public_key();
@@ -810,7 +810,7 @@ public:
       auto it = _keys.find(key);
       if( it != _keys.end() )
       {
-        fc::optional<fc::ecc::private_key> privkey = wif_to_key( it->second );
+        fc::optional<fc::ecc::private_key> privkey = fc::ecc::private_key::generate_from_base58( it->second );
         FC_ASSERT( privkey.valid(), "Malformed private key in _keys" );
         available_keys.insert(key);
         available_private_keys[key] = *privkey;

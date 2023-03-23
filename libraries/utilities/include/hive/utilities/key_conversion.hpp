@@ -29,6 +29,4 @@
 
 namespace hive { namespace utilities {
 
-fc::optional<fc::ecc::private_key> wif_to_key( const std::string& wif_key );
-
 } } // end namespace hive::utilities
