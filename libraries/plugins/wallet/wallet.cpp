@@ -166,7 +166,7 @@ public:
    //          account, false otherwise (but it is removed either way)
    bool remove_key(string key)
    {
-      public_key_type pub(key);
+      public_key_type pub( public_key_type::from_base58_with_prefix( key, HIVE_ADDRESS_PREFIX ) );
       auto itr = _keys.find(pub);
       if( itr != _keys.end() ) {
          _keys.erase(pub);
