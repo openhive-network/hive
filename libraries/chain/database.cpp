@@ -130,7 +130,7 @@ database_impl::database_impl( database& self )
   : _self(self), _evaluator_registry(self), _req_action_evaluator_registry(self), _opt_action_evaluator_registry(self) {}
 
 database::database()
-  : _my( new database_impl(*this) ) {}
+  : _my( new database_impl(*this) ), _decoded_types_data_storage(util::decoded_types_data_storage::get_instance()) {}
 
 database::~database()
 {
@@ -149,7 +149,6 @@ void database::open( const open_args& args )
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
-
     initialize_state_independent_data(args);
     load_state_initial_data(args);
 
@@ -162,6 +161,7 @@ void database::initialize_state_independent_data(const open_args& args)
   initialize_indexes();
   initialize_evaluators();
   initialize_irreversible_storage();
+  check_state_objects_definitions(args.chainbase_flags & chainbase::skip_env_check);
 
   if(!find< dynamic_global_property_object >())
   {
@@ -4005,6 +4005,47 @@ void database::initialize_irreversible_storage()
   auto s = get_segment_manager();
 
   irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
+}
+
+void database::check_state_objects_definitions(const bool override_decoded_state_objects_data)
+{
+  auto s = get_segment_manager();
+  shared_string* decoded_state_objects_data = s->find<shared_string>( "decoded_state_objects_data_json" ).first;
+
+  if (!decoded_state_objects_data)
+  {
+    decoded_state_objects_data = s->construct<shared_string>( "decoded_state_objects_data_json" )(allocator< shared_string >(s));
+    *decoded_state_objects_data = _decoded_types_data_storage.generate_decoded_types_data_json_string();
+  }
+  else if (override_decoded_state_objects_data)
+    *decoded_state_objects_data = _decoded_types_data_storage.generate_decoded_types_data_json_string();
+  else
+  {
+    auto result = _decoded_types_data_storage.check_if_decoded_types_data_json_matches_with_current_decoded_data(to_string(*decoded_state_objects_data));
+
+    if (!result.first)
+    {
+      std::fstream loaded_decoded_types_details, current_decoded_types_details;
+      constexpr char current_data_filename[] = "current_decoded_types_details.log";
+      constexpr char loaded_data_filename[] = "loaded_decoded_types_details.log";
+
+      loaded_decoded_types_details.open(loaded_data_filename, std::ios::out | std::ios::trunc);
+      if (loaded_decoded_types_details.good())
+        loaded_decoded_types_details << _decoded_types_data_storage.generate_decoded_types_data_pretty_string(*decoded_state_objects_data);
+      loaded_decoded_types_details.flush();
+      loaded_decoded_types_details.close();
+
+      current_decoded_types_details.open(current_data_filename, std::ios::out | std::ios::trunc);
+      if (current_decoded_types_details.good())
+        current_decoded_types_details << _decoded_types_data_storage.generate_decoded_types_data_pretty_string();
+      current_decoded_types_details.flush();
+      current_decoded_types_details.close();
+
+      FC_THROW_EXCEPTION(state_object_definitions_mismatch, "State objects definitions mismatch.\nDetails:\n ${details}\n"
+                                                            "Full data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
+                                                            ("details", result.second)(current_data_filename)(loaded_data_filename));
+    }
+  }
 }
 
 void database::resetState(const open_args& args)

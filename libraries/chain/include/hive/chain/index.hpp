@@ -41,6 +41,7 @@ void _add_index_impl( database& db )
   std::shared_ptr< chainbase::index_extension > ext =
     std::make_shared< index_info_impl< MultiIndexType > >();
   db.add_index_extension< MultiIndexType >( ext );
+  db.register_new_type<MultiIndexType>();
 }
 
 template< typename MultiIndexType >
