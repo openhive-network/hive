@@ -78,11 +78,16 @@ namespace fc {
            {
             return a.serialize() != b.serialize();
            }
+           inline friend bool operator<( const public_key& a, const public_key& b )
+           {
+            return a.serialize() < b.serialize();
+           }
 
            /// Allows to convert current public key object into base58 number.
            std::string to_base58() const;
            static std::string to_base58( const public_key_data &key );
-           static public_key from_base58( const std::string& b58 );
+           static public_key from_base58( const std::string& b58, bool is_sha256 = true );
+           static public_key from_base58_with_prefix( const std::string& b58_with_prefix, const std::string& prefix );
 
            unsigned int fingerprint() const;
 

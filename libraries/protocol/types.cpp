@@ -18,20 +18,8 @@ namespace hive { namespace protocol {
 
   public_key_type::public_key_type( const std::string& base58str )
   {
-    // TODO:  Refactor syntactic checks into static is_valid()
-    //        to make public_key_type API more similar to address API
-    std::string prefix( HIVE_ADDRESS_PREFIX );
-
-    const size_t prefix_len = prefix.size();
-    FC_ASSERT( base58str.size() > prefix_len );
-    FC_ASSERT( base58str.substr( 0, prefix_len ) ==  prefix , "", ("base58str", base58str) );
-    auto bin = fc::from_base58( base58str.substr( prefix_len ) );
-    binary_key bin_key;
-    fc::raw::unpack_from_vector(bin, bin_key);
-    key_data = bin_key.data;
-    FC_ASSERT( fc::ripemd160::hash( key_data.data, key_data.size() )._hash[0] == bin_key.check );
+    key_data = fc::ecc::public_key::from_base58_with_prefix( base58str, HIVE_ADDRESS_PREFIX );
   };
-
 
   public_key_type::operator fc::ecc::public_key_data() const
   {

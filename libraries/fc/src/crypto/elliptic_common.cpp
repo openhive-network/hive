@@ -152,17 +152,34 @@ namespace fc { namespace ecc {
       return fc::to_base58(data.begin(), data.size());
     }
 
-    public_key public_key::from_base58( const std::string& b58 )
+    public_key public_key::from_base58( const std::string& b58, bool is_sha256 )
     {
         array<char, 37> data;
         size_t s = fc::from_base58(b58, (char*)&data, sizeof(data) );
         FC_ASSERT( s == sizeof(data) );
 
         public_key_data key;
-        uint32_t check = (uint32_t)sha256::hash(data.data, sizeof(key))._hash[0];
+        uint32_t check = 0;
+
+        if( is_sha256 )
+            check = (uint32_t)sha256::hash(data.data, sizeof(key))._hash[0];
+        else
+            check = (uint32_t)ripemd160::hash(data.data, sizeof(key))._hash[0];
+
         FC_ASSERT( memcmp( (char*)&check, data.data + sizeof(key), sizeof(check) ) == 0 );
         memcpy( (char*)key.data, data.data, sizeof(key) );
         return from_key_data(key);
+    }
+
+    public_key public_key::from_base58_with_prefix( const std::string& b58_with_prefix, const std::string& prefix )
+    {
+      // TODO:  Refactor syntactic checks into static is_valid()
+      //        to make public_key_type API more similar to address API
+      const size_t prefix_len = prefix.size();
+      FC_ASSERT( b58_with_prefix.size() > prefix_len );
+      FC_ASSERT( b58_with_prefix.substr( 0, prefix_len ) ==  prefix , "", ("b58_with_prefix", b58_with_prefix) );
+
+      return from_base58( b58_with_prefix.substr( prefix_len ), false/*is_sha256*/ );
     }
 
     unsigned int public_key::fingerprint() const
