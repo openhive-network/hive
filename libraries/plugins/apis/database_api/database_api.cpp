@@ -2301,6 +2301,14 @@ void cab_destroy_C_impl(const char* context)
   }
 }
 
+bool replace(std::string& s, const std::string& portion_to_be_replaced, const std::string& with) {
+    size_t start_pos = s.find(portion_to_be_replaced);
+    if(start_pos == std::string::npos)
+        return false;
+    s.replace(start_pos, portion_to_be_replaced.size(), with);
+    return true;
+}
+
 
 int consume_json_block_impl(const char *json_block, const char* context, int block_num)
 {
@@ -2317,7 +2325,11 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
   hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[s];
   hive::chain::database& db = db_api_impl._db;
   
-  fc::variant v = fc::json::from_string( std::string{ json_block } );
+  std::string json = std::string{ json_block };
+  
+  replace(json, "hf_version", "version");
+
+  fc::variant v = fc::json::from_string( json );
 
   hive::plugins::block_api::api_signed_block_object sb;
 
