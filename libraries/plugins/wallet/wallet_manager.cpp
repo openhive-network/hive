@@ -236,7 +236,7 @@ hive::protocol::signed_transaction wallet_manager::sign_transaction(const hive::
          if (!i.second->is_locked()) {
             //pychol-mychol
             //std::optional<hive::protocol::signature_type> sig = i.second->try_sign_digest(stxn.sig_digest(id, stxn.context_free_data), pk);
-            std::optional<hive::protocol::signature_type> sig;
+            std::optional<signature_type> sig;
             if (sig) {
                stxn.signatures.push_back(*sig);
                found = true;
@@ -252,14 +252,14 @@ hive::protocol::signed_transaction wallet_manager::sign_transaction(const hive::
    return stxn;
 }
 
-hive::protocol::signature_type wallet_manager::sign_digest(const hive::protocol::digest_type& digest, const public_key_type& key)
+signature_type wallet_manager::sign_digest(const digest_type& digest, const public_key_type& key)
 {
    check_timeout();
 
    try {
       for (const auto& i : wallets) {
          if (!i.second->is_locked()) {
-            std::optional<hive::protocol::signature_type> sig = i.second->try_sign_digest(digest, key);
+            std::optional<signature_type> sig = i.second->try_sign_digest(digest, key);
             if (sig)
                return *sig;
          }

@@ -1,15 +1,18 @@
 #pragma once
 
-#include <hive/protocol/types.hpp>
+#include <fc/crypto/elliptic.hpp>
+#include <fc/container/flat_fwd.hpp>
 
 using namespace std;
 
 namespace hive { namespace plugins { namespace wallet {
 
-using hive::protocol::private_key_type;
-using hive::protocol::public_key_type;
-using hive::protocol::signature_type;
-using hive::protocol::digest_type;
+using private_key_type  = fc::ecc::private_key;
+using public_key_type   = fc::ecc::public_key;
+using signature_type    = fc::ecc::compact_signature;
+using digest_type       = fc::sha256;
+
+using fc::flat_set;
 
 class wallet_api
 {
@@ -67,12 +70,12 @@ class wallet_api
        * using \c import_key()
        * @returns a map containing the private keys, indexed by their public key
        */
-      virtual map<hive::protocol::public_key_type, hive::protocol::private_key_type> list_keys() = 0;
+      virtual map<public_key_type, private_key_type> list_keys() = 0;
 
       /** Dumps all public keys owned by the wallet.
        * @returns a vector containing the public keys
        */
-      virtual flat_set<hive::protocol::public_key_type> list_public_keys() = 0;
+      virtual flat_set<public_key_type> list_public_keys() = 0;
 
       /** Imports a WIF Private Key into the wallet to be used to sign transactions by an account.
        *
