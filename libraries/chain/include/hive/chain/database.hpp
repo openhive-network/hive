@@ -11,6 +11,7 @@
 #include <hive/chain/notifications.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
+#include <hive/chain/util/decoded_types_data_storage.hpp>
 #include <hive/chain/util/signal.hpp>
 
 #include <hive/protocol/protocol.hpp>
@@ -629,6 +630,8 @@ namespace chain {
       // Reset irreversible state (unaffected by undo)
       void initialize_irreversible_storage();
 
+      void check_state_objects_definitions(const bool override_decoded_state_objects_data);
+
       void resetState(const open_args& args);
 
       void init_schema();
@@ -822,9 +825,16 @@ namespace chain {
         return _hardfork_versions;
       }
 
+      template <typename T>
+      void register_new_type()
+      {
+        _decoded_types_data_storage.register_new_type<T>();
+      }
+
     private:
 
       std::unique_ptr< database_impl > _my;
+      util::decoded_types_data_storage& _decoded_types_data_storage;
 
       fork_database                 _fork_db;
       hardfork_versions             _hardfork_versions;
