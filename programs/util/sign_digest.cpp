@@ -45,7 +45,7 @@ int main(int argc, char** argv, char** envp)
     fc::from_variant( v, sreq );
     signing_result sres;
     sres.dig = sreq.dig;
-    fc::ecc::private_key priv_key = *hive::utilities::wif_to_key( sreq.wif );
+    fc::ecc::private_key priv_key = *fc::ecc::private_key::generate_from_base58( sreq.wif );
     sres.sig = priv_key.sign_compact( sreq.dig );
     sres.key = hive::protocol::public_key_type( priv_key.get_public_key() );
     std::cout << fc::json::to_string( sres ) << std::endl;

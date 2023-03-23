@@ -248,6 +248,31 @@ namespace fc { namespace ecc {
         return regenerate( secret );
     }
 
+    fc::optional<private_key> private_key::generate_from_base58( const std::string& b58 )
+    {
+      std::vector<char> b58_bytes;
+      try
+      {
+        b58_bytes = fc::from_base58(b58);
+      }
+      catch (const fc::parse_error_exception&)
+      {
+        return fc::optional<fc::ecc::private_key>();
+      }
+      if (b58_bytes.size() < 5)
+        return fc::optional<fc::ecc::private_key>();
+      std::vector<char> key_bytes(b58_bytes.begin() + 1, b58_bytes.end() - 4);
+      fc::ecc::private_key key = fc::variant(key_bytes).as<fc::ecc::private_key>();
+      fc::sha256 check = fc::sha256::hash(b58_bytes.data(), b58_bytes.size() - 4);
+      fc::sha256 check2 = fc::sha256::hash(check);
+
+      if( memcmp( (char*)&check, b58_bytes.data() + b58_bytes.size() - 4, 4 ) == 0 ||
+          memcmp( (char*)&check2, b58_bytes.data() + b58_bytes.size() - 4, 4 ) == 0 )
+        return key;
+
+      return fc::optional<fc::ecc::private_key>();
+    }
+
     fc::sha256 private_key::get_secret( const EC_KEY * const k )
     {
        if( !k )
@@ -266,7 +291,7 @@ namespace fc { namespace ecc {
        return sec;
     }
 
-    std::string private_key::str()
+    std::string private_key::str() const
     {
       auto secret = get_secret();
 

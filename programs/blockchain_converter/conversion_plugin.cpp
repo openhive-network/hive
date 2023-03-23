@@ -15,13 +15,11 @@ namespace hive { namespace converter { namespace plugins {
   using hive::protocol::private_key_type;
   using hive::protocol::authority;
 
-  using hive::utilities::wif_to_key;
-
   void conversion_plugin_impl::set_wifs( bool use_private, const std::string& _owner, const std::string& _active, const std::string& _posting )
   {
-    fc::optional< private_key_type > _owner_key = wif_to_key( _owner );
-    fc::optional< private_key_type > _active_key = wif_to_key( _active );
-    fc::optional< private_key_type > _posting_key = wif_to_key( _posting );
+    fc::optional< private_key_type > _owner_key = fc::ecc::private_key::generate_from_base58( _owner );
+    fc::optional< private_key_type > _active_key = fc::ecc::private_key::generate_from_base58( _active );
+    fc::optional< private_key_type > _posting_key = fc::ecc::private_key::generate_from_base58( _posting );
 
     if( use_private )
       _owner_key = converter.get_witness_key();
