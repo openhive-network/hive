@@ -25,8 +25,6 @@
 
 #include <fc/log/logger.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
-
 namespace hive { namespace converter {
 
   namespace hp = hive::protocol;

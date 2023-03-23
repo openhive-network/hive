@@ -5,7 +5,6 @@
 #include <hive/protocol/version.hpp>
 
 #include <hive/utilities/logging_config.hpp>
-#include <hive/utilities/key_conversion.hpp>
 #include <hive/utilities/git_revision.hpp>
 
 #include <hive/plugins/account_by_key/account_by_key_plugin.hpp>

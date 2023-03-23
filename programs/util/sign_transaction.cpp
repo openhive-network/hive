@@ -10,8 +10,6 @@
 
 #include <hive/chain/full_transaction.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
-
 #include <hive/protocol/transaction.hpp>
 #include <hive/protocol/types.hpp>
 

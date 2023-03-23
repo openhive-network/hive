@@ -8,8 +8,6 @@
 #include <fc/reflect/reflect.hpp>
 #include <fc/variant.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
-
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/authority.hpp>
 

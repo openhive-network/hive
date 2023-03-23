@@ -43,7 +43,6 @@
 #include <fc/smart_ref_impl.hpp>
 
 #include <hive/utilities/git_revision.hpp>
-#include <hive/utilities/key_conversion.hpp>
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>

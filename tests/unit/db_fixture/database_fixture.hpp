@@ -8,7 +8,6 @@
 
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
 #include <hive/utilities/tempdir.hpp>
 
 #include <hive/plugins/block_api/block_api_plugin.hpp>
