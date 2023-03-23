@@ -29,7 +29,6 @@
 #include <fc/io/json.hpp>
 
 #include <hive/protocol/types.hpp>
-#include <hive/utilities/key_conversion.hpp>
 
 #ifndef WIN32
 #include <csignal>
