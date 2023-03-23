@@ -148,14 +148,17 @@ public:
    //          account, false otherwise (but it is stored either way)
    bool import_key(string wif_key)
    {
-      //pychol-mychol
-      //private_key_type priv(wif_key);
-      private_key_type priv;
-      public_key_type wif_pub_key = priv.get_public_key();
+      auto priv = private_key_type::generate_from_base58( wif_key );
+      if( priv.valid() )
+      {
+         HIVE_ASSERT( false, hive::chain::key_exist_exception, "Key can't be constructed" );
+      }
+
+      public_key_type wif_pub_key = priv->get_public_key();
 
       auto itr = _keys.find(wif_pub_key);
       if( itr == _keys.end() ) {
-         _keys[wif_pub_key] = priv;
+         _keys[wif_pub_key] = *priv;
          return true;
       }
       HIVE_ASSERT( false, hive::chain::key_exist_exception, "Key already in wallet" );
@@ -192,9 +195,8 @@ public:
       else
          HIVE_ASSERT( false, hive::chain::unsupported_key_type_exception, "Key type \"${kt}\" not supported by software wallet", ("kt", key_type));
 
-      //pychol-mychol
-      //import_key(priv_key.to_string());
-      import_key("xxxx");
+      import_key(priv_key.str());
+
       //pychol-mychol
       //return priv_key.get_public_key().to_string();
       return "xxxx";
