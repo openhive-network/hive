@@ -21,8 +21,6 @@
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/block.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
-
 #include <boost/program_options.hpp>
 
 #include <memory>

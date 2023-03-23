@@ -18,8 +18,6 @@
 #include <hive/protocol/block.hpp>
 #include <hive/protocol/hardfork_block.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
-
 #include <boost/program_options.hpp>
 
 #include <string>

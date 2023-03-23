@@ -15,8 +15,6 @@
 //#include <fc/thread/mutex.hpp>
 #include <fc/thread/scoped_lock.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
-
 #include <sstream>
 #include <string>
 

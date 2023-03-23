@@ -10,8 +10,6 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/witness_objects.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
-
 namespace hive { namespace plugins { namespace debug_node {
 
 namespace detail {

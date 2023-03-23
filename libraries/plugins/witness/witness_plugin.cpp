@@ -9,7 +9,6 @@
 #include <hive/chain/util/impacted.hpp>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
 
 #include <fc/io/json.hpp>

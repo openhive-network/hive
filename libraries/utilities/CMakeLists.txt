@@ -18,7 +18,6 @@ file(GLOB HEADERS "include/hive/utilities/*.hpp")
 set(sources
    notifications.cpp
    benchmark_dumper.cpp
-   key_conversion.cpp
    string_escape.cpp
    tempdir.cpp
    words.cpp

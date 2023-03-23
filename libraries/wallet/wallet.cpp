@@ -1,7 +1,6 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/utilities/git_revision.hpp>
-#include <hive/utilities/key_conversion.hpp>
 #include <hive/utilities/words.hpp>
 
 #include <hive/protocol/base.hpp>

@@ -6,8 +6,6 @@
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/authority.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
-
 #include <string>
 
 namespace hive { namespace converter { namespace plugins {

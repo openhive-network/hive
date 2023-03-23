@@ -6,7 +6,6 @@
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/statsd/utility.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
 #include <hive/utilities/notifications.hpp>
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/database_configuration.hpp>

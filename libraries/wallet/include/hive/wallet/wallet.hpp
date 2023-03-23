@@ -4,8 +4,6 @@
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_args.hpp>
 #include <hive/wallet/misc_utilities.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
-
 #include <fc/macros.hpp>
 #include <fc/real128.hpp>
 #include <fc/crypto/base58.hpp>
