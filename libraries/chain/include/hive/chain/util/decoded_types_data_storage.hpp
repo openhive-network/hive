@@ -32,6 +32,7 @@ class decoded_type_data
     virtual ~decoded_type_data() = default;
 
     virtual std::string to_json_string() const;
+    virtual std::string to_pretty_string() const;
 
     virtual std::string_view get_checksum() const final { return checksum; }
     virtual std::string_view get_type_id() const final { return type_id; }
@@ -56,6 +57,7 @@ class reflected_decoded_type_data : public decoded_type_data
     reflected_decoded_type_data(const std::vector<fc::variant>& json);
 
     std::string to_json_string() const override;
+    std::string to_pretty_string() const override;
 
     std::string_view get_type_name() const { return fc_name; }
     bool is_enum() const { return members.empty(); }
@@ -132,6 +134,8 @@ class decoded_types_data_storage final
 
     const std::unordered_map<std::string_view, std::shared_ptr<decoded_type_data>>& get_decoded_types_data_map() const { return decoded_types_data_map; }
 
+    // if json string is specified, generate pretty string with info from it, otherwise generate output from map with current decoded types data.
+    std::string generate_decoded_types_data_pretty_string(const std::string& decoded_types_data_json = std::string()) const;
     std::string generate_decoded_types_data_json_string() const;
 
     // bool - comparing result, string - details of detected differences.

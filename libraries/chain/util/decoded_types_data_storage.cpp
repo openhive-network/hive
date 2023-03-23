@@ -59,6 +59,15 @@ std::string decoded_type_data::to_json_string() const
   return result;
 }
 
+std::string decoded_type_data::to_pretty_string() const
+{
+  std::stringstream ss;
+  ss << "Type id: " << type_id << "\n";
+  ss << "Checksum: " << checksum << "\n";
+  ss << "Reflected: " << reflected << "\n";
+  return ss.str();
+}
+
 reflected_decoded_type_data::reflected_decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _fc_name,
                                                          members_vector&& _members, enum_values_vector&& _enum_values)
   : decoded_type_data(_checksum, _type_id, true), members(std::move(_members)), enum_values(std::move(_enum_values)), fc_name(_fc_name)
@@ -142,6 +151,32 @@ std::string reflected_decoded_type_data::to_json_string() const
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Created json for type: ${fc_name} is not valid: %{result}", (fc_name)(result) );
 
   return result;
+}
+
+std::string reflected_decoded_type_data::to_pretty_string() const
+{
+  std::stringstream ss;
+  ss << "Type id: " << type_id << "\n";
+  ss << "Name: " << fc_name << "\n";
+  ss << "Checksum: " << checksum << "\n";
+  ss << "Reflected: " << reflected << "\n";
+
+  if (is_enum())
+  {
+    ss << "Enum values:\n";
+
+    for (const auto& [name, value] : enum_values)
+      ss << "  " << name << ": " << value << "\n";
+  }
+  else
+  {
+    ss << "Members:\n";
+
+    for (const auto& [type, name] : members)
+      ss << "  " << type << ": " << name << "\n";
+  }
+
+  return ss.str();
 }
 
 decoded_types_data_storage::decoded_types_data_storage()
@@ -247,6 +282,25 @@ std::unordered_map<std::string_view, std::unique_ptr<decoded_type_data>> generat
     decoded_types_map.try_emplace(loaded_decoded_type->get_type_id(), std::move(loaded_decoded_type));
   }
   return decoded_types_map;
+}
+
+std::string decoded_types_data_storage::generate_decoded_types_data_pretty_string(const std::string& decoded_types_data_json) const
+{
+  auto generate_pretty_string_from_map = [](const auto& decoded_types_map) -> std::string
+  {
+    std::stringstream ss;
+    ss << "\nNumber of objects in map: " << decoded_types_map.size() << "\n\n";
+
+    for (const auto& [key, decoded_type_data] : decoded_types_map)
+      ss << decoded_type_data->to_pretty_string() << "\n\n";
+
+    return ss.str();
+  };
+
+  if (decoded_types_data_json.empty())
+    return generate_pretty_string_from_map(decoded_types_data_map);
+  else
+    return generate_pretty_string_from_map(generate_data_map_from_json(decoded_types_data_json));
 }
 
 std::pair<bool, std::string> decoded_types_data_storage::check_if_decoded_types_data_json_matches_with_current_decoded_data(const std::string& decoded_types_data_json) const
