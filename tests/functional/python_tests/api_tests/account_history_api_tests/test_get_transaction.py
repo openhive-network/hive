@@ -7,7 +7,7 @@ from hive_local_tools import run_for
 @pytest.mark.parametrize('include_reversible', (
         True, False,
 ))
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_get_transaction_in_reversible_block(node, include_reversible):
     wallet = tt.Wallet(attach_to=node, additional_arguments=['--transaction-serialization=hf26'])
     transaction = wallet.create_account('alice')
@@ -27,7 +27,7 @@ def test_get_transaction_in_reversible_block(node, include_reversible):
 @pytest.mark.parametrize('include_reversible', (
         False, True,
 ))
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_wrong_transaction_id(node, incorrect_id, include_reversible):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.get_transaction(id=incorrect_id, include_reversible=include_reversible)

@@ -3,7 +3,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_default_args_value(node):
     node.api.account_history.get_ops_in_block()
 
@@ -12,7 +12,7 @@ def test_default_args_value(node):
         (False, 3),
         (True, 2)
 ))
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_filter_virtual_ops(node, only_virtual, number_of_ops):
     wallet = tt.Wallet(attach_to=node)
     block_number = wallet.create_account('alice')['block_num']
@@ -26,7 +26,7 @@ def test_filter_virtual_ops(node, only_virtual, number_of_ops):
         (False, '__eq__'),
         (True, '__gt__')
 ))
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_get_operations_in_block_with_and_without_reversible(node, include_reversible, comparison_type):
     response = node.api.account_history.get_ops_in_block(block_num=1,
                                                          only_virtual=False,
@@ -34,6 +34,6 @@ def test_get_operations_in_block_with_and_without_reversible(node, include_rever
     assert getattr(len(response['ops']), comparison_type)(0)
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_get_ops_in_non_existent_block(node):
     node.api.account_history.get_ops_in_block(block_num=-1)

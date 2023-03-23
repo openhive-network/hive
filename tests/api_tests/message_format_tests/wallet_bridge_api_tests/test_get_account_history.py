@@ -38,7 +38,7 @@ CORRECT_VALUES = [
         (ACCOUNTS[0], -1, True),  # bool is treated like numeric (0:1)
     ]
 )
-@run_for("testnet", "mainnet_5m", "live_mainnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=['account_history_api'])
 def test_get_account_history_with_correct_value(node, account, from_, limit, should_prepare):
     if should_prepare:
         node.restart(time_offset="+0h x10")

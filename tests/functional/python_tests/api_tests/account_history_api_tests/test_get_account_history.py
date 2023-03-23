@@ -3,7 +3,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_get_empty_history(node):
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account('alice')
@@ -14,7 +14,7 @@ def test_get_empty_history(node):
 @pytest.mark.parametrize('include_reversible', (
         True, False,
 ))
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_check_for_newly_created_history_operations(node, include_reversible):
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account('alice', hives=100)
@@ -24,7 +24,7 @@ def test_check_for_newly_created_history_operations(node, include_reversible):
     assert len(response['history']) > 0
 
 
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_filter_only_transfer_ops(node):
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account('alice', hives=100)
@@ -33,7 +33,7 @@ def test_filter_only_transfer_ops(node):
     assert len(response['history']) == 1
 
 @pytest.mark.parametrize("step", (1, 2, 4, 8, 16, 32, 64))
-@run_for('testnet')
+@run_for('testnet', enable_plugins=['account_history_api'])
 def test_pagination(node: tt.InitNode, step: int):
     amount_of_transfers = 59
     amount_of_operations_from_account_creation = 5

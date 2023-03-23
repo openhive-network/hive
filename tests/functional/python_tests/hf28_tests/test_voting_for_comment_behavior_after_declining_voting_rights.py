@@ -71,7 +71,7 @@ def test_edit_comment_vote_without_voting_rights_before_comment_reward_pay_out(n
         wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 50)
 
 
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["account_history_api"])
 def test_payout_rewards_for_comment_vote_without_voting_rights(node):
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=100_000_000)
