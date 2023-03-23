@@ -90,7 +90,7 @@ class rc_plugin_impl
 
     bool before_first_block()
     {
-      return (_db.count< rc_account_object >() == 0);
+      return (_db.count< rc_resource_param_object >() == 0);
     }
 
     int64_t calculate_cost_of_resources( int64_t total_vests, rc_info& usage_info );
