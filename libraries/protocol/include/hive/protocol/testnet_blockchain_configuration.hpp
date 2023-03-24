@@ -57,6 +57,10 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     fc::time_point_sec     genesis_time;
     std::array<fc::optional<uint32_t>, HIVE_NUM_HARDFORKS + 1> blocks = {};
     fc::optional<uint64_t> init_supply, hbd_init_supply;
+    // Whether we want producer_missed_operation & shutdown_witness_operation vops generated.
+    bool generate_missed_block_operations = false;
+    // How many blocks is witness allowed to miss before it is being shut down.
+    uint16_t witness_shutdown_threshold = 28800; // aka HIVE_BLOCKS_PER_DAY
 
     public:
       configuration();
@@ -71,6 +75,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       void set_genesis_time( const fc::time_point_sec& genesis_time );
       void set_hardfork_schedule( const std::vector<hardfork_schedule_item_t>& hardfork_schedule );
       uint32_t get_hf_time(uint32_t hf_num, uint32_t default_time_sec)const;
+      bool get_generate_missed_block_operations() const { return generate_missed_block_operations; }
+      uint16_t get_witness_shutdown_threshold() const { return witness_shutdown_threshold; }
 
       uint32_t get_hive_reverse_auction_window_seconds() const { return hive_reverse_auction_window_seconds; }
       uint32_t get_hive_early_voting_seconds() const { return hive_early_voting_seconds; }
@@ -196,6 +202,19 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       }
 
       void set_skeleton_key(const hive::protocol::private_key_type& private_key);
+
+      void set_generate_missed_block_operations( bool generate )
+      {
+        generate_missed_block_operations = generate;
+      }
+
+      /**
+       * [0 .. HIVE_BLOCKS_PER_DAY]
+       */
+      void set_witness_shutdown_threshold( uint16_t threshold )
+      {
+         witness_shutdown_threshold = threshold;
+      }
   };
 
   extern configuration configuration_data;

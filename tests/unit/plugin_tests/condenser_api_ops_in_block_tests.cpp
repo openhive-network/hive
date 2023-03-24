@@ -300,6 +300,38 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_hf13 )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( get_ops_in_block_hf19 )
+{ try {
+  BOOST_TEST_MESSAGE( "testing get_ops_in_block with hf19_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    // Make witness operations irreversible.
+    generate_until_irreversible_block( 4 );
+    // Artificially generate missing blocks.
+    generate_blocks( db->head_block_time() + fc::seconds(9) );
+    // Make the block with desired vops irreversible.
+    generate_until_irreversible_block( 27 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_t expected_operations = { { // shutdown_witness_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:18","op":{"type":"shutdown_witness_operation","value":{"owner":"alice19ah"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:18","op":["shutdown_witness",{"owner":"alice19ah"}]})~"
+      }, { // producer_missed_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:18","op":{"type":"producer_missed_operation","value":{"producer":"alice19ah"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:01:18","op":["producer_missed",{"producer":"alice19ah"}]})~"
+      }, { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"91794209040","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":27,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:01:24","op":["producer_reward",{"producer":"initminer","vesting_shares":"91794.209040 VESTS"}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 27 );
+  };
+  
+  hf19_scenario( check_point_tester );
+  
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_CASE( get_ops_in_block_hf23 )
 { try {
 
@@ -565,7 +597,7 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_witness )
   };
   
   witness_scenario( check_point_tester );
-  
+
 } FC_LOG_AND_RETHROW() }
 
 BOOST_AUTO_TEST_CASE( get_ops_in_block_escrow_and_savings )

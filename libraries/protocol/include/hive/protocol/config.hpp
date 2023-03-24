@@ -78,7 +78,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD          (configuration_data.get_hive_proposal_maintenance_period())
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
 #define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD    (60*60) /// 1 hour
-#define HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD    (fc::days(5))
+#define HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD    (fc::seconds(configuration_data.get_hive_governance_vote_expiration_period()))
+#define HIVE_WITNESS_SHUTDOWN_THRESHOLD           (configuration_data.get_witness_shutdown_threshold())
 
 #define HIVE_GLOBAL_REMOVE_THRESHOLD          20
 
@@ -160,6 +161,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP          (60*60*24*1) /// 1 day
 #define HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD     HIVE_ONE_DAY_SECONDS
 #define HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD     (fc::days(365))
+#define HIVE_WITNESS_SHUTDOWN_THRESHOLD            HIVE_BLOCKS_PER_DAY
 
 #define HIVE_GLOBAL_REMOVE_THRESHOLD          200
 

@@ -19,6 +19,8 @@ condenser_api_fixture::condenser_api_fixture()
     configuration_data.set_feed_related_values( 1, 3*24*7 ); // see comment to set_feed_related_values
     configuration_data.set_savings_related_values( 20 );
     configuration_data.set_min_recurrent_transfers_recurrence( 1 );
+    configuration_data.set_generate_missed_block_operations( true );
+    configuration_data.set_witness_shutdown_threshold( 0 );
 
     ah_plugin = &app.register_plugin< ah_plugin_type >();
     ah_plugin->set_destroy_database_on_startup();
@@ -57,7 +59,7 @@ condenser_api_fixture::condenser_api_fixture()
 
   init_account_pub_key = init_account_priv_key.get_public_key();
 
-  open_database( _data_dir );
+  open_database( _data_dir/*, shared_file_size_in_mb_512*/ );
 
   generate_block();
   validate_database();
@@ -70,6 +72,8 @@ condenser_api_fixture::~condenser_api_fixture()
     configuration_data.reset_feed_values();
     configuration_data.reset_savings_values();
     configuration_data.reset_recurrent_transfers_values();
+    configuration_data.set_generate_missed_block_operations( false );
+    configuration_data.set_witness_shutdown_threshold( HIVE_BLOCKS_PER_DAY ); // reset to default value
 
     // If we're unwinding due to an exception, don't do any more checks.
     // This way, boost test's last checkpoint tells us approximately where the error was.
@@ -164,6 +168,21 @@ void condenser_api_fixture::hf13_scenario( check_point_tester_t check_point_1_te
   // and can be checked: vote_operation, effective_comment_vote_operation, delete_comment_operation,
   // ineffective_delete_comment_operation & producer_reward_operation.
   check_point_2_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+}
+
+void condenser_api_fixture::hf19_scenario( check_point_tester_t check_point_tester )
+{
+  db->set_hardfork( HIVE_HARDFORK_0_19 );
+  generate_block();
+
+  ACTORS( (alice19ah)(ben19ah) );
+  generate_block();
+  
+  witness_create( "alice19ah", alice19ah_private_key, "foo.bar", alice19ah_private_key.get_public_key(), 1000 );
+  witness_vote( "ben19ah", "alice19ah", ben19ah_private_key );
+
+  // Now all the operations mentioned above can be checked. They can appear as early as 27th block, depending on configuration.
+  check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 }
 
 void condenser_api_fixture::hf23_scenario( check_point_tester_t check_point_tester )

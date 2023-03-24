@@ -5369,18 +5369,21 @@ void database::update_global_dynamic_data( const signed_block& b )
         modify( witness_missed, [&]( witness_object& w )
         {
           w.total_missed++;
-FC_TODO( "#ifndef not needed after HF 20 is live" );
-#ifndef IS_TEST_NET
           if( has_hardfork( HIVE_HARDFORK_0_14__278 ) && !has_hardfork( HIVE_HARDFORK_0_20__SP190 ) )
           {
-            if( head_block_num() - w.last_confirmed_block_num  > HIVE_BLOCKS_PER_DAY )
+            if( head_block_num() - w.last_confirmed_block_num  > HIVE_WITNESS_SHUTDOWN_THRESHOLD )
             {
               w.signing_key = public_key_type();
-              push_virtual_operation( shutdown_witness_operation( w.owner ) );
+#ifdef IS_TEST_NET
+              if( configuration_data.get_generate_missed_block_operations() )
+#endif
+                push_virtual_operation( shutdown_witness_operation( w.owner ) );
             }
           }
-          push_virtual_operation( producer_missed_operation( w.owner ) );
+#ifdef IS_TEST_NET
+          if( configuration_data.get_generate_missed_block_operations() )
 #endif
+            push_virtual_operation( producer_missed_operation( w.owner ) );
         } );
       }
     }
