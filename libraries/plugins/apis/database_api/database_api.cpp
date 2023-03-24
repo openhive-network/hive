@@ -14,7 +14,9 @@
 
 #include <hive/utilities/git_revision.hpp>
 
-
+namespace hive { namespace app {
+std::shared_ptr<hive::chain::full_block_type> from_variant_to_full_block_ptr(const fc::variant& v );
+}}
 
 
 namespace hive { namespace plugins { namespace database_api {
@@ -2301,13 +2303,6 @@ void cab_destroy_C_impl(const char* context)
   }
 }
 
-bool replace(std::string& s, const std::string& portion_to_be_replaced, const std::string& with) {
-    size_t start_pos = s.find(portion_to_be_replaced);
-    if(start_pos == std::string::npos)
-        return false;
-    s.replace(start_pos, portion_to_be_replaced.size(), with);
-    return true;
-}
 
 
 int consume_json_block_impl(const char *json_block, const char* context, int block_num)
@@ -2327,18 +2322,10 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
   
   std::string json = std::string{ json_block };
   
-  replace(json, "hf_version", "version");
 
   fc::variant v = fc::json::from_string( json );
 
-  hive::plugins::block_api::api_signed_block_object sb;
-
-  fc::from_variant( v, sb );
-
-  auto siz = sb.transactions.size();
-  siz = siz;
-
-  std::shared_ptr<hive::chain::full_block_type> fb_ptr = hive::chain::full_block_type::create_from_signed_block(sb);
+  std::shared_ptr<hive::chain::full_block_type> fb_ptr = from_variant_to_full_block_ptr(v);
 
 
   uint64_t skip_flags = hive::plugins::chain::database::skip_block_log;

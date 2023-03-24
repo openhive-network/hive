@@ -104,7 +104,11 @@ struct hardfork_version_vote
   hardfork_version_vote() {}
   hardfork_version_vote( hardfork_version v, fc::time_point_sec t ):hf_version( v ),hf_time( t ) {}
 
+#ifdef MTLK_FROM_VARIANT_ON_CONSUME_JSON
+  version   hf_version;
+#else
   hardfork_version   hf_version;
+#endif
   fc::time_point_sec hf_time;
 };
 
