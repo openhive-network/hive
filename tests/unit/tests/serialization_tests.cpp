@@ -654,8 +654,21 @@ BOOST_AUTO_TEST_CASE( legacy_signed_transaction )
   auto _tx2 = hive::chain::full_transaction_type::create_from_signed_transaction( tx2, hive::protocol::pack_type::legacy, false /* cache this transaction */);
   BOOST_REQUIRE( _tx->get_transaction_id() == _tx2->get_transaction_id() );
 
-  BOOST_CHECK_NO_THROW(
+  /*
+    Why does `TST1111111111111111111111111111111114T1Anm` trigger an error?
+
+    The variable `my->_key` is filled by zeros for above key, but in class `public_key` there are assertions like: `FC_ASSERT( my->_key != empty_pub )`
+    Unfortunately `empty_pub` is default data filled by zeros as well.
+
+    Hence the key `TST1111111111111111111111111111111114T1Anm` is not allowed.
+  */
+  BOOST_CHECK_THROW(
    fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" )
+     .as< legacy_signed_transaction >(), fc::exception
+  );
+
+  BOOST_CHECK_NO_THROW(
+   fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST82m7LE1Hxf4SqGUYiUzL62mLyqAZmcGNEz33hJ1P3FTa6a8hws\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" )
      .as< legacy_signed_transaction >()
   );
 }
