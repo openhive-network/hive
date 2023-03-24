@@ -15,15 +15,17 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
   private:
     boost::container::flat_set<hive::protocol::account_name_type>& accounts_new;
     boost::container::flat_set<hive::protocol::account_name_type>& accounts_created;
+    blockchain_converter& converter;
 
   public:
     typedef void result_type;
 
     ops_impacted_accounts_visitor(
       boost::container::flat_set<account_name_type>& accounts_new,
-      boost::container::flat_set<account_name_type>& accounts_created
+      boost::container::flat_set<account_name_type>& accounts_created,
+      blockchain_converter& converter
     )
-      : accounts_new( accounts_new ), accounts_created( accounts_created )
+      : accounts_new( accounts_new ), accounts_created( accounts_created ), converter( converter )
     {}
 
     template< typename T >
@@ -55,8 +57,13 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
     result_type operator()( hive::protocol::pow2_operation& op )const {
       const auto& input = op.work.which() ? op.work.get< hive::protocol::equihash_pow >().input : op.work.get< hive::protocol::pow2 >().input;
 
-      if( !op.new_owner_key.valid() )
-        accounts_new.insert( input.worker_account );
+      if( accounts_created.find( input.worker_account ) == accounts_created.end() )
+      {
+        if( !op.new_owner_key.valid() )
+          op.new_owner_key = converter.get_witness_key().get_public_key();
+
+        accounts_created.insert( input.worker_account );
+      }
     }
   };
 

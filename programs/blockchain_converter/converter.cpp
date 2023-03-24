@@ -443,7 +443,7 @@ namespace hive { namespace converter {
     return cached_hf;
   }
 
-  void blockchain_converter::sign_transaction( hc::full_transaction_type& trx, authority::classification type )const
+  void blockchain_converter::sign_transaction( hc::full_transaction_type& trx )const
   {
     FC_ASSERT( transaction_signing_keys.size() == 1, "There are no signing keys. You need to call apply_second_authority_keys() before signing transactions" );
 

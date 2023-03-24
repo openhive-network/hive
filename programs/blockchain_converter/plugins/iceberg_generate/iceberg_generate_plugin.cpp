@@ -192,11 +192,7 @@ namespace detail {
             if( enable_op_content_strip )
               op = op.visit( ops_strip_content_visitor{} );
 
-            size_t old_new_accs_size = new_accounts.size();
-            op.visit( ops_impacted_accounts_visitor{ new_accounts, all_accounts } );
-            // On no account changes, there is no need for signing
-            if( op.which() == 30 && new_accounts.size() == old_new_accs_size)
-              block.transactions.at(i).signatures.clear();
+            op.visit( ops_impacted_accounts_visitor{ new_accounts, all_accounts, converter } );
 
             // Collecting permlinks
             const auto created_permlink_data = op.visit(created_permlinks_visitor{});
