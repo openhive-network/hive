@@ -91,7 +91,7 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
 
   for( const account_name_type& a : args.accounts )
   {
-    const rc_account_object* rc_account = _db.find< rc_account_object, hive::chain::by_name >( a );
+    const account_object* rc_account = _db.find_account( a );
 
     if( rc_account != nullptr )
     {
@@ -109,9 +109,9 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
   list_rc_accounts_return result;
   result.rc_accounts.reserve( args.limit );
 
-  auto& idx = _db.get_index< hive::plugins::rc::rc_account_index, hive::chain::by_name >();
-  auto itr = idx.lower_bound(  args.start.as< account_name_type >() );
-  auto filter = &filter_default< rc_account_object >;
+  auto& idx = _db.get_index< hive::chain::account_index, hive::chain::by_name >();
+  auto itr = idx.lower_bound( args.start.as< account_name_type >() );
+  auto filter = &filter_default< hive::chain::account_object >;
   auto end = idx.end();
 
   while( result.rc_accounts.size() < args.limit && itr != end )

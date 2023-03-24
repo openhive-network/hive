@@ -264,7 +264,8 @@ void verify_authority_accounts_exist(
 }
 
 const account_object& create_account( database& db, const account_name_type& name, const public_key_type& key,
-  const time_point_sec& time, bool mined, const account_object* recovery_account = nullptr, asset initial_delegation = asset( 0, VESTS_SYMBOL ) )
+  const time_point_sec& time, bool mined, asset fee_for_rc_adjustment, const account_object* recovery_account = nullptr,
+  asset initial_delegation = asset( 0, VESTS_SYMBOL ) )
 {
   if( db.has_hardfork( HIVE_HARDFORK_0_11 ) )
   {
@@ -276,8 +277,16 @@ const account_object& create_account( database& db, const account_name_type& nam
     recovery_account = &db.get_account( "steem" ); //not using find_account to make sure "steem" already exists
   }
 
+  int64_t rc_adjustment_from_fee = 0; // accounts created prior to HF20 have all RC related data set during HF20
+  if( db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  {
+    FC_ASSERT( fee_for_rc_adjustment.symbol == HIVE_SYMBOL, "Wrong account creation fee symbol" );
+    const auto& dgpo = db.get_dynamic_global_properties();
+    rc_adjustment_from_fee = ( fee_for_rc_adjustment * dgpo.get_vesting_share_price() ).amount.value;
+  }
+
   return db.create< account_object >( name, key, time, mined, recovery_account,
-    !db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) /*voting mana 100%*/, initial_delegation );
+    !db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) /*voting mana 100%*/, initial_delegation, rc_adjustment_from_fee );
 }
 
 void account_create_evaluator::do_apply( const account_create_operation& o )
@@ -335,7 +344,8 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
     _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o.fee );
   }
 
-  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, &creator );
+  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time,
+    false /*mined*/, o.fee, &creator );
 
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
@@ -440,7 +450,8 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o.fee );
   }
 
-  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, &creator, o.delegation );
+  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time,
+    false /*mined*/, o.fee, &creator, o.delegation );
 
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
@@ -2095,7 +2106,8 @@ void pow_apply( database& db, Operation o )
   auto itr = accounts_by_name.find(o.get_worker_account());
   if(itr == accounts_by_name.end())
   {
-    const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp.time, true /*mined*/ );
+    const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp.time,
+      true /*mined*/, asset( 0, HIVE_SYMBOL ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
 #ifdef COLLECT_ACCOUNT_METADATA
@@ -2233,7 +2245,8 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   if(itr == accounts_by_name.end())
   {
     FC_ASSERT( o.new_owner_key.valid(), "New owner key is not valid." );
-    const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, true /*mined*/ );
+    const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time,
+      true /*mined*/, asset( 0, HIVE_SYMBOL ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
 #ifdef COLLECT_ACCOUNT_METADATA
@@ -2495,7 +2508,8 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
     a.pending_claimed_accounts--;
   });
 
-  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, false /*mined*/, &creator );
+  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time,
+    false /*mined*/, _db.get_witness_schedule_object().median_props.account_creation_fee, &creator );
 
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )

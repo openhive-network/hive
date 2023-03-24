@@ -16,115 +16,33 @@ using namespace hive::protocol;
 using namespace hive::plugins;
 using namespace hive::plugins::rc;
 
-int64_t regenerate_mana( debug_node::debug_node_plugin* db_plugin, const rc_account_object& acc )
+int64_t regenerate_rc_mana( debug_node::debug_node_plugin* db_plugin, const account_object& acc )
 {
   db_plugin->debug_update( [&]( database& db )
   {
-    db.modify( acc, [&]( rc_account_object& rc_account )
+    db.modify( acc, [&]( account_object& account )
     {
-      auto max_rc = get_maximum_rc( db.get_account( rc_account.account ), rc_account );
-      hive::chain::util::manabar_params manabar_params( max_rc, HIVE_RC_REGEN_TIME );
-      rc_account.rc_manabar.regenerate_mana( manabar_params, db.head_block_time() );
+      auto max_rc = account.get_maximum_rc();
+      hive::chain::util::manabar_params manabar_params( max_rc.value, HIVE_RC_REGEN_TIME );
+      account.rc_manabar.regenerate_mana( manabar_params, db.head_block_time() );
     } );
   } );
   return acc.rc_manabar.current_mana;
 }
 
-void clear_mana( debug_node::debug_node_plugin* db_plugin, const rc_account_object& acc )
+void clear_mana( debug_node::debug_node_plugin* db_plugin, const account_object& acc )
 {
   db_plugin->debug_update( [&]( database& db )
   {
-    db.modify( acc, [&]( rc_account_object& rc_account )
+    db.modify( acc, [&]( account_object& account )
     {
-      rc_account.rc_manabar.current_mana = 0;
-      rc_account.rc_manabar.last_update_time = db.head_block_time().sec_since_epoch();
+      account.rc_manabar.current_mana = 0;
+      account.rc_manabar.last_update_time = db.head_block_time().sec_since_epoch();
     } );
   } );
 }
 
 BOOST_FIXTURE_TEST_SUITE( rc_plugin_tests, genesis_database_fixture )
-
-BOOST_AUTO_TEST_CASE( account_creation )
-{
-  try
-  {
-    BOOST_TEST_MESSAGE( "Testing existence of rc_accounts after regular account creation" );
-
-    generate_block();
-
-    //ABW: the idea/hack to fix problem of "steem" account being used (as recovery) before it was actually
-    //created was executed - it is now created in genesis block
-    auto* rc_steem = db->find< rc_account_object, by_name >( "steem" );
-    BOOST_REQUIRE( rc_steem != nullptr );
-
-    PREP_ACTOR( alice )
-    create_with_pow( "alice", alice_public_key, alice_private_key );
-    generate_block();
-    
-    auto* rc_alice = db->find< rc_account_object, by_name >( "alice" );
-    BOOST_REQUIRE( rc_alice != nullptr );
-
-    inject_hardfork( 13 );
-
-    PREP_ACTOR( bob )
-    create_with_pow2( "bob", bob_public_key, bob_private_key );
-    generate_block();
-
-    auto* rc_bob = db->find< rc_account_object, by_name >( "bob" );
-    BOOST_REQUIRE( rc_bob != nullptr );
-
-    inject_hardfork( 17 );
-
-    PREP_ACTOR( sam )
-    vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
-    create_with_delegation( HIVE_INIT_MINER_NAME, "sam", sam_public_key, sam_post_key, ASSET( "100000000.000000 VESTS" ), init_account_priv_key );
-    generate_block();
-
-    auto* rc_sam = db->find< rc_account_object, by_name >( "sam" );
-    BOOST_REQUIRE( rc_sam != nullptr );
-
-    inject_hardfork( 20 );
-
-    PREP_ACTOR( dave )
-    {
-      account_create_operation op;
-      op.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
-      op.creator = HIVE_INIT_MINER_NAME;
-      op.new_account_name = "dave";
-      op.owner = authority( 1, dave_public_key, 1 );
-      op.active = authority( 1, dave_public_key, 1 );
-      op.posting = authority( 1, dave_post_key.get_public_key(), 1 );
-      op.memo_key = dave_post_key.get_public_key();
-      op.json_metadata = "";
-
-      push_transaction( op, init_account_priv_key );
-    }
-    generate_block();
-
-    auto* rc_dave = db->find< rc_account_object, by_name >( "dave" );
-    BOOST_REQUIRE( rc_dave != nullptr );
-
-    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-    
-    PREP_ACTOR( greg )
-    {
-      db_plugin->debug_update( [=]( database& db )
-      {
-        db.modify( db.get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
-        {
-          a.pending_claimed_accounts += 1;
-        } );
-      } );
-
-      create_claimed_account( HIVE_INIT_MINER_NAME, "greg", greg_public_key, greg_post_key.get_public_key(), "", init_account_priv_key );
-    }
-    generate_block();
-
-    auto* rc_greg = db->find< rc_account_object, by_name >( "greg" );
-    BOOST_REQUIRE( rc_greg != nullptr );
-  }
-  FC_LOG_AND_RETHROW()
-}
 
 BOOST_AUTO_TEST_CASE( rc_usage_buckets )
 {
@@ -417,9 +335,9 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     vest( "initminer", "agent", ASSET( "1000.000 TESTS" ) );
     fund( "victim", ASSET( "1.000 TESTS" ) );
 
-    const auto& agent_rc = db->get< rc_account_object, by_name >( "agent" );
-    const auto& victim_rc = db->get< rc_account_object, by_name >( "victim" );
-    const auto& thief_rc = db->get< rc_account_object, by_name >( "thief" );
+    const auto& agent_rc = db->get_account( "agent" );
+    const auto& victim_rc = db->get_account( "victim" );
+    const auto& thief_rc = db->get_account( "thief" );
 
     BOOST_TEST_MESSAGE( "agent becomes recovery account for victim" );
     change_recovery_account( "victim", "agent", victim_private_key );
@@ -440,9 +358,9 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     generate_block();
 
     BOOST_TEST_MESSAGE( "thief keeps RC of victim at zero - recovery still possible" );
-    auto pre_tx_agent_mana = regenerate_mana( db_plugin, agent_rc );
+    auto pre_tx_agent_mana = regenerate_rc_mana( db_plugin, agent_rc );
     clear_mana( db_plugin, victim_rc );
-    auto pre_tx_thief_mana = regenerate_mana( db_plugin, thief_rc );
+    auto pre_tx_thief_mana = regenerate_rc_mana( db_plugin, thief_rc );
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     recover_account_operation recover;
@@ -475,8 +393,8 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     request_account_recovery( "agent", "victim", authority( 3, "agent", 1, victim_testB_private_key.get_public_key(), 3 ), agent_private_key );
     generate_block();
     //finally recover adding expensive operation as extra - test 1: before actual recovery
-    pre_tx_agent_mana = regenerate_mana( db_plugin, agent_rc );
-    auto pre_tx_victim_mana = regenerate_mana( db_plugin, victim_rc );
+    pre_tx_agent_mana = regenerate_rc_mana( db_plugin, agent_rc );
+    auto pre_tx_victim_mana = regenerate_rc_mana( db_plugin, victim_rc );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     claim_account_operation expensive;
     expensive.creator = "victim";
@@ -535,13 +453,13 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     vest( "initminer", "agent", ASSET( "1000.000 TESTS" ) );
     fund( "victim1", ASSET( "1.000 TESTS" ) );
 
-    const auto& agent_rc = db->get< rc_account_object, by_name >( "agent" );
-    const auto& victim1_rc = db->get< rc_account_object, by_name >( "victim1" );
-    const auto& victim2_rc = db->get< rc_account_object, by_name >( "victim2" );
-    const auto& victim3_rc = db->get< rc_account_object, by_name >( "victim3" );
-    const auto& thief1_rc = db->get< rc_account_object, by_name >( "thief1" );
-    const auto& thief2_rc = db->get< rc_account_object, by_name >( "thief2" );
-    const auto& thief3_rc = db->get< rc_account_object, by_name >( "thief3" );
+    const auto& agent_rc = db->get_account( "agent" );
+    const auto& victim1_rc = db->get_account( "victim1" );
+    const auto& victim2_rc = db->get_account( "victim2" );
+    const auto& victim3_rc = db->get_account( "victim3" );
+    const auto& thief1_rc = db->get_account( "thief1" );
+    const auto& thief2_rc = db->get_account( "thief2" );
+    const auto& thief3_rc = db->get_account( "thief3" );
 
     BOOST_TEST_MESSAGE( "agent becomes recovery account for all victims" );
     change_recovery_account( "victim1", "agent", victim1_private_key );
@@ -586,13 +504,13 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     generate_block();
 
     BOOST_TEST_MESSAGE( "thiefs keep RC of victims at zero - recovery not possible for multiple accounts in one tx..." );
-    auto pre_tx_agent_mana = regenerate_mana( db_plugin, agent_rc );
+    auto pre_tx_agent_mana = regenerate_rc_mana( db_plugin, agent_rc );
     clear_mana( db_plugin, victim1_rc );
     clear_mana( db_plugin, victim2_rc );
     clear_mana( db_plugin, victim3_rc );
-    auto pre_tx_thief1_mana = regenerate_mana( db_plugin, thief1_rc );
-    auto pre_tx_thief2_mana = regenerate_mana( db_plugin, thief2_rc );
-    auto pre_tx_thief3_mana = regenerate_mana( db_plugin, thief3_rc );
+    auto pre_tx_thief1_mana = regenerate_rc_mana( db_plugin, thief1_rc );
+    auto pre_tx_thief2_mana = regenerate_rc_mana( db_plugin, thief2_rc );
+    auto pre_tx_thief3_mana = regenerate_rc_mana( db_plugin, thief3_rc );
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     recover_account_operation recover;
@@ -810,7 +728,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
 
     vest( "initminer", "victim", ASSET( "1000.000 TESTS" ) );
     generate_block();
-    const auto& victim_rc = db->get< rc_account_object, by_name >( "victim" );
+    const auto& victim_rc = db->get_account( "victim" );
 
     //many repeats to gather average CPU consumption of recovery process
     uint64_t time = 0;
@@ -886,7 +804,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     vest( "initminer", "bob", ASSET( "70000.000 TESTS" ) ); //<- change that amount to tune RC cost
     fund( "alice", ASSET( "1000.000 TESTS" ) );
 
-    const auto& alice_rc = db->get< rc_account_object, by_name >( "alice" );
+    const auto& alice_rc = db->get_account( "alice" );
 
     BOOST_TEST_MESSAGE( "Clear RC on alice and wait a bit so she has enough for one operation but not two" );
     clear_mana( db_plugin, alice_rc );
@@ -1667,7 +1585,7 @@ BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
 
     generate_block();
 
-    const auto& dave_rc = db->get< rc_account_object, by_name >("dave");
+    const auto& dave_rc = db->get_account( "dave" );
 
     BOOST_TEST_MESSAGE("Clear RC on dave");
     clear_mana(db_plugin, dave_rc);
@@ -1706,7 +1624,7 @@ BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
     }
 
     /// Find dave RC account once again and verify pointers to chain object (they should match)
-    const auto* dave_rc2 = db->find< rc_account_object, by_name >("dave");
+    const auto* dave_rc2 = db->find_account("dave");
     BOOST_REQUIRE_EQUAL(&dave_rc, dave_rc2);
   }
   FC_LOG_AND_RETHROW()

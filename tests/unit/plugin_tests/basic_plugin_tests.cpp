@@ -164,8 +164,6 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
   );
   BOOST_CHECK_EQUAL( sizeof( rc::rc_pending_data ), 128u ); //singleton
   BOOST_CHECK_EQUAL( sizeof( rc::rc_pending_data_index::MULTIINDEX_NODE_TYPE ), 160u );
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_account_object ), 80u ); //permanent, as many as account_object, 1.3M atm
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_account_index::MULTIINDEX_NODE_TYPE ), 144u );
   BOOST_CHECK_EQUAL( sizeof( rc::rc_usage_bucket_object ), 48u ); //always HIVE_RC_WINDOW_BUCKET_COUNT objects
   BOOST_CHECK_EQUAL( sizeof( rc::rc_usage_bucket_index::MULTIINDEX_NODE_TYPE ), 112u );
   BOOST_CHECK_EQUAL( sizeof( rc::rc_direct_delegation_object ), 24u ); //lasting, most likely more popular than regular delegation so count should be expected in the millions
@@ -201,7 +199,6 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_resource_param_object>().str(), fc::ripemd160("60167602314ac2fb78cbf5cd2c42dc743673376a").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_pool_object>().str(), fc::ripemd160("014f0f64dc054fb96c34062a98bbea4aba9b5117").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_pending_data>().str(), fc::ripemd160("d5e97974cd75493d90802ab01db5acd444b8acb4").str() );
-  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_account_object>().str(), fc::ripemd160("3c26d32439a0143c126346f2b4a8b6827fece7c2").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_direct_delegation_object>().str(), fc::ripemd160("c4f36c482e5fc6d63bd1f8a128f8510718f9a759").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_usage_bucket_object>().str(), fc::ripemd160("891e927cfce3c8780e2fc2fd31cc3235168273e0").str() );
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_type_checksum<hive::plugins::reputation::reputation_object>().str(), fc::ripemd160("e6ca2e8a612c4b357340c7e37c7cecd03a8fc51f").str() );

@@ -155,75 +155,6 @@ void rc_plugin_impl::set_auto_report( const std::string& _option_type, const std
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report output" );
 }
 
-template< bool account_may_exist = false >
-void create_rc_account( database& db, uint32_t now, const account_object& account, asset rc_adjustment )
-{
-  // ilog( "create_rc_account( ${a} )", ("a", account.name) );
-  if( account_may_exist )
-  {
-    const rc_account_object* rc_account = db.find< rc_account_object, by_name >( account.get_name() );
-    if( rc_account != nullptr )
-      return;
-  }
-
-  if( rc_adjustment.symbol == HIVE_SYMBOL )
-  {
-    const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
-    rc_adjustment = rc_adjustment * gpo.get_vesting_share_price();
-  }
-  else if( rc_adjustment.symbol == VESTS_SYMBOL )
-  {
-    // This occurs naturally when rc_account is initialized, so don't logspam
-    // wlog( "Encountered rc_adjustment.symbol == VESTS_SYMBOL creating account ${acct}", ("acct", account.name) );
-  }
-  else
-  {
-    elog( "Encountered unknown rc_adjustment creating account ${acct}", ("acct", account.get_name()) );
-    rc_adjustment = asset( 0, VESTS_SYMBOL );
-  }
-
-  db.create< rc_account_object >( [&]( rc_account_object& rca )
-  {
-    rca.account = account.get_name();
-    rca.rc_manabar.last_update_time = now;
-    rca.rc_adjustment = rc_adjustment;
-    int64_t max_rc = get_maximum_rc( account, rca );
-    rca.rc_manabar.current_mana = max_rc;
-    rca.last_max_rc = max_rc;
-  } );
-}
-
-template< bool account_may_exist = false >
-void create_rc_account( database& db, uint32_t now, const account_name_type& account_name, asset rc_adjustment )
-{
-  const account_object& account = db.get< account_object, by_name >( account_name );
-  create_rc_account< account_may_exist >( db, now, account, rc_adjustment );
-}
-
-std::vector< std::pair< int64_t, account_name_type > > dump_all_accounts( const database& db )
-{
-  std::vector< std::pair< int64_t, account_name_type > > result;
-  const auto& idx = db.get_index< account_index >().indices().get< by_id >();
-  for( auto it=idx.begin(); it!=idx.end(); ++it )
-  {
-    result.emplace_back( it->get_id(), it->get_name() );
-  }
-
-  return result;
-}
-
-std::vector< std::pair< int64_t, account_name_type > > dump_all_rc_accounts( const database& db )
-{
-  std::vector< std::pair< int64_t, account_name_type > > result;
-  const auto& idx = db.get_index< rc_account_index >().indices().get< by_id >();
-  for( auto it=idx.begin(); it!=idx.end(); ++it )
-  {
-    result.emplace_back( it->get_id(), it->account );
-  }
-
-  return result;
-}
-
 void use_account_rcs(
   database& db,
   const dynamic_global_property_object& gpo,
@@ -244,23 +175,22 @@ void use_account_rcs(
   }
 
   // ilog( "use_account_rcs( ${n}, ${rc} )", ("n", account_name)("rc", rc) );
-  const account_object& account = db.get< account_object, by_name >( account_name );
-  const rc_account_object& rc_account = db.get< rc_account_object, by_name >( account_name );
+  const account_object& account = db.get_account( account_name );
 
   manabar_params mbparams;
-  auto max_mana = get_maximum_rc( account, rc_account );
+  auto max_mana = account.get_maximum_rc().value;
   mbparams.max_mana = max_mana;
   tx_info.max = max_mana;
-  tx_info.rc = rc_account.rc_manabar.current_mana; // initialize before regen in case of exception
+  tx_info.rc = account.rc_manabar.current_mana; // initialize before regen in case of exception
   mbparams.regen_time = HIVE_RC_REGEN_TIME;
 
   try{
 
-  db.modify( rc_account, [&]( rc_account_object& rca )
+  db.modify( account, [&]( account_object& acc )
   {
-    rca.rc_manabar.regenerate_mana< true >( mbparams, gpo.time.sec_since_epoch() );
-    tx_info.rc = rc_account.rc_manabar.current_mana; // update after regeneration
-    bool has_mana = rca.rc_manabar.has_mana( rc );
+    acc.rc_manabar.regenerate_mana< true >( mbparams, gpo.time.sec_since_epoch() );
+    tx_info.rc = acc.rc_manabar.current_mana; // update after regeneration
+    bool has_mana = acc.rc_manabar.has_mana( rc );
 
     if( !skip.skip_reject_not_enough_rc )
     {
@@ -297,8 +227,8 @@ void use_account_rcs(
       }
     }
 
-    rca.rc_manabar.use_mana( rc );
-    tx_info.rc = rca.rc_manabar.current_mana;
+    acc.rc_manabar.use_mana( rc );
+    tx_info.rc = acc.rc_manabar.current_mana;
   } );
   }FC_CAPTURE_AND_RETHROW( (tx_info) )
 }
@@ -589,7 +519,14 @@ void rc_plugin_impl::on_first_block()
   const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
   for( auto it=idx.begin(); it!=idx.end(); ++it )
   {
-    create_rc_account( _db, now.sec_since_epoch(), *it, asset( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT, VESTS_SYMBOL ) );
+    _db.modify( *it, [&]( account_object& account )
+    {
+      account.rc_adjustment = HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT;
+      account.rc_manabar.last_update_time = now.sec_since_epoch();
+      auto max_rc = account.get_maximum_rc().value;
+      account.rc_manabar.current_mana = max_rc;
+      account.last_max_rc = max_rc;
+    } );
   }
 }
 
@@ -634,7 +571,7 @@ struct pre_apply_operation_visitor
     _current_block_number = gpo.head_block_number;
   }
 
-  void regenerate( const account_object& account, const rc_account_object& rc_account )const
+  void regenerate( const account_object& account )const
   {
     //
     // Since RC tracking is non-consensus, we must rely on consensus to forbid
@@ -644,15 +581,15 @@ struct pre_apply_operation_visitor
     //
     static_assert( HIVE_RC_REGEN_TIME <= HIVE_VOTING_MANA_REGENERATION_SECONDS, "RC regen time must be smaller than vote regen time" );
 
-    // ilog( "regenerate(${a})", ("a", account.name) );
+    // ilog( "regenerate(${a})", ("a", account.get_name()) );
 
     manabar_params mbparams;
-    mbparams.max_mana = get_maximum_rc( account, rc_account );
+    mbparams.max_mana = account.get_maximum_rc().value;
     mbparams.regen_time = HIVE_RC_REGEN_TIME;
 
     try {
 
-    if( mbparams.max_mana != rc_account.last_max_rc )
+    if( mbparams.max_mana != account.last_max_rc )
     {
       // this situation indicates a bug in RC code, most likely some operation that affects RC was not
       // properly handled by setting new value for last_max_rc after RC changed
@@ -660,26 +597,26 @@ struct pre_apply_operation_visitor
       {
         HIVE_ASSERT( false, plugin_exception,
           "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
-          ("a", account.get_name())("old", rc_account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
+          ("a", account.get_name())("old", account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
       }
       else
       {
         wlog( "NOTIFYALERT! Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
-          ("a", account.get_name())("old", rc_account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
+          ("a", account.get_name())("old", account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
       }
     }
 
-    _db.modify( rc_account, [&]( rc_account_object& rca )
+    _db.modify( account, [&]( account_object& acc )
     {
-      rca.rc_manabar.regenerate_mana< true >( mbparams, _current_time );
+      acc.rc_manabar.regenerate_mana< true >( mbparams, _current_time );
     } );
-    } FC_CAPTURE_AND_RETHROW( (account)(rc_account)(mbparams.max_mana) )
+    } FC_CAPTURE_AND_RETHROW( (account)(mbparams.max_mana) )
   }
 
   template< bool account_may_not_exist = false >
   void regenerate( const account_name_type& name )const
   {
-    const account_object* account = _db.find< account_object, by_name >( name );
+    const account_object* account = _db.find_account( name );
     if( account_may_not_exist )
     {
       if( account == nullptr )
@@ -690,11 +627,7 @@ struct pre_apply_operation_visitor
       FC_ASSERT( account != nullptr, "Unexpectedly, account ${a} does not exist", ("a", name) );
     }
 
-    const rc_account_object* rc_account = _db.find< rc_account_object, by_name >( name );
-    FC_ASSERT( rc_account != nullptr, "Unexpectedly, rc_account ${a} does not exist", ("a", name) );
-    try{
-    regenerate( *account, *rc_account );
-    } FC_CAPTURE_AND_RETHROW( (*account)(*rc_account) )
+    regenerate( *account );
   }
 
   void operator()( const account_create_with_delegation_operation& op )const
@@ -843,111 +776,90 @@ struct post_apply_operation_visitor
     _current_witness = dgpo.current_witness;
   }
 
-  void check_for_rc_delegation_overflow( const account_object& from_account, const rc_account_object& from_rc_account ) const
-  {
-    if( from_rc_account.get_delegated_rc() <= 0 )
-      return; //quick exit for all the times before RC delegations are activated (HF26)
-
-    int64_t delegation_overflow = -get_maximum_rc( from_account, from_rc_account, true );
-    int64_t initial_overflow = delegation_overflow;
-
-    if( delegation_overflow > 0 )
-    {
-      int16_t remove_limit = _db.get_remove_threshold();
-      remove_guard obj_perf( remove_limit );
-      remove_delegations( _db, delegation_overflow, from_account.get_id(), _current_time, obj_perf );
-
-      if( delegation_overflow > 0 )
-      {
-        // there are still active delegations that need to be cleared, but we've already exhausted the object removal limit;
-        // set an object to continue removals in following blocks while blocking explicit changes in RC delegations on account
-        auto* expired = _db.find< rc_expired_delegation_object, by_account >( from_account.get_id() );
-        if( expired != nullptr )
-        {
-          // supplement existing object from still unfinished previous delegation removal...
-          _db.modify( *expired, [&]( rc_expired_delegation_object& e )
-          {
-            e.expired_delegation += delegation_overflow;
-          } );
-        }
-        else
-        {
-          // ...or create new one
-          _db.create< rc_expired_delegation_object >( from_account, delegation_overflow );
-        }
-      }
-
-      // We don't update last_max_rc and the manabars because update_modified_accounts will do it
-      _db.modify( from_rc_account, [&]( rc_account_object& rca )
-      {
-        rca.delegated_rc -= initial_overflow;
-      } );
-    }
-  }
-
   void update_after_vest_change( const account_name_type& account_name, bool _fill_new_mana = true, bool _check_for_rc_delegation_overflow = false ) const
   {
-    const account_object& account = _db.get< account_object, by_name >( account_name );
-    const rc_account_object& rc_account = _db.get< rc_account_object, by_name >( account_name );
-
-    if( rc_account.rc_manabar.last_update_time != _current_time )
+    const account_object& account = _db.get_account( account_name );
+    if( account.rc_manabar.last_update_time != _current_time )
     {
       //most likely cause: there is no regenerate() call in corresponding pre_apply_operation_visitor handler
       wlog( "NOTIFYALERT! Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
         ( "a", account.get_name() )( "b", _db.head_block_num() ) );
     }
 
-    if( _check_for_rc_delegation_overflow )
+    if( _check_for_rc_delegation_overflow && account.get_delegated_rc() > 0 )
     {
       //the following action is needed when given account lost VESTs and it now might have less
-      //than it already delegated with rc delegations
-      check_for_rc_delegation_overflow( account, rc_account );
+      //than it already delegated with rc delegations (second part of condition is a quick exit
+      //check for times before RC delegations are activated (HF26))
+      int64_t delegation_overflow = - account.get_maximum_rc( true ).value;
+      int64_t initial_overflow = delegation_overflow;
+
+      if( delegation_overflow > 0 )
+      {
+        int16_t remove_limit = _db.get_remove_threshold();
+        remove_guard obj_perf( remove_limit );
+        remove_delegations( _db, delegation_overflow, account.get_id(), _current_time, obj_perf );
+
+        if( delegation_overflow > 0 )
+        {
+          // there are still active delegations that need to be cleared, but we've already exhausted the object removal limit;
+          // set an object to continue removals in following blocks while blocking explicit changes in RC delegations on account
+          auto* expired = _db.find< rc_expired_delegation_object, by_account >( account.get_id() );
+          if( expired != nullptr )
+          {
+            // supplement existing object from still unfinished previous delegation removal...
+            _db.modify( *expired, [&]( rc_expired_delegation_object& e )
+            {
+              e.expired_delegation += delegation_overflow;
+            } );
+          }
+          else
+          {
+            // ...or create new one
+            _db.create< rc_expired_delegation_object >( account, delegation_overflow );
+          }
+        }
+
+        // We don't update last_max_rc and the manabars here because it happens below
+        _db.modify( account, [&]( account_object& acc )
+        {
+          acc.delegated_rc -= initial_overflow;
+        } );
+      }
     }
 
-    int64_t new_last_max_rc = get_maximum_rc( account, rc_account );
-    int64_t drc = new_last_max_rc - rc_account.last_max_rc;
+    int64_t new_last_max_rc = account.get_maximum_rc().value;
+    int64_t drc = new_last_max_rc - account.last_max_rc.value;
     drc = _fill_new_mana ? drc : 0;
 
-    if( new_last_max_rc != rc_account.last_max_rc )
+    if( new_last_max_rc != account.last_max_rc )
     {
-      _db.modify( rc_account, [&]( rc_account_object& rca )
+      _db.modify( account, [&]( account_object& acc )
       {
         //note: rc delegations behave differently because if they behaved the following way there would
         //be possible to easily fill up mana through giving and immediately taking away rc delegations
-        rca.last_max_rc = new_last_max_rc;
+        acc.last_max_rc = new_last_max_rc;
         //only positive delta is applied directly to mana, so receiver can immediately start using it;
         //negative delta is caused by either power down or reduced incoming delegation; in both cases
         //there is a delay that makes transfered vests unusable for long time (not shorter than full
         //rc regeneration) therefore we can skip applying negative delta without risk of "pumping" rc;
         //by not applying negative delta we preserve mana that affected account "earned" so far...
-        rca.rc_manabar.current_mana += std::max( drc, int64_t( 0 ) );
+        acc.rc_manabar.current_mana += std::max( drc, int64_t( 0 ) );
         //...however we have to reduce it when its current level would exceed new maximum (issue #191)
-        if( rca.rc_manabar.current_mana > rca.last_max_rc )
-          rca.rc_manabar.current_mana = rca.last_max_rc;
+        if( acc.rc_manabar.current_mana > acc.last_max_rc )
+          acc.rc_manabar.current_mana = acc.last_max_rc.value;
       } );
     }
   }
 
-  void operator()( const account_create_operation& op )const
-  {
-    create_rc_account( _db, _current_time, op.new_account_name, op.fee );
-  }
-
   void operator()( const account_create_with_delegation_operation& op )const
   {
-    create_rc_account( _db, _current_time, op.new_account_name, op.fee );
     update_after_vest_change( op.creator );
-  }
-
-  void operator()( const create_claimed_account_operation& op )const
-  {
-    create_rc_account( _db, _current_time, op.new_account_name, _db.get_witness_schedule_object().median_props.account_creation_fee );
   }
 
   void operator()( const pow_operation& op )const
   {
     // ilog( "handling post-apply pow_operation" );
-    create_rc_account< true >( _db, _current_time, op.worker_account, asset( 0, HIVE_SYMBOL ) );
     update_after_vest_change( op.worker_account );
     update_after_vest_change( _current_witness );
   }
@@ -955,7 +867,6 @@ struct post_apply_operation_visitor
   void operator()( const pow2_operation& op )const
   {
     auto worker_name = get_worker_name( op.work );
-    create_rc_account< true >( _db, _current_time, worker_name, asset( 0, HIVE_SYMBOL ) );
     update_after_vest_change( worker_name );
     update_after_vest_change( _current_witness );
   }
@@ -1256,17 +1167,14 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
 void rc_plugin_impl::validate_database()
 {
-  const auto& rc_idx = _db.get_index< rc_account_index >().indices().get< by_name >();
+  const auto& idx = _db.get_index< account_index >().indices().get< by_name >();
 
-  for( const rc_account_object& rc_account : rc_idx )
+  for( const account_object& account : idx )
   {
-    const account_object& account = _db.get< account_object, by_name >( rc_account.account );
-    int64_t max_rc = get_maximum_rc( account, rc_account );
-
-    assert( max_rc == rc_account.last_max_rc );
-    FC_ASSERT( max_rc == rc_account.last_max_rc,
+    int64_t max_rc = account.get_maximum_rc().value;
+    FC_ASSERT( max_rc == account.last_max_rc,
       "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
-      ("a", account.get_name())("old", rc_account.last_max_rc)("new", max_rc)("b", _db.head_block_num()) );
+      ("a", account.get_name())("old", account.last_max_rc)("new", max_rc)("b", _db.head_block_num()) );
   }
 }
 
@@ -1469,7 +1377,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_stats_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pending_data_index);
-    HIVE_ADD_PLUGIN_INDEX(db, rc_account_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_usage_bucket_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_expired_delegation_index);
@@ -1633,43 +1540,29 @@ void rc_stats_object::add_stats( const rc_info& tx_info )
   }
 }
 
-int64_t get_maximum_rc( const account_object& account, const rc_account_object& rc_account, bool only_delegable_rc )
-{
-  int64_t result = account.get_vesting().amount.value;
-  result = fc::signed_sat_sub( result, account.delegated_vesting_shares.amount.value );
-  result = fc::signed_sat_add( result, account.received_vesting_shares.amount.value );
-  if( only_delegable_rc == false ) //cannot rc delegate virtual vests coming from account creation fee
-    result = fc::signed_sat_add( result, rc_account.max_rc_creation_adjustment.amount.value );
-  result = fc::signed_sat_sub( result, account.get_next_vesting_withdrawal().value );
-  result = fc::signed_sat_sub( result, (int64_t) rc_account.delegated_rc );
-  if( only_delegable_rc == false ) //cannot redelegate rc received from other accounts
-    result = fc::signed_sat_add( result, (int64_t) rc_account.received_delegated_rc );
-  return result;
-}
-
-void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object& account,
+void update_account_after_rc_delegation( database& _db, const account_object& account,
   uint32_t now, int64_t delta, bool regenerate_mana )
 {
-  _db.modify< rc_account_object >( rc_account, [&]( rc_account_object& rca )
+  _db.modify< account_object >( account, [&]( account_object& acc )
   {
-    auto max_rc = get_maximum_rc( account, rc_account );
+    auto max_rc = acc.get_maximum_rc().value;
     hive::chain::util::manabar_params manabar_params( max_rc, HIVE_RC_REGEN_TIME );
     if( regenerate_mana )
     {
-      rca.rc_manabar.regenerate_mana< true >( manabar_params, now );
+      acc.rc_manabar.regenerate_mana< true >( manabar_params, now );
     }
-    else if( rc_account.rc_manabar.last_update_time != now )
+    else if( acc.rc_manabar.last_update_time != now )
     {
       //most likely cause: there is no regenerate() call in corresponding pre_apply_operation_visitor handler
       wlog( "NOTIFYALERT! Account ${a} not regenerated prior to RC change, noticed on block ${b}",
-        ( "a", account.get_name() )( "b", _db.head_block_num() ) );
+        ( "a", acc.get_name() )( "b", _db.head_block_num() ) );
     }
     //rc delegation changes are immediately reflected in current_mana in both directions;
     //if negative delta was not taking away delegated mana it would be easy to pump RC;
     //note that it is different when actual VESTs are involved
-    rca.rc_manabar.current_mana = std::max( rca.rc_manabar.current_mana + delta, int64_t( 0 ) );
-    rca.last_max_rc = max_rc + delta;
-    rca.received_delegated_rc += delta;
+    acc.rc_manabar.current_mana = std::max( acc.rc_manabar.current_mana + delta, int64_t( 0 ) );
+    acc.last_max_rc = max_rc + delta;
+    acc.received_rc += delta;
   } );
 }
 
@@ -1709,11 +1602,10 @@ void remove_delegations( database& _db, int64_t& delegation_overflow, account_id
         break;
     }
 
-    const auto& to_account = _db.get<account_object, by_id>( to_id );
-    const auto& to_rc_account = _db.get<rc_account_object, by_name>( to_account.get_name() );
+    const auto& to_account = _db.get_account( to_id );
     //since to_account was not originally expected to be affected by operation that is being
     //processed, we need to regenerate its mana before rc delegation is modified
-    update_rc_account_after_delegation( _db, to_rc_account, to_account, now, -delta_rc, true );
+    update_account_after_rc_delegation( _db, to_account, now, -delta_rc, true );
 
     delegation_overflow -= delta_rc;
   }

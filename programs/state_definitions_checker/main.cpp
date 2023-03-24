@@ -89,7 +89,6 @@ int main( int argc, char** argv )
     dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_pool_object>();
     dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_stats_object>();
     dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_pending_data>();
-    dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_account_object>();
     dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_direct_delegation_object>();
     dtds_instance.get_decoded_type_checksum<hive::plugins::rc::rc_usage_bucket_object>();
     dtds_instance.get_decoded_type_checksum<hive::plugins::reputation::reputation_object>();
