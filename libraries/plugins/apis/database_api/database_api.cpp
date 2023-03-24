@@ -2334,8 +2334,8 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
   skip_flags |= hive::plugins::chain::database::skip_witness_signature ; 
   // skip_flags |= hive::plugins::chain::database::skip_transaction_signatures;
   // skip_flags |= hive::plugins::chain::database::skip_transaction_dupe_check;
-  //skip_flags |= hive::plugins::chain::database::skip_tapos_check; //try not to skip it mtlk
-  skip_flags |= hive::plugins::chain::database::skip_merkle_check;
+  skip_flags |= hive::plugins::chain::database::skip_tapos_check; 
+  //skip_flags |= hive::plugins::chain::database::skip_merkle_check;//try not to skip it mtlk
   // skip_flags |= hive::plugins::chain::database::skip_witness_schedule_check;
   skip_flags |= hive::plugins::chain::database::skip_authority_check;
   // skip_flags |= hive::plugins::chain::database::skip_validate;
