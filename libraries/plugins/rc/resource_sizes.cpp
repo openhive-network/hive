@@ -53,10 +53,9 @@ state_object_size_info::state_object_size_info()
 
   // account create (all versions)
   account_create_base_size(
-    SIZE( account_index::MULTIINDEX_NODE_TYPE, 616 ) * PERSISTENT_STATE_BYTE +
+    SIZE( account_index::MULTIINDEX_NODE_TYPE, 616+144 ) * PERSISTENT_STATE_BYTE +
     //SIZE( account_metadata_index::MULTIINDEX_NODE_TYPE, 136 ) * PERSISTENT_STATE_BYTE +
-    SIZE( account_authority_index::MULTIINDEX_NODE_TYPE, 312 ) * PERSISTENT_STATE_BYTE +
-    SIZE( rc_account_index::MULTIINDEX_NODE_TYPE, 144 ) * PERSISTENT_STATE_BYTE ),
+    SIZE( account_authority_index::MULTIINDEX_NODE_TYPE, 312 ) * PERSISTENT_STATE_BYTE ),
   //account_json_metadata_char_size(
   //  PERSISTENT_STATE_BYTE ),
   authority_account_member_size(

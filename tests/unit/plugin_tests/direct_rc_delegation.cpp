@@ -135,8 +135,8 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_REQUIRE( delegation->to == bob_id );
     BOOST_REQUIRE( delegation->delegated_rc == uint64_t(op.max_rc) );
 
-    const rc_account_object& from_rc_account = db->get< rc_account_object, by_name >( op.from );
-    const rc_account_object& to_rc_account = db->get< rc_account_object, by_name >( "bob" );
+    const account_object& from_rc_account = db->get_account( op.from );
+    const account_object& to_rc_account = db->get_account( "bob" );
 
     BOOST_REQUIRE( from_rc_account.get_delegated_rc() == min_delegation + 1 );
     BOOST_REQUIRE( from_rc_account.get_received_rc() == 0 );
@@ -164,8 +164,8 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_REQUIRE( delegation_decreased->to == bob_id );
     BOOST_REQUIRE( delegation_decreased->delegated_rc == uint64_t(op.max_rc) );
 
-    const rc_account_object& from_rc_account_decreased = db->get< rc_account_object, by_name >( op.from );
-    const rc_account_object& to_rc_account_decreased = db->get< rc_account_object, by_name >( "bob" );
+    const account_object& from_rc_account_decreased = db->get_account( op.from );
+    const account_object& to_rc_account_decreased = db->get_account( "bob" );
 
     BOOST_REQUIRE( from_rc_account_decreased.get_delegated_rc() == min_delegation );
     BOOST_REQUIRE( from_rc_account_decreased.get_received_rc() == 0 );
@@ -186,8 +186,8 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_REQUIRE( delegation_increased->to == bob_id );
     BOOST_REQUIRE( delegation_increased->delegated_rc == uint64_t(op.max_rc) );
 
-    const rc_account_object& from_rc_account_increased = db->get< rc_account_object, by_name >( op.from );
-    const rc_account_object& to_rc_account_increased = db->get< rc_account_object, by_name >( "bob" );
+    const account_object& from_rc_account_increased = db->get_account( op.from );
+    const account_object& to_rc_account_increased = db->get_account( "bob" );
 
     BOOST_REQUIRE( from_rc_account_increased.get_delegated_rc() == min_delegation + 10 );
     BOOST_REQUIRE( from_rc_account_increased.get_received_rc() == 0 );
@@ -206,8 +206,8 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     const rc_direct_delegation_object* delegation_deleted = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
     BOOST_REQUIRE( delegation_deleted == nullptr );
 
-    const rc_account_object& from_rc_account_deleted = db->get< rc_account_object, by_name >( "alice" );
-    const rc_account_object& to_rc_account_deleted = db->get< rc_account_object, by_name >( "bob" );
+    const account_object& from_rc_account_deleted = db->get_account( "alice" );
+    const account_object& to_rc_account_deleted = db->get_account( "bob" );
 
     BOOST_REQUIRE( from_rc_account_deleted.get_delegated_rc() == 0 );
     BOOST_REQUIRE( from_rc_account_deleted.get_received_rc() == 0 );
@@ -280,8 +280,8 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_REQUIRE( delegation->to == bob_id );
     BOOST_REQUIRE( delegation->delegated_rc == uint64_t(op.max_rc) );
 
-    const rc_account_object& from_rc_account = db->get< rc_account_object, by_name >( op.from );
-    const rc_account_object& to_rc_account = db->get< rc_account_object, by_name >( "bob" );
+    const account_object& from_rc_account = db->get_account( op.from );
+    const account_object& to_rc_account = db->get_account( "bob" );
 
     BOOST_REQUIRE( from_rc_account.get_delegated_rc() == min_delegation * 4 );
     BOOST_REQUIRE( from_rc_account.get_received_rc() == 0 );
@@ -319,9 +319,9 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_REQUIRE( delegation_decreased_dave->to == dave_id );
     BOOST_REQUIRE( delegation_decreased_dave->delegated_rc == uint64_t(op.max_rc) );
 
-    const rc_account_object& from_rc_account_decreased = db->get< rc_account_object, by_name >( op.from );
-    const rc_account_object& bob_rc_account_decreased = db->get< rc_account_object, by_name >( "bob" );
-    const rc_account_object& dave_rc_account_decreased = db->get< rc_account_object, by_name >( "dave" );
+    const account_object& from_rc_account_decreased = db->get_account( op.from );
+    const account_object& bob_rc_account_decreased = db->get_account( "bob" );
+    const account_object& dave_rc_account_decreased = db->get_account( "dave" );
 
     BOOST_REQUIRE( from_rc_account_decreased.get_delegated_rc() == min_delegation * 2 );
     BOOST_REQUIRE( from_rc_account_decreased.get_received_rc() == 0 );
@@ -349,9 +349,9 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_REQUIRE( dan_delegation_created->to == dan_id );
     BOOST_REQUIRE( dan_delegation_created->delegated_rc == uint64_t(op.max_rc) );
 
-    const rc_account_object& alice_rc_account_increased = db->get< rc_account_object, by_name >( op.from );
-    const rc_account_object& dan_rc_account_created = db->get< rc_account_object, by_name >( "dan" );
-    const rc_account_object& bob_rc_account_increased = db->get< rc_account_object, by_name >( "bob" );
+    const account_object& alice_rc_account_increased = db->get_account( op.from );
+    const account_object& dan_rc_account_created = db->get_account( "dan" );
+    const account_object& bob_rc_account_increased = db->get_account( "bob" );
 
     BOOST_REQUIRE( alice_rc_account_increased.get_delegated_rc() == min_delegation * 5 );
     BOOST_REQUIRE( alice_rc_account_increased.get_received_rc() == 0 );
@@ -377,10 +377,10 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_REQUIRE( delegation_dan_deleted == nullptr );
     BOOST_REQUIRE( delegation_dave_deleted == nullptr );
 
-    const rc_account_object& from_rc_account_deleted = db->get< rc_account_object, by_name >( "alice" );
-    const rc_account_object& bob_rc_account_deleted = db->get< rc_account_object, by_name >( "bob" );
-    const rc_account_object& dave_rc_account_deleted = db->get< rc_account_object, by_name >( "dave" );
-    const rc_account_object& dan_rc_account_deleted = db->get< rc_account_object, by_name >( "dan" );
+    const account_object& from_rc_account_deleted = db->get_account( "alice" );
+    const account_object& bob_rc_account_deleted = db->get_account( "bob" );
+    const account_object& dave_rc_account_deleted = db->get_account( "dave" );
+    const account_object& dan_rc_account_deleted = db->get_account( "dan" );
 
     BOOST_REQUIRE( from_rc_account_deleted.get_delegated_rc() == 0 );
     BOOST_REQUIRE( from_rc_account_deleted.get_received_rc() == 0 );
@@ -548,10 +548,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
     generate_block();
 
-    const rc_account_object& alice_rc_initial = db->get< rc_account_object, by_name >( "alice" );
     const account_object& alice_account_initial = db->get_account( "alice" );
     int64_t vesting_amount = alice_account_initial.get_vesting().amount.value;
-    int64_t creation_rc = alice_rc_initial.get_rc_adjustment().value;
+    int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
 
     // Delegate 10 rc to bob, the rest to dave, alice has rc_adjustment remaining rc
     delegate_rc_operation op;
@@ -574,9 +573,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     push_transaction(custom_op, alice_private_key);
     generate_block();
 
-    const rc_account_object& bob_rc_account_before = db->get< rc_account_object, by_name >("bob");
-    const rc_account_object& dave_rc_account_before = db->get< rc_account_object, by_name >("dave");
-    const rc_account_object& alice_rc_before = db->get< rc_account_object, by_name >( "alice" );
+    const account_object& bob_rc_account_before = db->get_account( "bob" );
+    const account_object& dave_rc_account_before = db->get_account( "dave" );
+    const account_object& alice_rc_before = db->get_account( "alice" );
 
     BOOST_REQUIRE( alice_rc_before.get_delegated_rc() == uint64_t(vesting_amount) );
     BOOST_REQUIRE( alice_rc_before.get_received_rc() == 0 );
@@ -601,9 +600,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     dvso.delegatee = {"eve"};
     push_transaction(dvso, alice_private_key);
 
-    const rc_account_object& bob_rc_account_after = db->get< rc_account_object, by_name >("bob");
-    const rc_account_object& dave_rc_account_after = db->get< rc_account_object, by_name >("dave");
-    const rc_account_object& alice_rc_after = db->get< rc_account_object, by_name >( "alice" );
+    const account_object& bob_rc_account_after = db->get_account( "bob" );
+    const account_object& dave_rc_account_after = db->get_account( "dave" );
+    const account_object& alice_rc_after = db->get_account( "alice" );
 
     BOOST_REQUIRE( alice_rc_after.get_delegated_rc() == uint64_t(vesting_amount) - 5 );
     BOOST_REQUIRE( alice_rc_after.get_received_rc() == 0 );
@@ -624,9 +623,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     dvso.delegatee = "martin";
     push_transaction(dvso, alice_private_key);
 
-    const rc_account_object& bob_rc_account_after_two = db->get< rc_account_object, by_name >("bob");
-    const rc_account_object& dave_rc_account_after_two = db->get< rc_account_object, by_name >("dave");
-    const rc_account_object& alice_rc_after_two = db->get< rc_account_object, by_name >( "alice" );
+    const account_object& bob_rc_account_after_two = db->get_account( "bob" );
+    const account_object& dave_rc_account_after_two = db->get_account( "dave" );
+    const account_object& alice_rc_after_two = db->get_account( "alice" );
 
     const rc_direct_delegation_object* delegation_deleted = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
     BOOST_REQUIRE( delegation_deleted == nullptr );
@@ -674,10 +673,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
     generate_block();
 
-    const rc_account_object& alice_rc_initial = db->get< rc_account_object, by_name >( "alice" );
     const account_object& alice_account_initial = db->get_account( "alice" );
     uint64_t vesting_amount = uint64_t(alice_account_initial.get_vesting().amount.value);
-    int64_t creation_rc = alice_rc_initial.get_rc_adjustment().value;
+    int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
 
     delegate_rc_operation op;
     op.from = "alice";
@@ -701,9 +699,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     push_custom_json_operation( {}, { "alice" }, HIVE_RC_PLUGIN_NAME, fc::json::to_string( rc_plugin_operation( op ) ), alice_private_key );
     generate_block();
 
-    const rc_account_object& actor0_rc_account_before = db->get< rc_account_object, by_name >("actor0");
-    const rc_account_object& actor2_rc_account_before = db->get< rc_account_object, by_name >("actor2");
-    const rc_account_object& alice_rc_before = db->get< rc_account_object, by_name >( "alice" );
+    const account_object& actor0_rc_account_before = db->get_account( "actor0" );
+    const account_object& actor2_rc_account_before = db->get_account( "actor2" );
+    const account_object& alice_rc_before = db->get_account( "alice" );
     BOOST_REQUIRE( alice_rc_before.get_delegated_rc() == vesting_amount );
     BOOST_REQUIRE( alice_rc_before.get_received_rc() == 0 );
     BOOST_REQUIRE( alice_rc_before.last_max_rc == creation_rc );
@@ -725,9 +723,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     dvso.delegatee = "bob";
     push_transaction(dvso, alice_private_key);
 
-    const rc_account_object& actor0_rc_account_after = db->get< rc_account_object, by_name >("actor0");
-    const rc_account_object& actor2_rc_account_after = db->get< rc_account_object, by_name >("actor2");
-    const rc_account_object& alice_rc_after = db->get< rc_account_object, by_name >( "alice" );
+    const account_object& actor0_rc_account_after = db->get_account( "actor0" );
+    const account_object& actor2_rc_account_after = db->get_account( "actor2" );
+    const account_object& alice_rc_after = db->get_account( "alice" );
 
     BOOST_REQUIRE( alice_rc_after.get_delegated_rc() == vesting_amount - 25 ); // total amount minus what was delegated
     BOOST_REQUIRE( alice_rc_after.get_received_rc() == 0 );
@@ -747,8 +745,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     BOOST_REQUIRE( delegation_actor1_deleted == nullptr );
 
     // We check that the rest of the delegations weren't affected
-    for (int i = 4; i < NUM_ACTORS; i++) {
-      const rc_account_object& actor_rc_account = db->get< rc_account_object, by_name >( "actor" + std::to_string(i) );
+    for (int i = 4; i < NUM_ACTORS; i++)
+    {
+      const account_object& actor_rc_account = db->get_account( "actor" + std::to_string(i) );
       BOOST_REQUIRE( actor_rc_account.rc_manabar.current_mana == creation_rc + 10 );
       BOOST_REQUIRE( actor_rc_account.last_max_rc == creation_rc + 10 );
       BOOST_REQUIRE( actor_rc_account.get_received_rc() == 10 );
@@ -761,7 +760,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     dvso.delegatee = "bob";
     push_transaction(dvso, alice_private_key);
 
-    const rc_account_object& alice_rc_end = db->get< rc_account_object, by_name >( "alice" );
+    const account_object& alice_rc_end = db->get_account( "alice" );
 
     BOOST_REQUIRE( alice_rc_end.get_delegated_rc() == 0 );
     BOOST_REQUIRE( alice_rc_end.get_received_rc() == 0 );
@@ -775,8 +774,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
       i -= removal_limit;
     }
     // We check that every delegation got deleted
-    for (int i = 0; i < NUM_ACTORS; i++) {
-      const rc_account_object& actor_rc_account = db->get< rc_account_object, by_name >( "actor" + std::to_string(i) );
+    for (int i = 0; i < NUM_ACTORS; i++)
+    {
+      const account_object& actor_rc_account = db->get_account( "actor" + std::to_string(i) );
       BOOST_REQUIRE( actor_rc_account.rc_manabar.current_mana == creation_rc );
       BOOST_REQUIRE( actor_rc_account.last_max_rc == creation_rc );
       BOOST_REQUIRE( actor_rc_account.get_received_rc() == 0 );
@@ -788,7 +788,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     dvso.delegatee = "bob";
     push_transaction(dvso, alice_private_key);
 
-    const rc_account_object& alice_rc_final = db->get< rc_account_object, by_name >( "alice" );
+    const account_object& alice_rc_final = db->get_account( "alice" );
     BOOST_REQUIRE( alice_rc_final.get_delegated_rc() == 0 );
     BOOST_REQUIRE( alice_rc_final.get_received_rc() == 0 );
     BOOST_REQUIRE( alice_rc_final.last_max_rc == creation_rc );
@@ -816,9 +816,8 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
     generate_block();
 
-    const rc_account_object& alice_rc_initial = db->get< rc_account_object, by_name >( "alice" );
     const account_object& alice_account_initial = db->get_account( "alice" );
-    int64_t creation_rc = alice_rc_initial.get_rc_adjustment().value;
+    int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
     int64_t vesting_shares = alice_account_initial.get_vesting().amount.value;
     int64_t delegated_rc = vesting_shares / 2;
 
@@ -848,9 +847,9 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     BOOST_REQUIRE( get_vesting( "alice" ).amount.value == vesting_shares );
 
     {
-      const rc_account_object& alice_rc_account = db->get< rc_account_object, by_name >( "alice" );
-      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
-      const rc_account_object& dave_rc_account = db->get< rc_account_object, by_name >("dave");
+      const account_object& alice_rc_account = db->get_account( "alice" );
+      const account_object& bob_rc_account = db->get_account( "bob" );
+      const account_object& dave_rc_account = db->get_account( "dave" );
 
       BOOST_REQUIRE( alice_rc_account.get_delegated_rc() == uint64_t(vesting_shares - withdraw_rate.amount.value) ); // total amount minus what was withdrew
       BOOST_REQUIRE( alice_rc_account.get_received_rc() == 0 );
@@ -883,9 +882,9 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
       // generate up to just before the withdrawal
       generate_blocks( db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS - HIVE_BLOCK_INTERVAL);
 
-      const rc_account_object& alice_rc_account = db->get< rc_account_object, by_name >( "alice" );
-      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
-      const rc_account_object& dave_rc_account = db->get< rc_account_object, by_name >("dave");
+      const account_object& alice_rc_account = db->get_account( "alice" );
+      const account_object& bob_rc_account = db->get_account( "bob" );
+      const account_object& dave_rc_account = db->get_account( "dave" );
       const rc_direct_delegation_object* delegation_bob = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
       const rc_direct_delegation_object* delegation_dave = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, dave_id ) );
       auto total_vests_withdrew = withdraw_rate.amount.value * (i + 1);
@@ -935,9 +934,9 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     generate_blocks( db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS, true );
 
     {
-      const rc_account_object& alice_rc_account = db->get< rc_account_object, by_name >( "alice" );
-      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
-      const rc_account_object& dave_rc_account = db->get< rc_account_object, by_name >("dave");
+      const account_object& alice_rc_account = db->get_account( "alice" );
+      const account_object& bob_rc_account = db->get_account( "bob" );
+      const account_object& dave_rc_account = db->get_account( "dave" );
 
       BOOST_REQUIRE( alice_rc_account.get_delegated_rc() == 0 );
       BOOST_REQUIRE( alice_rc_account.get_received_rc() == 0 );
@@ -981,9 +980,8 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
     generate_block();
 
-    const rc_account_object& alice_rc_initial = db->get< rc_account_object, by_name >( "alice" );
     const account_object& alice_account_initial = db->get_account( "alice" );
-    int64_t creation_rc = alice_rc_initial.get_rc_adjustment().value;
+    int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
     int64_t vesting_shares = alice_account_initial.get_vesting().amount.value;
     int64_t delegated_rc = vesting_shares / 2;
 
@@ -1017,9 +1015,9 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
 
     BOOST_REQUIRE( get_vesting( "alice" ).amount.value == vesting_shares );
     {
-      const rc_account_object& alice_rc_account = db->get< rc_account_object, by_name >( "alice" );
-      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
-      const rc_account_object& dave_rc_account = db->get< rc_account_object, by_name >("dave");
+      const account_object& alice_rc_account = db->get_account( "alice" );
+      const account_object& bob_rc_account = db->get_account( "bob" );
+      const account_object& dave_rc_account = db->get_account( "dave" );
 
       BOOST_REQUIRE( alice_rc_account.get_delegated_rc() == uint64_t(vesting_shares - withdraw_rate.amount.value) ); // total amount minus what was withdrew
       BOOST_REQUIRE( alice_rc_account.get_received_rc() == 0 );
@@ -1048,9 +1046,9 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     generate_block();
 
     {
-      const rc_account_object& alice_rc_account = db->get< rc_account_object, by_name >( "alice" );
-      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
-      const rc_account_object& dave_rc_account = db->get< rc_account_object, by_name >("dave");
+      const account_object& alice_rc_account = db->get_account( "alice" );
+      const account_object& bob_rc_account = db->get_account( "bob" );
+      const account_object& dave_rc_account = db->get_account( "dave" );
 
       BOOST_REQUIRE( alice_rc_account.get_delegated_rc() == uint64_t(vesting_shares - (withdraw_rate.amount.value * 2 - withdraw_rate.amount.value / 2 )));
       BOOST_REQUIRE( alice_rc_account.get_received_rc() == 0 );
@@ -1104,20 +1102,21 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     generate_block();
 
     BOOST_TEST_MESSAGE( "Fetching the baseLine with no RC delegations" );
-    const rc_account_object& bob_rc_account_initial = db->get< rc_account_object, by_name >("bob");
+    const account_object& bob_rc_account_initial = db->get_account( "bob" );
     auto initial_mana = bob_rc_account_initial.rc_manabar.current_mana;
     auto current_mana = initial_mana;
 
-    while (current_mana + 5000000 > initial_mana) {
-      transfer( "bob", "bob", ASSET( "1.000 TBD" ));
-      const rc_account_object& bob_rc_account_current = db->get< rc_account_object, by_name >("bob");
+    while (current_mana + 5000000 > initial_mana)
+    {
+      transfer( "bob", "bob", ASSET( "1.000 TBD" ) );
+      const account_object& bob_rc_account_current = db->get_account( "bob" );
       current_mana = bob_rc_account_current.rc_manabar.current_mana;
     }
 
     int64_t delta_no_delegation = 0;
     {
-      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
-      hive::chain::util::manabar_params manabar_params(get_maximum_rc( db->get< account_object, by_name >( "bob" ),  bob_rc_account), HIVE_RC_REGEN_TIME);
+      const account_object& bob_rc_account = db->get_account( "bob" );
+      hive::chain::util::manabar_params manabar_params( bob_rc_account.get_maximum_rc().value, HIVE_RC_REGEN_TIME );
       auto bob_rc_manabar = bob_rc_account.rc_manabar;
       // Magic number: we renerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
       bob_rc_manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1);
@@ -1137,28 +1136,29 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     generate_block();
 
     {
-      const rc_account_object& bob_rc_account_initial = db->get< rc_account_object, by_name >("bob");
+      const account_object& bob_rc_account_initial = db->get_account( "bob" );
       auto initial_mana = bob_rc_account_initial.rc_manabar.current_mana;
       current_mana = initial_mana;
 
-      while (current_mana + 5000000 > initial_mana) {
+      while (current_mana + 5000000 > initial_mana)
+      {
         transfer( "bob", "bob", ASSET( "1.000 TBD" ));
-        const rc_account_object& bob_rc_account_current = db->get< rc_account_object, by_name >("bob");
+        const account_object& bob_rc_account_current = db->get_account( "bob" );
         current_mana = bob_rc_account_current.rc_manabar.current_mana;
       }
     }
 
     int64_t delta_delegation = 0;
     {
-      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
-      hive::chain::util::manabar_params manabar_params(get_maximum_rc( db->get< account_object, by_name >( "bob" ),  bob_rc_account), HIVE_RC_REGEN_TIME);
+      const account_object& bob_rc_account = db->get_account( "bob" );
+      hive::chain::util::manabar_params manabar_params( bob_rc_account.get_maximum_rc().value, HIVE_RC_REGEN_TIME );
       auto bob_rc_manabar = bob_rc_account.rc_manabar;
       // Magic number: we renerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
       bob_rc_manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1);
       delta_delegation = bob_rc_manabar.current_mana - current_mana;
     }
 
-    BOOST_REQUIRE( delta_delegation > delta_no_delegation);
+    BOOST_REQUIRE( delta_delegation > delta_no_delegation );
 
     BOOST_TEST_MESSAGE( "Reducing the RC delegation" );
     drc_op.max_rc = db->get_account( "alice" ).get_vesting().amount.value / 2;
@@ -1167,21 +1167,22 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     generate_block();
 
     {
-      const rc_account_object& bob_rc_account_initial = db->get< rc_account_object, by_name >("bob");
+      const account_object& bob_rc_account_initial = db->get_account( "bob" );
       auto initial_mana = bob_rc_account_initial.rc_manabar.current_mana;
       current_mana = initial_mana;
 
-      while (current_mana + 5000000 > initial_mana) {
-        transfer( "bob", "bob", ASSET( "1.000 TBD" ));
-        const rc_account_object& bob_rc_account_current = db->get< rc_account_object, by_name >("bob");
+      while (current_mana + 5000000 > initial_mana)
+      {
+        transfer( "bob", "bob", ASSET( "1.000 TBD" ) );
+        const account_object& bob_rc_account_current = db->get_account( "bob" );
         current_mana = bob_rc_account_current.rc_manabar.current_mana;
       }
     }
 
     int64_t delta_reduced_delegation = 0;
     {
-      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
-      hive::chain::util::manabar_params manabar_params(get_maximum_rc( db->get< account_object, by_name >( "bob" ),  bob_rc_account), HIVE_RC_REGEN_TIME);
+      const account_object& bob_rc_account = db->get_account( "bob" );
+      hive::chain::util::manabar_params manabar_params( bob_rc_account.get_maximum_rc().value, HIVE_RC_REGEN_TIME );
       auto bob_rc_manabar = bob_rc_account.rc_manabar;
       // Magic number: we renerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
       bob_rc_manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1);
@@ -1195,13 +1196,14 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     generate_block();
 
     {
-      const rc_account_object& bob_rc_account_initial = db->get< rc_account_object, by_name >("bob");
+      const account_object& bob_rc_account_initial = db->get_account( "bob" );
       auto initial_mana = bob_rc_account_initial.rc_manabar.current_mana;
       current_mana = initial_mana;
 
-      while (current_mana + 5000000 > initial_mana) {
-        transfer( "bob", "bob", ASSET( "1.000 TBD" ));
-        const rc_account_object& bob_rc_account_current = db->get< rc_account_object, by_name >("bob");
+      while (current_mana + 5000000 > initial_mana)
+      {
+        transfer( "bob", "bob", ASSET( "1.000 TBD" ) );
+        const account_object& bob_rc_account_current = db->get_account( "bob" );
         current_mana = bob_rc_account_current.rc_manabar.current_mana;
       }
     }
@@ -1210,8 +1212,8 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
 
     int64_t delta_removed_delegation = 0;
     {
-      const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
-      hive::chain::util::manabar_params manabar_params(get_maximum_rc( db->get< account_object, by_name >( "bob" ),  bob_rc_account), HIVE_RC_REGEN_TIME);
+      const account_object& bob_rc_account = db->get_account( "bob" );
+      hive::chain::util::manabar_params manabar_params( bob_rc_account.get_maximum_rc().value, HIVE_RC_REGEN_TIME );
       auto bob_rc_manabar = bob_rc_account.rc_manabar;
       // Magic number: we renerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
       bob_rc_manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1);
@@ -1259,7 +1261,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     push_transaction(custom_op, alice_private_key);
     generate_block();
 
-    const rc_account_object& bob_rc_account_initial = db->get< rc_account_object, by_name >("bob");
+    const account_object& bob_rc_account_initial = db->get_account( "bob" );
     auto current_mana = bob_rc_account_initial.rc_manabar.current_mana;
 
     // Magic number, it's hard to exactly hit 0 RC, but since we delegated 100k rc, removing the delegation would put us to 0
@@ -1271,7 +1273,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
       op.amount = ASSET( "0.001 TESTS" );
       push_transaction(op, bob_private_key);
       generate_block();
-      const rc_account_object& bob_rc_account_current = db->get< rc_account_object, by_name >("bob");
+      const account_object& bob_rc_account_current = db->get_account( "bob" );
       current_mana = bob_rc_account_current.rc_manabar.current_mana;
     }
 
@@ -1281,9 +1283,9 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     push_transaction(custom_op, alice_private_key);
     generate_block();
 
-    const rc_account_object& bob_rc_account = db->get< rc_account_object, by_name >("bob");
-    BOOST_REQUIRE(bob_rc_account.rc_manabar.current_mana == 0 );
-    BOOST_REQUIRE(get_maximum_rc( db->get< account_object, by_name >( "bob" ),  bob_rc_account) >= 0);
+    const account_object& bob_rc_account = db->get_account( "bob" );
+    BOOST_REQUIRE( bob_rc_account.rc_manabar.current_mana == 0 );
+    BOOST_REQUIRE( bob_rc_account.get_maximum_rc() >= 0 );
 
     validate_database();
   }
@@ -1315,9 +1317,9 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     BOOST_REQUIRE_EQUAL( full_vest, get_vesting( "delegator2" ).amount.value );
     BOOST_REQUIRE_EQUAL( full_vest, get_vesting( "delegator3" ).amount.value );
 
-    const auto& delegatee_rc = db->get< rc_account_object, by_name >( "delegatee" );
-    const auto& pattern2_rc = db->get< rc_account_object, by_name >( "pattern2" );
-    const auto& pattern3_rc = db->get< rc_account_object, by_name >( "pattern3" );
+    const auto& delegatee_rc = db->get_account( "delegatee" );
+    const auto& pattern2_rc = db->get_account( "pattern2" );
+    const auto& pattern3_rc = db->get_account( "pattern3" );
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern2_rc.rc_manabar.current_mana );
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern3_rc.rc_manabar.current_mana );
 
@@ -1362,15 +1364,15 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     BOOST_TEST_MESSAGE( "Artificially going negative with RC of delegatees to expose problem" );
     //NOTE: the problem was fixed and on top of that we can no longer go negative with mana,
     //so we could probably remove the test, but we keep it as testament of previous bugs
-    //int64_t full_rc = get_maximum_rc( db->get< account_object, by_name >( "delegatee" ), delegatee_rc );
+    //int64_t full_rc = db->get_account( "delegatee" ).get_maximum_rc();
     //int64_t min_rc = -1 * ( HIVE_RC_MAX_NEGATIVE_PERCENT * full_rc ) / HIVE_100_PERCENT;
     int64_t min_rc = 0;
-    auto rc_set_negative_mana = [&]( const rc_account_object& rca )
+    auto rc_set_negative_mana = [&]( const account_object& account )
     {
-      db->modify( rca, [&]( rc_account_object& rc_account )
+      db->modify( account, [&]( account_object& acc )
       {
-        rc_account.rc_manabar.current_mana = min_rc;
-        rc_account.rc_manabar.last_update_time = ( db->head_block_time() - fc::seconds( HIVE_RC_REGEN_TIME ) ).sec_since_epoch();
+        acc.rc_manabar.current_mana = min_rc;
+        acc.rc_manabar.last_update_time = ( db->head_block_time() - fc::seconds( HIVE_RC_REGEN_TIME ) ).sec_since_epoch();
       } );
     };
     rc_set_negative_mana( delegatee_rc );
@@ -1418,10 +1420,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
     generate_block();
 
-    const rc_account_object& alice_rc_initial = db->get< rc_account_object, by_name >( "alice" );
     const account_object& alice_account_initial = db->get_account( "alice" );
     int64_t vesting_amount = alice_account_initial.get_vesting().amount.value;
-    int64_t creation_rc = alice_rc_initial.get_rc_adjustment().value;
+    int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
 
     // We delegate all our vesting shares to bob
     delegate_vesting_shares_operation dvso;
@@ -1451,10 +1452,10 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     push_transaction(custom_op, bob_private_key);
     generate_block();
 
-    const rc_account_object& alice_rc_before = db->get< rc_account_object, by_name >( "alice" );
-    const rc_account_object& bob_rc_account_before = db->get< rc_account_object, by_name >("bob");
-    const rc_account_object& dave_rc_account_before = db->get< rc_account_object, by_name >("dave");
-    const rc_account_object& eve_rc_account_before = db->get< rc_account_object, by_name >("eve");
+    const account_object& alice_rc_before = db->get_account( "alice" );
+    const account_object& bob_rc_account_before = db->get_account( "bob" );
+    const account_object& dave_rc_account_before = db->get_account( "dave" );
+    const account_object& eve_rc_account_before = db->get_account( "eve" );
 
     BOOST_REQUIRE( alice_rc_before.get_delegated_rc() == 0 );
     BOOST_REQUIRE( alice_rc_before.get_received_rc() == 0 );
@@ -1477,10 +1478,10 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     dvso.vesting_shares = ASSET( "0.000000 VESTS");
     push_transaction(dvso, alice_private_key);
 
-    const rc_account_object& alice_rc_after = db->get< rc_account_object, by_name >( "alice" );
-    const rc_account_object& bob_rc_account_after = db->get< rc_account_object, by_name >("bob");
-    const rc_account_object& dave_rc_account_after = db->get< rc_account_object, by_name >("dave");
-    const rc_account_object& eve_rc_account_after = db->get< rc_account_object, by_name >("eve");
+    const account_object& alice_rc_after = db->get_account( "alice" );
+    const account_object& bob_rc_account_after = db->get_account( "bob" );
+    const account_object& dave_rc_account_after = db->get_account( "dave" );
+    const account_object& eve_rc_account_after = db->get_account( "eve" );
 
     BOOST_REQUIRE( alice_rc_after.get_delegated_rc() == 0 );
     BOOST_REQUIRE( alice_rc_after.get_received_rc() == 0 );
@@ -1587,7 +1588,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
 
     for( auto& account : accounts )
     {
-      const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
+      const account_object& _account = db->get_account( account.account );
       BOOST_REQUIRE( _account.get_received_rc() == 10 );
     }
 
@@ -1608,7 +1609,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     int i = 0;
     for( auto& account : accounts )
     {
-      const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
+      const account_object& _account = db->get_account( account.account );
       BOOST_REQUIRE( _account.get_received_rc() == ( i >= removal_limit ? 10 : 0 ) );
       ++i;
     }
@@ -1620,7 +1621,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     i = 0;
     for( auto& account : accounts )
     {
-      const rc_account_object& _account = db->get< rc_account_object, by_name >( account.account );
+      const account_object& _account = db->get_account( account.account );
       BOOST_REQUIRE( _account.get_received_rc() == ( i >= removal_limit * 2 ? 10 : i >= removal_limit ? 5 : 0 ) );
       ++i;
     }

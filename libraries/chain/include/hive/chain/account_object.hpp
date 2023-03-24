@@ -31,8 +31,8 @@ namespace hive { namespace chain {
         const account_name_type& _name, const public_key_type& _memo_key,
         const time_point_sec& _creation_time, bool _mined,
         const account_object* _recovery_account,
-        bool _fill_mana, const asset& incoming_delegation )
-      : id( _id ), name( _name ), created( _creation_time ),
+        bool _fill_mana, const asset& incoming_delegation, int64_t _rc_adjustment = 0 )
+      : id( _id ), name( _name ), rc_adjustment( _rc_adjustment ), created( _creation_time ),
         mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
       {
         if( _recovery_account != nullptr )
@@ -42,6 +42,13 @@ namespace hive { namespace chain {
         downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
         if( _fill_mana )
           voting_manabar.current_mana = HIVE_100_PERCENT; //nonsense, but that's what was in the original code
+        if( rc_adjustment.value )
+        {
+          rc_manabar.last_update_time = _creation_time.sec_since_epoch();
+          auto max_rc = get_maximum_rc().value;
+          rc_manabar.current_mana = max_rc;
+          last_max_rc = max_rc;
+        }
       }
 
       //minimal constructor used for creation of accounts at genesis and in tests
@@ -93,6 +100,21 @@ namespace hive { namespace chain {
       const VEST_asset& get_vest_rewards() const { return reward_vesting_balance; }
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
       const HIVE_asset& get_vest_rewards_as_hive() const { return reward_vesting_hive; }
+
+      //effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
+      share_type get_maximum_rc( bool only_delegable = false ) const
+      {
+        share_type total = get_effective_vesting_shares() - delegated_rc;
+        if( only_delegable == false )
+          total += rc_adjustment + received_rc;
+        return total;
+      }
+      //RC compensation for account creation fee
+      share_type get_rc_adjustment() const { return rc_adjustment; }
+      //RC that were delegated to other accounts
+      share_type get_delegated_rc() const { return delegated_rc; }
+      //RC that were borrowed from other accounts
+      share_type get_received_rc() const { return received_rc; }
 
       //gives name of the account
       const account_name_type& get_name() const { return name; }
@@ -147,6 +169,7 @@ namespace hive { namespace chain {
 
       util::manabar     voting_manabar;
       util::manabar     downvote_manabar;
+      util::manabar     rc_manabar;
 
       HBD_asset         hbd_balance; ///< HBD liquid balance
       HBD_asset         savings_hbd_balance; ///< HBD balance guarded by 3 day withdrawal (also earns interest)
@@ -168,6 +191,11 @@ namespace hive { namespace chain {
 
       VEST_asset        withdrawn; ///< VESTS already withdrawn in currently active power down (why do we even need this?)
       VEST_asset        to_withdraw; ///< VESTS yet to be withdrawn in currently active power down (withdown should just be subtracted from this)
+
+      share_type        rc_adjustment; ///< compensation for account creation fee in form of extra RC
+      share_type        delegated_rc; ///< RC delegated out to other accounts
+      share_type        received_rc; ///< RC delegated to this account
+      share_type        last_max_rc; ///< (for bug catching with RC code, can be removed once RC becomes part of consensus)
 
       share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens (could be 32bit)
 
@@ -640,6 +668,7 @@ FC_REFLECT( hive::chain::account_object,
           (savings_hbd_seconds)
           (voting_manabar)
           (downvote_manabar)
+          (rc_manabar)
           (hbd_balance)(savings_hbd_balance)
           (reward_hbd_balance)(reward_hive_balance)
           (reward_vesting_hive)(balance)
@@ -648,6 +677,8 @@ FC_REFLECT( hive::chain::account_object,
           (received_vesting_shares)(vesting_withdraw_rate)
           (curation_rewards)(posting_rewards)
           (withdrawn)(to_withdraw)
+          (rc_adjustment)(delegated_rc)
+          (received_rc)(last_max_rc)
           (pending_claimed_accounts)(sum_delayed_votes)
           (hbd_seconds_last_update)(hbd_last_interest_payment)(savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)
           (created)(last_account_update)(last_post)(last_root_post)

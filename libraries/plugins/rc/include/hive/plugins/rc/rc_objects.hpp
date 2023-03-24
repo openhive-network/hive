@@ -264,33 +264,6 @@ class rc_pending_data : public object< rc_pending_data_type, rc_pending_data >
 };
 typedef oid_ref< rc_pending_data > rc_pending_data_id_type;
 
-class rc_account_object : public object< rc_account_object_type, rc_account_object >
-{
-  CHAINBASE_OBJECT( rc_account_object );
-  public:
-    CHAINBASE_DEFAULT_CONSTRUCTOR( rc_account_object )
-
-    //RC compensation for account creation fee
-    share_type get_rc_adjustment() const { return rc_adjustment; }
-    //RC that were delegated to other accounts
-    share_type get_delegated_rc() const { return delegated_rc; }
-    //RC that were borrowed from other accounts
-    share_type get_received_rc() const { return received_rc; }
-
-    account_name_type            account;
-    hive::chain::util::manabar   rc_manabar;
-    share_type                   rc_adjustment;
-
-    // This is used for bug-catching, to match that the vesting shares in a
-    // pre-op are equal to what they were at the last post-op.
-    share_type                   last_max_rc;
-
-    share_type                   delegated_rc;
-    share_type                   received_rc;
-};
-typedef oid_ref< rc_account_object > rc_account_id_type;
-
-
 class rc_direct_delegation_object : public object< rc_direct_delegation_object_type, rc_direct_delegation_object >
 {
   CHAINBASE_OBJECT( rc_direct_delegation_object );
@@ -307,8 +280,7 @@ class rc_direct_delegation_object : public object< rc_direct_delegation_object_t
 };
 typedef oid_ref< rc_direct_delegation_object > rc_direct_delegtion_id_type;
 
-int64_t get_maximum_rc( const hive::chain::account_object& account, const rc_account_object& rc_account, bool only_delegable_rc = false );
-void update_rc_account_after_delegation( database& _db, const rc_account_object& rc_account, const account_object& account, uint32_t now, int64_t delta, bool regenerate_mana = false );
+void update_account_after_rc_delegation( database& _db, const account_object& account, uint32_t now, int64_t delta, bool regenerate_mana = false );
 
 /**
   * When delegation overflow happens (see check_for_rc_delegation_overflow) some direct rc delegations need to be removed.
@@ -415,17 +387,6 @@ typedef multi_index_container<
   allocator< rc_pending_data >
 > rc_pending_data_index;
 
-typedef multi_index_container<
-  rc_account_object,
-  indexed_by<
-    ordered_unique< tag< by_id >,
-      const_mem_fun< rc_account_object, rc_account_object::id_type, &rc_account_object::get_id > >,
-    ordered_unique< tag< by_name >,
-      member< rc_account_object, account_name_type, &rc_account_object::account > >
-  >,
-  allocator< rc_account_object >
-> rc_account_index;
-
 struct by_from_to;
 
 typedef multi_index_container<
@@ -503,17 +464,6 @@ FC_REFLECT( hive::plugins::rc::rc_pending_data,
   (differential_usage)
 )
 CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_pending_data, hive::plugins::rc::rc_pending_data_index )
-
-FC_REFLECT( hive::plugins::rc::rc_account_object,
-  (id)
-  (account)
-  (rc_manabar)
-  (rc_adjustment)
-  (last_max_rc)
-  (delegated_rc)
-  (received_rc)
-  )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_account_object, hive::plugins::rc::rc_account_index )
 
 FC_REFLECT( hive::plugins::rc::rc_direct_delegation_object,
   (id)

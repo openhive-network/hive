@@ -52,15 +52,14 @@ struct rc_account_api_object
 {
   rc_account_api_object(){}
 
-  rc_account_api_object( const rc_account_object& rca, const database& db ) :
-          account( rca.account ),
-          rc_manabar( rca.rc_manabar ),
-          max_rc_creation_adjustment( rca.get_rc_adjustment(), VESTS_SYMBOL ),
-          delegated_rc( rca.get_delegated_rc().value ),
-          received_delegated_rc( rca.get_received_rc().value )
-  {
-    max_rc = get_maximum_rc( db.get_account( account ), rca );
-  }
+  rc_account_api_object( const account_object& a, const database& db ) :
+    account( a.get_name() ),
+    rc_manabar( a.rc_manabar ),
+    max_rc_creation_adjustment( a.get_rc_adjustment(), VESTS_SYMBOL ),
+    max_rc( a.get_maximum_rc().value ),
+    delegated_rc( a.get_delegated_rc().value ),
+    received_delegated_rc( a.get_received_rc().value )
+  {}
 
   account_name_type     account;
   hive::chain::util::manabar   rc_manabar;
@@ -86,11 +85,11 @@ struct rc_direct_delegation_api_object
   rc_direct_delegation_api_object(){}
 
   rc_direct_delegation_api_object( const rc_direct_delegation_object& rcdd, const account_name_type& _from, account_name_type _to ) :
-          from_id( rcdd.from ),
-          to_id( rcdd.to ),
-          from(_from),
-          to(_to),
-          delegated_rc( rcdd.delegated_rc ) {}
+    from_id( rcdd.from ),
+    to_id( rcdd.to ),
+    from(_from),
+    to(_to),
+    delegated_rc( rcdd.delegated_rc ) {}
 
   account_id_type from_id;
   account_id_type to_id;
