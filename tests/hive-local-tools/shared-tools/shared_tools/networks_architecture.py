@@ -4,37 +4,37 @@
 config = {
     "networks": [
                     {
-                        "InitNode"     : True,
+                        "InitNode"     : { "Active": True, "Prepare": True },
                         "ApiNode"      : True,
-                        "WitnessNodes" :[ 1, 2, 4 ]
+                        "WitnessNodes" :[ 1, 2, { "Witnesses": 4, "Prepare": False } ]
                     },
                     {
                         "InitNode"     : False,
-                        "ApiNode"      : True,
-                        "WitnessNodes" :[ 6, 5 ]
+                        "ApiNode"      : { "Active": True, "Prepare": False },
+                        "WitnessNodes" :[ { "Witnesses": 6, "Prepare": True }, 5 ]
                     }
                 ]
 }
 
 na = NetworksArchitecture()
 na.load(config)
-print(na)
+print(na.show())
 
 ***Result***
 
-(Network-alpha)
-  (InitNode)
-  (ApiNode)
-  (WitnessNode-0 (witness0-alpha))
-  (WitnessNode-1 (witness1-alpha)(witness2-alpha))
-  (WitnessNode-2 (witness3-alpha)(witness4-alpha)(witness5-alpha)(witness6-alpha))
-(Network-beta)
-  (ApiNode)
-  (WitnessNode-0 (witness7-beta)(witness8-beta)(witness9-beta)(witness10-beta)(witness11-beta)(witness12-beta))
-  (WitnessNode-1 (witness13-beta)(witness14-beta)(witness15-beta)(witness16-beta)(witness17-beta))
+[Network-alpha]
+ (InitNode(P))
+ (ApiNode())
+ (WitnessNode-0()) (witness0-alpha)
+ (WitnessNode-1()) (witness1-alpha, witness2-alpha)
+ (WitnessNode-2()) (witness3-alpha, witness4-alpha, witness5-alpha, witness6-alpha)
+[Network-beta]
+ (ApiNode())
+ (WitnessNode-0(P)) (witness7-beta, witness8-beta, witness9-beta, witness10-beta, witness11-beta, witness12-beta)
+ (WitnessNode-1()) (witness13-beta, witness14-beta, witness15-beta, witness16-beta, witness17-beta)
 """
 
-from typing import Callable
+from typing import Callable, Tuple, Any
 
 from dataclasses import dataclass, field
 
@@ -42,13 +42,20 @@ import test_tools as tt
 
 @dataclass
 class NodeWrapper:
-    name : str
+    name    : str
+    prepare : bool
+    def show(self, offset: str = "") -> str:
+        return f"{offset}({self.name}({'P' if self.prepare else ''}))"
 
 @dataclass
-class InitNodeWrapper(NodeWrapper): pass
+class InitNodeWrapper(NodeWrapper):
+    def show(self) -> str:
+        return NodeWrapper.show(self, " ")
 
 @dataclass
-class ApiWrapper(NodeWrapper): pass
+class ApiWrapper(NodeWrapper):
+    def show(self) -> str:
+        return NodeWrapper.show(self, " ")
 
 @dataclass
 class WitnessWrapper(NodeWrapper):
@@ -61,6 +68,14 @@ class WitnessWrapper(NodeWrapper):
             else:
                 self.witnesses.append( f"witness{i}-{processor(network_number)}" ) #"witness0-alpha", "witness1-alpha", "witness2-alpha"
 
+    def show(self) -> str:
+        details = []
+
+        for witness in self.witnesses:
+            details.append(witness)
+
+        return NodeWrapper.show(self, " ") + " (" + ", ".join( detail for detail in details) + ")"
+
 class NetworkWrapper:
     def __init__(self, name) -> None:
         self.name           = name
@@ -69,20 +84,19 @@ class NetworkWrapper:
         self.api_node: ApiWrapper | None            = None
         self.witness_nodes: list[WitnessWrapper]    = []
 
-    def __str__(self) -> str:
+    def show(self) -> str:
         details = []
-        details.append(f"({self.name})")
 
         if self.init_node is not None:
-            details.append(str(self.init_node))
+            details.append(self.init_node.show())
 
         if self.api_node is not None:
-            details.append(str(self.api_node))
+            details.append(self.api_node.show())
 
         for witness_node in self.witness_nodes:
-            details.append(str(witness_node))
+            details.append(witness_node.show())
 
-        return "\n  ".join( detail for detail in details)
+        return f"[{self.name}]" + "\n" + "\n".join( detail for detail in details)
 
 @dataclass
 class NetworksArchitecture:
@@ -99,6 +113,24 @@ class NetworksArchitecture:
                           "phi",        "chi",      "psi",      "omega" ]
         return greek_alphabet[idx % len(greek_alphabet)]
 
+    def get_key_information(self, key_name: str, current_dict: dict, default: Any = False) -> Any:
+        return current_dict.get(key_name, default)
+
+    def get_api_init(self, node_name: str, current_dict: dict) -> Tuple[bool, bool]:
+        #returns statuses: [active, prepare]
+        node = self.get_key_information(node_name, current_dict)
+        if isinstance(node, dict):
+            return self.get_key_information("Active", node), self.get_key_information("Prepare", node)
+        else:
+            return node, False
+
+    def get_witness(self, data: Any) -> Tuple[int, bool]:
+        #returns statuses: [witnesses' number, prepare]
+        if isinstance(data, dict):
+            return self.get_key_information("Witnesses", data, -1), self.get_key_information("Prepare", data, -1)
+        else:
+            return data, False
+
     def load(self, config: dict) -> None:
         assert "networks" in config
         _networks = config["networks"]
@@ -107,24 +139,37 @@ class NetworksArchitecture:
         for cnt_network, network in enumerate(_networks):
             current_net = NetworkWrapper(f"Network-{self.greek(cnt_network)}")
 
-            if network.get("InitNode", False):
-                current_net.init_node = InitNodeWrapper("InitNode")
+            init_node_active, init_node_prepare = self.get_api_init("InitNode", network)
+            if init_node_active:
+                current_net.init_node = InitNodeWrapper("InitNode", init_node_prepare)
                 self.nodes_number += 1
 
-            if network.get("ApiNode", False):
-                current_net.api_node = ApiWrapper("ApiNode")
+            api_node_active, api_node_prepare = self.get_api_init("ApiNode", network)
+            if api_node_active:
+                current_net.api_node = ApiWrapper("ApiNode", api_node_prepare)
                 self.nodes_number += 1
 
             if witness_nodes := network.get("WitnessNodes", False):
                 self.nodes_number += len(witness_nodes)
-                for cnt_witness_node, witnesses_number in enumerate(witness_nodes):
-                    current_witness = WitnessWrapper(f"WitnessNode-{cnt_witness_node}")
-                    current_witness.create_witnesses(cnt_witness_start, cnt_witness_start + witnesses_number, cnt_network, self.greek, self.legacy_witness_name)
-                    cnt_witness_start += witnesses_number
+
+                for cnt_witness_node, witness_object in enumerate(witness_nodes):
+                    witness_node_number, witness_node_prepare = self.get_witness(witness_object)
+
+                    assert witness_node_number >= 0, "Expected number of witnesses >= 0"
+
+                    current_witness = WitnessWrapper(f"WitnessNode-{cnt_witness_node}", witness_node_prepare)
+                    current_witness.create_witnesses(cnt_witness_start, cnt_witness_start + witness_node_number, cnt_network, self.greek, self.legacy_witness_name)
+                    cnt_witness_start += witness_node_number
 
                     current_net.witness_nodes.append(current_witness)
 
             self.networks.append(current_net)
+
+    def show(self) -> str:
+        details = []
+        for network in self.networks:
+            details.append(network.show())
+        return "\n".join( detail for detail in details)
 
 class NetworksBuilder:
     def __init__(self) -> None:
