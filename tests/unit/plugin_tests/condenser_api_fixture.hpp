@@ -57,13 +57,19 @@ struct condenser_api_fixture : database_fixture
   void hf12_scenario( check_point_tester_t check_point_tester );
 
   /**
-   * Tests operations that need hardfork lower than 20:
+   * Tests operations that need hardfork lower than 17:
    *  pow2_operation (< hf17), ineffective_delete_comment_operation (< hf19) & account_create_with_delegation_operation (< hf20)
    * Also tests: 
    *  account_created_operation, pow_reward_operation, transfer_operation, comment_operation, comment_options_operation,
    *  vote_operation, effective_comment_vote_operation, delete_comment_operation & producer_reward_operation
    */
   void hf13_scenario( check_point_tester_t check_point_1_tester, check_point_tester_t check_point_2_tester );
+
+  /**
+   * Tests operations that need hardfork lower than 20:
+   *  shutdown_witness_operation (< 20), producer_missed_operation & producer_reward_operation
+   */
+  void hf19_scenario( check_point_tester_t check_point_tester );
 
   /**
    * Tests operations related to HIVE hardforks (23 & 24):
