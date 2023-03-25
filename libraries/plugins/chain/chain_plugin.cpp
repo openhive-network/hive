@@ -975,8 +975,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       result_hardfors.emplace_back(hardfork_schedule_item_t{ i + 1, hardfork_schedule[j].block_num });
     }
 
-    configuration_data.set_genesis_time( fc::time_point_sec( genesis_time ) );
-    configuration_data.set_hardfork_schedule( result_hardfors );
+    configuration_data.set_hardfork_schedule( fc::time_point_sec( genesis_time ), result_hardfors );
     configuration_data.set_init_witnesses( init_witnesses );
   }
 #endif

@@ -565,12 +565,18 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_vesting )
 
 BOOST_AUTO_TEST_CASE( get_ops_in_block_witness )
 { try {
+  // We need to set HIVE_GENESIS_TIME to very low value to force updating governance_vote_expiration_ts to low value.
+  // (see the conditional instruction in update_governance_vote_expiration_ts that we don't want to trigger)
+  configuration::hardfork_schedule_t ancient_hf25_schedule = { hardfork_schedule_item_t{ 25, 1 } };
+  configuration_data.set_hardfork_schedule( fc::time_point_sec( 0 ), ancient_hf25_schedule );
+  // Additionally shorten governance voting expiration period to acquire expired_account_notification_operation in block 8.
+  configuration_data.set_governance_voting_related_values( 60*60*24*1, 15 );
 
   BOOST_TEST_MESSAGE( "testing get_ops_in_block with witness_scenario" );
 
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
-    generate_until_irreversible_block( 4 );
+    generate_until_irreversible_block( 8 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
     expected_t expected_operations = { { // witness_update_operation
@@ -594,9 +600,28 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_witness )
       } };
     expected_t expected_virtual_operations = { expected_operations[5] };
     test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 4 );
+
+    expected_operations = { { // producer_reward_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8397109606","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":["producer_reward",{"producer":"initminer","vesting_shares":"8397.109606 VESTS"}]})~"
+      }, { // proxy_cleared_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":{"type":"proxy_cleared_operation","value":{"account":"ben5ah","proxy":"carol5ah"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":["proxy_cleared",{"account":"ben5ah","proxy":"carol5ah"}]})~"
+      }, { // expired_account_notification_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":{"type":"expired_account_notification_operation","value":{"account":"ben5ah"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":["expired_account_notification",{"account":"ben5ah"}]})~"
+      }, { // expired_account_notification_operation
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":4,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":{"type":"expired_account_notification_operation","value":{"account":"carol5ah"}},"operation_id":0})~",
+      R"~({"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":4,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":["expired_account_notification",{"account":"carol5ah"}]})~"
+      } };
+    // Note that all operations of this block are virtual, hence we can reuse the same expected container here.
+    test_get_ops_in_block( *this, expected_operations, expected_operations, 8 );
   };
   
   witness_scenario( check_point_tester );
+
+  configuration_data.reset_hardfork_schedule();
+  configuration_data.reset_governance_voting_values();
 
 } FC_LOG_AND_RETHROW() }
 
@@ -675,7 +700,7 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_escrow_and_savings )
 
 BOOST_AUTO_TEST_CASE( get_ops_in_block_proposal )
 { try {
-  configuration_data.set_delayed_voting_related_values( 90 );
+  configuration_data.set_governance_voting_related_values( 90, 60*60*24*5 );
   configuration_data.set_proposal_related_values( 30 );
 
   BOOST_TEST_MESSAGE( "testing get_ops_in_block with proposal_scenario" );
@@ -761,7 +786,7 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_proposal )
 
   proposal_scenario( check_point_tester );
 
-  configuration_data.reset_delayed_voting_values();
+  configuration_data.reset_governance_voting_values();
   configuration_data.reset_proposal_values();
 } FC_LOG_AND_RETHROW() }
 

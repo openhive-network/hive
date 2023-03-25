@@ -42,31 +42,53 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     return init_witnesses;
   }
 
-  void configuration::set_genesis_time( const fc::time_point_sec& genesis_time )
+  void configuration::set_hardfork_schedule( const fc::time_point_sec& genesis_time,
+    const std::vector<hardfork_schedule_item_t>& hardfork_schedule )
   {
+    ilog("Hardfork schedule applied: ${hardfork_schedule} with genesis time ${genesis_time}", (hardfork_schedule)(genesis_time));
+    
     this->genesis_time = genesis_time;
+
+    // Clear container contents.
+    hf_times.fill( 0 );
+    // Set genesis time
+    hf_times[ 0 ] = genesis_time.sec_since_epoch();
+
+    size_t last_hf_index = 0;
+    for( size_t i = 0; i < hardfork_schedule.size(); ++i )
+    {
+      size_t current_hf_index = hardfork_schedule[ i ].hardfork;
+      uint32_t current_block_num = hardfork_schedule[ i ].block_num;
+
+      FC_ASSERT( current_hf_index > 0, "You cannot specify the hardfork 0 block. Use 'genesis-time' option instead" );
+      FC_ASSERT( current_hf_index <= HIVE_NUM_HARDFORKS, "You are not allowed to specify future hardfork times" );
+      FC_ASSERT( current_hf_index > last_hf_index, "The hardfork schedule items must be in ascending order, no repetitions" );
+
+      // Set provided hardfork time filling the gaps if needed.
+      while( last_hf_index < current_hf_index )
+      {
+        ++last_hf_index;
+        hf_times[ last_hf_index ] = genesis_time.sec_since_epoch() + (current_block_num * HIVE_BLOCK_INTERVAL);
+      }
+    }
+
+    // Note that remainding hardforks are left initialized to zero, which is handled in get_hf_time
   }
 
-  void configuration::set_hardfork_schedule( const std::vector<hardfork_schedule_item_t>& hardfork_schedule )
+  void configuration::reset_hardfork_schedule()
   {
-    ilog("Hardfork schedule applied: ${hf_schedule}", ("hf_schedule", hardfork_schedule));
-
-    // Init genesis
-    blocks[0] = 0;
-
-    for( size_t i = 0; i < hardfork_schedule.size(); ++i )
-      blocks.at( hardfork_schedule[ i ].hardfork ) = hardfork_schedule[ i ].block_num;
+    genesis_time = fc::time_point_sec();
+    // Clear container contents.
+    hf_times.fill( 0 );
+    // Set genesis time
+    hf_times[ 0 ] = genesis_time.sec_since_epoch();
   }
 
   uint32_t configuration::get_hf_time(uint32_t hf_num, uint32_t default_time_sec)const
   {
-    FC_ASSERT( hf_num < blocks.size(), "Trying to retrieve hardfork of a non-existing hardfork ${hf}", ("hf", hf_num) );
+    FC_ASSERT( hf_num < hf_times.size(), "Trying to retrieve hardfork of a non-existing hardfork ${hf}", ("hf", hf_num) );
 
-    return blocks[hf_num].valid() ?
-        // Deduce (calculate) the time based on the genesis time when hardfork schedule is specified:
-        genesis_time.sec_since_epoch() + (blocks[hf_num].value() * HIVE_BLOCK_INTERVAL)
-      : default_time_sec // No hardfork schedule specified, use default time sec
-    ;
+    return hf_times[hf_num] != 0 ? hf_times[hf_num] : default_time_sec; // No hardfork schedule specified, use default time sec
   }
 
   configuration::configuration()
