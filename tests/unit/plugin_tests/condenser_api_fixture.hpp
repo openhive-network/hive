@@ -105,7 +105,8 @@ struct condenser_api_fixture : database_fixture
 
   /**
    * Operations tested here:
-   *  witness_update_operation, feed_publish_operation, account_witness_proxy_operation, account_witness_vote_operation, witness_set_properties_operation
+   *  witness_update_operation, feed_publish_operation, account_witness_proxy_operation, account_witness_vote_operation,
+   *  witness_set_properties_operation, proxy_cleared_operation & expired_account_notification_operation
    * Also tested here: 
    *  producer_reward_operation
    *  

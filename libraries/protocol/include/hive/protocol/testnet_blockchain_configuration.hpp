@@ -47,6 +47,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     uint16_t hive_min_recurrent_transfers_recurrence = 24; // hours, originally 24
     // Delay between funds vesting and its usage in governance voting.
     uint64_t hive_delayed_voting_total_interval_seconds = 60*60*24*1; // 1 day, originally 30 days
+    // Time before governance votes expire.
+    int64_t hive_governance_vote_expiration_period = 60*60*24*5; // seconds, originally 5 days
     // How often proposals are taken care of.
     uint32_t hive_proposal_maintenance_period = 60*60; // 1 hour
     
@@ -55,7 +57,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
     std::vector<std::string> init_witnesses;
     fc::time_point_sec     genesis_time;
-    std::array<fc::optional<uint32_t>, HIVE_NUM_HARDFORKS + 1> blocks = {};
+    // Hardfork times expressed in seconds since epoch.
+    std::array< uint32_t, HIVE_NUM_HARDFORKS + 1> hf_times = {};
     fc::optional<uint64_t> init_supply, hbd_init_supply;
     // Whether we want producer_missed_operation & shutdown_witness_operation vops generated.
     bool generate_missed_block_operations = false;
@@ -72,8 +75,16 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
       void set_init_witnesses( const std::vector<std::string>& init_witnesses );
       const std::vector<std::string>& get_init_witnesses()const;
-      void set_genesis_time( const fc::time_point_sec& genesis_time );
-      void set_hardfork_schedule( const std::vector<hardfork_schedule_item_t>& hardfork_schedule );
+      typedef std::vector<hardfork_schedule_item_t> hardfork_schedule_t;
+      /**
+       * Sets genesis time and consecutive hardfork times to be retrieved by get_hf_time later.
+       * 
+       * @param genesis_time - when genesis should happen.
+       * @param hardfork_schedule - when hardforks following genesis should happen. No need to specify all of them, the function
+       * will fill in the gaps while get_hf_time will handle the tail ones (see implementation).
+       */
+      void set_hardfork_schedule( const fc::time_point_sec& genesis_time, const hardfork_schedule_t& hardfork_schedule );
+      void reset_hardfork_schedule();
       uint32_t get_hf_time(uint32_t hf_num, uint32_t default_time_sec)const;
       bool get_generate_missed_block_operations() const { return generate_missed_block_operations; }
       uint16_t get_witness_shutdown_threshold() const { return witness_shutdown_threshold; }
@@ -92,6 +103,7 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
       uint32_t get_hive_delayed_voting_total_interval_seconds() const { return hive_delayed_voting_total_interval_seconds; }
       uint32_t get_hive_delayed_voting_interval_seconds() const { return get_hive_delayed_voting_total_interval_seconds() / 30; }
+      int64_t  get_hive_governance_vote_expiration_period() const { return hive_governance_vote_expiration_period; }
 
       uint32_t get_hive_proposal_maintenance_period() const { return hive_proposal_maintenance_period; }
 
@@ -175,16 +187,19 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
       /**
        * [30*3 .. 60*60*24*30]
+       * [15 .. 60*60*24*5 ]
        */
-      void set_delayed_voting_related_values( uint64_t delayed_voting_total_interval_seconds )
+      void set_governance_voting_related_values( uint64_t delayed_voting_total_interval_seconds, int64_t governance_vote_expiration_period )
       {
         hive_delayed_voting_total_interval_seconds = delayed_voting_total_interval_seconds;
+        hive_governance_vote_expiration_period = governance_vote_expiration_period;
       }
 
-      void reset_delayed_voting_values()
+      void reset_governance_voting_values()
       {
         configuration clear;
-        set_delayed_voting_related_values( clear.get_hive_delayed_voting_total_interval_seconds() );
+        set_governance_voting_related_values( clear.get_hive_delayed_voting_total_interval_seconds(),
+                                              clear.get_hive_governance_vote_expiration_period() );
       }
 
       /**
