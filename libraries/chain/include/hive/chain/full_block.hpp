@@ -107,7 +107,7 @@ class full_block_type
     static std::shared_ptr<full_block_type> create_from_block_header_and_transactions(const block_header& header, 
                                                                                       const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions,
                                                                                       const fc::ecc::private_key* signer,
-                                                                                      int block_num);
+                                                                                      int block_num =0 );
 
     void decode_block() const; // immediately decompresses & unpacks the block, called by the worker thread
     const signed_block& get_block() const;
@@ -134,7 +134,7 @@ class full_block_type
     const compressed_block_data& get_alternate_compressed_block() const;
 
     const std::vector<std::shared_ptr<full_transaction_type>>& get_full_transactions() const;
-    static checksum_type compute_merkle_root(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, int block_num);
+    static checksum_type compute_merkle_root(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, int block_num = 0);
     void compute_merkle_root() const;
     const checksum_type& get_merkle_root() const;
 };

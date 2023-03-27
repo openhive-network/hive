@@ -33,7 +33,7 @@ int main( int argc, char** argv, char** envp )
     b1.previous = hive::protocol::block_id_type();
 
     std::shared_ptr<hive::chain::full_block_type> fb1 =
-      hive::chain::full_block_type::create_from_block_header_and_transactions(b1, full_txs, nullptr);
+      hive::chain::full_block_type::create_from_block_header_and_transactions(b1, full_txs, nullptr, 0);
 
     log.append(fb1);
     log.flush();
@@ -46,7 +46,7 @@ int main( int argc, char** argv, char** envp )
     b2.previous = fb1->get_block_id();
 
     std::shared_ptr<hive::chain::full_block_type> fb2 =
-      hive::chain::full_block_type::create_from_block_header_and_transactions(b2, full_txs, nullptr);
+      hive::chain::full_block_type::create_from_block_header_and_transactions(b2, full_txs, nullptr, 0);
 
     log.append(fb2);
     log.flush();

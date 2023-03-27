@@ -2346,7 +2346,7 @@ void print_sha()
 
 
 ///////
-static auto volatile stop_in_consume_json_block_impl = true;
+static auto volatile stop_in_consume_json_block_impl = false;
 
 
 
