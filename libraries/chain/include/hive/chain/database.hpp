@@ -828,13 +828,16 @@ namespace chain {
       template <typename T>
       void register_new_type()
       {
-        _decoded_types_data_storage.register_new_type<T>();
+        if (_decoded_types_data_storage)
+          _decoded_types_data_storage->register_new_type<T>();
+        else
+          FC_THROW("Tried to decode type when decoded types storage doesn't exist.");
       }
 
     private:
 
       std::unique_ptr< database_impl > _my;
-      util::decoded_types_data_storage& _decoded_types_data_storage;
+      std::unique_ptr<util::decoded_types_data_storage> _decoded_types_data_storage;
 
       fork_database                 _fork_db;
       hardfork_versions             _hardfork_versions;

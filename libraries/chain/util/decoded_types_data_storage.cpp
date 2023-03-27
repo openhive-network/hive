@@ -199,12 +199,6 @@ decoded_types_data_storage::~decoded_types_data_storage()
   dlog("decoded_types_data_storage object has been deleted. Decoded types map size: ${map_size}", ("map_size", decoded_types_data_map.size()));
 }
 
-decoded_types_data_storage& decoded_types_data_storage::get_instance()
-{
-  static decoded_types_data_storage instance;
-  return instance;
-}
-
 bool decoded_types_data_storage::add_type_to_decoded_types_set(const std::string_view type_name)
 {
   return decoded_types_set.emplace(type_name).second;
