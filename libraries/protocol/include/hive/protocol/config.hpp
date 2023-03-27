@@ -52,7 +52,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_CHAIN_ID                         (fc::sha256::hash("testnet"))
 #define HIVE_ADDRESS_PREFIX                   "TST"
 
-#define HIVE_GENESIS_TIME                     (fc::time_point_sec(hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(0, 1451606400)))
+#define HIVE_GENESIS_TIME                     (fc::time_point_sec(configuration_data.get_hf_time(0, 1451606400)))
 #define HIVE_MINING_TIME                      (fc::time_point_sec(1451606400)) // Friday, January 1, 2016 12:00:00 AM UTC
 #define HIVE_CASHOUT_WINDOW_SECONDS           (configuration_data.get_hive_cashout_window_seconds())
 #define HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12  (HIVE_CASHOUT_WINDOW_SECONDS)
@@ -72,8 +72,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(6)
 #define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  1
 
-#define HIVE_INIT_SUPPLY                      (hive::protocol::testnet_blockchain_configuration::configuration_data.get_init_supply(int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 )))
-#define HIVE_HBD_INIT_SUPPLY                  (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hbd_init_supply(int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 )))
+#define HIVE_INIT_SUPPLY                      (configuration_data.get_init_supply(int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 )))
+#define HIVE_HBD_INIT_SUPPLY                  (configuration_data.get_hbd_init_supply(int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 )))
 
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD          (configuration_data.get_hive_proposal_maintenance_period())
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
@@ -127,7 +127,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_ADDRESS_PREFIX                   "STM"
 
 #ifdef USE_ALTERNATE_CHAIN_ID
-#define HIVE_GENESIS_TIME                     (fc::time_point_sec(hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(0, 1458835200)))
+#define HIVE_GENESIS_TIME                     (fc::time_point_sec(configuration_data.get_hf_time(0, 1458835200)))
 #else
 #define HIVE_GENESIS_TIME                     (fc::time_point_sec(1458835200)) // Friday, January 1, 2016 12:00:00 AM UTC
 #endif
@@ -150,8 +150,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  3186477
 
 #ifdef USE_ALTERNATE_CHAIN_ID
-#define HIVE_INIT_SUPPLY                      (hive::protocol::testnet_blockchain_configuration::configuration_data.get_init_supply(int64_t( 0 )))
-#define HIVE_HBD_INIT_SUPPLY                  (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hbd_init_supply(int64_t( 0 )))
+#define HIVE_INIT_SUPPLY                      (configuration_data.get_init_supply(int64_t( 0 )))
+#define HIVE_HBD_INIT_SUPPLY                  (configuration_data.get_hbd_init_supply(int64_t( 0 )))
 #else
 #define HIVE_INIT_SUPPLY                      int64_t(0)
 #define HIVE_HBD_INIT_SUPPLY                  int64_t(0)
