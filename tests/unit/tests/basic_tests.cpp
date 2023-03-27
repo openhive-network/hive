@@ -923,6 +923,10 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
   }
 
   BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 28 ); // decoded types map size shouldn't change.
+
+  BOOST_CHECK_NO_THROW(dtds_instance.register_new_type<fc::static_variant<>>());
+  BOOST_CHECK_NO_THROW(dtds_instance.register_new_type<fc::static_variant<int>>());
+  BOOST_CHECK_EQUAL( dtds_instance.get_decoded_types_data_map().size(), 30 );
 }
 
 BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
