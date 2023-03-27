@@ -1,3 +1,5 @@
+#ifdef USE_ALTERNATE_CHAIN_ID
+
 #include <hive/protocol/testnet_blockchain_configuration.hpp>
 
 #include <hive/protocol/config.hpp>
@@ -115,3 +117,5 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
   }
 
 } } }// hive::protocol::testnet_blockchain_configuration
+
+#endif // USE_ALTERNATE_CHAIN_ID

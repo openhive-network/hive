@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef USE_ALTERNATE_CHAIN_ID
+
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/hardfork.hpp>
 
@@ -237,3 +239,5 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 } } }// hive::protocol::testnet_blockchain_configuration
 
 FC_REFLECT( hive::protocol::testnet_blockchain_configuration::hardfork_schedule_item_t, (hardfork)(block_num) )
+
+#endif // USE_ALTERNATE_CHAIN_ID
