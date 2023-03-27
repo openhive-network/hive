@@ -130,7 +130,7 @@ database_impl::database_impl( database& self )
   : _self(self), _evaluator_registry(self), _req_action_evaluator_registry(self), _opt_action_evaluator_registry(self) {}
 
 database::database()
-  : _my( new database_impl(*this) ), _decoded_types_data_storage(util::decoded_types_data_storage::get_instance()) {}
+  : _my( new database_impl(*this) ), _decoded_types_data_storage(std::make_unique<util::decoded_types_data_storage>()) {}
 
 database::~database()
 {
@@ -4015,13 +4015,13 @@ void database::check_state_objects_definitions(const bool override_decoded_state
   if (!decoded_state_objects_data)
   {
     decoded_state_objects_data = s->construct<shared_string>( "decoded_state_objects_data_json" )(allocator< shared_string >(s));
-    *decoded_state_objects_data = _decoded_types_data_storage.generate_decoded_types_data_json_string();
+    *decoded_state_objects_data = _decoded_types_data_storage->generate_decoded_types_data_json_string();
   }
   else if (override_decoded_state_objects_data)
-    *decoded_state_objects_data = _decoded_types_data_storage.generate_decoded_types_data_json_string();
+    *decoded_state_objects_data = _decoded_types_data_storage->generate_decoded_types_data_json_string();
   else
   {
-    auto result = _decoded_types_data_storage.check_if_decoded_types_data_json_matches_with_current_decoded_data(to_string(*decoded_state_objects_data));
+    auto result = _decoded_types_data_storage->check_if_decoded_types_data_json_matches_with_current_decoded_data(to_string(*decoded_state_objects_data));
 
     if (!result.first)
     {
@@ -4031,13 +4031,13 @@ void database::check_state_objects_definitions(const bool override_decoded_state
 
       loaded_decoded_types_details.open(loaded_data_filename, std::ios::out | std::ios::trunc);
       if (loaded_decoded_types_details.good())
-        loaded_decoded_types_details << _decoded_types_data_storage.generate_decoded_types_data_pretty_string(*decoded_state_objects_data);
+        loaded_decoded_types_details << _decoded_types_data_storage->generate_decoded_types_data_pretty_string(*decoded_state_objects_data);
       loaded_decoded_types_details.flush();
       loaded_decoded_types_details.close();
 
       current_decoded_types_details.open(current_data_filename, std::ios::out | std::ios::trunc);
       if (current_decoded_types_details.good())
-        current_decoded_types_details << _decoded_types_data_storage.generate_decoded_types_data_pretty_string();
+        current_decoded_types_details << _decoded_types_data_storage->generate_decoded_types_data_pretty_string();
       current_decoded_types_details.flush();
       current_decoded_types_details.close();
 
@@ -4046,6 +4046,8 @@ void database::check_state_objects_definitions(const bool override_decoded_state
                                                             ("details", result.second)(current_data_filename)(loaded_data_filename));
     }
   }
+
+  _decoded_types_data_storage.reset();
 }
 
 void database::resetState(const open_args& args)

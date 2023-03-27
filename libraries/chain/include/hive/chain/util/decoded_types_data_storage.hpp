@@ -98,9 +98,6 @@ using decoded_types_map_t = std::unordered_map<std::string_view, std::shared_ptr
 class decoded_types_data_storage final
 {
   private:
-    decoded_types_data_storage();
-    ~decoded_types_data_storage();
-
     bool add_type_to_decoded_types_set(const std::string_view type_name);
     void add_decoded_type_data_to_map(const std::shared_ptr<decoded_type_data>& decoded_type);
 
@@ -108,18 +105,14 @@ class decoded_types_data_storage final
     template <typename ...Args> friend class decoders::non_reflected_types::specific_type_decoder;
 
   public:
-    decoded_types_data_storage(const decoded_types_data_storage&) = delete;
-    decoded_types_data_storage& operator=(const decoded_types_data_storage&) = delete;
-    decoded_types_data_storage(decoded_types_data_storage&&) = delete;
-    decoded_types_data_storage& operator=(decoded_types_data_storage&&) = delete;
-
-    static decoded_types_data_storage& get_instance();
+    decoded_types_data_storage();
+    ~decoded_types_data_storage();
 
     template <typename T>
     void register_new_type()
     {
       decoders::main_decoder<T> decoder;
-      decoder.decode();
+      decoder.decode(*this);
     }
 
     template <typename T>
@@ -158,26 +151,40 @@ namespace decoders
 {
   /* Checks if T is a template type. IMPORTANT - doesn't work for template types which accepts value, for example fc::array<type, value>, ::value will return false. */
   template <typename>
-  struct template_types_detector : std::false_type { void analyze_arguments() const {} };
+  struct template_types_detector : std::false_type
+  {
+    template_types_detector(decoded_types_data_storage&) {}
+    void analyze_arguments() {}
+  };
 
   template <template <typename...> typename T, typename... Args>
   struct template_types_detector<T<Args...>> : std::bool_constant<sizeof...(Args) != 0U>
   {
     private:
+      decoded_types_data_storage& dtds;
+
       struct types_vector_analyzer
       {
-        template<typename U> void operator()(U*) const
+        types_vector_analyzer(decoded_types_data_storage& _dtds) : dtds(_dtds) {}
+
+        template<typename U> void operator()(U*)
         {
           main_decoder<U> decoder;
-          decoder.decode();
+          decoder.decode(dtds);
         }
+
+        private:
+          decoded_types_data_storage& dtds;
       };
 
     public:
-      void analyze_arguments() const
+      template_types_detector(decoded_types_data_storage& _dtds) : dtds(_dtds) {}
+
+      void analyze_arguments()
       {
         typedef boost::mpl::vector<Args...> types_vector;
-        boost::mpl::for_each<typename boost::mpl::transform<types_vector, boost::add_pointer<boost::mpl::_1>>::type>(types_vector_analyzer());
+        types_vector_analyzer analyzer(dtds);
+        boost::mpl::for_each<typename boost::mpl::transform<types_vector, boost::add_pointer<boost::mpl::_1>>::type>(analyzer);
       }
   };
 
@@ -185,7 +192,7 @@ namespace decoders
   class visitor_type_decoder
   {
     public:
-      visitor_type_decoder(reflected_decoded_type_data::members_vector& _members, const std::string_view type_name) : members(_members)
+      visitor_type_decoder(reflected_decoded_type_data::members_vector& _members, const std::string_view type_name, decoded_types_data_storage& _dtds) : members(_members), dtds(_dtds)
       {
         encoder.write(type_name.data(), type_name.size());
       }
@@ -194,11 +201,11 @@ namespace decoders
       void operator()(const char *name) const
       {
         decoders::main_decoder<Member> decoder;
-        decoder.decode();
+        decoder.decode(dtds);
 
         if (template_types_detector<Member>::value)
         {
-          template_types_detector<Member> detector;
+          template_types_detector<Member> detector(dtds);
           detector.analyze_arguments();
         }
 
@@ -219,6 +226,7 @@ namespace decoders
     private:
       mutable fc::ripemd160::encoder encoder;
       reflected_decoded_type_data::members_vector& members;
+      decoded_types_data_storage& dtds;
     };
 
   class visitor_enum_decoder
@@ -266,11 +274,11 @@ namespace decoders
   template<typename T>
   struct main_decoder<T, true /* is_defined - type is reflected */>
   {
-    void decode() const
+    void decode(decoded_types_data_storage& dtds) const
     {
       const std::string_view type_id_name = typeid(T).name();
 
-      if (!decoded_types_data_storage::get_instance().add_type_to_decoded_types_set(type_id_name))
+      if (!dtds.add_type_to_decoded_types_set(type_id_name))
           return;
 
       if constexpr (fc::reflector<T>::is_enum::value)
@@ -279,15 +287,15 @@ namespace decoders
         visitor_enum_decoder visitor(enum_values, type_id_name);
         fc::reflector<T>::visit(visitor);
         const std::string_view type_name = fc::get_typename<T>::name();
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<reflected_decoded_type_data>(visitor.get_checksum().str(), type_id_name, type_name, std::move(reflected_decoded_type_data::members_vector()), std::move(enum_values)));
+        dtds.add_decoded_type_data_to_map(std::make_shared<reflected_decoded_type_data>(visitor.get_checksum().str(), type_id_name, type_name, std::move(reflected_decoded_type_data::members_vector()), std::move(enum_values)));
       }
       else
       {
         reflected_decoded_type_data::members_vector members;
-        visitor_type_decoder visitor(members, type_id_name);
+        visitor_type_decoder visitor(members, type_id_name, dtds);
         fc::reflector<T>::visit(visitor);
         const std::string_view type_name = fc::get_typename<T>::name();
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<reflected_decoded_type_data>(visitor.get_checksum().str(), type_id_name, type_name, std::move(members), std::move(reflected_decoded_type_data::enum_values_vector())));
+        dtds.add_decoded_type_data_to_map(std::make_shared<reflected_decoded_type_data>(visitor.get_checksum().str(), type_id_name, type_name, std::move(members), std::move(reflected_decoded_type_data::enum_values_vector())));
       }
     }
   };
@@ -295,7 +303,7 @@ namespace decoders
   template<typename T>
   struct main_decoder<T, false /* is_defined - type is not reflected */>
   {
-    void decode() const
+    void decode(decoded_types_data_storage& dtds) const
     {
       /* Type is fundamental - do nothing. */
       if constexpr (std::is_fundamental<T>::value) {}
@@ -303,9 +311,9 @@ namespace decoders
       else if constexpr (std::is_trivial<T>::value)
       {
         if (template_types_detector<T>::value &&
-            decoded_types_data_storage::get_instance().add_type_to_decoded_types_set(typeid(T).name()))
+            dtds.add_type_to_decoded_types_set(typeid(T).name()))
         {
-          template_types_detector<T> detector;
+          template_types_detector<T> detector(dtds);
           detector.analyze_arguments();
         }
       }
@@ -314,11 +322,11 @@ namespace decoders
       {
         const std::string_view index_type_id = typeid(T).name();
 
-        if (decoded_types_data_storage::get_instance().add_type_to_decoded_types_set(index_type_id))
+        if (dtds.add_type_to_decoded_types_set(index_type_id))
         {
-          decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(index_type_id), index_type_id, false));
+          dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(index_type_id), index_type_id, false));
           main_decoder<typename T::value_type> decoder;
-          decoder.decode();
+          decoder.decode(dtds);
         }
       }
       /* Boost types. We control boost types via checking boost version, so only check if typeid of these types match (it will change in case of any template parameters change). */
@@ -331,16 +339,16 @@ namespace decoders
       {
         const std::string_view boost_type_id = typeid(T).name();
 
-        if (decoded_types_data_storage::get_instance().add_type_to_decoded_types_set(boost_type_id))
-          decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(boost_type_id), boost_type_id, false));
+        if (dtds.add_type_to_decoded_types_set(boost_type_id))
+          dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(boost_type_id), boost_type_id, false));
       }
       /* Type should be hashable if it's not handled by one of above ifs. */
       else if constexpr (is_specific_type_decodable<T>::value)
       {
-        if (decoded_types_data_storage::get_instance().add_type_to_decoded_types_set(typeid(T).name()))
+        if (dtds.add_type_to_decoded_types_set(typeid(T).name()))
         {
           non_reflected_types::specific_type_decoder<T> decoder;
-          decoder.decode();
+          decoder.decode(dtds);
         }
       }
       /* If we cannot decode type, compilation error should occur. */
@@ -355,7 +363,7 @@ namespace decoders
     template<typename T>
     struct specific_type_decoder<chainbase::oid<T>>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(chainbase::oid<T>).name();
@@ -369,16 +377,16 @@ namespace decoders
         ss << alignof(oid_value_type);
         ss << typeid(oid_value_type).name();
 
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
-        decoder.decode();
+        decoder.decode(dtds);
       }
     };
 
     template<typename T>
     struct specific_type_decoder<chainbase::oid_ref<T>>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(chainbase::oid_ref<T>).name();
@@ -392,16 +400,16 @@ namespace decoders
         ss << alignof(oid_value_type);
         ss << typeid(oid_value_type).name();
 
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
-        decoder.decode();
+        decoder.decode(dtds);
       }
     };
 
     template<>
     struct specific_type_decoder<fc::time_point_sec>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(fc::time_point_sec).name();
@@ -415,14 +423,14 @@ namespace decoders
         ss << alignof(sec_since_epoch_type);
         ss << typeid(sec_since_epoch_type).name();
 
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
       }
     };
 
     template<typename A, typename B>
     struct specific_type_decoder<fc::erpair<A, B>>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(fc::erpair<A, B>).name();
@@ -436,19 +444,19 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->second)));
         ss << typeid(nullObj->second).name();
 
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
 
         main_decoder<A> decoder_A;
-        decoder_A.decode();
+        decoder_A.decode(dtds);
         main_decoder<B> decoder_B;
-        decoder_B.decode();
+        decoder_B.decode(dtds);
       }
     };
 
     template<typename T, size_t N>
     struct specific_type_decoder<fc::array<T, N>>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(fc::array<T, N>).name();
@@ -460,16 +468,16 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->data)));
         ss << typeid(nullObj->data).name();
 
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
-        decoder.decode();
+        decoder.decode(dtds);
       }
     };
 
     template< typename T>
     struct specific_type_decoder<hive::protocol::fixed_string_impl<T>>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(hive::protocol::fixed_string_impl<T>).name();
@@ -481,16 +489,16 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->data)));
         ss << typeid(nullObj->data).name();
 
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
-        decoder.decode();
+        decoder.decode(dtds);
       }
     };
 
     template<>
     struct specific_type_decoder<fc::ripemd160>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(fc::ripemd160).name();
@@ -502,14 +510,14 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->_hash)));
         ss << typeid(nullObj->_hash).name();
 
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
       }
     };
 
     template<typename T>
     struct specific_type_decoder<fc::static_variant<T>>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(fc::static_variant<T>).name();
@@ -520,30 +528,30 @@ namespace decoders
         fc::static_variant<T> sv;
         ss << typeid(sv.which()).name();
 
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
-        decoder.decode();
+        decoder.decode(dtds);
       }
     };
 
     template<>
     struct specific_type_decoder<fc::static_variant<>>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(fc::static_variant<>).name();
         ss << type_id;
         ss << sizeof(fc::static_variant<>);
         ss << alignof(fc::static_variant<>);
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
       }
     };
 
     template<>
     struct specific_type_decoder<fc::sha256>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(fc::sha256).name();
@@ -555,14 +563,14 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->_hash)));
         ss << typeid(nullObj->_hash).name();
 
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
       }
     };
 
     template<typename T, size_t N>
     struct specific_type_decoder<fc::int_array<T, N>>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
         const std::string_view type_id = typeid(fc::int_array<T, N>).name();
@@ -574,21 +582,21 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->data)));
         ss << typeid(nullObj->data).name();
 
-        decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
+        dtds.add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
         main_decoder<T> decoder;
-        decoder.decode();
+        decoder.decode(dtds);
       }
     };
 
     template<typename A, typename B>
     struct specific_type_decoder<std::pair<A, B>>
     {
-      void decode() const
+      void decode(decoded_types_data_storage& dtds) const
       {
         main_decoder<A> decoder_A;
-        decoder_A.decode();
+        decoder_A.decode(dtds);
         main_decoder<B> decoder_B;
-        decoder_B.decode();
+        decoder_B.decode(dtds);
       }
     };
 
