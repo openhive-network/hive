@@ -105,7 +105,6 @@ class decoded_types_data_storage final
     template <typename ...Args> friend class decoders::non_reflected_types::specific_type_decoder;
 
   public:
-    decoded_types_data_storage();
     ~decoded_types_data_storage();
 
     template <typename T>

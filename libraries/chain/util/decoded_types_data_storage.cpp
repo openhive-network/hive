@@ -189,11 +189,6 @@ std::string reflected_decoded_type_data::to_pretty_string() const
   return ss.str();
 }
 
-decoded_types_data_storage::decoded_types_data_storage()
-{
-  dlog("decoded_types_data_storage object has been created.");
-}
-
 decoded_types_data_storage::~decoded_types_data_storage()
 {
   dlog("decoded_types_data_storage object has been deleted. Decoded types map size: ${map_size}", ("map_size", decoded_types_data_map.size()));
