@@ -89,13 +89,17 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
   find_rc_accounts_return result;
   result.rc_accounts.reserve( args.accounts.size() );
 
-  for( const account_name_type& a : args.accounts )
+  const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
+  if( rc_plugin.is_active() ) //for backward compatibility, but it would be better to just give error when not started yet
   {
-    const account_object* rc_account = _db.find_account( a );
-
-    if( rc_account != nullptr )
+    for( const account_name_type& a : args.accounts )
     {
-      result.rc_accounts.emplace_back( *rc_account, _db );
+      const account_object* rc_account = _db.find_account( a );
+
+      if( rc_account != nullptr )
+      {
+        result.rc_accounts.emplace_back( *rc_account, _db );
+      }
     }
   }
 
@@ -109,17 +113,21 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
   list_rc_accounts_return result;
   result.rc_accounts.reserve( args.limit );
 
-  auto& idx = _db.get_index< hive::chain::account_index, hive::chain::by_name >();
-  auto itr = idx.lower_bound( args.start.as< account_name_type >() );
-  auto filter = &filter_default< hive::chain::account_object >;
-  auto end = idx.end();
-
-  while( result.rc_accounts.size() < args.limit && itr != end )
+  const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
+  if( rc_plugin.is_active() ) //for backward compatibility, but it would be better to just give error when not started yet
   {
-    if( filter( *itr ) )
-      result.rc_accounts.emplace_back( *itr, _db );
+    auto& idx = _db.get_index< hive::chain::account_index, hive::chain::by_name >();
+    auto itr = idx.lower_bound( args.start.as< account_name_type >() );
+    auto filter = &filter_default< hive::chain::account_object >;
+    auto end = idx.end();
 
-    ++itr;
+    while( result.rc_accounts.size() < args.limit && itr != end )
+    {
+      if( filter( *itr ) )
+        result.rc_accounts.emplace_back( *itr, _db );
+
+      ++itr;
+    }
   }
 
   return result;

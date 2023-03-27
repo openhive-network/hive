@@ -1426,6 +1426,11 @@ void rc_plugin::plugin_shutdown()
 
 }
 
+bool rc_plugin::is_active() const
+{
+  return !my->before_first_block();
+}
+
 void rc_plugin::set_rc_plugin_skip_flags( rc_plugin_skip_flags skip )
 {
   my->_skip = skip;
