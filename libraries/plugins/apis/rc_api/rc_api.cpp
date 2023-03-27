@@ -112,12 +112,13 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
 
   list_rc_accounts_return result;
   result.rc_accounts.reserve( args.limit );
+  account_name_type start = args.start.as< account_name_type >();
 
   const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
   if( rc_plugin.is_active() ) //for backward compatibility, but it would be better to just give error when not started yet
   {
     auto& idx = _db.get_index< hive::chain::account_index, hive::chain::by_name >();
-    auto itr = idx.lower_bound( args.start.as< account_name_type >() );
+    auto itr = idx.lower_bound( start );
     auto filter = &filter_default< hive::chain::account_object >;
     auto end = idx.end();
 
