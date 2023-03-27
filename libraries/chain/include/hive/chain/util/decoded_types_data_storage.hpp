@@ -182,22 +182,6 @@ namespace decoders
   };
 
   /* Tools for decoding reflected types and enums. /*/
-  struct visitor_defined_types_detector
-  {
-    template <typename Member, class Class, Member(Class::*member)>
-    void operator()(const char *name) const
-    {
-      decoders::main_decoder<Member> decoder;
-      decoder.decode();
-
-      if (template_types_detector<Member>::value)
-      {
-        template_types_detector<Member> detector;
-        detector.analyze_arguments();
-      }
-    }
-  };
-
   class visitor_type_decoder
   {
     public:
@@ -209,6 +193,15 @@ namespace decoders
       template <typename Member, class Class, Member(Class::*member)>
       void operator()(const char *name) const
       {
+        decoders::main_decoder<Member> decoder;
+        decoder.decode();
+
+        if (template_types_detector<Member>::value)
+        {
+          template_types_detector<Member> detector;
+          detector.analyze_arguments();
+        }
+
         const std::string field_name(name);
         const std::string type_id(typeid(Member).name());
         Class* const nullObj = nullptr;
@@ -290,7 +283,6 @@ namespace decoders
       }
       else
       {
-        fc::reflector<T>::visit(visitor_defined_types_detector());
         reflected_decoded_type_data::members_vector members;
         visitor_type_decoder visitor(members, type_id_name);
         fc::reflector<T>::visit(visitor);
