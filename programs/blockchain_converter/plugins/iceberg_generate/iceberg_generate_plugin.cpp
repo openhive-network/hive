@@ -230,6 +230,7 @@ namespace detail {
         print_post_conversion_data( block_converted->get_block() );
 
         const auto& transactions = block_converted->get_full_transactions();
+        FC_ASSERT(transactions.size() == block_converted->get_block().transactions.size());
 
         for( size_t i = 0; i < transactions.size(); ++i )
           if( theApp.is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check

@@ -220,6 +220,9 @@ namespace hive { namespace converter {
     : _private_key( _private_key ), chain_id( chain_id ), shared_signatures_stack_in(10000), shared_signatures_stack_out(10000), increase_block_size( increase_block_size ), signers_exit( false )
   {
     FC_ASSERT( signers_size > 0, "There must be at least 1 signer thread!" );
+
+    hive::chain::set_chain_id_for_transaction_signature_validation(chain_id);
+
     for( size_t i = 0; i < signers_size; ++i )
       signers.emplace( signers.end(), std::bind( [&]( size_t worker_index ) {
         sig_stack_in_type local_trx;
@@ -307,7 +310,7 @@ namespace hive { namespace converter {
 
   std::shared_ptr< hc::full_block_type > blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time, bool alter_time_in_visitor )
   {
-    if( has_hardfork( cached_hf + 1, _signed_block ) )
+    while( has_hardfork( cached_hf + 1, _signed_block ) )
       ++cached_hf;
 
     std::vector< hc::full_transaction_ptr > full_transactions;
