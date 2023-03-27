@@ -20,6 +20,7 @@
 #include <appbase/plugin.hpp>
 
 #include <fc/signals.hpp>
+#include <fc/reflect/reflect.hpp>
 
 #include <fc/log/logger.hpp>
 
@@ -1011,3 +1012,5 @@ namespace chain {
     hive::plugins::chain::snapshot_load_helper& load_helper;
   };
 } }
+
+FC_REFLECT(hive::chain::database::irreversible_object_type, (last_irreversible_block_num))

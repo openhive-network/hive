@@ -4003,7 +4003,7 @@ void database::initialize_indexes()
 void database::initialize_irreversible_storage()
 {
   auto s = get_segment_manager();
-
+  register_new_type<irreversible_object_type>();
   irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
 }
 
