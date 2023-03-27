@@ -544,10 +544,6 @@ namespace decoders
         ss << type_id;
         ss << sizeof(fc::static_variant<>);
         ss << alignof(fc::static_variant<>);
-
-        fc::static_variant<> sv;
-        ss << typeid(sv.which()).name();
-
         decoded_types_data_storage::get_instance().add_decoded_type_data_to_map(std::make_shared<decoded_type_data>(calculate_checksum_from_string(ss.str()), type_id, false));
       }
     };
