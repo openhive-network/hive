@@ -4,6 +4,8 @@
 
 #include <fc/io/json.hpp>
 
+bool czy_printowac(int block_num);
+
 namespace hive { namespace chain {
 
 /* static */ std::atomic<uint32_t> full_block_type::number_of_instances_created = {0};
@@ -94,13 +96,15 @@ full_block_type::~full_block_type()
   full_block->decoded_block_storage = std::move(decoded_block_storage);
   fc::raw::pack(stream, block);
   full_block->has_uncompressed_block.store(true, std::memory_order_release);
+//mtlk tutaj zrzut binarny calego blocku, zaznacz tam kolenjne struktury, transakcje
 
   return full_block;
 } FC_CAPTURE_AND_RETHROW() }
 
 /* static */ std::shared_ptr<full_block_type> full_block_type::create_from_block_header_and_transactions(const block_header& header, 
                                                                                                          const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions,
-                                                                                                         const fc::ecc::private_key* signer)
+                                                                                                         const fc::ecc::private_key* signer,
+                                                                                                         int block_num)
 { try {
   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
 
@@ -112,7 +116,7 @@ full_block_type::~full_block_type()
   decoded_block_storage->block = signed_block();
   signed_block& new_block = *decoded_block_storage->block; // alias to keep things shorter
   (block_header&)new_block = header;
-  full_block->merkle_root = compute_merkle_root(full_transactions);
+  full_block->merkle_root = compute_merkle_root(full_transactions, block_num);
   new_block.transaction_merkle_root = *full_block->merkle_root;
 
   // let's start generating the serialized version of the block:
@@ -547,15 +551,22 @@ uint32_t full_block_type::get_uncompressed_block_size() const
   return decoded_block_storage->uncompressed_block.raw_size;
 }
 
-/* static */ checksum_type full_block_type::compute_merkle_root(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions)
+/* static */ checksum_type full_block_type::compute_merkle_root(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, int block_num)
 {
   if (full_transactions.empty())
     return checksum_type();
 
+
+  if(czy_printowac(block_num))
+  {
+    int a = 0;
+    a = a;
+  }
+
   std::vector<digest_type> ids;
   ids.resize(full_transactions.size());
   std::transform(full_transactions.begin(), full_transactions.end(), ids.begin(), 
-                 [](const std::shared_ptr<full_transaction_type>& transaction) { return transaction->get_merkle_digest(); });
+                 [block_num](const std::shared_ptr<full_transaction_type>& transaction) { return transaction->get_merkle_digest(block_num); });
 
   hive::protocol::serialization_mode_controller::pack_guard guard(hive::protocol::pack_type::legacy);
 
@@ -574,6 +585,9 @@ uint32_t full_block_type::get_uncompressed_block_size() const
     current_number_of_hashes = k;
   }
 
+  if(czy_printowac(block_num))
+    wlog("Inside compute_merkle_root block_num=${block_num} ids[0]=${ids0}", ("block_num", block_num)("ids0", ids[0]));
+
   return checksum_type::hash(ids[0]);
 }
 
@@ -584,7 +598,12 @@ void full_block_type::compute_merkle_root() const
   {
     decode_block();
     fc::time_point compute_begin = fc::time_point::now();
-    merkle_root = compute_merkle_root(full_transactions);
+    if(czy_printowac(get_block_num()))
+    {
+      int a = 0;
+      a=a;
+    }
+    merkle_root = compute_merkle_root(full_transactions, get_block_num());
     fc::time_point compute_end = fc::time_point::now();
     compute_merkle_root_time = compute_end - compute_begin;
   }

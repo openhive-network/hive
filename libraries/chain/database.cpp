@@ -76,6 +76,39 @@ long next_hf_time()
   return hfTime;
 }
 
+ char to_hex_digit(int c)
+ {
+     if(c < 10)
+      return c+'0';
+     return 'a' + c -10;
+ }
+
+std::string binary2str( const char* d, uint32_t dlen ) 
+{
+  std::string ou;
+  for(size_t i = 0; i < (dlen); ++i)
+  {
+    int c = *(d +i);
+    char hex_digit = to_hex_digit((c >> 4) & 0xf);
+    ou += hex_digit;
+    hex_digit = to_hex_digit(c & 0xf);
+    ou += hex_digit;
+  }        
+  return ou;
+}
+
+
+bool czy_printowac(int block_num)
+{
+
+
+    if(block_num == 994240)
+        return true;
+
+
+    return false;
+}
+
 namespace hive { namespace chain {
 
 struct object_schema_repr
@@ -4374,11 +4407,24 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
   }
 }
 
+static auto volatile stop_in_apply_block = true;
+
 void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 {
   const signed_block& block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
   block_notification note(full_block);
+
+
+  if(czy_printowac(block_num))
+  {
+    if(stop_in_apply_block)
+    {
+      int a = 0;
+      a=a;
+    }
+  }
+
 
   try {
   notify_pre_apply_block( note );
@@ -4443,7 +4489,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   {
     if( _benchmark_dumper.is_enabled() )
       _benchmark_dumper.begin();
-
+    
     auto merkle_root = full_block->get_merkle_root();
 
     try
