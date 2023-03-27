@@ -802,7 +802,15 @@ namespace hive { namespace chain {
         FC_THROW("unknown purpose");
     }
 
-    std::thread queue_filler_thread([&]() {
+    std::shared_ptr< std::thread > queue_filler_thread;
+
+    BOOST_SCOPE_EXIT( &queue_filler_thread ) {
+      ilog("Queue filler thread is joining.");
+      if( queue_filler_thread )
+        queue_filler_thread->join();
+    } BOOST_SCOPE_EXIT_END
+
+    queue_filler_thread = std::make_shared<std::thread>([&]() {
       fc::set_thread_name("for_each_io"); // tells the OS the thread's name
       fc::thread::current().set_name("for_each_io"); // tells fc the thread's name for logging
       for (uint32_t block_number = starting_block_number; block_number <= ending_block_number; ++block_number)
@@ -843,7 +851,6 @@ namespace hive { namespace chain {
         break;
       }
     }
-    queue_filler_thread.join();
   }
 
   void block_log::truncate(uint32_t new_head_block_num)
