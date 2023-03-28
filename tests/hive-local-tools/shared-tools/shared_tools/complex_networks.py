@@ -268,11 +268,6 @@ def before_run_network(builder: networks.NetworksBuilder, preparers: Iterable[sq
                                  '{"name":"sync","level":"debug","appender":"p2p"} '\
                                  '{"name":"p2p","level":"debug","appender":"p2p"}'
 
-
-def prepare_database( database, name: str = "haf_block_log") -> Any:
-    return database(f"postgresql:///{name}")
-
-
 def run_whole_network(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparers: Iterable[sql_preparer] = None) -> Tuple[networks.NetworksBuilder, Any]:
     before_action = None
     if preparers is not None:
@@ -289,41 +284,6 @@ def run_whole_network(architecture: networks.NetworksArchitecture, block_log_dir
 
 def prepare_network(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None) -> networks.NetworksBuilder:
     return run_whole_network(architecture, block_log_directory_name, time_offsets)
-
-
-def prepare_network_with_1_session(database, architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparer: sql_preparer = None) -> Tuple[networks.NetworksBuilder, Any]:
-    preparer.session = prepare_database(database)
-    return run_whole_network(architecture, block_log_directory_name, time_offsets, [preparer]), preparer.session
-
-
-def prepare_network_with_2_sessions(database, architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparers: Iterable[sql_preparer] = None) -> Tuple[networks.NetworksBuilder, Any]:
-    preparers[0].session = prepare_database(database)
-    preparers[1].session = prepare_database(database, "haf_block_log_ref")
-    return run_whole_network(architecture, block_log_directory_name, time_offsets, preparers), [preparers[0].session, preparers[1].session]
-
-
-def prepare_node_with_database(database) -> Tuple[tt.ApiNode, Any, Any]:
-    config = {
-        "networks": [
-                        {
-                            "ApiNode"   : True,
-                        }
-                    ]
-    }
-    architecture = networks.NetworksArchitecture()
-    architecture.load(config)
-
-    builder = networks.NetworksBuilder()
-    builder.build(architecture, True)
-
-    network_under_test      = 0
-    node_under_test_name    = "ApiNode0"
-
-    preparer = sql_preparer(network_under_test, node_under_test_name, prepare_database(database))
-    preparer.prepare(builder)
-
-    return preparer.node(builder), preparer.session, preparer.db_name()
-
 
 def prepare_time_offsets(limit: int):
     time_offsets: int = []
