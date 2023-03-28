@@ -99,7 +99,7 @@ void print_sha()
 int main( int argc, char** argv )
 {
 
-  print_sha();
+  //print_sha();
 
   try
   {
