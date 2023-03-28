@@ -173,11 +173,12 @@ class NetworksArchitecture:
 
 class NetworksBuilder:
     def __init__(self) -> None:
-        self.init_node: tt.InitNode | None  = None
-        self.witness_names: list[str]       = []
-        self.networks: list[tt.Network]     = []
-        self.nodes: list[tt.AnyNode]        = []
-        self.init_wallet: tt.Wallet | None  = None
+        self.init_node: tt.InitNode | None      = None
+        self.witness_names: list[str]           = []
+        self.networks: list[tt.Network]         = []
+        self.nodes: list[tt.AnyNode]            = []
+        self.prepare_nodes: list[tt.AnyNode]    = []
+        self.init_wallet: tt.Wallet | None      = None
 
     def build(self, architecture: NetworksArchitecture, init_node_can_be_empty: bool = False) -> None:
         for network in architecture.networks:
@@ -187,13 +188,21 @@ class NetworksBuilder:
                 assert self.init_node is None, "InitNode already exists"
                 self.init_node = tt.InitNode(network=tt_network)
                 self.nodes.append(self.init_node)
+                if network.init_node.prepare:
+                    self.prepare_nodes.append(self.init_node)
 
             for witness in network.witness_nodes:
                 self.witness_names.extend(witness.witnesses)
-                self.nodes.append(tt.WitnessNode(witnesses=witness.witnesses, network=tt_network))
+                witness_node = tt.WitnessNode(witnesses=witness.witnesses, network=tt_network)
+                self.nodes.append(witness_node)
+                if witness.prepare:
+                    self.prepare_nodes.append(witness_node)
 
             if network.api_node is not None:
-                self.nodes.append(tt.ApiNode(network=tt_network))
+                api_node = tt.ApiNode(network=tt_network)
+                self.nodes.append(api_node)
+                if network.api_node.prepare:
+                    self.prepare_nodes.append(api_node)
 
             self.networks.append(tt_network)
         assert init_node_can_be_empty or self.init_node is not None
