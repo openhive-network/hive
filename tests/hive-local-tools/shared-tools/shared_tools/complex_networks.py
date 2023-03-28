@@ -8,22 +8,10 @@ import test_tools as tt
 from .complex_networks_helper_functions import connect_sub_networks
 import shared_tools.networks_architecture as networks
 
-class sql_preparer:
-    def __init__(self, network_under_test: int, node_under_test_name: str, session: Any = None) -> None:
-        self.network_under_test     = network_under_test
-        self.node_under_test_name   = node_under_test_name
-        self.session                = session
+class NodesPreparer:
+    def prepare(self, _: networks.NetworksBuilder) -> None:
+        pass
 
-    def prepare(self, builder: networks.NetworksBuilder):
-        node_under_test = builder.networks[self.network_under_test].node(self.node_under_test_name)
-        node_under_test.config.plugin.append('sql_serializer')
-        node_under_test.config.psql_url = str(self.db_name())
-
-    def db_name(self) -> Any:
-        return None if self.session is None else self.session.get_bind().url
-
-    def node(self, builder) -> Any:
-        return builder.networks[self.network_under_test].node(self.node_under_test_name)
 
 def get_time_offset_from_file(file: Path) -> str:
     with open(file, "r", encoding="UTF-8") as file:
@@ -210,12 +198,12 @@ def prepare_nodes(sub_networks_sizes: list) -> list:
     return sub_networks, init_node, all_witness_names
 
 
-def generate_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, before_action: Optional[Callable[[], networks.NetworksBuilder]] = None, desired_blocklog_length: Optional[int] = None) -> Dict:
+def generate_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, preparer: NodesPreparer = None, desired_blocklog_length: Optional[int] = None) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
-    if before_action is not None:
-        before_action(builder)
+    if preparer is not None:
+        preparer.prepare(builder)
 
     run_networks(builder.networks, None)
 
@@ -225,12 +213,12 @@ def generate_networks(architecture: networks.NetworksArchitecture, block_log_dir
     return None
 
 
-def launch_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, before_action: Optional[Callable[[], networks.NetworksBuilder]] = None) -> Dict:
+def launch_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, preparer: NodesPreparer = None) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
-    if before_action is not None:
-        before_action(builder)
+    if preparer is not None:
+        preparer.prepare(builder)
 
     run_networks(builder.networks, block_log_directory_name, time_offsets)
 
@@ -241,13 +229,13 @@ def launch_networks(architecture: networks.NetworksArchitecture, block_log_direc
     return builder
 
 
-def generate_or_launch(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, before_action: Optional[Callable[[], networks.NetworksBuilder]] = None) -> Dict:
+def generate_or_launch(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, preparer: NodesPreparer = None) -> Dict:
     if allow_generate_block_log():
         assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
         tt.logger.info(f"New `block_log` generation: {block_log_directory_name}")
-        return generate_networks(architecture, block_log_directory_name, before_action)
+        return generate_networks(architecture, block_log_directory_name, preparer)
 
-    return launch_networks(architecture, block_log_directory_name, time_offsets, before_action)
+    return launch_networks(architecture, block_log_directory_name, time_offsets, preparer)
 
 
 def allow_generate_block_log() -> bool:
@@ -256,24 +244,8 @@ def allow_generate_block_log() -> bool:
         return False
     return int(status) == 1
 
-
-def before_run_network(builder: networks.NetworksBuilder, preparers: Iterable[sql_preparer]):
-    for preparer in preparers:
-        preparer.prepare(builder)
-
-    for node in builder.nodes:
-        node.config.log_logger = '{"name":"default","level":"debug","appender":"stderr,p2p"} '\
-                                 '{"name":"user","level":"debug","appender":"stderr,p2p"} '\
-                                 '{"name":"chainlock","level":"debug","appender":"p2p"} '\
-                                 '{"name":"sync","level":"debug","appender":"p2p"} '\
-                                 '{"name":"p2p","level":"debug","appender":"p2p"}'
-
-def run_whole_network(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparers: Iterable[sql_preparer] = None) -> Tuple[networks.NetworksBuilder, Any]:
-    before_action = None
-    if preparers is not None:
-        before_action = partial( before_run_network, preparers = preparers)
-
-    builder = generate_or_launch(architecture, block_log_directory_name, time_offsets, before_action)
+def run_whole_network(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparer: NodesPreparer = None) -> Tuple[networks.NetworksBuilder, Any]:
+    builder = generate_or_launch(architecture, block_log_directory_name, time_offsets, preparer)
 
     if builder is None:
         tt.logger.info(f"Generating 'block_log' enabled. Exiting...")
