@@ -24,6 +24,7 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load():
     """
 
     first_node = tt.InitNode()
+    first_node.config.plugin = ['witness', 'account_by_key', 'account_by_key_api', 'block_api', 'database_api', 'debug_node_api', 'network_node_api', 'wallet_bridge_api']
     first_node.run()
     wallet = tt.Wallet(attach_to=first_node)
 
@@ -38,6 +39,7 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load():
     snapshot = first_node.dump_snapshot()
 
     second_node = tt.ApiNode()
+    second_node.config.plugin = ['account_by_key', 'account_by_key_api', 'block_api', 'database_api', 'debug_node_api', 'network_node_api', 'wallet_bridge_api', 'chain_api', 'condenser_api', 'market_history_api', 'network_broadcast_api', 'rc_api', 'reputation_api', 'rewards_api', 'transaction_status_api', 'witness_api']
     connect_nodes(first_node, second_node)
     second_node.run(load_snapshot_from=snapshot, wait_for_live=False)
 
