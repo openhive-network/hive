@@ -40,6 +40,9 @@
 #define LOG_READ  (std::ios::in | std::ios::binary)
 #define LOG_WRITE (std::ios::out | std::ios::binary | std::ios::app)
 
+
+bool czy_printowac(int block_num);
+
 namespace hive { namespace chain {
 
   typedef boost::interprocess::scoped_lock< boost::mutex > scoped_lock;
@@ -365,6 +368,12 @@ namespace hive { namespace chain {
 
   std::shared_ptr<full_block_type> block_log::read_block_by_num( uint32_t block_num )const
   {
+    if(czy_printowac(block_num))
+    {
+      int b = 0;
+      b=b;
+    }
+
     try
     {
       // first, check if it's the current head block; if so, we can just return it.  If the

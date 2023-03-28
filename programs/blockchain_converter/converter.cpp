@@ -403,11 +403,11 @@ namespace hive { namespace converter {
           ++trx_applied_count;
     }
 
-    _signed_block.transaction_merkle_root = hc::full_block_type::compute_merkle_root( full_transactions, 0);
+    _signed_block.transaction_merkle_root = hc::full_block_type::compute_merkle_root( full_transactions );
 
     current_block_ptr = nullptr; // Invalidate to make sure that other functions will not try to use deallocated data
 
-    return hc::full_block_type::create_from_block_header_and_transactions( _signed_block, full_transactions, &_private_key , 0);
+    return hc::full_block_type::create_from_block_header_and_transactions( _signed_block, full_transactions, &_private_key );
   }
 
   const hp::block_id_type& blockchain_converter::get_converter_head_block_id()const

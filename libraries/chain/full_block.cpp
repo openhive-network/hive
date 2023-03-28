@@ -413,6 +413,15 @@ void full_block_type::decode_block() const
     fc::raw::unpack(datastream, number_of_transactions);
     decoded_block_storage->block->transactions.resize(number_of_transactions.value);
     full_transactions.resize(number_of_transactions.value);
+
+
+    if(czy_printowac(decoded_block_storage->block->block_num()))
+    {
+      int a = 0;
+      a = a;
+    }
+
+
     for (unsigned i = 0; i < number_of_transactions.value; ++i)
     {
       // The transaction hierarchy is:
@@ -440,6 +449,10 @@ void full_block_type::decode_block() const
     decode_block_time = decode_block_end - decode_block_begin;
 
     has_unpacked_block.store(true, std::memory_order_release);
+
+  //mtlk pack and display
+
+
   }
 }
 
