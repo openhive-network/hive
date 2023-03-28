@@ -111,40 +111,6 @@ bool czy_printowac(int block_num)
     return false;
 }
 
-static int pack_depth = 0;
-static bool to_print_packing = false;
-
-int get_pack_depth()
-{
-  return pack_depth;
-}
-
-void inc_pack_depth()
-{
-  pack_depth++;
-}
-void dec_pack_depth()
-{
-  pack_depth--;
-}
-
-
-bool print_packing()
-{
-  return to_print_packing;
-}
-
-void set_print_packing()
-{
-    to_print_packing = true;
-}
-
-void clear_print_packing()
-{
-    to_print_packing = false;
-}
-
-
 
 namespace hive { namespace chain {
 

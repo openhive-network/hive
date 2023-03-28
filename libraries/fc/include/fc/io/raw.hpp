@@ -20,9 +20,6 @@
 #include <map>
 #include <deque>
 
-int get_pack_depth();
-void inc_pack_depth();
-void dec_pack_depth();
 
 inline std::string spaces(int n)
 {
@@ -34,7 +31,47 @@ inline std::string spaces(int n)
   return sp;
 }
 
-bool print_packing();
+
+inline int pack_depth = 0;
+
+inline bool to_print_packing = false;
+
+
+inline int get_pack_depth()
+{
+  return pack_depth;
+}
+
+
+inline void inc_pack_depth()
+{
+  pack_depth++;
+}
+
+inline void dec_pack_depth()
+{
+  pack_depth--;
+}
+
+
+
+inline bool print_packing()
+{
+  return to_print_packing;
+}
+
+
+inline void set_print_packing()
+{
+    to_print_packing = true;
+}
+
+
+inline void clear_print_packing()
+{
+    to_print_packing = false;
+}
+
 
 
 namespace fc {
