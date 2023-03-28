@@ -23,7 +23,17 @@
 int get_pack_depth();
 void inc_pack_depth();
 void dec_pack_depth();
-std::string spaces(int n);
+
+inline std::string spaces(int n)
+{
+  std::string sp;
+  for (int i = 0 ; i < n; ++i)
+  {
+    sp += " ";
+  }
+  return sp;
+}
+
 bool print_packing();
 
 

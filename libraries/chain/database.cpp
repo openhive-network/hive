@@ -128,15 +128,6 @@ void dec_pack_depth()
   pack_depth--;
 }
 
-std::string spaces(int n)
-{
-  std::string sp;
-  for (int i = 0 ; i < n; ++i)
-  {
-    sp += " ";
-  }
-  return sp;
-}
 
 bool print_packing()
 {
