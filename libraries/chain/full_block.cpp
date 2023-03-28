@@ -5,7 +5,8 @@
 #include <fc/io/json.hpp>
 
 bool czy_printowac(int block_num);
-
+void set_print_packing();
+void clear_print_packing();
 namespace hive { namespace chain {
 
 /* static */ std::atomic<uint32_t> full_block_type::number_of_instances_created = {0};
@@ -94,7 +95,17 @@ full_block_type::~full_block_type()
   fc::datastream<char*> stream(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size);
   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
   full_block->decoded_block_storage = std::move(decoded_block_storage);
+  if(czy_printowac(block.block_num()))
+  {
+    wlog("BEGIN mtlk priniting pack of block_num=${bn}", ("bn", block.block_num()));
+    set_print_packing();
+  }
   fc::raw::pack(stream, block);
+  if(czy_printowac(block.block_num()))
+  {
+    wlog("END mtlk priniting pack of block_num=${bn}", ("bn", block.block_num()));
+    clear_print_packing();
+  }
   full_block->has_uncompressed_block.store(true, std::memory_order_release);
 //mtlk tutaj zrzut binarny calego blocku, zaznacz tam kolenjne struktury, transakcje
 

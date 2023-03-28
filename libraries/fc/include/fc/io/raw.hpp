@@ -13,8 +13,19 @@
 #include <fc/exception/exception.hpp>
 #include <fc/safe.hpp>
 #include <fc/io/raw_fwd.hpp>
+
+#include <fc/log/logger.hpp>
+#include <cxxabi.h>
+
 #include <map>
 #include <deque>
+
+int get_pack_depth();
+void inc_pack_depth();
+void dec_pack_depth();
+std::string spaces(int n);
+bool print_packing();
+
 
 namespace fc {
     namespace raw {
@@ -276,8 +287,11 @@ namespace fc {
 
     // fc::string
     template<typename Stream> inline void pack( Stream& s, const fc::string& v )  {
+      inc_pack_depth();
+      if(print_packing())wlog(spaces(get_pack_depth()) + "stri=\"${s}\"", ("s", v));
       fc::raw::pack( s, unsigned_int((uint32_t)v.size()));
       if( v.size() ) s.write( v.c_str(), v.size() );
+      dec_pack_depth();
     }
 
     template<typename Stream> inline void unpack( Stream& s, fc::string& value, uint32_t depth )  {
@@ -309,6 +323,7 @@ namespace fc {
 
         template<typename T, typename C, T(C::*p)>
         void operator()( const char* name )const {
+          if(print_packing())wlog(spaces(get_pack_depth()) + "\"${name}\"", ("name", name));
           fc::raw::pack( s, c.*p );
         }
         private:
@@ -598,10 +613,14 @@ namespace fc {
     }
 
 
-
     template<typename Stream, typename T>
     inline void pack( Stream& s, const T& v ) {
+      int cxa_demangle_status;
+      inc_pack_depth();
+      
+      if(print_packing())wlog(spaces(get_pack_depth()) + "${t}", ("t",  abi::__cxa_demangle(typeid(v).name(), 0, 0, &cxa_demangle_status) ));
       fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::pack(s,v);
+      dec_pack_depth();
     }
     template<typename Stream, typename T>
     inline void unpack( Stream& s, T& v, uint32_t depth )

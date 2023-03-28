@@ -1,8 +1,13 @@
 #pragma once
+
+#include <string>
+
 #include <fc/utility.hpp>
 #include <string.h>
 #include <stdint.h>
 
+std::string binary2str( const char* d, uint32_t dlen );
+bool print_packing();
 namespace fc {
 
 namespace detail 
@@ -36,6 +41,7 @@ class datastream {
       
       inline bool write( const char* d, size_t s ) {
         if( _end - _pos >= (int32_t)s ) {
+          if(print_packing())wlog("write s=${size} from=${pos} to=${end} contents=${c}",("pos", _pos - _start) ("size", s) ("end", _pos - _start + s)("c", binary2str(d, s)) );
           memcpy( _pos, d, s );
           _pos += s;
           return true;

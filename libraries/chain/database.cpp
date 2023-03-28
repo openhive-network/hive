@@ -83,7 +83,7 @@ long next_hf_time()
      return 'a' + c -10;
  }
 
-std::string binary2str( const char* d, uint32_t dlen ) 
+std::string binary2str( const char* d, uint32_t dlen )
 {
   std::string ou;
   for(size_t i = 0; i < (dlen); ++i)
@@ -102,12 +102,58 @@ bool czy_printowac(int block_num)
 {
 
 
+     if(block_num == 1093)
+         return true;
     if(block_num == 994240)
         return true;
 
 
     return false;
 }
+
+static int pack_depth = 0;
+static bool to_print_packing = false;
+
+int get_pack_depth()
+{
+  return pack_depth;
+}
+
+void inc_pack_depth()
+{
+  pack_depth++;
+}
+void dec_pack_depth()
+{
+  pack_depth--;
+}
+
+std::string spaces(int n)
+{
+  std::string sp;
+  for (int i = 0 ; i < n; ++i)
+  {
+    sp += " ";
+  }
+  return sp;
+}
+
+bool print_packing()
+{
+  return to_print_packing;
+}
+
+void set_print_packing()
+{
+    to_print_packing = true;
+}
+
+void clear_print_packing()
+{
+    to_print_packing = false;
+}
+
+
 
 namespace hive { namespace chain {
 
