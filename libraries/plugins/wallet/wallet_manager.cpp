@@ -225,29 +225,7 @@ string wallet_manager::create_key(const std::string& name, const std::string& ke
 
 hive::protocol::signed_transaction wallet_manager::sign_transaction(const hive::protocol::signed_transaction& txn, const flat_set<public_key_type>& keys, const hive::protocol::chain_id_type& id)
 {
-   check_timeout();
-   hive::protocol::signed_transaction stxn(txn);
-
-   for (const auto& pk : keys) {
-      bool found = false;
-      for (const auto& i : wallets) {
-         if (!i.second->is_locked()) {
-            //pychol-mychol
-            //std::optional<hive::protocol::signature_type> sig = i.second->try_sign_digest(stxn.sig_digest(id, stxn.context_free_data), pk);
-            std::optional<signature_type> sig;
-            if (sig) {
-               stxn.signatures.push_back(*sig);
-               found = true;
-               break; // inner for
-            }
-         }
-      }
-      if (!found) {
-         FC_THROW_EXCEPTION( hive::chain::wallet_missing_pub_key_exception, "Public key not found in unlocked wallets ${k}", ("k", pk));
-      }
-   }
-
-   return stxn;
+   return hive::protocol::signed_transaction();
 }
 
 signature_type wallet_manager::sign_digest(const digest_type& digest, const public_key_type& key)
