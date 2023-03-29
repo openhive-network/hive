@@ -22,11 +22,8 @@
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
 
-#ifndef WIN32
 # include <sys/types.h>
 # include <sys/stat.h>
-
-#endif
 
 namespace hive { namespace plugins { namespace wallet {
 
