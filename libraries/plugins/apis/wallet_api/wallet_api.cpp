@@ -8,22 +8,25 @@ namespace hive { namespace plugins { namespace wallet_api {
 
 namespace detail {
 
+
+using hive::plugins::wallet::wallet_manager;
+
 class wallet_api_impl
 {
   public:
-    wallet_api_impl() : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+    wallet_api_impl(): _wallet_mgr( appbase::app().get_plugin< hive::plugins::wallet::wallet_plugin >().get_wallet_manager() ) {}
 
     DECLARE_API_IMPL
     (
-      (pychol_mychol)
+      (create)
     )
 
-    chain::database& _db;
+    wallet_manager& _wallet_mgr;
 };
 
-DEFINE_API_IMPL( wallet_api_impl, pychol_mychol )
+DEFINE_API_IMPL( wallet_api_impl, create )
 {
-  return pychol_mychol_return();
+  return { _wallet_mgr.create( args.wallet_name ) };
 }
 
 } // detail
@@ -35,8 +38,8 @@ wallet_api::wallet_api(): my( new detail::wallet_api_impl() )
 
 wallet_api::~wallet_api() {}
 
-DEFINE_READ_APIS( wallet_api,
-  (pychol_mychol)
+DEFINE_LOCKLESS_APIS( wallet_api,
+  (create)
   )
 
 } } } // hive::plugins::wallet_api

@@ -16,11 +16,14 @@ namespace detail
 
 using plugins::json_rpc::void_type;
 
-typedef void_type pychol_mychol_args;
-
-struct pychol_mychol_return
+struct create_args
 {
-  variant_object any;
+  std::string wallet_name;
+};
+
+struct create_return
+{
+  std::string password;
 };
 
 class wallet_api
@@ -30,7 +33,7 @@ class wallet_api
     ~wallet_api();
 
     DECLARE_API(
-      (pychol_mychol)
+      (create)
       )
 
   private:
@@ -39,6 +42,5 @@ class wallet_api
 
 } } } // hive::plugins::wallet_api
 
-FC_REFLECT( hive::plugins::wallet_api::pychol_mychol_return,
-  (any)
-  )
+FC_REFLECT( hive::plugins::wallet_api::create_args, (wallet_name) )
+FC_REFLECT( hive::plugins::wallet_api::create_return, (password) )
