@@ -35,11 +35,10 @@ namespace detail {
 private_key_type derive_private_key( const std::string& prefix_string,
                                          int sequence_number )
 {
-   std::string sequence_string = std::to_string(sequence_number);
-   //pychol-mychol
-   //fc::sha512 h = fc::sha512::hash(prefix_string + " " + sequence_string);
-   //return private_key_type::regenerate<fc::ecc::private_key_shim>(fc::sha256::hash(h));
-   return private_key_type();
+  std::string sequence_string = std::to_string(sequence_number);
+  fc::sha512 h = fc::sha512::hash(prefix_string + " " + sequence_string);
+  fc::ecc::private_key derived_key = fc::ecc::private_key::regenerate(fc::sha256::hash(h));
+  return derived_key;
 }
 
 class soft_wallet_impl
@@ -185,13 +184,9 @@ public:
 
       private_key_type priv_key;
       if(key_type == "K1")
-         //pychol-mychol
-         //priv_key = fc::crypto::private_key::generate<fc::ecc::private_key_shim>();
-         priv_key = private_key_type();
+         priv_key = fc::ecc::private_key::generate();
       else if(key_type == "R1")
-         //pychol-mychol
-         //priv_key = fc::crypto::private_key::generate<fc::crypto::r1::private_key_shim>();
-         priv_key = private_key_type();
+         priv_key = fc::ecc::private_key::generate();
       else
          HIVE_ASSERT( false, hive::chain::unsupported_key_type_exception, "Key type \"${kt}\" not supported by software wallet", ("kt", key_type));
 
@@ -414,10 +409,8 @@ pair<public_key_type,private_key_type> soft_wallet::get_private_key_from_passwor
    auto seed = account + role + password;
    HIVE_ASSERT( seed.size(), hive::chain::wallet_exception, "seed should not be empty" );
    auto secret = fc::sha256::hash( seed.c_str(), seed.size() );
-   //pychol-mychol
-   //auto priv = private_key_type::regenerate<fc::ecc::private_key_shim>( secret );
-   auto priv = private_key_type();
-   return std::make_pair(  priv.get_public_key(), priv );
+   auto priv = fc::ecc::private_key::regenerate( secret );
+   return std::make_pair( public_key_type( priv.get_public_key() ), priv );
 }
 
 void soft_wallet::set_wallet_filename(string wallet_filename)
