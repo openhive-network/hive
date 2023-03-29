@@ -72,6 +72,10 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     // How many blocks is witness allowed to miss before it is being shut down.
     uint16_t witness_shutdown_threshold = 28800; // aka HIVE_BLOCKS_PER_DAY
 
+    fc::optional<fc::microseconds> min_root_comment_interval;
+    fc::optional<fc::microseconds> min_reply_interval;
+    fc::optional<fc::microseconds> min_comment_edit_interval;
+
     public:
       configuration();
 
@@ -95,6 +99,13 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       uint32_t get_hf_time(uint32_t hf_num, uint32_t default_time_sec)const;
       bool get_generate_missed_block_operations() const { return generate_missed_block_operations; }
       uint16_t get_witness_shutdown_threshold() const { return witness_shutdown_threshold; }
+
+      void set_min_root_comment_interval( const fc::microseconds& time );
+      const fc::microseconds& get_min_root_comment_interval( const fc::microseconds& default_value )const;
+      void set_min_reply_interval( const fc::microseconds& time );
+      const fc::microseconds& get_min_reply_interval( const fc::microseconds& default_value )const;
+      void set_min_comment_edit_interval( const fc::microseconds& time );
+      const fc::microseconds& get_min_comment_edit_interval( const fc::microseconds& default_value )const;
 
       uint32_t get_hive_reverse_auction_window_seconds() const { return hive_reverse_auction_window_seconds; }
       uint32_t get_hive_early_voting_seconds() const { return hive_early_voting_seconds; }

@@ -93,6 +93,48 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     return hf_times[hf_num] != 0 ? hf_times[hf_num] : default_time_sec; // No hardfork schedule specified, use default time sec
   }
 
+  void configuration::set_min_root_comment_interval( const fc::microseconds& time )
+  {
+    min_root_comment_interval = time;
+  }
+
+  const fc::microseconds& configuration::get_min_root_comment_interval( const fc::microseconds& default_value )const
+  {
+    if( min_root_comment_interval.valid() )
+      return *min_root_comment_interval;
+
+    return default_value;
+  }
+
+  void configuration::set_min_reply_interval( const fc::microseconds& time )
+  {
+    min_reply_interval = time;
+  }
+
+
+  const fc::microseconds& configuration::get_min_reply_interval( const fc::microseconds& default_value )const
+  {
+    if( min_reply_interval.valid() )
+      return *min_reply_interval;
+
+    return default_value;
+  }
+
+
+  void configuration::set_min_comment_edit_interval( const fc::microseconds& time )
+  {
+    min_comment_edit_interval = time;
+  }
+
+
+  const fc::microseconds& configuration::get_min_comment_edit_interval( const fc::microseconds& default_value )const
+  {
+    if( min_comment_edit_interval.valid() )
+      return *min_comment_edit_interval;
+
+    return default_value;
+  }
+
   configuration::configuration()
   {
     hive_initminer_key = get_default_initminer_private_key();
