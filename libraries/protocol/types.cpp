@@ -33,11 +33,7 @@ namespace hive { namespace protocol {
 
   public_key_type::operator std::string() const
   {
-    binary_key k;
-    k.data = key_data;
-    k.check = fc::ripemd160::hash( k.data.data, k.data.size() )._hash[0];
-    auto data = fc::raw::pack_to_vector( k );
-    return HIVE_ADDRESS_PREFIX + fc::to_base58( data.data(), data.size() );
+    return fc::ecc::public_key::to_base58_with_prefix( key_data, HIVE_ADDRESS_PREFIX );
   }
 
   bool operator == ( const public_key_type& p1, const fc::ecc::public_key& p2)
