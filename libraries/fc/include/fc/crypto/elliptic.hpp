@@ -85,7 +85,8 @@ namespace fc {
 
            /// Allows to convert current public key object into base58 number.
            std::string to_base58() const;
-           static std::string to_base58( const public_key_data &key );
+           static std::string to_base58( const public_key_data &key, bool is_sha256 = true );
+           static std::string to_base58_with_prefix( const public_key_data &key, const std::string& prefix );
            static public_key from_base58( const std::string& b58, bool is_sha256 = true );
            static public_key from_base58_with_prefix( const std::string& b58_with_prefix, const std::string& prefix );
 

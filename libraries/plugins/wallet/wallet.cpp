@@ -197,9 +197,7 @@ public:
 
       import_key(priv_key.str());
 
-      //pychol-mychol
-      //return priv_key.get_public_key().to_string();
-      return "xxxx";
+      return fc::ecc::public_key::to_base58_with_prefix( priv_key.get_public_key().serialize(), HIVE_ADDRESS_PREFIX );
    }
 
    bool load_wallet_file(string wallet_filename = "")

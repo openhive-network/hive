@@ -142,14 +142,25 @@ namespace fc { namespace ecc {
        return generate_from_seed( get_secret(), enc.result() );
     }
 
-    std::string public_key::to_base58( const public_key_data &key )
+    std::string public_key::to_base58( const public_key_data &key, bool is_sha256 )
     {
-      uint32_t check = (uint32_t)sha256::hash(key.data, sizeof(key))._hash[0];
+      uint32_t check = 0;
+
+      if( is_sha256 )
+        check = (uint32_t)sha256::hash(key.data, sizeof(key))._hash[0];
+      else
+        check = (uint32_t)ripemd160::hash(key.data, sizeof(key))._hash[0];
+
       assert(key.size() + sizeof(check) == 37);
       array<char, 37> data;
       memcpy(data.data, key.begin(), key.size());
       memcpy(data.begin() + key.size(), (const char*)&check, sizeof(check));
       return fc::to_base58(data.begin(), data.size());
+    }
+
+    std::string public_key::to_base58_with_prefix( const public_key_data &key, const std::string& prefix )
+    {
+      return prefix + to_base58( key, false/*is_sha256*/ );
     }
 
     public_key public_key::from_base58( const std::string& b58, bool is_sha256 )
