@@ -171,6 +171,7 @@ mirrornet_replay_test:
       --skeleton-key "$MIRRORNET_SKELETON_KEY"
       --set-benchmark-interval 100000
       --force-replay
+      --validate-during-replay
       --stop-replay-at-block $NUMBER_OF_BLOCKS
       --exit-before-sync | tee hived-replay.log
   artifacts:
