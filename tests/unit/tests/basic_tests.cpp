@@ -759,21 +759,18 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
 
   {
     /* hive::chain::witness_object::witness_schedule_type is a reflected enum, so we can get some data about it. */
-    const hive::chain::util::reflected_decoded_type_data* reflected_enum_ptr = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
-                                                                                (dtds.get_decoded_type_data<hive::chain::witness_object::witness_schedule_type>().get());
-    BOOST_CHECK( reflected_enum_ptr );
-    BOOST_CHECK( reflected_enum_ptr->is_reflected() );
-    BOOST_CHECK( reflected_enum_ptr->is_enum() );
-    BOOST_CHECK( reflected_enum_ptr->get_members().empty() );
+    const hive::chain::util::decoded_type_data& reflected_enum_data = dtds.get_decoded_type_data<hive::chain::witness_object::witness_schedule_type>();
+    BOOST_CHECK( reflected_enum_data.reflected );
+    BOOST_CHECK( !reflected_enum_data.members );
+    BOOST_CHECK( reflected_enum_data.enum_values );
+    BOOST_CHECK_EQUAL( reflected_enum_data.checksum, "8826d3384e563df375fae0b2e00e23d61dee90d8" );
+    BOOST_CHECK_EQUAL( reflected_enum_data.type_id, "N4hive5chain14witness_object21witness_schedule_typeE" );
+    BOOST_CHECK_EQUAL( *reflected_enum_data.name, "hive::chain::witness_object::witness_schedule_type" );
 
-    const hive::chain::util::reflected_decoded_type_data::enum_values_vector& enum_values_for_type = reflected_enum_ptr->get_enum_values();
-
+    const hive::chain::util::decoded_type_data::enum_values_vector_t& enum_values_for_type = *reflected_enum_data.enum_values;
     BOOST_CHECK( !enum_values_for_type.empty() );
-    BOOST_CHECK_EQUAL( reflected_enum_ptr->get_checksum(), "8826d3384e563df375fae0b2e00e23d61dee90d8" );
-    BOOST_CHECK_EQUAL( reflected_enum_ptr->get_type_id(), "N4hive5chain14witness_object21witness_schedule_typeE" );
-    BOOST_CHECK_EQUAL( reflected_enum_ptr->get_type_name(), "hive::chain::witness_object::witness_schedule_type" );
 
-    const hive::chain::util::reflected_decoded_type_data::enum_values_vector specific_enum_values_pattern{{"elected", 0},{"timeshare", 1}, {"miner", 2}, {"none", 3}};
+    const hive::chain::util::decoded_type_data::enum_values_vector_t specific_enum_values_pattern{{"elected", 0},{"timeshare", 1}, {"miner", 2}, {"none", 3}};
 
     BOOST_CHECK_EQUAL( enum_values_for_type.size(), specific_enum_values_pattern.size() );
 
@@ -798,15 +795,14 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 6 );
 
   {
-    const hive::chain::util::decoded_type_data* decoded_boost_type = dtds.get_decoded_type_data<boost::container::flat_map<int, std::string>>().get();
+    const hive::chain::util::decoded_type_data& decoded_boost_type = dtds.get_decoded_type_data<boost::container::flat_map<int, std::string>>();
 
-    BOOST_CHECK( decoded_boost_type );
-    BOOST_CHECK( !decoded_boost_type->is_reflected() );
-    BOOST_CHECK_EQUAL( decoded_boost_type->get_checksum(), "14ac59e65d8cf4341dc8fb7e6d3404a95ab9f5a0");
-    BOOST_CHECK_EQUAL( decoded_boost_type->get_type_id(), "N5boost9container8flat_mapIiNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4lessIiEvEE");
-
-    //we shouldn't be able to cast decoded data to reflected type data.
-    BOOST_CHECK( !dynamic_cast<hive::chain::util::reflected_decoded_type_data*>(dtds.get_decoded_type_data<boost::container::flat_map<int, std::string>>().get()) );
+    BOOST_CHECK( !decoded_boost_type.reflected );
+    BOOST_CHECK_EQUAL( decoded_boost_type.checksum, "14ac59e65d8cf4341dc8fb7e6d3404a95ab9f5a0");
+    BOOST_CHECK_EQUAL( decoded_boost_type.type_id, "N5boost9container8flat_mapIiNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt4lessIiEvEE");
+    BOOST_CHECK( !decoded_boost_type.name );
+    BOOST_CHECK( !decoded_boost_type.members );
+    BOOST_CHECK( !decoded_boost_type.enum_values );
   }
 
   /*
@@ -819,22 +815,19 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
   dtds.register_new_type<hive::chain::decline_voting_rights_request_index>();
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 12 );
   {
-    const hive::chain::util::reflected_decoded_type_data* reflected_type_ptr = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
-                                                                                (dtds.get_decoded_type_data<hive::chain::decline_voting_rights_request_object>().get());
+    const hive::chain::util::decoded_type_data& decoded_type_data = dtds.get_decoded_type_data<hive::chain::decline_voting_rights_request_object>();
 
-    BOOST_CHECK( reflected_type_ptr );
-    BOOST_CHECK( reflected_type_ptr->is_reflected() );
-    BOOST_CHECK( !reflected_type_ptr->is_enum() );
-    BOOST_CHECK( reflected_type_ptr->get_enum_values().empty() );
+    BOOST_CHECK( decoded_type_data.reflected );
+    BOOST_CHECK( !decoded_type_data.enum_values );
+    BOOST_CHECK( decoded_type_data.members );
+    BOOST_CHECK_EQUAL( decoded_type_data.checksum, "07a72f6d76870fbab70cd7bbfb8e5b5e92a2bcbc" );
+    BOOST_CHECK_EQUAL( decoded_type_data.type_id, "N4hive5chain36decline_voting_rights_request_objectE" );
+    BOOST_CHECK_EQUAL( *decoded_type_data.name, "hive::chain::decline_voting_rights_request_object" );
 
-    const hive::chain::util::reflected_decoded_type_data::members_vector& type_members = reflected_type_ptr->get_members();
-
+    const hive::chain::util::decoded_type_data::members_vector_t& type_members = *decoded_type_data.members;
     BOOST_CHECK( !type_members.empty() );
-    BOOST_CHECK_EQUAL( reflected_type_ptr->get_checksum(), "07a72f6d76870fbab70cd7bbfb8e5b5e92a2bcbc" );
-    BOOST_CHECK_EQUAL( reflected_type_ptr->get_type_id(), "N4hive5chain36decline_voting_rights_request_objectE" );
-    BOOST_CHECK_EQUAL( reflected_type_ptr->get_type_name(), "hive::chain::decline_voting_rights_request_object" );
 
-    const hive::chain::util::reflected_decoded_type_data::members_vector type_members_pattern
+    const hive::chain::util::decoded_type_data::members_vector_t type_members_pattern
       {{.type = "chainbase::oid<hive::chain::decline_voting_rights_request_object>", .name = "id", .offset = 0},
        {.type = "hive::protocol::account_name_type", .name = "account", .offset = 8},
        {.type = "fc::time_point_sec", .name = "effective_date", .offset = 24}};
@@ -848,17 +841,14 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
       BOOST_CHECK_EQUAL(type_members[i].offset, type_members_pattern[i].offset);
     }
 
-    const hive::chain::util::decoded_type_data* decoded_index_data_ptr = dtds.get_decoded_type_data<hive::chain::decline_voting_rights_request_index>().get();
-    BOOST_CHECK( decoded_index_data_ptr );
-    BOOST_CHECK( !decoded_index_data_ptr->is_reflected() );
+    const hive::chain::util::decoded_type_data& decoded_index_data = dtds.get_decoded_type_data<hive::chain::decline_voting_rights_request_index>();
+    BOOST_CHECK( !decoded_index_data.reflected );
 
-    const hive::chain::util::decoded_type_data* decoded_type_data_ptr_1 = dtds.get_decoded_type_data<fc::time_point_sec>().get();
-    BOOST_CHECK( decoded_type_data_ptr_1 );
-    BOOST_CHECK( !decoded_type_data_ptr_1->is_reflected() );
+    const hive::chain::util::decoded_type_data& decoded_type_data_tps = dtds.get_decoded_type_data<fc::time_point_sec>();
+    BOOST_CHECK( !decoded_type_data_tps.reflected );
 
-    const hive::chain::util::decoded_type_data* decoded_type_data_ptr_2 = dtds.get_decoded_type_data<fc::erpair< uint64_t, uint64_t >>().get();
-    BOOST_CHECK( decoded_type_data_ptr_2 );
-    BOOST_CHECK( !decoded_type_data_ptr_2->is_reflected() );
+    const hive::chain::util::decoded_type_data& decoded_type_data_fcerpair = dtds.get_decoded_type_data<fc::erpair< uint64_t, uint64_t >>();
+    BOOST_CHECK( !decoded_type_data_fcerpair.reflected );
 
     BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 12 ); // there should be no new types in map, because object is already decoded because index was decoded.
   }
@@ -867,14 +857,13 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
   dtds.register_new_type<fc::ripemd160>();
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 13 );
   {
-    const hive::chain::util::decoded_type_data* non_reflected_type_ptr = dtds.get_decoded_type_data<fc::ripemd160>().get();
-    BOOST_CHECK( non_reflected_type_ptr );
-    BOOST_CHECK( !non_reflected_type_ptr->is_reflected() );
-    BOOST_CHECK_EQUAL( non_reflected_type_ptr->get_checksum(), "686344869324c953019f65bef15816ca48c831d4" );
-    BOOST_CHECK_EQUAL( non_reflected_type_ptr->get_type_id(), "N2fc9ripemd160E" );
-
-    //we shouldn't be able to cast decoded data to reflected type data.
-    BOOST_CHECK( !dynamic_cast<hive::chain::util::reflected_decoded_type_data*>(dtds.get_decoded_type_data<fc::ripemd160>().get()) );
+    const hive::chain::util::decoded_type_data& decoded_non_reflected_type = dtds.get_decoded_type_data<fc::ripemd160>();
+    BOOST_CHECK( !decoded_non_reflected_type.reflected );
+    BOOST_CHECK( !decoded_non_reflected_type.name );
+    BOOST_CHECK( !decoded_non_reflected_type.members );
+    BOOST_CHECK( !decoded_non_reflected_type.enum_values );
+    BOOST_CHECK_EQUAL( decoded_non_reflected_type.checksum, "686344869324c953019f65bef15816ca48c831d4" );
+    BOOST_CHECK_EQUAL( decoded_non_reflected_type.type_id, "N2fc9ripemd160E" );
   }
 
   /*
@@ -884,22 +873,20 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
   dtds.register_new_type<hive::chain::account_object>();
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 );
   {
-    const hive::chain::util::reflected_decoded_type_data* reflected_public_key_type_ptr = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
-                                                                                            (dtds.get_decoded_type_data<hive::protocol::public_key_type>().get());
+    const hive::chain::util::decoded_type_data& decoded_public_key_type = dtds.get_decoded_type_data<hive::protocol::public_key_type>();
 
-    BOOST_CHECK( reflected_public_key_type_ptr );
-    BOOST_CHECK( reflected_public_key_type_ptr->is_reflected() );
-    BOOST_CHECK( !reflected_public_key_type_ptr->is_enum() );
-    BOOST_CHECK( reflected_public_key_type_ptr->get_enum_values().empty() );
+    BOOST_CHECK( decoded_public_key_type.reflected );
+    BOOST_CHECK( !decoded_public_key_type.enum_values );
+    BOOST_CHECK( decoded_public_key_type.members );
+    BOOST_CHECK_EQUAL( decoded_public_key_type.checksum, "8acb3034188086a3630d70c44b1ddb21fe0f8d1f" );
+    BOOST_CHECK_EQUAL( decoded_public_key_type.type_id, "N4hive8protocol15public_key_typeE" );
+    BOOST_CHECK_EQUAL( *decoded_public_key_type.name, "hive::protocol::public_key_type" );
 
-    const hive::chain::util::reflected_decoded_type_data::members_vector& public_key_members = reflected_public_key_type_ptr->get_members();
+    const hive::chain::util::decoded_type_data::members_vector_t& public_key_members = *decoded_public_key_type.members;
 
     BOOST_CHECK( !public_key_members.empty() );
-    BOOST_CHECK_EQUAL( reflected_public_key_type_ptr->get_checksum(), "8acb3034188086a3630d70c44b1ddb21fe0f8d1f" );
-    BOOST_CHECK_EQUAL( reflected_public_key_type_ptr->get_type_id(), "N4hive8protocol15public_key_typeE" );
-    BOOST_CHECK_EQUAL( reflected_public_key_type_ptr->get_type_name(), "hive::protocol::public_key_type" );
 
-    const hive::chain::util::reflected_decoded_type_data::members_vector public_key_members_pattern {{.type = "fc::array<char,33>", .name = "key_data", .offset = 0}};
+    const hive::chain::util::decoded_type_data::members_vector_t public_key_members_pattern {{.type = "fc::array<char,33>", .name = "key_data", .offset = 0}};
     BOOST_CHECK_EQUAL( public_key_members.size(), public_key_members_pattern.size() );
 
     for (size_t i = 0; i < public_key_members_pattern.size(); ++i)
@@ -909,17 +896,14 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
       BOOST_CHECK_EQUAL(public_key_members[i].offset, public_key_members_pattern[i].offset);
     }
 
-    const hive::chain::util::decoded_type_data* non_reflected_array_ptr = dtds.get_decoded_type_data<fc::array<char,33>>().get();
-    BOOST_CHECK( non_reflected_array_ptr );
-    BOOST_CHECK( !non_reflected_array_ptr->is_reflected() );
+    const hive::chain::util::decoded_type_data& decoded_fc_array = dtds.get_decoded_type_data<fc::array<char,33>>();
+    BOOST_CHECK( !decoded_fc_array.reflected );
 
-    const hive::chain::util::reflected_decoded_type_data* reflected_account_object_ptr = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
-                                                                                          (dtds.get_decoded_type_data<hive::chain::account_object>().get());
-    BOOST_CHECK( reflected_account_object_ptr );
-    BOOST_CHECK( reflected_account_object_ptr->is_reflected() );
-    BOOST_CHECK( !reflected_account_object_ptr->is_enum() );
-    BOOST_CHECK( reflected_account_object_ptr->get_enum_values().empty() );
-    BOOST_CHECK_EQUAL( reflected_account_object_ptr->get_members().size(), 53 );
+    const hive::chain::util::decoded_type_data& decoded_account_object = dtds.get_decoded_type_data<hive::chain::account_object>();
+    BOOST_CHECK( decoded_account_object.reflected );
+    BOOST_CHECK( !decoded_account_object.enum_values );
+    BOOST_CHECK( decoded_account_object.members );
+    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 53 );
   }
 
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 ); // decoded types map size shouldn't change.
@@ -934,74 +918,116 @@ BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
   hive::chain::util::decoded_types_data_storage dtds;
   {
     // 1. reflected enum.
-    const hive::chain::util::reflected_decoded_type_data* decoded_witness_schedule_type = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
-                                                                                            (dtds.get_decoded_type_data<hive::chain::witness_object::witness_schedule_type>().get());
+    dtds.register_new_type<hive::chain::witness_object::witness_schedule_type>();
+    const hive::chain::util::decoded_type_data& decoded_witness_schedule_type = dtds.get_decoded_type_data<hive::chain::witness_object::witness_schedule_type>();
+    const std::string decoded_witness_schedule_type_str = fc::json::to_string(decoded_witness_schedule_type);
+    hive::chain::util::decoded_type_data created_decoded_witness_schedule_type(decoded_witness_schedule_type_str);
 
-    const std::string decoded_witness_schedule_type_str = decoded_witness_schedule_type->to_json_string();
-    hive::chain::util::reflected_decoded_type_data created_decoded_witness_schedule_type(fc::json::from_string(decoded_witness_schedule_type_str).get_array());
-
-    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.get_checksum(), decoded_witness_schedule_type->get_checksum());
-    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.get_type_id(), decoded_witness_schedule_type->get_type_id());
-    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.get_type_name(), decoded_witness_schedule_type->get_type_name());
-    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.is_enum(), decoded_witness_schedule_type->is_enum());
-    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.is_reflected(), decoded_witness_schedule_type->is_reflected());
-    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.get_enum_values().size(), decoded_witness_schedule_type->get_enum_values().size());
-    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.get_members().size(), decoded_witness_schedule_type->get_members().size());
-    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.to_json_string(), decoded_witness_schedule_type_str);
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.checksum, decoded_witness_schedule_type.checksum);
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.type_id, decoded_witness_schedule_type.type_id);
+    BOOST_CHECK_EQUAL(*created_decoded_witness_schedule_type.name, *decoded_witness_schedule_type.name);
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.reflected, decoded_witness_schedule_type.reflected);
+    BOOST_CHECK(created_decoded_witness_schedule_type.enum_values);
+    BOOST_CHECK(decoded_witness_schedule_type.enum_values);
+    BOOST_CHECK(!created_decoded_witness_schedule_type.members);
+    BOOST_CHECK(!decoded_witness_schedule_type.members);
+    BOOST_CHECK_EQUAL(created_decoded_witness_schedule_type.enum_values->size(), decoded_witness_schedule_type.enum_values->size());
+    BOOST_CHECK_EQUAL(fc::json::to_string(created_decoded_witness_schedule_type), decoded_witness_schedule_type_str);
   }
   {
     // 2. reflected type.
-    const hive::chain::util::reflected_decoded_type_data* decoded_decline_voting_rights_request_object = dynamic_cast<hive::chain::util::reflected_decoded_type_data*>
-                                                                                                          (dtds.get_decoded_type_data<hive::chain::decline_voting_rights_request_object>().get());
-    const std::string decoded_decline_voting_rights_request_object_str = decoded_decline_voting_rights_request_object->to_json_string();
-    hive::chain::util::reflected_decoded_type_data created_decoded_decline_voting_rights_request_object(fc::json::from_string(decoded_decline_voting_rights_request_object_str).get_array());
+    dtds.register_new_type<hive::chain::decline_voting_rights_request_object>();
+    const hive::chain::util::decoded_type_data& decoded_decline_voting_rights_request_object = dtds.get_decoded_type_data<hive::chain::decline_voting_rights_request_object>();
+    const std::string decoded_decline_voting_rights_request_object_str = fc::json::to_string(decoded_decline_voting_rights_request_object);
+    hive::chain::util::decoded_type_data created_decoded_decline_voting_rights_request_object(decoded_decline_voting_rights_request_object_str);
 
-    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.get_checksum(), decoded_decline_voting_rights_request_object->get_checksum());
-    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.get_type_id(), decoded_decline_voting_rights_request_object->get_type_id());
-    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.get_type_name(), decoded_decline_voting_rights_request_object->get_type_name());
-    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.is_enum(), decoded_decline_voting_rights_request_object->is_enum());
-    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.is_reflected(), decoded_decline_voting_rights_request_object->is_reflected());
-    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.get_enum_values().size(), decoded_decline_voting_rights_request_object->get_enum_values().size());
-    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.get_members().size(), decoded_decline_voting_rights_request_object->get_members().size());
-    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.to_json_string(), decoded_decline_voting_rights_request_object_str);
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.checksum, decoded_decline_voting_rights_request_object.checksum);
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.type_id, decoded_decline_voting_rights_request_object.type_id);
+    BOOST_CHECK_EQUAL(*created_decoded_decline_voting_rights_request_object.name, *decoded_decline_voting_rights_request_object.name);
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.reflected, decoded_decline_voting_rights_request_object.reflected);
+    BOOST_CHECK(!created_decoded_decline_voting_rights_request_object.enum_values);
+    BOOST_CHECK(!decoded_decline_voting_rights_request_object.enum_values);
+    BOOST_CHECK(created_decoded_decline_voting_rights_request_object.members);
+    BOOST_CHECK(decoded_decline_voting_rights_request_object.members);
+    BOOST_CHECK_EQUAL(created_decoded_decline_voting_rights_request_object.members->size(), decoded_decline_voting_rights_request_object.members->size());
+    BOOST_CHECK_EQUAL(fc::json::to_string(created_decoded_decline_voting_rights_request_object), decoded_decline_voting_rights_request_object_str);
   }
   {
     // 3. Non reflected type.
-    const hive::chain::util::decoded_type_data* decoded_time_point_sec = dtds.get_decoded_type_data<fc::time_point_sec>().get();
-    const std::string decoded_time_point_sec_str = decoded_time_point_sec->to_json_string();
-    hive::chain::util::decoded_type_data created_decoded_time_point_sec(fc::json::from_string(decoded_time_point_sec_str).get_array());
+    dtds.register_new_type<fc::time_point_sec>();
+    const hive::chain::util::decoded_type_data& decoded_time_point_sec = dtds.get_decoded_type_data<fc::time_point_sec>();
+    const std::string decoded_time_point_sec_str = fc::json::to_string(decoded_time_point_sec);
+    hive::chain::util::decoded_type_data created_decoded_time_point_sec(decoded_time_point_sec_str);
 
-    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.get_checksum(), decoded_time_point_sec->get_checksum());
-    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.get_type_id(), decoded_time_point_sec->get_type_id());
-    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.is_reflected(), decoded_time_point_sec->is_reflected());
-    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.to_json_string(), decoded_time_point_sec_str);
+    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.checksum, decoded_time_point_sec.checksum);
+    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.type_id, decoded_time_point_sec.type_id);
+    BOOST_CHECK_EQUAL(created_decoded_time_point_sec.reflected, decoded_time_point_sec.reflected);
+    BOOST_CHECK(!created_decoded_time_point_sec.members);
+    BOOST_CHECK(!created_decoded_time_point_sec.enum_values);
+    BOOST_CHECK(!created_decoded_time_point_sec.name);
+    BOOST_CHECK_EQUAL(fc::json::to_string(created_decoded_time_point_sec), decoded_time_point_sec_str);
   }
   {
     // 4. Error while creating  reflected or nonreflected decoded type.
-    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(std::vector<fc::variant>{}), fc::invalid_arg_exception);
-    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(std::vector<fc::variant>{"qwer","asdf", "qwer"}), fc::invalid_arg_exception);
-    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(std::vector<fc::variant>{true, "asdf", "qwer"}), fc::invalid_arg_exception);
-    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(std::vector<fc::variant>{false, "asdf", "qwer", "zxcv"}), fc::invalid_arg_exception);
-
-    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{}), fc::invalid_arg_exception);
-    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{true, "asdf", "qwer", "zxcv", "asdf", fc::variant_object("asdf", 1)}), fc::invalid_arg_exception);
-    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{"qwer", "asdf", "qwer", "zxcv", false, fc::variant_object("asdf", 1)}), fc::invalid_arg_exception);
-    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{true, "asdf", "qwer", "zxcv", false, "asdf"}), fc::invalid_arg_exception);
-    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{true, "asdf", "qwer", "zxcv", false, fc::variant_object("asdf", 1), "asd"}), fc::invalid_arg_exception);
-    BOOST_CHECK_THROW(hive::chain::util::reflected_decoded_type_data(std::vector<fc::variant>{true, "asdf", "qwer", "zxcv", false}), fc::invalid_arg_exception);
+   BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(""), fc::invalid_arg_exception);
+   {
+    fc::variant_object_builder builder;
+    builder("type_id","asdf")("checksum","zxcv");
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(fc::json::to_string(builder.get())), fc::invalid_arg_exception);
+   }
+   {
+    fc::variant_object_builder builder;
+    builder("reflected",false)("type_id","zxcv");
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(fc::json::to_string(builder.get())), fc::invalid_arg_exception);
+   }
+   {
+    fc::variant_object_builder builder;
+    builder("reflected",false)("checksum","asdf");
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(fc::json::to_string(builder.get())), fc::invalid_arg_exception);
+   }
+   {
+    fc::variant_object_builder builder;
+    builder("reflected","zxcv")("type_id","zxcv")("checksum","asdf");
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(fc::json::to_string(builder.get())), fc::bad_cast_exception);
+   }
+   {
+    fc::variant_object_builder builder;
+    builder("reflected",true)("type_id","zxcv")("checksum","asdf")("name","zxcv");
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(fc::json::to_string(builder.get())), fc::invalid_arg_exception);
+   }
+   {
+    fc::variant_object_builder builder;
+    builder("reflected",true)("type_id","zxcv")("checksum","asdf")("name","zxcv")("enum_values", fc::variant_object());
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(fc::json::to_string(builder.get())), fc::bad_cast_exception);
+   }
+   {
+    fc::variant_object_builder builder;
+    builder("reflected",true)("type_id","zxcv")("checksum","asdf")("name","zxcv")("members", fc::variant_object());
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(fc::json::to_string(builder.get())), fc::bad_cast_exception);
+   }
+   {
+    fc::variant_object_builder builder;
+    hive::chain::util::decoded_type_data::members_vector_t members_patters{{.type="zxcv",.name="asdf",.offset=0}};
+    builder("reflected",false)("type_id","zxcv")("checksum","asdf")("name","zxcv")("members", members_patters);
+    BOOST_CHECK_THROW(hive::chain::util::decoded_type_data(fc::json::to_string(builder.get())), fc::invalid_arg_exception);
+   }
   }
   {
     // 5. Generate json by decoded_types_data_storage. Comparing method should return true - data generated by json is the same data which is kept in map.
     const std::string current_decoded_types_data_in_json = dtds.generate_decoded_types_data_json_string();
     const std::string json_pattern = "["
-      "[1,\"N4hive5chain36decline_voting_rights_request_objectE\",\"07a72f6d76870fbab70cd7bbfb8e5b5e92a2bcbc\",\"hive::chain::decline_voting_rights_request_object\",0,"
-        "[[\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\",\"id\",0],[\"hive::protocol::account_name_type\",\"account\",8],[\"fc::time_point_sec\",\"effective_date\",24]]],"
-      "[0,\"N2fc14time_point_secE\",\"caf66a3ac4e50b6f285ada8954de203a54ac98cf\"],"
-      "[0,\"N2fc6erpairImmEE\",\"00b25a6ab8226db3a31e2582dc70e0b8f508ba21\"],"
-      "[0,\"N4hive8protocol17fixed_string_implIN2fc6erpairImmEEEE\",\"e7a2f4780f492fef01378693217d9e7358757dcd\"],"
-      "[0,\"N9chainbase3oidIN4hive5chain36decline_voting_rights_request_objectEEE\",\"cd1883f4c4665b69da64199ce965393405513f21\"],"
-      "[1,\"N4hive5chain14witness_object21witness_schedule_typeE\",\"8826d3384e563df375fae0b2e00e23d61dee90d8\",\"hive::chain::witness_object::witness_schedule_type\",1,"
-        "{\"elected\":0,\"timeshare\":1,\"miner\":2,\"none\":3}]"
+      "{\"name\":\"hive::chain::decline_voting_rights_request_object\",\"members\":["
+        "{\"type\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\",\"name\":\"id\",\"offset\":0},"
+        "{\"type\":\"hive::protocol::account_name_type\",\"name\":\"account\",\"offset\":8},"
+        "{\"type\":\"fc::time_point_sec\",\"name\":\"effective_date\",\"offset\":24}],"
+      "\"type_id\":\"N4hive5chain36decline_voting_rights_request_objectE\",\"checksum\":\"07a72f6d76870fbab70cd7bbfb8e5b5e92a2bcbc\",\"reflected\":true},"
+      "{\"type_id\":\"N2fc14time_point_secE\",\"checksum\":\"caf66a3ac4e50b6f285ada8954de203a54ac98cf\",\"reflected\":false},"
+      "{\"type_id\":\"N2fc6erpairImmEE\",\"checksum\":\"00b25a6ab8226db3a31e2582dc70e0b8f508ba21\",\"reflected\":false},"
+      "{\"type_id\":\"N4hive8protocol17fixed_string_implIN2fc6erpairImmEEEE\",\"checksum\":\"e7a2f4780f492fef01378693217d9e7358757dcd\",\"reflected\":false},"
+      "{\"type_id\":\"N9chainbase3oidIN4hive5chain36decline_voting_rights_request_objectEEE\",\"checksum\":\"cd1883f4c4665b69da64199ce965393405513f21\",\"reflected\":false},"
+      "{\"name\":\"hive::chain::witness_object::witness_schedule_type\",\"enum_values\":["
+      "[\"elected\",0],[\"timeshare\",1],[\"miner\",2],[\"none\",3]],"
+      "\"type_id\":\"N4hive5chain14witness_object21witness_schedule_typeE\",\"checksum\":\"8826d3384e563df375fae0b2e00e23d61dee90d8\",\"reflected\":true}"
       "]";
 
     BOOST_CHECK_EQUAL(current_decoded_types_data_in_json, json_pattern);
@@ -1011,9 +1037,15 @@ BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
   }
   {
     // 6. passing json with should not match to current decoded types map data.
-    const std::string wrong_json_pattern = "[[1,\"N4hive5chain14witness_object21witness_schedule_typeE\",\"8826d3384e563df375fae0b2e00e23d61dee90d5\",\"hive::chain::witness_object::witness_schedule_type\",1,{\"elected\":0,\"timeshare\":1,\"miner\":2,\"none\":3}],[0,\"N9chainbase3oidIN4hive5chain29withdraw_vesting_route_objectEEE\",\"9f9a4d9defc72dbc8bdcdbba04e02e4bd136c3b6\"]]";
+    const std::string wrong_json_pattern = "["
+      "{\"reflected\":true,\"type_id\":\"N4hive5chain14witness_object21witness_schedule_typeE\",\"checksum\":\"8826d3384e563df375fae0b2e00e23d61dee90d5\",\"name\":\"hive::chain::witness_object::witness_schedule_type\","
+        "\"enum_values\":[[\"elected\",0],[\"timeshare\",1],[\"miner\",2],[\"none\",3]]}"
+      "{\"reflected\":false,\"type_id\":\"N9chainbase3oidIN4hive5chain29withdraw_vesting_route_objectEEE\",\"checksum\":\"9f9a4d9defc72dbc8bdcdbba04e02e4bd136c3b6\"}"
+      "]";
+
     const auto response = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(wrong_json_pattern);
     BOOST_CHECK(!response.first);
+
     const std::string response_pattern =
     "Amount of decoded types differs from amount of loaded decoded types. Current amount of decoded types: 6, loaded amount of decoded types: 2\n"
     "Type is in current decoded types map but not in loaded decoded types map: hive::chain::decline_voting_rights_request_object\n"
@@ -1022,70 +1054,77 @@ BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
     "Type is in current decoded types map but not in loaded decoded types map: N4hive8protocol17fixed_string_implIN2fc6erpairImmEEEE\n"
     "Type is in current decoded types map but not in loaded decoded types map: N9chainbase3oidIN4hive5chain36decline_voting_rights_request_objectEEE\n"
     "Reflected type: hive::chain::witness_object::witness_schedule_type has checksum: 8826d3384e563df375fae0b2e00e23d61dee90d8, which diffs from loaded type: 8826d3384e563df375fae0b2e00e23d61dee90d5\n"
-    "Type is in loaded decoded types map but not in current decoded types map:N9chainbase3oidIN4hive5chain29withdraw_vesting_route_objectEEE\n";
+    "Type is in loaded decoded types map but not in current decoded types map: N9chainbase3oidIN4hive5chain29withdraw_vesting_route_objectEEE\n";
+
     BOOST_CHECK_EQUAL(response.second, response_pattern);
   }
   {
     // 7. Pass wrong json or something else than json. Exception should be thrown.
-    BOOST_CHECK_THROW(dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data("asdf"), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data("asdf"), fc::parse_error_exception);
     BOOST_CHECK_THROW(dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(""), fc::invalid_arg_exception);
-    BOOST_CHECK_THROW(dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data("[[2,\"N9chainbase3oidIN4hive5chain29withdraw_vesting_route_objectEEE\",\"9f9a4d9defc72dbc8bdcdbba04e02e4bd136c3b6\"]]"), fc::invalid_arg_exception);
-    BOOST_CHECK_THROW(dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data("[[1,\"ASDFG\",\"QWERTY\",\"ZXCVBN\",2,{\"ZXCVB\":0}]]"), fc::invalid_arg_exception);
   }
+}
+
+template <typename T>
+std::string_view get_decoded_type_checksum(hive::chain::util::decoded_types_data_storage& dtds)
+{
+  dtds.register_new_type<T>();
+  return dtds.get_decoded_type_checksum<T>();
 }
 
 BOOST_AUTO_TEST_CASE( chain_object_checksum )
 {
   hive::chain::util::decoded_types_data_storage dtds;
 
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::account_object>(), "587aea89a3ed83109ade1c4b808ffc1c7d5b96cf" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::account_metadata_object>(), "8afa67ed15888d3f927bcb2b986d172da1f34375" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::account_authority_object>(), "918c06ba905b0b095aa62df1b432e823790df6ba" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::vesting_delegation_object>(), "7a6cd5d88139e0c501e52ad5c26b2def2efd07a0" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::vesting_delegation_expiration_object>(), "6194b9b2563550582ddb573fe52b1e21a4437e3b" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::owner_authority_history_object>(), "9c5112ba809aecc4f87540ac24409b292fa35fa7" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::account_recovery_request_object>(), "cd4d092d7ad8808bdb495fbe7c4f3b5720684ec3" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::change_recovery_account_request_object>(), "38d9aca36a34fd424be5053c89f989f727ecb5f2" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::block_summary_object>(), "5894437d8fbfc5b21a6dd12a6a49c88c5be4b9b7" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::comment_object>(), "4675213b6f61c5050a1669f3202048ea6752169f" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::comment_cashout_ex_object>(), "5bd998eef24ebee5fe5bf1a935956520ad44f0f2" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::comment_vote_object>(), "8ebf568ac759d00ee1d53b456e52edaa3791b56e" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::proposal_object>(), "bfe417071b06c7ea78a1aa42dc54a87e39bced73" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::proposal_vote_object>(), "045fe6cfecd0e66286a513210a177f0266a2fd69" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::hardfork_property_object>(), "eccc5f45ebfe5c8f74e5ea16d1251ff9a8d09d0d" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::convert_request_object>(), "152458a15c66285cd4b040847eb40edbb88a1400" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::collateralized_convert_request_object>(), "4f7ed0cb6ec3349e3b910c907e49ea70820de399" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::escrow_object>(), "fdb1ce7097af1cb3af336ff98a4b344131f581be" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::savings_withdraw_object>(), "2bac6b38b5ffcd66d3222cb76c16f0660b178000" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>(), "51a39bcd4ac2f6848e5f3c73d36fccbe8bbf5cc0" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::feed_history_object>(), "0920ae5e3416aa63d93bd183d8b0097a6042c9e0" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::limit_order_object>(), "c9ecc3d754aa3d6b118ebcc5719dac2089c04c0f" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::withdraw_vesting_route_object>(), "de94693e25f3f1182c39e77cfaff328098b88ba8" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::decline_voting_rights_request_object>(), "07a72f6d76870fbab70cd7bbfb8e5b5e92a2bcbc" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::reward_fund_object>(), "377f79d55fea6d0828d8ac7f22ec6c453b393d2a" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::recurrent_transfer_object>(), "e2ac0aa6c2023129d32b5ab81db2d25f5a6c0ec3" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::pending_required_action_object>(), "3d017c3490841bd5b11c552eac030830d8e1642e" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::pending_optional_action_object>(), "bde29654096d4db8cb4397896685131e50221f5c" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::transaction_object>(), "34c3f519ba27dedbf0bf95657acd753bb62e469c" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::witness_vote_object>(), "7fba3dd9aa976deb4b9233ed2a7ad29204c7f991" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::witness_schedule_object>(), "f942aae63947afa6ff5e60510b49926c72be6fef" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::witness_object>(), "03e1da5feb5e8d88d4a61449a638f6ec0f63b504" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "587aea89a3ed83109ade1c4b808ffc1c7d5b96cf" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_metadata_object>(dtds), "8afa67ed15888d3f927bcb2b986d172da1f34375" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "918c06ba905b0b095aa62df1b432e823790df6ba" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_object>(dtds), "7a6cd5d88139e0c501e52ad5c26b2def2efd07a0" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_expiration_object>(dtds), "6194b9b2563550582ddb573fe52b1e21a4437e3b" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::owner_authority_history_object>(dtds), "9c5112ba809aecc4f87540ac24409b292fa35fa7" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_recovery_request_object>(dtds), "cd4d092d7ad8808bdb495fbe7c4f3b5720684ec3" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::change_recovery_account_request_object>(dtds), "38d9aca36a34fd424be5053c89f989f727ecb5f2" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::block_summary_object>(dtds), "5894437d8fbfc5b21a6dd12a6a49c88c5be4b9b7" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_object>(dtds), "4675213b6f61c5050a1669f3202048ea6752169f" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_ex_object>(dtds), "5bd998eef24ebee5fe5bf1a935956520ad44f0f2" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_vote_object>(dtds), "8ebf568ac759d00ee1d53b456e52edaa3791b56e" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::proposal_object>(dtds), "bfe417071b06c7ea78a1aa42dc54a87e39bced73" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::proposal_vote_object>(dtds), "045fe6cfecd0e66286a513210a177f0266a2fd69" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::hardfork_property_object>(dtds), "eccc5f45ebfe5c8f74e5ea16d1251ff9a8d09d0d" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::convert_request_object>(dtds), "152458a15c66285cd4b040847eb40edbb88a1400" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::collateralized_convert_request_object>(dtds), "4f7ed0cb6ec3349e3b910c907e49ea70820de399" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::escrow_object>(dtds), "fdb1ce7097af1cb3af336ff98a4b344131f581be" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::savings_withdraw_object>(dtds), "2bac6b38b5ffcd66d3222cb76c16f0660b178000" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>(dtds), "51a39bcd4ac2f6848e5f3c73d36fccbe8bbf5cc0" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::feed_history_object>(dtds), "0920ae5e3416aa63d93bd183d8b0097a6042c9e0" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::limit_order_object>(dtds), "c9ecc3d754aa3d6b118ebcc5719dac2089c04c0f" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::withdraw_vesting_route_object>(dtds), "de94693e25f3f1182c39e77cfaff328098b88ba8" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::decline_voting_rights_request_object>(dtds), "07a72f6d76870fbab70cd7bbfb8e5b5e92a2bcbc" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::reward_fund_object>(dtds), "377f79d55fea6d0828d8ac7f22ec6c453b393d2a" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::recurrent_transfer_object>(dtds), "e2ac0aa6c2023129d32b5ab81db2d25f5a6c0ec3" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::pending_required_action_object>(dtds), "3d017c3490841bd5b11c552eac030830d8e1642e" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::pending_optional_action_object>(dtds), "bde29654096d4db8cb4397896685131e50221f5c" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::transaction_object>(dtds), "34c3f519ba27dedbf0bf95657acd753bb62e469c" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::witness_vote_object>(dtds), "7fba3dd9aa976deb4b9233ed2a7ad29204c7f991" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::witness_schedule_object>(dtds), "f942aae63947afa6ff5e60510b49926c72be6fef" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::witness_object>(dtds), "03e1da5feb5e8d88d4a61449a638f6ec0f63b504" );
 
   #ifdef HIVE_ENABLE_SMT
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::smt_token_object>(), "d0560917541f173f8aa06909e8f718a2d502b39d" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::account_regular_balance_object>(), "29676138808502f7a8f16f1df815143dab536814" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::account_rewards_balance_object>(), "ec01d2d1a2f207fb68430d645fe4d43f24d578f7" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::nai_pool_object>(), "de4aac8e6b7f52a1f08e6d8daacdb46275a2bc02" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::smt_token_emissions_object>(), "5cb6a0a11dc7ca3f85a37105502374ad1dfab806" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::smt_contribution_object>(), "53a5133aed8fe290feccc31f88c1251c6841d465" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::smt_ico_object>(), "64caa9ed82fef9b70b246c1e8fd36963a457942b" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::smt_token_object>(dtds), "d0560917541f173f8aa06909e8f718a2d502b39d" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_regular_balance_object>(dtds), "29676138808502f7a8f16f1df815143dab536814" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_rewards_balance_object>(dtds), "ec01d2d1a2f207fb68430d645fe4d43f24d578f7" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::nai_pool_object>(dtds), "de4aac8e6b7f52a1f08e6d8daacdb46275a2bc02" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::smt_token_emissions_object>(dtds), "5cb6a0a11dc7ca3f85a37105502374ad1dfab806" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::smt_contribution_object>(dtds), "53a5133aed8fe290feccc31f88c1251c6841d465" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::smt_ico_object>(dtds), "64caa9ed82fef9b70b246c1e8fd36963a457942b" );
 
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::comment_cashout_object>(), "53daa2994a6ed66b6ba3426b9640a5f372c5d2fa" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(), "d4e768d340b4704e1948a374449ce984c01d5789" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_object>(dtds), "53daa2994a6ed66b6ba3426b9640a5f372c5d2fa" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "d4e768d340b4704e1948a374449ce984c01d5789" );
   #else
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::comment_cashout_object>(), "852b9160388cf2fd59c105d4a27e016206281ef9" );
-  BOOST_CHECK_EQUAL( dtds.get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(), "7d0cd80256810267856bc72e273a360352a00c9b" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_object>(dtds), "852b9160388cf2fd59c105d4a27e016206281ef9" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "7d0cd80256810267856bc72e273a360352a00c9b" );
   #endif
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
