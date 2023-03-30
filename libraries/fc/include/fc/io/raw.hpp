@@ -388,7 +388,7 @@ namespace fc {
         template<typename T, typename C, T(C::*p)>
         inline void operator()( const char* name )const
         { try {
-          if(print_packing())wlog(spaces(get_pack_depth()) + "\"${name}\"", ("name", name));
+          //if(print_packing())wlog(spaces(get_pack_depth()) + "\"${name}\"", ("name", name));
           fc::raw::unpack( s, c.*p );
         } FC_RETHROW_EXCEPTIONS( warn, "Error unpacking field ${field}", ("field",name) ) }
         private:
