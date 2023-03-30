@@ -2478,7 +2478,7 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
   
 
 
-  fc::variant v = fc::json::f   rom_string( json );
+  fc::variant v = fc::json::from_string( json );
 
   std::shared_ptr<hive::chain::full_block_type> fb_ptr = from_variant_to_full_block_ptr(v, block_num);
 
