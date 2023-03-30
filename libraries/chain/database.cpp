@@ -4168,7 +4168,11 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
         auth.account = STEEM_ACCOUNT_NAME;
+#ifdef USE_ALTERNATE_CHAIN_ID
+        auth.owner = authority( 1, STEEM_PUBLIC_KEY, 1, init_public_key, 1 );
+#else
         auth.owner = authority( 1, STEEM_PUBLIC_KEY, 1 );
+#endif
         auth.active = auth.owner;
         auth.posting = auth.owner;
       } );
