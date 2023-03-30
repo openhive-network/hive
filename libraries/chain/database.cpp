@@ -4573,13 +4573,12 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
         auto v = fc::json::to_string( block );
         auto pretty = fc::json::to_pretty_string(v);
 
-        wlog("Merkle check failed mtlk block_num=${block_num} id=${id} block.transaction_merkle_root=${btmr} merkle_root=${mr} block=${block} block_pretty=${block_pretty}",
+        wlog("Merkle check failed mtlk block_num=${block_num} id=${id} block.transaction_merkle_root=${btmr} merkle_root=${mr} block=${block}",
         ("block_num", block_num)
         ("id", full_block->get_block_id())
         ("btmr", block.transaction_merkle_root)
         ("mr", merkle_root)
         ("block", block)
-        ("block_pretty", pretty)
         );
         
 
