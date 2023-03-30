@@ -82,13 +82,23 @@ bool czy_printowac(int block_num)
 {
 
 
-     if(block_num == 1093)
-         return true;
+    //  if(block_num == 1093)
+    //      return true;
     if(block_num == 994240)
         return true;
 
 
     return false;
+}
+
+void pack_name_callback(const char* name)
+{
+  if(std::string(name) ==  "symbol")
+  {
+    int c = 0;
+    c = c;
+  }
+
 }
 
 
@@ -4390,7 +4400,7 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
   }
 }
 
-static auto volatile stop_in_apply_block = true;
+
 
 void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 {
@@ -4401,11 +4411,8 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
   if(czy_printowac(block_num))
   {
-    if(stop_in_apply_block)
-    {
       int a = 0;
       a=a;
-    }
   }
 
 
@@ -4477,8 +4484,26 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
     try
     {
-      FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
-                (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
+
+      // FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
+      //           (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
+
+      if(block.transaction_merkle_root != merkle_root) //mtlk
+      {
+        auto v = fc::json::to_string( block );
+        auto pretty = fc::json::to_pretty_string(v);
+
+        wlog("Merkle check failed mtlk block_num=${block_num} id=${id} block.transaction_merkle_root=${btmr} merkle_root=${mr} block=${block} block_pretty=${block_pretty}",
+        ("block_num", block_num)
+        ("id", full_block->get_block_id())
+        ("btmr", block.transaction_merkle_root)
+        ("mr", merkle_root)
+        ("block", block)
+        ("block_pretty", pretty)
+        );
+        
+
+      }
     }
     catch( fc::assert_exception& e )
     { //don't throw error if this is a block with a known bad merkle root

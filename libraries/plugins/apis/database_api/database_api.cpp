@@ -2384,6 +2384,13 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
 
   // }
 
+
+    while(stop_in_consume_json_block_impl)
+    {
+        int a = 0;
+        a=a;
+    }
+
   if(994240 == block_num)
   {
     wlog("mtlk consume_json_block_impl pid= ${pid}", ("pid", getpid()));
@@ -2411,16 +2418,67 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
   hive::chain::database& db = db_api_impl._db;
   
   std::string json = std::string{ json_block };
-  
+
   if(czy_printowac(block_num))
    {
    
     wlog("In block=${block_num}", ("block_num", block_num));
     wlog("json=${json}", ("json",std::string{ json_block } ));
-//    wlog("signed_block=${signed_block}", ("signed_block", sb));
    }  
 
-  fc::variant v = fc::json::from_string( json );
+//// block 000f2bc0 = F2BC0₁₆ = 994240₁₀
+// json=R"""({
+//     "previous": "000f2bbfcbdad7bb80bc42c476567c750badd90b",
+//     "timestamp": "2016-04-28T23:22:18",
+//     "witness": "steemychicken1",
+//     "transaction_merkle_root": "8195f855f6d54d6856f9a08a08b21bdd6b14472e",
+//     "extensions": [],
+//     "witness_signature": "1f2ce40298d1569ba0f118146f71482ff18afdb02d844321addf3ebd7e970d65a625d4cb65aae4a9c884f896f0c2c6939603287997377d1f2d440d6f09825aab97",
+//     "transactions": [
+//         {
+//             "ref_block_num": 11199,
+//             "ref_block_prefix": 3151485643,
+//             "expiration": "2016-04-28T23:22:45",
+//             "operations": [
+//                 {
+//                     "type": "witness_update_operation",
+//                     "value": {
+//                         "owner": "liondani",
+//                         "url": "https://bitcointalk.org/index.php?topic=1410943.msg14643675#msg14643675",
+//                         "block_signing_key": "STM66crmnX96YMyWUPnFzSkv7DsGESbWaoSGbmoNq4EWDYq2wnwPf",
+//                         "props": {
+//                             "account_creation_fee": {
+//                                 "amount": "1",
+//                                 "precision": 3,
+//                                 "nai": "@@000000021"
+//                             },
+//                             "maximum_block_size": 131072,
+//                             "hbd_interest_rate": 1000
+//                         },
+//                         "fee": {
+//                             "amount": "0",
+//                             "precision": 3,
+//                             "nai": "@@000000021"
+//                         }
+//                     }
+//                 }
+//             ],
+//             "extensions": [],
+//             "signatures": [
+//                 "1f1fd68fd2b2ec919357c8e534d1473a16f5505a7719bbb2a2100478f212f9353272c38b12d1468d1c3eb830f659e80a28a5a985661bb2c79e4acd2ef34bc919b4"
+//             ]
+//         }
+//     ],
+//     "block_id": "000f2bc023d45d15a543cb9bb19b56c25012d15c",
+//     "signing_key": "STM6Wf68LVi22QC9eS8LBWykRiSrKKp5RTWXcNqjh3VPNhiT9xFxx",
+//     "transaction_ids": [
+//         "5cf59b8b633f8e894adef4c8ccd6e2353040ff70"
+//     ]
+// })""";
+  
+
+
+  fc::variant v = fc::json::f   rom_string( json );
 
   std::shared_ptr<hive::chain::full_block_type> fb_ptr = from_variant_to_full_block_ptr(v, block_num);
 

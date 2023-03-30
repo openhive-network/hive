@@ -97,16 +97,38 @@ full_block_type::~full_block_type()
   full_block->decoded_block_storage = std::move(decoded_block_storage);
   if(czy_printowac(block.block_num()))
   {
-    wlog("BEGIN mtlk priniting pack of block_num=${bn}", ("bn", block.block_num()));
+    wlog("BEGIN mtlk essential priniting pack of block_num=${bn}", ("bn", block.block_num()));
     set_print_packing();
   }
   fc::raw::pack(stream, block);
   if(czy_printowac(block.block_num()))
   {
-    wlog("END mtlk priniting pack of block_num=${bn}", ("bn", block.block_num()));
+    wlog("END mtlk essential priniting pack of block_num=${bn}", ("bn", block.block_num()));
     clear_print_packing();
+
   }
+
   full_block->has_uncompressed_block.store(true, std::memory_order_release);
+
+  if(czy_printowac(block.block_num()))
+  {
+    if(full_block)
+    {
+      if(full_block->full_transactions.size())
+      {
+        auto ilp = full_block->full_transactions[0]->is_legacy_pack();
+        if(ilp)
+        {
+          wlog("Is_legacy_pack");
+        }
+        else
+        {
+          wlog("NOT_legacy_pack");
+        }
+      }
+    }
+  }
+  
 //mtlk tutaj zrzut binarny calego blocku, zaznacz tam kolenjne struktury, transakcje
 
   return full_block;
@@ -442,6 +464,9 @@ void full_block_type::decode_block() const
       // block were previously seen as standalone transactions.  If so, we can reuse their data and avoid re-validating the transaction
       const bool use_transaction_cache = fc::time_point::now() - decoded_block_storage->block->timestamp < fc::minutes(1);
       full_transactions[i] = full_transaction_type::create_from_block(decoded_block_storage, i, serialized_transaction, use_transaction_cache);
+      auto ilp = full_transactions[i]->is_legacy_pack();
+      ilp = ilp;
+      
     }
     FC_ASSERT(datastream.remaining() == 0, "Error: data leftover after decoding block");
 
@@ -450,7 +475,52 @@ void full_block_type::decode_block() const
 
     has_unpacked_block.store(true, std::memory_order_release);
 
-  //mtlk pack and display
+    //mtlk pack and display
+    {
+        
+      if(czy_printowac(decoded_block_storage->block->block_num()))
+      {
+
+        
+        auto size = fc::raw::pack_size(decoded_block_storage->block.operator*());
+
+        wlog("BEGIN normal extra mtlk priniting pack of block_num=${bn}", ("bn", decoded_block_storage->block->block_num()));
+        set_print_packing();
+
+        char* temp_buf = new char[size];
+        fc::datastream<char*> stream(temp_buf, size);
+        fc::raw::pack(stream, decoded_block_storage->block.operator*());
+
+        clear_print_packing();
+        wlog("END normal extra mtlk priniting pack of block_num=${bn}", ("bn", decoded_block_storage->block->block_num()));
+        delete temp_buf;
+      }
+        
+        
+        // datastream<size_t> ps;
+        // fc::raw::pack(ps,block );
+        // auto size =  ps.tellp();
+
+        //   decoded_block_storage->uncompressed_block.raw_size = fc::raw::pack_size(block);
+        //     decoded_block_storage->uncompressed_block.raw_bytes.reset(new char[decoded_block_storage->uncompressed_block.raw_size]);
+
+        // // pack the block
+        //   fc::datastream<char*> stream(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size);
+        //   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
+        //   full_block->decoded_block_storage = std::move(decoded_block_storage);
+        //   if(czy_printowac(block.block_num()))
+        //   {
+        //     wlog("BEGIN mtlk priniting pack of block_num=${bn}", ("bn", block.block_num()));
+        //     set_print_packing();
+        //   }
+        //   fc::raw::pack(stream, block);
+        //   if(czy_printowac(block.block_num()))
+        //   {
+        //     wlog("END mtlk priniting pack of block_num=${bn}", ("bn", block.block_num()));
+        //     clear_print_packing();
+        //   }
+
+    }
 
 
   }
