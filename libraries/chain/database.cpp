@@ -154,13 +154,30 @@ bool czy_printowac(int block_num)
 {
 
 
-    //  if(block_num == 1093)
-    //      return true;
-    if(block_num == 994240)
+bool czy_printowac(int block_num)
+{
+    switch(block_num)
+    {  
+      case 1093:
+      case 994240:
+      case 1021529:
+      case 3143833:
+      case 3208405:
+      case 3695672:
+      case 3705111:
+      case 3705120:
+      case 3713940:
+      case 3714132:
+      case 3714567:
+      case 3714588:
+      case 4138790:
+      case 4338089:
+      case 4626205:
+      case 4632595:
         return true;
+  }
 
-
-    return false;
+  return false;
 }
 
 
