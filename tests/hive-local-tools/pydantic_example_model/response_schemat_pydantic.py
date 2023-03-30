@@ -1,7 +1,8 @@
 from __future__ import annotations
-from pydantic import BaseModel, PositiveInt, ValidationError, Json
-from pydantic.generics import GenericModel
 import requests
+
+from pydantic import BaseModel, ValidationError, Json
+from pydantic.generics import GenericModel
 from typing import Generic, TypeVar, Any, Type
 
 from fundamental_schemas_pydantic import (Authority,
@@ -12,10 +13,11 @@ from fundamental_schemas_pydantic import (Authority,
                                           DelayedVotes,
                                           RegexName,
                                           RegexKey,
-                                          HiveDateTime)
+                                          HiveDateTime,
+                                          HiveInt)
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=BaseModel)
 
 
 class HiveResult(GenericModel, Generic[T]):
@@ -35,7 +37,7 @@ class HiveResult(GenericModel, Generic[T]):
 
 
 class AccountItem(BaseModel):
-    id: PositiveInt
+    id: HiveInt
     name: RegexName
     owner: Authority
     active: Authority
@@ -51,23 +53,23 @@ class AccountItem(BaseModel):
     recovery_account: str
     last_account_recovery: HiveDateTime
     reset_account: str
-    comment_count: int
-    lifetime_vote_count: int
-    post_count: int
+    comment_count: HiveInt
+    lifetime_vote_count: HiveInt
+    post_count: HiveInt
     can_vote: bool
     voting_manabar: Manabar
     downvote_manabar: Manabar
     balance: AssetHive
     savings_balance: AssetHive
     hbd_balance: AssetHbd
-    hbd_seconds: int
+    hbd_seconds: HiveInt
     hbd_seconds_last_update: HiveDateTime
     hbd_last_interest_payment: HiveDateTime
     savings_hbd_balance: AssetHbd
-    savings_hbd_seconds: int
+    savings_hbd_seconds: HiveInt
     savings_hbd_seconds_last_update: HiveDateTime
     savings_hbd_last_interest_payment: HiveDateTime
-    savings_withdraw_requests: int
+    savings_withdraw_requests: HiveInt
     reward_hbd_balance: AssetHbd
     reward_hive_balance: AssetHive
     reward_vesting_balance: AssetVests
@@ -78,20 +80,20 @@ class AccountItem(BaseModel):
     vesting_withdraw_rate: AssetVests
     post_voting_power: AssetVests
     next_vesting_withdrawal: HiveDateTime
-    withdrawn: int
-    to_withdraw: int
-    withdraw_routes: int
-    pending_transfers: int
-    curation_rewards: int
-    posting_rewards: int
-    proxied_vsf_votes: list[int]
-    witnesses_voted_for: int
+    withdrawn: HiveInt
+    to_withdraw: HiveInt
+    withdraw_routes: HiveInt
+    pending_transfers: HiveInt
+    curation_rewards: HiveInt
+    posting_rewards: HiveInt
+    proxied_vsf_votes: list[HiveInt]
+    witnesses_voted_for: HiveInt
     last_post: HiveDateTime
     last_root_post: HiveDateTime
     last_post_edit: HiveDateTime
     last_vote_time: HiveDateTime
-    post_bandwidth: int
-    pending_claimed_accounts: int
+    post_bandwidth: HiveInt
+    pending_claimed_accounts: HiveInt
     is_smt: bool
     delayed_votes: list[DelayedVotes]
     governance_vote_expiration_ts: HiveDateTime
@@ -119,3 +121,4 @@ if __name__ == "__main__":
         print(e.json())
 
     print(find_accounts.schema_json(indent=2))
+

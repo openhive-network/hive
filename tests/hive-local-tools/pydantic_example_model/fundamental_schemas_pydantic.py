@@ -1,7 +1,7 @@
-from pydantic import BaseModel, PositiveInt, validator, ConstrainedStr
 from datetime import datetime
-
 import re
+
+from pydantic import BaseModel, PositiveInt, validator, ConstrainedStr, ConstrainedInt
 
 
 class HiveDateTime(datetime):
@@ -13,6 +13,19 @@ class HiveDateTime(datetime):
         except ValueError:
             raise ValueError('date must be in format %Y-%m-%dT%H:%M:%S')
         return v
+
+
+class HiveInt(ConstrainedInt):
+    ge = 0
+
+    @classmethod
+    @validator('hiveformat')
+    def check_int_hive_format(cls, v):
+        try:
+            hive_int = int(v)
+        except ValueError:
+            raise ValueError('That is not int, and cant convert it to int')
+        return hive_int
 
 
 class RegexName(ConstrainedStr):
@@ -80,7 +93,40 @@ class DelayedVotes(BaseModel):
     val: int
 
 
+class HardForkVersion(ConstrainedStr):
+    regex = re.compile(r'^(?:(?:[1-9][0-9]*)|0)\.[0-9]+$')
 
 
+class Hex(ConstrainedStr):
+    pass
+
+
+class Sha256(ConstrainedStr):
+    regex = re.compile(r'^[0-9a-fA-F]*$')
+    min_length = 64
+    max_length = 64
+
+
+class HiveVersion(BaseModel):
+    blockchain_version: HardForkVersion
+    hive_revision: Hex
+    fc_revision: Hex
+    chain_id: Sha256
+    node_type: str  # constr(reqex=r'^(mainnet|testnet|mirrornet)$')
+
+
+class HbdExchangeRate(BaseModel):
+    """
+    Need to get more information
+    """
+    pass
+
+
+class LegacyAssetHbd(ConstrainedStr):
+    regex = re.compile(r'^[0-9]+\.[0-9]{3} (?:HBD|TBD)$')
+
+    @staticmethod
+    def symbol():
+        pass
 
 
