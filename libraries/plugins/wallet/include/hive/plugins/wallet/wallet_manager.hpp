@@ -1,7 +1,5 @@
 #pragma once
 
-#include <hive/protocol/transaction.hpp>
-
 #include <hive/plugins/wallet/wallet_api.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/filesystem/path.hpp>
@@ -40,17 +38,6 @@ public:
    /// @see wallet_manager::set_timeout(const std::chrono::seconds& t)
    /// @param secs The timeout in seconds.
    void set_timeout(int64_t secs) { set_timeout(std::chrono::seconds(secs)); }
-      
-   /// Sign transaction with the private keys specified via their public keys.
-   /// Use chain_controller::get_required_keys to determine which keys are needed for txn.
-   /// @param txn the transaction to sign.
-   /// @param keys the public keys of the corresponding private keys to sign the transaction with
-   /// @param id the chain_id to sign transaction with.
-   /// @return txn signed
-   /// @throws fc::exception if corresponding private keys not found in unlocked wallets
-   hive::protocol::signed_transaction sign_transaction(const hive::protocol::signed_transaction& txn, const flat_set<public_key_type>& keys,
-                                             const hive::protocol::chain_id_type& id);
-
 
    /// Sign digest with the private keys specified via their public keys.
    /// @param digest the digest to sign.

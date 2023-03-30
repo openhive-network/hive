@@ -6,7 +6,7 @@ add_library( wallet_plugin
              wallet_manager.cpp
              ${HEADERS} )
 
-target_link_libraries( wallet_plugin hive_protocol hive_chain appbase )
+target_link_libraries( wallet_plugin appbase )
 target_include_directories( wallet_plugin PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 if( CLANG_TIDY_EXE )

@@ -5,7 +5,7 @@
 #include <fc/real128.hpp>
 #include <fc/crypto/base58.hpp>
 
-using namespace std;
+#include<vector>
 
 namespace hive { namespace plugins { namespace wallet {
 
@@ -13,7 +13,7 @@ typedef uint16_t transaction_handle_type;
 
 struct wallet_data
 {
-   vector<char>              cipher_keys; /** encrypted keys */
+   std::vector<char>              cipher_keys; /** encrypted keys */
 };
 
 namespace detail {
@@ -187,6 +187,12 @@ struct plain_keys {
 };
 
 } } }
+
+namespace fc
+{
+  void from_variant( const fc::variant& var, hive::plugins::wallet::wallet_data& vo );
+  void to_variant( const hive::plugins::wallet::wallet_data& var, fc::variant& vo );
+}
 
 FC_REFLECT( hive::plugins::wallet::wallet_data, (cipher_keys) )
 
