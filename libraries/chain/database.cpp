@@ -150,8 +150,70 @@ void clear_print_packing()
 
 
 
-bool czy_printowac(int block_num)
+void print_transaction_bytes(const char* tag, int block_num, const char * d, int len)
 {
+  std::string horizontally;
+  for(size_t i =0 ; i < len; ++i)
+  {
+      //char mem = memory.data()[i];
+      char ser = d[i];
+      horizontally += tohex(ser);
+
+      std::string err;
+      // if(mem != ser)
+      // {
+      //     err= " error!";
+      // }
+
+
+      //std::string mems;mems += mem;
+      std::string sers; sers += ser;
+
+      //mems = to_printable(mems);
+      sers = to_printable(sers);
+
+      wlog("${ser} ${serhex} ${i}", 
+      ("ser", sers)
+        ("serhex", tohex(ser))
+        ("i",i)
+      );
+
+      // wlog("${mem}${ser} ${memhex}${serhex} ${i} ${err}", 
+      // ("mem", mems)
+      // ("ser", sers)
+      // ("memhex", tohex(mem) )
+      //  ("serhex", tohex(ser))
+      //  ("i",i)
+      //  ("err", err) 
+      // );
+
+      // wlog("${mem}${ser} ${memhex}${serhex}${err}", 
+      // ("mem", mem)
+      // ("ser", ser)
+      // ("memhex", tohex(mem) )
+      // ("serhex", tohex(ser))
+      // ("err", err) 
+      // );
+      
+      // if(memory.data()[i] != serialized_transaction.begin[i])
+      // {
+      //   wlog("error ", ("i", i));
+      // }
+  }
+
+  wlog("tag=${tag} block_num=${block_num}=horizontally=${h}", ("tag", tag) ("block_num", block_num)("h", horizontally));
+
+}
+
+void print_sha(const char* tag, int block_num, const char * d, int len)
+{
+
+    auto merkle_digest = hive::protocol::digest_type::hash(d, len);
+    wlog("tag=${tag} print_sha merkle_digest=${merkle_digest}", ("tag", tag) ("merkle_digest", merkle_digest));
+    wlog("transaction_bytes");
+    print_transaction_bytes(tag, block_num, d, len);
+}
+
 
 
 bool czy_printowac(int block_num)

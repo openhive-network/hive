@@ -4,6 +4,8 @@
 
 #include <fc/io/json.hpp>
 
+void print_sha(const char* tag, int block_num, const char * d, int len);
+
 bool czy_printowac(int block_num);
 void set_print_packing();
 void clear_print_packing();
@@ -459,6 +461,17 @@ void full_block_type::decode_block() const
       serialized_transaction.transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
       fc::raw::unpack(datastream, decoded_block_storage->block->transactions[i].signatures);
       serialized_transaction.signed_transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
+
+
+      if(czy_printowac(decoded_block_storage->block->block_num()))
+      {
+        wlog("original_full_transaction_type::get_merkle_digest block_num=${block_num} memorybinsize=${size}", ("block_num", decoded_block_storage->block->block_num())("size", serialized_transaction.signed_transaction_end - serialized_transaction.begin));
+        print_sha(
+          "original_serialized_transaction", 
+          decoded_block_storage->block->block_num(), 
+          serialized_transaction.begin, 
+          serialized_transaction.signed_transaction_end - serialized_transaction.begin);
+      }
     
       // if we're in live mode (as opposed to not syncing/replaying), use the transaction cache to see if transactions in this
       // block were previously seen as standalone transactions.  If so, we can reuse their data and avoid re-validating the transaction

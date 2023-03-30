@@ -9,6 +9,23 @@
 bool czy_printowac(int block_num);
 char to_hex_digit(int c);
 std::string binary2str( const char* d, uint32_t dlen );
+std::string to_printable(const std::string& c);
+
+
+void print_sha(const char* tag, int block_num, const char * d, int len);
+
+
+ 
+
+std::string tohex(char c)
+{
+  std::string ou;
+  char hex_digit = to_hex_digit((c >> 4) & 0xf);
+  ou += hex_digit;
+  hex_digit = to_hex_digit(c & 0xf); ou += hex_digit;
+  return ou;
+}
+
 
 
 namespace fc {
@@ -66,39 +83,9 @@ const signed_transaction& full_transaction_type::get_transaction() const
   }
 }
 
-namespace {
-
-  const int arraySize = 231;
-
-  std::array<char,arraySize> memory= {'\xbf','\x2b','\xcb','\xda','\xd7','\xbb','\x45','\x9b','\x22','\x57','\x01','\x0b','\x08','\x6c','\x69','\x6f','\x6e','\x64','\x61','\x6e','\x69','\x47','\x68','\x74','\x74','\x70','\x73','\x3a','\x2f','\x2f','\x62','\x69','\x74','\x63','\x6f','\x69','\x6e','\x74','\x61','\x6c','\x6b','\x2e','\x6f','\x72','\x67','\x2f','\x69','\x6e','\x64','\x65','\x78','\x2e','\x70','\x68','\x70','\x3f','\x74','\x6f','\x70','\x69','\x63','\x3d','\x31','\x34','\x31','\x30','\x39','\x34','\x33','\x2e','\x6d','\x73','\x67','\x31','\x34','\x36','\x34','\x33','\x36','\x37','\x35','\x23','\x6d','\x73','\x67','\x31','\x34','\x36','\x34','\x33','\x36','\x37','\x35','\x02','\x9f','\x3c','\xc5','\x5b','\x72','\x77','\x26','\xfd','\x2a','\xd9','\x95','\xc4','\xcd','\x7b','\xae','\x83','\xdf','\xc7','\xe1','\x45','\x82','\x04','\x0b','\x76','\xc7','\xc3','\x06','\x05','\x2d','\xb4','\x7d','\x84','\x01','\x00','\x00','\x00','\x00','\x00','\x00','\x00','\x03','\x53','\x54','\x45','\x45','\x4d','\x00','\x00','\x00','\x00','\x02','\x00','\xe8','\x03','\x00','\x00','\x00','\x00','\x00','\x00','\x00','\x00','\x03','\x53','\x54','\x45','\x45','\x4d','\x00','\x00','\x00','\x01','\x1f','\x1f','\xd6','\x8f','\xd2','\xb2','\xec','\x91','\x93','\x57','\xc8','\xe5','\x34','\xd1','\x47','\x3a','\x16','\xf5','\x50','\x5a','\x77','\x19','\xbb','\xb2','\xa2','\x10','\x04','\x78','\xf2','\x12','\xf9','\x35','\x32','\x72','\xc3','\x8b','\x12','\xd1','\x46','\x8d','\x1c','\x3e','\xb8','\x30','\xf6','\x59','\xe8','\x0a','\x28','\xa5','\xa9','\x85','\x66','\x1b','\xb2','\xc7','\x9e','\x4a','\xcd','\x2e','\xf3','\x4b','\xc9','\x19','\xb4'};
-
-void print_sha(const char* tag, const char * d, int len)
-{
-
-    auto merkle_digest = hive::protocol::digest_type::hash(d, len);
-    wlog("tag=${tag} print_sha merkle_digest=${merkle_digest}", ("tag", tag) ("merkle_digest", merkle_digest));
-
-}
 
 
 
- char to_hex_digit(int c)
- {
-     if(c < 10)
-       return c+'0';
-     return 'a' + c -10;
- }
- 
-
-std::string tohex(char c)
-{
-  std::string ou;
-  char hex_digit = to_hex_digit((c >> 4) & 0xf);
-  ou += hex_digit;
-  hex_digit = to_hex_digit(c & 0xf); ou += hex_digit;
-  return ou;
-}
-}
 
 
 const hive::protocol::digest_type& full_transaction_type::get_merkle_digest(int block_num) const
@@ -110,30 +97,40 @@ const hive::protocol::digest_type& full_transaction_type::get_merkle_digest(int 
     {
       if(czy_printowac(block_num))
       {
-        print_sha("memory", memory.data(), arraySize);
+        //print_sha("memory", memory.data(), arraySize);
 
-        for(size_t i =0 ; i < arraySize; ++i)
+        for(size_t i =0 ; i < (serialized_transaction.signed_transaction_end - serialized_transaction.begin); ++i)
         {
-            char mem = memory.data()[i];
+            //char mem = memory.data()[i];
             char ser = serialized_transaction.begin[i];
             std::string err;
             
-            if(mem != ser)
-            {
-                err= " error!";
-            }
+            // if(mem != ser)
+            // {
+            //     err= " error!";
+            // }
 
-            std::string mems;mems += (mem);
+
+            //std::string mems;mems += mem;
             std::string sers; sers += ser;
 
-            wlog("${mem}${ser} ${memhex}${serhex} ${i} ${err}", 
-            ("mem", mems)
+            //mems = to_printable(mems);
+            sers = to_printable(sers);
+
+            wlog("${ser} ${serhex} ${i}", 
             ("ser", sers)
-            ("memhex", tohex(mem) )
              ("serhex", tohex(ser))
              ("i",i)
-             ("err", err) 
-                        );
+            );
+
+            // wlog("${mem}${ser} ${memhex}${serhex} ${i} ${err}", 
+            // ("mem", mems)
+            // ("ser", sers)
+            // ("memhex", tohex(mem) )
+            //  ("serhex", tohex(ser))
+            //  ("i",i)
+            //  ("err", err) 
+            // );
 
             // wlog("${mem}${ser} ${memhex}${serhex}${err}", 
             // ("mem", mem)
@@ -159,17 +156,21 @@ const hive::protocol::digest_type& full_transaction_type::get_merkle_digest(int 
       {
         wlog("full_transaction_type::get_merkle_digest block_num=${block_num} memorybinsize=${size}", ("block_num", block_num)("size", serialized_transaction.signed_transaction_end - serialized_transaction.begin));
 
-        print_sha("serialized_transaction", serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
+        print_sha(
+          "serialized_transaction",
+          block_num,
+          serialized_transaction.begin,
+          serialized_transaction.signed_transaction_end - serialized_transaction.begin);
 
       auto ser_tra_len = serialized_transaction.signed_transaction_end - serialized_transaction.begin;
        std::string ou = binary2str( serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin ) ;
        wlog("ser_tra_len=${ser_tra_len} ${ou}", ("ou", ou)("ser_tra_len",ser_tra_len));
 
-       ou = binary2str( memory.data(), arraySize) ;
-       wlog("memory.data() ${ou}", ("ou", ou));
+       //ou = binary2str( memory.data(), arraySize) ;
+       //wlog("memory.data() ${ou}", ("ou", ou));
 
        wlog("full_transaction_type::get_merkle_digest merkle_digest=${merkle_digest}", ("merkle_digest", merkle_digest));
-        print_sha("memory", memory.data(), arraySize);
+        //print_sha("memory", memory.data(), arraySize);
 
       }
 
