@@ -91,15 +91,6 @@ bool czy_printowac(int block_num)
     return false;
 }
 
-void pack_name_callback(const char* name)
-{
-  if(std::string(name) ==  "symbol")
-  {
-    int c = 0;
-    c = c;
-  }
-
-}
 
 
 namespace hive { namespace chain {

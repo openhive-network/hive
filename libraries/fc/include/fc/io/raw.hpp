@@ -20,7 +20,15 @@
 #include <map>
 #include <deque>
 
-void pack_name_callback(const char* name);
+inline void pack_name_callback(const char* name)
+{
+  if(std::string(name) ==  "symbol")
+  {
+    int c = 0;
+    c = c;
+  }
+
+}
 
 inline std::string spaces(int n)
 {
