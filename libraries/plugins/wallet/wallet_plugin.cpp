@@ -26,10 +26,6 @@ void wallet_plugin::set_program_options(boost::program_options::options_descript
           "Timeout for unlocked wallet in seconds (default 900 (15 minutes)). "
           "Wallets will automatically lock after specified number of seconds of inactivity. "
           "Activity is defined as any wallet command e.g. list-wallets.")
-         ("yubihsm-url", bpo::value<string>()->value_name("URL"),
-          "Override default URL of http://localhost:12345 for connecting to yubihsm-connector")
-         ("yubihsm-authkey", bpo::value<uint16_t>()->value_name("key_num"),
-          "Enables YubiHSM support using given Authkey")
          ;
 }
 
