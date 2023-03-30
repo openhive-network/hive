@@ -1,7 +1,5 @@
 #include <hive/plugins/wallet/wallet_plugin.hpp>
 
-#include <hive/chain/database_exceptions.hpp>
-
 #include <boost/filesystem.hpp>
 #include <chrono>
 
@@ -44,7 +42,7 @@ void wallet_plugin::plugin_initialize(const boost::program_options::variables_ma
       }
       if (options.count("unlock-timeout")) {
          auto timeout = options.at("unlock-timeout").as<int64_t>();
-         HIVE_ASSERT(timeout > 0, hive::chain::invalid_lock_timeout_exception, "Please specify a positive timeout ${t}", ("t", timeout));
+         FC_ASSERT(timeout > 0, "Please specify a positive timeout ${t}", ("t", timeout));
          std::chrono::seconds t(timeout);
          wallet_manager_ptr->set_timeout(t);
       }
