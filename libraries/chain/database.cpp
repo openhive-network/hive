@@ -5378,13 +5378,13 @@ void database::update_global_dynamic_data( const signed_block& b )
             if( head_block_num() - w.last_confirmed_block_num  > HIVE_WITNESS_SHUTDOWN_THRESHOLD )
             {
               w.signing_key = public_key_type();
-#ifdef IS_TEST_NET
+#ifdef USE_ALTERNATE_CHAIN_ID
               if( configuration_data.get_generate_missed_block_operations() )
 #endif
                 push_virtual_operation( shutdown_witness_operation( w.owner ) );
             }
           }
-#ifdef IS_TEST_NET
+#ifdef USE_ALTERNATE_CHAIN_ID
           if( configuration_data.get_generate_missed_block_operations() )
 #endif
             push_virtual_operation( producer_missed_operation( w.owner ) );

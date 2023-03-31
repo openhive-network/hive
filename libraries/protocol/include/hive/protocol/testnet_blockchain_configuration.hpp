@@ -63,7 +63,12 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     std::array< uint32_t, HIVE_NUM_HARDFORKS + 1> hf_times = {};
     fc::optional<uint64_t> init_supply, hbd_init_supply;
     // Whether we want producer_missed_operation & shutdown_witness_operation vops generated.
-    bool generate_missed_block_operations = false;
+    bool generate_missed_block_operations = 
+#ifdef IS_TEST_NET
+      false; // Don't generate for testnet node (unless overridden in e.g. unit test).
+#else
+      true; // Do generate for other non-mainnet nodes.
+#endif // IS_TEST_NET
     // How many blocks is witness allowed to miss before it is being shut down.
     uint16_t witness_shutdown_threshold = 28800; // aka HIVE_BLOCKS_PER_DAY
 
