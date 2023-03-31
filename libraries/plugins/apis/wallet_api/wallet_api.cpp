@@ -19,6 +19,7 @@ class wallet_api_impl
     DECLARE_API_IMPL
     (
       (create)
+      (open)
     )
 
     wallet_manager& _wallet_mgr;
@@ -27,6 +28,11 @@ class wallet_api_impl
 DEFINE_API_IMPL( wallet_api_impl, create )
 {
   return { _wallet_mgr.create( args.wallet_name ) };
+}
+
+DEFINE_API_IMPL( wallet_api_impl, open )
+{
+  _wallet_mgr.open( args.wallet_name );
 }
 
 } // detail
@@ -40,6 +46,7 @@ wallet_api::~wallet_api() {}
 
 DEFINE_LOCKLESS_APIS( wallet_api,
   (create)
+  (open)
   )
 
 } } } // hive::plugins::wallet_api
