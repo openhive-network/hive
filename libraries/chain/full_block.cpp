@@ -678,6 +678,17 @@ uint32_t full_block_type::get_uncompressed_block_size() const
   hive::protocol::serialization_mode_controller::pack_guard guard(hive::protocol::pack_type::legacy);
 
   vector<digest_type>::size_type current_number_of_hashes = ids.size();
+
+  if(czy_printowac(block_num))
+  {
+    wlog("current_number_of_hashes=${cnh}", ("cnh", current_number_of_hashes));
+    for (const auto& id : ids)
+    {
+      wlog("transaction_merkle_digest=${tmd}", ("tmd", id));
+    }
+  }
+
+
   while (current_number_of_hashes > 1)
   {
     // hash ID's in pairs
@@ -693,7 +704,10 @@ uint32_t full_block_type::get_uncompressed_block_size() const
   }
 
   if(czy_printowac(block_num))
+  {
     wlog("Inside compute_merkle_root block_num=${block_num} ids[0]=${ids0}", ("block_num", block_num)("ids0", ids[0]));
+    wlog("Returning checksum_type::hash(ids[0])=${cth}", ("cth" ,checksum_type::hash(ids[0])));
+  }
 
   return checksum_type::hash(ids[0]);
 }

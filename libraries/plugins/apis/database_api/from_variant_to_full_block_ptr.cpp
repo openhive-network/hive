@@ -29,10 +29,12 @@ std::shared_ptr<hive::chain::full_block_type> from_variant_to_full_block_ptr(con
 
   fc::from_variant( v, sb );
 
-  if(block_num_debug == 994240)
+  if(block_num_debug == 994240 || block_num_debug == 1021529)
   {
     auto& op = sb.transactions[0].operations[0].get<hive::protocol::witness_update_operation>();
     op.props.account_creation_fee.symbol.ser = 0x4d4545545301;
+    //4d 45 45 54 53   03 
+
   }
 
 
