@@ -171,6 +171,17 @@ bool czy_printowac(int block_num)
       case 4338089:
       case 4626205:
       case 4632595:
+
+      case 3705111:
+      case 3705120:
+      case 3713940:
+      case 3714132:
+      case 3714567:
+      case 3714588:
+      case 4138790:
+
+
+
         return true;
   }
 
