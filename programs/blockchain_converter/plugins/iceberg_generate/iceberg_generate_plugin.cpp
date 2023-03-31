@@ -151,7 +151,9 @@ namespace detail {
 
     uint32_t gpo_interval = 0;
 
-    boost::container::flat_set<hp::account_name_type> all_accounts;
+    boost::container::flat_set<hp::account_name_type> all_accounts = {
+      HIVE_MINER_ACCOUNT, HIVE_NULL_ACCOUNT, HIVE_TEMP_ACCOUNT, HIVE_INIT_MINER_NAME
+    };
     boost::container::flat_set<author_and_permlink_hash_t> all_permlinks;
 
     const auto init_start_block_num = start_block_num;
