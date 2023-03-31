@@ -16,15 +16,19 @@ namespace detail
 
 using plugins::json_rpc::void_type;
 
-struct create_args
+struct wallet_args
 {
   std::string wallet_name;
 };
 
+using create_args = wallet_args;
 struct create_return
 {
   std::string password;
 };
+
+using open_args   = wallet_args;
+using open_return = void_type;
 
 class wallet_api
 {
@@ -34,6 +38,7 @@ class wallet_api
 
     DECLARE_API(
       (create)
+      (open)
       )
 
   private:
@@ -42,5 +47,5 @@ class wallet_api
 
 } } } // hive::plugins::wallet_api
 
-FC_REFLECT( hive::plugins::wallet_api::create_args, (wallet_name) )
+FC_REFLECT( hive::plugins::wallet_api::wallet_args, (wallet_name) )
 FC_REFLECT( hive::plugins::wallet_api::create_return, (password) )
