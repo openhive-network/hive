@@ -804,10 +804,15 @@ namespace hive { namespace chain {
 
     std::shared_ptr< std::thread > queue_filler_thread;
 
-    BOOST_SCOPE_EXIT( &queue_filler_thread ) {
+    BOOST_SCOPE_EXIT( &queue_filler_thread, &stop_requested, &block_queue_condition ) {
       ilog("Queue filler thread is joining.");
       if( queue_filler_thread )
+      {
+        stop_requested = true;
+        block_queue_condition.notify_one();
         queue_filler_thread->join();
+      }
+      ilog("Queue filler thread was joined.");
     } BOOST_SCOPE_EXIT_END
 
     queue_filler_thread = std::make_shared<std::thread>([&]() {
