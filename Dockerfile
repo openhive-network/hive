@@ -44,14 +44,6 @@ WORKDIR /home/hived_admin
 # Install additionally packages located in user directory
 RUN /usr/local/src/scripts/setup_ubuntu.sh --user
 
-#docker build --target=ci-base-image-5m -t registry.gitlab.syncad.com/hive/hive/ci-base-image-5m:ubuntu20.04-xxx -f Dockerfile .
-FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS ci-base-image-5m
-
-USER hived
-RUN  mkdir -p /home/hived/datadir/blockchain && \
-  wget -c https://gtg.openhive.network/get/blockchain/block_log.5M --output-document=/home/hived/datadir/blockchain/block_log
-USER hived_admin
-
 FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS build
 
 ARG BUILD_HIVE_TESTNET=OFF
@@ -107,7 +99,10 @@ SHELL ["/bin/bash", "-c"]
 USER hived
 WORKDIR /home/hived
 
-RUN mkdir -p /home/hived/datadir/ && mkdir /home/hived/shm_dir/
+RUN mkdir -p /home/hived/bin && \
+    mkdir /home/hived/shm_dir && \
+    mkdir /home/hived/datadir && \
+    chown -Rc hived:users /home/hived/
 
 COPY --from=build --chown=hived:users \
   /home/hived_admin/build/programs/hived/hived \
@@ -147,19 +142,3 @@ EXPOSE ${WS_PORT}
 EXPOSE ${HTTP_PORT}
 # Port specific to HTTP cli_wallet server
 EXPOSE ${CLI_WALLET_PORT}
-
-# Hardcoded as not supported yet (to be eliminated at all together with data image target)
-FROM registry.gitlab.syncad.com/hive/hive/ci-base-image-5m:ubuntu22.04-2 AS block_log_5m_source
-
-FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-$BUILD_IMAGE_TAG as data
-
-COPY --from=block_log_5m_source --chown=hived:users /home/hived/datadir /home/hived/datadir
-ADD --chown=hived:users ./docker/config_5M.ini /home/hived/datadir/config.ini
-
-RUN "/home/hived_admin/docker_entrypoint.sh" --force-replay --stop-replay-at-block=5000000 --exit-before-sync
-
-ENTRYPOINT [ "/home/hived_admin/docker_entrypoint.sh" ]
-
-# default command line to be passed for this version (which should be stopped at 5M)
-CMD ["--replay-blockchain", "--stop-replay-at-block=5000000"]
-
