@@ -6,7 +6,7 @@ add_library( witness_plugin
              ${HEADERS}
            )
 
-target_link_libraries( witness_plugin p2p_plugin chain_plugin rc_plugin appbase hive_chain hive_utilities hive_utilities )
+target_link_libraries( witness_plugin p2p_plugin chain_plugin hive_protocol rc_plugin appbase hive_chain hive_utilities hive_utilities )
 target_include_directories( witness_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 

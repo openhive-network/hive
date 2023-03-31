@@ -7,12 +7,18 @@
 
 #include <appbase/application.hpp>
 
+#include <hive/protocol/testnet_blockchain_configuration.hpp>
+
 #define HIVE_WITNESS_PLUGIN_NAME "witness"
 
 #define RESERVE_RATIO_PRECISION ((int64_t)10000)
 #define RESERVE_RATIO_MIN_INCREMENT ((int64_t)5000)
 
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define WITNESS_CUSTOM_OP_BLOCK_LIMIT (configuration_data.get_witness_custom_op_block_limit(5))
+#else
 #define WITNESS_CUSTOM_OP_BLOCK_LIMIT 5
+#endif
 
 namespace hive { namespace plugins { namespace witness {
 
