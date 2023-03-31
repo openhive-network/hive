@@ -75,6 +75,7 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     fc::optional<fc::microseconds> min_root_comment_interval;
     fc::optional<fc::microseconds> min_reply_interval;
     fc::optional<fc::microseconds> min_comment_edit_interval;
+    fc::optional<uint64_t>         witness_custom_op_block_limit;
 
     public:
       configuration();
@@ -106,6 +107,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       const fc::microseconds& get_min_reply_interval( const fc::microseconds& default_value )const;
       void set_min_comment_edit_interval( const fc::microseconds& time );
       const fc::microseconds& get_min_comment_edit_interval( const fc::microseconds& default_value )const;
+      void set_witness_custom_op_block_limit( uint64_t value );
+      uint64_t get_witness_custom_op_block_limit( uint64_t default_value )const;
 
       uint32_t get_hive_reverse_auction_window_seconds() const { return hive_reverse_auction_window_seconds; }
       uint32_t get_hive_early_voting_seconds() const { return hive_early_voting_seconds; }

@@ -135,6 +135,19 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     return default_value;
   }
 
+  void configuration::set_witness_custom_op_block_limit( uint64_t value )
+  {
+    witness_custom_op_block_limit = value;
+  }
+
+  uint64_t configuration::get_witness_custom_op_block_limit( uint64_t default_value )const
+  {
+    if( witness_custom_op_block_limit.valid() )
+      return *witness_custom_op_block_limit;
+
+    return default_value;
+  }
+
   configuration::configuration()
   {
     hive_initminer_key = get_default_initminer_private_key();

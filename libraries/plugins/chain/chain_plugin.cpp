@@ -949,6 +949,9 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     if( alternate_chain_spec.get_object().contains("min_comment_edit_interval") )
       configuration_data.set_min_comment_edit_interval( fc::seconds( alternate_chain_spec["min_comment_edit_interval"].as< uint64_t >() ) );
 
+    if( alternate_chain_spec.get_object().contains("witness_custom_op_block_limi") )
+      configuration_data.set_witness_custom_op_block_limit( alternate_chain_spec["witness_custom_op_block_limi"].as< uint64_t >() );
+
     std::vector< string > init_witnesses;
     if( alternate_chain_spec.get_object().contains("init_witnesses") )
       init_witnesses = alternate_chain_spec["init_witnesses"].as< std::vector< string > >();
