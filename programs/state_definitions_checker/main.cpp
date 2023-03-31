@@ -90,7 +90,6 @@ void do_job()
     dtds.register_new_type<hive::plugins::rc::rc_pool_object>();
     dtds.register_new_type<hive::plugins::rc::rc_stats_object>();
     dtds.register_new_type<hive::plugins::rc::rc_pending_data>();
-    dtds.register_new_type<hive::plugins::rc::rc_account_object>();
     dtds.register_new_type<hive::plugins::rc::rc_direct_delegation_object>();
     dtds.register_new_type<hive::plugins::rc::rc_usage_bucket_object>();
     dtds.register_new_type<hive::plugins::reputation::reputation_object>();

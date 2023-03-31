@@ -206,7 +206,6 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_resource_param_object>(dtds), "a283de5a95d6026c37e266f868836a4728cd1efd" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_pool_object>(dtds), "0de3692294cd21cdc895748f8d77cabc00cc11eb" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_pending_data>(dtds), "d01fb8e966668911fcccfeb69b2c409c4aa6647a" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_account_object>(dtds), "95a7ff2b1c6582f52c3996e6f7052bfc54bd0505" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_direct_delegation_object>(dtds), "4125192524090b813c6518262992af4248a368a9" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_usage_bucket_object>(dtds), "506973e9daf1e436612f27518c048c2e74e72603" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::reputation::reputation_object>(dtds), "dd76a68d64569b1a4b02d0910431e9c902656f11" );
