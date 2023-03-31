@@ -58,9 +58,23 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+if [ -f "$DATA_CACHE/datadir/status" ];
+then
+    echo "Previous replay exit code"
+    status=$(cat "$DATA_CACHE/datadir/status")
+    echo "$status"
+    if [ "$status" -eq 0 ];
+    then
+        echo "Previous replay datadir is valid, exiting"
+        exit 0
+    fi
+fi
+echo "Didnt find valid previous replay, performing fresh replay"
+ls "$DATA_CACHE" -lath
+rm "$DATA_CACHE/datadir" -rf
+rm "$DATA_CACHE/shm_dir" -rf
 
 echo "Preparing datadir and shm_dir in location ${DATA_CACHE}"
-rm "$DATA_CACHE" -rf
 "$SCRIPTPATH/prepare_data_and_shm_dir.sh" --data-base-dir="$DATA_CACHE" \
     --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
 
@@ -71,9 +85,13 @@ echo "Attempting to perform replay basing on image ${IMG}..."
     --docker-option=--volume="$DATA_CACHE":"$DATA_CACHE" \
     --docker-option=--env=DATADIR="$DATA_CACHE/datadir" \
     --docker-option=--env=SHM_DIR="$DATA_CACHE/shm_dir" \
+    --docker-option=--env=HIVED_UID="$(id -u)" \
     $IMG --replay-blockchain --stop-replay-at-block=5000000 --exit-before-sync
 
 echo "Logs from container hived_instance:"
 docker logs -f hived_instance &
 
-exit $(docker wait hived_instance)
+status=$(docker wait hived_instance)
+
+echo "$status" > "$DATA_CACHE/datadir/status"
+exit $status

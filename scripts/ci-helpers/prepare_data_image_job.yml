@@ -35,26 +35,6 @@ include:
     - rm $CLEANUP_PATH_PATTERN -rf
   when: manual
 
-.prepare_hived_data_5m_image:
-  extends: .docker_image_builder_job
-
-  variables:
-    SUBMODULE_DIR: "$CI_PROJECT_DIR"
-    REGISTRY_USER: "$CI_IMG_BUILDER_USER"
-    REGISTRY_PASS: $CI_IMG_BUILDER_PASSWORD
-
-    SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
-  script:
-    - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS" "hived-binaries"
-    - ls -la ./hived-binaries/*
-
-  artifacts:
-    reports:
-      dotenv: docker_image_name.env
-    paths:
-      - ./hived-binaries/*
-    expire_in: 6 hours
-
 .prepare_hived_image:
   extends: .docker_image_builder_job
 
@@ -66,8 +46,7 @@ include:
     BINARY_CACHE_PATH: "hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
   script:
-    - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
-    - $SCRIPTS_PATH/ci-helpers/get_image4submodule2.sh
+    - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh
         "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive/ "HIVED_IMAGE_NAME" "$REGISTRY_USER" "$REGISTRY_PASS"
         --export-binaries="$BINARY_CACHE_PATH" --network-type="$HIVE_NETWORK_TYPE"
     - ls -la ./$BINARY_CACHE_PATH/*
@@ -88,15 +67,15 @@ include:
     SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
     BLOCK_LOG_SOURCE_DIR: ""
     CONFIG_INI_SOURCE: ""
-    DATA_CACHE: $DATA_CACHE_MAINNET
+    DATA_CACHE_HIVE_COMMIT: "${DATA_CACHE_HIVE_TEMPLATE}_${HIVED_IMAGE_NAME_COMMIT}"
     HIVE_NETWORK_TYPE: mainnet
   script:
-    - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
-    - $SCRIPTS_PATH/ci-helpers/build_data2.sh $HIVED_IMAGE_NAME
-        --data-cache="$DATA_CACHE" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
-    - echo "cache usage:"
-    - du -h -d 1 /cache || true
-    - cp $DATA_CACHE/datadir/docker_entrypoint.log $CI_PROJECT_DIR
+    - mkdir "$DATA_CACHE_HIVE_COMMIT" -p
+    - flock "$DATA_CACHE_HIVE_COMMIT" $SCRIPTS_PATH/ci-helpers/build_data.sh $HIVED_IMAGE_NAME
+        --data-cache="$DATA_CACHE_HIVE_COMMIT" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
+    - mkdir "$DATA_CACHE_HIVE"
+    - cp "$DATA_CACHE_HIVE_COMMIT"/* "$DATA_CACHE_HIVE" -rp
+    - cp "$DATA_CACHE_HIVE_COMMIT/datadir/docker_entrypoint.log" "$CI_PROJECT_DIR"
     - echo "HIVED_UID=$(id -u)" > hived_uid.env
     - cat hived_uid.env
 
