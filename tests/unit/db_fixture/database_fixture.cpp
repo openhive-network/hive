@@ -726,6 +726,16 @@ void database_fixture::transfer(
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount) )
 }
 
+void database_fixture::transfer( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
+{
+  transfer_operation op;
+  op.from = from;
+  op.to = to;
+  op.amount = amount;
+
+  push_transaction( op, key );
+}
+
 void database_fixture::recurrent_transfer( const string& from, const string& to, const asset& amount, const string& memo,
   uint16_t recurrence, uint16_t executions, const fc::ecc::private_key& key )
 {
