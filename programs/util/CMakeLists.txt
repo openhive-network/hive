@@ -177,3 +177,14 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
+
+add_executable( decoded_types_data_storage_tester decoded_types_data_storage_tester.cpp )
+target_link_libraries( decoded_types_data_storage_tester
+                       PRIVATE hive_chain hive_protocol hive_plugins fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+install( TARGETS
+   decoded_types_data_storage_tester
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
