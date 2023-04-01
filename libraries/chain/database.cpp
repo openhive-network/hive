@@ -4574,23 +4574,48 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
     try
     {
+        //legacy asset
+        switch(block_num)
+        {
+          case  994240:        //"account_creation_fee": "0.1 HIVE"
+          case 1021529:        //"account_creation_fee": "10.0 HIVE"
+          case 3143833:        //"account_creation_fee": "3.00000 HIVE"
+          case 3208405:        //"account_creation_fee": "2.00000 HIVE"
+          case 3695672:        //"account_creation_fee": "3.00 HIVE"
+          case 4338089:        //"account_creation_fee": "0.001 0.001"
+          case 4626205:        //"account_creation_fee": "6.000 6.000"
+          case 4632595:        //"account_creation_fee": "6.000 6.000"
+            break;
 
-      // FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
-      //           (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
+        //just wrong merkle
+          case 3705111:
+          case 3705120:
+          case 3713940:
+          case 3714132:
+          case 3714567:
+          case 3714588:
+          case 4138790:
+            break;
+          
+          default:
 
-      if(block.transaction_merkle_root != merkle_root) //mtlk
-      {
-        auto v = fc::json::to_string( block );
-        auto pretty = fc::json::to_pretty_string(v);
+            FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
+                      (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
+        }
 
-        wlog("Merkle check failed mtlk block_num=${block_num} id=${id} block.transaction_merkle_root=${btmr} merkle_root=${mr} block=${block}",
-        ("block_num", block_num)
-        ("id", full_block->get_block_id())
-        ("btmr", block.transaction_merkle_root)
-        ("mr", merkle_root)
-        ("block", block)
-        );
-        
+        if(block.transaction_merkle_root != merkle_root) //mtlk
+        {
+          auto v = fc::json::to_string( block );
+          auto pretty = fc::json::to_pretty_string(v);
+
+          wlog("Merkle check failed mtlk block_num=${block_num} id=${id} block.transaction_merkle_root=${btmr} merkle_root=${mr} block=${block}",
+          ("block_num", block_num)
+          ("id", full_block->get_block_id())
+          ("btmr", block.transaction_merkle_root)
+          ("mr", merkle_root)
+          ("block", block)
+          );
+          
 
       }
     }
