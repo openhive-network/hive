@@ -88,7 +88,9 @@ std::string to_printable(const std::string& c)
 void print_transaction_bytes(const char* tag, int block_num, const char * d, int len)
 {
   std::string horizontally;
-  for(size_t i =0 ; i < len; ++i)
+
+if(0)
+  for(int i =0 ; i < len; ++i)
   {
       //char mem = memory.data()[i];
       char ser = d[i];
