@@ -5039,7 +5039,7 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 
 
       //legacy asset
-      switch(block_num)
+      switch(head_block_num())
       {
         case  994240:        //"account_creation_fee": "0.1 HIVE"
         case 1021529:        //"account_creation_fee": "10.0 HIVE"
@@ -5074,7 +5074,8 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
                                           false,
                                           flat_set<account_name_type>(),
                                           flat_set<account_name_type>(),
-                                          flat_set<account_name_type>());
+                                          flat_set<account_name_type>(),
+                                          head_block_num());
       }
 
       if (_benchmark_dumper.is_enabled())

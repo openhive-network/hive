@@ -14,7 +14,8 @@ void verify_authority(const required_authorities_type& required_authorities,
                       bool allow_committe /* = false */,
                       const flat_set<account_name_type>& active_approvals /* = flat_set<account_name_type>() */,
                       const flat_set<account_name_type>& owner_approvals /* = flat_set<account_name_type>() */,
-                      const flat_set<account_name_type>& posting_approvals /* = flat_set<account_name_type>() */)
+                      const flat_set<account_name_type>& posting_approvals /* = flat_set<account_name_type>() */,
+                      int block_num)
 { try {
   /**
     *  Transactions with operations required posting authority cannot be combined
@@ -72,6 +73,20 @@ void verify_authority(const required_authorities_type& required_authorities,
   // fetch all of the top level authorities
   for( const auto& id : required_authorities.required_active )
   {
+
+    if(!( s.check_authority(id) || s.check_authority(get_owner(id))))
+    {
+
+          wlog(
+            "Missing Active Authority ${id} auth=${auth} owner=${owner} block_num=${block_num}",
+            ("id",id)
+            ("auth",get_active(id))
+            ("owner",get_owner(id))
+            ("block_num", block_num)
+          );
+
+    }
+
     HIVE_ASSERT( s.check_authority(id) ||
                 s.check_authority(get_owner(id)),
                 tx_missing_active_auth, "Missing Active Authority ${id}", ("id",id)("auth",get_active(id))("owner",get_owner(id)) );
