@@ -89,6 +89,16 @@ inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sy
   // 3143833:        "account_creation_fee": "3.00000 HIVE"
   // 3208405:        "account_creation_fee": "2.00000 HIVE"
   // 3695672:        "account_creation_fee": "3.00 HIVE"
+
+// block_num=3705111 Merkle check failed mtlk block_num=3705111 
+// block_num=3705120 failed mtlk block_num=3705120
+// block_num=3713940 Merkle check failed mtlk block_num=3713940
+// block_num=3714132 Merkle check failed mtlk block_num=3714132
+// block_num=3714567 Merkle check failed mtlk block_num=3714567
+// block_num=3714588 Merkle check failed mtlk block_num=3714588
+// block_num=4138790 Merkle check failed mtlk block_num=4138790
+
+
   // 4338089:        "account_creation_fee": "0.001 0.001"
   // 4626205:        "account_creation_fee": "6.000 6.000"
   // 4632595:        "account_creation_fee": "6.000 6.000"

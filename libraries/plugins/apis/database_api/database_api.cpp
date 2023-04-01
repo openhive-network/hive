@@ -2463,6 +2463,78 @@ int consume_json_block_impl(const char *json_block, const char* context, int blo
   
 
 
+// //In block=3705111
+// json=R"""({
+// "witness": "witness.svk",
+// "block_id": "00388917fe8c0184c499e115d9ee3bf0cf6825bb",
+// "previous": "00388916318d804f9371fe551732d707617c69e4",
+// "timestamp": "2016-08-01T14:56:00",
+// "extensions": [],
+// "signing_key": "STM6vxp7zj1SRdd6QqbQKabjvM1xT1tURT8rNZf5qFHswEkjpYK3x",
+// "transactions": [
+//     {
+//         "expiration": "2016-08-01T14:56:24",
+//         "extensions": [],
+//         "operations": [
+//             {
+//                 "type": "account_update_operation",
+//                 "value": {
+//                     "account": "jesus2",
+//                     "posting": {
+//                         "key_auths": [
+//                             [
+//                                 "STM7xqXUoCzjB7BXvzE7hCjVcLpgpEVMy3ALy3ygCFX3opkmuhDNd",
+//                                 1
+//                             ]
+//                         ],
+//                         "account_auths": [
+//                             [
+//                                 "STM6GVCS7JeftT27",
+//                                 1
+//                             ]
+//                         ],
+//                         "weight_threshold": 1
+//                     },
+//                     "memo_key": "STM8Mf3UvSfnoGtBsxi3SjaHYWuUxYgJUJKHWeMsJcLycH6jYMrM5",
+//                     "json_metadata": ""
+//                 }
+//             }
+//         ],
+//         "signatures": [
+//             "201123be78b9ee9560e60b90b04712e87e89655c9b6419e32b9b0e715fa651ea8078b09182f2ea09bf0e00b80c3a4dea7a081ddf69972a288fbfc0d30c5ad68a14"
+//         ],
+//         "ref_block_num": 35093,
+//         "ref_block_prefix": 3914984601
+//     },
+//     {
+//         "expiration": "2016-08-01T14:56:12",
+//         "extensions": [],
+//         "operations": [
+//             {
+//                 "type": "vote_operation",
+//                 "value": {
+//                     "voter": "kalimor",
+//                     "author": "domino",
+//                     "weight": 10000,
+//                     "permlink": "re-lehard-steemit-dlya-chainikov-5-prostykh-shagov-ot-novichka-do-steemian-80-lvl-50-poleznykh-ssylok-2-redakciya-20160721t084441610z"
+//                 }
+//             }
+//         ],
+//         "signatures": [
+//             "2030862252eb295c804e11e7ba40a9c02b9cfe8178522bc9ef22b8134b999da0c139d447752aefb29ee6f7caf310f2a052071a19fe9db07c4d2dbff69dbf7e31d4"
+//         ],
+//         "ref_block_num": 35067,
+//         "ref_block_prefix": 2222533022
+//     }
+// ],
+// "transaction_ids": [
+//     "45c95c0ee2225a98622fc2cf38cdda7de0958098",
+//     "23287b6f9a60b7a59c78f98d7a16cfdef4473dab"
+// ],
+// "witness_signature": "205094b547050ea59b5419792efbc633bdaac77f88e98c5927edb645bc642e7ee55254d4a9f51b77587d74eeb894ec96b2e6405a2d19fac2ea02b61dcec25f0b3f",
+// "transaction_merkle_root": "e6ad5676bf6cb1a393376fd4d15f43e9e76a535f"
+// })""";
+
   fc::variant v = fc::json::from_string( json );
 
   std::shared_ptr<hive::chain::full_block_type> fb_ptr = from_variant_to_full_block_ptr(v, block_num);
