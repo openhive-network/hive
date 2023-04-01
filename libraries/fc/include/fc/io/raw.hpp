@@ -32,6 +32,8 @@ inline void pack_name_callback(const char* name)
 
 inline std::string spaces(int n)
 {
+  if(n > 10)
+    n = 5;
   std::string sp;
   for (int i = 0 ; i < n; ++i)
   {
