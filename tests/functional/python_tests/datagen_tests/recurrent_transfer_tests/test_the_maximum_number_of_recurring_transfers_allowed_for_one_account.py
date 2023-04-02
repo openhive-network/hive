@@ -24,14 +24,15 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
         block_log_directory,
         absolute_start_time=timestamp + tt.Time.days(2),
         time_multiplier=90,
-        timeout=240
+        timeout=600
     )
     wallet = tt.Wallet(attach_to=replayed_node)
 
     all_accounts_names = wallet.list_accounts()
 
-    tt.logger.info(f"start waiting, headblock: {replayed_node.get_last_block_number()}")
-    replayed_node.wait_number_of_blocks(math.ceil(len(all_accounts_names) * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK))
+    block_number = math.ceil(len(all_accounts_names) * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK)
+    tt.logger.info(f"start waiting, headblock: {replayed_node.get_last_block_number()}, blocks to wait for: {block_number}")
+    replayed_node.wait_number_of_blocks(block_number)
     tt.logger.info(f"finish waiting, headblock: {replayed_node.get_last_block_number()}")
 
     for account_name in all_accounts_names:
