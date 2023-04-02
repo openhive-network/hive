@@ -1,5 +1,7 @@
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
+#include <hive/protocol/types.hpp>
+
 namespace hive { namespace chain { namespace util {
 
 std::string calculate_checksum_from_string(const std::string_view str)
@@ -33,11 +35,12 @@ decoded_type_data::decoded_type_data(const std::string_view _checksum, const std
 
   const bool has_members = !_members.empty();
   const bool has_enum_values = !_enum_values.empty();
-  
-  if (!has_members && !has_enum_values)
-    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members or enum_values vector have to be specified." );
+
+  //at the moment only hive::void_t is reflected structure with no members.
+  if (!has_members && !has_enum_values && type_id != typeid(hive::void_t).name())
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members or enum_values vector have to be specified. Type name: ${name}", (name) );
   else if (has_members && has_enum_values)
-    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members and enum_values vector cannot be specified together." );
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members and enum_values vector cannot be specified together. Type name: ${name}", (name) );
 
   if (has_members)
     members = std::move(_members);
@@ -60,7 +63,9 @@ decoded_type_data::decoded_type_data(const std::string& json)
 
   if (checksum.empty() || type_id.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json misses basic decoded type data. ${json}", (json));
-  if (reflected && ((!name || name->empty()) || ((!members || members->empty()) && (!enum_values || enum_values->empty()))))
+
+  //at the moment only hive::void_t is reflected structure with no members.
+  if (reflected && ((!name || name->empty()) || ((!members || members->empty()) && (!enum_values || enum_values->empty()) && type_id != typeid(hive::void_t).name())))
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with reflected decoded type doesn't contain enough data. ${json}", (json));
   else if (!reflected && (name || members || enum_values))
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with non reflected decoded type contains data for reflected type. ${json}", (json));
