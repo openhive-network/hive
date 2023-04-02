@@ -903,7 +903,7 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     BOOST_CHECK( decoded_account_object.reflected );
     BOOST_CHECK( !decoded_account_object.enum_values );
     BOOST_CHECK( decoded_account_object.members );
-    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 53 );
+    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 56 );
   }
 
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 ); // decoded types map size shouldn't change.
@@ -1076,7 +1076,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 {
   hive::chain::util::decoded_types_data_storage dtds;
 
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "587aea89a3ed83109ade1c4b808ffc1c7d5b96cf" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "f123e4e507bf0792ecf3c974819bb6850e967708" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_metadata_object>(dtds), "8afa67ed15888d3f927bcb2b986d172da1f34375" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "918c06ba905b0b095aa62df1b432e823790df6ba" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_object>(dtds), "7a6cd5d88139e0c501e52ad5c26b2def2efd07a0" );
