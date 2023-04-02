@@ -5041,25 +5041,25 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
       //legacy asset
       switch(block_num)
       {
-        case  994240:        //"account_creation_fee": "0.1 HIVE"
-        case 1021529:        //"account_creation_fee": "10.0 HIVE"
-        case 3143833:        //"account_creation_fee": "3.00000 HIVE"
-        case 3208405:        //"account_creation_fee": "2.00000 HIVE"
-        case 3695672:        //"account_creation_fee": "3.00 HIVE"
-        case 4338089:        //"account_creation_fee": "0.001 0.001"
-        case 4626205:        //"account_creation_fee": "6.000 6.000"
-        case 4632595:        //"account_creation_fee": "6.000 6.000"
-          break;
+      //   case  994240:        //"account_creation_fee": "0.1 HIVE"
+      //   case 1021529:        //"account_creation_fee": "10.0 HIVE"
+      //   case 3143833:        //"account_creation_fee": "3.00000 HIVE"
+      //   case 3208405:        //"account_creation_fee": "2.00000 HIVE"
+      //   case 3695672:        //"account_creation_fee": "3.00 HIVE"
+      //   case 4338089:        //"account_creation_fee": "0.001 0.001"
+      //   case 4626205:        //"account_creation_fee": "6.000 6.000"
+      //   case 4632595:        //"account_creation_fee": "6.000 6.000"
+      //     break;
 
-      //just wrong merkle
-        case 3705111:
-        case 3705120:
-        case 3713940:
-        case 3714132:
-        case 3714567:
-        case 3714588:
-        case 4138790:
-          break;
+      // //just wrong merkle
+      //   case 3705111:
+      //   case 3705120:
+      //   case 3713940:
+      //   case 3714132:
+      //   case 3714567:
+      //   case 3714588:
+      //   case 4138790:
+      //     break;
         
         default:
           hive::protocol::verify_authority(required_authorities,

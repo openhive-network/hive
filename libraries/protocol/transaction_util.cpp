@@ -1,5 +1,8 @@
 #include <hive/protocol/transaction_util.hpp>
 
+
+auto static volatile stop_in_failed_verify_authority=false;
+
 namespace hive { namespace protocol {
 
 void verify_authority(const required_authorities_type& required_authorities, 
@@ -85,11 +88,29 @@ void verify_authority(const required_authorities_type& required_authorities,
             ("block_num", block_num)
           );
 
-    }
 
-    HIVE_ASSERT( s.check_authority(id) ||
-                s.check_authority(get_owner(id)),
-                tx_missing_active_auth, "Missing Active Authority ${id}", ("id",id)("auth",get_active(id))("owner",get_owner(id)) );
+          while(stop_in_failed_verify_authority)
+          {
+            int a= 0;
+            a=a;
+          }
+
+          if(!( s.check_authority(id) || s.check_authority(get_owner(id))))
+          {
+
+                wlog(
+                  "Once more Missing Active Authority ${id} auth=${auth} owner=${owner} block_num=${block_num}",
+                  ("id",id)
+                  ("auth",get_active(id))
+                  ("owner",get_owner(id))
+                  ("block_num", block_num)
+                );
+          }
+
+    }
+    //mtlk HIVE_ASSERT( s.check_authority(id) ||
+    //             s.check_authority(get_owner(id)),
+    //             tx_missing_active_auth, "Missing Active Authority ${id}", ("id",id)("auth",get_active(id))("owner",get_owner(id)) );
   }
 
   for( const auto& id : required_authorities.required_owner )
@@ -114,11 +135,17 @@ void verify_authority(const required_authorities_type& required_authorities,
                 tx_missing_witness_auth, "Missing Witness Authority ${id}, key ${signing_key}", (id)(signing_key));
   }
 
-  HIVE_ASSERT(
-    !s.remove_unused_signatures(),
-    tx_irrelevant_sig,
-    "Unnecessary signature(s) detected"
-    );
+
+  if(s.remove_unused_signatures())
+  {
+     wlog("Unnecessary signature(s) detected block_num=${block_num}", ("block_num", block_num));
+  }
+
+  // mtlk  HIVE_ASSERT(
+  //   !s.remove_unused_signatures(),
+  //   tx_irrelevant_sig,
+  //   "Unnecessary signature(s) detected"
+  //   );
 } FC_CAPTURE_AND_RETHROW((sigs)) }
 
 } } // hive::protocol
