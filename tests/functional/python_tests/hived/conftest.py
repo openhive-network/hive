@@ -44,6 +44,7 @@ def node_with_20k_proposal_votes():
     timestamp -= tt.Time.seconds(5)
 
     init_node = tt.InitNode()
+    init_node.config.plugin.append("condenser_api")
 
     init_node.run(
         time_offset=tt.Time.serialize(timestamp, format_=tt.Time.TIME_OFFSET_FORMAT),
