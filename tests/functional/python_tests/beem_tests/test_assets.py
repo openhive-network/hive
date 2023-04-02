@@ -26,6 +26,8 @@ def node(chain_id, skeleton_key):
 
     init_node = tt.InitNode()
     init_node.config.private_key = skeleton_key
+    init_node.config.plugin.append("account_history_api")
+    init_node.config.plugin.append("condenser_api")
 
     init_node.run(
         time_offset=tt.Time.serialize(timestamp, format_=tt.Time.TIME_OFFSET_FORMAT),
