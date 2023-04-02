@@ -675,7 +675,7 @@ namespace chain {
       void set_flush_interval( uint32_t flush_blocks );
       void check_free_memory( bool force_print, uint32_t current_block_num );
 
-      void apply_transaction( const std::shared_ptr<full_transaction_type>& trx, uint32_t skip = skip_nothing );
+      void apply_transaction( const std::shared_ptr<full_transaction_type>& trx, uint32_t skip = skip_nothing, int block_num = 0 );
       void apply_required_action( const required_automated_action& a );
       void apply_optional_action( const optional_automated_action& a );
 
@@ -717,8 +717,8 @@ namespace chain {
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
       void switch_forks(item_ptr new_head);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block);
-      void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
-      void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
+      void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip, int block_num);
+      void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx, int block_num );
       void apply_operation( const operation& op );
 
       void process_required_actions( const required_automated_actions& actions );

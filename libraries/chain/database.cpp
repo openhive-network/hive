@@ -1434,7 +1434,7 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
   // apply the changes.
 
   auto temp_session = start_undo_session();
-  _apply_transaction(full_transaction);
+  _apply_transaction(full_transaction, 0);
   _pending_tx.push_back(full_transaction);
 
   notify_changed_objects();
@@ -4669,7 +4669,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
       * for transactions when validating broadcast transactions or
       * when building a block.
       */
-    apply_transaction( trx, skip );
+    apply_transaction( trx, skip, block_num);
     ++_current_trx_in_block;
   }
 
@@ -4958,12 +4958,12 @@ try {
   }
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::apply_transaction(const std::shared_ptr<full_transaction_type>& trx, uint32_t skip)
+void database::apply_transaction(const std::shared_ptr<full_transaction_type>& trx, uint32_t skip, int block_num)
 {
-  detail::with_skip_flags( *this, skip, [&]() { _apply_transaction(trx); });
+  detail::with_skip_flags( *this, skip, [&]() { _apply_transaction(trx, block_num); });
 }
 
-void database::validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip)
+void database::validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip, int block_num)
 {
   const signed_transaction& trx = full_transaction->get_transaction();
 
@@ -5039,7 +5039,7 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 
 
       //legacy asset
-      switch(head_block_num())
+      switch(block_num)
       {
         case  994240:        //"account_creation_fee": "0.1 HIVE"
         case 1021529:        //"account_creation_fee": "10.0 HIVE"
@@ -5075,7 +5075,7 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
                                           flat_set<account_name_type>(),
                                           flat_set<account_name_type>(),
                                           flat_set<account_name_type>(),
-                                          head_block_num());
+                                          block_num);
       }
 
       if (_benchmark_dumper.is_enabled())
@@ -5089,7 +5089,7 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
   }
 }
 
-void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
+void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, int block_num)
 { try {
   if( _current_tx_status == TX_STATUS_NONE )
   {
@@ -5113,7 +5113,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
 
   const signed_transaction& trx = full_transaction->get_transaction();
 
-  validate_transaction(full_transaction, skip);
+  validate_transaction(full_transaction, skip, block_num);
 
   //Insert transaction into unique transactions database.
   if( !(skip & skip_transaction_dupe_check) )
@@ -5702,7 +5702,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   // ours (so their tapos would reference a block not in our chain), but we still want to know.
   // If we have that block in our fork database and a supermajority of witnesses approve it, we
   // want to try to switch to it.
-  validate_transaction(full_transaction, skip_tapos_check);
+  validate_transaction(full_transaction, skip_tapos_check, 0);
 
   signed_transaction trx = full_transaction->get_transaction();
 
