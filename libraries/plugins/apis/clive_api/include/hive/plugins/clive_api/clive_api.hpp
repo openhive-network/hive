@@ -40,6 +40,9 @@ using set_timeout_return = void_type;
 using lock_all_args   = void_type;
 using lock_all_return = void_type;
 
+using lock_args   = wallet_args;
+using lock_return = void_type;
+
 class clive_api
 {
   public:
@@ -51,6 +54,7 @@ class clive_api
       (open)
       (set_timeout)
       (lock_all)
+      (lock)
     )
 
   private:
