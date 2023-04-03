@@ -20,6 +20,7 @@ class wallet_api_impl
     (
       (create)
       (open)
+      (set_timeout)
     )
 
     wallet_manager& _wallet_mgr;
@@ -33,6 +34,13 @@ DEFINE_API_IMPL( wallet_api_impl, create )
 DEFINE_API_IMPL( wallet_api_impl, open )
 {
   _wallet_mgr.open( args.wallet_name );
+  return open_return();
+}
+
+DEFINE_API_IMPL( wallet_api_impl, set_timeout )
+{
+  _wallet_mgr.set_timeout( args.seconds );
+  return set_timeout_return();
 }
 
 } // detail
@@ -47,6 +55,7 @@ wallet_api::~wallet_api() {}
 DEFINE_LOCKLESS_APIS( wallet_api,
   (create)
   (open)
+  (set_timeout)
   )
 
 } } } // hive::plugins::wallet_api
