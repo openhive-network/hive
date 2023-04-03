@@ -1316,6 +1316,9 @@ namespace chainbase {
       bool get_is_open() const
         { return _is_open; }
 
+      void set_decoded_state_objects_data(const std::string& json);
+      std::string get_decoded_state_objects_data() const;
+
     private:
       template<typename MultiIndexType>
       void add_index_helper() {

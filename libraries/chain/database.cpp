@@ -181,9 +181,9 @@ void database::open( const open_args& args )
 void database::initialize_state_independent_data(const open_args& args)
 {
   initialize_indexes();
+  check_state_objects_definitions(args.chainbase_flags & chainbase::skip_env_check);
   initialize_evaluators();
   initialize_irreversible_storage();
-  check_state_objects_definitions(args.chainbase_flags & chainbase::skip_env_check);
 
   if(!find< dynamic_global_property_object >())
   {
@@ -4024,28 +4024,22 @@ void database::initialize_indexes()
 
 void database::initialize_irreversible_storage()
 {
-  FC_ASSERT(_my->_decoded_types_data_storage);
-  _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();
-
   auto s = get_segment_manager();
   irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
 }
 
 void database::check_state_objects_definitions(const bool override_decoded_state_objects_data)
 {
-  auto s = get_segment_manager();
-  shared_string* decoded_state_objects_data = s->find<shared_string>( "decoded_state_objects_data_json" ).first;
+  FC_ASSERT(_my->_decoded_types_data_storage);
+  _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();
 
-  if (!decoded_state_objects_data)
-  {
-    decoded_state_objects_data = s->construct<shared_string>( "decoded_state_objects_data_json" )(allocator< shared_string >(s));
-    *decoded_state_objects_data = _my->_decoded_types_data_storage->generate_decoded_types_data_json_string();
-  }
-  else if (override_decoded_state_objects_data)
-    *decoded_state_objects_data = _my->_decoded_types_data_storage.generate_decoded_types_data_json_string();
+  const std::string decoded_state_objects_data = get_decoded_state_objects_data();
+
+  if (decoded_state_objects_data.empty() || override_decoded_state_objects_data)
+    set_decoded_state_objects_data(_my->_decoded_types_data_storage->generate_decoded_types_data_json_string());
   else
   {
-    auto result = _my->_decoded_types_data_storage->check_if_decoded_types_data_json_matches_with_current_decoded_data(to_string(*decoded_state_objects_data));
+    auto result = _my->_decoded_types_data_storage->check_if_decoded_types_data_json_matches_with_current_decoded_data(decoded_state_objects_data);
 
     if (!result.first)
     {
@@ -4055,7 +4049,7 @@ void database::check_state_objects_definitions(const bool override_decoded_state
 
       loaded_decoded_types_details.open(loaded_data_filename, std::ios::out | std::ios::trunc);
       if (loaded_decoded_types_details.good())
-        loaded_decoded_types_details << _my->_decoded_types_data_storage->generate_decoded_types_data_pretty_string(*decoded_state_objects_data);
+        loaded_decoded_types_details << _my->_decoded_types_data_storage->generate_decoded_types_data_pretty_string(decoded_state_objects_data);
       loaded_decoded_types_details.flush();
       loaded_decoded_types_details.close();
 

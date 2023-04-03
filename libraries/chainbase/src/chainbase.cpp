@@ -20,7 +20,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 #else
       template< typename Allocator >
       environment_check( allocator< Allocator > a )
-                  : version_info( a ), plugins( a )
+                  : version_info( a ), decoded_state_objects_data_json(a), plugins( a )
 #endif
       {
         memset( &compiler_version, 0, sizeof( compiler_version ) );
@@ -36,7 +36,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         windows = true;
 #endif
       }
-
+      // decoded_state_objects_data_json is generated later, so we don't check it here.
       friend bool operator == ( const environment_check& a, const environment_check& b ) {
         return std::make_tuple( a.compiler_version, a.debug, a.apple, a.windows )
           ==  std::make_tuple( b.compiler_version, b.debug, b.apple, b.windows );
@@ -48,11 +48,11 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         plugins = other.plugins;
 #endif
         version_info = other.version_info;
+        decoded_state_objects_data_json = other.decoded_state_objects_data_json;
         compiler_version = other.compiler_version;
         debug = other.debug;
         apple = other.apple;
         windows = other.windows;
-
         return *this;
       }
 
@@ -128,10 +128,10 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
             environment_extension.logger( message );
           }
         }
-        created_storage = false;
       }
 
       shared_string                 version_info;
+      shared_string                 decoded_state_objects_data_json;
       t_flat_set< shared_string >   plugins;
 #endif
       boost::array<char,256>  compiler_version;
@@ -199,6 +199,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
           std::string dr = eCheck.dump();
           BOOST_THROW_EXCEPTION(std::runtime_error("Different persistent & runtime environments. Persistent: `" + dp + "'. Runtime: `"+ dr + "'.Probably database created by a different compiler, build, or operating system"));
         }
+
+        if (env.first->created_storage)
+          env.first->created_storage = false;
 
         std::cout << "Compiler and build environment read from persistent storage: `" << env.first->dump() << '\'' << std::endl;
       }
@@ -341,6 +344,23 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     return session( std::move( _sub_sessions ), _undo_session_count );
   }
 
+  void database::set_decoded_state_objects_data(const std::string& json)
+  {
+    environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    assert(env);
+
+    if (!env->created_storage)
+      BOOST_THROW_EXCEPTION( std::runtime_error( "Cannot set decoded state objects data if storage is not newly created." ) );
+
+    env->decoded_state_objects_data_json = json.c_str();
+  }
+
+  std::string database::get_decoded_state_objects_data() const
+  {
+    const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    assert(env);
+    return std::string(env->decoded_state_objects_data_json.c_str());
+  }
 }  // namespace chainbase
 
 
