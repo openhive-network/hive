@@ -30,6 +30,13 @@ struct create_return
 using open_args   = wallet_args;
 using open_return = void_type;
 
+
+struct set_timeout_args
+{
+  int64_t seconds;
+};
+using set_timeout_return = void_type;
+
 class wallet_api
 {
   public:
@@ -39,7 +46,8 @@ class wallet_api
     DECLARE_API(
       (create)
       (open)
-      )
+      (set_timeout)
+    )
 
   private:
     std::unique_ptr< detail::wallet_api_impl > my;
@@ -49,3 +57,4 @@ class wallet_api
 
 FC_REFLECT( hive::plugins::wallet_api::wallet_args, (wallet_name) )
 FC_REFLECT( hive::plugins::wallet_api::create_return, (password) )
+FC_REFLECT( hive::plugins::wallet_api::set_timeout_args, (seconds) )
