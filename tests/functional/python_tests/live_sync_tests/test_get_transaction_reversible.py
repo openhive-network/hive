@@ -4,7 +4,7 @@ import test_tools as tt
 def test_get_transaction_reversible():
     net = tt.Network()
     init_node = tt.InitNode(network=net)
-    api_node = tt.ApiNode(network=net)
+    api_node = tt.FullApiNode(network=net)
 
     tt.logger.info('Running network, waiting for live sync...')
 
