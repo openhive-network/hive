@@ -1,13 +1,13 @@
 #pragma once
 
-#include <hive/plugins/wallet/wallet_api.hpp>
+#include <hive/plugins/clive/clive_api.hpp>
 
 #include <fc/real128.hpp>
 #include <fc/crypto/base58.hpp>
 
 #include<vector>
 
-namespace hive { namespace plugins { namespace wallet {
+namespace hive { namespace plugins { namespace clive {
 
 typedef uint16_t transaction_handle_type;
 
@@ -17,19 +17,19 @@ struct wallet_data
 };
 
 namespace detail {
-class soft_wallet_impl;
+class clive_impl;
 }
 
 /**
  * This wallet assumes it is connected to the database server with a high-bandwidth, low-latency connection and
  * performs minimal caching.
  */
-class soft_wallet final : public wallet_api
+class clive final : public clive_api
 {
    public:
-      soft_wallet( const wallet_data& initial_data );
+      clive( const wallet_data& initial_data );
 
-      ~soft_wallet();
+      ~clive();
 
       bool copy_wallet_file( string destination_filename );
 
@@ -177,7 +177,7 @@ class soft_wallet final : public wallet_api
       */
       std::optional<signature_type> try_sign_digest( const digest_type digest, const public_key_type public_key ) override;
 
-      std::shared_ptr<detail::soft_wallet_impl> my;
+      std::shared_ptr<detail::clive_impl> my;
       void encrypt_keys();
 };
 
@@ -190,10 +190,10 @@ struct plain_keys {
 
 namespace fc
 {
-  void from_variant( const fc::variant& var, hive::plugins::wallet::wallet_data& vo );
-  void to_variant( const hive::plugins::wallet::wallet_data& var, fc::variant& vo );
+  void from_variant( const fc::variant& var, hive::plugins::clive::wallet_data& vo );
+  void to_variant( const hive::plugins::clive::wallet_data& var, fc::variant& vo );
 }
 
-FC_REFLECT( hive::plugins::wallet::wallet_data, (cipher_keys) )
+FC_REFLECT( hive::plugins::clive::wallet_data, (cipher_keys) )
 
-FC_REFLECT( hive::plugins::wallet::plain_keys, (checksum)(keys) )
+FC_REFLECT( hive::plugins::clive::plain_keys, (checksum)(keys) )

@@ -5,7 +5,7 @@
 
 using namespace std;
 
-namespace hive { namespace plugins { namespace wallet {
+namespace hive { namespace plugins { namespace clive {
 
 using private_key_type  = fc::ecc::private_key;
 using public_key_type   = fc::ecc::public_key;
@@ -14,10 +14,10 @@ using digest_type       = fc::sha256;
 
 using fc::flat_set;
 
-class wallet_api
+class clive_api
 {
    public:
-      virtual ~wallet_api() {}
+      virtual ~clive_api() {}
 
       /**
        * Get the private key corresponding to a public key.  The

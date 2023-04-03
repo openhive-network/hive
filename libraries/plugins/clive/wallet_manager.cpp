@@ -1,15 +1,15 @@
 #include <appbase/application.hpp>
 
-#include <hive/plugins/wallet/wallet_manager.hpp>
-#include <hive/plugins/wallet/wallet.hpp>
-#include <hive/plugins/wallet/wallet_exceptions.hpp>
+#include <hive/plugins/clive/wallet_manager.hpp>
+#include <hive/plugins/clive/clive.hpp>
+#include <hive/plugins/clive/clive_exceptions.hpp>
 
 #include <fc/filesystem.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
-namespace hive { namespace plugins { namespace wallet {
+namespace hive { namespace plugins { namespace clive {
 
 namespace bfs = boost::filesystem;
 
@@ -61,12 +61,12 @@ std::string wallet_manager::create(const std::string& name) {
    auto wallet_filename = dir / (name + file_ext);
 
    if (fc::exists(wallet_filename)) {
-      FC_THROW_EXCEPTION( wallet_exist_exception, "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
+      FC_THROW_EXCEPTION( clive_exist_exception, "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
    }
 
    std::string password = gen_password();
    wallet_data d;
-   auto wallet = make_unique<soft_wallet>(d);
+   auto wallet = make_unique<clive>(d);
    wallet->set_password(password);
    wallet->set_wallet_filename(wallet_filename.string());
    wallet->unlock(password);
@@ -93,11 +93,11 @@ void wallet_manager::open(const std::string& name) {
    FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
 
    wallet_data d;
-   auto wallet = std::make_unique<soft_wallet>(d);
+   auto wallet = std::make_unique<clive>(d);
    auto wallet_filename = dir / (name + file_ext);
    wallet->set_wallet_filename(wallet_filename.string());
    if (!wallet->load_wallet_file()) {
-      FC_THROW_EXCEPTION( wallet_nonexistent_exception, "Unable to open file: ${f}", ("f", wallet_filename.string()));
+      FC_THROW_EXCEPTION( clive_nonexistent_exception, "Unable to open file: ${f}", ("f", wallet_filename.string()));
    }
 
    // If we have name in our map then remove it since we want the emplace below to replace.
@@ -126,10 +126,10 @@ map<public_key_type,private_key_type> wallet_manager::list_keys(const string& na
    check_timeout();
 
    if (wallets.count(name) == 0)
-      FC_THROW_EXCEPTION( wallet_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
+      FC_THROW_EXCEPTION( clive_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
    auto& w = wallets.at(name);
    if (w->is_locked())
-      FC_THROW_EXCEPTION( wallet_locked_exception, "Wallet is locked: ${w}", ("w", name));
+      FC_THROW_EXCEPTION( clive_locked_exception, "Wallet is locked: ${w}", ("w", name));
    w->check_password(pw); //throws if bad password
    return w->list_keys();
 }
@@ -162,7 +162,7 @@ void wallet_manager::lock_all() {
 void wallet_manager::lock(const std::string& name) {
    check_timeout();
    if (wallets.count(name) == 0) {
-      FC_THROW_EXCEPTION( wallet_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
+      FC_THROW_EXCEPTION( clive_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
    }
    auto& w = wallets.at(name);
    if (w->is_locked()) {
@@ -178,7 +178,7 @@ void wallet_manager::unlock(const std::string& name, const std::string& password
    }
    auto& w = wallets.at(name);
    if (!w->is_locked()) {
-      FC_THROW_EXCEPTION( wallet_unlocked_exception, "Wallet is already unlocked: ${w}", ("w", name));
+      FC_THROW_EXCEPTION( clive_unlocked_exception, "Wallet is already unlocked: ${w}", ("w", name));
       return;
    }
    w->unlock(password);
@@ -187,11 +187,11 @@ void wallet_manager::unlock(const std::string& name, const std::string& password
 void wallet_manager::import_key(const std::string& name, const std::string& wif_key) {
    check_timeout();
    if (wallets.count(name) == 0) {
-      FC_THROW_EXCEPTION( wallet_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
+      FC_THROW_EXCEPTION( clive_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
    }
    auto& w = wallets.at(name);
    if (w->is_locked()) {
-      FC_THROW_EXCEPTION( wallet_locked_exception, "Wallet is locked: ${w}", ("w", name));
+      FC_THROW_EXCEPTION( clive_locked_exception, "Wallet is locked: ${w}", ("w", name));
    }
    w->import_key(wif_key);
 }
@@ -199,11 +199,11 @@ void wallet_manager::import_key(const std::string& name, const std::string& wif_
 void wallet_manager::remove_key(const std::string& name, const std::string& password, const std::string& key) {
    check_timeout();
    if (wallets.count(name) == 0) {
-      FC_THROW_EXCEPTION( wallet_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
+      FC_THROW_EXCEPTION( clive_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
    }
    auto& w = wallets.at(name);
    if (w->is_locked()) {
-      FC_THROW_EXCEPTION( wallet_locked_exception, "Wallet is locked: ${w}", ("w", name));
+      FC_THROW_EXCEPTION( clive_locked_exception, "Wallet is locked: ${w}", ("w", name));
    }
    w->check_password(password); //throws if bad password
    w->remove_key(key);
@@ -212,11 +212,11 @@ void wallet_manager::remove_key(const std::string& name, const std::string& pass
 string wallet_manager::create_key(const std::string& name, const std::string& key_type) {
    check_timeout();
    if (wallets.count(name) == 0) {
-      FC_THROW_EXCEPTION( wallet_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
+      FC_THROW_EXCEPTION( clive_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
    }
    auto& w = wallets.at(name);
    if (w->is_locked()) {
-      FC_THROW_EXCEPTION( wallet_locked_exception, "Wallet is locked: ${w}", ("w", name));
+      FC_THROW_EXCEPTION( clive_locked_exception, "Wallet is locked: ${w}", ("w", name));
    }
 
    string upper_key_type = boost::to_upper_copy<std::string>(key_type);
@@ -237,12 +237,12 @@ signature_type wallet_manager::sign_digest(const digest_type& digest, const publ
       }
    } FC_LOG_AND_RETHROW();
 
-   FC_THROW_EXCEPTION( wallet_missing_pub_key_exception, "Public key not found in unlocked wallets ${k}", ("k", key));
+   FC_THROW_EXCEPTION( clive_missing_pub_key_exception, "Public key not found in unlocked wallets ${k}", ("k", key));
 }
 
-void wallet_manager::own_and_use_wallet(const string& name, std::unique_ptr<wallet_api>&& wallet) {
+void wallet_manager::own_and_use_wallet(const string& name, std::unique_ptr<clive_api>&& wallet) {
    if(wallets.find(name) != wallets.end())
-      FC_THROW_EXCEPTION( wallet_exception, "Tried to use wallet name that already exists.");
+      FC_THROW_EXCEPTION( clive_exception, "Tried to use wallet name that already exists.");
    wallets.emplace(name, std::move(wallet));
 }
 
@@ -255,7 +255,7 @@ void wallet_manager::start_lock_watch(std::shared_ptr<boost::asio::deadline_time
       if(ec != boost::system::error_code()) {
          if(rc.type() == bfs::file_not_found) {
             appbase::app().generate_interrupt_request();
-            FC_THROW_EXCEPTION( wallet_exception, "Lock file removed while keosd still running.  Terminating.");
+            FC_THROW_EXCEPTION( clive_exception, "Lock file removed while keosd still running.  Terminating.");
          }
       }
       t->expires_from_now(boost::posix_time::seconds(1));
@@ -274,7 +274,7 @@ void wallet_manager::initialize_lock() {
    wallet_dir_lock = std::make_unique<boost::interprocess::file_lock>(lock_path.string().c_str());
    if(!wallet_dir_lock->try_lock()) {
       wallet_dir_lock.reset();
-      FC_THROW_EXCEPTION( wallet_exception, "Failed to lock access to wallet directory; is another keosd running?");
+      FC_THROW_EXCEPTION( clive_exception, "Failed to lock access to wallet directory; is another keosd running?");
    }
    auto timer = std::make_shared<boost::asio::deadline_timer>(appbase::app().get_io_service(), boost::posix_time::seconds(1));
    start_lock_watch(timer);

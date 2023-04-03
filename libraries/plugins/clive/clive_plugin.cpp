@@ -1,22 +1,22 @@
-#include <hive/plugins/wallet/wallet_plugin.hpp>
+#include <hive/plugins/clive/clive_plugin.hpp>
 
 #include <boost/filesystem.hpp>
 #include <chrono>
 
 #include <fc/io/json.hpp>
 
-namespace hive { namespace plugins { namespace wallet {
+namespace hive { namespace plugins { namespace clive {
 
 namespace bpo = boost::program_options;
 namespace bfs = boost::filesystem;
 
-wallet_plugin::wallet_plugin() {}
+clive_plugin::clive_plugin() {}
 
-wallet_manager& wallet_plugin::get_wallet_manager() {
+wallet_manager& clive_plugin::get_wallet_manager() {
    return *wallet_manager_ptr;
 }
 
-void wallet_plugin::set_program_options(boost::program_options::options_description& cli, boost::program_options::options_description& cfg) {
+void clive_plugin::set_program_options(boost::program_options::options_description& cli, boost::program_options::options_description& cfg) {
    cfg.add_options()
          ("wallet-dir", bpo::value<boost::filesystem::path>()->default_value("."),
           "The path of the wallet files (absolute path or relative to application data dir)")
@@ -27,7 +27,7 @@ void wallet_plugin::set_program_options(boost::program_options::options_descript
          ;
 }
 
-void wallet_plugin::plugin_initialize(const boost::program_options::variables_map& options) {
+void clive_plugin::plugin_initialize(const boost::program_options::variables_map& options) {
    ilog("initializing wallet plugin");
    try {
       wallet_manager_ptr = std::make_unique<wallet_manager>();
