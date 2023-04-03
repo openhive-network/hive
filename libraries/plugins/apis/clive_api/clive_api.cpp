@@ -8,13 +8,12 @@ namespace hive { namespace plugins { namespace clive_api {
 
 namespace detail {
 
-
 using hive::plugins::clive::wallet_manager;
 
 class clive_api_impl
 {
   public:
-    clive_api_impl(): _wallet_mgr( appbase::app().get_plugin< hive::plugins::clive::clive_plugin >().get_wallet_manager() ) {}
+    clive_api_impl(): _wallet_mgr( appbase::app().get_plugin<hive::plugins::clive::clive_plugin>().get_wallet_manager() ) {}
 
     DECLARE_API_IMPL
     (
@@ -22,6 +21,7 @@ class clive_api_impl
       (open)
       (set_timeout)
       (lock_all)
+      (lock)
     )
 
     wallet_manager& _wallet_mgr;
@@ -50,6 +50,12 @@ DEFINE_API_IMPL( clive_api_impl, lock_all )
   return lock_all_return();
 }
 
+DEFINE_API_IMPL( clive_api_impl, lock )
+{
+  _wallet_mgr.lock( args.wallet_name );
+  return lock_return();
+}
+
 } // detail
 
 clive_api::clive_api(): my( new detail::clive_api_impl() )
@@ -64,6 +70,7 @@ DEFINE_LOCKLESS_APIS( clive_api,
   (open)
   (set_timeout)
   (lock_all)
+  (lock)
   )
 
 } } } // hive::plugins::clive_api
