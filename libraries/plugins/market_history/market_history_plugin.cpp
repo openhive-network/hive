@@ -5,6 +5,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <fc/io/json.hpp>
 
@@ -217,3 +218,6 @@ uint32_t market_history_plugin::get_max_history_per_bucket() const
 }
 
 } } } // hive::plugins::market_history
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::market_history::order_history_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::market_history::bucket_index)

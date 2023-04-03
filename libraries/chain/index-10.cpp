@@ -11,6 +11,7 @@
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/witness_schedule.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 
 namespace hive { namespace chain {
 
@@ -31,3 +32,16 @@ void initialize_core_indexes_10( database& db )
 }
 
 } }
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::pending_required_action_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::pending_optional_action_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::proposal_index)
+#ifdef HIVE_ENABLE_SMT
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_token_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::account_regular_balance_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::account_rewards_balance_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::nai_pool_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_token_emissions_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_contribution_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_ico_index)
+#endif

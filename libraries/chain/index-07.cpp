@@ -10,6 +10,7 @@
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/witness_schedule.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 
 namespace hive { namespace chain {
 
@@ -21,3 +22,7 @@ void initialize_core_indexes_07( database& db )
 }
 
 } }
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::owner_authority_history_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::account_recovery_request_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::change_recovery_account_request_index)

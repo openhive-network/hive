@@ -7,6 +7,7 @@
 #include <hive/plugins/follow/inc_performance.hpp>
 
 #include <hive/chain/util/impacted.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/protocol/config.hpp>
 
@@ -394,3 +395,10 @@ void follow_plugin::plugin_shutdown()
 }
 
 } } } // hive::plugins::follow
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::follow::blog_author_stats_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::follow::follow_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::follow::feed_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::follow::blog_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::follow::reputation_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::follow::follow_count_index)

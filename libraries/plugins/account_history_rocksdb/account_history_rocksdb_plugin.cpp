@@ -9,6 +9,7 @@
 #include <hive/chain/util/impacted.hpp>
 #include <hive/chain/util/supplement_operations.hpp>
 #include <hive/chain/util/data_filter.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -2227,3 +2228,5 @@ bool account_history_rocksdb_plugin::find_transaction_info(const protocol::trans
 
 FC_REFLECT( hive::plugins::account_history_rocksdb::account_history_info,
   (id)(oldestEntryId)(newestEntryId)(oldestEntryTimestamp) )
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::account_history_rocksdb::volatile_operation_index)

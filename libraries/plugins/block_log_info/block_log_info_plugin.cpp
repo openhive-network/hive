@@ -8,6 +8,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/index.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -178,3 +179,6 @@ void block_log_info_plugin::plugin_shutdown()
 }
 
 } } } // hive::plugins::block_log_info
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::block_log_info::block_log_hash_state_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::block_log_info::block_log_pending_message_index);
