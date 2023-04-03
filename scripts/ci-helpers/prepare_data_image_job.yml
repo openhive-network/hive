@@ -1,45 +1,27 @@
+variables:
+  # Variables required by Common CI jobs
+  CI_COMMON_JOB_VERSION: "34b0315587e9fade191a927b54856d039dac9c4b"
+  DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
+  DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
+  IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
+
+include:
+  - project: 'hive/common-ci-configuration'
+    ref: 34b0315587e9fade191a927b54856d039dac9c4b # develop
+    file: '/templates/docker_image_jobs.gitlab-ci.yml'
+
 .docker_image_builder_job:
+  extends: .docker_image_builder_job_template
   variables:
     FF_NETWORK_PER_BUILD: "true"
-
-    # uses registry.gitlab.syncad.com/hive/hive/custom_docker:20.10.10-1
-    DOCKER_IMAGE_TAG: "@sha256:b16efe1217a85f4ed2c7b3768ba60c83d9434679ec91167ff31d77959c629b8f"
-
-  image: "registry.gitlab.syncad.com/hive/hive/custom_docker${DOCKER_IMAGE_TAG}"
   interruptible: true
-  services:
-    - name: "registry.gitlab.syncad.com/hive/hive/custom_dind:20.10.10-dind-1"
-      alias: "docker"
-      pull_policy: [always, if-not-present]
-      variables:
-        DOCKER_BUILDKIT: 1
-        DOCKER_DRIVER: "overlay2"
-        DOCKER_TLS_CERTDIR: "/certs"
 
   before_script:
     - git config --global --add safe.directory '*'
 
 .docker_image_cleanup_job:
-  image: alpine:3.16
+  extends: .docker_image_cleanup_job_template
   interruptible: true
-  before_script:
-    - apk update && apk add bash curl jq
-
-  variables:
-    # Interface variables (to be overrided by derived jobs)
-    REGISTRY: $CI_REGISTRY_IMAGE
-    REGISTRY_USER: ""
-    REGISTRY_PASS: ""
-    IMAGE_PATH: ""
-    IMAGE_TAG: ""
-
-    SCRIPTS_PATH: "$CI_PROJECT_DIR/scripts"
-
-  script:
-    - echo "Attempting to cleanup an image $IMAGE_PATH using tag $IMAGE_TAG from $REGISTRY"
-    - "$SCRIPTS_PATH/ci-helpers/delete-image.sh"
-
-  when: always
 
 .cleanup_cache_manual:
   image: alpine:3.16
