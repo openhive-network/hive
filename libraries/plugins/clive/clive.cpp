@@ -1,5 +1,5 @@
-#include <hive/plugins/wallet/wallet.hpp>
-#include <hive/plugins/wallet/wallet_exceptions.hpp>
+#include <hive/plugins/clive/clive.hpp>
+#include <hive/plugins/clive/clive_exceptions.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-namespace hive { namespace plugins { namespace wallet {
+namespace hive { namespace plugins { namespace clive {
 
 #ifdef IS_TEST_NET
 #define HIVE_ADDRESS_PREFIX                   "TST"
@@ -43,7 +43,7 @@ private_key_type derive_private_key( const std::string& prefix_string,
   return derived_key;
 }
 
-class soft_wallet_impl
+class clive_impl
 {
    private:
       void enable_umask_protection() {
@@ -59,13 +59,13 @@ class soft_wallet_impl
       }
 
 public:
-   soft_wallet& self;
-   soft_wallet_impl( soft_wallet& s, const wallet_data& initial_data )
+   clive& self;
+   clive_impl( clive& s, const wallet_data& initial_data )
       : self( s )
    {
    }
 
-   virtual ~soft_wallet_impl()
+   virtual ~clive_impl()
    {}
 
    void encrypt_keys()
@@ -270,23 +270,23 @@ public:
 
 }
 
-soft_wallet::soft_wallet(const wallet_data& initial_data)
-   : my(new detail::soft_wallet_impl(*this, initial_data))
+clive::clive(const wallet_data& initial_data)
+   : my(new detail::clive_impl(*this, initial_data))
 {}
 
-soft_wallet::~soft_wallet() {}
+clive::~clive() {}
 
-bool soft_wallet::copy_wallet_file(string destination_filename)
+bool clive::copy_wallet_file(string destination_filename)
 {
   return my->copy_wallet_file(destination_filename);
 }
 
-string soft_wallet::get_wallet_filename() const
+string clive::get_wallet_filename() const
 {
   return my->get_wallet_filename();
 }
 
-bool soft_wallet::import_key(string wif_key)
+bool clive::import_key(string wif_key)
 {
   FC_ASSERT( !is_locked(), "Unable to import key on a locked wallet");
 
@@ -298,7 +298,7 @@ bool soft_wallet::import_key(string wif_key)
   return false;
 }
 
-bool soft_wallet::remove_key(string key)
+bool clive::remove_key(string key)
 {
   FC_ASSERT( !is_locked(), "Unable to remove key from a locked wallet");
 
@@ -310,7 +310,7 @@ bool soft_wallet::remove_key(string key)
   return false;
 }
 
-string soft_wallet::create_key(string key_type)
+string clive::create_key(string key_type)
 {
   FC_ASSERT( !is_locked(), "Unable to create key on a locked wallet");
 
@@ -319,32 +319,32 @@ string soft_wallet::create_key(string key_type)
   return ret;
 }
 
-bool soft_wallet::load_wallet_file( string wallet_filename )
+bool clive::load_wallet_file( string wallet_filename )
 {
   return my->load_wallet_file( wallet_filename );
 }
 
-void soft_wallet::save_wallet_file( string wallet_filename )
+void clive::save_wallet_file( string wallet_filename )
 {
   my->save_wallet_file( wallet_filename );
 }
 
-bool soft_wallet::is_locked() const
+bool clive::is_locked() const
 {
   return my->is_locked();
 }
 
-bool soft_wallet::is_new() const
+bool clive::is_new() const
 {
   return my->_wallet.cipher_keys.size() == 0;
 }
 
-void soft_wallet::encrypt_keys()
+void clive::encrypt_keys()
 {
   my->encrypt_keys();
 }
 
-void soft_wallet::lock()
+void clive::lock()
 { try {
   FC_ASSERT( !is_locked(), "Unable to lock a locked wallet" );
   encrypt_keys();
@@ -355,7 +355,7 @@ void soft_wallet::lock()
   my->_checksum = fc::sha512();
 } FC_CAPTURE_AND_RETHROW() }
 
-void soft_wallet::unlock(string password)
+void clive::unlock(string password)
 { try {
   FC_ASSERT(password.size() > 0);
   auto pw = fc::sha512::hash(password.c_str(), password.size());
@@ -367,7 +367,7 @@ void soft_wallet::unlock(string password)
   my->_checksum = pk.checksum;
 }FC_CAPTURE_AND_RETHROW( ("Invalid password for wallet: ")(get_wallet_filename()) ) }
 
-void soft_wallet::check_password(string password)
+void clive::check_password(string password)
 { try {
   FC_ASSERT(password.size() > 0);
   auto pw = fc::sha512::hash(password.c_str(), password.size());
@@ -377,7 +377,7 @@ void soft_wallet::check_password(string password)
   FC_ASSERT(pk.checksum == pw);
 }FC_CAPTURE_AND_RETHROW( ("Invalid password for wallet: ")(get_wallet_filename()) ) }
 
-void soft_wallet::set_password( string password )
+void clive::set_password( string password )
 {
   if( !is_new() )
     FC_ASSERT( !is_locked(), "The wallet must be unlocked before the password can be set" );
@@ -385,29 +385,29 @@ void soft_wallet::set_password( string password )
   lock();
 }
 
-map<public_key_type, private_key_type> soft_wallet::list_keys()
+map<public_key_type, private_key_type> clive::list_keys()
 {
   FC_ASSERT( !is_locked(), "Unable to list public keys of a locked wallet");
   return my->_keys;
 }
 
-flat_set<public_key_type> soft_wallet::list_public_keys() {
+flat_set<public_key_type> clive::list_public_keys() {
   FC_ASSERT( !is_locked(), "Unable to list private keys of a locked wallet");
   flat_set<public_key_type> keys;
   boost::copy(my->_keys | boost::adaptors::map_keys, std::inserter(keys, keys.end()));
   return keys;
 }
 
-private_key_type soft_wallet::get_private_key( public_key_type pubkey )const
+private_key_type clive::get_private_key( public_key_type pubkey )const
 {
   return my->get_private_key( pubkey );
 }
 
-std::optional<signature_type> soft_wallet::try_sign_digest( const digest_type digest, const public_key_type public_key ) {
+std::optional<signature_type> clive::try_sign_digest( const digest_type digest, const public_key_type public_key ) {
   return my->try_sign_digest(digest, public_key);
 }
 
-pair<public_key_type,private_key_type> soft_wallet::get_private_key_from_password( string account, string role, string password )const {
+pair<public_key_type,private_key_type> clive::get_private_key_from_password( string account, string role, string password )const {
   auto seed = account + role + password;
   FC_ASSERT( seed.size(), "seed should not be empty" );
   auto secret = fc::sha256::hash( seed.c_str(), seed.size() );
@@ -415,7 +415,7 @@ pair<public_key_type,private_key_type> soft_wallet::get_private_key_from_passwor
   return std::make_pair( public_key_type( priv.get_public_key() ), priv );
 }
 
-void soft_wallet::set_wallet_filename(string wallet_filename)
+void clive::set_wallet_filename(string wallet_filename)
 {
   my->_wallet_filename = wallet_filename;
 }
@@ -424,12 +424,12 @@ void soft_wallet::set_wallet_filename(string wallet_filename)
 
 namespace fc
 {
-  void from_variant( const fc::variant& var,  hive::plugins::wallet::wallet_data& vo )
+  void from_variant( const fc::variant& var,  hive::plugins::clive::wallet_data& vo )
   {
       from_variant( var, vo.cipher_keys );
   }
 
-  void to_variant( const hive::plugins::wallet::wallet_data& var, fc::variant& vo )
+  void to_variant( const hive::plugins::clive::wallet_data& var, fc::variant& vo )
   {
     to_variant( var.cipher_keys, vo );
   }

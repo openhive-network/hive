@@ -1,8 +1,8 @@
 #include <appbase/application.hpp>
 
 #include <hive/plugins/webserver/webserver_plugin.hpp>
-#include <hive/plugins/wallet/wallet_plugin.hpp>
-#include <hive/plugins/wallet_api/wallet_api_plugin.hpp>
+#include <hive/plugins/clive/clive_plugin.hpp>
+#include <hive/plugins/clive_api/clive_api_plugin.hpp>
 
 #include <fc/exception/exception.hpp>
 #include <fc/thread/thread.hpp>
@@ -34,13 +34,13 @@ int main( int argc, char** argv )
 
     appbase::app().register_plugin< hive::plugins::webserver::webserver_plugin >();
     appbase::app().register_plugin< hive::plugins::json_rpc::json_rpc_plugin >();
-    appbase::app().register_plugin< hive::plugins::wallet::wallet_plugin >();
-    appbase::app().register_plugin< hive::plugins::wallet_api::wallet_api_plugin >();
+    appbase::app().register_plugin< hive::plugins::clive::clive_plugin >();
+    appbase::app().register_plugin< hive::plugins::clive_api::clive_api_plugin >();
 
     theApp.set_app_name( "bee_keeper" );
 
     auto initializationResult = theApp.initialize<
-        hive::plugins::wallet_api::wallet_api_plugin,
+        hive::plugins::clive_api::clive_api_plugin,
         hive::plugins::webserver::webserver_plugin >
         ( argc, argv );
 

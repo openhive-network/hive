@@ -7,11 +7,11 @@
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
 
-namespace hive { namespace plugins { namespace wallet_api {
+namespace hive { namespace plugins { namespace clive_api {
 
 namespace detail
 {
-  class wallet_api_impl;
+  class clive_api_impl;
 }
 
 using plugins::json_rpc::void_type;
@@ -37,11 +37,11 @@ struct set_timeout_args
 };
 using set_timeout_return = void_type;
 
-class wallet_api
+class clive_api
 {
   public:
-    wallet_api();
-    ~wallet_api();
+    clive_api();
+    ~clive_api();
 
     DECLARE_API(
       (create)
@@ -50,11 +50,11 @@ class wallet_api
     )
 
   private:
-    std::unique_ptr< detail::wallet_api_impl > my;
+    std::unique_ptr< detail::clive_api_impl > my;
 };
 
-} } } // hive::plugins::wallet_api
+} } } // hive::plugins::clive_api
 
-FC_REFLECT( hive::plugins::wallet_api::wallet_args, (wallet_name) )
-FC_REFLECT( hive::plugins::wallet_api::create_return, (password) )
-FC_REFLECT( hive::plugins::wallet_api::set_timeout_args, (seconds) )
+FC_REFLECT( hive::plugins::clive_api::wallet_args, (wallet_name) )
+FC_REFLECT( hive::plugins::clive_api::create_return, (password) )
+FC_REFLECT( hive::plugins::clive_api::set_timeout_args, (seconds) )

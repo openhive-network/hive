@@ -1,6 +1,6 @@
 ADD_HIVE_EXECUTABLE ( NAME bee_keeper
                       SOURCES main.cpp
-                      LIBRARIES appbase webserver_plugin wallet_api_plugin wallet_plugin
+                      LIBRARIES appbase webserver_plugin clive_api_plugin clive_plugin
 )
 
 if( UNIX AND NOT APPLE )
