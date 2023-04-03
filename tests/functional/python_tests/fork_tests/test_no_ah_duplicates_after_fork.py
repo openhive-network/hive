@@ -7,8 +7,8 @@ def test_no_duplicates_in_account_history_plugin_after_fork(prepare_with_many_wi
     alpha_net = networks_builder.networks[0]
     beta_net = networks_builder.networks[1]
 
-    alpha_node = alpha_net.node('ApiNode0')
-    beta_node = beta_net.node('ApiNode1')
+    alpha_node = alpha_net.node('FullApiNode0')
+    beta_node = beta_net.node('FullApiNode1')
 
     # TRIGGER
     # Using network_node_api we block communication between alpha and beta parts.
@@ -33,8 +33,8 @@ def display_current_head_block_number_in_both_networks(info, nodes):
     return res
 
 def trigger_fork(alpha_net, beta_net):
-    alpha_node = alpha_net.node('ApiNode0')
-    beta_node = beta_net.node('ApiNode1')
+    alpha_node = alpha_net.node('FullApiNode0')
+    beta_node = beta_net.node('FullApiNode1')
 
     witness_node = alpha_net.node('WitnessNode0')
     tt.logger.info(f'Correct witnesses detection')
