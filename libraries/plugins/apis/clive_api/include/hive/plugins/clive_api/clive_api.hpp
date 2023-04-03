@@ -37,6 +37,9 @@ struct set_timeout_args
 };
 using set_timeout_return = void_type;
 
+using lock_all_args   = void_type;
+using lock_all_return = void_type;
+
 class clive_api
 {
   public:
@@ -47,6 +50,7 @@ class clive_api
       (create)
       (open)
       (set_timeout)
+      (lock_all)
     )
 
   private:
