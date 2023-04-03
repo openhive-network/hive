@@ -12,6 +12,7 @@
 #include <hive/chain/index.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/comment_object.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
@@ -221,3 +222,5 @@ void reputation_plugin::plugin_shutdown()
 }
 
 } } } // hive::plugins::reputation
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::reputation::reputation_index)

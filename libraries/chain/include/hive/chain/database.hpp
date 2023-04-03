@@ -11,8 +11,8 @@
 #include <hive/chain/notifications.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
-#include <hive/chain/util/decoded_types_data_storage.hpp>
 #include <hive/chain/util/signal.hpp>
+#include <hive/chain/util/type_registrar.hpp>
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -200,6 +200,9 @@ namespace chain {
       void initialize_state_independent_data(const open_args& args);
 
       bool is_included_block_unlocked(const block_id_type& block_id);
+
+      void begin_type_register_process(util::abstract_type_registrar& r);
+
     public:
       std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
       std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received);
@@ -829,16 +832,13 @@ namespace chain {
       template <typename T>
       void register_new_type()
       {
-        if (_decoded_types_data_storage)
-          _decoded_types_data_storage->register_new_type<T>();
-        else
-          FC_THROW("Tried to decode type when decoded types storage doesn't exist.");
+        util::type_registrar<T> r;
+        begin_type_register_process(r);
       }
 
     private:
 
       std::unique_ptr< database_impl > _my;
-      std::unique_ptr<util::decoded_types_data_storage> _decoded_types_data_storage;
 
       fork_database                 _fork_db;
       hardfork_versions             _hardfork_versions;

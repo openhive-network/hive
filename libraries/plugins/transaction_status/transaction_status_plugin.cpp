@@ -5,6 +5,7 @@
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 #include <hive/protocol/config.hpp>
 
 #include <fc/io/json.hpp>
@@ -352,3 +353,5 @@ void transaction_status_plugin::rebuild_state()
 #endif
 
 } } } // hive::plugins::transaction_status
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::transaction_status::transaction_status_index)

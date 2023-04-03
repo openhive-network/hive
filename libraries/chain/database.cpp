@@ -35,6 +35,7 @@
 #include <hive/chain/util/nai_generator.hpp>
 #include <hive/chain/util/dhf_processor.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
+#include <hive/chain/util/decoded_types_data_storage.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
@@ -117,20 +118,32 @@ class database_impl
 {
   public:
     database_impl( database& self );
+    void register_new_type(util::abstract_type_registrar&);
 
-    database&                                       _self;
-    evaluator_registry< operation >                 _evaluator_registry;
-    evaluator_registry< required_automated_action > _req_action_evaluator_registry;
-    evaluator_registry< optional_automated_action > _opt_action_evaluator_registry;
-    std::map<account_name_type, block_id_type>      _last_fast_approved_block_by_witness;
-    bool                                            _last_pushed_block_was_before_checkpoint = false; // just used for logging
+    database&                                         _self;
+    evaluator_registry< operation >                   _evaluator_registry;
+    evaluator_registry< required_automated_action >   _req_action_evaluator_registry;
+    evaluator_registry< optional_automated_action >   _opt_action_evaluator_registry;
+    std::map<account_name_type, block_id_type>        _last_fast_approved_block_by_witness;
+    util::decoded_types_data_storage                  _decoded_types_data_storage;
+    bool                                              _last_pushed_block_was_before_checkpoint = false; // just used for logging
 };
 
 database_impl::database_impl( database& self )
   : _self(self), _evaluator_registry(self), _req_action_evaluator_registry(self), _opt_action_evaluator_registry(self) {}
 
+void database_impl::register_new_type(util::abstract_type_registrar& r)
+{
+  r.register_type(_decoded_types_data_storage);
+}
+
 database::database()
-  : _my( new database_impl(*this) ), _decoded_types_data_storage(std::make_unique<util::decoded_types_data_storage>()) {}
+  : _my( new database_impl(*this) ) {}
+
+void database::begin_type_register_process(util::abstract_type_registrar& r)
+{
+  _my->register_new_type(r);
+}
 
 database::~database()
 {
@@ -4002,8 +4015,9 @@ void database::initialize_indexes()
 
 void database::initialize_irreversible_storage()
 {
+  _my->_decoded_types_data_storage.register_new_type<irreversible_object_type>();
+
   auto s = get_segment_manager();
-  register_new_type<irreversible_object_type>();
   irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
 }
 
@@ -4015,13 +4029,13 @@ void database::check_state_objects_definitions(const bool override_decoded_state
   if (!decoded_state_objects_data)
   {
     decoded_state_objects_data = s->construct<shared_string>( "decoded_state_objects_data_json" )(allocator< shared_string >(s));
-    *decoded_state_objects_data = _decoded_types_data_storage->generate_decoded_types_data_json_string();
+    *decoded_state_objects_data = _my->_decoded_types_data_storage.generate_decoded_types_data_json_string();
   }
   else if (override_decoded_state_objects_data)
-    *decoded_state_objects_data = _decoded_types_data_storage->generate_decoded_types_data_json_string();
+    *decoded_state_objects_data = _my->_decoded_types_data_storage.generate_decoded_types_data_json_string();
   else
   {
-    auto result = _decoded_types_data_storage->check_if_decoded_types_data_json_matches_with_current_decoded_data(to_string(*decoded_state_objects_data));
+    auto result = _my->_decoded_types_data_storage.check_if_decoded_types_data_json_matches_with_current_decoded_data(to_string(*decoded_state_objects_data));
 
     if (!result.first)
     {
@@ -4031,13 +4045,13 @@ void database::check_state_objects_definitions(const bool override_decoded_state
 
       loaded_decoded_types_details.open(loaded_data_filename, std::ios::out | std::ios::trunc);
       if (loaded_decoded_types_details.good())
-        loaded_decoded_types_details << _decoded_types_data_storage->generate_decoded_types_data_pretty_string(*decoded_state_objects_data);
+        loaded_decoded_types_details << _my->_decoded_types_data_storage.generate_decoded_types_data_pretty_string(*decoded_state_objects_data);
       loaded_decoded_types_details.flush();
       loaded_decoded_types_details.close();
 
       current_decoded_types_details.open(current_data_filename, std::ios::out | std::ios::trunc);
       if (current_decoded_types_details.good())
-        current_decoded_types_details << _decoded_types_data_storage->generate_decoded_types_data_pretty_string();
+        current_decoded_types_details << _my->_decoded_types_data_storage.generate_decoded_types_data_pretty_string();
       current_decoded_types_details.flush();
       current_decoded_types_details.close();
 
@@ -4046,8 +4060,6 @@ void database::check_state_objects_definitions(const bool override_decoded_state
                                                             ("details", result.second)(current_data_filename)(loaded_data_filename));
     }
   }
-
-  _decoded_types_data_storage.reset();
 }
 
 void database::resetState(const open_args& args)

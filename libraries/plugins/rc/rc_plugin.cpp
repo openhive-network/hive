@@ -18,6 +18,7 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/generic_custom_operation_interpreter.hpp>
 #include <hive/chain/index.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/chain/util/remove_guard.hpp>
 
@@ -1372,7 +1373,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     my->_post_apply_custom_operation_conn = db.add_post_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
       { try { my->on_post_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
 
-
     HIVE_ADD_PLUGIN_INDEX(db, rc_resource_param_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
     HIVE_ADD_PLUGIN_INDEX(db, rc_stats_index);
@@ -1617,3 +1617,11 @@ void remove_delegations( database& _db, int64_t& delegation_overflow, account_id
 }
 
 } } } // hive::plugins::rc
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_expired_delegation_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_resource_param_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_pool_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_stats_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_pending_data_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_direct_delegation_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_usage_bucket_index)

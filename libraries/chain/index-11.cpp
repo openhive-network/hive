@@ -11,6 +11,7 @@
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/witness_schedule.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 
 namespace hive { namespace chain {
 
@@ -23,3 +24,8 @@ void initialize_core_indexes_11( database& db )
 }
 
 } }
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::proposal_vote_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::comment_cashout_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::comment_cashout_ex_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::recurrent_transfer_index)

@@ -8,6 +8,8 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 
+#include <hive/chain/util/type_registrar_definition.hpp>
+
 namespace hive { namespace plugins { namespace account_by_key {
 
 namespace detail {
@@ -306,3 +308,5 @@ void account_by_key_plugin::plugin_shutdown()
 }
 
 } } } // hive::plugins::account_by_key
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::account_by_key::key_lookup_index)

@@ -7,6 +7,7 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/util/impacted.hpp>
+#include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/utilities/key_conversion.hpp>
 #include <hive/utilities/plugin_utilities.hpp>
@@ -695,3 +696,5 @@ void witness_plugin::plugin_shutdown()
 }
 
 } } } // hive::plugins::witness
+
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::witness::witness_custom_op_index)
