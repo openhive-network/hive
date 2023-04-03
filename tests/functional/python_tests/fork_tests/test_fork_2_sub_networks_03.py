@@ -22,8 +22,8 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
 
     witness_details_part  = sh.get_part_of_witness_details(networks_builder.witness_names, 4, 16)
 
-    minority_api_node       = networks_builder.networks[0].node('ApiNode0')
-    majority_api_node       = networks_builder.networks[1].node('ApiNode1')
+    minority_api_node       = networks_builder.networks[0].node('FullApiNode0')
+    majority_api_node       = networks_builder.networks[1].node('FullApiNode1')
     majority_witness_node   = networks_builder.networks[1].node('WitnessNode1')
 
     majority_witness_wallet = tt.Wallet(attach_to = majority_witness_node)

@@ -15,11 +15,11 @@ def prepare_with_many_witnesses() -> networks.NetworksBuilder:
         "networks": [
                         {
                             "InitNode"     : True,
-                            "ApiNode"      : True,
+                            "FullApiNode"  : True,
                             "WitnessNodes" :[3, 3, 2, 2]
                         },
                         {
-                            "ApiNode"      : True,
+                            "FullApiNode"  : True,
                             "WitnessNodes" :[3, 3, 2, 2]
                         }
                     ]
@@ -34,11 +34,11 @@ def prepare_fork_2_sub_networks_00() -> networks.NetworksBuilder:
         "networks": [
                         {
                             "InitNode"     : True,
-                            "ApiNode"      : True,
+                            "FullApiNode"  : True,
                             "WitnessNodes" :[3]
                         },
                         {
-                            "ApiNode"      : True,
+                            "FullApiNode"  : True,
                             "WitnessNodes" :[18]
                         }
                     ]
@@ -53,11 +53,11 @@ def prepare_fork_2_sub_networks_01() -> networks.NetworksBuilder:
         "networks": [
                         {
                             "InitNode"     : True,
-                            "ApiNode"      : True,
+                            "FullApiNode"  : True,
                             "WitnessNodes" :[6]
                         },
                         {
-                            "ApiNode"      : True,
+                            "FullApiNode"  : True,
                             "WitnessNodes" :[17]
                         }
                     ]
@@ -72,11 +72,11 @@ def prepare_fork_2_sub_networks_02() -> networks.NetworksBuilder:
         "networks": [
                         {
                             "InitNode"     : True,
-                            "ApiNode"      : True,
+                            "FullApiNode"  : True,
                             "WitnessNodes" :[6]
                         },
                         {
-                            "ApiNode"      : True,
+                            "FullApiNode"  : True,
                             "WitnessNodes" :[17]
                         }
                     ]
@@ -91,11 +91,11 @@ def prepare_fork_2_sub_networks_03() -> networks.NetworksBuilder:
         "networks": [
                         {
                             "InitNode"     : True,
-                            "ApiNode"      : True,
+                            "FullApiNode"  : True,
                             "WitnessNodes" :[3]
                         },
                         {
-                            "ApiNode"      : True,
+                            "FullApiNode"  : True,
                             "WitnessNodes" :[18]
                         }
                     ]

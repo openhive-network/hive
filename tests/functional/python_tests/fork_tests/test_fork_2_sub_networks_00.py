@@ -13,8 +13,8 @@ def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
 
     networks_builder = prepare_fork_2_sub_networks_00
 
-    minority_api_node = networks_builder.networks[0].node('ApiNode0')
-    majority_api_node = networks_builder.networks[1].node('ApiNode1')
+    minority_api_node = networks_builder.networks[0].node('FullApiNode0')
+    majority_api_node = networks_builder.networks[1].node('FullApiNode1')
 
     logs = []
 

@@ -7,7 +7,7 @@ def test_no_duplicates_in_account_history_plugin_after_restart(prepare_with_many
     # TRIGGER
     # We restart one of nodes.
     networks_builder = prepare_with_many_witnesses
-    api_node = networks_builder.networks[0].node('ApiNode0')
+    api_node = networks_builder.networks[0].node('FullApiNode0')
 
     head_block_num = api_node.api.condenser.get_dynamic_global_properties()['head_block_number']
     head_block_timestamp = api_node.api.block.get_block(block_num=head_block_num)['block']['timestamp']
