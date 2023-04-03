@@ -58,6 +58,11 @@ class ApiWrapper(NodeWrapper):
         return NodeWrapper.show(self, " ")
 
 @dataclass
+class FullApiWrapper(NodeWrapper):
+    def show(self) -> str:
+        return NodeWrapper.show(self, " ")
+
+@dataclass
 class WitnessWrapper(NodeWrapper):
     witnesses : list = field(default_factory = list)
 
@@ -82,6 +87,7 @@ class NetworkWrapper:
 
         self.init_node: InitNodeWrapper | None      = None
         self.api_node: ApiWrapper | None            = None
+        self.full_api_node: FullApiWrapper | None   = None
         self.witness_nodes: list[WitnessWrapper]    = []
 
     def show(self) -> str:
@@ -92,6 +98,9 @@ class NetworkWrapper:
 
         if self.api_node is not None:
             details.append(self.api_node.show())
+
+        if self.full_api_node is not None:
+            details.append(self.full_api_node.show())
 
         for witness_node in self.witness_nodes:
             details.append(witness_node.show())
@@ -149,6 +158,11 @@ class NetworksArchitecture:
                 current_net.api_node = ApiWrapper("ApiNode", api_node_prepare)
                 self.nodes_number += 1
 
+            full_api_node_active, full_api_node_prepare = self.get_api_init("FullApiNode", network)
+            if full_api_node_active:
+                current_net.full_api_node = FullApiWrapper("FullApiNode", full_api_node_prepare)
+                self.nodes_number += 1
+
             if witness_nodes := network.get("WitnessNodes", False):
                 self.nodes_number += len(witness_nodes)
 
@@ -203,6 +217,12 @@ class NetworksBuilder:
                 self.nodes.append(api_node)
                 if network.api_node.prepare:
                     self.prepare_nodes.append(api_node)
+
+            if network.full_api_node is not None:
+                full_api_node = tt.FullApiNode(network=tt_network)
+                self.nodes.append(full_api_node)
+                if network.full_api_node.prepare:
+                    self.prepare_nodes.append(full_api_node)
 
             self.networks.append(tt_network)
         assert init_node_can_be_empty or self.init_node is not None
