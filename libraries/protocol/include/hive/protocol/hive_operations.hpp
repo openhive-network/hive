@@ -1228,7 +1228,7 @@ FC_REFLECT( hive::protocol::custom_operation, (required_auths)(id)(data) )
 FC_REFLECT( hive::protocol::custom_json_operation, (required_auths)(required_posting_auths)(id)(json) )
 FC_REFLECT( hive::protocol::custom_binary_operation, (required_owner_auths)(required_active_auths)(required_posting_auths)(required_auths)(id)(data) )
 FC_REFLECT( hive::protocol::limit_order_create_operation, (owner)(orderid)(amount_to_sell)(min_to_receive)(fill_or_kill)(expiration) )
-FC_REFLECT( hive::protocol::limit_order_create2_operation, (owner)(orderid)(amount_to_sell)(exchange_rate)(fill_or_kill)(expiration) )
+FC_REFLECT( hive::protocol::limit_order_create2_operation, (owner)(orderid)(amount_to_sell)(fill_or_kill)(exchange_rate)(expiration) )
 FC_REFLECT( hive::protocol::limit_order_cancel_operation, (owner)(orderid) )
 
 FC_REFLECT( hive::protocol::delete_comment_operation, (author)(permlink) );
@@ -1244,7 +1244,7 @@ FC_REFLECT( hive::protocol::allowed_vote_assets, (votable_assets) )
 FC_REFLECT_TYPENAME( hive::protocol::comment_options_extension )
 FC_REFLECT( hive::protocol::comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)(extensions) )
 
-FC_REFLECT( hive::protocol::escrow_transfer_operation, (from)(to)(hbd_amount)(hive_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
+FC_REFLECT( hive::protocol::escrow_transfer_operation, (from)(to)(agent)(escrow_id)(hbd_amount)(hive_amount)(fee)(ratification_deadline)(escrow_expiration)(json_meta) );
 FC_REFLECT( hive::protocol::escrow_approve_operation, (from)(to)(agent)(who)(escrow_id)(approve) );
 FC_REFLECT( hive::protocol::escrow_dispute_operation, (from)(to)(agent)(who)(escrow_id) );
 FC_REFLECT( hive::protocol::escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(hbd_amount)(hive_amount) );
