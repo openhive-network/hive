@@ -333,21 +333,6 @@ namespace chainbase {
       generic_index( allocator<value_type> a )
       :_stack(a),_indices( a ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) {}
 
-      void validate()const {
-        if( sizeof(typename MultiIndexType::value_type) != _size_of_value_type || sizeof(*this) != _size_of_this )
-        {
-          char buffer[512];
-          std::snprintf( buffer, sizeof(buffer), "content of memory does not match data expected by executable. type-name: %s new-value-type-size: %s old-value-type-size: %s new-generic-index-size: %s old-generic-index-size: %s",
-            get_type_name().c_str(),
-            std::to_string( sizeof(typename MultiIndexType::value_type) ).c_str(),
-            std::to_string( _size_of_value_type ).c_str(),
-            std::to_string( sizeof(*this) ).c_str(),
-            std::to_string( _size_of_this ).c_str() );
-
-          CHAINBASE_THROW_EXCEPTION( std::runtime_error(buffer) );
-        }
-      }
-
       /**
         * Construct a new element in the multi_index_container.
         * Set the ID to the next available ID, then increment _next_id and fire off on_create().
@@ -1347,9 +1332,6 @@ namespace chainbase {
           idx_ptr = _found.first;
         }
 #endif
-
-
-        idx_ptr->validate();
 
         if( _is_index_new )
           _at_least_one_index_is_created_now = true;
