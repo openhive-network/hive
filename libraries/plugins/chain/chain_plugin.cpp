@@ -712,7 +712,7 @@ bool chain_plugin_impl::replay_blockchain()
       Returns information if the replay is last operation.
     */
     return appbase::app().is_interrupt_request()/*user triggered SIGINT/SIGTERM*/ || exit_after_replay/*shutdown node definitely*/;
-  } FC_CAPTURE_AND_LOG( () )
+  } FC_CAPTURE_LOG_AND_RETHROW( () )
 
   return true;
 }
