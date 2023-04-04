@@ -57,6 +57,14 @@ struct import_key_args
 };
 using import_key_return = void_type;
 
+struct remove_key_args
+{
+  std::string wallet_name;
+  std::string password;
+  std::string public_key;
+};
+using remove_key_return = void_type;
+
 class clive_api
 {
   public:
@@ -71,6 +79,7 @@ class clive_api
       (lock)
       (unlock)
       (import_key)
+      (remove_key)
     )
 
   private:
@@ -84,3 +93,4 @@ FC_REFLECT( hive::plugins::clive_api::create_return, (password) )
 FC_REFLECT( hive::plugins::clive_api::set_timeout_args, (seconds) )
 FC_REFLECT( hive::plugins::clive_api::unlock_args, (wallet_name)(password) )
 FC_REFLECT( hive::plugins::clive_api::import_key_args, (wallet_name)(wif_key) )
+FC_REFLECT( hive::plugins::clive_api::remove_key_args, (wallet_name)(password)(public_key) )
