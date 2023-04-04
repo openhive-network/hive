@@ -70,8 +70,9 @@ then
     fi
 fi
 echo "Didnt find valid previous replay, performing fresh replay"
-rm "${DATA_CACHE}/datadir" -rf
-rm "${DATA_CACHE}/shm_dir" -rf
+ls "${DATA_CACHE}" -lath
+docker run -v "${DATA_CACHE}":/data_cache alpine sh -c 'rm /data_cache/datadir -rf'
+docker run -v "${DATA_CACHE}":/data_cache alpine sh -c 'rm /data_cache/shm_dir -rf'
 
 echo "Preparing datadir and shm_dir in location ${DATA_CACHE}"
 "$SCRIPTPATH/prepare_data_and_shm_dir.sh" --data-base-dir="$DATA_CACHE" \
