@@ -64,6 +64,7 @@ namespace detail {
 
     void on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc, const hp::asset& account_creation_fee );
     void on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link );
+    bool handle_claim_account( hp::signed_block& b, size_t affected_tx_index, size_t affected_op_index );
   };
 
 
@@ -112,6 +113,22 @@ namespace detail {
     tx.operations.emplace_back( op );
 
     b.transactions.emplace( b.transactions.begin(), tx );
+  }
+
+  bool iceberg_generate_plugin_impl::handle_claim_account( hp::signed_block& b, size_t affected_tx_index, size_t affected_op_index )
+  {
+    if( b.transactions.at(affected_tx_index).operations.size() == 1 )
+    {
+      b.transactions.erase(b.transactions.begin() + affected_tx_index);
+
+      return true;
+    }
+    else
+    {
+      b.transactions.at(affected_tx_index).operations.erase(b.transactions.at(affected_tx_index).operations.begin() + affected_op_index);
+
+      return false;
+    }
   }
 
   void iceberg_generate_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
@@ -190,19 +207,32 @@ namespace detail {
           boost::container::flat_set<hp::account_name_type> new_accounts;
           std::vector<ops_permlink_tracker_result_t> permlinks;
 
-          for( auto& op : block.transactions.at(i).operations )
+          for( size_t j = 0; j < block.transactions.at(i).operations.size(); ++j )
           {
-            // Stripping operations content
-            if( enable_op_content_strip )
-              op = op.visit( ops_strip_content );
+            auto& op = block.transactions.at(i).operations.at(j);
 
             op.visit( ops_impacted_accounts_visitor{ new_accounts, all_accounts, converter } );
+
+            if( op.which() == 22 || op.which() == 23 )
+            {
+              if( handle_claim_account(block, i, j) )
+              {
+                ++i;
+                break;
+              }
+              ++j;
+              continue;
+            }
 
             // Collecting permlinks
             const auto created_permlink_data = op.visit(created_permlinks_visitor{});
             all_permlinks.insert( compute_author_and_permlink_hash( created_permlink_data ) );
 
             permlinks.emplace_back( op.visit(dependent_permlinks_visitor{}) );
+
+            // Stripping operations content
+            if( enable_op_content_strip )
+              op = op.visit( ops_strip_content );
           }
 
           for( const auto& dependent_permlink_data : permlinks )

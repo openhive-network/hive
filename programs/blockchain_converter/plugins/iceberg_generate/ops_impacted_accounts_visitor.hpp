@@ -38,8 +38,11 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
 
     // Operations creating accounts that should not collect accounts to be created:
 
-    // TODO: Handle claim_account_operation and create_claimed_account_operation
-
+    result_type operator()( const hive::protocol::create_claimed_account_operation& op )const
+    {
+      accounts_new.insert( op.creator );
+      accounts_created.insert( op.new_account_name );
+    }
     result_type operator()( const hive::protocol::account_create_operation& op )const
     {
       accounts_new.insert( op.creator );
