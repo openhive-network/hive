@@ -161,6 +161,8 @@ namespace detail {
     uint32_t last_witness_schedule_block_check = lib_num;
     hp::asset account_creation_fee = get_account_creation_fee( output_urls.at(0) );
 
+    ops_strip_content_visitor ops_strip_content{};
+
     // Pre-init: Detect required iceberg operations
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
@@ -192,7 +194,7 @@ namespace detail {
           {
             // Stripping operations content
             if( enable_op_content_strip )
-              op = op.visit( ops_strip_content_visitor{} );
+              op = op.visit( ops_strip_content );
 
             op.visit( ops_impacted_accounts_visitor{ new_accounts, all_accounts, converter } );
 

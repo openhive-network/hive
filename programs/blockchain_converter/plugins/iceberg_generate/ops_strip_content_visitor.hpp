@@ -2,11 +2,19 @@
 
 #include <hive/protocol/types.hpp>
 
+#include <string>
+
 namespace hive { namespace converter { namespace plugins { namespace iceberg_generate { namespace detail {
 
   class ops_strip_content_visitor
   {
+  private:
+    uint64_t nonce;
+
   public:
+    ops_strip_content_visitor()
+    : nonce(0) {}
+
     typedef hive::protocol::operation result_type;
 
     result_type operator()( hive::protocol::account_create_operation& op )const
@@ -113,9 +121,10 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hive::protocol::custom_json_operation& op )const
+    result_type operator()( hive::protocol::custom_json_operation& op )
     {
       op.json = "{}";
+      op.id = std::to_string(nonce++);
 
       return op;
     }
