@@ -4,6 +4,8 @@
 
 namespace hive { namespace chain { namespace util {
 
+const std::string HIVE_VOID_T = boost::core::demangle(typeid(hive::void_t).name());
+
 std::string calculate_checksum_from_string(const std::string_view str)
 {
   fc::ripemd160::encoder encoder;
@@ -11,14 +13,11 @@ std::string calculate_checksum_from_string(const std::string_view str)
   return std::move(encoder.result().str());
 }
 
-decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const size_t _type_size, const size_t type_align)
-  : size_of(_type_size), align_of(type_align), type_id(_type_id), checksum(_checksum)
+decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_name, const size_t _type_size, const size_t type_align)
+  : size_of(_type_size), align_of(type_align), name(_type_name), checksum(_checksum)
 {
-  FC_ASSERT(align_of);
-  FC_ASSERT(size_of);
-
-  if (type_id.empty())
-    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - type_id cannot be empty");
+  if (name.empty())
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - type_name cannot be empty");
   if (checksum.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - checksum cannot be empty");
   if (!align_of)
@@ -29,18 +28,17 @@ decoded_type_data::decoded_type_data(const std::string_view _checksum, const std
   reflected = false;
 }
 
-decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _name, const size_t _type_size, const size_t type_align,
+decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_name, const size_t _type_size, const size_t type_align,
                     members_vector_t&& _members)
-  : name(_name), members(std::move(_members)), size_of(_type_size), align_of(type_align), type_id(_type_id), checksum(_checksum)
+  : members(std::move(_members)), size_of(_type_size), align_of(type_align), name(_type_name), checksum(_checksum)
 {
-  if (type_id.empty())
-    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - type_id cannot be empty");
+
   if (checksum.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - checksum cannot be empty");
-  if (!name || name->empty())
+  if (name.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - field name must be specified." );
   //at the moment only hive::void_t is reflected structure with no members.
-  if (members->empty() && type_id != typeid(hive::void_t).name())
+  if (members->empty() && name != HIVE_VOID_T)
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members have to be specified. Type name: ${name}", (name) );
   if (!align_of)
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - align_of must be set");
@@ -50,14 +48,12 @@ decoded_type_data::decoded_type_data(const std::string_view _checksum, const std
   reflected = true;
 }
 
-decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _name, enum_values_vector_t&& _enum_values)
-  : name(_name), enum_values(std::move(_enum_values)), type_id(_type_id), checksum(_checksum)
+decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_name, enum_values_vector_t&& _enum_values)
+  : enum_values(std::move(_enum_values)), name(_type_name), checksum(_checksum)
 {
-  if (type_id.empty())
-    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - type_id cannot be empty");
   if (checksum.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - checksum cannot be empty");
-  if (!name || name->empty())
+  if (name.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - field name must be specified." );
   if (enum_values->empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Enum values have to be specified. Type name: ${name}", (name) );
@@ -76,13 +72,13 @@ decoded_type_data::decoded_type_data(const std::string& json)
   }
   FC_RETHROW_EXCEPTIONS(error, "Cannot create decoded_type_data from json: ${json}", (json))
 
-  if (checksum.empty() || type_id.empty())
+  if (checksum.empty() || name.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json misses basic decoded type data. ${json}", (json));
 
   //at the moment only hive::void_t is reflected structure with no members.
-  if (reflected && ((!name || name->empty()) || ((!members || members->empty()) && (!enum_values || enum_values->empty()) && type_id != typeid(hive::void_t).name())))
+  if (reflected && (((!members || members->empty()) && (!enum_values || enum_values->empty()) && name != HIVE_VOID_T)))
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with reflected decoded type doesn't contain enough data. ${json}", (json));
-  else if (!reflected && (name || members || enum_values))
+  else if (!reflected && (members || enum_values))
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with non reflected decoded type contains data for reflected type. ${json}", (json));
   
   if (enum_values->empty() && (!size_of || !align_of))
@@ -96,14 +92,14 @@ decoded_types_data_storage::~decoded_types_data_storage()
   dlog("decoded_types_data_storage object has been deleted. Decoded types map size: ${map_size}", ("map_size", decoded_types_data_map.size()));
 }
 
-bool decoded_types_data_storage::add_type_to_decoded_types_set(const std::string_view type_name)
+bool decoded_types_data_storage::add_type_to_decoded_types_set(const std::string_view type_id)
 {
-  return decoded_types_set.emplace(type_name).second;
+  return decoded_types_set.emplace(type_id).second;
 }
 
 void decoded_types_data_storage::add_decoded_type_data_to_map(decoded_type_data&& decoded_type)
 {
-  decoded_types_data_map.try_emplace(decoded_type.type_id, std::move(decoded_type));
+  decoded_types_data_map.try_emplace(decoded_type.name, std::move(decoded_type));
 }
 
 std::string decoded_types_data_storage::generate_decoded_types_data_json_string() const
@@ -142,7 +138,7 @@ decoded_types_data_storage::decoded_types_map_t generate_data_map_from_json(cons
       FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with decoded types data is not valid. Expecting a json object with decoded type data. ${decoded_types_data_json}", (decoded_types_data_json));
 
     const decoded_type_data loaded_decoded_type(fc::json::to_string(type_data));
-    decoded_types_map.try_emplace(loaded_decoded_type.type_id, std::move(loaded_decoded_type));
+    decoded_types_map.try_emplace(loaded_decoded_type.name, std::move(loaded_decoded_type));
   }
 
   return decoded_types_map;
@@ -191,12 +187,7 @@ std::pair<bool, std::string> decoded_types_data_storage::check_if_decoded_types_
       if (no_difference_detected)
         no_difference_detected = false;
 
-      error_ss << "Type is in current decoded types map but not in loaded decoded types map: ";
-
-      if (dtdm_decoded_type.name)
-        error_ss << *dtdm_decoded_type.name << "\n";
-      else
-        error_ss << dtdm_decoded_type.type_id << "\n";
+      error_ss << "Type is in current decoded types map but not in loaded decoded types map: " << dtdm_decoded_type.name << "\n";
     }
     else
     {
@@ -206,12 +197,9 @@ std::pair<bool, std::string> decoded_types_data_storage::check_if_decoded_types_
         if (no_difference_detected)
           no_difference_detected = false;
 
-        if (dtdm_decoded_type.name)
-          error_ss << "Reflected type: " << *dtdm_decoded_type.name;
-        else
-          error_ss << "Type with id: " << dtdm_key;
-
-        error_ss << " has checksum: " << dtdm_decoded_type.checksum << ", which diffs from loaded type: " << ldtm_decoded_type.checksum << "\n";
+        error_ss << "Reflected type: " << dtdm_decoded_type.name
+                 << " has checksum: " << dtdm_decoded_type.checksum
+                 << ", which diffs from loaded type: " << ldtm_decoded_type.checksum << "\n";
       }
     }
 
@@ -223,12 +211,7 @@ std::pair<bool, std::string> decoded_types_data_storage::check_if_decoded_types_
     if (no_difference_detected)
       no_difference_detected = false;
 
-    error_ss << "Type is in loaded decoded types map but not in current decoded types map: ";
-
-    if (ldtm_decoded_type.name)
-      error_ss << *ldtm_decoded_type.name << "\n";
-    else
-      error_ss << ldtm_decoded_type.type_id << "\n";
+    error_ss << "Type is in loaded decoded types map but not in current decoded types map: " << ldtm_decoded_type.name << "\n";
   }
 
   return std::pair<bool, std::string>(no_difference_detected, error_ss.str());
