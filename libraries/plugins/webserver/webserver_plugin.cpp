@@ -3,8 +3,6 @@
 
 #include <hive/plugins/json_rpc/utility.hpp>
 
-#include <hive/plugins/chain/chain_plugin.hpp>
-
 #include <fc/network/ip.hpp>
 #include <fc/log/logger_config.hpp>
 #include <fc/io/json.hpp>
@@ -154,8 +152,8 @@ template<typename websocket_server_type>
 class webserver_plugin_impl : public webserver_base
 {
   public:
-    webserver_plugin_impl( thread_pool_size_t _thread_pool_size, plugins::chain::chain_plugin& c ) :
-      thread_pool_size( _thread_pool_size ), chain( c )
+    webserver_plugin_impl( thread_pool_size_t _thread_pool_size ) :
+      thread_pool_size( _thread_pool_size )
     {
     }
 
@@ -188,9 +186,6 @@ class webserver_plugin_impl : public webserver_base
     std::unique_ptr< asio::io_service::work > thread_pool_work;
 
     plugins::json_rpc::json_rpc_plugin* api = nullptr;
-    boost::signals2::connection         chain_sync_con;
-
-    plugins::chain::chain_plugin& chain;
 
   private:
     void update_http_endpoint();
@@ -204,19 +199,6 @@ void webserver_plugin_impl<websocket_server_type>::startup()
   FC_ASSERT( api != nullptr, "Could not find API Register Plugin" );
 
   prepare_threads();
-
-  if( chain.get_state() != appbase::abstract_plugin::started )
-  {
-    ilog( "Waiting for chain plugin to start" );
-    chain_sync_con = chain.on_sync.connect( 0, [this]()
-    {
-      start_webserver();
-    });
-  }
-  else
-  {
-    start_webserver();
-  }
 }
 
 template<typename websocket_server_type>
@@ -596,9 +578,9 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
   auto _ws_deflate_enabled = options.at( "webserver-ws-deflate" ).as< bool >();
   ilog("Compression in webserver is ${_ws_deflate_enabled}", ("_ws_deflate_enabled", _ws_deflate_enabled ? "enabled" : "disabled"));
   if( _ws_deflate_enabled )
-    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size, appbase::app().get_plugin< plugins::chain::chain_plugin >() ) );
+    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size ) );
   else
-    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_nondeflate>( thread_pool_size, appbase::app().get_plugin< plugins::chain::chain_plugin >() ) );
+    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_nondeflate>( thread_pool_size ) );
 
   if( options.count( "webserver-http-endpoint" ) )
   {
@@ -662,6 +644,11 @@ void webserver_plugin::plugin_pre_shutdown()
 void webserver_plugin::plugin_shutdown()
 {
   // everything moved to pre_shutdown
+}
+
+void webserver_plugin::start_webserver()
+{
+  my->start_webserver();
 }
 
 } } } // hive::plugins::webserver

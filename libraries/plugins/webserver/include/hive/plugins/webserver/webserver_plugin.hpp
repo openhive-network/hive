@@ -1,9 +1,7 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
 #include <appbase/application.hpp>
 
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
-#include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <boost/thread.hpp>
 #include <boost/container/vector.hpp>
@@ -35,11 +33,13 @@ class webserver_plugin : public appbase::plugin< webserver_plugin >
     webserver_plugin();
     virtual ~webserver_plugin();
 
-    APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin)(plugins::json_rpc::json_rpc_plugin) );
+    APPBASE_PLUGIN_REQUIRES( (hive::plugins::json_rpc::json_rpc_plugin) );
 
     static const std::string& name() { static std::string name = HIVE_WEBSERVER_PLUGIN_NAME; return name; }
 
     virtual void set_program_options(options_description&, options_description& cfg) override;
+
+    void start_webserver();
 
   protected:
     virtual void plugin_initialize(const variables_map& options) override;

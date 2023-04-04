@@ -4,6 +4,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/plugins/chain/abstract_block_producer.hpp>
+#include <hive/plugins/webserver/webserver_plugin.hpp>
 
 #include <boost/signals2.hpp>
 
@@ -26,7 +27,7 @@ using synchronization_type = boost::signals2::signal<void()>;
 class chain_plugin : public plugin< chain_plugin >
 {
 public:
-  APPBASE_PLUGIN_REQUIRES()
+  APPBASE_PLUGIN_REQUIRES( (hive::plugins::webserver::webserver_plugin) )
 
   chain_plugin();
   virtual ~chain_plugin();
