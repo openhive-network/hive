@@ -28,7 +28,7 @@ void clive_plugin::set_program_options(boost::program_options::options_descripti
 }
 
 void clive_plugin::plugin_initialize(const boost::program_options::variables_map& options) {
-   ilog("initializing wallet plugin");
+   ilog("initializing clive plugin");
    try {
       wallet_manager_ptr = std::make_unique<wallet_manager>();
 
