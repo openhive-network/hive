@@ -192,35 +192,35 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
 {
   util::decoded_types_data_storage dtds;
 
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::account_by_key::key_lookup_object>(dtds), "21368c880381c5684dee87750479de271a2bfe76" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::account_history_rocksdb::volatile_operation_object>(dtds), "4c92b72006ceac2c3e984eb1978390947f3c41df" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::block_log_info::block_log_hash_state_object>(dtds), "6173e5b82a43b542b8374311dceba299c06685c8" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::block_log_info::block_log_pending_message_object>(dtds), "0660b7e1f7cb9767dbcc2defc736ff05bd067275" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::follow_object>(dtds), "dea18af8e14a666e16c235417cd3ebbf01f32ea9" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::feed_object>(dtds), "9fc01a4fab5f59c850109c281eaedadbeee73d8d" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::blog_object>(dtds), "21fb3738991bf0849e58462b8aa476f58e29c5ff" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::blog_author_stats_object>(dtds), "00913248b32659781431251262291e2e76564c48" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::reputation_object>(dtds), "2e27d233bd0c71cfe7429787e2913597e1cabbff" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::follow_count_object>(dtds), "c10d9d3107af456a1ad824860388c341b518a170" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::order_history_object>(dtds), "b43a086969ad26b9347ce2a876af17fdaf4fa0e8" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_resource_param_object>(dtds), "a283de5a95d6026c37e266f868836a4728cd1efd" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_pool_object>(dtds), "0de3692294cd21cdc895748f8d77cabc00cc11eb" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_pending_data>(dtds), "d01fb8e966668911fcccfeb69b2c409c4aa6647a" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_direct_delegation_object>(dtds), "4125192524090b813c6518262992af4248a368a9" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_usage_bucket_object>(dtds), "506973e9daf1e436612f27518c048c2e74e72603" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::reputation::reputation_object>(dtds), "dd76a68d64569b1a4b02d0910431e9c902656f11" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::tag_object>(dtds), "02c3f2f3c40de66efcc5f1033f6d62d1aef57961" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::tag_stats_object>(dtds), "05b570c3396c8176cba9abf9c7c0baaf93e8135e" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::author_tag_stats_object>(dtds), "c029d9bb0a30c846d47a4b4b9742bc55325fe093" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::transaction_status::transaction_status_object>(dtds), "20e988b5505821be0cb75a57a89999f4c168d00b" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::witness::witness_custom_op_object>(dtds), "8f227484c1a87918538c8727c916acf48bdbb965" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::account_by_key::key_lookup_object>(dtds), "b15664037aaf526e9abf4e295abc58bac301c813" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::account_history_rocksdb::volatile_operation_object>(dtds), "009775c2d4bf3384fa99c350674151b5c5c46b2a" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::block_log_info::block_log_hash_state_object>(dtds), "1ad502e939386f07fb513d48c8c07f9ff5a76a6a" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::block_log_info::block_log_pending_message_object>(dtds), "b7da18e0b992b242d903ac255ca3023151db5e16" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::follow_object>(dtds), "ec79acbc66b8210e1e6cd31c5edc8fc5d86618fe" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::feed_object>(dtds), "e81464ef261de05536c9ebfb72fbd401400516e3" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::blog_object>(dtds), "f937a7645c6d33f37ddc38b1d72546abc6724aa5" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::blog_author_stats_object>(dtds), "58e3ac97c4bc94439018638905b3bc9ff14fb7ce" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::reputation_object>(dtds), "49ee99bdff6ef39bc07ec1c8512a2e8818c74c8b" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::follow_count_object>(dtds), "e1411fd1ee8d2fff1f8e825162e93728edd35bbf" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::order_history_object>(dtds), "d44984762f037d0a93007dfc3f172c0cca5cf8f2" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_resource_param_object>(dtds), "f69f64d7e12147d2f2dc9615ec505d755164f2df" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_pool_object>(dtds), "13bb3709c6288a5c8456147c3e7ca2f415018932" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_pending_data>(dtds), "14ec7fb2db706f9031e1e1336649cbca7e6228a4" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_direct_delegation_object>(dtds), "2a3b2b9ef27ebc0069d05fcdba5206f9c9097b4d" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_usage_bucket_object>(dtds), "11320f8e96a49b16f18e55f24fc1d6624ee79a81" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::reputation::reputation_object>(dtds), "cacdc6e0294f4098f4cef0c3e0bc06e4d7ede488" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::tag_object>(dtds), "3b2e46494852fc71120a3da6d4530083ed046a3f" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::tag_stats_object>(dtds), "0de2c00c5633f9c1c7d79b5de15045b9016c772f" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::author_tag_stats_object>(dtds), "1fc079af51f6655c554ea2d30495802f626540b2" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::transaction_status::transaction_status_object>(dtds), "cb9ceb3c9d94912d0e5326d6ebfcd6110bd9c953" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::witness::witness_custom_op_object>(dtds), "685bb79eb173fc063846cf12f938c26125f7099c" );
 
   #ifdef HIVE_ENABLE_SMT
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::bucket_object>(dtds), "77f71ebcdf8ff22735400f3809b1a9884611ea8b" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_stats_object>(dtds), "2c5a48c0db94641b8a862b58a7783412659e0570" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::bucket_object>(dtds), "0ed6488aad10a231f02e7e58a5f7733362821c72" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_stats_object>(dtds), "99d4a9eaa914ddab85390759d598e449a2c3e176" );
   #else
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::bucket_object>(dtds), "c961c3886afa159b6bf38586d1b22500d31d6ce3" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_stats_object>(dtds), "e49e5008e8ee2d40fee07a5b8840403372f8d0bc" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::bucket_object>(dtds), "fc8f56ad056d2594e97aac6e7e618007a1bfecfb" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_stats_object>(dtds), "ec39a73776c12779ca1694a60aaa85b5c836abec" );
   #endif
 }
 
