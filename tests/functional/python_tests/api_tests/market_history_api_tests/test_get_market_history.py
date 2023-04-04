@@ -104,6 +104,9 @@ def test_bucket_output_parameters(node, tbds, hive_high, hive_low, non_hive_high
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account('alice', hives=tt.Asset.Test(1000), vests=tt.Asset.Test(100))
 
+    start_block = node.get_last_block_number()
+    tt.logger.info(f"Starting order creation at block: {start_block}") # Usually starts at block #3
+    
     wallet.api.create_order('alice', 0, tt.Asset.Test(100), tt.Asset.Tbd(10), False, 3600)
     wallet.api.create_order('initminer', 1, tt.Asset.Tbd(10), tt.Asset.Test(100), False, 3600)
 
@@ -112,6 +115,9 @@ def test_bucket_output_parameters(node, tbds, hive_high, hive_low, non_hive_high
 
     wallet.api.create_order('alice', 4, tt.Asset.Test(300), tt.Asset.Tbd(40), False, 3600)
     wallet.api.create_order('initminer', 5, tt.Asset.Tbd(40), tt.Asset.Test(300), False, 3600)
+
+    end_block = node.get_last_block_number()
+    tt.logger.info(f"Order creation finished at block: {end_block}") # Usually ends at block #9
 
     buckets = node.api.market_history.get_market_history(bucket_seconds=300, start=tt.Time.from_now(weeks=-1),
                                                          end=tt.Time.from_now(weeks=1))['buckets']
