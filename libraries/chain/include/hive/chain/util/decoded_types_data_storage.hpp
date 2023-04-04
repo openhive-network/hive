@@ -12,7 +12,7 @@
 
 #include <hive/protocol/fixed_string.hpp>
 
-#include <unordered_map>
+#include <map>
 #include <unordered_set>
 
 #include <boost/mpl/vector.hpp>
@@ -35,9 +35,11 @@ struct decoded_type_data
   using enum_values_vector_t = std::vector<std::pair<std::string, size_t>>;
 
   decoded_type_data() = delete;
-  decoded_type_data(const std::string_view _checksum, const std::string_view _type_id);
-  decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _name,
-                    members_vector_t&& _members, enum_values_vector_t&& _enum_values);
+
+  decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const size_t _type_size, const size_t type_align);
+  decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _name, enum_values_vector_t&& _enum_values);
+  decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _name, const size_t _type_size, const size_t type_align,
+                    members_vector_t&& _members);
 
   // json pattern: "{"reflected": bool, "type_id": string, "checksum": string, "size_of": int, "align_of": int}"
   // json pattern: "{"reflected": bool, "type_id": string, "checksum": string, "name": string, "size_of": int, "align_of": int, "members": [{"type":string, "name":string, "offset":int}, ...}]}"
@@ -47,6 +49,8 @@ struct decoded_type_data
   fc::optional<std::string> name;
   fc::optional<members_vector_t> members; // in case of structure
   fc::optional<enum_values_vector_t> enum_values; // in case of enum
+  fc::optional<size_t> size_of;
+  fc::optional<size_t> align_of;
   std::string type_id;
   std::string checksum;
   bool reflected;
@@ -76,8 +80,8 @@ class decoded_types_data_storage final
     template <typename ...Args> friend class decoders::non_reflected_types::specific_type_decoder;
 
   public:
-    using decoding_types_set_t = std::unordered_set<std::string>;
-    using decoded_types_map_t = std::unordered_map<std::string, decoded_type_data>;
+    // stores data about decoded types.
+    using decoded_types_map_t = std::map<std::string, decoded_type_data>;
 
     ~decoded_types_data_storage();
 
@@ -115,8 +119,9 @@ class decoded_types_data_storage final
     std::pair<bool, std::string> check_if_decoded_types_data_json_matches_with_current_decoded_data(const std::string& decoded_types_data_json) const;
 
   private:
-    decoding_types_set_t decoded_types_set; // we store typeid(T).name() here
-    decoded_types_map_t decoded_types_data_map; //key - type_id
+    using decoding_types_set_t = std::unordered_set<std::string>;
+    decoding_types_set_t decoded_types_set; // we store typeid(T).name() here. Set is used to kept info about types which are decoded or DURING decoding process.
+    decoded_types_map_t decoded_types_data_map; //key - type_id. Storing info about decoded types.
 };
 
 namespace decoders
@@ -161,12 +166,20 @@ namespace decoders
   };
 
   /* Tools for decoding reflected types and enums. */
+  template <typename T>
   class visitor_type_decoder
   {
     public:
-      visitor_type_decoder(decoded_type_data::members_vector_t& _members, const std::string_view type_name, decoded_types_data_storage& _dtds) : members(_members), dtds(_dtds)
+      visitor_type_decoder(decoded_types_data_storage& _dtds) : dtds(_dtds)
       {
-        encoder.write(type_name.data(), type_name.size());
+        type_id = typeid(T).name();
+        type_size_of = sizeof(T);
+        type_align_of = alignof(T);
+        const std::string size_str = std::to_string(type_size_of);
+        const std::string align_str = std::to_string(type_align_of);
+        encoder.write(type_id.data(), type_id.size());
+        encoder.write(size_str.data(), size_str.size());
+        encoder.write(align_str.data(), align_str.size());
       }
 
       template <typename Member, class Class, Member(Class::*member)>
@@ -192,21 +205,29 @@ namespace decoders
         encoder.write(member_offset_str.data(), member_offset_str.size());
         members.push_back({.type = fc::get_typename<Member>::name(), .name = field_name, .offset = member_offset});
       }
-      
-      fc::ripemd160 get_checksum() { return encoder.result(); }
+
+      decoded_type_data get_decoded_type_data()
+      {
+        return decoded_type_data(encoder.result().str(), type_id, fc::get_typename<T>::name(), type_size_of, type_align_of, std::move(members));
+      }
 
     private:
       mutable fc::ripemd160::encoder encoder;
-      decoded_type_data::members_vector_t& members;
+      std::string type_id;
+      mutable decoded_type_data::members_vector_t members;
       decoded_types_data_storage& dtds;
+      size_t type_size_of;
+      size_t type_align_of;
     };
 
+  template <typename T>
   class visitor_enum_decoder
   {
     public:
-      visitor_enum_decoder(decoded_type_data::enum_values_vector_t& _enum_values, const std::string_view enum_name) : enum_values(_enum_values)
+      visitor_enum_decoder()
       {
-        encoder.write(enum_name.data(), enum_name.size());
+        type_id = typeid(T).name();
+        encoder.write(type_id.data(), type_id.size());
       }
 
       void operator()(const char *name, const int64_t value) const
@@ -218,11 +239,15 @@ namespace decoders
         enum_values.push_back({value_name, value});
       }
 
-      fc::ripemd160 get_checksum() { return encoder.result(); }
+      decoded_type_data get_decoded_type_data()
+      {
+        return decoded_type_data(encoder.result().str(), type_id, fc::get_typename<T>::name(), std::move(enum_values));
+      }
 
     private:
       mutable fc::ripemd160::encoder encoder;
-      decoded_type_data::enum_values_vector_t& enum_values;
+      std::string type_id;
+      mutable decoded_type_data::enum_values_vector_t enum_values;
     };
 
   /* Throws a compilation error in case of instantiation. */
@@ -255,21 +280,15 @@ namespace decoders
 
       if constexpr (fc::reflector<T>::is_enum::value)
       {
-        decoded_type_data::enum_values_vector_t enum_values;
-        visitor_enum_decoder visitor(enum_values, type_id_name);
+        visitor_enum_decoder<T> visitor;
         fc::reflector<T>::visit(visitor);
-        const std::string_view type_name = fc::get_typename<T>::name();
-        dtds.add_decoded_type_data_to_map(std::move(
-          decoded_type_data(visitor.get_checksum().str(), type_id_name, type_name, std::move(decoded_type_data::members_vector_t()), std::move(enum_values))));
+        dtds.add_decoded_type_data_to_map(std::move(visitor.get_decoded_type_data()));
       }
       else
       {
-        decoded_type_data::members_vector_t members;
-        visitor_type_decoder visitor(members, type_id_name, dtds);
+        visitor_type_decoder<T> visitor(dtds);
         fc::reflector<T>::visit(visitor);
-        const std::string_view type_name = fc::get_typename<T>::name();
-        dtds.add_decoded_type_data_to_map(std::move(
-          decoded_type_data(visitor.get_checksum().str(), type_id_name, type_name, std::move(members), std::move(decoded_type_data::enum_values_vector_t()))));
+        dtds.add_decoded_type_data_to_map(std::move(visitor.get_decoded_type_data()));
       }
     }
   };
@@ -298,7 +317,7 @@ namespace decoders
 
         if (dtds.add_type_to_decoded_types_set(index_type_id))
         {
-          dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(index_type_id), index_type_id)));
+          dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(index_type_id), index_type_id, sizeof(T), alignof(T))));
           main_decoder<typename T::value_type> decoder;
           decoder.decode(dtds);
         }
@@ -314,7 +333,7 @@ namespace decoders
         const std::string_view boost_type_id = typeid(T).name();
 
         if (dtds.add_type_to_decoded_types_set(boost_type_id))
-          dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(boost_type_id), boost_type_id)));
+          dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(boost_type_id), boost_type_id, sizeof(T), alignof(T))));
       }
       /* Type should be hashable if it's not handled by one of above ifs. */
       else if constexpr (is_specific_type_decodable<T>::value)
@@ -351,7 +370,7 @@ namespace decoders
         ss << alignof(oid_value_type);
         ss << typeid(oid_value_type).name();
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(chainbase::oid<T>), alignof(chainbase::oid<T>))));
         main_decoder<T> decoder;
         decoder.decode(dtds);
       }
@@ -374,7 +393,7 @@ namespace decoders
         ss << alignof(oid_value_type);
         ss << typeid(oid_value_type).name();
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(chainbase::oid_ref<T>), alignof(chainbase::oid_ref<T>))));
         main_decoder<T> decoder;
         decoder.decode(dtds);
       }
@@ -397,7 +416,7 @@ namespace decoders
         ss << alignof(sec_since_epoch_type);
         ss << typeid(sec_since_epoch_type).name();
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(fc::time_point_sec), alignof(fc::time_point_sec))));
       }
     };
 
@@ -418,7 +437,7 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->second)));
         ss << typeid(nullObj->second).name();
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(fc::erpair<A, B>), alignof(fc::erpair<A, B>))));
 
         main_decoder<A> decoder_A;
         decoder_A.decode(dtds);
@@ -442,7 +461,7 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->data)));
         ss << typeid(nullObj->data).name();
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(fc::array<T, N>), alignof(fc::array<T, N>))));
         main_decoder<T> decoder;
         decoder.decode(dtds);
       }
@@ -463,7 +482,7 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->data)));
         ss << typeid(nullObj->data).name();
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(hive::protocol::fixed_string_impl<T>), alignof(hive::protocol::fixed_string_impl<T>))));
         main_decoder<T> decoder;
         decoder.decode(dtds);
       }
@@ -484,7 +503,7 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->_hash)));
         ss << typeid(nullObj->_hash).name();
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(fc::ripemd160), alignof(fc::ripemd160))));
       }
     };
 
@@ -502,7 +521,7 @@ namespace decoders
         fc::static_variant<T> sv;
         ss << typeid(sv.which()).name();
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(fc::static_variant<T>), alignof(fc::static_variant<T>))));
         main_decoder<T> decoder;
         decoder.decode(dtds);
       }
@@ -518,7 +537,7 @@ namespace decoders
         ss << type_id;
         ss << sizeof(fc::static_variant<>);
         ss << alignof(fc::static_variant<>);
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(fc::static_variant<>), alignof(fc::static_variant<>))));
       }
     };
 
@@ -537,7 +556,7 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->_hash)));
         ss << typeid(nullObj->_hash).name();
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(fc::sha256), alignof(fc::sha256))));
       }
     };
 
@@ -556,7 +575,7 @@ namespace decoders
         ss << size_t(static_cast<void*>(&(nullObj->data)));
         ss << typeid(nullObj->data).name();
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id)));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), type_id, sizeof(fc::int_array<T, N>), alignof(fc::int_array<T, N>))));
         main_decoder<T> decoder;
         decoder.decode(dtds);
       }
@@ -582,4 +601,4 @@ namespace decoders
 } } } // hive::chain::util
 
 FC_REFLECT(hive::chain::util::decoded_type_data::member_data, (type)(name)(offset))
-FC_REFLECT(hive::chain::util::decoded_type_data, (name)(members)(enum_values)(type_id)(checksum)(reflected))
+FC_REFLECT(hive::chain::util::decoded_type_data, (name)(members)(enum_values)(size_of)(align_of)(type_id)(checksum)(reflected))

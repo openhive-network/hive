@@ -11,20 +11,27 @@ std::string calculate_checksum_from_string(const std::string_view str)
   return std::move(encoder.result().str());
 }
 
-decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_id)
-  : type_id(_type_id), checksum(_checksum)
+decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const size_t _type_size, const size_t type_align)
+  : size_of(_type_size), align_of(type_align), type_id(_type_id), checksum(_checksum)
 {
+  FC_ASSERT(align_of);
+  FC_ASSERT(size_of);
+
   if (type_id.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - type_id cannot be empty");
   if (checksum.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - checksum cannot be empty");
+  if (!align_of)
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - align_of must be set");
+  if (!size_of)
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - size_of must be set");
 
   reflected = false;
 }
 
-decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _name,
-                                     members_vector_t&& _members, enum_values_vector_t&& _enum_values)
-  : name(_name), type_id(_type_id), checksum(_checksum)
+decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _name, const size_t _type_size, const size_t type_align,
+                    members_vector_t&& _members)
+  : name(_name), members(std::move(_members)), size_of(_type_size), align_of(type_align), type_id(_type_id), checksum(_checksum)
 {
   if (type_id.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - type_id cannot be empty");
@@ -32,20 +39,28 @@ decoded_type_data::decoded_type_data(const std::string_view _checksum, const std
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - checksum cannot be empty");
   if (!name || name->empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - field name must be specified." );
-
-  const bool has_members = !_members.empty();
-  const bool has_enum_values = !_enum_values.empty();
-
   //at the moment only hive::void_t is reflected structure with no members.
-  if (!has_members && !has_enum_values && type_id != typeid(hive::void_t).name())
-    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members or enum_values vector have to be specified. Type name: ${name}", (name) );
-  else if (has_members && has_enum_values)
-    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members and enum_values vector cannot be specified together. Type name: ${name}", (name) );
+  if (members->empty() && type_id != typeid(hive::void_t).name())
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members have to be specified. Type name: ${name}", (name) );
+  if (!align_of)
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - align_of must be set");
+  if (!size_of)
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - size_of must be set");
 
-  if (has_members)
-    members = std::move(_members);
-  else
-    enum_values = std::move(_enum_values);
+  reflected = true;
+}
+
+decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_id, const std::string_view _name, enum_values_vector_t&& _enum_values)
+  : name(_name), enum_values(std::move(_enum_values)), type_id(_type_id), checksum(_checksum)
+{
+  if (type_id.empty())
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - type_id cannot be empty");
+  if (checksum.empty())
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - checksum cannot be empty");
+  if (!name || name->empty())
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - field name must be specified." );
+  if (enum_values->empty())
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Enum values have to be specified. Type name: ${name}", (name) );
 
   reflected = true;
 }
@@ -69,6 +84,11 @@ decoded_type_data::decoded_type_data(const std::string& json)
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with reflected decoded type doesn't contain enough data. ${json}", (json));
   else if (!reflected && (name || members || enum_values))
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with non reflected decoded type contains data for reflected type. ${json}", (json));
+  
+  if (enum_values->empty() && (!size_of || !align_of))
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with decoded type should contains data about sizeof and alignof if type is not an reflected enum. ${json}", (json));
+  else if (!enum_values->empty() && (size_of || align_of))
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with decoded reflected type should not contains data about sizeof and alignof. ${json}", (json));
 }
 
 decoded_types_data_storage::~decoded_types_data_storage()
@@ -97,7 +117,7 @@ std::string decoded_types_data_storage::generate_decoded_types_data_json_string(
   return fc::json::to_string(decoded_types_vector);
 }
 
-std::unordered_map<std::string, decoded_type_data> generate_data_map_from_json(const std::string& decoded_types_data_json)
+decoded_types_data_storage::decoded_types_map_t generate_data_map_from_json(const std::string& decoded_types_data_json)
 {
   if (decoded_types_data_json.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with decoded types data cannot be empty.");
@@ -114,8 +134,7 @@ std::unordered_map<std::string, decoded_type_data> generate_data_map_from_json(c
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with decoded types data is not valid. Expecting a an array of objects. ${decoded_types_data_json}", (decoded_types_data_json));
 
   const auto& json_array = json.get_array();
-  std::unordered_map<std::string, decoded_type_data> decoded_types_map;
-  decoded_types_map.reserve(json_array.size());
+  decoded_types_data_storage::decoded_types_map_t decoded_types_map;
 
   for (const fc::variant& type_data : json_array)
   {
