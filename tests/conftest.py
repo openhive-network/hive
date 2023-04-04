@@ -44,7 +44,9 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
     """
     def __create_init_node() -> tt.InitNode:
         init_node = tt.InitNode()
-        init_node.config.plugin.extend(__get_plugins())
+        init_node.config.plugin.extend([plugin for plugin in __get_plugins() if plugin not in ["condenser_api"]])
+        # init_node.config.plugin.extend(__get_plugins())
+        init_node.config.plugin.append("condenser_api")  # FIXME eliminate condenser_api usage from other tests than this API specific
         init_node.run()
         return init_node
 
