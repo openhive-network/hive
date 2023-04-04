@@ -30,7 +30,6 @@ struct create_return
 using open_args   = wallet_args;
 using open_return = void_type;
 
-
 struct set_timeout_args
 {
   int64_t seconds;
@@ -42,6 +41,14 @@ using lock_all_return = void_type;
 
 using lock_args   = wallet_args;
 using lock_return = void_type;
+
+
+struct unlock_args
+{
+  std::string wallet_name;
+  std::string password;
+};
+using unlock_return = void_type;
 
 class clive_api
 {
@@ -55,6 +62,7 @@ class clive_api
       (set_timeout)
       (lock_all)
       (lock)
+      (unlock)
     )
 
   private:
@@ -66,3 +74,4 @@ class clive_api
 FC_REFLECT( hive::plugins::clive_api::wallet_args, (wallet_name) )
 FC_REFLECT( hive::plugins::clive_api::create_return, (password) )
 FC_REFLECT( hive::plugins::clive_api::set_timeout_args, (seconds) )
+FC_REFLECT( hive::plugins::clive_api::unlock_args, (wallet_name)(password) )
