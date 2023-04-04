@@ -13,7 +13,10 @@
 #include <set>
 
 #if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
-#define HIVE_NUM_HARDFORKS 29
+  #define HIVE_NUM_HARDFORKS 29
+#elif defined(USE_ALTERNATE_CHAIN_ID)
+  #define HIVE_NUM_HARDFORKS 28
 #else
-#define HIVE_NUM_HARDFORKS 28
+  /// Mainnet atm supports only HF27
+  #define HIVE_NUM_HARDFORKS 27
 #endif
