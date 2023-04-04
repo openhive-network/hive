@@ -32,10 +32,8 @@ int main( int argc, char** argv )
 
     theApp.add_program_options( bpo::options_description(), options );
 
-    appbase::app().register_plugin< hive::plugins::webserver::webserver_plugin >();
-    appbase::app().register_plugin< hive::plugins::json_rpc::json_rpc_plugin >();
-    appbase::app().register_plugin< hive::plugins::clive::clive_plugin >();
-    appbase::app().register_plugin< hive::plugins::clive_api::clive_api_plugin >();
+    appbase::app().register_plugin<hive::plugins::clive_api::clive_api_plugin>();
+    appbase::app().register_plugin<hive::plugins::webserver::webserver_plugin>();
 
     theApp.set_app_name( "bee_keeper" );
 
@@ -55,6 +53,8 @@ int main( int argc, char** argv )
       fc::print_stacktrace_on_segfault();
       ilog( "Backtrace on segfault is enabled." );
     }
+
+    appbase::app().get_plugin<hive::plugins::webserver::webserver_plugin>().start_webserver();
 
     theApp.startup();
     theApp.exec();

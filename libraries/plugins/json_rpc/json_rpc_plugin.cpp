@@ -179,7 +179,7 @@ namespace detail
         (get_signature) )
 
       std::unique_ptr< json_rpc_logger >                 _logger;
-      std::function<bool()>                              _check_serialization_status;
+      std::function<bool()>                              _check_serialization_status = [](){ return true; };
   };
 
   json_rpc_plugin_impl::json_rpc_plugin_impl() {}
@@ -219,6 +219,7 @@ namespace detail
 
   void json_rpc_plugin_impl::initialize()
   {
+    ilog("initializing JSON RPC plugin");
     JSON_RPC_REGISTER_API( "jsonrpc" );
   }
 
