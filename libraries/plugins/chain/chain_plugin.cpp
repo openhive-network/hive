@@ -113,11 +113,14 @@ namespace detail {
 class chain_plugin_impl
 {
   public:
-    chain_plugin_impl() {}
+    chain_plugin_impl(): webserver( appbase::app().get_plugin<hive::plugins::webserver::webserver_plugin>() )
+    {}
     ~chain_plugin_impl() 
     {
       stop_write_processing();
-      if(dumper_post_apply_block.connected()) dumper_post_apply_block.disconnect();
+
+      if( chain_sync_con.connected() )
+        chain_sync_con.disconnect();
     }
 
     void register_snapshot_provider(state_snapshot_provider& provider)
@@ -138,6 +141,7 @@ class chain_plugin_impl
     void process_snapshot();
     bool check_data_consistency();
 
+    void prepare_work( bool started, synchronization_type& on_sync );
     void work( synchronization_type& on_sync );
 
     void write_default_database_config( bfs::path& p );
@@ -213,6 +217,9 @@ class chain_plugin_impl
     fc::optional<sync_progress_data> sync_progress;
 
     class write_request_visitor;
+
+    boost::signals2::connection                 chain_sync_con;
+    hive::plugins::webserver::webserver_plugin& webserver;
 };
 
 struct chain_plugin_impl::write_request_visitor
@@ -720,6 +727,22 @@ void chain_plugin_impl::process_snapshot()
     snapshot_provider->process_explicit_snapshot_requests( db_open_args );
 }
 
+void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_sync )
+{
+  if( !started )
+  {
+    ilog( "Waiting for chain plugin to start" );
+    chain_sync_con = on_sync.connect( 0, [this]()
+    {
+      webserver.start_webserver();
+    });
+  }
+  else
+  {
+      webserver.start_webserver();
+  }
+}
+
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
   ilog( "Started on blockchain with ${n} blocks, LIB: ${lb}", ("n", db.head_block_num())("lb", db.get_last_irreversible_block_num()) );
@@ -1032,6 +1055,7 @@ void chain_plugin::plugin_startup()
   ilog("Looking for snapshot processing requests...");
   my->process_snapshot();
 
+  my->prepare_work( get_state() == appbase::abstract_plugin::started, on_sync );
 
   if( my->replay )
   {
