@@ -171,40 +171,20 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
       auto env = _segment->find< environment_check >( "environment" );
 
-      if( flags & skip_env_check )
-      {
-        if( !env.first )
-        {
-          _segment->construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
-        }
-        else
-        {
-          *env.first = environment_check( allocator< environment_check >( _segment->get_segment_manager() ) );
-          if (environment_extension)
-          {
-            env.first->version_info = environment_extension->version_info.c_str();
-            for( auto& item : environment_extension->plugins )
-              env.first->plugins.insert( shared_string( item.c_str(), _segment->get_segment_manager() ) );
-          }
-        }
+      environment_check eCheck( allocator< environment_check >( _segment->get_segment_manager() ) );
+      if( !env.first || !( *env.first == eCheck) ) {
+        if(!env.first)
+          BOOST_THROW_EXCEPTION( std::runtime_error( "Unable to find environment data saved in persistent storage. Probably database created by a different compiler, build, or operating system" ) );
+
+        std::string dp = env.first->dump();
+        std::string dr = eCheck.dump();
+        BOOST_THROW_EXCEPTION(std::runtime_error("Different persistent & runtime environments. Persistent: `" + dp + "'. Runtime: `"+ dr + "'.Probably database created by a different compiler, build, or operating system"));
       }
-      else
-      {
-        environment_check eCheck( allocator< environment_check >( _segment->get_segment_manager() ) );
-        if( !env.first || !( *env.first == eCheck) ) {
-          if(!env.first)
-            BOOST_THROW_EXCEPTION( std::runtime_error( "Unable to find environment data saved in persistent storage. Probably database created by a different compiler, build, or operating system" ) );
 
-          std::string dp = env.first->dump();
-          std::string dr = eCheck.dump();
-          BOOST_THROW_EXCEPTION(std::runtime_error("Different persistent & runtime environments. Persistent: `" + dp + "'. Runtime: `"+ dr + "'.Probably database created by a different compiler, build, or operating system"));
-        }
+      if (env.first->created_storage)
+        env.first->created_storage = false;
 
-        if (env.first->created_storage)
-          env.first->created_storage = false;
-
-        std::cout << "Compiler and build environment read from persistent storage: `" << env.first->dump() << '\'' << std::endl;
-      }
+      std::cout << "Compiler and build environment read from persistent storage: `" << env.first->dump() << '\'' << std::endl;
     } else {
       _file_size = shared_file_size;
       _segment.reset( new bip::managed_mapped_file( bip::create_only,

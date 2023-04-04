@@ -181,7 +181,7 @@ void database::open( const open_args& args )
 void database::initialize_state_independent_data(const open_args& args)
 {
   initialize_indexes();
-  check_state_objects_definitions(args.chainbase_flags & chainbase::skip_env_check);
+  check_state_objects_definitions();
   initialize_evaluators();
   initialize_irreversible_storage();
 
@@ -242,17 +242,10 @@ void database::load_state_initial_data(const open_args& args)
     ilog("Blockchain state database is AT IRREVERSIBLE state specific to head block: ${hb} and LIB: ${lb}",
          ("hb", head_block_num())("lb", this->get_last_irreversible_block_num()));
 
-    if (args.chainbase_flags & chainbase::skip_env_check)
-    {
-      set_revision(head_block_num());
-    }
-    else
-    {
-      FC_ASSERT(revision() == head_block_num(), "Chainbase revision does not match head block num.",
-                ("rev", revision())("head_block", head_block_num()));
-      if (args.do_validate_invariants)
-        validate_invariants();
-    }
+    FC_ASSERT(revision() == head_block_num(), "Chainbase revision does not match head block num.",
+             ("rev", revision())("head_block", head_block_num()));
+    if (args.do_validate_invariants)
+      validate_invariants();
   });
 
   if (head_block_num())
@@ -4028,14 +4021,14 @@ void database::initialize_irreversible_storage()
   irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
 }
 
-void database::check_state_objects_definitions(const bool override_decoded_state_objects_data)
+void database::check_state_objects_definitions()
 {
   FC_ASSERT(_my->_decoded_types_data_storage);
   _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();
 
   const std::string decoded_state_objects_data = get_decoded_state_objects_data();
 
-  if (decoded_state_objects_data.empty() || override_decoded_state_objects_data)
+  if (decoded_state_objects_data.empty())
     set_decoded_state_objects_data(_my->_decoded_types_data_storage->generate_decoded_types_data_json_string());
   else
   {

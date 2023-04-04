@@ -674,8 +674,6 @@ void chain_plugin_impl::open()
     blockchain_worker_thread_pool::get_instance().shutdown();
 
     wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
-    wlog( "If you know what you are doing you can skip this check and force open the database using `--force-open`." );
-    wlog( "WARNING: THIS MAY CORRUPT YOUR DATABASE. FORCE OPEN AT YOUR OWN RISK." );
     wlog( " Error: ${e}", ("e", e) );
     hive::notify_hived_status("exitting with open database error");
     
@@ -808,7 +806,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
-      ("force-open", bpo::bool_switch()->default_value(false), "force open the database, skipping the environment check" )
       ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
       ("stop-replay-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
       ("exit-after-replay", bpo::bool_switch()->default_value(false), "[ DEPRECATED ] Exit after reaching given block number")
@@ -847,8 +844,6 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
   if( options.count( "shared-file-scale-rate" ) )
     my->shared_file_scale_rate = options.at( "shared-file-scale-rate" ).as< uint16_t >();
-
-  my->chainbase_flags |= options.at( "force-open" ).as< bool >() ? chainbase::skip_env_check : chainbase::skip_nothing;
 
   my->force_replay        = options.count( "force-replay" ) ? options.at( "force-replay" ).as<bool>() : false;
   my->validate_during_replay =

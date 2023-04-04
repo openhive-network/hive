@@ -634,7 +634,7 @@ namespace chain {
       // Reset irreversible state (unaffected by undo)
       void initialize_irreversible_storage();
 
-      void check_state_objects_definitions(const bool override_decoded_state_objects_data);
+      void check_state_objects_definitions();
 
       void resetState(const open_args& args);
 
