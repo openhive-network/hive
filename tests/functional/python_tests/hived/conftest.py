@@ -6,7 +6,7 @@ from pytest import fixture
 import test_tools as tt
 
 
-@fixture(scope='package')
+@fixture
 def block_log_helper() -> Tuple[tt.BlockLog, int]:
     BLOCK_COUNT = 30
 
@@ -19,15 +19,15 @@ def block_log_helper() -> Tuple[tt.BlockLog, int]:
 
     node.close()
     tt.logger.info(f'prepared block log with {block_log_length} blocks')
-    yield node.block_log, block_log_length
+    return node.block_log, block_log_length
 
 
-@fixture(scope='package')
+@fixture 
 def block_log(block_log_helper) -> Path:
     return block_log_helper[0].path
 
 
-@fixture(scope='package')
+@fixture 
 def block_log_length(block_log_helper) -> int:
     return block_log_helper[1]
 
