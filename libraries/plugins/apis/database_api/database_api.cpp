@@ -2191,6 +2191,15 @@ DEFINE_READ_APIS( database_api,
 
 
 
+#include <iostream>
+#include <string>
+#include <pqxx/pqxx>
+
+
+#include <fc/variant.hpp>
+#include <fc/io/json.hpp>
+#include <hive/protocol/operations.hpp>
+
 #include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
 
 
@@ -2630,6 +2639,66 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 
   return r;
 }
+
+void try_grab_operations_C_impl( int from ,   int to ,  const char *context,   const char *postgres_url )
+{
+
+  pqxx::connection c{postgres_url};
+
+  {
+    pqxx::work txn{c};
+    pqxx::result r{txn.exec("SELECT COUNT(*) FROM hive.blocks")};
+
+    std::cout << "mtlk columns count=" << r.columns() << "\n";
+    std::cout << "mtlk column name=" << r.column_name(0) << "\n";
+    std::cout << "mtlk rows  count=" << r.size() << "\n";
+
+    for (auto row: r)
+        std::cout
+      // Address column by name.  Use c_str() to get C-style string.
+      << row["count"].c_str()
+      << " makes "
+      // Address column by zero-based index.  Use as<int>() to parse as int.
+      << row[0].as<int>()
+      << "."
+      << std::endl;
+      txn.commit();
+  }
+
+  pqxx::work txn{c};
+  pqxx::result r{txn.exec("SELECT block_num, body FROM hive.operations WHERE block_num >= " 
+                            + std::to_string(from) 
+                            + " and block_num <= " 
+                            + std::to_string(to) 
+                            + " ORDER BY id ASC")};
+
+  for(auto i = 0; i < r.columns(); ++i)
+  {
+    std::cout << "Column " << i << " name=" << r.column_name(i) << " type= " << r.column_type(r.column_name(i)) << std::endl;
+  }
+
+  for (const auto &row: r)
+  {
+    for (const auto &field: row) std::cout << field.c_str() << '\t';
+    std::cout << std::endl;
+    const auto& o = row[1];
+    std::string json = std::string(o.c_str());
+    fc::variant v = fc::json::from_string( json );
+
+    hive::protocol::operation op;
+
+    fc::from_variant( v, op );
+
+    wlog("op=${op}", ("op", op));
+
+    //std::cout << op << std::endl;
+
+  }
+
+  txn.commit();
+}
+
+
 
 
 }
