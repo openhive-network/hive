@@ -39,7 +39,7 @@ namespace hive { namespace chain {
   };
   typedef shared_ptr<fork_item> item_ptr;
 
-  struct forkdb_lock_exception : public std::exception
+  struct forkdb_lock_exception : public chainbase::lock_exception
   {
     explicit forkdb_lock_exception() {}
     virtual ~forkdb_lock_exception() {}

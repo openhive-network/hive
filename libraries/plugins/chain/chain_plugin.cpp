@@ -114,7 +114,10 @@ class chain_plugin_impl
 {
   public:
     chain_plugin_impl(): webserver( appbase::app().get_plugin<hive::plugins::webserver::webserver_plugin>() )
-    {}
+    {
+      appbase::app().get_plugin<hive::plugins::json_rpc::json_rpc_plugin>().add_serialization_status( [this](){ return db.has_hardfork( HIVE_HARDFORK_1_26 ); } );
+    }
+
     ~chain_plugin_impl() 
     {
       stop_write_processing();
@@ -787,7 +790,7 @@ void chain_plugin_impl::setup_benchmark_dumper()
 } // detail
 
 
-chain_plugin::chain_plugin() : my( new detail::chain_plugin_impl() ) {}
+chain_plugin::chain_plugin(){}
 chain_plugin::~chain_plugin(){}
 
 database& chain_plugin::db() { return my->db; }
@@ -847,6 +850,8 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 }
 
 void chain_plugin::plugin_initialize(const variables_map& options) {
+  my.reset( new detail::chain_plugin_impl() );
+
   hive::utilities::notifications::setup_notifications(options);
   my->shared_memory_dir = app().data_dir() / "blockchain";
 

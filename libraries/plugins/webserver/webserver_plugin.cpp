@@ -7,6 +7,7 @@
 #include <fc/log/logger_config.hpp>
 #include <fc/io/json.hpp>
 #include <fc/network/resolve.hpp>
+#include <fc/thread/thread.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/bind/bind.hpp>
@@ -140,6 +141,7 @@ class webserver_base
   public:
 
     virtual void startup() = 0;
+    virtual void start_webserver() = 0;
     virtual void stop_webserver() = 0;
     virtual ~webserver_base() {};
 
@@ -160,7 +162,7 @@ class webserver_plugin_impl : public webserver_base
     void startup() override;
     void prepare_threads();
 
-    void start_webserver();
+    void start_webserver() override;
     void stop_webserver() override;
 
     void handle_ws_message( websocket_server_type*, connection_hdl, const typename websocket_server_type::message_ptr& );

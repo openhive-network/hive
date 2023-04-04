@@ -1,5 +1,4 @@
 #pragma once
-#include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/clive/clive_plugin.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 
