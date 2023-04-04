@@ -23,19 +23,20 @@ typedef std::vector< std::pair< std::string, std::string > > expected_t;
 
 BOOST_FIXTURE_TEST_SUITE( condenser_get_account_history_tests, condenser_api_fixture );
 
-void test_get_account_history( const condenser_api_fixture& caf, const std::vector< std:: string >& account_names, const std::vector< expected_t >& expected_operations )
+void test_get_account_history( const condenser_api_fixture& caf, const std::vector< std:: string >& account_names, const std::vector< expected_t >& expected_operations,
+  uint64_t filter_low = 0xFFFFFFFF'FFFFFFFFull, uint64_t filter_high = 0xFFFFFFFF'FFFFFFFFull )
 {
   // For each requested account ...
-  BOOST_REQUIRE( expected_operations.size() == account_names.size() );
+  BOOST_REQUIRE_EQUAL( expected_operations.size(), account_names.size() );
   for( size_t account_index = 0; account_index < account_names.size(); ++account_index)
   {
     const auto& account_name = account_names[ account_index ];
     const auto& expected_for_account = expected_operations[ account_index ];
 
-    auto ah1 = caf.account_history_api->get_account_history( {account_name, 100 /*start*/, 100 /*limit*/, false /*include_reversible*/ /*, filter_low, filter_high*/ } );
-    auto ah2 = caf.condenser_api->get_account_history( condenser_api::get_account_history_args( {account_name, 100 /*start*/, 100 /*limit*/ /*, filter_low, filter_high*/} ) );
-    BOOST_REQUIRE( ah1.history.size() == ah2.size() );
-    BOOST_REQUIRE( expected_for_account.size() == ah2.size() );
+    auto ah1 = caf.account_history_api->get_account_history( {account_name, 100 /*start*/, 100 /*limit*/, false /*include_reversible*/, filter_low, filter_high } );
+    auto ah2 = caf.condenser_api->get_account_history( condenser_api::get_account_history_args( {account_name, 100 /*start*/, 100 /*limit*/, filter_low, filter_high} ) );
+    BOOST_REQUIRE_EQUAL( ah1.history.size(), ah2.size() );
+    BOOST_REQUIRE_EQUAL( expected_for_account.size(), ah2.size() );
     ilog( "${n} operation(s) in account ${account} history", ("n", ah2.size())("account", account_name) );
 
     // For each event (operation) in account history ...
@@ -61,7 +62,58 @@ void test_get_account_history( const condenser_api_fixture& caf, const std::vect
   }
 }
 
-// TODO create get_account_history_hf1 test here
+// Uses hf1_scenario to test additional paramters of get_account_history.
+BOOST_AUTO_TEST_CASE( get_account_history_hf1 )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_account_history with hf1_scenario (and different args)" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 21 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    // Filter out producer_reward_operation
+    expected_t expected_initminer_history = { {
+      R"~([0,{"trx_id":"0000000000000000000000000000000000000000","block":1,"trx_in_block":4294967295,"op_in_trx":6,"virtual_op":true,"timestamp":"2016-01-01T00:00:00","op":{"type":"account_created_operation","value":{"new_account_name":"initminer","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([0,{"trx_id":"0000000000000000000000000000000000000000","block":1,"trx_in_block":4294967295,"op_in_trx":6,"virtual_op":true,"timestamp":"2016-01-01T00:00:00","op":["account_created",{"new_account_name":"initminer","creator":"initminer","initial_vesting_shares":"0.000000 VESTS","initial_delegation":"0.000000 VESTS"}]}])~"
+      }, {
+      R"~([4,{"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"vesting_shares_split_operation","value":{"owner":"initminer","vesting_shares_before_split":{"amount":"1000000","precision":6,"nai":"@@000000037"},"vesting_shares_after_split":{"amount":"1000000000000","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["vesting_shares_split",{"owner":"initminer","vesting_shares_before_split":"1.000000 VESTS","vesting_shares_after_split":"1000000.000000 VESTS"}]}])~"
+      }, {
+      R"~([23,{"trx_id":"0000000000000000000000000000000000000000","block":21,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:03","op":{"type":"system_warning_operation","value":{"message":"Changing maximum block size from 2097152 to 131072"}},"operation_id":0}])~",
+      R"~([23,{"trx_id":"0000000000000000000000000000000000000000","block":21,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:01:03","op":["system_warning",{"message":"Changing maximum block size from 2097152 to 131072"}]}])~"
+      } };
+    BOOST_REQUIRE( operation::tag<producer_reward_operation>::value == 64 ); // Replace with enum value after !898 is merged
+    test_get_account_history( *this, { "initminer" }, { expected_initminer_history }, 1000, 1000,
+                              0xFFFFFFFF /*all low*/, 0xFFFFFFFE /*all high except producer_reward_operation*/ );
+
+    // Filter out producer_reward_operation & system_warning_operation
+    expected_initminer_history = { {
+      R"~([0,{"trx_id":"0000000000000000000000000000000000000000","block":1,"trx_in_block":4294967295,"op_in_trx":6,"virtual_op":true,"timestamp":"2016-01-01T00:00:00","op":{"type":"account_created_operation","value":{"new_account_name":"initminer","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([0,{"trx_id":"0000000000000000000000000000000000000000","block":1,"trx_in_block":4294967295,"op_in_trx":6,"virtual_op":true,"timestamp":"2016-01-01T00:00:00","op":["account_created",{"new_account_name":"initminer","creator":"initminer","initial_vesting_shares":"0.000000 VESTS","initial_delegation":"0.000000 VESTS"}]}])~"
+      }, {
+      R"~([4,{"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"vesting_shares_split_operation","value":{"owner":"initminer","vesting_shares_before_split":{"amount":"1000000","precision":6,"nai":"@@000000037"},"vesting_shares_after_split":{"amount":"1000000000000","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["vesting_shares_split",{"owner":"initminer","vesting_shares_before_split":"1.000000 VESTS","vesting_shares_after_split":"1000000.000000 VESTS"}]}])~"
+      } };
+    BOOST_REQUIRE( operation::tag<system_warning_operation>::value == 82 ); // Replace with enum value after !898 is merged
+    test_get_account_history( *this, { "initminer" }, { expected_initminer_history }, 1000, 1000,
+                              0xFFFFFFFF /*all low*/, 0xFFFBFFFE /*all high except producer_reward_operation & system_warning_operation*/ );
+
+    // Filter out producer_reward_operation, system_warning_operation & account_created_operation
+    expected_initminer_history = { {
+      R"~([4,{"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"vesting_shares_split_operation","value":{"owner":"initminer","vesting_shares_before_split":{"amount":"1000000","precision":6,"nai":"@@000000037"},"vesting_shares_after_split":{"amount":"1000000000000","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"0000000000000000000000000000000000000000","block":2,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["vesting_shares_split",{"owner":"initminer","vesting_shares_before_split":"1.000000 VESTS","vesting_shares_after_split":"1000000.000000 VESTS"}]}])~"
+      } };
+    BOOST_REQUIRE( operation::tag<account_created_operation>::value == 80 ); // Replace with enum value after !898 is merged
+    test_get_account_history( *this, { "initminer" }, { expected_initminer_history }, 1000, 1000,
+                              0xFFFFFFFF /*all low*/, 0xFFFAFFFE /*all high except producer_reward_operation, system_warning_operation & account_created_operation*/ );
+  };
+
+  hf1_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+  
 // TODO create get_account_history_hf8_test here
 // TODO create get_account_history_hf12 test here
 // TODO Create get_account_history_hf13 here
