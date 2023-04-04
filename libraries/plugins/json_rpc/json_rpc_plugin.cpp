@@ -13,7 +13,6 @@
 #include <fc/io/fstream.hpp>
 
 #include <chainbase/chainbase.hpp>
-#include <hive/chain/fork_database.hpp>
 
 #define ENABLE_JSON_RPC_LOG
 
@@ -173,17 +172,24 @@ namespace detail
           _logger->log(request, response);
       }
 
+      void add_serialization_status( const std::function<bool()>& call );
+
       DECLARE_API(
         (get_methods)
         (get_signature) )
 
       std::unique_ptr< json_rpc_logger >                 _logger;
-
-      chain::database& _db;
+      std::function<bool()>                              _check_serialization_status;
   };
 
-  json_rpc_plugin_impl::json_rpc_plugin_impl(): _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+  json_rpc_plugin_impl::json_rpc_plugin_impl() {}
   json_rpc_plugin_impl::~json_rpc_plugin_impl() {}
+
+
+  void json_rpc_plugin_impl::add_serialization_status( const std::function<bool()>& serialization_status )
+  {
+    _check_serialization_status = serialization_status;
+  }
 
   void json_rpc_plugin_impl::add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig )
   {
@@ -346,7 +352,7 @@ namespace detail
               {
                 STATSD_START_TIMER( "jsonrpc", "api", method_name, 1.0f );
 
-                if( _db.has_hardfork( HIVE_HARDFORK_1_26 ) )
+                if( _check_serialization_status() )
                 {
                   bool _change_of_serialization_is_allowed = false;
                   try
@@ -394,10 +400,6 @@ namespace detail
               }
             }
             catch( chainbase::lock_exception& e )
-            {
-              response.error = json_rpc_error( JSON_RPC_ERROR_DURING_CALL, e.what() );
-            }
-            catch( chain::forkdb_lock_exception& e )
             {
               response.error = json_rpc_error( JSON_RPC_ERROR_DURING_CALL, e.what() );
             }
@@ -587,6 +589,11 @@ string json_rpc_plugin::call( const string& message )
     return fc::json::to_string( response );
   }
 
+}
+
+void json_rpc_plugin::add_serialization_status( const std::function<bool()>& serialization_status )
+{
+  my->add_serialization_status( serialization_status );
 }
 
 } } } // hive::plugins::json_rpc

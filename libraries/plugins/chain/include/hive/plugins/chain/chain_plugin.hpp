@@ -27,7 +27,7 @@ using synchronization_type = boost::signals2::signal<void()>;
 class chain_plugin : public plugin< chain_plugin >
 {
 public:
-  APPBASE_PLUGIN_REQUIRES( (hive::plugins::webserver::webserver_plugin) )
+  APPBASE_PLUGIN_REQUIRES( (hive::plugins::webserver::webserver_plugin)(hive::plugins::json_rpc::json_rpc_plugin) )
 
   chain_plugin();
   virtual ~chain_plugin();

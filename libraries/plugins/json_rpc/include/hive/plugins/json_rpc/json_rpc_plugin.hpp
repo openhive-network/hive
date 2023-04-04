@@ -2,8 +2,6 @@
 #include <chainbase/forward_declarations.hpp>
 #include <appbase/application.hpp>
 
-#include <hive/plugins/chain/chain_plugin.hpp>
-
 #include <fc/variant.hpp>
 #include <fc/io/json.hpp>
 #include <fc/reflect/variant.hpp>
@@ -93,7 +91,7 @@ class json_rpc_plugin : public appbase::plugin< json_rpc_plugin >
     json_rpc_plugin();
     virtual ~json_rpc_plugin();
 
-    APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) );
+    APPBASE_PLUGIN_REQUIRES();
     virtual void set_program_options( options_description&, options_description& ) override;
 
     static const std::string& name() { static std::string name = HIVE_JSON_RPC_PLUGIN_NAME; return name; }
@@ -106,6 +104,8 @@ class json_rpc_plugin : public appbase::plugin< json_rpc_plugin >
 
     void add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig );
     string call( const string& body );
+
+    void add_serialization_status( const std::function<bool()>& serialization_status );
 
   private:
     std::unique_ptr< detail::json_rpc_plugin_impl > my;
