@@ -150,7 +150,7 @@ public:
    bool import_key(string wif_key)
    {
       auto priv = private_key_type::generate_from_base58( wif_key );
-      if( priv.valid() )
+      if( !priv.valid() )
       {
         FC_ASSERT( false, "Key can't be constructed" );
       }
