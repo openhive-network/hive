@@ -22,6 +22,7 @@ class clive_api_impl
       (set_timeout)
       (lock_all)
       (lock)
+      (unlock)
     )
 
     wallet_manager& _wallet_mgr;
@@ -56,6 +57,12 @@ DEFINE_API_IMPL( clive_api_impl, lock )
   return lock_return();
 }
 
+DEFINE_API_IMPL( clive_api_impl, unlock )
+{
+  _wallet_mgr.unlock( args.wallet_name, args.password );
+  return unlock_return();
+}
+
 } // detail
 
 clive_api::clive_api(): my( new detail::clive_api_impl() )
@@ -71,6 +78,7 @@ DEFINE_LOCKLESS_APIS( clive_api,
   (set_timeout)
   (lock_all)
   (lock)
+  (unlock)
   )
 
 } } } // hive::plugins::clive_api
