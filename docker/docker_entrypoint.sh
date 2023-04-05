@@ -14,6 +14,14 @@ fi
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTDIR/scripts"
 
+LOG_FILE="${DATADIR}/${LOG_FILE:=docker_entrypoint.log}"
+sudo -n touch "$LOG_FILE"
+sudo -n chown -Rc hived:users "$LOG_FILE"
+sudo -n chmod a+rw "$LOG_FILE"
+
+source "$SCRIPTSDIR/common.sh"
+
+
 if sudo -Enu hived test ! -d "$DATADIR"
 then
     echo "Data directory (DATADIR) $DATADIR does not exist. Exiting."
@@ -25,13 +33,6 @@ then
     echo "Shared memory file directory (SHM_DIR) $SHM_DIR does not exist. Exiting."
     exit 1
 fi
-
-
-LOG_FILE="${DATADIR}"/${LOG_FILE:=docker_entrypoint.log}"
-sudo -n touch "$LOG_FILE"
-sudo -n chown -Rc hived:users "$LOG_FILE"
-sudo -n chmod a+rw "$LOG_FILE"
-source "$SCRIPTSDIR/common.sh"
 
 
 cleanup () {

@@ -21,8 +21,7 @@ variables:
 
   TOX_VERSION: "3.25.1"
 
-  DATA_CACHE_MAINNET: /cache/replay_data_hive_mainnet
-  DATA_CACHE_MIRRORNET: /cache/replay_data_hive_mirrornet
+  DATA_CACHE_HIVE: /cache/replay_data_hive
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
 
@@ -49,7 +48,7 @@ prepare_hived_data:
       artifacts: true
   stage: build
   variables:
-    DATA_CACHE: ${DATA_CACHE_MAINNET}_${HIVED_IMAGE_NAME_COMMIT}
+    DATA_CACHE_HIVE_COMMIT: "${DATA_CACHE_HIVE}_${HIVED_IMAGE_NAME_COMMIT}"
     HIVE_NETWORK_TYPE: mainnet
     BLOCK_LOG_SOURCE_DIR: $BLOCK_LOG_SOURCE_DIR_5M
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
@@ -219,8 +218,8 @@ plugin_test:
   - name: $HIVED_IMAGE_NAME
     alias: hived-instance
     variables:
-      DATADIR: $DATA_CACHE/datadir
-      SHM_DIR: $DATA_CACHE/shm_dir
+      DATADIR: $DATA_CACHE_HIVE_COMMIT/datadir
+      SHM_DIR: $DATA_CACHE_HIVE_COMMIT/shm_dir
       LOG_FILE: $CI_JOB_NAME.log
     command: ["--replay-blockchain", "--stop-replay-at-block=5000000"]
 
@@ -490,7 +489,7 @@ patterns_tests:
     FF_NETWORK_PER_BUILD: 1
     PYTHONPATH: "$CI_PROJECT_DIR/tests/hive-local-tools/test-tools/package"
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
-    DATA_CACHE: $DATA_CACHE
+    DATA_CACHE_HIVE_COMMIT: "$DATA_CACHE_HIVE_COMMIT"
     HIVED_UID: $HIVED_UID
   needs:
     - job: prepare_hived_data
@@ -511,7 +510,7 @@ patterns_tests:
 
   after_script:
     - rm docker_entrypoint.log -f
-    - cp $DATA_CACHE/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
+    - cp $DATA_CACHE_HIVE_COMMIT/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
 
   artifacts:
     reports:
@@ -554,7 +553,7 @@ python_pattern_mainnet_tests:
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
     JUNIT_REPORT: tests/api_tests/python_patterns_tests/report.xml
     BINARY_CACHE_PATH: "hived-binaries"
-    DATA_CACHE: $DATA_CACHE
+    DATA_CACHE_HIVE_COMMIT: "$DATA_CACHE_HIVE_COMMIT"
     HIVED_UID: $HIVED_UID
   needs:
     - job: prepare_hived_image
@@ -576,7 +575,7 @@ python_pattern_mainnet_tests:
 
   after_script:
     - rm docker_entrypoint.log -f
-    - cp $DATA_CACHE/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
+    - cp $DATA_CACHE_HIVE_COMMIT/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
 
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
@@ -618,14 +617,14 @@ message_format_mainnet_5m_tests:
   variables:
     NODE_ADDRESS: "hived-instance:8090"
     NODE_TYPE: "mainnet_5m"
-    DATA_CACHE: $DATA_CACHE
+    DATA_CACHE_HIVE_COMMIT: "$DATA_CACHE_HIVE_COMMIT"
     HIVED_UID: $HIVED_UID
   before_script:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
     - !reference [.message_format_tests, before_script]
   after_script:
     - rm docker_entrypoint.log -f
-    - cp $DATA_CACHE/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
+    - cp $DATA_CACHE_HIVE_COMMIT/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     reports:
@@ -676,7 +675,7 @@ witness_tests:
     NODE_ADDRESS: "hived-instance:8090"
     PYTEST_TIMEOUT_MINUTES: 5
     JUNIT_REPORT: tests/functional/python_tests/witness_tests/report.xml
-    DATA_CACHE: $DATA_CACHE
+    DATA_CACHE_HIVE_COMMIT: "$DATA_CACHE_HIVE_COMMIT"
     HIVED_UID: $HIVED_UID
   script:
     - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
@@ -685,7 +684,7 @@ witness_tests:
     - *run-pytest
   after_script:
     - rm docker_entrypoint.log -f
-    - cp $DATA_CACHE/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
+    - cp $DATA_CACHE_HIVE_COMMIT/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
   resource_group: ${CI_COMMIT_SHA}
   tags:
     - hive-builder-4
