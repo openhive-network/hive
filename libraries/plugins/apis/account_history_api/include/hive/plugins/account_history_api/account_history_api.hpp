@@ -95,6 +95,114 @@ struct get_account_history_return
   std::map< uint32_t, api_operation_object > history;
 };
 
+/** 
+ * Use these flags e.g. in filter_low argument of get_account_history.
+ */
+enum class get_account_history_op_filter_low : uint64_t
+{
+  vote_operation                                        = 0x00000000'00000001ull,
+  comment_operation                                     = 0x00000000'00000002ull,
+  transfer_operation                                    = 0x00000000'00000004ull,
+  transfer_to_vesting_operation                         = 0x00000000'00000008ull,
+  withdraw_vesting_operation                            = 0x00000000'00000010ull,
+  limit_order_create_operation                          = 0x00000000'00000020ull,
+  limit_order_cancel_operation                          = 0x00000000'00000040ull,
+  feed_publish_operation                                = 0x00000000'00000080ull,
+  convert_operation                                     = 0x00000000'00000100ull,
+  account_create_operation                              = 0x00000000'00000200ull,
+  account_update_operation                              = 0x00000000'00000400ull,
+  witness_update_operation                              = 0x00000000'00000800ull,
+  account_witness_vote_operation                        = 0x00000000'00001000ull,
+  account_witness_proxy_operation                       = 0x00000000'00002000ull,
+  pow_operation                                         = 0x00000000'00004000ull,
+  custom_operation                                      = 0x00000000'00008000ull,
+  witness_block_approve_operation                       = 0x00000000'00010000ull,
+  delete_comment_operation                              = 0x00000000'00020000ull,
+  custom_json_operation                                 = 0x00000000'00040000ull,
+  comment_options_operation                             = 0x00000000'00080000ull,
+  set_withdraw_vesting_route_operation                  = 0x00000000'00100000ull,
+  limit_order_create2_operation                         = 0x00000000'00200000ull,
+  claim_account_operation                               = 0x00000000'00400000ull,
+  create_claimed_account_operation                      = 0x00000000'00800000ull,
+  request_account_recovery_operation                    = 0x00000000'01000000ull,
+  recover_account_operation                             = 0x00000000'02000000ull,
+  change_recovery_account_operation                     = 0x00000000'04000000ull,
+  escrow_transfer_operation                             = 0x00000000'08000000ull,
+  escrow_dispute_operation                              = 0x00000000'10000000ull,
+  escrow_release_operation                              = 0x00000000'20000000ull,
+  pow2_operation                                        = 0x00000000'40000000ull,
+  escrow_approve_operation                              = 0x00000000'80000000ull,
+  transfer_to_savings_operation                         = 0x00000001'00000000ull,
+  transfer_from_savings_operation                       = 0x00000002'00000000ull,
+  cancel_transfer_from_savings_operation                = 0x00000004'00000000ull,
+  custom_binary_operation                               = 0x00000008'00000000ull,
+  decline_voting_rights_operation                       = 0x00000010'00000000ull,
+  reset_account_operation                               = 0x00000020'00000000ull, // (number to be reused with new operation)
+  set_reset_account_operation                           = 0x00000040'00000000ull, // (number to be reused with new operation)
+  claim_reward_balance_operation                        = 0x00000080'00000000ull,
+  delegate_vesting_shares_operation                     = 0x00000100'00000000ull,
+  account_create_with_delegation_operation              = 0x00000200'00000000ull,
+  witness_set_properties_operation                      = 0x00000400'00000000ull,
+  account_update2_operation                             = 0x00000800'00000000ull,
+  create_proposal_operation                             = 0x00001000'00000000ull,
+  update_proposal_votes_operation                       = 0x00002000'00000000ull,
+  remove_proposal_operation                             = 0x00004000'00000000ull,
+  update_proposal_operation                             = 0x00008000'00000000ull,
+  collateralized_convert_operation                      = 0x00010000'00000000ull,
+  recurrent_transfer_operation                          = 0x00020000'00000000ull,
+  fill_convert_request_operation                        = 0x00040000'00000000ull,
+  author_reward_operation                               = 0x00080000'00000000ull,
+  curation_reward_operation                             = 0x00100000'00000000ull,
+  comment_reward_operation                              = 0x00200000'00000000ull,
+  liquidity_reward_operation                            = 0x00400000'00000000ull,
+  interest_operation                                    = 0x00800000'00000000ull,
+  fill_vesting_withdraw_operation                       = 0x01000000'00000000ull,
+  fill_order_operation                                  = 0x02000000'00000000ull,
+  shutdown_witness_operation                            = 0x04000000'00000000ull,
+  fill_transfer_from_savings_operation                  = 0x08000000'00000000ull,
+  hardfork_operation                                    = 0x10000000'00000000ull,
+  comment_payout_update_operation                       = 0x20000000'00000000ull,
+  return_vesting_delegation_operation                   = 0x40000000'00000000ull,
+  comment_benefactor_reward_operation                   = 0x80000000'00000000ull
+};
+
+/** 
+ * Use these flags e.g. in filter_high argument of get_account_history.
+ */
+enum class get_account_history_op_filter_high : uint64_t
+{
+  producer_reward_operation                             = 0x00000000'00000001ull,
+  clear_null_account_balance_operation                  = 0x00000000'00000002ull,
+  proposal_pay_operation                                = 0x00000000'00000004ull,
+  dhf_funding_operation                                 = 0x00000000'00000008ull,
+  hardfork_hive_operation                               = 0x00000000'00000010ull,
+  hardfork_hive_restore_operation                       = 0x00000000'00000020ull,
+  delayed_voting_operation                              = 0x00000000'00000040ull,
+  consolidate_treasury_balance_operation                = 0x00000000'00000080ull,
+  effective_comment_vote_operation                      = 0x00000000'00000100ull,
+  ineffective_delete_comment_operation                  = 0x00000000'00000200ull,
+  dhf_conversion_operation                              = 0x00000000'00000400ull,
+  expired_account_notification_operation                = 0x00000000'00000800ull,
+  changed_recovery_account_operation                    = 0x00000000'00001000ull,
+  transfer_to_vesting_completed_operation               = 0x00000000'00002000ull,
+  pow_reward_operation                                  = 0x00000000'00004000ull,
+  vesting_shares_split_operation                        = 0x00000000'00008000ull,
+  account_created_operation                             = 0x00000000'00010000ull,
+  fill_collateralized_convert_request_operation         = 0x00000000'00020000ull,
+  system_warning_operation                              = 0x00000000'00040000ull,
+  fill_recurrent_transfer_operation                     = 0x00000000'00080000ull,
+  failed_recurrent_transfer_operation                   = 0x00000000'00100000ull,
+  limit_order_cancelled_operation                       = 0x00000000'00200000ull,
+  producer_missed_operation                             = 0x00000000'00400000ull,
+  proposal_fee_operation                                = 0x00000000'00800000ull,
+  collateralized_convert_immediate_conversion_operation = 0x00000000'01000000ull,
+  escrow_approved_operation                             = 0x00000000'02000000ull,
+  escrow_rejected_operation                             = 0x00000000'04000000ull,
+  proxy_cleared_operation                               = 0x00000000'08000000ull,
+  declined_voting_rights_operation                      = 0x00000000'10000000ull,
+  // Add new operations here or reuse (set_)reset_account_operation values in operation_filter_low
+};
+
 enum enum_vops_filter : uint64_t
 {
   fill_convert_request_operation                = 0x0000'00000001ull,
