@@ -2198,6 +2198,7 @@ DEFINE_READ_APIS( database_api,
 
 #include <fc/variant.hpp>
 #include <fc/io/json.hpp>
+#include <fc/io/sstream.hpp>
 #include <hive/protocol/operations.hpp>
 
 #include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
@@ -2640,12 +2641,9 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
   return r;
 }
 
-void try_grab_operations_C_impl( int from ,   int to ,  const char *context,   const char *postgres_url )
+void sanity_check(const char *&postgres_url) 
 {
-
-  pqxx::connection c{postgres_url};
-
-  {
+    pqxx::connection c{postgres_url};
     pqxx::work txn{c};
     pqxx::result r{txn.exec("SELECT COUNT(*) FROM hive.blocks")};
 
@@ -2653,53 +2651,258 @@ void try_grab_operations_C_impl( int from ,   int to ,  const char *context,   c
     std::cout << "mtlk column name=" << r.column_name(0) << "\n";
     std::cout << "mtlk rows  count=" << r.size() << "\n";
 
-    for (auto row: r)
-        std::cout
-      // Address column by name.  Use c_str() to get C-style string.
-      << row["count"].c_str()
-      << " makes "
-      // Address column by zero-based index.  Use as<int>() to parse as int.
-      << row[0].as<int>()
-      << "."
-      << std::endl;
-      txn.commit();
-  }
+    for (auto row : r)
+      std::cout
+          // Address column by name.  Use c_str() to get C-style string.
+          << row["count"].c_str()
+          << " makes "
+          // Address column by zero-based index.  Use as<int>() to parse as int.
+          << row[0].as<int>() << "." << std::endl;
+    txn.commit();
 
-  pqxx::work txn{c};
-  pqxx::result r{txn.exec("SELECT block_num, body FROM hive.operations WHERE block_num >= " 
-                            + std::to_string(from) 
-                            + " and block_num <= " 
-                            + std::to_string(to) 
-                            + " ORDER BY id ASC")};
-
-  for(auto i = 0; i < r.columns(); ++i)
+  for(auto i = 0u; i < r.columns(); ++i)
   {
     std::cout << "Column " << i << " name=" << r.column_name(i) << " type= " << r.column_type(r.column_name(i)) << std::endl;
   }
 
-  for (const auto &row: r)
+
+//  pqxx::work op_work{c};
+//  pqxx::result ops{op_work.exec("SELECT block_num, body FROM hive.operations WHERE block_num >= " 
+//                             + std::to_string(from) 
+//                             + " and block_num <= " 
+//                             + std::to_string(to) 
+//                             + " ORDER BY id ASC")};
+
+//   for (const auto &row: ops)
+//   {
+//     for (const auto &field: row) std::cout << field.c_str() << '\t';
+//     std::cout << std::endl;
+//     const auto& o = row[1];
+//     std::string json = std::string(o.c_str());
+//     fc::variant v = fc::json::from_string( json );
+
+//     hive::protocol::operation op;
+
+//     fc::from_variant( v, op );
+
+//     wlog("op=${op}", ("op", op));
+
+//     //std::cout << op << std::endl;
+
+//   }
+
+//   op_work.commit();
+
+}
+
+volatile auto static stop_in_grab = false;
+
+
+void try_grab_operations_C_impl(int from, int to, const char *context,
+                                const char *postgres_url) 
+{
+
+
+  wlog("mtlk try_grab_operations_C pid= ${pid}", ("pid", getpid()));
+
+
+  while(stop_in_grab)
   {
-    for (const auto &field: row) std::cout << field.c_str() << '\t';
-    std::cout << std::endl;
-    const auto& o = row[1];
-    std::string json = std::string(o.c_str());
-    fc::variant v = fc::json::from_string( json );
+    int a = 0;
+    a = a;
+  }
 
-    hive::protocol::operation op;
 
-    fc::from_variant( v, op );
 
-    wlog("op=${op}", ("op", op));
+  sanity_check(postgres_url);
 
-    //std::cout << op << std::endl;
+  pqxx::connection c{postgres_url};
+
+  pqxx::work blocks_work{c};
+  pqxx::result blocks{blocks_work.exec("SELECT * FROM hive.blocks JOIN hive.accounts ON  id = producer_account_id WHERE num >= " 
+                            + std::to_string(from) 
+                            + " and num <= " 
+                            + std::to_string(to) 
+                            + " ORDER BY num ASC")};
+  blocks_work.commit();
+
+  pqxx::work transactions_work{c};
+  pqxx::result transactions{transactions_work.exec("SELECT block_num, trx_in_block, ref_block_num, ref_block_prefix, expiration FROM hive.transactions WHERE block_num >= " 
+                            + std::to_string(from) 
+                            + " and block_num <= " 
+                            + std::to_string(to) 
+                            + " ORDER BY block_num, trx_in_block ASC")};
+  transactions_work.commit();
+
+
+  pqxx::work operations_work{c};
+  pqxx::result operations{operations_work.exec("SELECT block_num, body, trx_in_block FROM hive.operations WHERE block_num >= " 
+                            + std::to_string(from) 
+                            + " and block_num <= " 
+                            + std::to_string(to) 
+                            + " ORDER BY id ASC")};
+  operations_work.commit();
+
+
+  for(auto i = 0u; i < blocks.columns(); ++i)
+  {
+    std::cout << "Column " << i << " name=" << blocks.column_name(i) << " type= " << blocks.column_type(blocks.column_name(i)) << std::endl;
+  }
+
+
+  auto transaction_expecting_block = -1;
+  auto transactions_it = transactions.begin();
+  if( transactions.size() > 0)
+  {
+      const auto& first_transaction = transactions[0];
+      transaction_expecting_block = first_transaction["block_num"].as<int>();
+  }
+
+  auto operations_expecting_block = -1;
+  auto operations_expecting_transaction = -1;
+  auto operations_it = operations.begin();
+  if(operations.size() > 0)
+  {
+    const auto& first_operation = operations[0];
+    operations_expecting_block =  first_operation["block_num"].as<int>();
+    operations_expecting_transaction = first_operation["trx_in_block"].as<int>();
 
   }
 
-  txn.commit();
+
+
+  for(const auto& block : blocks)
+  {
+    auto block_num = block["num"].as<int>();
+    
+    //fill in block header here
+    fc::variant_object_builder block_v;
+    block_v
+    ("witness", block["name"].c_str()) ////"steemychicken1",
+    ("block_id", block["id"].c_str())
+    ("previous", block["prev"].c_str()) // "000f2bbfcbdad7bb80bc42c476567c750badd90b",
+    ("timestamp",  block["created_at"].c_str()) //"2016-04-28T23:22:18"
+    ("extensions", block["extensions"].c_str() )//[],
+    ("signing_key", block["signing_key"].c_str())
+    ;
+
+    // "transaction_ids": [
+    //     "5cf59b8b633f8e894adef4c8ccd6e2353040ff70"
+    // ]
+
+
+//    "transactions": [
+
+    //contruct variant array
+
+    std::vector<std::vector<fc::variant>> trancactions_vector;
+
+    if(block_num == transaction_expecting_block)
+    for(; transactions_it != transactions.end(); ++transactions_it)
+    {
+      const auto transaction = (*transactions_it);
+      if(transaction["block_num"].as<int>() == block_num)
+      {
+        auto trx_in_block = transaction["trx_in_block"].as<int>();
+
+        //fill in transaction here
+
+        fc::variant_object_builder transaction_v;
+        transaction_v
+        ("ref_block_num", transaction["ref_block_num"].c_str())
+        ("ref_block_prefix", transaction["ref_block_prefix"].c_str())
+        ("expiration", transaction["expiration"].c_str())
+        ;
+
+            // "extensions": [],
+            // "signatures": [
+            //     "1f1fd68fd2b2ec919357c8e534d1473a16f5505a7719bbb2a2100478f212f9353272c38b12d1468d1c3eb830f659e80a28a5a985661bb2c79e4acd2ef34bc919b4"
+            // ]
+
+        variant tv;
+        to_variant(transaction_v.get(),  tv);
+        fc::stringstream toss;
+        fc::json::to_stream(toss, tv);
+    
+        wlog("transaction=${j}",  ( "j", toss.str()));
+
+
+        //rewind
+        while(operations_expecting_block < block_num)
+        {
+          operations_it++;
+          operations_expecting_block = operations_it["block_num"].as<int>();
+          operations_expecting_transaction = operations_it["trx_in_block"].as<int>();
+        }
+
+
+        std::vector<fc::variant> operations_vector;
+        if(block_num == operations_expecting_block && trx_in_block == operations_expecting_transaction)
+        for(; operations_it != operations.end(); ++operations_it)
+        {
+          const auto operation = (*operations_it);
+          if(operation["block_num"].as<int>() == block_num && operation["trx_in_block"].as<int>() == trx_in_block)
+          {
+            //fill in op here
+            
+                const auto& o = operation["body"];
+                std::string json = std::string(o.c_str());
+                fc::variant ov = fc::json::from_string( json );
+           
+                hive::protocol::operation op;
+                fc::from_variant( ov, op );
+
+                wlog("op=${op}",("op", op));
+                
+                operations_vector.push_back(ov);
+                
+
+          }
+          else
+          {
+            operations_expecting_block = operations_it["block_num"].as<int>();
+            operations_expecting_transaction = operations_it["trx_in_block"].as<int>();
+            break;
+          }
+
+        }
+
+        
+
+        trancactions_vector.push_back(operations_vector);
+
+
+      }
+      else
+      {
+        transaction_expecting_block = transaction["block_num"].as<int>();
+        break;
+      }
+
+      
+
+    
+    }
+
+    //append do transaction array transakcję
+    variant vt;
+    to_variant(trancactions_vector, vt);
+    block_v
+    ("transactions", vt)
+    ("witness_signature", block["witness_signature"].c_str()) //  "1f2ce40298d1569ba0f118146f71482ff18afdb02d844321addf3ebd7e970d65a625d4cb65aae4a9c884f896f0c2c6939603287997377d1f2d440d6f09825aab97",
+    ("transaction_merkle_root", block["transaction_merkle_root"].c_str()) // "8195f855f6d54d6856f9a08a08b21bdd6b14472e",
+    ;
+
+    variant v;
+    to_variant(block_v.get(),  v);
+    fc::stringstream oss;
+    fc::json::to_stream(oss, v);
+
+    wlog("block_num=${block_num} header=${j}", ("block_num", block_num) ( "j", oss.str()));
+
+
+
+  }
 }
 
-
-
-
-}
-}
+}}
