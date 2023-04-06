@@ -71,6 +71,12 @@ struct create_key_return
   std::string public_key;
 };
 
+using list_wallets_args = void_type;
+struct list_wallets_return
+{
+  std::vector<std::string> wallets;
+};
+
 class clive_api
 {
   public:
@@ -87,6 +93,7 @@ class clive_api
       (import_key)
       (remove_key)
       (create_key)
+      (list_wallets)
     )
 
   private:
@@ -102,3 +109,4 @@ FC_REFLECT( hive::plugins::clive_api::unlock_args, (wallet_name)(password) )
 FC_REFLECT( hive::plugins::clive_api::import_key_args, (wallet_name)(wif_key) )
 FC_REFLECT( hive::plugins::clive_api::remove_key_args, (wallet_name)(password)(public_key) )
 FC_REFLECT( hive::plugins::clive_api::create_key_return, (public_key) )
+FC_REFLECT( hive::plugins::clive_api::list_wallets_return, (wallets) )
