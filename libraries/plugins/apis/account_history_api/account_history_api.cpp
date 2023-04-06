@@ -50,6 +50,173 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_ops_in_block )
   return result;
 }
 
+/** 
+ * These values are used internally in CHECK_OPERATION, replacing 
+ * hive::protocol::operation::which() used earlier.
+ * They are NOT flags to be used in filter_low/filter_high arguments. 
+ */
+enum enum_ops_filter : uint16_t
+{
+  vote_operation                                        = 0x0000, // 0
+  comment_operation                                     = 0x0001, // 1
+  transfer_operation                                    = 0x0002, // 2
+  transfer_to_vesting_operation                         = 0x0003, // 3
+  withdraw_vesting_operation                            = 0x0004, // 4
+  limit_order_create_operation                          = 0x0005, // 5
+  limit_order_cancel_operation                          = 0x0006, // 6
+  feed_publish_operation                                = 0x0007, // 7
+  convert_operation                                     = 0x0008, // 8
+  account_create_operation                              = 0x0009, // 9
+  account_update_operation                              = 0x000A, // 10
+  witness_update_operation                              = 0x000B, // 11
+  account_witness_vote_operation                        = 0x000C, // 12
+  account_witness_proxy_operation                       = 0x000D, // 13
+  pow_operation                                         = 0x000E, // 14
+  custom_operation                                      = 0x000F, // 15
+  witness_block_approve_operation                       = 0x0010, // 16
+  delete_comment_operation                              = 0x0011, // 17
+  custom_json_operation                                 = 0x0012, // 18
+  comment_options_operation                             = 0x0013, // 19
+  set_withdraw_vesting_route_operation                  = 0x0014, // 20
+  limit_order_create2_operation                         = 0x0015, // 21
+  claim_account_operation                               = 0x0016, // 22
+  create_claimed_account_operation                      = 0x0017, // 23
+  request_account_recovery_operation                    = 0x0018, // 24
+  recover_account_operation                             = 0x0019, // 25
+  change_recovery_account_operation                     = 0x001A, // 26
+  escrow_transfer_operation                             = 0x001B, // 27
+  escrow_dispute_operation                              = 0x001C, // 28
+  escrow_release_operation                              = 0x001D, // 29
+  pow2_operation                                        = 0x001E, // 30
+  escrow_approve_operation                              = 0x001F, // 31
+  transfer_to_savings_operation                         = 0x0020, // 32
+  transfer_from_savings_operation                       = 0x0021, // 33
+  cancel_transfer_from_savings_operation                = 0x0022, // 34
+  custom_binary_operation                               = 0x0023, // 35
+  decline_voting_rights_operation                       = 0x0024, // 36
+  reset_account_operation                               = 0x0025, // 37 (number to be reused with new operation)
+  set_reset_account_operation                           = 0x0026, // 38 (number to be reused with new operation)
+  claim_reward_balance_operation                        = 0x0027, // 39
+  delegate_vesting_shares_operation                     = 0x0028, // 40
+  account_create_with_delegation_operation              = 0x0029, // 41
+  witness_set_properties_operation                      = 0x002A, // 42
+  account_update2_operation                             = 0x002B, // 43
+  create_proposal_operation                             = 0x002C, // 44
+  update_proposal_votes_operation                       = 0x002D, // 45
+  remove_proposal_operation                             = 0x002E, // 46
+  update_proposal_operation                             = 0x002F, // 47
+  collateralized_convert_operation                      = 0x0030, // 48
+  recurrent_transfer_operation                          = 0x0031, // 49
+  // Here won't be SMT operations
+  // Virtual operations below (as of the day of this enum creation)
+  fill_convert_request_operation                        = 0x0032, // last_regular + 1
+  author_reward_operation                               = 0x0033, // last_regular + 2
+  curation_reward_operation                             = 0x0034, // last_regular + 3
+  comment_reward_operation                              = 0x0035, // last_regular + 4
+  liquidity_reward_operation                            = 0x0036, // last_regular + 5
+  interest_operation                                    = 0x0037, // last_regular + 6
+  fill_vesting_withdraw_operation                       = 0x0038, // last_regular + 7
+  fill_order_operation                                  = 0x0039, // last_regular + 8
+  shutdown_witness_operation                            = 0x003A, // last_regular + 9
+  fill_transfer_from_savings_operation                  = 0x003B, // last_regular + 10
+  hardfork_operation                                    = 0x003C, // last_regular + 11
+  comment_payout_update_operation                       = 0x003D, // last_regular + 12
+  return_vesting_delegation_operation                   = 0x003E, // last_regular + 13
+  comment_benefactor_reward_operation                   = 0x003F, // last_regular + 14
+  producer_reward_operation                             = 0x0040, // last_regular + 15
+  clear_null_account_balance_operation                  = 0x0041, // last_regular + 16
+  proposal_pay_operation                                = 0x0042, // last_regular + 17
+  dhf_funding_operation                                 = 0x0043, // last_regular + 18
+  hardfork_hive_operation                               = 0x0044, // last_regular + 19
+  hardfork_hive_restore_operation                       = 0x0045, // last_regular + 20
+  delayed_voting_operation                              = 0x0046, // last_regular + 21
+  consolidate_treasury_balance_operation                = 0x0047, // last_regular + 22
+  effective_comment_vote_operation                      = 0x0048, // last_regular + 23
+  ineffective_delete_comment_operation                  = 0x0049, // last_regular + 24
+  dhf_conversion_operation                              = 0x004A, // last_regular + 25
+  expired_account_notification_operation                = 0x004B, // last_regular + 26
+  changed_recovery_account_operation                    = 0x004C, // last_regular + 27
+  transfer_to_vesting_completed_operation               = 0x004D, // last_regular + 28
+  pow_reward_operation                                  = 0x004E, // last_regular + 29
+  vesting_shares_split_operation                        = 0x004F, // last_regular + 30
+  account_created_operation                             = 0x0050, // last_regular + 31
+  fill_collateralized_convert_request_operation         = 0x0051, // last_regular + 32
+  system_warning_operation                              = 0x0052, // last_regular + 33,
+  fill_recurrent_transfer_operation                     = 0x0053, // last_regular + 34
+  failed_recurrent_transfer_operation                   = 0x0054, // last_regular + 35
+  limit_order_cancelled_operation                       = 0x0055, // last_regular + 36
+  producer_missed_operation                             = 0x0056, // last_regular + 37
+  proposal_fee_operation                                = 0x0057, // last_regular + 38
+  collateralized_convert_immediate_conversion_operation = 0x0058, // last_regular + 39
+  escrow_approved_operation                             = 0x0059, // last_regular + 40
+  escrow_rejected_operation                             = 0x005A, // last_regular + 41
+  proxy_cleared_operation                               = 0x005B, // last_regular + 42
+  declined_voting_rights_operation                      = 0x005C, // last_regular + 43
+  // End of initial list (as of the day of this enum creation).
+};
+
+#define CHECK_OPERATION( r, data, CLASS_NAME ) \
+  void operator()( const hive::protocol::CLASS_NAME& op ) { \
+    _accepted = enum_ops_filter::CLASS_NAME < 64 ? \
+      _filter_low & (UINT64_C(1) << enum_ops_filter::CLASS_NAME) : \
+      _filter_high & (UINT64_C(1) << (enum_ops_filter::CLASS_NAME - 64)); }
+
+#define CHECK_OPERATIONS( CLASS_NAMES ) \
+  BOOST_PP_SEQ_FOR_EACH( CHECK_OPERATION, _, CLASS_NAMES )
+
+struct operation_filtering_visitor
+{
+  typedef void result_type;
+
+  bool check(uint64_t filter_low, uint64_t filter_high, const hive::protocol::operation& op)
+  {
+    _filter_low = filter_low;
+    _filter_high = filter_high;
+    _accepted = false;
+    op.visit(*this);
+
+    return _accepted;
+  }
+
+  template< typename T >
+  void operator()( const T& ) { _accepted = false; }
+
+  CHECK_OPERATIONS( (vote_operation)(comment_operation)(transfer_operation)(transfer_to_vesting_operation)
+  (withdraw_vesting_operation)(limit_order_create_operation)(limit_order_cancel_operation)(feed_publish_operation)
+  (convert_operation)(account_create_operation)(account_update_operation)(witness_update_operation)
+  (account_witness_vote_operation)(account_witness_proxy_operation)(pow_operation)(custom_operation)
+  (witness_block_approve_operation)(delete_comment_operation)(custom_json_operation)(comment_options_operation)
+  (set_withdraw_vesting_route_operation)(limit_order_create2_operation)(claim_account_operation)
+  (create_claimed_account_operation)(request_account_recovery_operation)(recover_account_operation)
+  (change_recovery_account_operation)(escrow_transfer_operation)(escrow_dispute_operation)(escrow_release_operation)
+  (pow2_operation)(escrow_approve_operation)(transfer_to_savings_operation)(transfer_from_savings_operation)
+  (cancel_transfer_from_savings_operation)(custom_binary_operation)(decline_voting_rights_operation)
+  (reset_account_operation)(set_reset_account_operation)(claim_reward_balance_operation)
+  (delegate_vesting_shares_operation)(account_create_with_delegation_operation)(witness_set_properties_operation)
+  (account_update2_operation)(create_proposal_operation)(update_proposal_votes_operation)(remove_proposal_operation)
+  (update_proposal_operation)(collateralized_convert_operation)(recurrent_transfer_operation)
+  (fill_convert_request_operation)(author_reward_operation)(curation_reward_operation)
+  (comment_reward_operation)(liquidity_reward_operation)(interest_operation)
+  (fill_vesting_withdraw_operation)(fill_order_operation)(shutdown_witness_operation)
+  (fill_transfer_from_savings_operation)(hardfork_operation)(comment_payout_update_operation)
+  (return_vesting_delegation_operation)(comment_benefactor_reward_operation)(producer_reward_operation)
+  (clear_null_account_balance_operation)(proposal_pay_operation)(dhf_funding_operation)
+  (hardfork_hive_operation)(hardfork_hive_restore_operation)(delayed_voting_operation)
+  (consolidate_treasury_balance_operation)(effective_comment_vote_operation)(ineffective_delete_comment_operation)
+  (dhf_conversion_operation)(expired_account_notification_operation)(changed_recovery_account_operation)
+  (transfer_to_vesting_completed_operation)(pow_reward_operation)(vesting_shares_split_operation)
+  (account_created_operation)(fill_collateralized_convert_request_operation)(system_warning_operation)
+  (fill_recurrent_transfer_operation)(failed_recurrent_transfer_operation)(limit_order_cancelled_operation)
+  (producer_missed_operation)(proposal_fee_operation)(collateralized_convert_immediate_conversion_operation)
+  (escrow_approved_operation)(escrow_rejected_operation)(proxy_cleared_operation)(declined_voting_rights_operation) )
+
+private:
+  uint64_t _filter_low = 0ull;
+  uint64_t _filter_high = 0ull;
+  bool     _accepted = false;
+};
+
+
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 {
   FC_ASSERT( args.limit <= 1000, "limit of ${l} is greater than maxmimum allowed", ("l",args.limit) );
@@ -72,15 +239,13 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
       {
         FC_ASSERT(total_processed_items < 2000, "Could not find filtered operation in ${total_processed_items} operations, to continue searching, set start=${sequence}.",("total_processed_items",total_processed_items)("sequence",sequence));
 
-        // we want to accept any operations where the corresponding bit is set in {filter_high, filter_low}
-        api_operation_object api_op(op);
-        unsigned bit_number = api_op.op.which();
-        bool accepted = bit_number < 64 ? filter_low & (UINT64_C(1) << bit_number)
-                                        : filter_high & (UINT64_C(1) << (bit_number - 64));
-
         ++total_processed_items;
 
-        if(accepted)
+        // we want to accept any operations where the corresponding bit is set in {filter_high, filter_low}
+        api_operation_object api_op(op);
+        operation_filtering_visitor accepting_visitor;
+        
+        if( accepting_visitor.check( filter_low, filter_high, api_op.op ) )
         {
           result.history.emplace(sequence, std::move(api_op));
           return true;
@@ -144,13 +309,13 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
   }
 }
 
-#define CHECK_OPERATION( r, data, CLASS_NAME ) \
+#define CHECK_VIRTUAL_OPERATION( r, data, CLASS_NAME ) \
   void operator()( const hive::protocol::CLASS_NAME& op ) { _accepted = (_filter & enum_vops_filter::CLASS_NAME) == enum_vops_filter::CLASS_NAME; }
 
-#define CHECK_OPERATIONS( CLASS_NAMES ) \
-  BOOST_PP_SEQ_FOR_EACH( CHECK_OPERATION, _, CLASS_NAMES )
+#define CHECK_VIRTUAL_OPERATIONS( CLASS_NAMES ) \
+  BOOST_PP_SEQ_FOR_EACH( CHECK_VIRTUAL_OPERATION, _, CLASS_NAMES )
 
-struct filtering_visitor
+struct virtual_operation_filtering_visitor
 {
   typedef void result_type;
 
@@ -166,7 +331,7 @@ struct filtering_visitor
   template< typename T >
   void operator()( const T& ) { _accepted = false; }
 
-  CHECK_OPERATIONS( (fill_convert_request_operation)(author_reward_operation)(curation_reward_operation)
+  CHECK_VIRTUAL_OPERATIONS( (fill_convert_request_operation)(author_reward_operation)(curation_reward_operation)
   (comment_reward_operation)(liquidity_reward_operation)(interest_operation)
   (fill_vesting_withdraw_operation)(fill_order_operation)(shutdown_witness_operation)
   (fill_transfer_from_savings_operation)(hardfork_operation)(comment_payout_update_operation)
@@ -208,7 +373,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 
       if( args.filter.valid() )
       {
-        filtering_visitor accepting_visitor;
+        virtual_operation_filtering_visitor accepting_visitor;
 
         if(accepting_visitor.check(*args.filter, _api_obj.op))
         {
