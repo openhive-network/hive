@@ -70,78 +70,78 @@ public:
 
    void encrypt_keys()
    {
-      if( !is_locked() )
-      {
-        plain_keys data;
-        data.keys = _keys;
-        data.checksum = _checksum;
-        auto plain_txt = fc::raw::pack_to_vector(data);
-        _wallet.cipher_keys = fc::aes_encrypt( data.checksum, plain_txt );
-      }
+    if( !is_locked() )
+    {
+      plain_keys data;
+      data.keys = _keys;
+      data.checksum = _checksum;
+      auto plain_txt = fc::raw::pack_to_vector(data);
+      _wallet.cipher_keys = fc::aes_encrypt( data.checksum, plain_txt );
+    }
    }
 
    bool copy_wallet_file( string destination_filename )
    {
-      fc::path src_path = get_wallet_filename();
-      if( !fc::exists( src_path ) )
-        return false;
-      fc::path dest_path = destination_filename + _wallet_filename_extension;
-      int suffix = 0;
-      while( fc::exists(dest_path) )
-      {
-        ++suffix;
-        dest_path = destination_filename + "-" + std::to_string( suffix ) + _wallet_filename_extension;
-      }
-      wlog( "backing up wallet ${src} to ${dest}",
-            ("src", src_path)
-            ("dest", dest_path) );
+    fc::path src_path = get_wallet_filename();
+    if( !fc::exists( src_path ) )
+      return false;
+    fc::path dest_path = destination_filename + _wallet_filename_extension;
+    int suffix = 0;
+    while( fc::exists(dest_path) )
+    {
+      ++suffix;
+      dest_path = destination_filename + "-" + std::to_string( suffix ) + _wallet_filename_extension;
+    }
+    wlog( "backing up wallet ${src} to ${dest}",
+          ("src", src_path)
+          ("dest", dest_path) );
 
-      fc::path dest_parent = fc::absolute(dest_path).parent_path();
-      try
-      {
-        enable_umask_protection();
-        if( !fc::exists( dest_parent ) )
-          fc::create_directories( dest_parent );
-        fc::copy( src_path, dest_path );
-        disable_umask_protection();
-      }
-      catch(...)
-      {
-        disable_umask_protection();
-        throw;
-      }
-      return true;
+    fc::path dest_parent = fc::absolute(dest_path).parent_path();
+    try
+    {
+      enable_umask_protection();
+      if( !fc::exists( dest_parent ) )
+        fc::create_directories( dest_parent );
+      fc::copy( src_path, dest_path );
+      disable_umask_protection();
+    }
+    catch(...)
+    {
+      disable_umask_protection();
+      throw;
+    }
+    return true;
    }
 
    bool is_locked()const
    {
-      return _checksum == fc::sha512();
+    return _checksum == fc::sha512();
    }
 
    string get_wallet_filename() const { return _wallet_filename; }
 
    std::optional<private_key_type> try_get_private_key(const public_key_type& id)const
    {
-      auto it = _keys.find(id);
-      if( it != _keys.end() )
-        return  it->second;
-      return std::optional<private_key_type>();
+    auto it = _keys.find(id);
+    if( it != _keys.end() )
+      return  it->second;
+    return std::optional<private_key_type>();
    }
 
-   std::optional<signature_type> try_sign_digest( const digest_type digest, const public_key_type public_key ) {
-      auto it = _keys.find(public_key);
-      if( it == _keys.end() )
-        return std::optional<signature_type>();
-      return it->second.sign_compact(digest);
+   std::optional<signature_type> try_sign_digest( const digest_type digest, const public_key_type public_key )
+   {
+    auto it = _keys.find(public_key);
+    if( it == _keys.end() )
+      return std::optional<signature_type>();
+    return it->second.sign_compact(digest);
    }
 
    private_key_type get_private_key(const public_key_type& id)const
    {
-      auto has_key = try_get_private_key( id );
-      FC_ASSERT( has_key, "Key doesn't exist!" );
-      return *has_key;
+    auto has_key = try_get_private_key( id );
+    FC_ASSERT( has_key, "Key doesn't exist!" );
+    return *has_key;
    }
-
 
    // imports the private key into the wallet, and associate it in some way (?) with the
    // given account name.
@@ -149,20 +149,20 @@ public:
    //          account, false otherwise (but it is stored either way)
    bool import_key(string wif_key)
    {
-      auto priv = private_key_type::generate_from_base58( wif_key );
-      if( !priv.valid() )
-      {
-        FC_ASSERT( false, "Key can't be constructed" );
-      }
+    auto priv = private_key_type::generate_from_base58( wif_key );
+    if( !priv.valid() )
+    {
+      FC_ASSERT( false, "Key can't be constructed" );
+    }
 
-      public_key_type wif_pub_key = priv->get_public_key();
+    public_key_type wif_pub_key = priv->get_public_key();
 
-      auto itr = _keys.find(wif_pub_key);
-      if( itr == _keys.end() ) {
-        _keys[wif_pub_key] = *priv;
-        return true;
-      }
-      FC_ASSERT( false, "Key already in wallet" );
+    auto itr = _keys.find(wif_pub_key);
+    if( itr == _keys.end() ) {
+      _keys[wif_pub_key] = *priv;
+      return true;
+    }
+    FC_ASSERT( false, "Key already in wallet" );
    }
 
    // Removes a key from the wallet
@@ -170,89 +170,80 @@ public:
    //          account, false otherwise (but it is removed either way)
    bool remove_key(string key)
    {
-      public_key_type pub( public_key_type::from_base58_with_prefix( key, HIVE_ADDRESS_PREFIX ) );
-      auto itr = _keys.find(pub);
-      if( itr != _keys.end() ) {
-         _keys.erase(pub);
-         return true;
-      }
-      FC_ASSERT( false, "Key not in wallet" );
+    public_key_type pub( public_key_type::from_base58_with_prefix( key, HIVE_ADDRESS_PREFIX ) );
+    auto itr = _keys.find(pub);
+    if( itr != _keys.end() ) {
+        _keys.erase(pub);
+        return true;
+    }
+    FC_ASSERT( false, "Key not in wallet" );
    }
 
-   string create_key(string key_type)
+   string create_key()
    {
-      if(key_type.empty())
-         key_type = _default_key_type;
+    private_key_type priv_key = fc::ecc::private_key::generate();
 
-      private_key_type priv_key;
-      if(key_type == "K1")
-         priv_key = fc::ecc::private_key::generate();
-      else if(key_type == "R1")
-         priv_key = fc::ecc::private_key::generate();
-      else
-         FC_ASSERT( false, "Key type \"${kt}\" not supported by software wallet", ("kt", key_type));
+    import_key(priv_key.str());
 
-      import_key(priv_key.str());
-
-      return fc::ecc::public_key::to_base58_with_prefix( priv_key.get_public_key().serialize(), HIVE_ADDRESS_PREFIX );
+    return fc::ecc::public_key::to_base58_with_prefix( priv_key.get_public_key().serialize(), HIVE_ADDRESS_PREFIX );
    }
 
    bool load_wallet_file(string wallet_filename = "")
    {
-      // TODO:  Merge imported wallet with existing wallet,
-      //        instead of replacing it
-      if( wallet_filename == "" )
-         wallet_filename = _wallet_filename;
+    // TODO:  Merge imported wallet with existing wallet,
+    //        instead of replacing it
+    if( wallet_filename == "" )
+        wallet_filename = _wallet_filename;
 
-      if( ! fc::exists( wallet_filename ) )
-         return false;
+    if( ! fc::exists( wallet_filename ) )
+        return false;
 
-      _wallet = fc::json::from_file( wallet_filename ).as< wallet_data >();
+    _wallet = fc::json::from_file( wallet_filename ).as< wallet_data >();
 
-      return true;
+    return true;
    }
 
    void save_wallet_file(string wallet_filename = "")
    {
-      //
-      // Serialize in memory, then save to disk
-      //
-      // This approach lessens the risk of a partially written wallet
-      // if exceptions are thrown in serialization
-      //
+    //
+    // Serialize in memory, then save to disk
+    //
+    // This approach lessens the risk of a partially written wallet
+    // if exceptions are thrown in serialization
+    //
 
-      encrypt_keys();
+    encrypt_keys();
 
-      if( wallet_filename == "" )
-          wallet_filename = _wallet_filename;
+    if( wallet_filename == "" )
+        wallet_filename = _wallet_filename;
 
-      wlog( "saving wallet to file ${fn}", ("fn", wallet_filename) );
+    wlog( "saving wallet to file ${fn}", ("fn", wallet_filename) );
 
-      string data = fc::json::to_pretty_string( _wallet );
-      try
-      {
-          enable_umask_protection();
-          //
-          // Parentheses on the following declaration fails to compile,
-          // due to the Most Vexing Parse.  Thanks, C++
-          //
-          // http://en.wikipedia.org/wiki/Most_vexing_parse
-          //
-          std::ofstream outfile{ wallet_filename };
-          if (!outfile) {
-            elog("Unable to open file: ${fn}", ("fn", wallet_filename));
-            FC_ASSERT( false, "Unable to open file: ${fn}", ("fn", wallet_filename));
-          }
-          outfile.write( data.c_str(), data.length() );
-          outfile.flush();
-          outfile.close();
-          disable_umask_protection();
-      }
-      catch(...)
-      {
-          disable_umask_protection();
-          throw;
-      }
+    string data = fc::json::to_pretty_string( _wallet );
+    try
+    {
+        enable_umask_protection();
+        //
+        // Parentheses on the following declaration fails to compile,
+        // due to the Most Vexing Parse.  Thanks, C++
+        //
+        // http://en.wikipedia.org/wiki/Most_vexing_parse
+        //
+        std::ofstream outfile{ wallet_filename };
+        if (!outfile) {
+          elog("Unable to open file: ${fn}", ("fn", wallet_filename));
+          FC_ASSERT( false, "Unable to open file: ${fn}", ("fn", wallet_filename));
+        }
+        outfile.write( data.c_str(), data.length() );
+        outfile.flush();
+        outfile.close();
+        disable_umask_protection();
+    }
+    catch(...)
+    {
+        disable_umask_protection();
+        throw;
+    }
   }
 
   string                                  _wallet_filename;
@@ -265,7 +256,6 @@ public:
   mode_t                  _old_umask;
 #endif
   const string _wallet_filename_extension = ".wallet";
-  const string _default_key_type = "K1";
 };
 
 }
@@ -310,11 +300,11 @@ bool clive::remove_key(string key)
   return false;
 }
 
-string clive::create_key(string key_type)
+string clive::create_key()
 {
   FC_ASSERT( !is_locked(), "Unable to create key on a locked wallet");
 
-  string ret = my->create_key(key_type);
+  string ret = my->create_key();
   save_wallet_file();
   return ret;
 }

@@ -25,6 +25,7 @@ class clive_api_impl
       (unlock)
       (import_key)
       (remove_key)
+      (create_key)
     )
 
     wallet_manager& _wallet_mgr;
@@ -77,6 +78,11 @@ DEFINE_API_IMPL( clive_api_impl, remove_key )
   return remove_key_return();
 }
 
+DEFINE_API_IMPL( clive_api_impl, create_key )
+{
+  return { _wallet_mgr.create_key( args.wallet_name ) };
+}
+
 } // detail
 
 clive_api::clive_api(): my( new detail::clive_api_impl() )
@@ -95,6 +101,7 @@ DEFINE_LOCKLESS_APIS( clive_api,
   (unlock)
   (import_key)
   (remove_key)
+  (create_key)
   )
 
 } } } // hive::plugins::clive_api

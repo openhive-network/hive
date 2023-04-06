@@ -105,10 +105,9 @@ public:
    /// Creates a key within the specified wallet.
    /// Wallet must be opened and unlocked
    /// @param name of the wallet to create key in
-   /// @param type of key to create
    /// @throws fc::exception if wallet not found or locked, or if the wallet cannot create said type of key
    /// @return The public key of the created key
-   string create_key(const std::string& name, const std::string& key_type);
+   string create_key(const std::string& name);
 
    /// Takes ownership of a wallet to use
    void own_and_use_wallet(const string& name, std::unique_ptr<clive_api>&& wallet);

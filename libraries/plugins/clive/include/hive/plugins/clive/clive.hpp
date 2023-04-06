@@ -169,9 +169,9 @@ class clive final : public clive_api
        *
        * example: create_key K1
        *
-       * @param key_type the key type to create. May be empty to allow wallet to pick appropriate/"best" key type
+       * @returns a string containing the public key of the created key
        */
-      string create_key( string key_type ) override;
+      string create_key() override;
 
       /* Attempts to sign a digest via the given public_key
       */

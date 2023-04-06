@@ -95,11 +95,11 @@ class clive_api
 
        /** Creates a key within the wallet to be used to sign transactions by an account.
        *
-       * example: create_key K1
+       * example: create_key
        *
-       * @param key_type the key type to create. May be empty to allow wallet to pick appropriate/"best" key type
+       * @returns a string containing the public key of the created key
        */
-      virtual string create_key( string key_type ) = 0;
+      virtual string create_key() = 0;
 
       /** Returns a signature given the digest and public_key, if this wallet can sign via that public key
        */
