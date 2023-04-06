@@ -859,6 +859,8 @@ namespace hive { namespace chain {
       }
       FC_CAPTURE_CALL_LOG_AND_RETHROW([&]()
         {
+          blockchain_worker_thread_pool::get_instance().shutdown();
+
           {
             std::unique_lock<std::mutex> lock(block_queue_mutex);
             stop_requested = true;
