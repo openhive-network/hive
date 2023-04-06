@@ -209,7 +209,7 @@ void wallet_manager::remove_key(const std::string& name, const std::string& pass
    w->remove_key(key);
 }
 
-string wallet_manager::create_key(const std::string& name, const std::string& key_type) {
+string wallet_manager::create_key(const std::string& name) {
    check_timeout();
    if (wallets.count(name) == 0) {
       FC_THROW_EXCEPTION( clive_nonexistent_exception, "Wallet not found: ${w}", ("w", name));
@@ -219,8 +219,7 @@ string wallet_manager::create_key(const std::string& name, const std::string& ke
       FC_THROW_EXCEPTION( clive_locked_exception, "Wallet is locked: ${w}", ("w", name));
    }
 
-   string upper_key_type = boost::to_upper_copy<std::string>(key_type);
-   return w->create_key(upper_key_type);
+   return w->create_key();
 }
 
 signature_type wallet_manager::sign_digest(const digest_type& digest, const public_key_type& key)
