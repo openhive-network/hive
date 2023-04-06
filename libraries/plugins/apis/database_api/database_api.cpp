@@ -2703,7 +2703,12 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
 {
 
 
-  wlog("mtlk try_grab_operations_C pid= ${pid}", ("pid", getpid()));
+  static auto first_time = true;
+  if(first_time)
+  {
+    first_time = false;
+    wlog("mtlk try_grab_operations_C pid= ${pid}", ("pid", getpid()));
+  }
 
 
   while(stop_in_grab)
