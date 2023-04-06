@@ -15,10 +15,17 @@ namespace detail
 }
 
 using plugins::json_rpc::void_type;
+using hive::plugins::clive::public_key_type;
+using hive::plugins::clive::private_key_type;
 
 struct wallet_args
 {
   std::string wallet_name;
+};
+struct wallet_password_args
+{
+  std::string wallet_name;
+  std::string password;
 };
 
 using create_args = wallet_args;
@@ -42,12 +49,7 @@ using lock_all_return = void_type;
 using lock_args   = wallet_args;
 using lock_return = void_type;
 
-
-struct unlock_args
-{
-  std::string wallet_name;
-  std::string password;
-};
+using unlock_args   = wallet_password_args;
 using unlock_return = void_type;
 
 struct import_key_args
@@ -77,6 +79,12 @@ struct list_wallets_return
   std::vector<std::string> wallets;
 };
 
+using list_keys_args = wallet_password_args;
+struct list_keys_return
+{
+  map<public_key_type, private_key_type> keys;
+};
+
 class clive_api
 {
   public:
@@ -94,6 +102,7 @@ class clive_api
       (remove_key)
       (create_key)
       (list_wallets)
+      (list_keys)
     )
 
   private:
@@ -103,10 +112,11 @@ class clive_api
 } } } // hive::plugins::clive_api
 
 FC_REFLECT( hive::plugins::clive_api::wallet_args, (wallet_name) )
+FC_REFLECT( hive::plugins::clive_api::wallet_password_args, (wallet_name)(password) )
 FC_REFLECT( hive::plugins::clive_api::create_return, (password) )
 FC_REFLECT( hive::plugins::clive_api::set_timeout_args, (seconds) )
-FC_REFLECT( hive::plugins::clive_api::unlock_args, (wallet_name)(password) )
 FC_REFLECT( hive::plugins::clive_api::import_key_args, (wallet_name)(wif_key) )
 FC_REFLECT( hive::plugins::clive_api::remove_key_args, (wallet_name)(password)(public_key) )
 FC_REFLECT( hive::plugins::clive_api::create_key_return, (public_key) )
 FC_REFLECT( hive::plugins::clive_api::list_wallets_return, (wallets) )
+FC_REFLECT( hive::plugins::clive_api::list_keys_return, (keys) )
