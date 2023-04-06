@@ -28,6 +28,7 @@ class clive_api_impl
       (create_key)
       (list_wallets)
       (list_keys)
+      (get_public_keys)
     )
 
     wallet_manager& _wallet_mgr;
@@ -95,6 +96,11 @@ DEFINE_API_IMPL( clive_api_impl, list_keys )
   return { _wallet_mgr.list_keys( args.wallet_name, args.password) };
 }
 
+DEFINE_API_IMPL( clive_api_impl, get_public_keys )
+{
+  return { _wallet_mgr.get_public_keys() };
+}
+
 } // detail
 
 clive_api::clive_api(): my( new detail::clive_api_impl() )
@@ -116,6 +122,7 @@ DEFINE_LOCKLESS_APIS( clive_api,
   (create_key)
   (list_wallets)
   (list_keys)
+  (get_public_keys)
   )
 
 } } } // hive::plugins::clive_api

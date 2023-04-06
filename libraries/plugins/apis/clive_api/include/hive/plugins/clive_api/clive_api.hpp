@@ -85,6 +85,12 @@ struct list_keys_return
   map<public_key_type, private_key_type> keys;
 };
 
+using get_public_keys_args = void_type;
+struct get_public_keys_return
+{
+  flat_set<public_key_type> keys;
+};
+
 class clive_api
 {
   public:
@@ -103,6 +109,7 @@ class clive_api
       (create_key)
       (list_wallets)
       (list_keys)
+      (get_public_keys)
     )
 
   private:
@@ -120,3 +127,4 @@ FC_REFLECT( hive::plugins::clive_api::remove_key_args, (wallet_name)(password)(p
 FC_REFLECT( hive::plugins::clive_api::create_key_return, (public_key) )
 FC_REFLECT( hive::plugins::clive_api::list_wallets_return, (wallets) )
 FC_REFLECT( hive::plugins::clive_api::list_keys_return, (keys) )
+FC_REFLECT( hive::plugins::clive_api::get_public_keys_return, (keys) )
