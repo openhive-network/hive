@@ -2795,7 +2795,7 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
 
     //contruct variant array
 
-    std::vector<std::vector<fc::variant>> trancactions_vector;
+    std::vector<fc::variant> trancactions_vector;
 
     if(block_num == transaction_expecting_block)
     for(; transactions_it != transactions.end(); ++transactions_it)
@@ -2869,7 +2869,7 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
 
         
 
-        trancactions_vector.push_back(operations_vector);
+        trancactions_vector.push_back(tv);
 
 
       }
