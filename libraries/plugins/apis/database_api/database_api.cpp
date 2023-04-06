@@ -2867,7 +2867,9 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
 
         }
 
-        
+        transaction_v
+        ("operations", operations_vector)
+        ;
 
         trancactions_vector.push_back(tv);
 
