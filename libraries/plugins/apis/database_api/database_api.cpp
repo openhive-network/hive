@@ -2810,7 +2810,7 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
         fc::variant_object_builder transaction_v;
         transaction_v
         ("ref_block_num", transaction["ref_block_num"].as<int>())
-        ("ref_block_prefix", transaction["ref_block_prefix"].as<int>())
+        ("ref_block_prefix", transaction["ref_block_prefix"].as<int64_t>())
         ("expiration", transaction["expiration"].c_str())
         ;
 
