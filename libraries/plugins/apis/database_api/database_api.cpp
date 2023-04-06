@@ -2784,7 +2784,7 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
     fc::variant_object_builder block_v;
     block_v
     ("witness", block["name"].c_str()) ////"steemychicken1",
-    ("block_id", block["id"].c_str())
+    ("block_id", block["hash"].c_str())
     ("previous", block["prev"].c_str()) // "000f2bbfcbdad7bb80bc42c476567c750badd90b",
     ("timestamp",  block["created_at"].c_str()) //"2016-04-28T23:22:18"
     ("extensions", block["extensions"].c_str() )//[],
