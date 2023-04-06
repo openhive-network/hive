@@ -99,7 +99,10 @@ SHELL ["/bin/bash", "-c"]
 USER hived
 WORKDIR /home/hived
 
-RUN mkdir -p /home/hived/datadir/ && mkdir /home/hived/shm_dir/
+RUN mkdir -p /home/hived/bin && \
+    mkdir /home/hived/shm_dir && \
+    mkdir /home/hived/datadir && \
+    chown -Rc hived:users /home/hived/
 
 COPY --from=build --chown=hived:users \
   /home/hived_admin/build/programs/hived/hived \
