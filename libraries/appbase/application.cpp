@@ -4,6 +4,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/exception/diagnostic_information.hpp>
+#include <boost/scope_exit.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -156,6 +157,12 @@ void application::startup() {
     startup_io_handler.run();
   });
 
+  BOOST_SCOPE_EXIT(&startup_io_handler, &startup_thread)
+  {
+    startup_io_handler.close();
+    startup_thread.join();
+  } BOOST_SCOPE_EXIT_END
+
   for (const auto& plugin : initialized_plugins)
   {
     plugin->startup();
@@ -171,10 +178,6 @@ void application::startup() {
       plugin->finalize_startup();
     }
   }
-
-  startup_io_handler.close();
-
-  startup_thread.join();
 }
 
 application& application::instance( bool reset ) {
