@@ -375,10 +375,18 @@ void clive::set_password( string password )
   lock();
 }
 
-map<public_key_type, private_key_type> clive::list_keys()
+map<std::string, std::string> clive::list_keys()
 {
   FC_ASSERT( !is_locked(), "Unable to list public keys of a locked wallet");
-  return my->_keys;
+
+  map<std::string, std::string> _result;
+  std::transform( my->_keys.begin(), my->_keys.end(), std::inserter( _result, _result.end() ),
+    []( const std::pair<public_key_type, private_key_type>& item )
+    {
+      return std::make_pair( item.first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ), item.second.to_base58() );
+    } );
+
+  return _result;
 }
 
 flat_set<std::string> clive::list_public_keys() {
@@ -386,11 +394,11 @@ flat_set<std::string> clive::list_public_keys() {
   flat_set<public_key_type> keys;
   boost::copy(my->_keys | boost::adaptors::map_keys, std::inserter(keys, keys.end()));
 
-  flat_set<std::string> result;
-  std::transform( keys.begin(), keys.end(), std::inserter( result, result.end() ),
+  flat_set<std::string> _result;
+  std::transform( keys.begin(), keys.end(), std::inserter( _result, _result.end() ),
     []( const public_key_type& public_key ){ return public_key.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ); } );
 
-  return result;
+  return _result;
 }
 
 private_key_type clive::get_private_key( public_key_type pubkey )const

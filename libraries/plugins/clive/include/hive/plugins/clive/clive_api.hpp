@@ -70,7 +70,7 @@ class clive_api
        * using \c import_key()
        * @returns a map containing the private keys, indexed by their public key
        */
-      virtual map<public_key_type, private_key_type> list_keys() = 0;
+      virtual map<std::string, std::string> list_keys() = 0;
 
       /** Dumps all public keys owned by the wallet.
        * @returns a vector containing the public keys
