@@ -88,7 +88,7 @@ struct list_keys_return
 using get_public_keys_args = void_type;
 struct get_public_keys_return
 {
-  flat_set<public_key_type> keys;
+  flat_set<std::string> keys;
 };
 
 class clive_api

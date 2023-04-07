@@ -134,10 +134,10 @@ map<public_key_type,private_key_type> wallet_manager::list_keys(const string& na
    return w->list_keys();
 }
 
-flat_set<public_key_type> wallet_manager::get_public_keys() {
+flat_set<std::string> wallet_manager::get_public_keys() {
    check_timeout();
    FC_ASSERT( !wallets.empty(), "You don't have any wallet!");
-   flat_set<public_key_type> result;
+   flat_set<std::string> result;
    bool is_all_wallet_locked = true;
    for (const auto& i : wallets) {
       if (!i.second->is_locked()) {

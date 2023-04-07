@@ -111,7 +111,7 @@ class clive final : public clive_api
       /** Dumps all public keys owned by the wallet.
        * @returns a vector containing the public keys
        */
-      flat_set<public_key_type> list_public_keys() override;
+      flat_set<std::string> list_public_keys() override;
 
       /** Loads a specified Graphene wallet.
        *
