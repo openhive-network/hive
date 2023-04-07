@@ -806,7 +806,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #ifdef USE_ALTERNATE_CHAIN_ID
   using hive::protocol::testnet_blockchain_configuration::configuration_data;
   /// Default initminer priv. key in non-mainnet builds.
-  auto default_skeleton_privkey = configuration_data.get_default_initminer_private_key().str();
+  auto default_skeleton_privkey = configuration_data.get_default_initminer_private_key().to_base58();
 #endif
 
   cfg.add_options()

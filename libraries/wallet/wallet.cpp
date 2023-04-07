@@ -509,7 +509,7 @@ public:
     int number_of_consecutive_unused_keys = 0;
     for( int key_index = 0; ; ++key_index )
     {
-      fc::ecc::private_key derived_private_key = derive_private_key(parent_key.str(), key_index);
+      fc::ecc::private_key derived_private_key = derive_private_key(parent_key.to_base58(), key_index);
       hive::chain::public_key_type derived_public_key = derived_private_key.get_public_key();
       if( _keys.find(derived_public_key) == _keys.end() )
       {
@@ -1105,7 +1105,7 @@ brain_key_info wallet_api::suggest_brain_key()const
   brain_key = normalize_brain_key(brain_key);
   fc::ecc::private_key priv_key = detail::derive_private_key( brain_key, 0 );
   result.brain_priv_key = brain_key;
-  result.wif_priv_key = priv_key.str();
+  result.wif_priv_key = priv_key.to_base58();
   result.pub_key = priv_key.get_public_key();
   return result;
 }
@@ -1283,7 +1283,7 @@ void wallet_api::lock()
   FC_ASSERT( !is_locked() );
   encrypt_keys();
   for( auto& key : my->_keys )
-    key.second = fc::ecc::private_key().str();
+    key.second = fc::ecc::private_key().to_base58();
   my->_keys.clear();
   my->_checksum = fc::sha512();
   my->self.lock_changed(true);
@@ -1327,7 +1327,7 @@ map<public_key_type, string> wallet_api::list_keys()
 
 string wallet_api::get_private_key( public_key_type pubkey )const
 {
-  return my->get_private_key( pubkey ).str();
+  return my->get_private_key( pubkey ).to_base58();
 }
 
 pair<public_key_type,string> wallet_api::get_private_key_from_password( const string& account, const string& role, const string& password )const {
@@ -1335,7 +1335,7 @@ pair<public_key_type,string> wallet_api::get_private_key_from_password( const st
   FC_ASSERT( seed.size() );
   auto secret = fc::sha256::hash( seed.c_str(), seed.size() );
   auto priv = fc::ecc::private_key::regenerate( secret );
-  return std::make_pair( public_key_type( priv.get_public_key() ), priv.str() );
+  return std::make_pair( public_key_type( priv.get_public_key() ), priv.to_base58() );
 }
 
 wallet_serializer_wrapper<database_api::api_feed_history_object> wallet_api::get_feed_history()const

@@ -18,7 +18,7 @@ constexpr auto password_prefix = "PW";
 
 std::string gen_password() {
    auto key = private_key_type::generate();
-   return password_prefix + key.str();
+   return password_prefix + key.to_base58();
 }
 
 bool valid_filename(const string& name) {

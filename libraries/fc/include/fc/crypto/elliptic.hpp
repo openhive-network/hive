@@ -133,7 +133,7 @@ namespace fc {
 
            operator private_key_secret ()const { return get_secret(); }
 
-           std::string str() const;
+           std::string to_base58() const;
 
            /**
             *  Given a public key, calculatse a 512 bit shared secret between that
