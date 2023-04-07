@@ -365,7 +365,7 @@ void database_fixture::open_database( const fc::path& _data_dir, uint16_t shared
 void database_fixture::generate_block(uint32_t skip, const fc::ecc::private_key& key, int miss_blocks)
 {
   skip |= default_skip;
-  db_plugin->debug_generate_blocks( key.str(), 1, skip, miss_blocks, true );
+  db_plugin->debug_generate_blocks( key.to_base58(), 1, skip, miss_blocks, true );
 }
 
 uint32_t database_fixture::generate_blocks(const std::string& debug_key, uint32_t count, uint32_t skip)

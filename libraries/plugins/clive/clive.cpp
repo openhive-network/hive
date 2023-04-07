@@ -183,7 +183,7 @@ public:
    {
     private_key_type priv_key = fc::ecc::private_key::generate();
 
-    import_key(priv_key.str());
+    import_key(priv_key.to_base58());
 
     return fc::ecc::public_key::to_base58_with_prefix( priv_key.get_public_key().serialize(), HIVE_ADDRESS_PREFIX );
    }

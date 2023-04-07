@@ -302,7 +302,7 @@ namespace fc { namespace ecc {
        return sec;
     }
 
-    std::string private_key::str() const
+    std::string private_key::to_base58() const
     {
       auto secret = get_secret();
 

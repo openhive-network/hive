@@ -87,7 +87,7 @@ int main( int argc, char** argv )
     {
       fc::mutable_variant_object mvo;
       hive::protocol::public_key_type pub_key = priv_key.get_public_key();
-      mvo( "private_key",    priv_key.str() )
+      mvo( "private_key",    priv_key.to_base58() )
     ( "public_key",     std::string( pub_key ) )
     ( "account_name", name )
   ;
