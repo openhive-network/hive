@@ -68,7 +68,7 @@ public:
    map<public_key_type,private_key_type> list_keys(const string& name, const string& pw);
 
    /// @return A set of public keys from all unlocked wallets, use with chain_controller::get_required_keys.
-   flat_set<public_key_type> get_public_keys();
+   flat_set<std::string> get_public_keys();
 
    /// Locks all the unlocked wallets.
    void lock_all();

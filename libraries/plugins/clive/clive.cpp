@@ -381,11 +381,16 @@ map<public_key_type, private_key_type> clive::list_keys()
   return my->_keys;
 }
 
-flat_set<public_key_type> clive::list_public_keys() {
+flat_set<std::string> clive::list_public_keys() {
   FC_ASSERT( !is_locked(), "Unable to list private keys of a locked wallet");
   flat_set<public_key_type> keys;
   boost::copy(my->_keys | boost::adaptors::map_keys, std::inserter(keys, keys.end()));
-  return keys;
+
+  flat_set<std::string> result;
+  std::transform( keys.begin(), keys.end(), std::inserter( result, result.end() ),
+    []( const public_key_type& public_key ){ return fc::ecc::public_key::to_base58_with_prefix( public_key.serialize(), HIVE_ADDRESS_PREFIX ); } );
+
+  return result;
 }
 
 private_key_type clive::get_private_key( public_key_type pubkey )const
