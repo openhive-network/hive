@@ -2732,7 +2732,7 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
   blocks_work.commit();
 
   pqxx::work transactions_work{c};
-  pqxx::result transactions{transactions_work.exec("SELECT block_num, trx_in_block, ref_block_num, ref_block_prefix, expiration FROM hive.transactions WHERE block_num >= " 
+  pqxx::result transactions{transactions_work.exec("SELECT block_num, trx_in_block, ref_block_num, ref_block_prefix, expiration, trx_hash, signature FROM hive.transactions WHERE block_num >= " 
                             + std::to_string(from) 
                             + " and block_num <= " 
                             + std::to_string(to) 
@@ -2745,6 +2745,7 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
                             + std::to_string(from) 
                             + " and block_num <= " 
                             + std::to_string(to) 
+                            + " AND op_type_id <= 49 "
                             + " ORDER BY id ASC")};
   operations_work.commit();
 
@@ -2795,6 +2796,8 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
     //     "5cf59b8b633f8e894adef4c8ccd6e2353040ff70"
     // ]
 
+    std::vector<variant> transaction_ids_vector;
+
 
 //    "transactions": [
 
@@ -2817,8 +2820,10 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
         ("ref_block_num", transaction["ref_block_num"].as<int>())
         ("ref_block_prefix", transaction["ref_block_prefix"].as<int64_t>())
         ("expiration", transaction["expiration"].c_str())
+        ("signatures", (transaction["signature"].c_str())+1 )
         ;
 
+        transaction_ids_vector.push_back(transaction["trx_hash"].c_str());
             // "extensions": [],
             // "signatures": [
             //     "1f1fd68fd2b2ec919357c8e534d1473a16f5505a7719bbb2a2100478f212f9353272c38b12d1468d1c3eb830f659e80a28a5a985661bb2c79e4acd2ef34bc919b4"
@@ -2829,7 +2834,7 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
         fc::stringstream toss;
         fc::json::to_stream(toss, tv);
     
-        wlog("transaction=${j}",  ( "j", toss.str()));
+        //wlog("transaction=${j}",  ( "j", toss.str()));
 
 
         //rewind
@@ -2857,7 +2862,7 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
                 hive::protocol::operation op;
                 fc::from_variant( ov, op );
 
-                wlog("op=${op}",("op", op));
+                //wlog("op=${op}",("op", op));
                 
                 operations_vector.push_back(ov);
                 
@@ -2898,6 +2903,7 @@ void try_grab_operations_C_impl(int from, int to, const char *context,
     ("transactions", vt)
     ("witness_signature", block["witness_signature"].c_str()) //  "1f2ce40298d1569ba0f118146f71482ff18afdb02d844321addf3ebd7e970d65a625d4cb65aae4a9c884f896f0c2c6939603287997377d1f2d440d6f09825aab97",
     ("transaction_merkle_root", block["transaction_merkle_root"].c_str()) // "8195f855f6d54d6856f9a08a08b21bdd6b14472e",
+    ("transaction_ids", transaction_ids_vector) 
     ;
 
     variant v;
