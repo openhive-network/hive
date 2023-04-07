@@ -122,7 +122,7 @@ std::vector<std::string> wallet_manager::list_wallets() {
    return result;
 }
 
-map<public_key_type,private_key_type> wallet_manager::list_keys(const string& name, const string& pw) {
+map<std::string, std::string> wallet_manager::list_keys(const string& name, const string& pw) {
    check_timeout();
 
    if (wallets.count(name) == 0)

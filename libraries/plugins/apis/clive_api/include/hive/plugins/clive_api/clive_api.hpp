@@ -82,7 +82,7 @@ struct list_wallets_return
 using list_keys_args = wallet_password_args;
 struct list_keys_return
 {
-  map<public_key_type, private_key_type> keys;
+  map<std::string, std::string> keys;
 };
 
 using get_public_keys_args = void_type;
