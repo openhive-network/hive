@@ -185,7 +185,7 @@ public:
 
     import_key(priv_key.to_base58());
 
-    return fc::ecc::public_key::to_base58_with_prefix( priv_key.get_public_key().serialize(), HIVE_ADDRESS_PREFIX );
+    return priv_key.get_public_key().to_base58_with_prefix( HIVE_ADDRESS_PREFIX );
    }
 
    bool load_wallet_file(string wallet_filename = "")
@@ -388,7 +388,7 @@ flat_set<std::string> clive::list_public_keys() {
 
   flat_set<std::string> result;
   std::transform( keys.begin(), keys.end(), std::inserter( result, result.end() ),
-    []( const public_key_type& public_key ){ return fc::ecc::public_key::to_base58_with_prefix( public_key.serialize(), HIVE_ADDRESS_PREFIX ); } );
+    []( const public_key_type& public_key ){ return public_key.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ); } );
 
   return result;
 }

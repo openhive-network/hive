@@ -158,9 +158,14 @@ namespace fc { namespace ecc {
       return fc::to_base58(data.begin(), data.size());
     }
 
-    std::string public_key::to_base58_with_prefix( const public_key_data &key, const std::string& prefix )
+    std::string public_key::to_base58_with_prefix(const std::string& prefix ) const
     {
-      return prefix + to_base58( key, false/*is_sha256*/ );
+      return to_base58_with_prefix( serialize(), prefix );
+    }
+
+    std::string public_key::to_base58_with_prefix( const public_key_data &key, const std::string& prefix, bool is_sha256 )
+    {
+      return prefix + to_base58( key, is_sha256 );
     }
 
     public_key public_key::from_base58( const std::string& b58, bool is_sha256 )
