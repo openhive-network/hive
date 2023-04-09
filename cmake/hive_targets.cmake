@@ -69,6 +69,48 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name )
 
 ENDMACRO()
 
+MACRO( ADD_TARGET_PACKAGE_LIBRARIES target_name _package_name use_static_libs )
+
+  SET( ORIGINAL_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} )
+
+  STRING(TOUPPER ${_package_name} package_name)
+
+  IF ( ${use_static_libs} )
+    MESSAGE( STATUS "Setting up ${_package_name} STATIC libraries for target: ${target_name}" )
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    SET( ${package_name}_USE_STATIC_LIBS TRUE )
+  ELSE() 
+    MESSAGE( STATUS "Setting up ${_package_name} SHARED libraries for target: ${target_name}" )
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+    SET( ${package_name}_USE_STATIC_LIBS FALSE )
+  ENDIF ()
+
+  FIND_PACKAGE( ${_package_name} REQUIRED )
+
+  IF (${${package_name}_FOUND})
+    target_compile_definitions( ${target_name} INTERFACE HAS_${package_name} )
+  ENDIF()
+
+  TARGET_INCLUDE_DIRECTORIES( ${target_name} INTERFACE ${${package_name}_INCLUDE_DIRS} )
+  TARGET_LINK_LIBRARIES( ${target_name} INTERFACE ${${package_name}_LIBRARIES} )
+
+  MESSAGE ( STATUS "Detected ${_package_name} libs: ${${package_name}_LIBRARIES}" )
+
+  UNSET (${package_name}_USE_STATIC_LIBS CACHE)
+  UNSET (${package_name}_LIBRARY CACHE)
+  UNSET (${package_name}_LIBRARY_RELEASE CACHE)
+  UNSET (${package_name}_LIBRARIES CACHE)
+
+  UNSET (${package_name}_USE_STATIC_LIBS )
+  UNSET (${package_name}_LIBRARIES )
+  UNSET (${package_name}_LIBRARY )
+  UNSET (${package_name}_LIBRARY_RELEASE )
+
+  SET( CMAKE_FIND_LIBRARY_SUFFIXES ${ORIGINAL_LIB_SUFFIXES} )
+
+ENDMACRO()
+
+
 MACRO( ADD_TARGET_OPENSSL_LIBRARIES target_name use_static_libs )
 
   IF ( ${use_static_libs} )
