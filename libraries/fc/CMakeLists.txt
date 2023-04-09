@@ -31,8 +31,6 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(platformBitness 64)
 endif()
 
-SET (ORIGINAL_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
-
 cmake_policy(SET CMP0054 NEW)
 
 IF( ECC_IMPL STREQUAL openssl )
@@ -142,8 +140,6 @@ IF(NOT "$ENV{OPENSSL_ROOT_DIR}" STREQUAL "")
   set(OPENSSL_INCLUDE_DIR ${OPENSSL_ROOT_DIR}/include)
   message(STATUS "Setting up OpenSSL root and include vars to ${OPENSSL_ROOT_DIR}, ${OPENSSL_INCLUDE_DIR}")
 ENDIF()
-
-set( CMAKE_FIND_LIBRARY_SUFFIXES ${ORIGINAL_LIB_SUFFIXES} )
 
 option( UNITY_BUILD OFF )
 
@@ -301,35 +297,6 @@ ELSE()
   ENDIF()
 ENDIF()
 
-IF(APPLE)
-  # As of 10.10 yosemite, the OpenSSL static libraries shipped with os x have a dependency
-  # on zlib, so any time you link in openssl you also need to link zlib.  .  We really want to detect whether openssl was configured with the --no-zlib
-  # option or not when it was built, but that's difficult to do in practice, so we
-  # just always try to link it in on mac.
-  find_package( ZLIB REQUIRED )
-ELSE(APPLE)
-  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-  find_package( ZLIB )
-  set( CMAKE_FIND_LIBRARY_SUFFIXES ${ORIGINAL_LIB_SUFFIXES} )
-ENDIF(APPLE)
-
-if( ZLIB_FOUND )
-  MESSAGE( STATUS "zlib found" )
-  add_definitions( -DHAS_ZLIB )
-else()
-  MESSAGE( STATUS "zlib not found" )
-  set( ZLIB_LIBRARIES "" )
-endif( ZLIB_FOUND )
-
-find_package( BZip2 )
-if( BZIP2_FOUND )
-   MESSAGE( STATUS "bzip2 found" )
-   add_definitions( -DHAS_BZIP2 )
-else()
-   MESSAGE( STATUS "bzip2 not found" )
-   set( BZIP2_LIBRARIES "" )
-endif( BZIP2_FOUND )
-
 # This will become unnecessary once we update to websocketpp which fixes upstream issue #395
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWEBSOCKETPP_STRICT_MASKING")
 
@@ -368,7 +335,7 @@ SET( private_includes
 
 target_include_directories(fc_core PUBLIC ${public_includes} PRIVATE ${private_includes})
 
-target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
+target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -486,9 +453,13 @@ ADD_TARGET_OPENSSL_LIBRARIES (STATIC_OPENSSL TRUE)
 
 add_library ( fc STATIC )
 target_link_libraries ( fc PUBLIC fc_core STATIC_BOOST STATIC_OPENSSL )
+ADD_TARGET_PACKAGE_LIBRARIES( fc ZLIB TRUE )
+ADD_TARGET_PACKAGE_LIBRARIES( fc BZip2 TRUE )
 
 add_library ( fc_shared_boost STATIC )
 target_link_libraries ( fc_shared_boost PUBLIC fc_core SHARED_BOOST SHARED_OPENSSL )
+ADD_TARGET_PACKAGE_LIBRARIES( fc_shared_boost ZLIB FALSE )
+ADD_TARGET_PACKAGE_LIBRARIES( fc_shared_boost BZip2 FALSE )
 
 SET(OPENSSL_CONF_TARGET )
 IF(DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
