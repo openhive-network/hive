@@ -2653,12 +2653,17 @@ void sanity_check(const char *&postgres_url)
 
 }
 
-template<typename T>
-std::string fixT(T s)
+std::string fixTime(const pqxx::field& t)
 {
-  std::string r =s.c_str();
+  std::string r =t.c_str();
   r[10] = 'T';
   return r;
+}
+
+
+const char* fixHex(const pqxx::field& h)
+{
+    return h.c_str() + 2;
 }
 
 
@@ -2670,10 +2675,10 @@ struct Postgres2Blocks
 
 
 
-  pqxx::result blocks;
-  pqxx::result transactions;
-  pqxx::result operations;
-  std::multimap<std::string, std::string> multisigs;
+  pqxx::result pg_blocks;
+  pqxx::result pg_transactions;
+  pqxx::result pg_operations;
+  std::multimap<std::string, std::string> pg_multisigs;
 
   int transaction_expecting_block;
   pqxx::result::const_iterator transactions_it;
@@ -2687,7 +2692,7 @@ void get_data_from_postgres(int from, int to, const char* postgres_url)
   pqxx::connection c{postgres_url};
 
   pqxx::work blocks_work{c};
-  blocks = {blocks_work.exec("SELECT * FROM hive.blocks JOIN hive.accounts ON  id = producer_account_id WHERE num >= " 
+  pg_blocks = {blocks_work.exec("SELECT * FROM hive.blocks JOIN hive.accounts ON  id = producer_account_id WHERE num >= " 
                             + std::to_string(from) 
                             + " and num <= " 
                             + std::to_string(to) 
@@ -2695,7 +2700,7 @@ void get_data_from_postgres(int from, int to, const char* postgres_url)
   blocks_work.commit();
 
   pqxx::work transactions_work{c};
-  transactions = {transactions_work.exec("SELECT block_num, trx_in_block, ref_block_num, ref_block_prefix, expiration, trx_hash, signature FROM hive.transactions WHERE block_num >= " 
+  pg_transactions = {transactions_work.exec("SELECT block_num, trx_in_block, ref_block_num, ref_block_prefix, expiration, trx_hash, signature FROM hive.transactions WHERE block_num >= " 
                             + std::to_string(from) 
                             + " and block_num <= " 
                             + std::to_string(to) 
@@ -2704,7 +2709,7 @@ void get_data_from_postgres(int from, int to, const char* postgres_url)
 
 
   pqxx::work operations_work{c};
-  operations = {operations_work.exec("SELECT block_num, body, trx_in_block FROM hive.operations WHERE block_num >= " 
+  pg_operations = {operations_work.exec("SELECT block_num, body, trx_in_block FROM hive.operations WHERE block_num >= " 
                             + std::to_string(from) 
                             + " and block_num <= " 
                             + std::to_string(to) 
@@ -2725,7 +2730,7 @@ void get_data_from_postgres(int from, int to, const char* postgres_url)
   for( auto row : transactions_multisig)
   {
     std::string key(std::string(row["trx_hash"].c_str()+2));
-    multisigs.insert(std::make_pair(key, row["signature"].c_str()+2));
+    pg_multisigs.insert(std::make_pair(key, row["signature"].c_str()+2));
   }
 
   transactions_multisig_work.commit();
@@ -2737,19 +2742,19 @@ void get_data_from_postgres(int from, int to, const char* postgres_url)
 void prepare_iterators()
 {
   transaction_expecting_block = -1;
-  transactions_it = transactions.begin();
-  if( transactions.size() > 0)
+  transactions_it = pg_transactions.begin();
+  if( pg_transactions.size() > 0)
   {
-      const auto& first_transaction = transactions[0];
+      const auto& first_transaction = pg_transactions[0];
       transaction_expecting_block = first_transaction["block_num"].as<int>();
   }
 
   operations_expecting_block = -1;
   operations_expecting_transaction = -1;
-  operations_it = operations.begin();
-  if(operations.size() > 0)
+  operations_it = pg_operations.begin();
+  if(pg_operations.size() > 0)
   {
-    const auto& first_operation = operations[0];
+    const auto& first_operation = pg_operations[0];
     operations_expecting_block =  first_operation["block_num"].as<int>();
     operations_expecting_transaction = first_operation["trx_in_block"].as<int>();
 
@@ -2758,7 +2763,7 @@ void prepare_iterators()
 
 void handle_operations(int block_num, int trx_in_block, std::vector<fc::variant>& operations_vector)
 {
-  for(; operations_it != operations.end(); ++operations_it)
+  for(; operations_it != pg_operations.end(); ++operations_it)
   {
     const auto operation = (*operations_it);
     if(operation["block_num"].as<int>() == block_num && operation["trx_in_block"].as<int>() == trx_in_block)
@@ -2787,7 +2792,7 @@ void handle_transactions(int block_num,
   std::vector<variant>& transaction_ids_vector,
   std::vector<fc::variant>& trancactions_vector)
  {
-  for (; transactions_it != transactions.end(); ++transactions_it) {
+  for (; transactions_it != pg_transactions.end(); ++transactions_it) {
     const auto transaction = (*transactions_it);
     if (transaction["block_num"].as<int>() == block_num) {
       auto trx_in_block = transaction["trx_in_block"].as<int>();
@@ -2810,7 +2815,7 @@ void handle_transactions(int block_num,
 
         transactions_multisig_work.commit();
 #else
-        auto range = multisigs.equal_range(transaction["trx_hash"].c_str() + 2);
+        auto range = pg_multisigs.equal_range(transaction["trx_hash"].c_str() + 2);
         for (auto it = range.first; it != range.second; ++it) {
           signa.push_back(it->second);
         }
@@ -2820,7 +2825,7 @@ void handle_transactions(int block_num,
       fc::variant_object_builder transaction_v;
       transaction_v("ref_block_num", transaction["ref_block_num"].as<int>())(
           "ref_block_prefix", transaction["ref_block_prefix"].as<int64_t>())(
-          "expiration", fixT(transaction["expiration"]))("signatures", signa);
+          "expiration", fixTime(transaction["expiration"]))("signatures", signa);
 
       transaction_ids_vector.push_back(transaction["trx_hash"].c_str() + 2);
 
@@ -2862,42 +2867,40 @@ fc::variant block2variant(const pqxx::row& block)
 {
   auto block_num = block["num"].as<int>();
 
-  std::vector<variant> transaction_ids_vector;
-
-  // construct variant array
-
-  std::vector<fc::variant> trancactions_vector;
-
+  std::vector<variant> transaction_ids_variants;
+  std::vector<fc::variant> transaction_variants;
   if(block_num == transaction_expecting_block)
-    handle_transactions(block_num, transaction_ids_vector, trancactions_vector);
+    handle_transactions(block_num, transaction_ids_variants, transaction_variants);
 
   std::string json = block["extensions"].c_str();
-  variant exts = json.size() ? fc::json::from_string(json) : fc::json::from_string("[]");
+  variant extensions = fc::json::from_string(json.empty() ?"[]":json);
 
   // fill in block header here
-  fc::variant_object_builder block_v;
-  block_v("witness", block["name"].c_str())("block_id", block["hash"].c_str() + 2)("previous", block["prev"].c_str() + 2)(
-      "timestamp", fixT(block["created_at"]).c_str())("extensions", exts)("signing_key", block["signing_key"].c_str());
+  fc::variant_object_builder block_variant_builder; 
+  block_variant_builder
+  ("witness", block["name"].c_str())
+  ("block_id", fixHex(block["hash"]))
+  ("previous", fixHex(block["prev"]))
+  ("timestamp", fixTime(block["created_at"]))
+  ("extensions", extensions)
+  ("signing_key", block["signing_key"].c_str())
+  ("transactions", transaction_variants)
+  ("witness_signature", fixHex(block["witness_signature"]))
+  ("transaction_merkle_root", fixHex(block["transaction_merkle_root"]))
+  ("transaction_ids", transaction_ids_variants);
 
-  // append transaction to transaction array
-  variant vt;
-  to_variant(trancactions_vector, vt);
-  block_v("transactions", vt)(
-      "witness_signature",
-      block["witness_signature"].c_str() + 2)
-      ("transaction_merkle_root", block["transaction_merkle_root"].c_str() + 2)
-      ("transaction_ids", transaction_ids_vector);
-
-  variant v;
-  to_variant(block_v.get(), v);
-  return v;
+  variant block_variant;
+  to_variant(block_variant_builder.get(), block_variant);
+  return block_variant;
 }
 
 std::string block2json(const pqxx::row& block)
 {
   variant v = block2variant(block);
+
   fc::stringstream oss;
   fc::json::to_stream(oss, v);
+
   std::string json_block = oss.str();
   return json_block;
 }
@@ -2905,25 +2908,22 @@ std::string block2json(const pqxx::row& block)
 
 void blocks2replay(const char *context)
 {
- for(const auto& block : blocks)
+ for(const auto& block : pg_blocks)
   {
-    
-    
     fc::variant v = block2variant(block);
 
     auto block_num = block["num"].as<int>();
+
     //std::string json = fc::json::to_pretty_string(v);
     //wlog("block_num=${block_num} header=${j}", ("block_num", block_num) ( "j", json));
+
     int n = consume_variant_block_impl(v, context, block_num);
     n=n;
-
   }
 }
 
 void run(int from, int to, const char *context, const char *postgres_url) 
 {
-
-
   get_data_from_postgres(from, to, postgres_url);
 
   prepare_iterators();
