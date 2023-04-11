@@ -1,5 +1,6 @@
 #include <hive/plugins/clive_api/clive_api_plugin.hpp>
 #include <hive/plugins/clive_api/clive_api.hpp>
+#include <hive/plugins/clive/clive_api.hpp>
 
 #include <fc/variant_object.hpp>
 #include <fc/reflect/variant.hpp>
@@ -29,6 +30,7 @@ class clive_api_impl
       (list_wallets)
       (list_keys)
       (get_public_keys)
+      (sign_digest)
     )
 
     wallet_manager& _wallet_mgr;
@@ -101,6 +103,12 @@ DEFINE_API_IMPL( clive_api_impl, get_public_keys )
   return { _wallet_mgr.get_public_keys() };
 }
 
+DEFINE_API_IMPL( clive_api_impl, sign_digest )
+{
+  using namespace hive::plugins::clive;
+  return { _wallet_mgr.sign_digest( digest_type( args.digest ), public_key_type::from_base58_with_prefix( args.public_key, HIVE_ADDRESS_PREFIX ) ) };
+}
+
 } // detail
 
 clive_api::clive_api(): my( new detail::clive_api_impl() )
@@ -123,6 +131,7 @@ DEFINE_LOCKLESS_APIS( clive_api,
   (list_wallets)
   (list_keys)
   (get_public_keys)
+  (sign_digest)
   )
 
 } } } // hive::plugins::clive_api

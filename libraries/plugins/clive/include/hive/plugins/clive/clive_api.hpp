@@ -7,6 +7,12 @@ using namespace std;
 
 namespace hive { namespace plugins { namespace clive {
 
+#ifdef IS_TEST_NET
+#define HIVE_ADDRESS_PREFIX                   "TST"
+#else
+#define HIVE_ADDRESS_PREFIX                   "STM"
+#endif
+
 using private_key_type  = fc::ecc::private_key;
 using public_key_type   = fc::ecc::public_key;
 using signature_type    = fc::ecc::compact_signature;
