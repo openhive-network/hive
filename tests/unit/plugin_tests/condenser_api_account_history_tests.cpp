@@ -62,7 +62,7 @@ void test_get_account_history( const condenser_api_fixture& caf, const std::vect
   }
 }
 
-// Uses hf1_scenario to test additional paramters of get_account_history.
+// Uses hf1_scenario to test additional parameters of get_account_history.
 BOOST_AUTO_TEST_CASE( get_account_history_hf1 )
 { try {
 
@@ -126,11 +126,81 @@ BOOST_AUTO_TEST_CASE( get_account_history_hf1 )
   hf1_scenario( check_point_tester );
 
 } FC_LOG_AND_RETHROW() }
+
+/**
+ * Uses hf23_scenario scenario to test:
+ * - the history of null account (creation, transfer to & asset burning / clear_null_account_balance_operation)
+ * - transfer of HBD/TBD
+ * - transfer with non-empty memo
+ * - clearing & restoring suspicious account (hardfork_hive(_restore)_operation)
+ * - transfer to vesting to another account.
+ */
+BOOST_AUTO_TEST_CASE( get_account_history_hf23 )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_account_history with hf23_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 6 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_t expected_steemflower_history = { {
+      R"~([0,{"trx_id":"da8ac5d9bb25c37c7d3846799344976a24d72d3d","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"steemflower","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6V7YxA9xvhM6QK5HzAjnMGxPEzpLNrbCvxv9pkvqJhJgst5xNL",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6V7YxA9xvhM6QK5HzAjnMGxPEzpLNrbCvxv9pkvqJhJgst5xNL",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST55Mrt8AaKKaH3WsggFF6iRqyXH1ijNCHcNqAaD6E1j5PcRG4FG",1]]},"memo_key":"TST6V7YxA9xvhM6QK5HzAjnMGxPEzpLNrbCvxv9pkvqJhJgst5xNL","json_metadata":""}},"operation_id":0}])~",
+      R"~([0,{"trx_id":"da8ac5d9bb25c37c7d3846799344976a24d72d3d","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["account_create",{"fee":"0.000 TESTS","creator":"initminer","new_account_name":"steemflower","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6V7YxA9xvhM6QK5HzAjnMGxPEzpLNrbCvxv9pkvqJhJgst5xNL",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6V7YxA9xvhM6QK5HzAjnMGxPEzpLNrbCvxv9pkvqJhJgst5xNL",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST55Mrt8AaKKaH3WsggFF6iRqyXH1ijNCHcNqAaD6E1j5PcRG4FG",1]]},"memo_key":"TST6V7YxA9xvhM6QK5HzAjnMGxPEzpLNrbCvxv9pkvqJhJgst5xNL","json_metadata":""}]}])~"
+      }, {
+      R"~([1,{"trx_id":"da8ac5d9bb25c37c7d3846799344976a24d72d3d","block":3,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"account_created_operation","value":{"new_account_name":"steemflower","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([1,{"trx_id":"da8ac5d9bb25c37c7d3846799344976a24d72d3d","block":3,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["account_created",{"new_account_name":"steemflower","creator":"initminer","initial_vesting_shares":"0.000000 VESTS","initial_delegation":"0.000000 VESTS"}]}])~"
+      }, {
+      R"~([2,{"trx_id":"bba790da82d142585bb32d9c1f8d7b037f9e8c8b","block":3,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"transfer_to_vesting_operation","value":{"from":"initminer","to":"steemflower","amount":{"amount":"100","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+      R"~([2,{"trx_id":"bba790da82d142585bb32d9c1f8d7b037f9e8c8b","block":3,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["transfer_to_vesting",{"from":"initminer","to":"steemflower","amount":"0.100 TESTS"}]}])~"
+      }, {
+      R"~([3,{"trx_id":"bba790da82d142585bb32d9c1f8d7b037f9e8c8b","block":3,"trx_in_block":1,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"transfer_to_vesting_completed_operation","value":{"from_account":"initminer","to_account":"steemflower","hive_vested":{"amount":"100","precision":3,"nai":"@@000000021"},"vesting_shares_received":{"amount":"98716683119","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([3,{"trx_id":"bba790da82d142585bb32d9c1f8d7b037f9e8c8b","block":3,"trx_in_block":1,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["transfer_to_vesting_completed",{"from_account":"initminer","to_account":"steemflower","hive_vested":"0.100 TESTS","vesting_shares_received":"98716.683119 VESTS"}]}])~"
+      }, {
+      R"~([4,{"trx_id":"fc9573c39c9d474b812e4f44beea6cc4d02b981e","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"transfer_operation","value":{"from":"steemflower","to":"null","amount":{"amount":"12","precision":3,"nai":"@@000000013"},"memo":"For flowers :)"}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"fc9573c39c9d474b812e4f44beea6cc4d02b981e","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["transfer",{"from":"steemflower","to":"null","amount":"0.012 TBD","memo":"For flowers :)"}]}])~"
+      }, {
+      R"~([5,{"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":5,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"hardfork_hive_operation","value":{"account":"steemflower","treasury":"steem.dao","other_affected_accounts":[],"hbd_transferred":{"amount":"0","precision":3,"nai":"@@000000013"},"hive_transferred":{"amount":"0","precision":3,"nai":"@@000000021"},"vests_converted":{"amount":"0","precision":6,"nai":"@@000000037"},"total_hive_from_vests":{"amount":"0","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+      R"~([5,{"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":5,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["hardfork_hive",{"account":"steemflower","treasury":"steem.dao","other_affected_accounts":[],"hbd_transferred":"0.000 TBD","hive_transferred":"0.000 TESTS","vests_converted":"0.000000 VESTS","total_hive_from_vests":"0.000 TESTS"}]}])~"
+      }, {
+      R"~([6,{"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":{"type":"hardfork_hive_restore_operation","value":{"account":"steemflower","treasury":"steem.dao","hbd_transferred":{"amount":"123456789000","precision":3,"nai":"@@000000013"},"hive_transferred":{"amount":"0","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+      R"~([6,{"trx_id":"0000000000000000000000000000000000000000","block":6,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":["hardfork_hive_restore",{"account":"steemflower","treasury":"steem.dao","hbd_transferred":"123456789.000 TBD","hive_transferred":"0.000 TESTS"}]}])~"
+      } };
+
+    expected_t expected_null_history = { {
+      R"~([0,{"trx_id":"0000000000000000000000000000000000000000","block":1,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:00","op":{"type":"account_created_operation","value":{"new_account_name":"null","creator":"null","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([0,{"trx_id":"0000000000000000000000000000000000000000","block":1,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:00","op":["account_created",{"new_account_name":"null","creator":"null","initial_vesting_shares":"0.000000 VESTS","initial_delegation":"0.000000 VESTS"}]}])~"
+      }, {
+      R"~([1,{"trx_id":"fc9573c39c9d474b812e4f44beea6cc4d02b981e","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"transfer_operation","value":{"from":"steemflower","to":"null","amount":{"amount":"12","precision":3,"nai":"@@000000013"},"memo":"For flowers :)"}},"operation_id":0}])~",
+      R"~([1,{"trx_id":"fc9573c39c9d474b812e4f44beea6cc4d02b981e","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["transfer",{"from":"steemflower","to":"null","amount":"0.012 TBD","memo":"For flowers :)"}]}])~"
+      }, {
+      R"~([2,{"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"clear_null_account_balance_operation","value":{"total_cleared":[{"amount":"12","precision":3,"nai":"@@000000013"}]}},"operation_id":0}])~",
+      R"~([2,{"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["clear_null_account_balance",{"total_cleared":["0.012 TBD"]}]}])~"
+      } };
+
+    test_get_account_history( *this, { "steemflower", HIVE_NULL_ACCOUNT }, { expected_steemflower_history, expected_null_history } );
+
+    expected_t expected_initminer_history = { {
+      R"~([28,{"trx_id":"bba790da82d142585bb32d9c1f8d7b037f9e8c8b","block":3,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"transfer_to_vesting_operation","value":{"from":"initminer","to":"steemflower","amount":{"amount":"100","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+      R"~([28,{"trx_id":"bba790da82d142585bb32d9c1f8d7b037f9e8c8b","block":3,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["transfer_to_vesting",{"from":"initminer","to":"steemflower","amount":"0.100 TESTS"}]}])~"
+      }, {
+      R"~([29,{"trx_id":"bba790da82d142585bb32d9c1f8d7b037f9e8c8b","block":3,"trx_in_block":1,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"transfer_to_vesting_completed_operation","value":{"from_account":"initminer","to_account":"steemflower","hive_vested":{"amount":"100","precision":3,"nai":"@@000000021"},"vesting_shares_received":{"amount":"98716683119","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([29,{"trx_id":"bba790da82d142585bb32d9c1f8d7b037f9e8c8b","block":3,"trx_in_block":1,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["transfer_to_vesting_completed",{"from_account":"initminer","to_account":"steemflower","hive_vested":"0.100 TESTS","vesting_shares_received":"98716.683119 VESTS"}]}])~"
+      } };
+
+    // Let's see transfer to vesting's operation "from" account being impacted too.
+    test_get_account_history( *this, { "initminer" }, { expected_initminer_history }, 1000, 1000, 
+      0x8ull /*transfer_to_vesting_operation*/, 0x2000ull /*transfer_to_vesting_completed_operation*/ ); // Replace with enum values after !898 is merged
+  };
+
+  hf23_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
   
 // TODO create get_account_history_hf8_test here
 // TODO create get_account_history_hf12 test here
 // TODO Create get_account_history_hf13 here
-// TODO Create get_account_history_hf23 here
 // TODO create get_account_history_vesting test here
 // TODO create get_account_history_witness test here
 // TODO create get_account_history_escrow_and_savings test here

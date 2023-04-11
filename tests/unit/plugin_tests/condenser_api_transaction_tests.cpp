@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE( get_transaction_signatures )
   push_transaction( tx_empty, fc::ecc::private_key() );
 
   // Single transaction with single signature.
-  transfer( "alice1trx", "bob1trx", ASSET( "2.222 TESTS" ), alice1trx_private_key );
+  transfer( "alice1trx", "bob1trx", ASSET( "2.222 TESTS" ), "", alice1trx_private_key );
 
   // Single transaction with multiple signatures.
   transfer_operation op;

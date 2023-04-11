@@ -192,11 +192,11 @@ void condenser_api_fixture::hf23_scenario( check_point_tester_t check_point_test
 
   ACTORS( (steemflower) );
   generate_block();
-  fund( "steemflower", ASSET( "123456789.012 TESTS" ) );
+  fund( "steemflower", ASSET( "123456789.012 TBD" ) );
   generate_block();
 
   // Trigger clear_null_account_balance_operation
-  transfer( "steemflower", HIVE_NULL_ACCOUNT, ASSET( "0.012 TESTS" ) );
+  transfer( "steemflower", HIVE_NULL_ACCOUNT, ASSET( "0.012 TBD" ), "For flowers :)", steemflower_private_key );
   generate_block();
 
   // Trigger hardfork_hive_operation
