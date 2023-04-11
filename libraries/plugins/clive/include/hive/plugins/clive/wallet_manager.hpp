@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/plugins/clive/clive_api.hpp>
+#include <hive/plugins/clive/clive_base.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
@@ -110,7 +110,7 @@ public:
    string create_key(const std::string& name);
 
    /// Takes ownership of a wallet to use
-   void own_and_use_wallet(const string& name, std::unique_ptr<clive_api>&& wallet);
+   void own_and_use_wallet(const string& name, std::unique_ptr<clive_base>&& wallet);
 
 private:
    /// Verify timeout has not occurred and reset timeout if not.
@@ -119,7 +119,7 @@ private:
 
 private:
    using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
-   std::map<std::string, std::unique_ptr<clive_api>> wallets;
+   std::map<std::string, std::unique_ptr<clive_base>> wallets;
    std::chrono::seconds timeout = std::chrono::seconds::max(); ///< how long to wait before calling lock_all()
    mutable timepoint_t timeout_time = timepoint_t::max(); ///< when to call lock_all()
    boost::filesystem::path dir = ".";
