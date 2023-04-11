@@ -726,12 +726,14 @@ void database_fixture::transfer(
   } FC_CAPTURE_AND_RETHROW( (from)(to)(amount) )
 }
 
-void database_fixture::transfer( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
+void database_fixture::transfer( const string& from, const string& to, const asset& amount, const std::string& memo,
+  const fc::ecc::private_key& key )
 {
   transfer_operation op;
   op.from = from;
   op.to = to;
   op.amount = amount;
+  op.memo = memo;
 
   push_transaction( op, key );
 }
