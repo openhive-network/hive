@@ -2675,10 +2675,10 @@ struct Postgres2Blocks
 
 
 
-  pqxx::result pg_blocks;
-  pqxx::result pg_transactions;
-  pqxx::result pg_operations;
-  std::multimap<std::string, std::string> pg_multisigs;
+  pqxx::result blocks;
+  pqxx::result transactions;
+  pqxx::result operations;
+  std::multimap<std::string, std::string> multisigs;
 
   int transaction_expecting_block;
   pqxx::result::const_iterator transactions_it;
@@ -2692,7 +2692,7 @@ void get_data_from_postgres(int from, int to, const char* postgres_url)
   pqxx::connection c{postgres_url};
 
   pqxx::work blocks_work{c};
-  pg_blocks = {blocks_work.exec("SELECT * FROM hive.blocks JOIN hive.accounts ON  id = producer_account_id WHERE num >= " 
+  blocks = {blocks_work.exec("SELECT * FROM hive.blocks JOIN hive.accounts ON  id = producer_account_id WHERE num >= " 
                             + std::to_string(from) 
                             + " and num <= " 
                             + std::to_string(to) 
@@ -2700,7 +2700,7 @@ void get_data_from_postgres(int from, int to, const char* postgres_url)
   blocks_work.commit();
 
   pqxx::work transactions_work{c};
-  pg_transactions = {transactions_work.exec("SELECT block_num, trx_in_block, ref_block_num, ref_block_prefix, expiration, trx_hash, signature FROM hive.transactions WHERE block_num >= " 
+  transactions = {transactions_work.exec("SELECT block_num, trx_in_block, ref_block_num, ref_block_prefix, expiration, trx_hash, signature FROM hive.transactions WHERE block_num >= " 
                             + std::to_string(from) 
                             + " and block_num <= " 
                             + std::to_string(to) 
@@ -2709,7 +2709,7 @@ void get_data_from_postgres(int from, int to, const char* postgres_url)
 
 
   pqxx::work operations_work{c};
-  pg_operations = {operations_work.exec("SELECT block_num, body, trx_in_block FROM hive.operations WHERE block_num >= " 
+  operations = {operations_work.exec("SELECT block_num, body, trx_in_block FROM hive.operations WHERE block_num >= " 
                             + std::to_string(from) 
                             + " and block_num <= " 
                             + std::to_string(to) 
@@ -2730,7 +2730,7 @@ void get_data_from_postgres(int from, int to, const char* postgres_url)
   for( auto row : transactions_multisig)
   {
     std::string key(std::string(row["trx_hash"].c_str()+2));
-    pg_multisigs.insert(std::make_pair(key, row["signature"].c_str()+2));
+    multisigs.insert(std::make_pair(key, row["signature"].c_str()+2));
   }
 
   transactions_multisig_work.commit();
@@ -2742,19 +2742,19 @@ void get_data_from_postgres(int from, int to, const char* postgres_url)
 void prepare_iterators()
 {
   transaction_expecting_block = -1;
-  transactions_it = pg_transactions.begin();
-  if( pg_transactions.size() > 0)
+  transactions_it = transactions.begin();
+  if( transactions.size() > 0)
   {
-      const auto& first_transaction = pg_transactions[0];
+      const auto& first_transaction = transactions[0];
       transaction_expecting_block = first_transaction["block_num"].as<int>();
   }
 
   operations_expecting_block = -1;
   operations_expecting_transaction = -1;
-  operations_it = pg_operations.begin();
-  if(pg_operations.size() > 0)
+  operations_it = operations.begin();
+  if(operations.size() > 0)
   {
-    const auto& first_operation = pg_operations[0];
+    const auto& first_operation = operations[0];
     operations_expecting_block =  first_operation["block_num"].as<int>();
     operations_expecting_transaction = first_operation["trx_in_block"].as<int>();
 
@@ -2763,7 +2763,7 @@ void prepare_iterators()
 
 void handle_operations(int block_num, int trx_in_block, std::vector<fc::variant>& operations_vector)
 {
-  for(; operations_it != pg_operations.end(); ++operations_it)
+  for(; operations_it != operations.end(); ++operations_it)
   {
     const auto operation = (*operations_it);
     if(operation["block_num"].as<int>() == block_num && operation["trx_in_block"].as<int>() == trx_in_block)
@@ -2792,7 +2792,7 @@ void handle_transactions(int block_num,
   std::vector<variant>& transaction_ids_vector,
   std::vector<fc::variant>& trancactions_vector)
  {
-  for (; transactions_it != pg_transactions.end(); ++transactions_it) {
+  for (; transactions_it != transactions.end(); ++transactions_it) {
     const auto transaction = (*transactions_it);
     if (transaction["block_num"].as<int>() == block_num) {
       auto trx_in_block = transaction["trx_in_block"].as<int>();
@@ -2815,7 +2815,7 @@ void handle_transactions(int block_num,
 
         transactions_multisig_work.commit();
 #else
-        auto range = pg_multisigs.equal_range(transaction["trx_hash"].c_str() + 2);
+        auto range = multisigs.equal_range(transaction["trx_hash"].c_str() + 2);
         for (auto it = range.first; it != range.second; ++it) {
           signa.push_back(it->second);
         }
@@ -2908,7 +2908,7 @@ std::string block2json(const pqxx::row& block)
 
 void blocks2replay(const char *context)
 {
- for(const auto& block : pg_blocks)
+ for(const auto& block : blocks)
   {
     fc::variant v = block2variant(block);
 
