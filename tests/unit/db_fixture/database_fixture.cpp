@@ -821,8 +821,6 @@ void database_fixture::vest( const string& from, const share_type& amount )
 
 void database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
 {
-  FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
-
   transfer_to_vesting_operation op;
   op.from = from;
   op.to = to;
