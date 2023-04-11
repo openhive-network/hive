@@ -2753,7 +2753,7 @@ void database::process_vesting_withdrawals()
       to_withdraw = from_account.to_withdraw.amount % from_account.vesting_withdraw_rate.amount;
     // see history of first (and so far the only) power down of 'gil' account: https://hiveblocks.com/@gil
     // the situation was caused by HF1, where vesting_withdraw_rate changed from 9615 before split to 9615.384615
-    // (instead of corrrect 9615.000000); that is the source of nonequivalence between taking all the rest of power down
+    // (instead of correct 9615.000000); that is the source of nonequivalence between taking all the rest of power down
     // (0.769270 VESTS) and modulo of "all % weekly rate" (0.000040 VESTS);
     // it is possible that other accounts were also affected in similar way, 'gil' was just the first where the difference
     // occurred

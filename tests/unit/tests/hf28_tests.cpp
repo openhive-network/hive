@@ -596,4 +596,156 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
 
 BOOST_AUTO_TEST_SUITE_END()
 
+BOOST_FIXTURE_TEST_SUITE( hf28_tests2, genesis_database_fixture )
+
+BOOST_AUTO_TEST_CASE( disturbed_power_down )
+{
+  try
+  {
+    autoscope reset( []() { configuration_data.reset_cashout_values(); } );
+    configuration_data.set_cashout_related_values( 0, 3, 6, 21, 3 );
+
+    // the scenario of this test replicates problem encountered by 'gil' account:
+    // - it received VESTS and started power down before HF1
+    // - it was supposed to last 104 weeks - normally it would happen over 104 weeks plus one
+    //   more step releasing amount remaining due to truncation
+    // - some power down was already executed when HF1 was activated (2 steps)
+    // - this is when the bug hit the account - vesting_withdraw_rate was recalculated instead
+    //   of being split by 1M like other VESTS related values
+    // - the recalculation caused final step of power down to only release tiny amount of VESTS
+    //   instead of all the rest
+    // - for that reason power down continued up to the time of HF28, when fix was introduced
+    // Note that change in HF16 to 13 weeks down from 104 didn't affect power downs already in
+    // progress.
+    // The test checks that the fix of HF28 actually works.
+    // Note that 'weeks' in above is expressed in cashout windows, which is 1hr by default
+    // in testnet (down to 7 blocks in above setting)
+    const int week_blocks = HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS / HIVE_BLOCK_INTERVAL; // number of blocks per "week" of power down
+    const int split = 1000000;
+
+    // amount of stake for 'bob' is divisible by 104 which is corner case due to remainder
+    // being 0; it is also not affected by split
+    const int64_t bob_amount = 1040000;
+    int64_t bob_rate = bob_amount / 104;
+    int64_t bob_vests = bob_amount;
+    // amount of stake for 'gil' reflects actual amount withdrown by that account on mainnet
+    const int64_t gil_amount = 1000000;
+    int64_t gil_rate = gil_amount / 104;
+    int64_t gil_vests = gil_amount;
+    // check to make sure mainnet values are used
+    static_assert( ( gil_amount / 104 == 9615 ) && ( gil_amount * split / 104 == 9615384615 ) );
+    BOOST_REQUIRE( db->get_dynamic_global_properties().get_vesting_share_price() ==
+      price( asset( 1000000, VESTS_SYMBOL ), asset( 1000, HIVE_SYMBOL ) ) );
+
+    ACTORS_DEFAULT_FEE( (bob)(gil) );
+    vest( HIVE_INIT_MINER_NAME, "bob", asset( bob_amount / 1000, HIVE_SYMBOL ), init_account_priv_key );
+    vest( HIVE_INIT_MINER_NAME, "gil", asset( gil_amount / 1000, HIVE_SYMBOL ), init_account_priv_key );
+    generate_block();
+
+    BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, bob_amount );
+    BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, gil_amount );
+
+    BOOST_TEST_MESSAGE( "Start power down" );
+    int start_block = db->head_block_num();
+    withdraw_vesting( "bob", get_vesting( "bob" ), bob_private_key );
+    withdraw_vesting( "gil", get_vesting( "gil" ), gil_private_key );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_next_vesting_withdrawal().value, bob_rate );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, gil_rate );
+
+    generate_blocks( week_blocks );
+    BOOST_CHECK_EQUAL( start_block + week_blocks, db->head_block_num() );
+
+    BOOST_TEST_MESSAGE( "Check after first week of power down" );
+    bob_vests -= bob_rate;
+    gil_vests -= gil_rate;
+
+    BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, bob_vests );
+    BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, gil_vests );
+
+    generate_blocks( week_blocks );
+    BOOST_CHECK_EQUAL( start_block + 2 * week_blocks, db->head_block_num() );
+
+    BOOST_TEST_MESSAGE( "Check after second week of power down" );
+    bob_vests -= bob_rate;
+    gil_vests -= gil_rate;
+
+    BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, bob_vests );
+    BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, gil_vests );
+
+    BOOST_TEST_MESSAGE( "Activate split" );
+    inject_hardfork( HIVE_HARDFORK_0_1 );
+    bob_vests *= split;
+    gil_vests *= split;
+
+    BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, bob_vests );
+    BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, gil_vests );
+    // split multiplied remaining stake by 1M (actually added 6 fractional decimal digits, but
+    // from the perspective of raw value is the sama as multiplication); unfortunately the power
+    // down rate was not multiplied but recalculated, disturbing the flow
+    bob_rate = bob_amount * split / 104;
+    gil_rate = gil_amount * split / 104;
+    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_next_vesting_withdrawal().value, bob_rate );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, gil_rate );
+
+    BOOST_CHECK_EQUAL( bob_vests % bob_rate, 0 );
+    BOOST_CHECK_EQUAL( gil_vests - 102 * gil_rate, 769270 );
+    BOOST_CHECK_EQUAL( gil_amount * split % gil_rate, 40 );
+    // we can see that after 769270 / 40 = 19231 additional weeks of power down (over 368 years)
+    // gil would be left with final step trying to take 40 from balance of 769270 % 40 = 30
+    // triggering error condition with NOTIFYALERT!
+    // we are not going to run the test that long (we'd run into "Problem of year 2037" much earlier)
+
+    BOOST_TEST_MESSAGE( "Run remaining power down steps without remainder" );
+    for( int i = 3; i <= 104; ++i )
+    {
+      generate_blocks( week_blocks ); //we've run two extra blocks during HF1 injection, but it doesn't matter
+      bob_vests -= bob_rate;
+      gil_vests -= gil_rate;
+
+      BOOST_TEST_MESSAGE( "Check after week " << i << " of power down");
+      BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, bob_vests );
+      BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, gil_vests );
+    }
+    BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, 0 );
+    BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_next_vesting_withdrawal().value, 0 );
+    // officially whole remainder of gil's power down is for next week, but that's not the case prior HF28
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, 769270 );
+
+    BOOST_TEST_MESSAGE( "Bob finished power down, but not gil" );
+    gil_rate = 40;
+    for( int i = 105; i < 135; ++i )
+    {
+      if( i == 115 )
+      {
+        BOOST_TEST_MESSAGE( "Activate change from 104 weeks down to 13 weeks" );
+        inject_hardfork( HIVE_HARDFORK_0_16 );
+      }
+      generate_blocks( week_blocks );
+      gil_vests -= gil_rate;
+      BOOST_TEST_MESSAGE( "Check after week " << i << " of power down" );
+      BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, gil_vests );
+    }
+    BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 - 30*40 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, 769270 - 30*40 );
+
+    BOOST_TEST_MESSAGE( "Activate fix" );
+    inject_hardfork( HIVE_HARDFORK_1_28 );
+
+    BOOST_TEST_MESSAGE( "Check innediately after HF28 - nothing changed yet for gil" );
+    BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 - 30 * 40 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, 769270 - 30 * 40 );
+
+    generate_blocks( week_blocks );
+    BOOST_TEST_MESSAGE( "Check week after activation of HF28 - should fix power down on gil" );
+    BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 0 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_next_vesting_withdrawal().value, 0 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
 #endif
