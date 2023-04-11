@@ -117,7 +117,18 @@ int main(int argc, char** argv, char** envp)
     {
       fc::variant v = fc::json::from_string( line, fc::json::strict_parser );
       tx_signing_request sreq;
-      fc::from_variant( v, sreq );
+
+      try
+      {
+        hive::protocol::serialization_mode_controller::mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
+        fc::from_variant( v, sreq );
+      }
+      catch(...)
+      {
+        hive::protocol::serialization_mode_controller::mode_guard guard( hive::protocol::transaction_serialization_type::hf26 );
+        fc::from_variant( v, sreq );
+      }
+
 
       full_transaction_ptr full_transaction = full_transaction_type::create_from_transaction(sreq.tx, sreq.serialization_type);
 
