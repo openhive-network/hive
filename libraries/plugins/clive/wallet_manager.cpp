@@ -136,7 +136,8 @@ map<std::string, std::string> wallet_manager::list_keys(const string& name, cons
 
 flat_set<std::string> wallet_manager::get_public_keys() {
    check_timeout();
-   FC_ASSERT( !wallets.empty(), "You don't have any wallet!");
+   if( wallets.empty() )
+      FC_THROW_EXCEPTION( clive_not_available_exception, "You don't have any wallet!");
    flat_set<std::string> result;
    bool is_all_wallet_locked = true;
    for (const auto& i : wallets) {
@@ -145,7 +146,8 @@ flat_set<std::string> wallet_manager::get_public_keys() {
       }
       is_all_wallet_locked &= i.second->is_locked();
    }
-   FC_ASSERT( !is_all_wallet_locked, "You don't have any unlocked wallet!");
+   if( is_all_wallet_locked )
+      FC_THROW_EXCEPTION( clive_locked_exception, "You don't have any unlocked wallet!");
    return result;
 }
 
