@@ -1,4 +1,12 @@
 # Defines Hive library target.
+LIST( APPEND CMAKE_MODULE_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/libraries/fc/CMakeModules"
+    "${CMAKE_CURRENT_SOURCE_DIR}/hive/libraries/fc/GitVersionGen" )
+
+#This must be processed before first project or enable_language statement
+INCLUDE(hive_build_types)
+
 project( Hive )
 cmake_minimum_required( VERSION 3.22.1 )
 
@@ -16,6 +24,7 @@ set( CUSTOM_URL_SCHEME "gcs" )
 set( INSTALLER_APP_ID "68ad7005-8eee-49c9-95ce-9eed97e5b347" )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
+set(CMAKE_VERBOSE_MAKEFILE "ON")
 
 #set (ENABLE_INSTALLER 1)
 #set (USE_PCH 1)
@@ -23,10 +32,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 if (USE_PCH)
   include (cotire)
 endif(USE_PCH)
-
-list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libraries/fc/CMakeModules" )
-list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libraries/fc/GitVersionGen" )
-list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 
 include( hive_options )
 include( hive_targets )
