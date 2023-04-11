@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/plugins/clive/clive_api.hpp>
+#include <hive/plugins/clive/clive_base.hpp>
 
 #include <fc/real128.hpp>
 #include <fc/crypto/base58.hpp>
@@ -24,7 +24,7 @@ class clive_impl;
  * This wallet assumes it is connected to the database server with a high-bandwidth, low-latency connection and
  * performs minimal caching.
  */
-class clive final : public clive_api
+class clive final : public clive_base
 {
    public:
       clive( const wallet_data& initial_data );

@@ -20,10 +20,10 @@ using digest_type       = fc::sha256;
 
 using fc::flat_set;
 
-class clive_api
+class clive_base
 {
    public:
-      virtual ~clive_api() {}
+      virtual ~clive_base() {}
 
       /**
        * Get the private key corresponding to a public key.  The

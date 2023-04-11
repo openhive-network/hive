@@ -1,6 +1,6 @@
 #include <hive/plugins/clive_api/clive_api_plugin.hpp>
 #include <hive/plugins/clive_api/clive_api.hpp>
-#include <hive/plugins/clive/clive_api.hpp>
+#include <hive/plugins/clive/clive_base.hpp>
 
 #include <fc/variant_object.hpp>
 #include <fc/reflect/variant.hpp>

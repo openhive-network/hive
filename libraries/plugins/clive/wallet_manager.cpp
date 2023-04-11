@@ -239,7 +239,7 @@ signature_type wallet_manager::sign_digest(const digest_type& digest, const publ
    FC_THROW_EXCEPTION( clive_missing_pub_key_exception, "Public key not found in unlocked wallets ${k}", ("k", key));
 }
 
-void wallet_manager::own_and_use_wallet(const string& name, std::unique_ptr<clive_api>&& wallet) {
+void wallet_manager::own_and_use_wallet(const string& name, std::unique_ptr<clive_base>&& wallet) {
    if(wallets.find(name) != wallets.end())
       FC_THROW_EXCEPTION( clive_exception, "Tried to use wallet name that already exists.");
    wallets.emplace(name, std::move(wallet));
