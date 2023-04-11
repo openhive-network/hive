@@ -2193,7 +2193,7 @@ DEFINE_READ_APIS( database_api,
 
 #include <iostream>
 #include <string>
-#include <pqxx/pqxx>
+#include </usr/include/pqxx/pqxx>
 
 
 #include <fc/variant.hpp>
