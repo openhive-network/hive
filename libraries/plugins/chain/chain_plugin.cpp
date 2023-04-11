@@ -1049,6 +1049,14 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     configuration_data.set_hardfork_schedule( fc::time_point_sec( genesis_time ), result_hardfors );
     configuration_data.set_init_witnesses( init_witnesses );
   }
+
+# ifdef HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED
+  FC_ASSERT(
+      configuration_data.get_init_supply(0) || configuration_data.get_hbd_init_supply(0),
+      "You have to specify at least one of the initial supplies in the alternate chain spec in order to run the iceberg plugin"
+  );
+# endif
+
 #endif
   uint32_t blockchain_thread_pool_size = options.at("blockchain-thread-pool-size").as<uint32_t>();
   blockchain_worker_thread_pool::set_thread_pool_size(blockchain_thread_pool_size);
