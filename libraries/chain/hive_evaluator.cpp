@@ -1182,7 +1182,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   }
   else
   {
-    amount_vested = _db.create_vesting( to_account, o.amount );   
+    amount_vested = _db.create_vesting( to_account, o.amount );
   }
 
   /// Emit this vop unconditionally, since VESTS balance changed immediately, indepdenent to subsequent updates of account voting power done inside `delayed_voting` mechanism.
