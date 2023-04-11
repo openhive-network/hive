@@ -26,12 +26,6 @@
 
 namespace hive { namespace plugins { namespace clive {
 
-#ifdef IS_TEST_NET
-#define HIVE_ADDRESS_PREFIX                   "TST"
-#else
-#define HIVE_ADDRESS_PREFIX                   "STM"
-#endif
-
 namespace detail {
 
 private_key_type derive_private_key( const std::string& prefix_string,

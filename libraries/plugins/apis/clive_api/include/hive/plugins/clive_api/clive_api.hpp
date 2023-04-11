@@ -15,8 +15,7 @@ namespace detail
 }
 
 using plugins::json_rpc::void_type;
-using hive::plugins::clive::public_key_type;
-using hive::plugins::clive::private_key_type;
+using hive::plugins::clive::signature_type;
 
 struct wallet_args
 {
@@ -91,6 +90,16 @@ struct get_public_keys_return
   flat_set<std::string> keys;
 };
 
+struct sign_digest_args
+{
+  std::string digest;
+  std::string public_key;
+};
+struct sign_digest_return
+{
+  signature_type signature;
+};
+
 class clive_api
 {
   public:
@@ -110,6 +119,7 @@ class clive_api
       (list_wallets)
       (list_keys)
       (get_public_keys)
+      (sign_digest)
     )
 
   private:
@@ -128,3 +138,5 @@ FC_REFLECT( hive::plugins::clive_api::create_key_return, (public_key) )
 FC_REFLECT( hive::plugins::clive_api::list_wallets_return, (wallets) )
 FC_REFLECT( hive::plugins::clive_api::list_keys_return, (keys) )
 FC_REFLECT( hive::plugins::clive_api::get_public_keys_return, (keys) )
+FC_REFLECT( hive::plugins::clive_api::sign_digest_args, (digest)(public_key) )
+FC_REFLECT( hive::plugins::clive_api::sign_digest_return, (signature) )
