@@ -2300,7 +2300,7 @@ int initialize_context(const char* context)
 
 namespace hive { namespace app {
 
-int get_expected_block_num_impl(const char* context)
+int consensus_state_provider_get_expected_block_num_impl(const char* context)
 {
   return initialize_context(context);
 }
