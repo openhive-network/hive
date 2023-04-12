@@ -193,9 +193,6 @@ FC_REFLECT( hive::plugins::database_api::api_account_object,
 
 typedef std::vector<collected_account_balances_t> collected_account_balances_collection_t;
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context);
-int get_expected_block_num_impl(const char* context);
-int consume_variant_block_impl(const fc::variant& v, const char* context, int block_num);
-void cab_destroy_C_impl(const char* context);
 
 
 bool is_keyauths_operation( const protocol::operation& op );
@@ -203,6 +200,9 @@ bool is_keyauths_operation( const protocol::operation& op );
 bool is_metadata_operation( const protocol::operation& op );
 
 void consensus_state_provider_replay_impl(int from, int to, const char *context, const char *postgres_url);
+int get_expected_block_num_impl(const char* context);
+int consume_variant_block_impl(const fc::variant& v, const char* context, int block_num);
+void consensus_state_provider_finish_impl(const char* context);
 
 
 } } // hive::app

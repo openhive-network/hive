@@ -2307,7 +2307,7 @@ int get_expected_block_num_impl(const char* context)
 
 
 
-void cab_destroy_C_impl(const char* context)
+void consensus_state_provider_finish_impl(const char* context)
 {
   if(haf_database_api_impls.find(context) != haf_database_api_impls.end())
   {
