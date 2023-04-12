@@ -80,7 +80,7 @@ namespace detail {
   {
     try
     {
-      log_in.open( input );
+      log_in.open( input, true );
     } FC_CAPTURE_AND_RETHROW( (input) );
   }
 
