@@ -24,7 +24,8 @@ int main( int argc, char** argv )
   try
   {
     bpo::options_description options;
-
+  
+    hive::notifications::add_program_options(options);
     options.add_options()
       ("backtrace", bpo::value< string >()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" );
 
