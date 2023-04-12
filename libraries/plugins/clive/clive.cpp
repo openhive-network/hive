@@ -1,5 +1,4 @@
 #include <hive/plugins/clive/clive.hpp>
-#include <hive/plugins/clive/clive_exceptions.hpp>
 
 #include <algorithm>
 #include <cctype>
