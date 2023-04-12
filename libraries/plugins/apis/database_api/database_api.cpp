@@ -14,11 +14,10 @@
 
 #include <hive/utilities/git_revision.hpp>
 
-void wazna_funkcja();
 
 #ifdef HAF_SHARED_LIB
 
-#pragma GCC error "HAF_SHARED_LIB defined !!!"
+#pragma GCC error ("HAF_SHARED_LIB defined !!!")
 
 #endif
 
