@@ -203,8 +203,7 @@ bool is_keyauths_operation( const protocol::operation& op );
 
 bool is_metadata_operation( const protocol::operation& op );
 
-void try_grab_operations_C_impl( int from ,   int to ,  const char *context,   const char *postgres_url );
-void grab_json_blocks_impl(int from, int to, const char *context, const char *postgres_url);
+void grab_pqxx_blocks_impl(int from, int to, const char *context, const char *postgres_url);
 
 
 } } // hive::app
