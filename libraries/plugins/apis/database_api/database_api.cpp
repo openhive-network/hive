@@ -2538,11 +2538,6 @@ int consume_variant_block_impl(const fc::variant& v, const char* context, int bl
   return expected_block_num;
 }
 
-int consume_json_block_impl(const char *json_block, const char* context, int block_num)
-{
-  fc::variant v = fc::json::from_string( json_block );
-  return consume_variant_block_impl(v, context, block_num);
-}
 
 
 
