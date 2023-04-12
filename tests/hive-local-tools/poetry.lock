@@ -354,7 +354,7 @@ version = "0.0.0"
 description = "Tools for checking if message fits expected format"
 category = "main"
 optional = false
-python-versions = ">=3.8"
+python-versions = "^3.10"
 files = []
 develop = true
 
