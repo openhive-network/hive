@@ -25,7 +25,7 @@ namespace hive { namespace app {
 std::shared_ptr<hive::chain::full_block_type> from_variant_to_full_block_ptr(const fc::variant& v, int block_num_debug );
 }}
 
-bool czy_printowac(int block_num);
+
 
 namespace hive { namespace plugins { namespace database_api {
 
@@ -2369,15 +2369,7 @@ int consume_variant_block_impl(const fc::variant& v, const char* context, int bl
   hive::chain::database& db = db_api_impl._db;
   
 
-  if(czy_printowac(block_num))
-   {
-   
-    wlog("In block=${block_num}", ("block_num", block_num));
-    std::string json = fc::json::to_pretty_string(v);
-    wlog("json=${json}", ("json", json));
-    
-   }  
-
+  
 //// block 000f2bc0 = F2BC0₁₆ = 994240₁₀
 // json=R"""({
 //     "previous": "000f2bbfcbdad7bb80bc42c476567c750badd90b",
@@ -2505,12 +2497,7 @@ int consume_variant_block_impl(const fc::variant& v, const char* context, int bl
  
   std::shared_ptr<hive::chain::full_block_type> fb_ptr = from_variant_to_full_block_ptr(v, block_num);
 
-  if(czy_printowac(block_num))
-  {
-    wlog("signed_block from full_block=${signed_block}", ("signed_block", fb_ptr->get_block()));
-  }  
-
-
+  
 
   uint64_t skip_flags = hive::plugins::chain::database::skip_block_log;
   // skip_flags |= hive::plugins::chain::database::skip_validate_invariants;

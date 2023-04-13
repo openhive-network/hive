@@ -80,13 +80,8 @@ void info(const hive::protocol::chain_id_type& chainId)
   std::cerr << "hived git_revision: \"" + fc::string(hive::utilities::git_revision_sha) + "\"\n\n";
   }
 
-
-
 int main( int argc, char** argv )
 {
-
-  //print_sha();
-
   try
   {
     // Setup logging config

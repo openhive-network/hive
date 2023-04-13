@@ -6,7 +6,6 @@
 #include <boost/lockfree/queue.hpp>
 #include <mutex>
 
-bool czy_printowac(int block_num);
 char to_hex_digit(int c);
 std::string binary2str( const char* d, uint32_t dlen );
 std::string to_printable(const std::string& c);
@@ -95,85 +94,7 @@ const hive::protocol::digest_type& full_transaction_type::get_merkle_digest(int 
     std::lock_guard<std::mutex> guard(results_mutex);
     if (!has_merkle_digest.load(std::memory_order_consume))
     {
-      if(czy_printowac(block_num))
-      {
-        //print_sha("memory", memory.data(), arraySize);
-
-        for(size_t i =0 ; i < (serialized_transaction.signed_transaction_end - serialized_transaction.begin); ++i)
-        {
-            //char mem = memory.data()[i];
-            char ser = serialized_transaction.begin[i];
-            std::string err;
-            
-            // if(mem != ser)
-            // {
-            //     err= " error!";
-            // }
-
-
-            //std::string mems;mems += mem;
-            std::string sers; sers += ser;
-
-            //mems = to_printable(mems);
-            sers = to_printable(sers);
-
-            wlog("${ser} ${serhex} ${i}", 
-            ("ser", sers)
-             ("serhex", tohex(ser))
-             ("i",i)
-            );
-
-            // wlog("${mem}${ser} ${memhex}${serhex} ${i} ${err}", 
-            // ("mem", mems)
-            // ("ser", sers)
-            // ("memhex", tohex(mem) )
-            //  ("serhex", tohex(ser))
-            //  ("i",i)
-            //  ("err", err) 
-            // );
-
-            // wlog("${mem}${ser} ${memhex}${serhex}${err}", 
-            // ("mem", mem)
-            // ("ser", ser)
-            // ("memhex", tohex(mem) )
-            // ("serhex", tohex(ser))
-            // ("err", err) 
-            // );
-            
-            // if(memory.data()[i] != serialized_transaction.begin[i])
-            // {
-            //   wlog("error ", ("i", i));
-            // }
-        }
-
-      }
-
-
-
       merkle_digest = hive::protocol::digest_type::hash(serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin);
-      
-      if(czy_printowac(block_num))
-      {
-        wlog("full_transaction_type::get_merkle_digest block_num=${block_num} memorybinsize=${size}", ("block_num", block_num)("size", serialized_transaction.signed_transaction_end - serialized_transaction.begin));
-
-        print_sha(
-          "serialized_transaction",
-          block_num,
-          serialized_transaction.begin,
-          serialized_transaction.signed_transaction_end - serialized_transaction.begin);
-
-      auto ser_tra_len = serialized_transaction.signed_transaction_end - serialized_transaction.begin;
-       std::string ou = binary2str( serialized_transaction.begin, serialized_transaction.signed_transaction_end - serialized_transaction.begin ) ;
-       wlog("ser_tra_len=${ser_tra_len} ${ou}", ("ou", ou)("ser_tra_len",ser_tra_len));
-
-       //ou = binary2str( memory.data(), arraySize) ;
-       //wlog("memory.data() ${ou}", ("ou", ou));
-
-       wlog("full_transaction_type::get_merkle_digest merkle_digest=${merkle_digest}", ("merkle_digest", merkle_digest));
-        //print_sha("memory", memory.data(), arraySize);
-
-      }
-
       has_merkle_digest.store(true, std::memory_order_release);
     }
   }

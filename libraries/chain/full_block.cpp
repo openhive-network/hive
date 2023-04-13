@@ -6,7 +6,6 @@
 
 void print_sha(const char* tag, int block_num, const char * d, int len);
 
-bool czy_printowac(int block_num);
 void set_print_packing();
 void clear_print_packing();
 namespace hive { namespace chain {
@@ -97,41 +96,8 @@ full_block_type::~full_block_type()
   fc::datastream<char*> stream(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size);
   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
   full_block->decoded_block_storage = std::move(decoded_block_storage);
-  if(czy_printowac(block.block_num()))
-  {
-    wlog("BEGIN mtlk essential priniting pack of block_num=${bn}", ("bn", block.block_num()));
-    set_print_packing();
-  }
   fc::raw::pack(stream, block);
-  if(czy_printowac(block.block_num()))
-  {
-    wlog("END mtlk essential priniting pack of block_num=${bn}", ("bn", block.block_num()));
-    clear_print_packing();
-
-  }
-
   full_block->has_uncompressed_block.store(true, std::memory_order_release);
-
-  if(czy_printowac(block.block_num()))
-  {
-    if(full_block)
-    {
-      if(full_block->full_transactions.size())
-      {
-        auto ilp = full_block->full_transactions[0]->is_legacy_pack();
-        if(ilp)
-        {
-          wlog("Is_legacy_pack");
-        }
-        else
-        {
-          wlog("NOT_legacy_pack");
-        }
-      }
-    }
-  }
-  
-//mtlk tutaj zrzut binarny calego blocku, zaznacz tam kolenjne struktury, transakcje
 
   return full_block;
 } FC_CAPTURE_AND_RETHROW() }
@@ -437,15 +403,6 @@ void full_block_type::decode_block() const
     fc::raw::unpack(datastream, number_of_transactions);
     decoded_block_storage->block->transactions.resize(number_of_transactions.value);
     full_transactions.resize(number_of_transactions.value);
-
-
-    if(czy_printowac(decoded_block_storage->block->block_num()))
-    {
-      int a = 0;
-      a = a;
-    }
-
-
     for (unsigned i = 0; i < number_of_transactions.value; ++i)
     {
       // The transaction hierarchy is:
@@ -462,24 +419,10 @@ void full_block_type::decode_block() const
       fc::raw::unpack(datastream, decoded_block_storage->block->transactions[i].signatures);
       serialized_transaction.signed_transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
 
-
-      if(czy_printowac(decoded_block_storage->block->block_num()))
-      {
-        wlog("original_full_transaction_type::get_merkle_digest block_num=${block_num} memorybinsize=${size}", ("block_num", decoded_block_storage->block->block_num())("size", serialized_transaction.signed_transaction_end - serialized_transaction.begin));
-        print_sha(
-          "original_serialized_transaction", 
-          decoded_block_storage->block->block_num(), 
-          serialized_transaction.begin, 
-          serialized_transaction.signed_transaction_end - serialized_transaction.begin);
-      }
-    
       // if we're in live mode (as opposed to not syncing/replaying), use the transaction cache to see if transactions in this
       // block were previously seen as standalone transactions.  If so, we can reuse their data and avoid re-validating the transaction
       const bool use_transaction_cache = fc::time_point::now() - decoded_block_storage->block->timestamp < fc::minutes(1);
       full_transactions[i] = full_transaction_type::create_from_block(decoded_block_storage, i, serialized_transaction, use_transaction_cache);
-      auto ilp = full_transactions[i]->is_legacy_pack();
-      ilp = ilp;
-      
     }
     FC_ASSERT(datastream.remaining() == 0, "Error: data leftover after decoding block");
 
@@ -487,55 +430,6 @@ void full_block_type::decode_block() const
     decode_block_time = decode_block_end - decode_block_begin;
 
     has_unpacked_block.store(true, std::memory_order_release);
-
-    //mtlk pack and display
-    {
-        
-      if(czy_printowac(decoded_block_storage->block->block_num()))
-      {
-
-        
-        auto size = fc::raw::pack_size(decoded_block_storage->block.operator*());
-
-        wlog("BEGIN normal extra mtlk priniting pack of block_num=${bn}", ("bn", decoded_block_storage->block->block_num()));
-        set_print_packing();
-
-        char* temp_buf = new char[size];
-        fc::datastream<char*> stream(temp_buf, size);
-        fc::raw::pack(stream, decoded_block_storage->block.operator*());
-
-        clear_print_packing();
-        wlog("END normal extra mtlk priniting pack of block_num=${bn}", ("bn", decoded_block_storage->block->block_num()));
-        delete temp_buf;
-      }
-        
-        
-        // datastream<size_t> ps;
-        // fc::raw::pack(ps,block );
-        // auto size =  ps.tellp();
-
-        //   decoded_block_storage->uncompressed_block.raw_size = fc::raw::pack_size(block);
-        //     decoded_block_storage->uncompressed_block.raw_bytes.reset(new char[decoded_block_storage->uncompressed_block.raw_size]);
-
-        // // pack the block
-        //   fc::datastream<char*> stream(decoded_block_storage->uncompressed_block.raw_bytes.get(), decoded_block_storage->uncompressed_block.raw_size);
-        //   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
-        //   full_block->decoded_block_storage = std::move(decoded_block_storage);
-        //   if(czy_printowac(block.block_num()))
-        //   {
-        //     wlog("BEGIN mtlk priniting pack of block_num=${bn}", ("bn", block.block_num()));
-        //     set_print_packing();
-        //   }
-        //   fc::raw::pack(stream, block);
-        //   if(czy_printowac(block.block_num()))
-        //   {
-        //     wlog("END mtlk priniting pack of block_num=${bn}", ("bn", block.block_num()));
-        //     clear_print_packing();
-        //   }
-
-    }
-
-
   }
 }
 
@@ -663,13 +557,6 @@ uint32_t full_block_type::get_uncompressed_block_size() const
   if (full_transactions.empty())
     return checksum_type();
 
-
-  if(czy_printowac(block_num))
-  {
-    int a = 0;
-    a = a;
-  }
-
   std::vector<digest_type> ids;
   ids.resize(full_transactions.size());
   std::transform(full_transactions.begin(), full_transactions.end(), ids.begin(), 
@@ -678,17 +565,6 @@ uint32_t full_block_type::get_uncompressed_block_size() const
   hive::protocol::serialization_mode_controller::pack_guard guard(hive::protocol::pack_type::legacy);
 
   vector<digest_type>::size_type current_number_of_hashes = ids.size();
-
-  if(czy_printowac(block_num))
-  {
-    wlog("current_number_of_hashes=${cnh}", ("cnh", current_number_of_hashes));
-    for (const auto& id : ids)
-    {
-      wlog("transaction_merkle_digest=${tmd}", ("tmd", id));
-    }
-  }
-
-
   while (current_number_of_hashes > 1)
   {
     // hash ID's in pairs
@@ -703,12 +579,6 @@ uint32_t full_block_type::get_uncompressed_block_size() const
     current_number_of_hashes = k;
   }
 
-  if(czy_printowac(block_num))
-  {
-    wlog("Inside compute_merkle_root block_num=${block_num} ids[0]=${ids0}", ("block_num", block_num)("ids0", ids[0]));
-    wlog("Returning checksum_type::hash(ids[0])=${cth}", ("cth" ,checksum_type::hash(ids[0])));
-  }
-
   return checksum_type::hash(ids[0]);
 }
 
@@ -719,11 +589,6 @@ void full_block_type::compute_merkle_root() const
   {
     decode_block();
     fc::time_point compute_begin = fc::time_point::now();
-    if(czy_printowac(get_block_num()))
-    {
-      int a = 0;
-      a=a;
-    }
     merkle_root = compute_merkle_root(full_transactions, get_block_num());
     fc::time_point compute_end = fc::time_point::now();
     compute_merkle_root_time = compute_end - compute_begin;

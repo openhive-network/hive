@@ -18,7 +18,6 @@
 
 #include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
 
-bool czy_printowac(int block_num);
 
 namespace hive { namespace app {
 
@@ -39,13 +38,6 @@ std::shared_ptr<hive::chain::full_block_type> from_variant_to_full_block_ptr(con
 
 
 
-  auto siz = sb.transactions.size();
-  siz = siz;
-  if(czy_printowac(block_num_debug))
-   {
-   
-     wlog("signed_block=${signed_block}", ("signed_block", sb));
-   }  
 
 
   return hive::chain::full_block_type::create_from_signed_block(sb);
