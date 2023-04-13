@@ -44,9 +44,9 @@ namespace hive { namespace converter { namespace plugins {
   void conversion_plugin_impl::print_wifs()const
   {
     ilog( "Second authority wif private keys:" );
-    dlog( "Owner: ${key}", ("key", converter.get_second_authority_key( authority::owner ).str() ) );
-    dlog( "Active: ${key}", ("key", converter.get_second_authority_key( authority::active ).str() ) );
-    dlog( "Posting: ${key}", ("key", converter.get_second_authority_key( authority::posting ).str() ) );
+    dlog( "Owner: ${key}", ("key", converter.get_second_authority_key( authority::owner ).to_base58() ) );
+    dlog( "Active: ${key}", ("key", converter.get_second_authority_key( authority::active ).to_base58() ) );
+    dlog( "Posting: ${key}", ("key", converter.get_second_authority_key( authority::posting ).to_base58() ) );
   }
 
   const blockchain_converter& conversion_plugin_impl::get_converter()const
