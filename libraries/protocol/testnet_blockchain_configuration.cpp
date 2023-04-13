@@ -8,32 +8,6 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
   configuration configuration_data;
 
-  void configuration::set_init_supply( uint64_t init_supply )
-  {
-    this->init_supply = init_supply;
-  }
-
-  void configuration::set_hbd_init_supply( uint64_t hbd_init_supply )
-  {
-    this->hbd_init_supply = hbd_init_supply;
-  }
-
-  uint64_t configuration::get_init_supply( uint64_t default_value )const
-  {
-    if( init_supply.valid() )
-      return *init_supply;
-
-    return default_value;
-  }
-
-  uint64_t configuration::get_hbd_init_supply( uint64_t default_value )const
-  {
-    if( hbd_init_supply.valid() )
-      return *hbd_init_supply;
-
-    return default_value;
-  }
-
   void configuration::set_init_witnesses( const std::vector<std::string>& init_witnesses )
   {
     this->init_witnesses = init_witnesses;
@@ -48,7 +22,7 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     const std::vector<hardfork_schedule_item_t>& hardfork_schedule )
   {
     ilog("Hardfork schedule applied: ${hardfork_schedule} with genesis time ${genesis_time}", (hardfork_schedule)(genesis_time));
-    
+
     this->genesis_time = genesis_time;
 
     // Clear container contents.
@@ -91,61 +65,6 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     FC_ASSERT( hf_num < hf_times.size(), "Trying to retrieve hardfork of a non-existing hardfork ${hf}", ("hf", hf_num) );
 
     return hf_times[hf_num] != 0 ? hf_times[hf_num] : default_time_sec; // No hardfork schedule specified, use default time sec
-  }
-
-  void configuration::set_min_root_comment_interval( const fc::microseconds& time )
-  {
-    min_root_comment_interval = time;
-  }
-
-  const fc::microseconds& configuration::get_min_root_comment_interval( const fc::microseconds& default_value )const
-  {
-    if( min_root_comment_interval.valid() )
-      return *min_root_comment_interval;
-
-    return default_value;
-  }
-
-  void configuration::set_min_reply_interval( const fc::microseconds& time )
-  {
-    min_reply_interval = time;
-  }
-
-
-  const fc::microseconds& configuration::get_min_reply_interval( const fc::microseconds& default_value )const
-  {
-    if( min_reply_interval.valid() )
-      return *min_reply_interval;
-
-    return default_value;
-  }
-
-
-  void configuration::set_min_comment_edit_interval( const fc::microseconds& time )
-  {
-    min_comment_edit_interval = time;
-  }
-
-
-  const fc::microseconds& configuration::get_min_comment_edit_interval( const fc::microseconds& default_value )const
-  {
-    if( min_comment_edit_interval.valid() )
-      return *min_comment_edit_interval;
-
-    return default_value;
-  }
-
-  void configuration::set_witness_custom_op_block_limit( uint64_t value )
-  {
-    witness_custom_op_block_limit = value;
-  }
-
-  uint64_t configuration::get_witness_custom_op_block_limit( uint64_t default_value )const
-  {
-    if( witness_custom_op_block_limit.valid() )
-      return *witness_custom_op_block_limit;
-
-    return default_value;
   }
 
   configuration::configuration()
