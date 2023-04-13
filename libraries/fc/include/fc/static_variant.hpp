@@ -96,41 +96,35 @@ struct storage_ops<N, T&, Ts...> {
 template<int64_t N, typename T, typename... Ts>
 struct storage_ops<N, T, Ts...> {
     static void del(int64_t n, void *data) {
-        if(n == N) 
-         reinterpret_cast<T*>(data)->~T();
+        if(n == N) reinterpret_cast<T*>(data)->~T();
         else storage_ops<N + 1, Ts...>::del(n, data);
     }
     static void con(int64_t n, void *data) {
-        if(n == N)
-          new(reinterpret_cast<T*>(data)) T();
+        if(n == N) new(reinterpret_cast<T*>(data)) T();
         else storage_ops<N + 1, Ts...>::con(n, data);
     }
 
     template<typename visitor>
     static typename visitor::result_type apply(int64_t n, void *data, visitor& v) {
-        if(n == N)
-          return v(*reinterpret_cast<T*>(data));
+        if(n == N) return v(*reinterpret_cast<T*>(data));
         else return storage_ops<N + 1, Ts...>::apply(n, data, v);
     }
 
     template<typename visitor>
     static typename visitor::result_type apply(int64_t n, void *data, const visitor& v) {
-        if(n == N) 
-         return v(*reinterpret_cast<T*>(data));
+        if(n == N) return v(*reinterpret_cast<T*>(data));
         else return storage_ops<N + 1, Ts...>::apply(n, data, v);
     }
 
     template<typename visitor>
     static typename visitor::result_type apply(int64_t n, const void *data, visitor& v) {
-        if(n == N) 
-         return v(*reinterpret_cast<const T*>(data));
+        if(n == N) return v(*reinterpret_cast<const T*>(data));
         else return storage_ops<N + 1, Ts...>::apply(n, data, v);
     }
 
     template<typename visitor>
     static typename visitor::result_type apply(int64_t n, const void *data, const visitor& v) {
-        if(n == N)
-          return v(*reinterpret_cast<const T*>(data));
+        if(n == N) return v(*reinterpret_cast<const T*>(data));
         else return storage_ops<N + 1, Ts...>::apply(n, data, v);
     }
 };

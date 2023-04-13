@@ -1,8 +1,5 @@
 #include <hive/protocol/transaction_util.hpp>
 
-
-auto static volatile stop_in_failed_verify_authority=false;
-
 namespace hive { namespace protocol {
 
 void verify_authority(const required_authorities_type& required_authorities, 
@@ -85,13 +82,6 @@ void verify_authority(const required_authorities_type& required_authorities,
             ("auth",get_active(id))
             ("owner",get_owner(id))
           );
-
-
-          while(stop_in_failed_verify_authority)
-          {
-            int a= 0;
-            a=a;
-          }
 
           if(!( s.check_authority(id) || s.check_authority(get_owner(id))))
           {
