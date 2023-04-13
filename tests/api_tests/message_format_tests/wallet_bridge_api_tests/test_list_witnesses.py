@@ -34,7 +34,7 @@ CORRECT_VALUES = [
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_witnesses_with_correct_value(node, witness_account, limit, should_prepare):
     if should_prepare:
-        node = prepare_node_with_witnesses(WITNESSES_NAMES)
+        node = prepare_node_with_witnesses(node, WITNESSES_NAMES)
     node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
@@ -48,7 +48,7 @@ def test_list_witnesses_with_correct_value(node, witness_account, limit, should_
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_witnesses_with_incorrect_value(node, witness_account, limit, should_prepare):
     if should_prepare:
-        node = prepare_node_with_witnesses(WITNESSES_NAMES)
+        node = prepare_node_with_witnesses(node, WITNESSES_NAMES)
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
@@ -66,6 +66,6 @@ def test_list_witnesses_with_incorrect_value(node, witness_account, limit, shoul
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_witnesses_with_incorrect_type_of_arguments(node, witness_account, limit, should_prepare):
     if should_prepare:
-        node = prepare_node_with_witnesses(WITNESSES_NAMES)
+        node = prepare_node_with_witnesses(node, WITNESSES_NAMES)
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_witnesses(witness_account, limit)

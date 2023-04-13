@@ -26,7 +26,7 @@ CORRECT_VALUES = [
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_witness_with_correct_value(node, witness_account, should_prepare):
     if should_prepare:
-        node = prepare_node_with_witnesses(WITNESSES_NAMES)
+        node = prepare_node_with_witnesses(node, WITNESSES_NAMES)
     node.api.wallet_bridge.get_witness(witness_account)
 
 
