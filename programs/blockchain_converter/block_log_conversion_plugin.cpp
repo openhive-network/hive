@@ -140,7 +140,7 @@ namespace detail {
         --it_block_num;
       }
       FC_ASSERT( chain_id_match, "Previous output block log chain id does not match the specified one or the owner key of the 2nd authority has changed",
-        ("chain_id", converter.get_chain_id())("owner_key", converter.get_second_authority_key( hp::authority::owner ).str()) );
+        ("chain_id", converter.get_chain_id())("owner_key", converter.get_second_authority_key( hp::authority::owner ).to_base58()) );
 
       dlog("Chain id match");
     }
