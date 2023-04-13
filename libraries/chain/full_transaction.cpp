@@ -6,27 +6,6 @@
 #include <boost/lockfree/queue.hpp>
 #include <mutex>
 
-char to_hex_digit(int c);
-std::string binary2str( const char* d, uint32_t dlen );
-std::string to_printable(const std::string& c);
-
-
-void print_sha(const char* tag, int block_num, const char * d, int len);
-
-
- 
-
-std::string tohex(char c)
-{
-  std::string ou;
-  char hex_digit = to_hex_digit((c >> 4) & 0xf);
-  ou += hex_digit;
-  hex_digit = to_hex_digit(c & 0xf); ou += hex_digit;
-  return ou;
-}
-
-
-
 namespace fc {
   void to_variant(std::chrono::nanoseconds duration, fc::variant& var)
   {

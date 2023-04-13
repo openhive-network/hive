@@ -4,10 +4,6 @@
 
 #include <fc/io/json.hpp>
 
-void print_sha(const char* tag, int block_num, const char * d, int len);
-
-void set_print_packing();
-void clear_print_packing();
 namespace hive { namespace chain {
 
 /* static */ std::atomic<uint32_t> full_block_type::number_of_instances_created = {0};

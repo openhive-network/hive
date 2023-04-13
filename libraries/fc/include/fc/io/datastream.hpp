@@ -1,31 +1,7 @@
 #pragma once
-
-#include <string>
-
 #include <fc/utility.hpp>
 #include <string.h>
 #include <stdint.h>
-
-inline char to_hex_digit(int c)
- {
-     if(c < 10)
-      return c+'0';
-     return 'a' + c -10;
- }
-
-inline std::string binary2str( const char* d, uint32_t dlen )
-{
-  std::string ou;
-  for(size_t i = 0; i < (dlen); ++i)
-  {
-    int c = *(d +i);
-    char hex_digit = to_hex_digit((c >> 4) & 0xf);
-    ou += hex_digit;
-    hex_digit = to_hex_digit(c & 0xf);
-    ou += hex_digit;
-  }        
-  return ou;
-}
 
 namespace fc {
 

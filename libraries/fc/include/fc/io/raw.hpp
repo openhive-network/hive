@@ -13,77 +13,8 @@
 #include <fc/exception/exception.hpp>
 #include <fc/safe.hpp>
 #include <fc/io/raw_fwd.hpp>
-
-#include <fc/log/logger.hpp>
-#include <cxxabi.h>
-
 #include <map>
 #include <deque>
-
-inline void pack_name_callback(const char* name)
-{
-  if(std::string(name) ==  "symbol")
-  {
-    int c = 0;
-    c = c;
-  }
-
-}
-
-inline std::string spaces(int n)
-{
-  if(n > 10)
-    n = 5;
-  std::string sp;
-  for (int i = 0 ; i < n; ++i)
-  {
-    sp += " ";
-  }
-  return sp;
-}
-
-
-inline int pack_depth = 0;
-
-inline bool to_print_packing = false;
-
-
-inline int get_pack_depth()
-{
-  return pack_depth;
-}
-
-
-inline void inc_pack_depth()
-{
-  pack_depth++;
-}
-
-inline void dec_pack_depth()
-{
-  pack_depth--;
-}
-
-
-
-inline bool print_packing()
-{
-  return to_print_packing;
-}
-
-
-inline void set_print_packing()
-{
-    to_print_packing = true;
-}
-
-
-inline void clear_print_packing()
-{
-    to_print_packing = false;
-}
-
-
 
 namespace fc {
     namespace raw {
