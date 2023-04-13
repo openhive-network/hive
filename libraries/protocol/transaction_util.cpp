@@ -17,8 +17,7 @@ void verify_authority(const required_authorities_type& required_authorities,
                       bool allow_committe /* = false */,
                       const flat_set<account_name_type>& active_approvals /* = flat_set<account_name_type>() */,
                       const flat_set<account_name_type>& owner_approvals /* = flat_set<account_name_type>() */,
-                      const flat_set<account_name_type>& posting_approvals /* = flat_set<account_name_type>() */,
-                      int block_num)
+                      const flat_set<account_name_type>& posting_approvals /* = flat_set<account_name_type>() */)
 { try {
   /**
     *  Transactions with operations required posting authority cannot be combined
@@ -85,7 +84,6 @@ void verify_authority(const required_authorities_type& required_authorities,
             ("id",id)
             ("auth",get_active(id))
             ("owner",get_owner(id))
-            ("block_num", block_num)
           );
 
 
@@ -103,7 +101,6 @@ void verify_authority(const required_authorities_type& required_authorities,
                   ("id",id)
                   ("auth",get_active(id))
                   ("owner",get_owner(id))
-                  ("block_num", block_num)
                 );
           }
 
@@ -138,7 +135,7 @@ void verify_authority(const required_authorities_type& required_authorities,
 
   if(s.remove_unused_signatures())
   {
-     wlog("Unnecessary signature(s) detected block_num=${block_num}", ("block_num", block_num));
+     wlog("Unnecessary signature(s) detected");
   }
 
   // mtlk  HIVE_ASSERT(

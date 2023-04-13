@@ -108,7 +108,7 @@ struct full_transaction_type
 
     void  set_is_in_cache() { is_in_cache = true; }
     const hive::protocol::signed_transaction& get_transaction() const;
-    const hive::protocol::digest_type& get_merkle_digest(int block_num=0) const;
+    const hive::protocol::digest_type& get_merkle_digest() const;
     const hive::protocol::digest_type& get_digest() const;
     hive::protocol::digest_type compute_sig_digest(const hive::protocol::chain_id_type& chain_id) const;
     const fc::ripemd160& get_legacy_transaction_message_hash() const;

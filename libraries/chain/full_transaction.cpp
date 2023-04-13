@@ -61,12 +61,7 @@ const signed_transaction& full_transaction_type::get_transaction() const
   }
 }
 
-
-
-
-
-
-const hive::protocol::digest_type& full_transaction_type::get_merkle_digest(int block_num) const
+const hive::protocol::digest_type& full_transaction_type::get_merkle_digest() const
 {
   if (!has_merkle_digest.load(std::memory_order_consume))
   {

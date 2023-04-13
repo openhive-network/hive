@@ -100,8 +100,7 @@ full_block_type::~full_block_type()
 
 /* static */ std::shared_ptr<full_block_type> full_block_type::create_from_block_header_and_transactions(const block_header& header, 
                                                                                                          const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions,
-                                                                                                         const fc::ecc::private_key* signer,
-                                                                                                         int block_num)
+                                                                                                         const fc::ecc::private_key* signer)
 { try {
   std::shared_ptr<full_block_type> full_block = std::make_shared<full_block_type>();
 
@@ -113,7 +112,7 @@ full_block_type::~full_block_type()
   decoded_block_storage->block = signed_block();
   signed_block& new_block = *decoded_block_storage->block; // alias to keep things shorter
   (block_header&)new_block = header;
-  full_block->merkle_root = compute_merkle_root(full_transactions, block_num);
+  full_block->merkle_root = compute_merkle_root(full_transactions);
   new_block.transaction_merkle_root = *full_block->merkle_root;
 
   // let's start generating the serialized version of the block:
@@ -548,7 +547,7 @@ uint32_t full_block_type::get_uncompressed_block_size() const
   return decoded_block_storage->uncompressed_block.raw_size;
 }
 
-/* static */ checksum_type full_block_type::compute_merkle_root(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, int block_num)
+/* static */ checksum_type full_block_type::compute_merkle_root(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions)
 {
   if (full_transactions.empty())
     return checksum_type();
@@ -556,7 +555,7 @@ uint32_t full_block_type::get_uncompressed_block_size() const
   std::vector<digest_type> ids;
   ids.resize(full_transactions.size());
   std::transform(full_transactions.begin(), full_transactions.end(), ids.begin(), 
-                 [block_num](const std::shared_ptr<full_transaction_type>& transaction) { return transaction->get_merkle_digest(block_num); });
+                 [](const std::shared_ptr<full_transaction_type>& transaction) { return transaction->get_merkle_digest(); });
 
   hive::protocol::serialization_mode_controller::pack_guard guard(hive::protocol::pack_type::legacy);
 
@@ -585,7 +584,7 @@ void full_block_type::compute_merkle_root() const
   {
     decode_block();
     fc::time_point compute_begin = fc::time_point::now();
-    merkle_root = compute_merkle_root(full_transactions, get_block_num());
+    merkle_root = compute_merkle_root(full_transactions);
     fc::time_point compute_end = fc::time_point::now();
     compute_merkle_root_time = compute_end - compute_begin;
   }

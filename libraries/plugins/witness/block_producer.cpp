@@ -63,7 +63,7 @@ void block_producer::_generate_block( chain::generate_block_flow_control* genera
   const fc::ecc::private_key* signer = (skip & chain::database::skip_witness_signature) ? nullptr : &block_signing_private_key;
 
   std::shared_ptr<hive::chain::full_block_type> full_pending_block = 
-    hive::chain::full_block_type::create_from_block_header_and_transactions(pending_block_header, full_transactions, signer, 0);
+    hive::chain::full_block_type::create_from_block_header_and_transactions(pending_block_header, full_transactions, signer);
 
   // TODO:  Move this to _push_block() so session is restored.
   if( !(skip & chain::database::skip_block_size_check) )
