@@ -1,3 +1,5 @@
+from typing import List
+
 import test_tools as tt
 
 
@@ -41,14 +43,13 @@ def prepare_proposals(wallet, accounts):
                                        'permlink')
 
 
-def prepare_node_with_witnesses(witnesses_names):
-    node = tt.InitNode()
+def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: List[str]) -> tt.InitNode:
     for name in witnesses_names:
         witness = tt.Account(name)
         node.config.witness.append(witness.name)
         node.config.private_key.append(witness.private_key)
 
-    node.run(time_offset="+0h x50")
+    node.restart(time_offset="+0h x50")
     wallet = tt.Wallet(attach_to=node)
 
     with wallet.in_single_transaction():
