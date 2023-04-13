@@ -328,11 +328,12 @@ void condenser_api_fixture::escrow_and_savings_scenario( check_point_tester_t ch
   ACTORS( (alice6ah)(ben6ah)(carol6ah) );
   generate_block();
   fund( "alice6ah", ASSET( "1.111 TESTS" ) );
+  fund( "alice6ah", ASSET( "2.121 TBD" ) );
   generate_block();
   
   escrow_transfer( "alice6ah", "ben6ah", "carol6ah", ASSET( "0.071 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
                   fc::seconds( HIVE_BLOCK_INTERVAL * 10 ), fc::seconds( HIVE_BLOCK_INTERVAL * 20 ), 30, alice6ah_private_key );
-  escrow_transfer( "alice6ah", "ben6ah", "carol6ah", ASSET( "0.007 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
+  escrow_transfer( "alice6ah", "ben6ah", "carol6ah", ASSET( "0.000 TESTS" ), ASSET( "0.007 TBD" ), ASSET( "0.001 TESTS" ), "{\"go\":\"now\"}",
                   fc::seconds( HIVE_BLOCK_INTERVAL * 10 ), fc::seconds( HIVE_BLOCK_INTERVAL * 20 ), 31, alice6ah_private_key );
 
   escrow_approve( "alice6ah", "ben6ah", "carol6ah", "carol6ah", true, 30, carol6ah_private_key );
@@ -342,10 +343,10 @@ void condenser_api_fixture::escrow_and_savings_scenario( check_point_tester_t ch
 
   escrow_approve( "alice6ah", "ben6ah", "carol6ah", "carol6ah", false, 31, carol6ah_private_key );
 
-  transfer_to_savings( "alice6ah", "alice6ah", ASSET( "0.009 TESTS" ), "ah savings", alice6ah_private_key );
-  transfer_from_savings( "alice6ah", "alice6ah", ASSET( "0.006 TESTS" ), 0, alice6ah_private_key );
-  transfer_from_savings( "alice6ah", "alice6ah", ASSET( "0.003 TESTS" ), 1, alice6ah_private_key );
-  cancel_transfer_from_savings( "alice6ah", 0, alice6ah_private_key );
+  transfer_to_savings( "alice6ah", "ben6ah", ASSET( "0.009 TESTS" ), "ah savings", alice6ah_private_key );
+  transfer_from_savings( "ben6ah", "alice6ah", ASSET( "0.006 TESTS" ), 0, ben6ah_private_key );
+  transfer_from_savings( "ben6ah", "carol6ah", ASSET( "0.003 TESTS" ), 1, ben6ah_private_key );
+  cancel_transfer_from_savings( "ben6ah", 0, ben6ah_private_key );
 
   // Now all the operations mentioned above can be checked. All of them will appear in 5th block,
   // except fill_transfer_from_savings_operation - its block number depends on test configuration.
