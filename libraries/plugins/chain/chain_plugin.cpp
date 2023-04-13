@@ -935,22 +935,25 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     auto                  hardfork_schedule = alternate_chain_spec["hardfork_schedule"].as< std::vector< hardfork_schedule_item_t > >();
 
     if( alternate_chain_spec.get_object().contains("init_supply") )
-      configuration_data.set_init_supply( alternate_chain_spec["init_supply"].as< uint64_t >() );
+      configuration_data.init_supply = alternate_chain_spec["init_supply"].as< uint64_t >();
 
     if( alternate_chain_spec.get_object().contains("hbd_init_supply") )
-      configuration_data.set_hbd_init_supply( alternate_chain_spec["hbd_init_supply"].as< uint64_t >() );
+      configuration_data.hbd_init_supply = alternate_chain_spec["hbd_init_supply"].as< uint64_t >();
 
     if( alternate_chain_spec.get_object().contains("min_root_comment_interval") )
-      configuration_data.set_min_root_comment_interval( fc::seconds( alternate_chain_spec["min_root_comment_interval"].as< uint64_t >() ) );
+      configuration_data.min_root_comment_interval = fc::seconds( alternate_chain_spec["min_root_comment_interval"].as< uint64_t >() );
 
     if( alternate_chain_spec.get_object().contains("min_reply_interval") )
-      configuration_data.set_min_reply_interval( fc::seconds( alternate_chain_spec["min_reply_interval"].as< uint64_t >() ) );
+    {
+      configuration_data.min_reply_interval = fc::seconds( alternate_chain_spec["min_reply_interval"].as< uint64_t >() );
+      configuration_data.min_reply_interval_hf20 = configuration_data.min_reply_interval;
+    }
 
     if( alternate_chain_spec.get_object().contains("min_comment_edit_interval") )
-      configuration_data.set_min_comment_edit_interval( fc::seconds( alternate_chain_spec["min_comment_edit_interval"].as< uint64_t >() ) );
+      configuration_data.min_comment_edit_interval = fc::seconds( alternate_chain_spec["min_comment_edit_interval"].as< uint64_t >() );
 
     if( alternate_chain_spec.get_object().contains("witness_custom_op_block_limi") )
-      configuration_data.set_witness_custom_op_block_limit( alternate_chain_spec["witness_custom_op_block_limi"].as< uint64_t >() );
+      configuration_data.witness_custom_op_block_limit = alternate_chain_spec["witness_custom_op_block_limi"].as< uint64_t >();
 
     std::vector< string > init_witnesses;
     if( alternate_chain_spec.get_object().contains("init_witnesses") )

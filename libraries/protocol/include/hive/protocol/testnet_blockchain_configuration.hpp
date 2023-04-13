@@ -61,9 +61,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     fc::time_point_sec     genesis_time;
     // Hardfork times expressed in seconds since epoch.
     std::array< uint32_t, HIVE_NUM_HARDFORKS + 1> hf_times = {};
-    fc::optional<uint64_t> init_supply, hbd_init_supply;
     // Whether we want producer_missed_operation & shutdown_witness_operation vops generated.
-    bool generate_missed_block_operations = 
+    bool generate_missed_block_operations =
 #ifdef IS_TEST_NET
       false; // Don't generate for testnet node (unless overridden in e.g. unit test).
 #else
@@ -72,18 +71,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     // How many blocks is witness allowed to miss before it is being shut down.
     uint16_t witness_shutdown_threshold = 28800; // aka HIVE_BLOCKS_PER_DAY
 
-    fc::optional<fc::microseconds> min_root_comment_interval;
-    fc::optional<fc::microseconds> min_reply_interval;
-    fc::optional<fc::microseconds> min_comment_edit_interval;
-    fc::optional<uint64_t>         witness_custom_op_block_limit;
-
     public:
       configuration();
-
-      void set_init_supply( uint64_t init_supply );
-      void set_hbd_init_supply( uint64_t hbd_init_supply );
-      uint64_t get_init_supply( uint64_t default_value )const;
-      uint64_t get_hbd_init_supply( uint64_t default_value )const;
 
       void set_init_witnesses( const std::vector<std::string>& init_witnesses );
       const std::vector<std::string>& get_init_witnesses()const;
@@ -100,15 +89,6 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       uint32_t get_hf_time(uint32_t hf_num, uint32_t default_time_sec)const;
       bool get_generate_missed_block_operations() const { return generate_missed_block_operations; }
       uint16_t get_witness_shutdown_threshold() const { return witness_shutdown_threshold; }
-
-      void set_min_root_comment_interval( const fc::microseconds& time );
-      const fc::microseconds& get_min_root_comment_interval( const fc::microseconds& default_value )const;
-      void set_min_reply_interval( const fc::microseconds& time );
-      const fc::microseconds& get_min_reply_interval( const fc::microseconds& default_value )const;
-      void set_min_comment_edit_interval( const fc::microseconds& time );
-      const fc::microseconds& get_min_comment_edit_interval( const fc::microseconds& default_value )const;
-      void set_witness_custom_op_block_limit( uint64_t value );
-      uint64_t get_witness_custom_op_block_limit( uint64_t default_value )const;
 
       uint32_t get_hive_reverse_auction_window_seconds() const { return hive_reverse_auction_window_seconds; }
       uint32_t get_hive_early_voting_seconds() const { return hive_early_voting_seconds; }
@@ -251,6 +231,20 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       {
          witness_shutdown_threshold = threshold;
       }
+
+# ifdef IS_TEST_NET
+      uint64_t init_supply = int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 );
+      uint64_t hbd_init_supply = int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 );
+#else // hive converter build
+      uint64_t init_supply = 0;
+      uint64_t hbd_init_supply = 0;
+#endif
+
+      fc::microseconds min_root_comment_interval = fc::seconds(60*5);
+      fc::microseconds min_reply_interval = fc::seconds(20);
+      fc::microseconds min_reply_interval_hf20 = fc::seconds(3);
+      fc::microseconds min_comment_edit_interval = fc::seconds(3);
+      uint64_t         witness_custom_op_block_limit = 5;
   };
 
   extern configuration configuration_data;

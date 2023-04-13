@@ -22,14 +22,17 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR (configuration_data.get_HF9_compromised_accounts_key())
 
-#define HIVE_MIN_ROOT_COMMENT_INTERVAL        (configuration_data.get_min_root_comment_interval(fc::seconds(60*5))) // 5 minutes
-#define HIVE_MIN_REPLY_INTERVAL               (configuration_data.get_min_reply_interval(fc::seconds(20))) // 20 seconds
-#define HIVE_MIN_REPLY_INTERVAL_HF20          (configuration_data.get_min_reply_interval(fc::seconds(3))) // 3 seconds
-#define HIVE_MIN_COMMENT_EDIT_INTERVAL        (configuration_data.get_min_comment_edit_interval(fc::seconds(3))) // 3 seconds
+#define HIVE_MIN_ROOT_COMMENT_INTERVAL        (configuration_data.min_root_comment_interval) // 5 minutes
+#define HIVE_MIN_REPLY_INTERVAL               (configuration_data.min_reply_interval) // 20 seconds
+#define HIVE_MIN_REPLY_INTERVAL_HF20          (configuration_data.min_reply_interval_hf20) // 3 seconds
+#define HIVE_MIN_COMMENT_EDIT_INTERVAL        (configuration_data.min_comment_edit_interval) // 3 seconds
+
+#define HIVE_INIT_SUPPLY                      (configuration_data.init_supply)
+#define HIVE_HBD_INIT_SUPPLY                  (configuration_data.hbd_init_supply)
 
 #else
 
-/// Mainnet 
+/// Mainnet
 #define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
 #define HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR
 
@@ -37,6 +40,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MIN_REPLY_INTERVAL               (fc::seconds(20)) // 20 seconds
 #define HIVE_MIN_REPLY_INTERVAL_HF20          (fc::seconds(3)) // 3 seconds
 #define HIVE_MIN_COMMENT_EDIT_INTERVAL        (fc::seconds(3)) // 3 seconds
+
+#define HIVE_INIT_SUPPLY                      int64_t(0)
+#define HIVE_HBD_INIT_SUPPLY                  int64_t(0)
 
 #endif /// USE_ALTERNATE_CHAIN_ID
 
@@ -81,9 +87,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::seconds(12)
 #define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(6)
 #define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  1
-
-#define HIVE_INIT_SUPPLY                      (configuration_data.get_init_supply(int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 )))
-#define HIVE_HBD_INIT_SUPPLY                  (configuration_data.get_hbd_init_supply(int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 )))
 
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD          (configuration_data.get_hive_proposal_maintenance_period())
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP         (60*60*24*1) // 1 day
@@ -163,14 +166,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::days(1)
 #define HIVE_OWNER_UPDATE_LIMIT                           fc::minutes(60)
 #define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  3186477
-
-#ifdef USE_ALTERNATE_CHAIN_ID
-#define HIVE_INIT_SUPPLY                      (configuration_data.get_init_supply(int64_t( 0 )))
-#define HIVE_HBD_INIT_SUPPLY                  (configuration_data.get_hbd_init_supply(int64_t( 0 )))
-#else
-#define HIVE_INIT_SUPPLY                      int64_t(0)
-#define HIVE_HBD_INIT_SUPPLY                  int64_t(0)
-#endif
 
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD           3600
 #define HIVE_PROPOSAL_MAINTENANCE_CLEANUP          (60*60*24*1) /// 1 day
