@@ -157,7 +157,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   }
 
 
-  void database::open(const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, const std::string& context)
+  void database::open(const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, const std::string& context, bool postgres_not_block_log)
   {
     assert( dir.is_absolute() );
     bfs::create_directories( dir );
@@ -171,8 +171,11 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     
     if( bfs::exists( abs_path ) )
     {
+      if(postgres_not_block_log)
+      {
         //mtlk TODO is it needed ?
         bfs::permissions(abs_path, bfs::perms::all_all | bfs::perms::add_perms);
+      }
 
       _file_size = bfs::file_size( abs_path );
       if( shared_file_size > _file_size )
@@ -227,9 +230,11 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                       ) );
       _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
 
+      if(postgres_not_block_log)
+      {
               //mtlk TODO is it needed ?
         bfs::permissions(abs_path, bfs::perms::all_all | bfs::perms::add_perms);
-
+      }
     }
 
     auto env = _segment->find< environment_check >( "environment" );

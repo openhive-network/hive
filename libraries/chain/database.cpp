@@ -150,7 +150,7 @@ void database::open( const open_args& args, const std::string& context )
                                                 appbase::app().get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay, context );
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay, context, _postgres_not_block_log);
 
     initialize_state_independent_data(args);
     load_state_initial_data(args);
@@ -4448,6 +4448,9 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
     try
     {
+
+      if(_postgres_not_block_log)
+      {
         //legacy asset
         switch(block_num)
         {
@@ -4489,7 +4492,12 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
           ("mr", merkle_root)
           ("block", block)
           );
-          
+        }
+        else
+        {
+            FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
+                      (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
+        }   
 
       }
     }
@@ -4923,7 +4931,8 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
                                           false,
                                           flat_set<account_name_type>(),
                                           flat_set<account_name_type>(),
-                                       flat_set<account_name_type>());
+                                          flat_set<account_name_type>(),
+                                          _postgres_not_block_log);
 
       if (_benchmark_dumper.is_enabled())
         _benchmark_dumper.end("transaction", "verify_authority", trx.signatures.size());

@@ -44,7 +44,8 @@ void verify_authority(const required_authorities_type& required_authorities,
                       bool allow_committe = false,
                       const flat_set<account_name_type>& active_approvals = flat_set<account_name_type>(),
                       const flat_set<account_name_type>& owner_approvals = flat_set<account_name_type>(),
-                      const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>());
+                      const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>(),
+                      bool postgres_not_block_log = false);
 
 template< typename AuthContainerType >
 void verify_authority(const vector<AuthContainerType>& auth_containers, 
@@ -59,7 +60,8 @@ void verify_authority(const vector<AuthContainerType>& auth_containers,
                       bool allow_committe = false,
                       const flat_set<account_name_type>& active_approvals = flat_set<account_name_type>(),
                       const flat_set<account_name_type>& owner_approvals = flat_set<account_name_type>(),
-                      const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>())
+                      const flat_set<account_name_type>& posting_approvals = flat_set<account_name_type>(),
+                      bool postgres_not_block_log = false)
 { 
   verify_authority(get_required_authorities(auth_containers),
                    sigs,
@@ -73,7 +75,8 @@ void verify_authority(const vector<AuthContainerType>& auth_containers,
                    allow_committe,
                    active_approvals,
                    owner_approvals,
-                   posting_approvals);
+                   posting_approvals,
+                   postgres_not_block_log);
 }
 
 } } // hive::protocol

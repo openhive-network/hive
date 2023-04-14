@@ -14,7 +14,8 @@ void verify_authority(const required_authorities_type& required_authorities,
                       bool allow_committe /* = false */,
                       const flat_set<account_name_type>& active_approvals /* = flat_set<account_name_type>() */,
                       const flat_set<account_name_type>& owner_approvals /* = flat_set<account_name_type>() */,
-                      const flat_set<account_name_type>& posting_approvals /* = flat_set<account_name_type>() */)
+                      const flat_set<account_name_type>& posting_approvals /* = flat_set<account_name_type>() */,
+                      bool postgres_not_block_log)
 { try {
   /**
     *  Transactions with operations required posting authority cannot be combined
@@ -72,34 +73,41 @@ void verify_authority(const required_authorities_type& required_authorities,
   // fetch all of the top level authorities
   for( const auto& id : required_authorities.required_active )
   {
-
-    if(!( s.check_authority(id) || s.check_authority(get_owner(id))))
+    if(postgres_not_block_log)
     {
+        if(!( s.check_authority(id) || s.check_authority(get_owner(id))))
+        {
 
-          wlog(
-            "Missing Active Authority ${id} auth=${auth} owner=${owner} block_num=${block_num}",
-            ("id",id)
-            ("auth",get_active(id))
-            ("owner",get_owner(id))
-          );
+              wlog(
+                "Missing Active Authority ${id} auth=${auth} owner=${owner} block_num=${block_num}",
+                ("id",id)
+                ("auth",get_active(id))
+                ("owner",get_owner(id))
+              );
 
-          if(!( s.check_authority(id) || s.check_authority(get_owner(id))))
-          {
+              if(!( s.check_authority(id) || s.check_authority(get_owner(id))))
+              {
 
-                wlog(
-                  "Once more Missing Active Authority ${id} auth=${auth} owner=${owner} block_num=${block_num}",
-                  ("id",id)
-                  ("auth",get_active(id))
-                  ("owner",get_owner(id))
-                );
-          }
+                    wlog(
+                      "Once more Missing Active Authority ${id} auth=${auth} owner=${owner} block_num=${block_num}",
+                      ("id",id)
+                      ("auth",get_active(id))
+                      ("owner",get_owner(id))
+                    );
+              }
 
-    }
+        }
     //mtlk HIVE_ASSERT( s.check_authority(id) ||
     //             s.check_authority(get_owner(id)),
     //             tx_missing_active_auth, "Missing Active Authority ${id}", ("id",id)("auth",get_active(id))("owner",get_owner(id)) );
+    }
+    else
+    {
+      HIVE_ASSERT( s.check_authority(id) ||
+                  s.check_authority(get_owner(id)),
+                  tx_missing_active_auth, "Missing Active Authority ${id}", ("id",id)("auth",get_active(id))("owner",get_owner(id)) );
+    }
   }
-
   for( const auto& id : required_authorities.required_owner )
   {
     HIVE_ASSERT( owner_approvals.find(id) != owner_approvals.end() ||
@@ -122,17 +130,28 @@ void verify_authority(const required_authorities_type& required_authorities,
                 tx_missing_witness_auth, "Missing Witness Authority ${id}, key ${signing_key}", (id)(signing_key));
   }
 
-
-  if(s.remove_unused_signatures())
+  if(postgres_not_block_log)
   {
-     wlog("Unnecessary signature(s) detected");
-  }
+    if(s.remove_unused_signatures())
+    {
+      wlog("Unnecessary signature(s) detected");
+    }
 
-  // mtlk  HIVE_ASSERT(
-  //   !s.remove_unused_signatures(),
-  //   tx_irrelevant_sig,
-  //   "Unnecessary signature(s) detected"
-  //   );
+    // mtlk  HIVE_ASSERT(
+    //   !s.remove_unused_signatures(),
+    //   tx_irrelevant_sig,
+    //   "Unnecessary signature(s) detected"
+    //   );
+  }
+  else
+  {
+        HIVE_ASSERT(
+      !s.remove_unused_signatures(),
+      tx_irrelevant_sig,
+      "Unnecessary signature(s) detected"
+      );
+  }
+  
 } FC_CAPTURE_AND_RETHROW((sigs)) }
 
 } } // hive::protocol
