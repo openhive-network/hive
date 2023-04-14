@@ -835,3 +835,15 @@ recovery_tests:
     - *run-pytest
   tags:
     - public-runner-docker
+
+operation_tests:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 10
+    JUNIT_REPORT: tests/functional/python_tests/operation_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/operation_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
