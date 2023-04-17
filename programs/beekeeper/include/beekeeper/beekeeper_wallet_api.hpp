@@ -1,4 +1,6 @@
 #pragma once
+#include <beekeeper/beekeeper_wallet_manager.hpp>
+
 #include <hive/plugins/json_rpc/utility.hpp>
 
 #include <hive/protocol/types.hpp>
@@ -7,15 +9,15 @@
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
 
-namespace hive { namespace plugins { namespace clive_api {
+namespace beekeeper {
 
 namespace detail
 {
-  class clive_api_impl;
+  class beekeeper_api_impl;
 }
 
-using plugins::json_rpc::void_type;
-using hive::plugins::clive::signature_type;
+using hive::plugins::json_rpc::void_type;
+using beekeeper::signature_type;
 
 struct wallet_args
 {
@@ -100,11 +102,11 @@ struct sign_digest_return
   signature_type signature;
 };
 
-class clive_api
+class beekeeper_wallet_api
 {
   public:
-    clive_api();
-    ~clive_api();
+    beekeeper_wallet_api( beekeeper::beekeeper_wallet_manager& wallet_mgr );
+    ~beekeeper_wallet_api();
 
     DECLARE_API(
       (create)
@@ -123,20 +125,20 @@ class clive_api
     )
 
   private:
-    std::unique_ptr< detail::clive_api_impl > my;
+    std::unique_ptr< detail::beekeeper_api_impl > my;
 };
 
-} } } // hive::plugins::clive_api
+} // beekeeper
 
-FC_REFLECT( hive::plugins::clive_api::wallet_args, (wallet_name) )
-FC_REFLECT( hive::plugins::clive_api::wallet_password_args, (wallet_name)(password) )
-FC_REFLECT( hive::plugins::clive_api::create_return, (password) )
-FC_REFLECT( hive::plugins::clive_api::set_timeout_args, (seconds) )
-FC_REFLECT( hive::plugins::clive_api::import_key_args, (wallet_name)(wif_key) )
-FC_REFLECT( hive::plugins::clive_api::remove_key_args, (wallet_name)(password)(public_key) )
-FC_REFLECT( hive::plugins::clive_api::create_key_return, (public_key) )
-FC_REFLECT( hive::plugins::clive_api::list_wallets_return, (wallets) )
-FC_REFLECT( hive::plugins::clive_api::list_keys_return, (keys) )
-FC_REFLECT( hive::plugins::clive_api::get_public_keys_return, (keys) )
-FC_REFLECT( hive::plugins::clive_api::sign_digest_args, (digest)(public_key) )
-FC_REFLECT( hive::plugins::clive_api::sign_digest_return, (signature) )
+FC_REFLECT( beekeeper::wallet_args, (wallet_name) )
+FC_REFLECT( beekeeper::wallet_password_args, (wallet_name)(password) )
+FC_REFLECT( beekeeper::create_return, (password) )
+FC_REFLECT( beekeeper::set_timeout_args, (seconds) )
+FC_REFLECT( beekeeper::import_key_args, (wallet_name)(wif_key) )
+FC_REFLECT( beekeeper::remove_key_args, (wallet_name)(password)(public_key) )
+FC_REFLECT( beekeeper::create_key_return, (public_key) )
+FC_REFLECT( beekeeper::list_wallets_return, (wallets) )
+FC_REFLECT( beekeeper::list_keys_return, (keys) )
+FC_REFLECT( beekeeper::get_public_keys_return, (keys) )
+FC_REFLECT( beekeeper::sign_digest_args, (digest)(public_key) )
+FC_REFLECT( beekeeper::sign_digest_return, (signature) )

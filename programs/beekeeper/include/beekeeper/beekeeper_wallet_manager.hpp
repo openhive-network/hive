@@ -1,6 +1,7 @@
 #pragma once
 
-#include <hive/plugins/clive/clive_base.hpp>
+#include <beekeeper/beekeeper_wallet_base.hpp>
+
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
@@ -8,20 +9,20 @@
 
 namespace fc { class variant; }
 
-namespace hive { namespace plugins { namespace clive {
+namespace beekeeper {
 
 /// Provides associate of wallet name to wallet and manages the interaction with each wallet.
 ///
-/// The name of the wallet is also used as part of the file name by soft_wallet. See wallet_manager::create.
+/// The name of the wallet is also used as part of the file name by soft_wallet. See beekeeper_wallet_manager::create.
 /// No const methods because timeout may cause lock_all() to be called.
-class wallet_manager {
+class beekeeper_wallet_manager {
 public:
-   wallet_manager();
-   wallet_manager(const wallet_manager&) = delete;
-   wallet_manager(wallet_manager&&) = delete;
-   wallet_manager& operator=(const wallet_manager&) = delete;
-   wallet_manager& operator=(wallet_manager&&) = delete;
-   ~wallet_manager();
+   beekeeper_wallet_manager();
+   beekeeper_wallet_manager(const beekeeper_wallet_manager&) = delete;
+   beekeeper_wallet_manager(beekeeper_wallet_manager&&) = delete;
+   beekeeper_wallet_manager& operator=(const beekeeper_wallet_manager&) = delete;
+   beekeeper_wallet_manager& operator=(beekeeper_wallet_manager&&) = delete;
+   ~beekeeper_wallet_manager();
 
    /// Set the path for location of wallet files.
    /// @param p path to override default ./ location of wallet files.
@@ -32,10 +33,10 @@ public:
 
    /// Set the timeout for locking all wallets.
    /// If set then after t seconds of inactivity then lock_all().
-   /// Activity is defined as any wallet_manager method call below.
+   /// Activity is defined as any beekeeper_wallet_manager method call below.
    void set_timeout(const std::chrono::seconds& t);
 
-   /// @see wallet_manager::set_timeout(const std::chrono::seconds& t)
+   /// @see beekeeper_wallet_manager::set_timeout(const std::chrono::seconds& t)
    /// @param secs The timeout in seconds.
    void set_timeout(int64_t secs) { set_timeout(std::chrono::seconds(secs)); }
 
@@ -56,7 +57,7 @@ public:
    std::string create(const std::string& name);
 
    /// Open an existing wallet file dir/{name}.wallet.
-   /// Note this does not unlock the wallet, see wallet_manager::unlock.
+   /// Note this does not unlock the wallet, see beekeeper_wallet_manager::unlock.
    /// @param name of the wallet file (minus ext .wallet) to open.
    /// @throws fc::exception if unable to find/open the wallet file.
    void open(const std::string& name);
@@ -110,7 +111,7 @@ public:
    string create_key(const std::string& name);
 
    /// Takes ownership of a wallet to use
-   void own_and_use_wallet(const string& name, std::unique_ptr<clive_base>&& wallet);
+   void own_and_use_wallet(const string& name, std::unique_ptr<beekeeper_wallet_base>&& wallet);
 
 private:
    /// Verify timeout has not occurred and reset timeout if not.
@@ -119,7 +120,7 @@ private:
 
 private:
    using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
-   std::map<std::string, std::unique_ptr<clive_base>> wallets;
+   std::map<std::string, std::unique_ptr<beekeeper_wallet_base>> wallets;
    std::chrono::seconds timeout = std::chrono::seconds::max(); ///< how long to wait before calling lock_all()
    mutable timepoint_t timeout_time = timepoint_t::max(); ///< when to call lock_all()
    boost::filesystem::path dir = ".";
@@ -130,6 +131,6 @@ private:
    void initialize_lock();
 };
 
-}}}
+} //beekeeper
 
 

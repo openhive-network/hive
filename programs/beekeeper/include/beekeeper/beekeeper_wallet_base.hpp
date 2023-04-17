@@ -2,16 +2,11 @@
 
 #include <fc/crypto/elliptic.hpp>
 #include <fc/container/flat_fwd.hpp>
+#include <hive/protocol/config.hpp>
 
 using namespace std;
 
-namespace hive { namespace plugins { namespace clive {
-
-#ifdef IS_TEST_NET
-#define HIVE_ADDRESS_PREFIX                   "TST"
-#else
-#define HIVE_ADDRESS_PREFIX                   "STM"
-#endif
+namespace beekeeper {
 
 using private_key_type  = fc::ecc::private_key;
 using public_key_type   = fc::ecc::public_key;
@@ -20,10 +15,10 @@ using digest_type       = fc::sha256;
 
 using fc::flat_set;
 
-class clive_base
+class beekeeper_wallet_base
 {
    public:
-      virtual ~clive_base() {}
+      virtual ~beekeeper_wallet_base() {}
 
       /**
        * Get the private key corresponding to a public key.  The
@@ -112,4 +107,4 @@ class clive_base
       virtual std::optional<signature_type> try_sign_digest( const digest_type digest, const public_key_type public_key ) = 0;
 };
 
-}}}
+}
