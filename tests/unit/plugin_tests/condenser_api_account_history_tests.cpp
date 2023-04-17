@@ -211,7 +211,6 @@ BOOST_AUTO_TEST_CASE( get_account_history_hf23 )
 // TODO create get_account_history_proposal test here
 // TODO create get_account_history_account test here
 // TODO create get_account_history_custom test here
-// TODO create get_account_history_recurrent_transfer test here
 // TODO create get_account_history_decline_voting_rights test here
 
 BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward )
@@ -655,6 +654,68 @@ BOOST_AUTO_TEST_CASE( get_account_history_escrow_and_savings )
   };
 
   escrow_and_savings_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
+/**
+ * Uses escrow_and_savings_scenario to test recurrent_transfer:
+ * - both impacted accounts (from/to)
+ * - in both allowed currencies (HIVE/HBD)
+ * - successfull (initially), then failed (due to low balance of 'from' account)
+ * - immediately cancelled
+ */
+BOOST_AUTO_TEST_CASE( get_account_history_recurrent_transfer )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_account_history with recurrent_transfer_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 1204 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_t expected_alice10ah_history = { {
+      R"~([4,{"trx_id":"93e35087c9401f6fa910684a849008cca1f85124","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","recurrence":1,"executions":2,"extensions":[]}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"93e35087c9401f6fa910684a849008cca1f85124","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","recurrence":1,"executions":2,"extensions":[]}]}])~"
+      }, {
+      R"~([5,{"trx_id":"58b39536800983e5b7228a3d8482515c6bc8ec1c","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"recurrent_transfer_operation","value":{"from":"ben10ah","to":"alice10ah","amount":{"amount":"7713","precision":3,"nai":"@@000000013"},"memo":"","recurrence":2,"executions":4,"extensions":[]}},"operation_id":0}])~",
+      R"~([5,{"trx_id":"58b39536800983e5b7228a3d8482515c6bc8ec1c","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["recurrent_transfer",{"from":"ben10ah","to":"alice10ah","amount":"7.713 TBD","memo":"","recurrence":2,"executions":4,"extensions":[]}]}])~"
+      }, {
+      R"~([6,{"trx_id":"2a7846469ffa8901e37b64ce65f6edbfe160aa7d","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"recurrent_transfer_operation","value":{"from":"ben10ah","to":"alice10ah","amount":{"amount":"0","precision":3,"nai":"@@000000013"},"memo":"","recurrence":3,"executions":7,"extensions":[]}},"operation_id":0}])~",
+      R"~([6,{"trx_id":"2a7846469ffa8901e37b64ce65f6edbfe160aa7d","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["recurrent_transfer",{"from":"ben10ah","to":"alice10ah","amount":"0.000 TBD","memo":"","recurrence":3,"executions":7,"extensions":[]}]}])~"
+      }, {
+      R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"fill_recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","remaining_executions":1}},"operation_id":0}])~",
+      R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["fill_recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","remaining_executions":1}]}])~"
+      }, {
+      R"~([8,{"trx_id":"0000000000000000000000000000000000000000","block":1204,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:00:12","op":{"type":"failed_recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","consecutive_failures":1,"remaining_executions":0,"deleted":false}},"operation_id":0}])~",
+      R"~([8,{"trx_id":"0000000000000000000000000000000000000000","block":1204,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:00:12","op":["failed_recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","consecutive_failures":1,"remaining_executions":0,"deleted":false}]}])~"
+      } };
+
+    expected_t expected_ben10ah_history = { {
+      R"~([4,{"trx_id":"93e35087c9401f6fa910684a849008cca1f85124","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","recurrence":1,"executions":2,"extensions":[]}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"93e35087c9401f6fa910684a849008cca1f85124","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","recurrence":1,"executions":2,"extensions":[]}]}])~"
+      }, {
+      R"~([5,{"trx_id":"58b39536800983e5b7228a3d8482515c6bc8ec1c","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"recurrent_transfer_operation","value":{"from":"ben10ah","to":"alice10ah","amount":{"amount":"7713","precision":3,"nai":"@@000000013"},"memo":"","recurrence":2,"executions":4,"extensions":[]}},"operation_id":0}])~",
+      R"~([5,{"trx_id":"58b39536800983e5b7228a3d8482515c6bc8ec1c","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["recurrent_transfer",{"from":"ben10ah","to":"alice10ah","amount":"7.713 TBD","memo":"","recurrence":2,"executions":4,"extensions":[]}]}])~"
+      }, {
+      R"~([6,{"trx_id":"2a7846469ffa8901e37b64ce65f6edbfe160aa7d","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"recurrent_transfer_operation","value":{"from":"ben10ah","to":"alice10ah","amount":{"amount":"0","precision":3,"nai":"@@000000013"},"memo":"","recurrence":3,"executions":7,"extensions":[]}},"operation_id":0}])~",
+      R"~([6,{"trx_id":"2a7846469ffa8901e37b64ce65f6edbfe160aa7d","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["recurrent_transfer",{"from":"ben10ah","to":"alice10ah","amount":"0.000 TBD","memo":"","recurrence":3,"executions":7,"extensions":[]}]}])~"
+      }, {
+      R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"fill_recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","remaining_executions":1}},"operation_id":0}])~",
+      R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["fill_recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","remaining_executions":1}]}])~"
+      }, {
+      R"~([8,{"trx_id":"0000000000000000000000000000000000000000","block":1204,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:00:12","op":{"type":"failed_recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","consecutive_failures":1,"remaining_executions":0,"deleted":false}},"operation_id":0}])~",
+      R"~([8,{"trx_id":"0000000000000000000000000000000000000000","block":1204,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T01:00:12","op":["failed_recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","consecutive_failures":1,"remaining_executions":0,"deleted":false}]}])~"
+      } };
+
+    // Filter out usual account_create(d) and transfer to vesting (completed)_operations checked in other tests.
+    uint64_t filter_low = -1ull & ~GET_LOW_OPERATION( account_create_operation ) & ~GET_LOW_OPERATION( transfer_to_vesting_operation );
+    uint64_t filter_high = -1ull & ~GET_HIGH_OPERATION( account_created_operation ) & ~GET_HIGH_OPERATION( transfer_to_vesting_completed_operation );
+    test_get_account_history( *this, { "alice10ah", "ben10ah" }, { expected_alice10ah_history, expected_ben10ah_history },
+      1000, 1000, filter_low, filter_high );
+  };
+
+  recurrent_transfer_scenario( check_point_tester );
 
 } FC_LOG_AND_RETHROW() }
 
