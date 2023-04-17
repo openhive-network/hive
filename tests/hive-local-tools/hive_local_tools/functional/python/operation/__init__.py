@@ -31,6 +31,14 @@ def get_current_mana(node: tt.InitNode, account_name: str) -> int:
     return node.api.rc.find_rc_accounts(accounts=[account_name])['rc_accounts'][0]['rc_manabar']['current_mana']
 
 
+def get_number_of_fill_order_operations(node):
+    return len(node.api.account_history.enum_virtual_ops(block_range_begin=1,
+                                                         block_range_end=node.get_last_block_number() + 1,
+                                                         include_reversible=True,
+                                                         filter=0x000080,
+                                                         group_by_block=False)["ops"])
+
+
 def get_vesting_price(node: tt.InitNode) -> int:
     """
     Current exchange rate - `1` Hive to Vest conversion price.
