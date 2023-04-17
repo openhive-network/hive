@@ -2238,9 +2238,9 @@ void init(hive::chain::database& db, const char* context)
   db_open_args.data_dir = "/home/dev/mainnet-5m";
   db_open_args.data_dir = "/home/dev/.consensus_state_provider";
 
-  ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
 
   db_open_args.data_dir = hive::app::get_context_shared_data_bin_dir();
+  ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
 
   db_open_args.shared_mem_dir =  db_open_args.data_dir /  "blockchain"; // "/home/dev/mainnet-5m/blockchain"
   db_open_args.initial_supply = HIVE_INIT_SUPPLY; // 0
@@ -2503,6 +2503,18 @@ int consume_variant_block_impl(const fc::variant& v, const char* context, int bl
   // skip_flags |= hive::plugins::chain::database::skip_witness_schedule_check;
   //skip_flags |= hive::plugins::chain::database::skip_authority_check;//try not to skip it mtlk 
   // skip_flags |= hive::plugins::chain::database::skip_validate;
+
+
+
+      skip_flags |= hive::plugins::chain::database::skip_witness_signature |
+      hive::plugins::chain::database::skip_transaction_signatures |
+      hive::plugins::chain::database::skip_transaction_dupe_check |
+      hive::plugins::chain::database::skip_tapos_check |
+      hive::plugins::chain::database::skip_merkle_check |
+      hive::plugins::chain::database::skip_witness_schedule_check |
+      hive::plugins::chain::database::skip_authority_check |
+      hive::plugins::chain::database::skip_validate; /// no need to validate operations
+
 
   db.set_tx_status( hive::plugins::chain::database::TX_STATUS_BLOCK );
 
