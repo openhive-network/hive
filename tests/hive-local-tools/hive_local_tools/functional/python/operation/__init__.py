@@ -4,6 +4,14 @@ import test_tools as tt
 from hive_local_tools.constants import filters_enum_virtual_ops
 
 
+def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
+    payout_vops = get_virtual_operation(node, "fill_transfer_from_savings_operation")
+    for vop in payout_vops:
+        if vop['op']['value']['memo'] == memo:
+            return True
+    return False
+
+
 def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_name: str) -> int:
     try:
         wallet.api.set_voting_proxy(account_name, "initminer")
