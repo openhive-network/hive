@@ -259,6 +259,7 @@ void condenser_api_fixture::convert_and_limit_order_scenario( check_point_tester
   collateralized_convert_hive_to_hbd( "carol3ah", 0, ASSET( "22.102 TESTS" ), carol3ah_private_key );
   limit_order_create( "carol3ah", ASSET( "11.400 TESTS" ), ASSET( "11.650 TBD" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 1, carol3ah_private_key );
   limit_order2_create( "carol3ah", ASSET( "22.075 TESTS" ), price( ASSET( "0.010 TESTS" ), ASSET( "0.010 TBD" ) ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 2, carol3ah_private_key );
+  limit_order2_create( "edgar3ah", ASSET( "22.075 TBD" ), price( ASSET( "0.010 TBD" ), ASSET( "0.010 TESTS" ) ), true, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 3, edgar3ah_private_key );
   limit_order_cancel( "carol3ah", 1, carol3ah_private_key );
 
   // Now all the operations mentioned above can be checked. All of them will appear in 5th block,
