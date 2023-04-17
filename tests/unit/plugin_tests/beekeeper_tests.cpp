@@ -5,22 +5,22 @@
 #include <fc/crypto/elliptic.hpp>
 #include <fc/filesystem.hpp>
 
-#include <hive/plugins/clive/clive.hpp>
-#include <hive/plugins/clive/wallet_manager.hpp>
+#include <beekeeper/beekeeper_wallet.hpp>
+#include <beekeeper/beekeeper_wallet_manager.hpp>
 
-using public_key_type   = hive::plugins::clive::public_key_type;
-using private_key_type  = hive::plugins::clive::private_key_type;
-using wallet_manager    = hive::plugins::clive::wallet_manager;
-using wallet_data       = hive::plugins::clive::wallet_data;
-using clive             = hive::plugins::clive::clive;
+using public_key_type           = beekeeper::public_key_type;
+using private_key_type          = beekeeper::private_key_type;
+using beekeeper_wallet_manager  = beekeeper::beekeeper_wallet_manager;
+using wallet_data               = beekeeper::wallet_data;
+using beekeeper_wallet          = beekeeper::beekeeper_wallet;
 
-BOOST_AUTO_TEST_SUITE(clive_tests)
+BOOST_AUTO_TEST_SUITE(beekeeper_tests)
 
 /// Test creating the wallet
 BOOST_AUTO_TEST_CASE(wallet_test)
 { try {
   wallet_data d;
-  clive wallet(d);
+  beekeeper_wallet wallet(d);
   BOOST_CHECK(wallet.is_locked());
 
   wallet.set_password("pass");
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   BOOST_CHECK(fc::exists("wallet_test.json"));
 
   wallet_data d2;
-  clive wallet2(d2);
+  beekeeper_wallet wallet2(d2);
 
   BOOST_CHECK(wallet2.is_locked());
   wallet2.load_wallet_file("wallet_test.json");
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   constexpr auto key2 = "5Ju5RTcVDo35ndtzHioPMgebvBM6LkJ6tvuU6LTNQv8yaz3ggZr";
   constexpr auto key3 = "5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3";
 
-  wallet_manager wm;
+  beekeeper_wallet_manager wm;
   BOOST_CHECK_EQUAL(0u, wm.list_wallets().size());
   BOOST_CHECK_THROW(wm.get_public_keys(), fc::exception);
   BOOST_CHECK_NO_THROW(wm.lock_all());
@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test) {
   try {
     if (fc::exists("test.wallet")) fc::remove("test.wallet");
 
-    wallet_manager wm;
+    beekeeper_wallet_manager wm;
     wm.create("test");
     constexpr auto key1 = "5JktVNHnRX48BUdtewU7N1CyL4Z886c42x7wYW7XhNWkDQRhdcS";
     wm.import_key("test", key1);

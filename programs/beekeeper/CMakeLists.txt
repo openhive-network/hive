@@ -1,7 +1,15 @@
+file(GLOB HEADERS "include/beekeeper/*.hpp")
+
 ADD_HIVE_EXECUTABLE ( NAME beekeeper
-                      SOURCES main.cpp
-                      LIBRARIES appbase webserver_plugin clive_api_plugin clive_plugin hive_notifications
+                      SOURCES
+                      main.cpp
+                      beekeeper_wallet_api.cpp
+                      beekeeper_wallet.cpp
+                      beekeeper_wallet_manager.cpp
+                      LIBRARIES appbase webserver_plugin hive_notifications
 )
+
+target_include_directories( beekeeper PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 if( UNIX AND NOT APPLE )
   set(rt_library rt )

@@ -273,7 +273,11 @@ set_target_properties(chain_test PROPERTIES ENABLE_EXPORTS true)
 
 target_link_libraries( chain_test db_fixture chainbase hive_chain hive_protocol account_history_rocksdb_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
 
-file(GLOB PLUGIN_TESTS "plugin_tests/*.cpp")
+file(GLOB PLUGIN_TESTS
+   "plugin_tests/*.cpp"
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper_wallet.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper_wallet_manager.cpp
+)
 
 parse_unit_tests(TEST_CASES ${PLUGIN_TESTS})
 
@@ -298,13 +302,15 @@ add_boost_test( plugin_test
     direct_rc_delegation/direct_rc_delegation_vesting_withdrawal_routes
     direct_rc_delegation/rc_delegation_regeneration
     direct_rc_delegation/rc_delegation_removal_no_rc
-    direct_rc_delegation/update_outdel_overflow_delegatee
+    direct_rc_delegation/update_outdel_overflow_delegatee 
 )
 
 # needed to correctly print crash stacktrace
 set_target_properties(plugin_test PROPERTIES ENABLE_EXPORTS true)
 
-target_link_libraries( plugin_test db_fixture hive_chain hive_protocol account_history_rocksdb_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin condenser_api_plugin database_api_plugin transaction_status_plugin transaction_status_api_plugin fc ${PLATFORM_SPECIFIC_LIBS} block_log_info_plugin tags_plugin follow_plugin clive_plugin )
+target_link_libraries( plugin_test db_fixture hive_chain hive_protocol account_history_rocksdb_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin condenser_api_plugin database_api_plugin transaction_status_plugin transaction_status_api_plugin fc ${PLATFORM_SPECIFIC_LIBS} block_log_info_plugin tags_plugin follow_plugin )
+
+target_include_directories( plugin_test PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/include" )
 
 if(MSVC)
   set_source_files_properties( tests/serialization_tests.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )

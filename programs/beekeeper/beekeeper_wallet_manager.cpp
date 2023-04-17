@@ -1,14 +1,14 @@
-#include <appbase/application.hpp>
+#include <beekeeper/beekeeper_wallet_manager.hpp>
+#include <beekeeper/beekeeper_wallet.hpp>
 
-#include <hive/plugins/clive/wallet_manager.hpp>
-#include <hive/plugins/clive/clive.hpp>
+#include <appbase/application.hpp>
 
 #include <fc/filesystem.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
-namespace hive { namespace plugins { namespace clive {
+namespace beekeeper {
 
 namespace bfs = boost::filesystem;
 
@@ -26,15 +26,15 @@ bool valid_filename(const string& name) {
    return bfs::path(name).filename().string() == name;
 }
 
-wallet_manager::wallet_manager() {}
+beekeeper_wallet_manager::beekeeper_wallet_manager() {}
 
-wallet_manager::~wallet_manager() {
+beekeeper_wallet_manager::~beekeeper_wallet_manager() {
    //not really required, but may spook users
    if(wallet_dir_lock)
       bfs::remove(lock_path);
 }
 
-void wallet_manager::set_timeout(const std::chrono::seconds& t) {
+void beekeeper_wallet_manager::set_timeout(const std::chrono::seconds& t) {
    timeout = t;
    auto now = std::chrono::system_clock::now();
    timeout_time = now + timeout;
@@ -42,7 +42,7 @@ void wallet_manager::set_timeout(const std::chrono::seconds& t) {
              ("t", t.count())("now", now.time_since_epoch().count())("timeout_time", timeout_time.time_since_epoch().count()));
 }
 
-void wallet_manager::check_timeout() {
+void beekeeper_wallet_manager::check_timeout() {
    if (timeout_time != timepoint_t::max()) {
       const auto& now = std::chrono::system_clock::now();
       if (now >= timeout_time) {
@@ -52,7 +52,7 @@ void wallet_manager::check_timeout() {
    }
 }
 
-std::string wallet_manager::create(const std::string& name) {
+std::string beekeeper_wallet_manager::create(const std::string& name) {
    check_timeout();
 
    FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
@@ -63,7 +63,7 @@ std::string wallet_manager::create(const std::string& name) {
 
    std::string password = gen_password();
    wallet_data d;
-   auto wallet = make_unique<clive>(d);
+   auto wallet = make_unique<beekeeper_wallet>(d);
    wallet->set_password(password);
    wallet->set_wallet_filename(wallet_filename.string());
    wallet->unlock(password);
@@ -84,13 +84,13 @@ std::string wallet_manager::create(const std::string& name) {
    return password;
 }
 
-void wallet_manager::open(const std::string& name) {
+void beekeeper_wallet_manager::open(const std::string& name) {
    check_timeout();
 
    FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
 
    wallet_data d;
-   auto wallet = std::make_unique<clive>(d);
+   auto wallet = std::make_unique<beekeeper_wallet>(d);
    auto wallet_filename = dir / (name + file_ext);
    wallet->set_wallet_filename(wallet_filename.string());
    FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));
@@ -104,7 +104,7 @@ void wallet_manager::open(const std::string& name) {
    wallets.emplace(name, std::move(wallet));
 }
 
-std::vector<std::string> wallet_manager::list_wallets() {
+std::vector<std::string> beekeeper_wallet_manager::list_wallets() {
    check_timeout();
    std::vector<std::string> result;
    for (const auto& i : wallets) {
@@ -117,7 +117,7 @@ std::vector<std::string> wallet_manager::list_wallets() {
    return result;
 }
 
-map<std::string, std::string> wallet_manager::list_keys(const string& name, const string& pw) {
+map<std::string, std::string> beekeeper_wallet_manager::list_keys(const string& name, const string& pw) {
    check_timeout();
 
    FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
@@ -127,7 +127,7 @@ map<std::string, std::string> wallet_manager::list_keys(const string& name, cons
    return w->list_keys();
 }
 
-flat_set<std::string> wallet_manager::get_public_keys() {
+flat_set<std::string> beekeeper_wallet_manager::get_public_keys() {
    check_timeout();
    FC_ASSERT( !wallets.empty(), "You don't have any wallet!");
    flat_set<std::string> result;
@@ -143,7 +143,7 @@ flat_set<std::string> wallet_manager::get_public_keys() {
 }
 
 
-void wallet_manager::lock_all() {
+void beekeeper_wallet_manager::lock_all() {
    // no call to check_timeout since we are locking all anyway
    for (auto& i : wallets) {
       if (!i.second->is_locked()) {
@@ -152,7 +152,7 @@ void wallet_manager::lock_all() {
    }
 }
 
-void wallet_manager::lock(const std::string& name) {
+void beekeeper_wallet_manager::lock(const std::string& name) {
    check_timeout();
    FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
    auto& w = wallets.at(name);
@@ -162,7 +162,7 @@ void wallet_manager::lock(const std::string& name) {
    w->lock();
 }
 
-void wallet_manager::unlock(const std::string& name, const std::string& password) {
+void beekeeper_wallet_manager::unlock(const std::string& name, const std::string& password) {
    check_timeout();
    if (wallets.count(name) == 0) {
       open( name );
@@ -173,7 +173,7 @@ void wallet_manager::unlock(const std::string& name, const std::string& password
    w->unlock(password);
 }
 
-void wallet_manager::import_key(const std::string& name, const std::string& wif_key) {
+void beekeeper_wallet_manager::import_key(const std::string& name, const std::string& wif_key) {
    check_timeout();
    FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
@@ -183,7 +183,7 @@ void wallet_manager::import_key(const std::string& name, const std::string& wif_
    w->import_key(wif_key);
 }
 
-void wallet_manager::remove_key(const std::string& name, const std::string& password, const std::string& key) {
+void beekeeper_wallet_manager::remove_key(const std::string& name, const std::string& password, const std::string& key) {
    check_timeout();
    FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
@@ -194,7 +194,7 @@ void wallet_manager::remove_key(const std::string& name, const std::string& pass
    w->remove_key(key);
 }
 
-string wallet_manager::create_key(const std::string& name) {
+string beekeeper_wallet_manager::create_key(const std::string& name) {
    check_timeout();
    FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
@@ -204,7 +204,7 @@ string wallet_manager::create_key(const std::string& name) {
    return w->create_key();
 }
 
-signature_type wallet_manager::sign_digest(const digest_type& digest, const public_key_type& key)
+signature_type beekeeper_wallet_manager::sign_digest(const digest_type& digest, const public_key_type& key)
 {
    check_timeout();
 
@@ -221,12 +221,12 @@ signature_type wallet_manager::sign_digest(const digest_type& digest, const publ
    FC_ASSERT( false, "Public key not found in unlocked wallets ${k}", ("k", key));
 }
 
-void wallet_manager::own_and_use_wallet(const string& name, std::unique_ptr<clive_base>&& wallet) {
+void beekeeper_wallet_manager::own_and_use_wallet(const string& name, std::unique_ptr<beekeeper_wallet_base>&& wallet) {
    FC_ASSERT( wallets.find(name) == wallets.end(), "Tried to use wallet name that already exists.");
    wallets.emplace(name, std::move(wallet));
 }
 
-void wallet_manager::start_lock_watch(std::shared_ptr<boost::asio::deadline_timer> t)
+void beekeeper_wallet_manager::start_lock_watch(std::shared_ptr<boost::asio::deadline_timer> t)
 {
    t->async_wait([t, this](const boost::system::error_code& /*ec*/)
    {
@@ -243,7 +243,7 @@ void wallet_manager::start_lock_watch(std::shared_ptr<boost::asio::deadline_time
    });
 }
 
-void wallet_manager::initialize_lock() {
+void beekeeper_wallet_manager::initialize_lock() {
    //This is technically somewhat racy in here -- if multiple keosd are in this function at once.
    //I've considered that an acceptable tradeoff to maintain cross-platform boost constructs here
    lock_path = dir / "wallet.lock";
@@ -260,4 +260,4 @@ void wallet_manager::initialize_lock() {
    start_lock_watch(timer);
 }
 
-}}}
+} //beekeeper
