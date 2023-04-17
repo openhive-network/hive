@@ -895,6 +895,12 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_recurrent_transfer )
     expected_t expected_operations = { { // recurrent_transfer_operation
       R"~({"trx_id":"93e35087c9401f6fa910684a849008cca1f85124","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","recurrence":1,"executions":2,"extensions":[]}},"operation_id":0})~",
       R"~({"trx_id":"93e35087c9401f6fa910684a849008cca1f85124","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","recurrence":1,"executions":2,"extensions":[]}]})~"
+      }, { // recurrent_transfer_operation
+      R"~({"trx_id":"58b39536800983e5b7228a3d8482515c6bc8ec1c","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"recurrent_transfer_operation","value":{"from":"ben10ah","to":"alice10ah","amount":{"amount":"7713","precision":3,"nai":"@@000000013"},"memo":"","recurrence":2,"executions":4,"extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"58b39536800983e5b7228a3d8482515c6bc8ec1c","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["recurrent_transfer",{"from":"ben10ah","to":"alice10ah","amount":"7.713 TBD","memo":"","recurrence":2,"executions":4,"extensions":[]}]})~"
+      }, { // recurrent_transfer_operation
+      R"~({"trx_id":"2a7846469ffa8901e37b64ce65f6edbfe160aa7d","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"recurrent_transfer_operation","value":{"from":"ben10ah","to":"alice10ah","amount":{"amount":"0","precision":3,"nai":"@@000000013"},"memo":"","recurrence":3,"executions":7,"extensions":[]}},"operation_id":0})~",
+      R"~({"trx_id":"2a7846469ffa8901e37b64ce65f6edbfe160aa7d","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":["recurrent_transfer",{"from":"ben10ah","to":"alice10ah","amount":"0.000 TBD","memo":"","recurrence":3,"executions":7,"extensions":[]}]})~"
       }, { // producer_reward_operation
       R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"producer_reward_operation","value":{"producer":"initminer","vesting_shares":{"amount":"8611634248","precision":6,"nai":"@@000000037"}}},"operation_id":0})~",
       R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["producer_reward",{"producer":"initminer","vesting_shares":"8611.634248 VESTS"}]})~"
@@ -902,7 +908,7 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_recurrent_transfer )
       R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"fill_recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","remaining_executions":1}},"operation_id":0})~",
       R"~({"trx_id":"0000000000000000000000000000000000000000","block":5,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["fill_recurrent_transfer",{"from":"alice10ah","to":"ben10ah","amount":"0.037 TESTS","memo":"With love","remaining_executions":1}]})~"
       } };
-    expected_t expected_virtual_operations = { expected_operations[1], expected_operations[2] };
+    expected_t expected_virtual_operations = { expected_operations[3], expected_operations[4] };
     test_get_ops_in_block( *this, expected_operations, expected_virtual_operations, 5 );
 
     expected_operations = { { // producer_reward_operation

@@ -451,10 +451,13 @@ void condenser_api_fixture::recurrent_transfer_scenario( check_point_tester_t ch
 
   ACTORS( (alice10ah)(ben10ah) );
   generate_block();
-  fund( "alice10ah", 40 );
+  fund( "alice10ah", ASSET("0.040 TESTS") );
+  fund( "ben10ah", ASSET("13.777 TBD") );
   generate_block();
 
   recurrent_transfer( "alice10ah", "ben10ah", ASSET( "0.037 TESTS" ), "With love", 1, 2, alice10ah_private_key );
+  recurrent_transfer( "ben10ah", "alice10ah", ASSET( "7.713 TBD" ), "", 2, 4, ben10ah_private_key );
+  recurrent_transfer( "ben10ah", "alice10ah", ASSET( "0.000 TBD" ), "", 3, 7, ben10ah_private_key );
 
   // The operations mentioned above can be checked now in 5th block, except 
   // failed_recurrent_transfer_operation - its block number depends on test configuration.
