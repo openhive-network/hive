@@ -11,6 +11,12 @@ namespace fc { class variant; }
 
 namespace beekeeper {
 
+struct wallet_details
+{
+  std::string name;
+  bool unlocked = false;
+};
+
 /// Provides associate of wallet name to wallet and manages the interaction with each wallet.
 ///
 /// The name of the wallet is also used as part of the file name by soft_wallet. See beekeeper_wallet_manager::create.
@@ -63,7 +69,7 @@ public:
    void open(const std::string& name);
 
    /// @return A list of wallet names with " *" appended if the wallet is unlocked.
-   std::vector<std::string> list_wallets();
+   std::vector<wallet_details> list_wallets();
 
    /// @return A list of private keys from a wallet provided password is correct to said wallet
    map<std::string, std::string> list_keys(const string& name, const string& pw);
@@ -133,4 +139,5 @@ private:
 
 } //beekeeper
 
+FC_REFLECT( beekeeper::wallet_details, (name)(unlocked) )
 

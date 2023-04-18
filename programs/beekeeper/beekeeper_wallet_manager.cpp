@@ -104,15 +104,12 @@ void beekeeper_wallet_manager::open(const std::string& name) {
    wallets.emplace(name, std::move(wallet));
 }
 
-std::vector<std::string> beekeeper_wallet_manager::list_wallets() {
+std::vector<wallet_details> beekeeper_wallet_manager::list_wallets() {
    check_timeout();
-   std::vector<std::string> result;
-   for (const auto& i : wallets) {
-      if (i.second->is_locked()) {
-         result.emplace_back(i.first);
-      } else {
-         result.emplace_back(i.first + " *");
-      }
+   std::vector<wallet_details> result;
+   for (const auto& i : wallets)
+   {
+      result.emplace_back( wallet_details{ i.first, !i.second->is_locked() } );
    }
    return result;
 }

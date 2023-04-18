@@ -77,7 +77,7 @@ struct create_key_return
 using list_wallets_args = void_type;
 struct list_wallets_return
 {
-  std::vector<std::string> wallets;
+  std::vector<wallet_details> wallets;
 };
 
 using list_keys_args = wallet_password_args;
