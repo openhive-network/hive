@@ -102,6 +102,8 @@ struct sign_digest_return
   signature_type signature;
 };
 
+using get_info_args   = void_type;
+using get_info_return = info;
 class beekeeper_wallet_api
 {
   public:
@@ -122,6 +124,7 @@ class beekeeper_wallet_api
       (list_keys)
       (get_public_keys)
       (sign_digest)
+      (get_info)
     )
 
   private:

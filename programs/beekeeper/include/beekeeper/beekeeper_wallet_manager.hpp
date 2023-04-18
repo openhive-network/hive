@@ -17,6 +17,12 @@ struct wallet_details
   bool unlocked = false;
 };
 
+struct info
+{
+  std::string now;
+  std::string timeout_time;
+};
+
 /// Provides associate of wallet name to wallet and manages the interaction with each wallet.
 ///
 /// The name of the wallet is also used as part of the file name by soft_wallet. See beekeeper_wallet_manager::create.
@@ -119,6 +125,9 @@ public:
    /// Takes ownership of a wallet to use
    void own_and_use_wallet(const string& name, std::unique_ptr<beekeeper_wallet_base>&& wallet);
 
+   /// @return Current time and timeout time
+   info get_info();
+
 private:
    /// Verify timeout has not occurred and reset timeout if not.
    /// Calls lock_all() if timeout has passed.
@@ -140,4 +149,4 @@ private:
 } //beekeeper
 
 FC_REFLECT( beekeeper::wallet_details, (name)(unlocked) )
-
+FC_REFLECT( beekeeper::info, (now)(timeout_time) )
