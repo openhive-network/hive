@@ -968,9 +968,15 @@ namespace chainbase {
       void wipe_indexes();
 
     public:
-      void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr, const bool wipe_shared_file = false );
-      void close();
-      void flush();
+     void open( const bfs::path& dir,
+                uint32_t flags = 0,
+                size_t shared_file_size = 0,
+                const boost::any& database_cfg = nullptr,
+                const helpers::environment_extension_resources* environment_extension = nullptr,
+                const bool wipe_shared_file = false,
+                bool postgres_not_block_log = false);
+     void close();
+     void flush();
       void wipe( const bfs::path& dir );
       void resize( size_t new_shared_file_size );
       void set_require_locking( bool enable_require_locking );
