@@ -98,6 +98,7 @@ namespace chain {
     bool exit_after_replay = false;
     bool force_replay = false;
     bool validate_during_replay = false;
+    bool postgres_not_block_log = false;
   };
 
   /**
@@ -184,7 +185,12 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      void open( const open_args& args );
+      void open( const open_args& args, const std::string& context = "" );
+      
+      void public_apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing )
+      {
+        apply_block(full_block, skip );
+      }
 
     private:
 
@@ -257,7 +263,7 @@ namespace chain {
       std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
       std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
                                                                         fc::microseconds wait_for_microseconds = fc::microseconds() );
-      std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
+      /// mtlk         std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
@@ -863,6 +869,8 @@ namespace chain {
       std::string                   _json_schema;
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
+
+      bool _postgres_not_block_log = false;
 
       fc::signal<void(const required_action_notification&)> _pre_apply_required_action_signal;
       fc::signal<void(const required_action_notification&)> _post_apply_required_action_signal;

@@ -142,20 +142,41 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       bool                    created_storage = true;
   };
 
-  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file )
+  namespace{
+  std::string shared_memory_bin_filename(const std::string& context)
+  {
+    if (context.empty())
+    {
+        return "shared_memory.bin";
+    }
+    else
+    {
+      return context + "_" + "shared_memory.bin";
+    }
+  }
+  }
+
+
+  void database::open(const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, const std::string& context, bool postgres_not_block_log)
   {
     assert( dir.is_absolute() );
     bfs::create_directories( dir );
     if( _data_dir != dir ) close();
-    if( wipe_shared_file ) wipe( dir );
+    if( wipe_shared_file ) wipe( dir, context );
 
     _data_dir = dir;
     _database_cfg = database_cfg;
 #ifndef ENABLE_STD_ALLOCATOR
-    auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
+    auto abs_path = bfs::absolute( dir / shared_memory_bin_filename(context) );
     
     if( bfs::exists( abs_path ) )
     {
+      if(postgres_not_block_log)
+      {
+        //mtlk TODO is it needed ?
+        bfs::permissions(abs_path, bfs::perms::all_all | bfs::perms::add_perms);
+      }
+
       _file_size = bfs::file_size( abs_path );
       if( shared_file_size > _file_size )
       {
@@ -208,6 +229,12 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                       abs_path.generic_string().c_str(), shared_file_size
                                       ) );
       _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
+
+      if(postgres_not_block_log)
+      {
+              //mtlk TODO is it needed ?
+        bfs::permissions(abs_path, bfs::perms::all_all | bfs::perms::add_perms);
+      }
     }
 
     auto env = _segment->find< environment_check >( "environment" );
@@ -252,12 +279,13 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _at_least_one_index_is_created_now      = false;
   }
 
-  void database::wipe( const bfs::path& dir )
+
+  void database::wipe( const bfs::path& dir , const std::string& context )
   {
     assert( !_is_open );
     _segment.reset();
     _meta.reset();
-    bfs::remove_all( dir / "shared_memory.bin" );
+    bfs::remove_all( dir / shared_memory_bin_filename(context));
     bfs::remove_all( dir / "shared_memory.meta" );
     _data_dir = bfs::path();
 
