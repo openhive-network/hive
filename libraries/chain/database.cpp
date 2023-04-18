@@ -137,10 +137,13 @@ database::~database()
   clear_pending();
 }
 
-void database::open( const open_args& args )
+void database::open( const open_args& args, const std::string& context )
 {
   try
   {
+
+    _postgres_not_block_log = args.postgres_not_block_log;
+    _my->create_new_decoded_types_data_storage();
     init_schema();
 
     helpers::environment_extension_resources environment_extension(
@@ -148,7 +151,7 @@ void database::open( const open_args& args )
                                                 appbase::app().get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay, context, _postgres_not_block_log);
 
     initialize_state_independent_data(args);
     load_state_initial_data(args);
@@ -178,13 +181,16 @@ void database::initialize_state_independent_data(const open_args& args)
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
 
-  with_write_lock([&]()
+  if(!_postgres_not_block_log)
   {
-    _block_log.open(args.data_dir / "block_log");
-    _block_log.set_compression(args.enable_block_log_compression);
-    _block_log.set_compression_level(args.block_log_compression_level);
-  });
-
+    with_write_lock([&]()
+    {
+      _block_log.open(args.data_dir / "block_log");
+      _block_log.set_compression(args.enable_block_log_compression);
+      _block_log.set_compression_level(args.block_log_compression_level);
+    });
+  }
+  
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
@@ -235,13 +241,16 @@ void database::load_state_initial_data(const open_args& args)
 
   if (head_block_num())
   {
-    std::shared_ptr<full_block_type> head_block = _block_log.read_block_by_num(head_block_num());
-    // This assertion should be caught and a reindex should occur
-    FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
-    "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
-    ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
+    if(!_postgres_not_block_log)
+    {
+      std::shared_ptr<full_block_type> head_block = _block_log.read_block_by_num(head_block_num());
+      // This assertion should be caught and a reindex should occur
+      FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
+      "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
+      ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
 
-    _fork_db.start_block(head_block);
+      _fork_db.start_block(head_block);
+    }
   }
 
   with_read_lock([&]() {
@@ -4010,7 +4019,7 @@ void database::initialize_irreversible_storage()
 void database::resetState(const open_args& args)
 {
   wipe(args.data_dir, args.shared_mem_dir, false);
-  open(args);
+  open(args, "");
 }
 
 const std::string& database::get_json_schema()const
@@ -4435,13 +4444,48 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   {
     if( _benchmark_dumper.is_enabled() )
       _benchmark_dumper.begin();
-
+    
     auto merkle_root = full_block->get_merkle_root();
 
     try
     {
-      FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
-                (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
+
+      if(_postgres_not_block_log)
+      {
+        //legacy asset
+        switch(block_num)
+        {
+          case  994240:        //"account_creation_fee": "0.1 HIVE"
+          case 1021529:        //"account_creation_fee": "10.0 HIVE"
+          case 3143833:        //"account_creation_fee": "3.00000 HIVE"
+          case 3208405:        //"account_creation_fee": "2.00000 HIVE"
+          case 3695672:        //"account_creation_fee": "3.00 HIVE"
+          case 4338089:        //"account_creation_fee": "0.001 0.001"
+          case 4626205:        //"account_creation_fee": "6.000 6.000"
+          case 4632595:        //"account_creation_fee": "6.000 6.000"
+            break;
+
+        //just wrong merkle
+          case 3705111:
+          case 3705120:
+          case 3713940:
+          case 3714132:
+          case 3714567:
+          case 3714588:
+          case 4138790:
+            break;
+          
+          default:
+
+            FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
+                      (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
+        }
+      }
+      else
+      {
+          FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
+                    (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
+      }
     }
     catch( fc::assert_exception& e )
     { //don't throw error if this is a block with a known bad merkle root
@@ -4861,19 +4905,20 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
       const flat_set<public_key_type>& signature_keys = full_transaction->get_signature_keys();
       const required_authorities_type& required_authorities = full_transaction->get_required_authorities();
 
-      hive::protocol::verify_authority(required_authorities,
-                                       signature_keys,
-                                       get_active,
-                                       get_owner,
-                                       get_posting,
-                                       get_witness_key,
-                                       HIVE_MAX_SIG_CHECK_DEPTH,
-                                       has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
-                                       has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
-                                       false,
-                                       flat_set<account_name_type>(),
-                                       flat_set<account_name_type>(),
-                                       flat_set<account_name_type>());
+          hive::protocol::verify_authority(required_authorities,
+                                          signature_keys,
+                                          get_active,
+                                          get_owner,
+                                          get_posting,
+                                          get_witness_key,
+                                          HIVE_MAX_SIG_CHECK_DEPTH,
+                                          has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
+                                          has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
+                                          false,
+                                          flat_set<account_name_type>(),
+                                          flat_set<account_name_type>(),
+                                          flat_set<account_name_type>(),
+                                          _postgres_not_block_log);
 
       if (_benchmark_dumper.is_enabled())
         _benchmark_dumper.end("transaction", "verify_authority", trx.signatures.size());

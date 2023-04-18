@@ -2,6 +2,7 @@ file(GLOB HEADERS "include/hive/plugins/database_api/*.hpp")
 
 add_library( database_api_plugin
              database_api.cpp
+             from_variant_to_full_block_ptr.cpp
              database_api_plugin.cpp
              ${HEADERS}
            )

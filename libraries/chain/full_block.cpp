@@ -413,7 +413,7 @@ void full_block_type::decode_block() const
       serialized_transaction.transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
       fc::raw::unpack(datastream, decoded_block_storage->block->transactions[i].signatures);
       serialized_transaction.signed_transaction_end = decoded_block_storage->uncompressed_block.raw_bytes.get() + datastream.tellp();
-    
+
       // if we're in live mode (as opposed to not syncing/replaying), use the transaction cache to see if transactions in this
       // block were previously seen as standalone transactions.  If so, we can reuse their data and avoid re-validating the transaction
       const bool use_transaction_cache = fc::time_point::now() - decoded_block_storage->block->timestamp < fc::minutes(1);
