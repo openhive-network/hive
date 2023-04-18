@@ -446,12 +446,48 @@ rc_direct_delegations_tests:
   tags:
     - public-runner-docker
 
-message_format_testnet_tests:
+message_format_testnet_tests_1/3:
   stage: test
   extends: .test_tools_based
 
   variables:
-    PYTEST_TIMEOUT_MINUTES: 45
+    PYTEST_TIMEOUT_MINUTES: 30
+    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
+    TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
+    NODE_TYPE: "testnet"
+    JUNIT_REPORT: tests/api_tests/message_format_tests/report.xml
+
+  script:
+    - cd tests/api_tests/message_format_tests
+    - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
+    - *run-pytest
+  tags:
+    - public-runner-docker
+
+message_format_testnet_tests_2/3:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 30
+    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
+    TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
+    NODE_TYPE: "testnet"
+    JUNIT_REPORT: tests/api_tests/message_format_tests/report.xml
+
+  script:
+    - cd tests/api_tests/message_format_tests
+    - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
+    - *run-pytest
+  tags:
+    - public-runner-docker
+
+message_format_testnet_tests_3/3:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 30
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
     TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
     NODE_TYPE: "testnet"
