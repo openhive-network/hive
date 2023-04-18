@@ -6,7 +6,7 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper
                       beekeeper_wallet_api.cpp
                       beekeeper_wallet.cpp
                       beekeeper_wallet_manager.cpp
-                      LIBRARIES appbase webserver_plugin hive_notifications
+                      LIBRARIES appbase webserver_plugin hive_utilities
 )
 
 target_include_directories( beekeeper PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )

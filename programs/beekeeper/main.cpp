@@ -33,7 +33,7 @@ class beekeeper_app
 
     void set_program_options()
     {
-      hive::notifications::add_program_options( options );
+      hive::utilities::notifications::add_program_options( options );
 
       options.add_options()
             ("wallet-dir", bpo::value<boost::filesystem::path>()->default_value("."),
@@ -53,7 +53,7 @@ class beekeeper_app
       ilog("initializing options");
       try {
           const boost::program_options::variables_map& _args = app.get_args();
-          hive::notifications::setup_notifications( _args );
+          hive::utilities::notifications::setup_notifications( _args );
 
           if (_args.count("wallet-dir"))
           {
