@@ -51,18 +51,26 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_ops_in_block )
 }
 
 #define CHECK_OPERATION_LOW( r, data, CLASS_NAME ) \
-  void operator()( const hive::protocol::CLASS_NAME& op ) { \
+  void operator()( const hive::protocol::CLASS_NAME& ) { \
     _accepted = _filter_low & static_cast< uint64_t >( get_account_history_op_filter_low::CLASS_NAME ); }
 
 #define CHECK_OPERATIONS_LOW( CLASS_NAMES ) \
   BOOST_PP_SEQ_FOR_EACH( CHECK_OPERATION_LOW, _, CLASS_NAMES )
 
 #define CHECK_OPERATION_HIGH( r, data, CLASS_NAME ) \
-  void operator()( const hive::protocol::CLASS_NAME& op ) { \
+  void operator()( const hive::protocol::CLASS_NAME& ) { \
     _accepted = _filter_high & static_cast< uint64_t >( get_account_history_op_filter_high::CLASS_NAME ); }
 
 #define CHECK_OPERATIONS_HIGH( CLASS_NAMES ) \
   BOOST_PP_SEQ_FOR_EACH( CHECK_OPERATION_HIGH, _, CLASS_NAMES )
+
+#define CHECK_SMT_OPERATION_HIGH( r, data, CLASS_NAME ) \
+  void operator()( const hive::protocol::CLASS_NAME& ) { \
+    _accepted = false; }
+
+#define CHECK_SMT_OPERATIONS_HIGH( CLASS_NAMES ) \
+  BOOST_PP_SEQ_FOR_EACH( CHECK_SMT_OPERATION_HIGH, _, CLASS_NAMES )
+
 
 struct operation_filtering_visitor
 {
@@ -109,14 +117,20 @@ struct operation_filtering_visitor
   (account_created_operation)(fill_collateralized_convert_request_operation)(system_warning_operation)
   (fill_recurrent_transfer_operation)(failed_recurrent_transfer_operation)(limit_order_cancelled_operation)
   (producer_missed_operation)(proposal_fee_operation)(collateralized_convert_immediate_conversion_operation)
-  (escrow_approved_operation)(escrow_rejected_operation)(proxy_cleared_operation)(declined_voting_rights_operation) )
+  (escrow_approved_operation)(escrow_rejected_operation)(proxy_cleared_operation)(declined_voting_rights_operation)
+  )
+
+#ifdef HIVE_ENABLE_SMT
+  CHECK_SMT_OPERATIONS_HIGH( (claim_reward_balance2_operation)(smt_setup_operation)(smt_setup_emissions_operation)(smt_set_setup_parameters_operation)
+    (smt_set_runtime_parameters_operation)(smt_create_operation)(smt_contribute_operation)
+  )
+#endif
 
 private:
   uint64_t _filter_low = 0ull;
   uint64_t _filter_high = 0ull;
   bool     _accepted = false;
 };
-
 
 DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_account_history )
 {
