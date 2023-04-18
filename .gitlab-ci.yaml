@@ -459,7 +459,7 @@ message_format_testnet_tests_1/3:
 
   script:
     - cd tests/api_tests/message_format_tests
-    - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
+    - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)" tests/api_tests/message_format_tests/account_by_key_api_tests tests/api_tests/message_format_tests/account_history_api_tests tests/api_tests/message_format_tests/block_api_tests tests/api_tests/message_format_tests/cli_wallet_tests tests/api_tests/message_format_tests/condenser_api_tests)
     - *run-pytest
   tags:
     - public-runner-docker
