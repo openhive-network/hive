@@ -1052,7 +1052,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
 # ifdef HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED
   FC_ASSERT(
-      configuration_data.get_init_supply(0) || configuration_data.get_hbd_init_supply(0),
+      configuration_data.init_supply || configuration_data.hbd_init_supply,
       "You have to specify at least one of the initial supplies in the alternate chain spec in order to run the iceberg plugin"
   );
 # endif

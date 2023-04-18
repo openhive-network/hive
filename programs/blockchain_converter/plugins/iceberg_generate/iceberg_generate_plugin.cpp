@@ -29,6 +29,7 @@
 #include <memory>
 #include <functional>
 #include <vector>
+#include <map>
 
 #include "../base/conversion_plugin.hpp"
 
@@ -180,7 +181,44 @@ namespace detail {
 
     ops_strip_content_visitor ops_strip_content{};
 
-    // Pre-init: Detect required iceberg operations
+    std::map< uint32_t, hp::share_type > init_assets;
+
+    // Pre-init: Detect required supply
+    ilog("Checking required initial supply");
+    for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
+    {
+      std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
+      FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
+
+      for( const auto& tx : _full_block->get_full_transactions() )
+        for(const auto& op : tx->get_transaction().operations)
+          for(const auto& balance : hive::app::operation_get_impacted_balances(op, blockchain_converter::has_hardfork( HIVE_HARDFORK_0_1, start_block_num )))
+          {
+            uint32_t nai = balance.second.symbol.to_nai();
+
+            if( init_assets.find(nai) == init_assets.end() )
+              init_assets[nai] = balance.second.amount.value;
+            else
+              init_assets[nai] += balance.second.amount.value;
+          }
+    }
+
+    update_lib_id();
+    int64_t virtual_supply = gpo["virtual_supply"].as< hp::asset >().amount.value;
+    int64_t current_hbd_supply = gpo["current_hbd_supply"].as< hp::asset >().amount.value;
+
+    ilog("Init supply: [${is} HIVE required, available: ${vs} HIVE], HBD Init supply: [${his} HBD required, available: ${hvs} HBD]",
+      ("is", init_assets[HIVE_NAI_HIVE])("vs", virtual_supply)
+      ("his", init_assets[HIVE_NAI_HBD])("hvs", current_hbd_supply)
+    );
+
+    // XXX: Should we also handle HIVE_NAI_VESTS?
+    FC_ASSERT( virtual_supply >= init_assets[HIVE_NAI_HIVE], "Insufficient initial supply in the output node blockchain" );
+    FC_ASSERT( current_hbd_supply >= init_assets[HIVE_NAI_HBD], "Insufficient HBD initial supply in the output node blockchain" );
+
+    ilog("Initial supply requirements met");
+
+    // The actual conversion:
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
       try {
