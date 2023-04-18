@@ -93,12 +93,12 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   // wallet has no keys when it is created
   BOOST_CHECK_EQUAL(0u, wm.get_public_keys().size());
   BOOST_CHECK_EQUAL(0u, wm.list_keys("test", pw).size());
-  BOOST_CHECK(wm.list_wallets().at(0).find("*") != std::string::npos);
+  BOOST_CHECK(wm.list_wallets()[0].unlocked);
   wm.lock("test");
-  BOOST_CHECK(wm.list_wallets().at(0).find("*") == std::string::npos);
+  BOOST_CHECK(!wm.list_wallets()[0].unlocked);
   wm.unlock("test", pw);
   BOOST_CHECK_THROW(wm.unlock("test", pw), fc::exception);
-  BOOST_CHECK(wm.list_wallets().at(0).find("*") != std::string::npos);
+  BOOST_CHECK(wm.list_wallets()[0].unlocked);
   wm.import_key("test", key1);
   BOOST_CHECK_EQUAL(1u, wm.get_public_keys().size());
   auto keys = wm.list_keys("test", pw);
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_CHECK_EQUAL(2u, wm.list_keys("test", pw).size());
   wm.lock_all();
   BOOST_CHECK_THROW(wm.get_public_keys(), fc::exception);
-  BOOST_CHECK(wm.list_wallets().at(0).find("*") == std::string::npos);
+  BOOST_CHECK(!wm.list_wallets()[0].unlocked);
 
   auto pw2 = wm.create("test2");
   BOOST_CHECK_EQUAL(2u, wm.list_wallets().size());
