@@ -142,7 +142,8 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       bool                    created_storage = true;
   };
 
-  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file )
+
+  void database::open(const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, bool postgres_not_block_log)
   {
     assert( dir.is_absolute() );
     bfs::create_directories( dir );

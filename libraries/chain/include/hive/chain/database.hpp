@@ -9,6 +9,7 @@
 #include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
+#include <hive/chain/op_iterator.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
@@ -99,6 +100,7 @@ namespace chain {
     bool exit_after_replay = false;
     bool force_replay = false;
     bool validate_during_replay = false;
+    bool postgres_not_block_log = false;
   };
 
   /**
@@ -186,6 +188,11 @@ namespace chain {
         * @param data_dir Path to open or create database in
         */
       void open( const open_args& args );
+      
+      void public_apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing )
+      {
+        apply_block(full_block, skip );
+      }
 
     private:
 
@@ -263,7 +270,7 @@ namespace chain {
       std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
       std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
                                                                         fc::microseconds wait_for_microseconds = fc::microseconds() );
-      std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
+      /// mtlk         std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
@@ -693,8 +700,15 @@ namespace chain {
       optional< chainbase::database::session > _pending_tx_session;
 
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
+    public:
+      void non_transactional_apply_block(const std::shared_ptr<full_block_type>& full_block, op_iterator_ptr op_it, uint32_t skip = skip_nothing);
+    private:
+      void _process_operations(op_iterator_ptr op_it);
+
       void switch_forks(item_ptr new_head);
-      void _apply_block(const std::shared_ptr<full_block_type>& full_block);
+      void _apply_block(const std::shared_ptr<full_block_type>& full_block, std::function<void(const std::shared_ptr<full_block_type>&, uint32_t)> process_func);
+
+      void process_transactions(const std::shared_ptr<full_block_type>& full_block, uint32_t skip);
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
       void apply_operation( const operation& op );
@@ -848,6 +862,8 @@ namespace chain {
       std::string                   _json_schema;
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
+
+      bool _postgres_not_block_log = false;
 
       fc::signal<void(const operation_notification&)>       _pre_apply_operation_signal;
       /**
