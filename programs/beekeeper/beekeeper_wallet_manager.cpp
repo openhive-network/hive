@@ -257,4 +257,15 @@ void beekeeper_wallet_manager::initialize_lock() {
    start_lock_watch(timer);
 }
 
+info beekeeper_wallet_manager::get_info()
+{
+  auto to_string = []( const std::chrono::system_clock::time_point& tp )
+  {
+    fc::time_point_sec _time( tp.time_since_epoch() / std::chrono::milliseconds(1000) );
+    return _time.to_iso_string();
+  };
+
+  return { to_string( std::chrono::system_clock::now() ), to_string( timeout_time ) };
+}
+
 } //beekeeper
