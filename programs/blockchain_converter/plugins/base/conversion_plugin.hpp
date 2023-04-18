@@ -34,6 +34,8 @@ namespace hive { namespace converter { namespace plugins {
   using hp::chain_id_type;
   using hp::private_key_type;
 
+  using find_comments_pair_t = std::pair<hp::account_name_type, std::string>;
+
   class conversion_plugin_impl {
   private:
     std::map<std::string, size_t> error_types;
@@ -79,6 +81,14 @@ namespace hive { namespace converter { namespace plugins {
      * @brief Get account creation fee from the output node
      */
     hp::asset get_account_creation_fee( const fc::url& using_url );
+
+    bool account_exists( const fc::url& using_url, const hp::account_name_type& acc );
+    bool accounts_exist( const fc::url& using_url, const std::vector<hp::account_name_type>& accs );
+
+    bool post_exists( const fc::url& using_url, const find_comments_pair_t& post );
+    bool posts_exist( const fc::url& using_url, const std::vector<find_comments_pair_t>& posts );
+
+    bool transaction_applied( const fc::url& using_url, const hp::transaction_id_type& txid );
 
     /**
      * @brief Get the id of the block preceding the one with the given number from the output node
