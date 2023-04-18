@@ -5419,6 +5419,7 @@ void database::update_global_dynamic_data( const signed_block& b )
   missed_blocks--;
   if( head_block_num() != 0 )
   {
+    auto start_time = fc::time_point::now();
     for( uint32_t i = 0; i < missed_blocks; ++i )
     {
       const auto& witness_missed = get_witness( get_scheduled_witness( i + 1 ) );
@@ -5445,6 +5446,9 @@ void database::update_global_dynamic_data( const signed_block& b )
         } );
       }
     }
+    fc::microseconds loop_time = fc::time_point::now() - start_time;
+    ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)", 
+      (missed_blocks)("ms", loop_time.count()/1000)("us", loop_time) );
   }
 
   // dynamic global properties updating
