@@ -243,7 +243,7 @@ fc::path common_init( const std::function< void( appbase::application& app, int 
 struct database_fixture {
   // the reason we use an app is to exercise the indexes of built-in
   //   plugins
-  chain::database* db = nullptr;
+  chain::full_database* db = nullptr;
   signed_transaction trx;
   public_key_type committee_key;
   account_id_type committee_account;
