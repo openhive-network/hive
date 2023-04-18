@@ -29,6 +29,7 @@
 #include <memory>
 #include <functional>
 #include <vector>
+#include <map>
 
 #include "../base/conversion_plugin.hpp"
 
@@ -82,7 +83,7 @@ namespace detail {
   {
     try
     {
-      log_in.open( input, thread_pool );
+      log_in.open( input, thread_pool, true );
     } FC_CAPTURE_AND_RETHROW( (input) );
   }
 
@@ -162,9 +163,6 @@ namespace detail {
     const auto init_start_block_num = start_block_num;
     uint32_t last_witness_schedule_block_check = lib_num;
 
-    uint32_t last_witness_schedule_block_check = lib_num;
-    hp::asset account_creation_fee = get_account_creation_fee( output_urls.at(0) );
-
     for( ; start_block_num <= stop_block_num && !theApp.is_interrupt_request(); ++start_block_num )
     {
       try {
@@ -222,7 +220,7 @@ namespace detail {
         }
 
         auto block_converted = converter.convert_signed_block( block, lib_id,
-          gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
+          gpo["time"].as< fc::time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
           true
         );
 
