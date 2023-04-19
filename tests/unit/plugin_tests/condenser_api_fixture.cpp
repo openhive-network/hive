@@ -415,14 +415,22 @@ void condenser_api_fixture::account_scenario( check_point_tester_t check_point_t
 
   claim_account( "alice8ah", ASSET( "0.000 TESTS" ), alice8ah_private_key );
   PREP_ACTOR( ben8ah )
-  create_claimed_account( "alice8ah", "ben8ah", ben8ah_public_key, ben8ah_post_key.get_public_key(), "", alice8ah_private_key );
+  create_claimed_account( "alice8ah", "ben8ah", ben8ah_public_key, ben8ah_post_key.get_public_key(), R"~("{"go":"now"}")~", alice8ah_private_key );
 
   vest( HIVE_INIT_MINER_NAME, "ben8ah", ASSET( "1000.000 TESTS" ) );
   change_recovery_account( "ben8ah", HIVE_INIT_MINER_NAME, ben8ah_private_key );
   account_update2( "ben8ah", authority(1, carol8ah_public_key,1), fc::optional<authority>(), fc::optional<authority>(),
-                    ben8ah_private_key.get_public_key(), R"~("{"success":true}")~", "", ben8ah_private_key );
+                    ben8ah_private_key.get_public_key(), R"~("{"success":true}")~", R"~("{"winner":"me"}")~", ben8ah_private_key );
   request_account_recovery( "alice8ah", "ben8ah", authority( 1, alice8ah_private_key.get_public_key(), 1 ), alice8ah_private_key );
   recover_account( "ben8ah", alice8ah_private_key, ben8ah_private_key );
+  // accidentally make another request ...
+  request_account_recovery( "alice8ah", "ben8ah", authority( 1, ben8ah_private_key.get_public_key(), 1 ), alice8ah_private_key );
+  // ... to cancel it immediately
+  request_account_recovery( "alice8ah", "ben8ah", authority( 0, ben8ah_private_key.get_public_key(), 0 ), alice8ah_private_key );
+  // accidentally change recovery account ...
+  change_recovery_account( "alice8ah", "ben8ah", alice8ah_private_key );
+  // ... to cancel it immediately
+  change_recovery_account( "alice8ah", HIVE_INIT_MINER_NAME, alice8ah_private_key );
 
   // Now all the operations mentioned above can be checked. All of them will appear in 46th block,
   // except changed_recovery_account_operation - its block number depends on test configuration.
