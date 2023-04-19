@@ -143,7 +143,6 @@ void database::open( const open_args& args, const std::string& context )
   {
 
     _postgres_not_block_log = args.postgres_not_block_log;
-    _my->create_new_decoded_types_data_storage();
     init_schema();
 
     helpers::environment_extension_resources environment_extension(
