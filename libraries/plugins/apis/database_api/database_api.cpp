@@ -14,6 +14,8 @@
 
 #include <hive/utilities/git_revision.hpp>
 
+
+
 namespace hive { namespace app {
 std::shared_ptr<hive::chain::full_block_type> from_variant_to_full_block_ptr(const fc::variant& v, int block_num_debug );
 }}
@@ -2201,7 +2203,59 @@ DEFINE_READ_APIS( database_api,
 
 #include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
 
+namespace consensus_state_provider
+{
+    class cache
+    {
+    public:
+        bool has_context(const char* context) const;
+        void add(const char* context, hive::chain::database& a_db);
+        void remove(const char* context);
+        hive::chain::database& get_db(const char* context) const;
 
+
+    };
+
+    hive::plugins::database_api::database_api_impl& get_database_api_impl(const cache&,  const char* context);
+
+
+namespace{
+ std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
+}
+
+
+bool cache::has_context(const char* context) const
+{
+    return haf_database_api_impls.find(context) != haf_database_api_impls.end();
+}
+
+void cache::remove(const char* context)
+{
+    haf_database_api_impls.erase(context);
+}
+
+
+hive::chain::database& cache::get_db(const char* context) const
+{
+    hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
+    hive::chain::database& db = db_api_impl._db;
+    return db;
+}
+
+hive::plugins::database_api::database_api_impl& get_database_api_impl(const cache&,  const char* context)
+{
+  return haf_database_api_impls[context];
+}
+
+
+void cache::add(const char* context, hive::chain::database& db)
+{
+  haf_database_api_impls.emplace(std::make_pair(std::string(context), hive::plugins::database_api::database_api_impl(db)));
+}
+
+
+
+}
 
 namespace hive { namespace app {
 
@@ -2211,25 +2265,25 @@ fc::path get_context_shared_data_bin_dir();
 
 void init(hive::chain::database& db, const char* context);
 
+consensus_state_provider::cache cache;
 
-namespace{
- std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
-}
+
 
 
 int initialize_context(const char* context)
 {
-  if(haf_database_api_impls.find(context) == haf_database_api_impls.end())
+  if(!cache.has_context(context))
   {
     hive::chain::database* db = new hive::chain::database;
     init(*db, context);
-    haf_database_api_impls.emplace(std::make_pair(std::string(context), hive::plugins::database_api::database_api_impl(*db)));
+    cache.add(context, *db);
+    //haf_database_api_impls.emplace(std::make_pair(std::string(context), hive::plugins::database_api::database_api_impl(*db)));
     return db->head_block_num() + 1;
   }
   else
   {
-    hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
-    hive::chain::database& db = db_api_impl._db;
+    
+    hive::chain::database& db = cache.get_db(context);
     return db.head_block_num() + 1;
   }
 }
@@ -2240,13 +2294,13 @@ namespace hive { namespace app {
 
 void consensus_state_provider_finish_impl(const char* context)
 {
-  if(haf_database_api_impls.find(context) != haf_database_api_impls.end())
+  if(cache.has_context(context))
   {
-      hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
-      hive::chain::database& db = db_api_impl._db;
+      hive::chain::database& db = cache.get_db(context);
       db.close();
       db. chainbase::database::wipe( get_context_shared_data_bin_dir()  /  "blockchain" , context);
-      haf_database_api_impls.erase(context);
+      cache.remove(context);
+
   }
 }
 
@@ -2269,9 +2323,7 @@ int consume_variant_block_impl(const fc::variant& v, const char* context, int bl
   expected_block_num++;
 
 
-  std::string s(context);
-  hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[s];
-  hive::chain::database& db = db_api_impl._db;
+  hive::chain::database& db = cache.get_db(context);
   
 
   
@@ -2327,7 +2379,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
   wlog("mtlk inside  pid=${pid}", ("pid", getpid()));
 
 
-  hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
+  hive::plugins::database_api::database_api_impl& db_api_impl = get_database_api_impl(cache, context);
 
 
 
@@ -2397,6 +2449,8 @@ fc::path get_context_shared_data_bin_dir()
     }
     return data_dir;
 }
+
+
 
 int consensus_state_provider_get_expected_block_num_impl(const char* context)
 {
