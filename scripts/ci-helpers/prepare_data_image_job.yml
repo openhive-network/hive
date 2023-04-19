@@ -73,9 +73,11 @@ include:
     - mkdir "$DATA_CACHE_HIVE_COMMIT" -p
     - flock "$DATA_CACHE_HIVE_COMMIT" $SCRIPTS_PATH/ci-helpers/build_data.sh $HIVED_IMAGE_NAME
         --data-cache="$DATA_CACHE_HIVE_COMMIT" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
+    - mkdir $DATA_CACHE_HIVE_PIPELINE -p
+    # we need file permissions to remove copy data cache
+    - docker run -v "$DATA_CACHE_HIVE_COMMIT":/src -v "$DATA_CACHE_HIVE_PIPELINE":/dst alpine sh -c 'rm /dst/* -rf && cp /src/* /dst -rp'
     - cp "$DATA_CACHE_HIVE_COMMIT/datadir/docker_entrypoint.log" "$CI_PROJECT_DIR"
     - echo "HIVED_UID=$(id -u)" > prepare_data_variables.env
-    - echo "DATA_CACHE_HIVE_COMMIT=$DATA_CACHE_HIVE_COMMIT" >> prepare_data_variables.env
     - cat prepare_data_variables.env
 
   artifacts:

@@ -70,7 +70,7 @@ then
     fi
 fi
 echo "Didnt find valid previous replay, performing fresh replay"
-ls "${DATA_CACHE}" -lath
+ls "${DATA_CACHE}" -lath # we need file permissions to remove old data cache
 docker run -v "${DATA_CACHE}":/data_cache alpine sh -c 'rm /data_cache/datadir -rf'
 docker run -v "${DATA_CACHE}":/data_cache alpine sh -c 'rm /data_cache/shm_dir -rf'
 
@@ -86,6 +86,7 @@ echo "Attempting to perform replay basing on image ${IMG}..."
     --docker-option=--volume="$DATA_CACHE/shm_dir":"/home/hived/shm_dir" \
     --docker-option=--env=DATADIR="/home/hived/datadir" \
     --docker-option=--env=SHM_DIR="/home/hived/shm_dir" \
+    --docker-option=--env=HIVED_UID="$(id -u)" \
     $IMG --replay-blockchain --stop-replay-at-block=5000000 --exit-before-sync
 
 echo "Logs from container hived_instance:"
