@@ -82,7 +82,6 @@ bool is_keyauths_operation( const protocol::operation& op );
 
 bool is_metadata_operation( const protocol::operation& op );
 
-void consensus_state_provider_replay_impl(int from, int to, const char *context, const char *postgres_url);
 int consensus_state_provider_get_expected_block_num_impl(const char* context);
 int consume_variant_block_impl(const fc::variant& v, const char* context, int block_num);
 void consensus_state_provider_finish_impl(const char* context);
