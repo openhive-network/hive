@@ -14,4 +14,6 @@ namespace consensus_state_provider
         hive::chain::database& get_db(const char* context) const;
 
     };
+
+    cache& get_cache();
 }

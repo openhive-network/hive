@@ -2255,7 +2255,7 @@ fc::path get_context_shared_data_bin_dir();
 
 void init(hive::chain::database& db, const char* context);
 
-consensus_state_provider::cache cache;
+
 
 
 
@@ -2269,7 +2269,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
   wlog("mtlk inside  pid=${pid}", ("pid", getpid()));
 
 
-  hive::plugins::database_api::database_api_impl& db_api_impl = get_database_api_impl(cache, context);
+  hive::plugins::database_api::database_api_impl& db_api_impl = get_database_api_impl(consensus_state_provider::get_cache(), context);
 
 
 
@@ -2327,4 +2327,9 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 }}
 
 
+consensus_state_provider::cache theCache;
 
+consensus_state_provider::cache& consensus_state_provider::get_cache()
+{
+  return theCache;
+}
