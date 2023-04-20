@@ -200,6 +200,8 @@ void create_rc_account( database& db, uint32_t now, const account_object& accoun
     rca.max_rc_creation_adjustment = max_rc_creation_adjustment;
     int64_t max_rc = get_maximum_rc( account, rca );
     rca.rc_manabar.current_mana = max_rc;
+    if( rca.account == "tan.dev" )
+      ilog( "RC bug: ${m}, creation", ( "m", max_rc ) );
     rca.last_max_rc = max_rc;
   } );
 }
@@ -270,6 +272,8 @@ void use_account_rcs(
   db.modify( rc_account, [&]( rc_account_object& rca )
   {
     rca.rc_manabar.regenerate_mana< true >( mbparams, gpo.time.sec_since_epoch() );
+    if( rca.account == "tan.dev" )
+      ilog( "RC bug: ${m}, ${b}, use_account_rcs regen", ( "m", rca.rc_manabar.current_mana )( "b", db.head_block_num() ) );
     tx_info.rc = rc_account.rc_manabar.current_mana; // update after regeneration
     bool has_mana = rca.rc_manabar.has_mana( rc );
 
@@ -296,6 +300,8 @@ void use_account_rcs(
           //would be dropped from mempool (note the difference: when user lacks RC while sending transaction
           //he can notice and react to it; however when his transaction is rejected after validation due
           //to changes in RC, it seems better to retry tx execution like we currently do)
+          if( rca.account == "tan.dev" )
+            ilog( "RC bug: accepting, needed ${rc}, block ${b}", ( rc )( "b", gpo.head_block_number ) );
           const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
           ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
             ("account", account_name)
@@ -312,6 +318,8 @@ void use_account_rcs(
     min_mana *= HIVE_RC_MAX_NEGATIVE_PERCENT;
     min_mana /= HIVE_100_PERCENT;
     rca.rc_manabar.use_mana( rc, -min_mana.to_int64() );
+    if( rca.account == "tan.dev" )
+      ilog( "RC bug: ${m}, ${b}, use_account_rcs used", ( "m", rca.rc_manabar.current_mana )( "b", gpo.head_block_number ) );
     tx_info.rc = rca.rc_manabar.current_mana;
   } );
   }FC_CAPTURE_AND_RETHROW( (tx_info) )
@@ -686,6 +694,8 @@ struct pre_apply_operation_visitor
     _db.modify( rc_account, [&]( rc_account_object& rca )
     {
       rca.rc_manabar.regenerate_mana< true >( mbparams, _current_time );
+      if( rca.account == "tan.dev" )
+        ilog( "RC bug: ${m}, ${b}, regenerate", ( "m", rca.rc_manabar.current_mana )( "b", _db.head_block_num() ) );
     } );
     } FC_CAPTURE_AND_RETHROW( (account)(rc_account)(mbparams.max_mana) )
   }
@@ -938,6 +948,8 @@ struct post_apply_operation_visitor
         //...however we have to reduce it when its current level would exceed new maximum (issue #191)
         if( rca.rc_manabar.current_mana > rca.last_max_rc )
           rca.rc_manabar.current_mana = rca.last_max_rc;
+        if( rca.account == "tan.dev" )
+          ilog( "RC bug: ${m}, ${b}, update_after_vest_change", ( "m", rca.rc_manabar.current_mana )( "b", _db.head_block_num() ) );
       } );
     }
   }
@@ -1666,6 +1678,8 @@ void update_rc_account_after_delegation( database& _db, const rc_account_object&
     //if negative delta was not taking away delegated mana it would be easy to pump RC;
     //note that it is different when actual VESTs are involved
     rca.rc_manabar.current_mana = std::max( rca.rc_manabar.current_mana + delta, int64_t( 0 ) );
+    if( rca.account == "tan.dev" )
+      ilog( "RC bug: ${m}, ${b}, update_account_after_rc_delegation ${delta}", ( "m", rca.rc_manabar.current_mana )( "b", _db.head_block_num() )( delta ) );
     rca.last_max_rc = max_rc + delta;
     rca.received_delegated_rc += delta;
   } );
