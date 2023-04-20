@@ -412,7 +412,7 @@ public:
   {
     auto it = _keys.find(id);
     if( it != _keys.end() )
-      return fc::ecc::private_key::generate_from_base58( it->second );
+      return fc::ecc::private_key::wif_to_key( it->second );
     return optional<fc::ecc::private_key>();
   }
 
@@ -437,7 +437,7 @@ public:
   // @returns either true or false if the key has been successfully added to the storage
   bool import_key(const string& wif_key)
   {
-    fc::optional<fc::ecc::private_key> optional_private_key = fc::ecc::private_key::generate_from_base58(wif_key);
+    fc::optional<fc::ecc::private_key> optional_private_key = fc::ecc::private_key::wif_to_key(wif_key);
     if( !optional_private_key )
       FC_THROW("Invalid private key");
     hive::chain::public_key_type wif_pub_key = optional_private_key->get_public_key();
@@ -509,7 +509,7 @@ public:
     int number_of_consecutive_unused_keys = 0;
     for( int key_index = 0; ; ++key_index )
     {
-      fc::ecc::private_key derived_private_key = derive_private_key(parent_key.to_base58(), key_index);
+      fc::ecc::private_key derived_private_key = derive_private_key(parent_key.key_to_wif(), key_index);
       hive::chain::public_key_type derived_public_key = derived_private_key.get_public_key();
       if( _keys.find(derived_public_key) == _keys.end() )
       {
@@ -809,7 +809,7 @@ public:
       auto it = _keys.find(key);
       if( it != _keys.end() )
       {
-        fc::optional<fc::ecc::private_key> privkey = fc::ecc::private_key::generate_from_base58( it->second );
+        fc::optional<fc::ecc::private_key> privkey = fc::ecc::private_key::wif_to_key( it->second );
         FC_ASSERT( privkey.valid(), "Malformed private key in _keys" );
         available_keys.insert(key);
         available_private_keys[key] = *privkey;
@@ -1105,7 +1105,7 @@ brain_key_info wallet_api::suggest_brain_key()const
   brain_key = normalize_brain_key(brain_key);
   fc::ecc::private_key priv_key = detail::derive_private_key( brain_key, 0 );
   result.brain_priv_key = brain_key;
-  result.wif_priv_key = priv_key.to_base58();
+  result.wif_priv_key = priv_key.key_to_wif();
   result.pub_key = priv_key.get_public_key();
   return result;
 }
@@ -1283,7 +1283,7 @@ void wallet_api::lock()
   FC_ASSERT( !is_locked() );
   encrypt_keys();
   for( auto& key : my->_keys )
-    key.second = fc::ecc::private_key().to_base58();
+    key.second = fc::ecc::private_key().key_to_wif();
   my->_keys.clear();
   my->_checksum = fc::sha512();
   my->self.lock_changed(true);
@@ -1327,7 +1327,7 @@ map<public_key_type, string> wallet_api::list_keys()
 
 string wallet_api::get_private_key( public_key_type pubkey )const
 {
-  return my->get_private_key( pubkey ).to_base58();
+  return my->get_private_key( pubkey ).key_to_wif();
 }
 
 pair<public_key_type,string> wallet_api::get_private_key_from_password( const string& account, const string& role, const string& password )const {
@@ -1335,7 +1335,7 @@ pair<public_key_type,string> wallet_api::get_private_key_from_password( const st
   FC_ASSERT( seed.size() );
   auto secret = fc::sha256::hash( seed.c_str(), seed.size() );
   auto priv = fc::ecc::private_key::regenerate( secret );
-  return std::make_pair( public_key_type( priv.get_public_key() ), priv.to_base58() );
+  return std::make_pair( public_key_type( priv.get_public_key() ), priv.key_to_wif() );
 }
 
 wallet_serializer_wrapper<database_api::api_feed_history_object> wallet_api::get_feed_history()const

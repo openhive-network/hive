@@ -285,7 +285,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
   chain::public_key_type debug_public_key;
   if( args.debug_key != "" )
   {
-    debug_private_key = fc::ecc::private_key::generate_from_base58( args.debug_key );
+    debug_private_key = fc::ecc::private_key::wif_to_key( args.debug_key );
     FC_ASSERT( debug_private_key.valid() );
     debug_public_key = debug_private_key->get_public_key();
   }

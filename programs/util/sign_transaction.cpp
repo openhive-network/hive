@@ -137,7 +137,7 @@ int main(int argc, char** argv, char** envp)
       sres.digest = full_transaction->get_digest();
       sres.sig_digest = full_transaction->compute_sig_digest(chainId);
 
-      auto priv_key = fc::ecc::private_key::generate_from_base58( sreq.wif );
+      auto priv_key = fc::ecc::private_key::wif_to_key( sreq.wif );
 
       if(priv_key)
       {

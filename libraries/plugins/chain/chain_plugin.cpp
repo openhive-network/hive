@@ -806,7 +806,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #ifdef USE_ALTERNATE_CHAIN_ID
   using hive::protocol::testnet_blockchain_configuration::configuration_data;
   /// Default initminer priv. key in non-mainnet builds.
-  auto default_skeleton_privkey = configuration_data.get_default_initminer_private_key().to_base58();
+  auto default_skeleton_privkey = configuration_data.get_default_initminer_private_key().key_to_wif();
 #endif
 
   cfg.add_options()
@@ -937,7 +937,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
       wlog("Setting custom skeleton key: ${sk}", ("sk", wif_key));
 
-      fc::optional<fc::ecc::private_key> skeleton_key = fc::ecc::private_key::generate_from_base58(wif_key);
+      fc::optional<fc::ecc::private_key> skeleton_key = fc::ecc::private_key::wif_to_key(wif_key);
       FC_ASSERT(skeleton_key.valid(), "unable to parse passed skeletpn key: ${sk}", ("sk", wif_key));
 
       configuration_data.set_skeleton_key(*skeleton_key);

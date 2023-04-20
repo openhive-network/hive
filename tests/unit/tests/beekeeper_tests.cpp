@@ -36,12 +36,12 @@ BOOST_AUTO_TEST_CASE(wallet_test)
 
   auto priv = fc::ecc::private_key::generate();
   auto pub = priv.get_public_key();
-  auto wif = priv.to_base58();
+  auto wif = priv.key_to_wif();
   wallet.import_key(wif);
   BOOST_CHECK_EQUAL(1u, wallet.list_keys().size());
 
   auto privCopy = wallet.get_private_key(pub);
-  BOOST_CHECK_EQUAL(wif, privCopy.to_base58());
+  BOOST_CHECK_EQUAL(wif, privCopy.key_to_wif());
 
   wallet.lock();
   BOOST_CHECK(wallet.is_locked());
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   BOOST_CHECK_EQUAL(1u, wallet2.list_keys().size());
 
   auto privCopy2 = wallet2.get_private_key(pub);
-  BOOST_CHECK_EQUAL(wif, privCopy2.to_base58());
+  BOOST_CHECK_EQUAL(wif, privCopy2.key_to_wif());
 
   fc::remove("wallet_test.json");
 } FC_LOG_AND_RETHROW() }
@@ -104,13 +104,13 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   auto keys = wm.list_keys("test", pw);
 
   auto pub_pri_pair = [](const char *key) -> auto {
-      auto prikey = private_key_type::generate_from_base58( key );
+      auto prikey = private_key_type::wif_to_key( key );
       return std::pair<const public_key_type, private_key_type>(prikey->get_public_key(), *prikey);
   };
 
   auto pub_pri_pair_str = [&](const char *key) -> auto {
     auto _keys = pub_pri_pair( key );
-    return std::make_pair( _keys.first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ), _keys.second.to_base58() );
+    return std::make_pair( _keys.first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ), _keys.second.key_to_wif() );
   };
 
   auto get_key = [&]( const char* key, const std::map<std::string, std::string>& keys )
@@ -172,8 +172,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 
   BOOST_CHECK_THROW(wm.list_keys("test2", "PWnogood"), fc::exception);
 
-  // private_key_type pkey1 = *( private_key_type::generate_from_base58( key1 ) );
-  //private_key_type pkey2 = *( private_key_type::generate_from_base58( key2 ) );
+  // private_key_type pkey1 = *( private_key_type::wif_to_key( key1 ) );
+  //private_key_type pkey2 = *( private_key_type::wif_to_key( key2 ) );
   // chain::signed_transaction trx;
   // auto chain_id = genesis_state().compute_chain_id();
   // flat_set<public_key_type> pubkeys;
@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 
   //now pluck out the private key from the wallet and see if the public key of said
   // private key matches what was returned earlier from the create_key() call
-  auto create_key_priv = private_key_type::generate_from_base58( wm.list_keys("testgen", pw).cbegin()->second );
+  auto create_key_priv = private_key_type::wif_to_key( wm.list_keys("testgen", pw).cbegin()->second );
   BOOST_CHECK_EQUAL(create_key_pub.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ), create_key_priv->get_public_key().to_base58_with_prefix( HIVE_ADDRESS_PREFIX ));
 
   wm.lock("testgen");

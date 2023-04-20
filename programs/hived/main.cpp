@@ -51,7 +51,7 @@ void info(const hive::protocol::chain_id_type& chainId)
 # endif
                             " NETWORK\n\n";
   std::cerr << "------------------------------------------------------\n";
-  std::cerr << "initminer private key: " << HIVE_INIT_PRIVATE_KEY.to_base58() << "\n";
+  std::cerr << "initminer private key: " << HIVE_INIT_PRIVATE_KEY.key_to_wif() << "\n";
 #else
   std::cerr << "                @     @@@@@@    ,@@@@@%               \n";
   std::cerr << "               @@@@    (@@@@@*    @@@@@@              \n";
