@@ -2238,22 +2238,6 @@ void cache::add(const char* context, hive::chain::database& db)
 }
 
 namespace hive { namespace app {
-
-fc::path get_context_shared_data_bin_dir();
-
-}}
-
-void init(hive::chain::database& db, const char* context);
-
-
-
-
-
-
-
-
-
-namespace hive { namespace app {
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
   wlog("mtlk inside  pid=${pid}", ("pid", getpid()));
