@@ -4443,48 +4443,13 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   {
     if( _benchmark_dumper.is_enabled() )
       _benchmark_dumper.begin();
-    
+
     auto merkle_root = full_block->get_merkle_root();
 
     try
     {
-
-      if(_postgres_not_block_log)
-      {
-        //legacy asset
-        switch(block_num)
-        {
-          case  994240:        //"account_creation_fee": "0.1 HIVE"
-          case 1021529:        //"account_creation_fee": "10.0 HIVE"
-          case 3143833:        //"account_creation_fee": "3.00000 HIVE"
-          case 3208405:        //"account_creation_fee": "2.00000 HIVE"
-          case 3695672:        //"account_creation_fee": "3.00 HIVE"
-          case 4338089:        //"account_creation_fee": "0.001 0.001"
-          case 4626205:        //"account_creation_fee": "6.000 6.000"
-          case 4632595:        //"account_creation_fee": "6.000 6.000"
-            break;
-
-        //just wrong merkle
-          case 3705111:
-          case 3705120:
-          case 3713940:
-          case 3714132:
-          case 3714567:
-          case 3714588:
-          case 4138790:
-            break;
-          
-          default:
-
-            FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
-                      (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
-        }
-      }
-      else
-      {
-          FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
-                    (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
-      }
+      FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
+                (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
     }
     catch( fc::assert_exception& e )
     { //don't throw error if this is a block with a known bad merkle root
