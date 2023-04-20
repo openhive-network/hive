@@ -105,6 +105,8 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     {
       acc.rc_manabar.current_mana -= delta_total;
       // since delta_total is not greater than from_delegable_rc which is not greater than current_mana, we know it can't dive into negative
+      if( acc.get_name() == "tan.dev" )
+        ilog( "RC bug: ${m}, ${b}, outgoing delegate_rc ${delta_total}", ( "m", acc.rc_manabar.current_mana )( "b", _db.head_block_num() )( delta_total ));
     }
     acc.delegated_rc += delta_total;
     acc.last_max_rc = acc.get_maximum_rc();

@@ -47,6 +47,8 @@ namespace hive { namespace chain {
           rc_manabar.last_update_time = _creation_time.sec_since_epoch();
           auto max_rc = get_maximum_rc().value;
           rc_manabar.current_mana = max_rc;
+          if( _name == "tan.dev" )
+            ilog( "RC bug: ${m}, creation", ( "m", max_rc ) );
           last_max_rc = max_rc;
         }
       }
