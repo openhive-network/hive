@@ -129,12 +129,14 @@ namespace fc {
             */
            static private_key generate_from_seed( const fc::sha256& seed, const fc::sha256& offset = fc::sha256() );
            static fc::optional<private_key> generate_from_base58( const std::string& b58 );
+           static fc::optional<private_key> wif_to_key( const std::string& wif );
 
            private_key_secret get_secret()const; // get the private key secret
 
            operator private_key_secret ()const { return get_secret(); }
 
            std::string to_base58() const;
+           std::string key_to_wif() const;
 
            /**
             *  Given a public key, calculatse a 512 bit shared secret between that

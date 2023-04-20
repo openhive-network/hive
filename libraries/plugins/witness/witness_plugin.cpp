@@ -604,7 +604,7 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
     const std::vector<std::string> keys = options["private-key"].as<std::vector<std::string>>();
     for (const std::string& wif_key : keys )
     {
-      fc::optional<fc::ecc::private_key> private_key = fc::ecc::private_key::generate_from_base58(wif_key);
+      fc::optional<fc::ecc::private_key> private_key = fc::ecc::private_key::wif_to_key(wif_key);
       FC_ASSERT( private_key.valid(), "unable to parse private key" );
       my->_private_keys[private_key->get_public_key()] = *private_key;
     }

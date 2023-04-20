@@ -142,7 +142,7 @@ public:
    //          account, false otherwise (but it is stored either way)
    bool import_key(string wif_key)
    {
-    auto priv = private_key_type::generate_from_base58( wif_key );
+    auto priv = private_key_type::wif_to_key( wif_key );
     if( !priv.valid() )
     {
       FC_ASSERT( false, "Key can't be constructed" );
@@ -176,7 +176,7 @@ public:
    {
     private_key_type priv_key = fc::ecc::private_key::generate();
 
-    import_key(priv_key.to_base58());
+    import_key(priv_key.key_to_wif());
 
     return priv_key.get_public_key().to_base58_with_prefix( HIVE_ADDRESS_PREFIX );
    }
@@ -376,7 +376,7 @@ map<std::string, std::string> beekeeper_wallet::list_keys()
   std::transform( my->_keys.begin(), my->_keys.end(), std::inserter( _result, _result.end() ),
     []( const std::pair<public_key_type, private_key_type>& item )
     {
-      return std::make_pair( item.first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ), item.second.to_base58() );
+      return std::make_pair( item.first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ), item.second.key_to_wif() );
     } );
 
   return _result;

@@ -289,6 +289,11 @@ namespace fc { namespace ecc {
       return fc::optional<fc::ecc::private_key>();
     }
 
+    fc::optional<private_key> private_key::wif_to_key( const std::string& wif )
+    {
+      return generate_from_base58( wif );
+    }
+
     fc::sha256 private_key::get_secret( const EC_KEY * const k )
     {
        if( !k )
@@ -322,6 +327,11 @@ namespace fc { namespace ecc {
       memcpy(data + size_of_data_to_hash, (char*)&digest, size_of_hash_bytes);
 
       return fc::to_base58(data, sizeof(data));
+    }
+
+    std::string private_key::key_to_wif() const
+    {
+      return to_base58();
     }
 
     private_key private_key::generate()

@@ -140,7 +140,7 @@ namespace detail {
         --it_block_num;
       }
       FC_ASSERT( chain_id_match, "Previous output block log chain id does not match the specified one or the owner key of the 2nd authority has changed",
-        ("chain_id", converter.get_chain_id())("owner_key", converter.get_second_authority_key( hp::authority::owner ).to_base58()) );
+        ("chain_id", converter.get_chain_id())("owner_key", converter.get_second_authority_key( hp::authority::owner ).key_to_wif()) );
 
       dlog("Chain id match");
     }
@@ -227,7 +227,7 @@ namespace detail {
       FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
     }
 
-    const auto private_key = fc::ecc::private_key::generate_from_base58( options["private-key"].as< std::string >() );
+    const auto private_key = fc::ecc::private_key::wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
     my = std::make_unique< detail::block_log_conversion_plugin_impl >( *private_key, _hive_chain_id, options.at( "jobs" ).as< size_t >() );
