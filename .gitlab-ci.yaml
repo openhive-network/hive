@@ -374,6 +374,9 @@ fork_tests:
     - *run-pytest
   tags:
     - public-runner-docker
+  artifacts:
+    expire_in: 2 days
+
 
 hf26_tests:
   stage: test
