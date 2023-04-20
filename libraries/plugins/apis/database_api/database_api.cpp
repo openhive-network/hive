@@ -2192,16 +2192,6 @@ DEFINE_READ_APIS( database_api,
 
 
 
-#include <iostream>
-#include <string>
-
-
-#include <fc/variant.hpp>
-#include <fc/io/json.hpp>
-#include <fc/io/sstream.hpp>
-#include <hive/protocol/operations.hpp>
-
-#include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
 
 namespace consensus_state_provider
 {
@@ -2326,8 +2316,12 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 }
 }}
 
+namespace
+{
+  consensus_state_provider::cache theCache;
+}
 
-consensus_state_provider::cache theCache;
+
 
 consensus_state_provider::cache& consensus_state_provider::get_cache()
 {
