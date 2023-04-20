@@ -16,11 +16,6 @@
 
 #include <hive/plugins/database_api/consensus_state_provider_cache.hpp>
 
-namespace hive { namespace app {
-std::shared_ptr<hive::chain::full_block_type> from_variant_to_full_block_ptr(const fc::variant& v, int block_num_debug );
-}}
-
-
 
 namespace hive { namespace plugins { namespace database_api {
 
@@ -2195,9 +2190,6 @@ DEFINE_READ_APIS( database_api,
 
 namespace consensus_state_provider
 {
-
-    hive::plugins::database_api::database_api_impl& get_database_api_impl(const cache&,  const char* context);
-
 
 namespace{
  std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
