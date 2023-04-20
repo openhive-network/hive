@@ -14,7 +14,7 @@
 
 #include <hive/utilities/git_revision.hpp>
 
-
+#include "/home/haf_admin/haf/src/hive_fork_manager/shared_lib/consensus_state_provider_cache.hpp"
 
 namespace hive { namespace app {
 std::shared_ptr<hive::chain::full_block_type> from_variant_to_full_block_ptr(const fc::variant& v, int block_num_debug );
@@ -2205,16 +2205,6 @@ DEFINE_READ_APIS( database_api,
 
 namespace consensus_state_provider
 {
-    class cache
-    {
-    public:
-        bool has_context(const char* context) const;
-        void add(const char* context, hive::chain::database& a_db);
-        void remove(const char* context);
-        hive::chain::database& get_db(const char* context) const;
-
-
-    };
 
     hive::plugins::database_api::database_api_impl& get_database_api_impl(const cache&,  const char* context);
 
@@ -2364,6 +2354,8 @@ int consume_variant_block_impl(const fc::variant& v, const char* context, int bl
 
   db.clear_tx_status();
 
+
+
   db.set_revision( db.head_block_num() );
 
 
@@ -2398,6 +2390,8 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
     hive::plugins::database_api::list_accounts_return db_api_impl_result = db_api_impl.list_accounts(args);
     if(db_api_impl_result.accounts.empty())
       break;
+
+
 
     decltype(args.limit) cnt = 0;
     for(const auto& a : db_api_impl_result.accounts)
