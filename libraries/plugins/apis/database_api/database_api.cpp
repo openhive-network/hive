@@ -2260,112 +2260,10 @@ consensus_state_provider::cache cache;
 
 
 
-int initialize_context(const char* context)
-{
-  if(!cache.has_context(context))
-  {
-    hive::chain::database* db = new hive::chain::database;
-    init(*db, context);
-    cache.add(context, *db);
-    //haf_database_api_impls.emplace(std::make_pair(std::string(context), hive::plugins::database_api::database_api_impl(*db)));
-    return db->head_block_num() + 1;
-  }
-  else
-  {
-    
-    hive::chain::database& db = cache.get_db(context);
-    return db.head_block_num() + 1;
-  }
-}
+
+
 
 namespace hive { namespace app {
-
-
-
-void consensus_state_provider_finish_impl(const char* context)
-{
-  if(cache.has_context(context))
-  {
-      hive::chain::database& db = cache.get_db(context);
-      db.close();
-      db. chainbase::database::wipe( get_context_shared_data_bin_dir()  /  "blockchain" , context);
-      cache.remove(context);
-
-  }
-}
-
-
-int consume_variant_block_impl(const fc::variant& v, const char* context, int block_num)
-{
-
-  static auto first_time = true;
-  if(first_time)
-  {
-    first_time = false;
-    wlog("mtlk consume_variant_block_impl pid= ${pid}", ("pid", getpid()));
-  }
-
-  int expected_block_num = initialize_context(context);
-
-  if(block_num != expected_block_num)
-     return expected_block_num;
-
-  expected_block_num++;
-
-
-  hive::chain::database& db = cache.get_db(context);
-  
-
-  
-
- 
-  std::shared_ptr<hive::chain::full_block_type> fb_ptr = from_variant_to_full_block_ptr(v, block_num);
-
-  
-
-  uint64_t skip_flags = hive::plugins::chain::database::skip_block_log;
-  // skip_flags |= hive::plugins::chain::database::skip_validate_invariants;
-  
-  //skip_flags |= hive::plugins::chain::database::skip_witness_signature ; //try not to skip it mtlk 
-  // skip_flags |= hive::plugins::chain::database::skip_transaction_signatures;
-  // skip_flags |= hive::plugins::chain::database::skip_transaction_dupe_check;
-  //skip_flags |= hive::plugins::chain::database::skip_tapos_check; //try not to skip it mtlk 
-  //skip_flags |= hive::plugins::chain::database::skip_merkle_check;//try not to skip it mtlk 
-  // skip_flags |= hive::plugins::chain::database::skip_witness_schedule_check;
-  //skip_flags |= hive::plugins::chain::database::skip_authority_check;//try not to skip it mtlk 
-  // skip_flags |= hive::plugins::chain::database::skip_validate;
-
-
-
-      skip_flags |= hive::plugins::chain::database::skip_witness_signature |
-      hive::plugins::chain::database::skip_transaction_signatures |
-      hive::plugins::chain::database::skip_transaction_dupe_check |
-      hive::plugins::chain::database::skip_tapos_check |
-      hive::plugins::chain::database::skip_merkle_check |
-      hive::plugins::chain::database::skip_witness_schedule_check |
-      hive::plugins::chain::database::skip_authority_check |
-      hive::plugins::chain::database::skip_validate; /// no need to validate operations
-
-
-  db.set_tx_status( hive::plugins::chain::database::TX_STATUS_BLOCK );
-
-
-  db.public_apply_block(fb_ptr, skip_flags);
-
-  db.clear_tx_status();
-
-
-
-  db.set_revision( db.head_block_num() );
-
-
-  return expected_block_num;
-}
-
-
-
-
-
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
   wlog("mtlk inside  pid=${pid}", ("pid", getpid()));
@@ -2426,74 +2324,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 
   return r;
 }
-
-fc::path get_context_shared_data_bin_dir()
-{
-
-    fc::path data_dir;
-    char* parent = getenv( "PGDATA" );
-
-    system("env");
-
-    if( parent != nullptr )
-    {
-      data_dir = std::string( parent );
-      data_dir = data_dir.parent_path();
-      data_dir = data_dir.parent_path();
-    }
-    return data_dir;
-}
-
-
-
-int consensus_state_provider_get_expected_block_num_impl(const char* context)
-{
-  return initialize_context(context);
-}
-
-
 }}
 
 
-void init(hive::chain::database& db, const char* context)
-{
-
-
-  db.set_flush_interval( 10'000 );//10 000
-  db.set_require_locking( false );// false 
-
-
-  hive::chain::open_args db_open_args;
-  db_open_args.data_dir = "/home/dev/mainnet-5m";
-  db_open_args.data_dir = "/home/dev/.consensus_state_provider";
-
-
-  db_open_args.data_dir = hive::app::get_context_shared_data_bin_dir();
-  ilog("mtlk db_open_args.data_dir=${dd}",("dd", db_open_args.data_dir));
-
-  db_open_args.shared_mem_dir =  db_open_args.data_dir /  "blockchain"; // "/home/dev/mainnet-5m/blockchain"
-  db_open_args.initial_supply = HIVE_INIT_SUPPLY; // 0
-  db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;// 0
-
-  db_open_args.shared_file_size = 25769803776;  //my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
-
-  db_open_args.shared_file_full_threshold = 0;// 0
-  db_open_args.shared_file_scale_rate = 0;// 0
-  db_open_args.chainbase_flags = 0;// 0
-  db_open_args.do_validate_invariants = false; // false
-  db_open_args.stop_replay_at = 0;//0
-  db_open_args.exit_after_replay = false;//false
-  db_open_args.validate_during_replay = false;// false
-  db_open_args.benchmark_is_enabled = false;//false
-  db_open_args.replay_in_memory = false;// false
-  db_open_args.enable_block_log_compression = true;// true
-  db_open_args.block_log_compression_level = 15;// 15
-
-  db_open_args.postgres_not_block_log = true;
-
-  db_open_args.force_replay = false;// false
-
-  db.open( db_open_args, context );
-
-}
 
