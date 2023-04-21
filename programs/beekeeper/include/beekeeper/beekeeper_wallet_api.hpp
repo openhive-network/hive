@@ -29,7 +29,11 @@ struct wallet_password_args
   std::string password;
 };
 
-using create_args = wallet_args;
+struct create_args
+{
+  std::string wallet_name;
+  fc::optional<std::string> password{};
+};
 struct create_return
 {
   std::string password;
@@ -135,6 +139,7 @@ class beekeeper_wallet_api
 
 FC_REFLECT( beekeeper::wallet_args, (wallet_name) )
 FC_REFLECT( beekeeper::wallet_password_args, (wallet_name)(password) )
+FC_REFLECT( beekeeper::create_args, (wallet_name)(password) )
 FC_REFLECT( beekeeper::create_return, (password) )
 FC_REFLECT( beekeeper::set_timeout_args, (seconds) )
 FC_REFLECT( beekeeper::import_key_args, (wallet_name)(wif_key) )

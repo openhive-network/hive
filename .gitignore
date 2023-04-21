@@ -128,3 +128,4 @@ r_advanced_benchmark.json
 # Directories generated for virtual enviroment
 venv
 .venv
+.cache

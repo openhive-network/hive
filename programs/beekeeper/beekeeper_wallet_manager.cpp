@@ -52,7 +52,7 @@ void beekeeper_wallet_manager::check_timeout() {
    }
 }
 
-std::string beekeeper_wallet_manager::create(const std::string& name) {
+std::string beekeeper_wallet_manager::create(const std::string& name, fc::optional<std::string> password) {
    check_timeout();
 
    FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
@@ -61,14 +61,16 @@ std::string beekeeper_wallet_manager::create(const std::string& name) {
 
    FC_ASSERT( !fc::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
 
-   std::string password = gen_password();
+   if(!password)
+      password = gen_password();
+
    wallet_data d;
    auto wallet = make_unique<beekeeper_wallet>(d);
-   wallet->set_password(password);
+   wallet->set_password(*password);
    wallet->set_wallet_filename(wallet_filename.string());
-   wallet->unlock(password);
+   wallet->unlock(*password);
    wallet->lock();
-   wallet->unlock(password);
+   wallet->unlock(*password);
 
    // Explicitly save the wallet file here, to ensure it now exists.
    wallet->save_wallet_file();
@@ -81,7 +83,7 @@ std::string beekeeper_wallet_manager::create(const std::string& name) {
    }
    wallets.emplace(name, std::move(wallet));
 
-   return password;
+   return *password;
 }
 
 void beekeeper_wallet_manager::open(const std::string& name) {
