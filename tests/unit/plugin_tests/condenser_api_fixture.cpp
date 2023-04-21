@@ -371,15 +371,16 @@ void condenser_api_fixture::proposal_scenario( check_point_tester_t check_point_
   transfer( "carol7ah", db->get_treasury_name(), ASSET( "30000.333 TESTS" ) ); // <- trigger dhf_conversion_operation
 
   // Create the proposal for the first time to be updated and removed.
+  post_comment("alice7ah", "permlink0", "title", "body", "test", alice7ah_private_key);
   int64_t proposal_id = 
-    create_proposal( "alice7ah", "ben7ah", db->head_block_time() - fc::days( 1 ), db->head_block_time() + fc::days( 2 ),
-                      asset( 100, HBD_SYMBOL ), alice7ah_private_key, false/*with_block_generation*/ );
+  create_proposal( "alice7ah", "ben7ah", "0" /*subject*/, "permlink0", db->head_block_time() - fc::days( 1 ), 
+                    db->head_block_time() + fc::days( 2 ), asset( 100, HBD_SYMBOL ), alice7ah_private_key );
   const proposal_object* proposal = find_proposal( proposal_id );
   std::string subject( proposal->subject );
   std::string permlink( proposal->permlink );
   BOOST_REQUIRE_NE( proposal, nullptr );
   update_proposal( proposal_id, "alice7ah", asset( 80, HBD_SYMBOL ), "new subject", proposal->permlink, alice7ah_private_key);
-  vote_proposal( "carol7ah", { proposal_id }, true/*approve*/, carol7ah_private_key);
+  vote_proposal( "carol7ah", { proposal_id }, false/*approve*/, carol7ah_private_key);
   remove_proposal( "alice7ah", { proposal_id }, alice7ah_private_key );
 
   generate_block();
