@@ -1,6 +1,4 @@
 
-import test_tools as tt
-
 def test_examples(cpp):
     x = 6
     y = 2

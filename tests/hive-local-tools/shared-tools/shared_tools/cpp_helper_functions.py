@@ -1,28 +1,19 @@
 import os
 import glob
+import sys
 
-def cpp_clear():
-    for file_pattern in (
-        "*.so",
-        "internal_wrapper.cpp",
-        ):
-        for file in glob.glob(file_pattern):
-            os.remove(file)
+from pathlib import Path
 
-def cpp_prepare():
-    cpp_source_file_name    = "cpp_functions"
-    cpp_wrapper_file_name   = "internal_wrapper.cpp"
-    cpp_interface_name      = "cpp_interface"
+import test_tools as tt
 
-    os.system( f"g++ -shared -std=c++17 -fPIC {cpp_source_file_name}.cpp -o lib{cpp_source_file_name}.so " )
+from shared_tools.cpp_setup import main
 
-    os.system(f"cython --cplus -3 {cpp_interface_name}.pyx -o {cpp_wrapper_file_name}")
+def cpp_prepare( setup_name: str = "cpp_setup.py", setup_mode: str = "setup_all", build_lib: Path = "./", build_temp: Path = "./" ):
+    tt.logger.info(f"start of cpp preparation...")
 
-    os.system(
-        "g++ -shared -std=c++17 -fPIC "
-        "`python3 -m pybind11 --includes` "
-        "-I . "
-        f"{cpp_wrapper_file_name} "
-        f"-o {cpp_interface_name}`python3-config --extension-suffix` "
-        f"-L. -l{cpp_source_file_name} -Wl,-rpath,."
-    )
+    backup = sys.argv
+    sys.argv = [f"{setup_name}", f"{setup_mode}", "--build-lib", f"{build_lib}", "--build-temp", f"{build_temp}"]
+    main()
+    sys.argv = backup
+
+    tt.logger.info(f"cpp preparation finished...")

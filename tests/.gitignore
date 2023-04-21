@@ -5,3 +5,4 @@ report.xml
 .tox
 .hived
 internal_wrapper.cpp
+*.o
