@@ -157,12 +157,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     
     if( bfs::exists( abs_path ) )
     {
-      if(postgres_not_block_log)
-      {
-        //mtlk TODO is it needed ?
-        bfs::permissions(abs_path, bfs::perms::all_all | bfs::perms::add_perms);
-      }
-
       _file_size = bfs::file_size( abs_path );
       if( shared_file_size > _file_size )
       {
@@ -215,12 +209,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                       abs_path.generic_string().c_str(), shared_file_size
                                       ) );
       _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
-
-      if(postgres_not_block_log)
-      {
-              //mtlk TODO is it needed ?
-        bfs::permissions(abs_path, bfs::perms::all_all | bfs::perms::add_perms);
-      }
     }
 
     auto env = _segment->find< environment_check >( "environment" );
@@ -265,13 +253,12 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _at_least_one_index_is_created_now      = false;
   }
 
-
   void database::wipe( const bfs::path& dir )
   {
     assert( !_is_open );
     _segment.reset();
     _meta.reset();
-    bfs::remove_all( dir / "shared_memory.bin");
+    bfs::remove_all( dir / "shared_memory.bin" );
     bfs::remove_all( dir / "shared_memory.meta" );
     _data_dir = bfs::path();
 
