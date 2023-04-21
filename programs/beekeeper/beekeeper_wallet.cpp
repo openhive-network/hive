@@ -140,7 +140,7 @@ public:
    // given account name.
    // @returns true if the key matches a current active/owner/memo key for the named
    //          account, false otherwise (but it is stored either way)
-   bool import_key(string wif_key)
+   string import_key(string wif_key)
    {
     auto priv = private_key_type::wif_to_key( wif_key );
     if( !priv.valid() )
@@ -153,7 +153,7 @@ public:
     auto itr = _keys.find(wif_pub_key);
     if( itr == _keys.end() ) {
       _keys[wif_pub_key] = *priv;
-      return true;
+      return wif_pub_key.to_base58_with_prefix( HIVE_ADDRESS_PREFIX );
     }
     FC_ASSERT( false, "Key already in wallet" );
    }
@@ -175,10 +175,7 @@ public:
    string create_key()
    {
     private_key_type priv_key = fc::ecc::private_key::generate();
-
-    import_key(priv_key.key_to_wif());
-
-    return priv_key.get_public_key().to_base58_with_prefix( HIVE_ADDRESS_PREFIX );
+    return import_key(priv_key.key_to_wif());
    }
 
    bool load_wallet_file(string wallet_filename = "")
@@ -269,16 +266,13 @@ string beekeeper_wallet::get_wallet_filename() const
   return my->get_wallet_filename();
 }
 
-bool beekeeper_wallet::import_key(string wif_key)
+string beekeeper_wallet::import_key(string wif_key)
 {
   FC_ASSERT( !is_locked(), "Unable to import key on a locked wallet");
 
-  if( my->import_key(wif_key) )
-  {
-    save_wallet_file();
-    return true;
-  }
-  return false;
+  const auto result = my->import_key(wif_key);
+  save_wallet_file();
+  return result;
 }
 
 bool beekeeper_wallet::remove_key(string key)

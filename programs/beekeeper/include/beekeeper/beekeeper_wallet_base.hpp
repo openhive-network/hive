@@ -84,7 +84,7 @@ class beekeeper_wallet_base
        *
        * @param wif_key the WIF Private Key to import
        */
-      virtual bool import_key( string wif_key ) = 0;
+      virtual string import_key( string wif_key ) = 0;
 
       /** Removes a key from the wallet.
        *
