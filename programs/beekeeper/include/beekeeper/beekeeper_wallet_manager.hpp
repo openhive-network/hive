@@ -63,10 +63,11 @@ public:
    /// A new wallet is created in file dir/{name}.wallet see set_dir.
    /// The new wallet is unlocked after creation.
    /// @param name of the wallet and name of the file without ext .wallet.
+   /// @param password to set for wallet, if not given will be automatically generated
    /// @return Plaintext password that is needed to unlock wallet. Caller is responsible for saving password otherwise
    ///         they will not be able to unlock their wallet. Note user supplied passwords are not supported.
    /// @throws fc::exception if wallet with name already exists (or filename already exists)
-   std::string create(const std::string& name);
+   std::string create(const std::string& name, fc::optional<std::string> password = fc::optional<std::string>{});
 
    /// Open an existing wallet file dir/{name}.wallet.
    /// Note this does not unlock the wallet, see beekeeper_wallet_manager::unlock.

@@ -42,7 +42,7 @@ class beekeeper_api_impl
 
 DEFINE_API_IMPL( beekeeper_api_impl, create )
 {
-  return { _wallet_mgr.create( args.wallet_name ) };
+  return { _wallet_mgr.create( args.wallet_name, args.password ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, open )
