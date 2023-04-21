@@ -5446,9 +5446,13 @@ void database::update_global_dynamic_data( const signed_block& b )
         } );
       }
     }
-    fc::microseconds loop_time = fc::time_point::now() - start_time;
-    ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)", 
-      (missed_blocks)("ms", loop_time.count()/1000)("us", loop_time) );
+
+    if (missed_blocks != 0)
+    {
+      fc::microseconds loop_time = fc::time_point::now() - start_time;
+      ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)", 
+        (missed_blocks)("ms", loop_time.count()/1000)("us", loop_time) );
+    }
   }
 
   // dynamic global properties updating
