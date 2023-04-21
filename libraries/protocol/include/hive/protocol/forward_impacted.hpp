@@ -84,7 +84,7 @@ bool is_metadata_operation( const protocol::operation& op );
 
 int consensus_state_provider_get_expected_block_num_impl(const char* context, const char* shared_memory_bin_path);
 int consume_variant_block_impl(const fc::variant& v, const char* context, int block_num, const char* shared_memory_bin_path);
-void consensus_state_provider_finish_impl(const char* context);
+void consensus_state_provider_finish_impl(const char* context, const char* shared_memory_bin_path);
 
 
 } } // hive::app
