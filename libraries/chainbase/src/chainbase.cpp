@@ -142,32 +142,18 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       bool                    created_storage = true;
   };
 
-  namespace{
-  std::string shared_memory_bin_filename(const std::string& context)
-  {
-    if (context.empty())
-    {
-        return "shared_memory.bin";
-    }
-    else
-    {
-      return context + "_" + "shared_memory.bin";
-    }
-  }
-  }
 
-
-  void database::open(const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, const std::string& context, bool postgres_not_block_log)
+  void database::open(const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file, bool postgres_not_block_log)
   {
     assert( dir.is_absolute() );
     bfs::create_directories( dir );
     if( _data_dir != dir ) close();
-    if( wipe_shared_file ) wipe( dir, context );
+    if( wipe_shared_file ) wipe( dir );
 
     _data_dir = dir;
     _database_cfg = database_cfg;
 #ifndef ENABLE_STD_ALLOCATOR
-    auto abs_path = bfs::absolute( dir / shared_memory_bin_filename(context) );
+    auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
     
     if( bfs::exists( abs_path ) )
     {
@@ -280,12 +266,12 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   }
 
 
-  void database::wipe( const bfs::path& dir , const std::string& context )
+  void database::wipe( const bfs::path& dir )
   {
     assert( !_is_open );
     _segment.reset();
     _meta.reset();
-    bfs::remove_all( dir / shared_memory_bin_filename(context));
+    bfs::remove_all( dir / "shared_memory.bin");
     bfs::remove_all( dir / "shared_memory.meta" );
     _data_dir = bfs::path();
 

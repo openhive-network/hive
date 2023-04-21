@@ -185,7 +185,7 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      void open( const open_args& args, const std::string& context = "" );
+      void open( const open_args& args );
       
       void public_apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing )
       {

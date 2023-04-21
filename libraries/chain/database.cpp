@@ -137,7 +137,7 @@ database::~database()
   clear_pending();
 }
 
-void database::open( const open_args& args, const std::string& context )
+void database::open( const open_args& args )
 {
   try
   {
@@ -150,7 +150,7 @@ void database::open( const open_args& args, const std::string& context )
                                                 appbase::app().get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay, context, _postgres_not_block_log);
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay, _postgres_not_block_log);
 
     initialize_state_independent_data(args);
     load_state_initial_data(args);
@@ -4018,7 +4018,7 @@ void database::initialize_irreversible_storage()
 void database::resetState(const open_args& args)
 {
   wipe(args.data_dir, args.shared_mem_dir, false);
-  open(args, "");
+  open(args);
 }
 
 const std::string& database::get_json_schema()const
