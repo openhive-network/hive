@@ -170,14 +170,14 @@ void beekeeper_wallet_manager::unlock(const std::string& name, const std::string
    w->unlock(password);
 }
 
-void beekeeper_wallet_manager::import_key(const std::string& name, const std::string& wif_key) {
+string beekeeper_wallet_manager::import_key(const std::string& name, const std::string& wif_key) {
    check_timeout();
    FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
    auto& w = wallets.at(name);
    FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
 
-   w->import_key(wif_key);
+   return w->import_key(wif_key);
 }
 
 void beekeeper_wallet_manager::remove_key(const std::string& name, const std::string& password, const std::string& key) {

@@ -107,7 +107,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        * @returns a map containing the private keys, indexed by their public key
        */
       map<std::string, std::string> list_keys() override;
-      
+
       /** Dumps all public keys owned by the wallet.
        * @returns a vector containing the public keys
        */
@@ -155,7 +155,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        *
        * @param wif_key the WIF Private Key to import
        */
-      bool import_key( string wif_key ) override;
+      string import_key( string wif_key ) override;
 
       /** Removes a key from the wallet.
        *

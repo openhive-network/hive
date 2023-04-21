@@ -77,8 +77,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, unlock )
 
 DEFINE_API_IMPL( beekeeper_api_impl, import_key )
 {
-  _wallet_mgr.import_key( args.wallet_name, args.wif_key );
-  return import_key_return();
+  return { _wallet_mgr.import_key( args.wallet_name, args.wif_key ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, remove_key )

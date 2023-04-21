@@ -53,13 +53,6 @@ using lock_return = void_type;
 using unlock_args   = wallet_password_args;
 using unlock_return = void_type;
 
-struct import_key_args
-{
-  std::string wallet_name;
-  std::string wif_key;
-};
-using import_key_return = void_type;
-
 struct remove_key_args
 {
   std::string wallet_name;
@@ -73,6 +66,13 @@ struct create_key_return
 {
   std::string public_key;
 };
+
+struct import_key_args
+{
+  std::string wallet_name;
+  std::string wif_key;
+};
+using import_key_return = create_key_return;
 
 using list_wallets_args = void_type;
 struct list_wallets_return
