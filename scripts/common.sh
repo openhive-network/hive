@@ -2,7 +2,7 @@
 
 set -euo pipefail 
 
-exec > >(tee "${LOG_FILE}") 2>&1
+exec > >(tee -i "${LOG_FILE}") 2>&1
 
 log_exec_params() {
   echo
