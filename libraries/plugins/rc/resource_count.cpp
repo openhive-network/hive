@@ -171,7 +171,7 @@ bool prepare_differential_usage( const OpType& op, const database& db, count_res
 template
 bool prepare_differential_usage< operation >( const operation& op, const database& db, count_resources_result& result );
 template
-bool prepare_differential_usage< rc_plugin_operation >( const rc_plugin_operation& op, const database& db, count_resources_result& result );
+bool prepare_differential_usage< rc_custom_operation >( const rc_custom_operation& op, const database& db, count_resources_result& result );
 template
 bool prepare_differential_usage< optional_automated_action >( const optional_automated_action& op, const database& db, count_resources_result& result );
 
@@ -751,6 +751,6 @@ void count_resource_usage(
 }
 
 template
-void count_resource_usage< rc_plugin_operation >( const rc_plugin_operation& op, count_resources_result& result, const fc::time_point_sec now );
+void count_resource_usage< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
 
 } } } // hive::plugins::rc

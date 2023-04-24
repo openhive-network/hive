@@ -27,9 +27,9 @@ struct delegate_rc_operation : base_operation
 
 typedef fc::static_variant<
         delegate_rc_operation
-  > rc_plugin_operation;
+  > rc_custom_operation;
 
-HIVE_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_plugin_operation, delegate_rc );
+HIVE_DEFINE_PLUGIN_EVALUATOR( rc_plugin, rc_custom_operation, delegate_rc );
 
 } } } // hive::plugins::rc
 
@@ -40,5 +40,5 @@ FC_REFLECT( hive::plugins::rc::delegate_rc_operation,
   (extensions)
   )
 
-HIVE_DECLARE_OPERATION_TYPE( hive::plugins::rc::rc_plugin_operation )
-FC_REFLECT_TYPENAME( hive::plugins::rc::rc_plugin_operation )
+HIVE_DECLARE_OPERATION_TYPE( hive::plugins::rc::rc_custom_operation )
+FC_REFLECT_TYPENAME( hive::plugins::rc::rc_custom_operation )
