@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/protocol/transaction.hpp>
+#include <hive/chain/rc/resource_count.hpp>
 
 #include <fc/int_array.hpp>
 #include <fc/reflect/reflect.hpp>
@@ -8,32 +9,11 @@
 
 namespace hive { namespace plugins { namespace rc {
 
-enum rc_resource_types
-{
-  resource_history_bytes,
-  resource_new_accounts,
-  resource_market_bytes,
-  resource_state_bytes,
-  resource_execution_time
-};
-
-} } } // hive::plugins::rc
-
-FC_REFLECT_ENUM( hive::plugins::rc::rc_resource_types,
-  (resource_history_bytes)
-  (resource_new_accounts)
-  (resource_market_bytes)
-  (resource_state_bytes)
-  (resource_execution_time)
-)
-
-namespace hive { namespace plugins { namespace rc {
-
-constexpr auto HIVE_RC_NUM_RESOURCE_TYPES = fc::reflector< rc_resource_types >::total_member_count;
-
-typedef fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES > resource_count_type;
-typedef fc::int_array< int64_t, HIVE_RC_NUM_RESOURCE_TYPES > resource_cost_type;
-typedef fc::int_array< uint16_t, HIVE_RC_NUM_RESOURCE_TYPES > resource_share_type;
+using hive::chain::rc_resource_types;
+using hive::chain::HIVE_RC_NUM_RESOURCE_TYPES;
+using hive::chain::resource_count_type;
+using hive::chain::resource_cost_type;
+using hive::chain::resource_share_type;
 
 typedef resource_count_type count_resources_result;
 
@@ -45,6 +25,3 @@ void count_resources(
   );
 
 } } } // hive::plugins::rc
-
-FC_REFLECT_TYPENAME( hive::plugins::rc::resource_count_type )
-FC_REFLECT_TYPENAME( hive::plugins::rc::resource_share_type )
