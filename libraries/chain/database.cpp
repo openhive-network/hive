@@ -4869,20 +4869,19 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
       const flat_set<public_key_type>& signature_keys = full_transaction->get_signature_keys();
       const required_authorities_type& required_authorities = full_transaction->get_required_authorities();
 
-          hive::protocol::verify_authority(required_authorities,
-                                          signature_keys,
-                                          get_active,
-                                          get_owner,
-                                          get_posting,
-                                          get_witness_key,
-                                          HIVE_MAX_SIG_CHECK_DEPTH,
-                                          has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
-                                          has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
-                                          false,
-                                          flat_set<account_name_type>(),
-                                          flat_set<account_name_type>(),
-                                          flat_set<account_name_type>(),
-                                          _postgres_not_block_log);
+      hive::protocol::verify_authority(required_authorities,
+                                       signature_keys,
+                                       get_active,
+                                       get_owner,
+                                       get_posting,
+                                       get_witness_key,
+                                       HIVE_MAX_SIG_CHECK_DEPTH,
+                                       has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
+                                       has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
+                                       false,
+                                       flat_set<account_name_type>(),
+                                       flat_set<account_name_type>(),
+                                       flat_set<account_name_type>());
 
       if (_benchmark_dumper.is_enabled())
         _benchmark_dumper.end("transaction", "verify_authority", trx.signatures.size());
