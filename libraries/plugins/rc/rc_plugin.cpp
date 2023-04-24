@@ -111,7 +111,7 @@ class rc_plugin_impl
     uint32_t                      _enable_at_block = 1;
     bool                          _enable_rc_stats = false; //needs to be false by default
 
-    std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > > _custom_operation_interpreter;
+    std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_custom_operation > > _custom_operation_interpreter;
 
     boost::signals2::connection   _pre_reindex_conn;
     boost::signals2::connection   _post_reindex_conn;
@@ -1059,7 +1059,7 @@ void rc_plugin_impl::pre_apply_custom_op_type( const custom_operation_notificati
 
 void rc_plugin_impl::on_pre_apply_custom_operation( const custom_operation_notification& note )
 {
-  pre_apply_custom_op_type< rc_plugin_operation >( note );
+  pre_apply_custom_op_type< rc_custom_operation >( note );
   // If we wanted to pre-handle other plugin operations, we could put pre_apply_custom_op_type< other_plugin_operation >( note )
 }
 
@@ -1095,7 +1095,7 @@ void rc_plugin_impl::post_apply_custom_op_type( const custom_operation_notificat
 
 void rc_plugin_impl::on_post_apply_custom_operation( const custom_operation_notification& note )
 {
-  post_apply_custom_op_type< rc_plugin_operation >( note );
+  post_apply_custom_op_type< rc_custom_operation >( note );
 }
 
 void rc_plugin_impl::on_pre_apply_optional_action( const optional_action_notification& note )
@@ -1392,7 +1392,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 
     // Each plugin needs its own evaluator registry.
-    my->_custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::plugins::rc::rc_plugin_operation > >( my->_db, name() );
+    my->_custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::plugins::rc::rc_custom_operation > >( my->_db, name() );
 
     // Add each operation evaluator to the registry
     my->_custom_operation_interpreter->register_evaluator< delegate_rc_evaluator >( this );

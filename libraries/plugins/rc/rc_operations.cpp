@@ -113,4 +113,4 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 
 } } } // hive::plugins::rc
 
-HIVE_DEFINE_OPERATION_TYPE( hive::plugins::rc::rc_plugin_operation )
+HIVE_DEFINE_OPERATION_TYPE( hive::plugins::rc::rc_custom_operation )

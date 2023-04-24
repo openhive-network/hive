@@ -1248,7 +1248,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     custom_json_operation custom_json;
     custom_json.required_posting_auths.insert( "alice" );
     custom_json.id = HIVE_RC_PLUGIN_NAME;
-    custom_json.json = fc::json::to_string( rc_plugin_operation( rc_delegation ) );
+    custom_json.json = fc::json::to_string( rc_custom_operation( rc_delegation ) );
     push_transaction( custom_json, alice_owner_key );
     auto first_delegation_extra_usage = pending_data.get_differential_usage();
     BOOST_REQUIRE_EQUAL( first_delegation_extra_usage[ resource_history_bytes ], 0 );
@@ -1265,7 +1265,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     BOOST_TEST_MESSAGE( "Create and update RC delegation with delegate_rc_operation" );
     rc_delegation.delegatees = { "bob", "sam" };
     rc_delegation.max_rc = 5000000;
-    custom_json.json = fc::json::to_string( rc_plugin_operation( rc_delegation ) );
+    custom_json.json = fc::json::to_string( rc_custom_operation( rc_delegation ) );
     push_transaction( custom_json, alice_owner_key );
     auto second_delegation_extra_usage = pending_data.get_differential_usage();
     for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i ) //just one new delegation like in first case
@@ -1277,7 +1277,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     BOOST_TEST_MESSAGE( "Update RC delegations with delegate_rc_operation" );
     rc_delegation.max_rc = 7500000;
-    custom_json.json = fc::json::to_string( rc_plugin_operation( rc_delegation ) );
+    custom_json.json = fc::json::to_string( rc_custom_operation( rc_delegation ) );
     push_transaction( custom_json, alice_owner_key );
     auto third_delegation_extra_usage = pending_data.get_differential_usage();
     BOOST_REQUIRE_EQUAL( third_delegation_extra_usage[ resource_history_bytes ], 0 );

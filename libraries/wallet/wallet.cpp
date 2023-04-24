@@ -2954,7 +2954,7 @@ wallet_signed_transaction wallet_api::delegate_rc(
   dro.max_rc  = max_rc;
 
   custom_json_operation op;
-  op.json = fc::json::to_string( rc_plugin_operation( dro ) );
+  op.json = fc::json::to_string( rc_custom_operation( dro ) );
   op.id = HIVE_RC_PLUGIN_NAME;
 
   flat_set< account_name_type > required_auths;
