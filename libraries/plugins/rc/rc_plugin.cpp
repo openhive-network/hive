@@ -3,7 +3,7 @@
 
 #include <hive/plugins/block_data_export/block_data_export_plugin.hpp>
 
-#include <hive/plugins/rc/rc_config.hpp>
+#include <hive/protocol/config.hpp>
 #include <hive/plugins/rc/rc_curve.hpp>
 #include <hive/plugins/rc/rc_export_objects.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
