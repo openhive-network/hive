@@ -1,9 +1,9 @@
 
-#include <hive/plugins/rc/resource_user.hpp>
+#include <hive/chain/rc/resource_user.hpp>
 
 #include <hive/protocol/transaction.hpp>
 
-namespace hive { namespace plugins { namespace rc {
+namespace hive { namespace chain {
 
 using namespace hive::protocol;
 
@@ -65,4 +65,4 @@ account_name_type get_resource_user( const optional_automated_action& action )
   return action.visit( vtor );
 }
 
-} } } // hive::plugins::rc
+} } // hive::chain
