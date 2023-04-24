@@ -17,6 +17,7 @@
 #include <hive/plugins/database_api/consensus_state_provider_cache.hpp>
 
 
+
 namespace hive { namespace plugins { namespace database_api {
 
 api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_object& cc, const database&)
@@ -2229,7 +2230,8 @@ void cache::add(const char* context, hive::chain::database& db)
 
 }
 
-namespace hive { namespace app {
+namespace consensus_state_provider
+{
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
   wlog("mtlk inside  pid=${pid}", ("pid", getpid()));
@@ -2290,7 +2292,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 
   return r;
 }
-}}
+}
 
 namespace
 {

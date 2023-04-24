@@ -63,28 +63,30 @@ void transaction_get_impacted_accounts(
   fc::flat_set<protocol::account_name_type>& result
   );
 
-struct collected_account_balances_t
-{
-  std::string account_name;
-  long long balance;
-  long long hbd_balance;
-  long long vesting_shares;
-  long long savings_hbd_balance;
-  long long reward_hbd_balance;
-};
 
 
-typedef std::vector<collected_account_balances_t> collected_account_balances_collection_t;
-collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context);
 
 
 bool is_keyauths_operation( const protocol::operation& op );
 
 bool is_metadata_operation( const protocol::operation& op );
 
-int consensus_state_provider_get_expected_block_num_impl(const char* context, const char* shared_memory_bin_path);
-int consume_variant_block_impl(const fc::variant& v, const char* context, int block_num, const char* shared_memory_bin_path);
-void consensus_state_provider_finish_impl(const char* context, const char* shared_memory_bin_path);
 
 
 } } // hive::app
+
+namespace consensus_state_provider
+{
+  struct collected_account_balances_t
+  {
+    std::string account_name;
+    long long balance;
+    long long hbd_balance;
+    long long vesting_shares;
+    long long savings_hbd_balance;
+    long long reward_hbd_balance;
+  };
+  typedef std::vector<collected_account_balances_t> collected_account_balances_collection_t;
+  collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context);
+}
+

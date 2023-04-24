@@ -19,8 +19,8 @@
 #include <../../../apis/block_api/include/hive/plugins/block_api/block_api_objects.hpp>
 
 
-namespace hive { namespace app {
-
+namespace consensus_state_provider
+{
 std::shared_ptr<hive::chain::full_block_type> from_variant_to_full_block_ptr(const fc::variant& v, int block_num_debug )
 {
 
@@ -43,4 +43,4 @@ std::shared_ptr<hive::chain::full_block_type> from_variant_to_full_block_ptr(con
   return hive::chain::full_block_type::create_from_signed_block(sb);
 }
 
-}}
+}
