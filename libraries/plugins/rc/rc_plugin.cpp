@@ -11,7 +11,7 @@
 #include <hive/plugins/rc/rc_operations.hpp>
 
 #include <hive/plugins/rc/resource_count.hpp>
-#include <hive/plugins/rc/resource_user.hpp>
+#include <hive/chain/rc/resource_user.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database.hpp>
@@ -40,7 +40,6 @@ bool prepare_differential_usage( const OpType& op, const database& db, count_res
 void count_resources( const optional_automated_action& action, const size_t size, count_resources_result& result, const fc::time_point_sec now );
 template< typename OpType >
 void count_resource_usage( const OpType& op, count_resources_result& result, const fc::time_point_sec now );
-account_name_type get_resource_user( const optional_automated_action& action );
 
 namespace detail {
 

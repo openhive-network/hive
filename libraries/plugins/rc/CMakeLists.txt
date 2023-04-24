@@ -5,7 +5,6 @@ add_library( rc_plugin
              rc_utility.cpp
              resource_count.cpp
              resource_sizes.cpp
-             resource_user.cpp
              rc_curve.cpp
              rc_operations.cpp
              ${HEADERS}
