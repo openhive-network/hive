@@ -2228,10 +2228,7 @@ void cache::add(const char* context, hive::chain::database& db)
 
 
 
-}
 
-namespace consensus_state_provider
-{
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
   wlog("mtlk inside  pid=${pid}", ("pid", getpid()));
