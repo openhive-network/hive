@@ -1,7 +1,7 @@
 #pragma once
 #include <hive/chain/util/manabar.hpp>
 
-#include <hive/plugins/rc/rc_config.hpp>
+#include <hive/protocol/config.hpp>
 #include <hive/plugins/rc/rc_export_objects.hpp>
 #include <hive/plugins/rc/rc_stats.hpp>
 #include <hive/plugins/rc/rc_utility.hpp>
@@ -23,6 +23,10 @@ namespace hive { namespace plugins { namespace rc {
 using namespace std;
 using namespace hive::chain;
 using hive::protocol::asset;
+
+#ifndef HIVE_RC_SPACE_ID
+#define HIVE_RC_SPACE_ID 16
+#endif
 
 enum rc_object_types
 {

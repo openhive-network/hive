@@ -1,6 +1,5 @@
 #include <hive/protocol/config.hpp>
 
-#include <hive/plugins/rc/rc_config.hpp>
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/rc_operations.hpp>
 
