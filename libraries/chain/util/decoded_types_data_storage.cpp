@@ -68,7 +68,12 @@ decoded_type_data::decoded_type_data(const std::string& json)
 
   try
   {
-  fc::from_variant(fc::json::from_string(json), *this);
+    fc::variant v = fc::json::from_string(json);
+    fc::variant_object vo = v.get_object();
+    if (!vo.contains("reflected"))
+      FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with decoded type data misses reflected flag. ${json}", (json));
+
+    fc::from_variant(v, *this);
   }
   FC_RETHROW_EXCEPTIONS(error, "Cannot create decoded_type_data from json: ${json}", (json))
 
