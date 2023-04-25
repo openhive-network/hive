@@ -12,9 +12,6 @@
 
 #include <hive/chain/util/reward.hpp>
 
-#include <hive/plugins/rc/rc_objects.hpp>
-#include <hive/plugins/rc/resource_count.hpp>
-
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/util/dhf_processor.hpp>
 
