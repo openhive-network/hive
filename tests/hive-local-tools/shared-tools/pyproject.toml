@@ -15,3 +15,6 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
+cython = "0.29.34"
+setuptools = "59.6.0"
+scikit-build = "0.17.2"
