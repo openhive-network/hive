@@ -1291,12 +1291,13 @@ namespace chainbase {
       const abstract_index_cntr_t& get_abstract_index_cntr() const
         { return _index_list; }
 
+      std::string get_decoded_state_objects_data() const;
+
     protected:
       bool get_is_open() const
         { return _is_open; }
 
       void set_decoded_state_objects_data(const std::string& json);
-      std::string get_decoded_state_objects_data() const;
 
     private:
       template<typename MultiIndexType>
