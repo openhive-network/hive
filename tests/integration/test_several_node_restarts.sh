@@ -9,9 +9,8 @@ wait_for_instance() {
   echo "Waiting for instance hosted by container: ${container_name}."
 
   docker inspect ${container_name} || true
-
+  ping -c 3 1.1.1.1
   CONTAINER_IP=$(docker inspect ${container_name} --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' || true)
-  ping -c 3 ${CONTAINER_IP}
   timeout $LIMIT bash <<EOF
   until [ ! -z "$CONTAINER_IP" ]
   do
