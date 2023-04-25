@@ -37,13 +37,14 @@ include:
 
 several_node_restarts_tests:
   extends: .prepare_hived_data_5m
+  image:
+    name: "registry.gitlab.syncad.com/hive/common-ci-configuration/docker-builder@sha256:e0ed8144d6ad147ade7de3a6cf4d1fd809afacd063c585e4172daae24ea66ebd"
   stage: test
   variables:
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
     HIVED_IMAGE_NAME: registry.gitlab.syncad.com/hive/hive/instance:instance-f7e1d658072ed8db9252c0b481599870442f7c90
 
   script:
-    - chmod a+x ./tests/integration/test_several_node_restarts.sh
     - ./tests/integration/test_several_node_restarts.sh
   tags:
     - public-runner-docker
