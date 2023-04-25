@@ -26,6 +26,8 @@ EOF
 
   sleep $LIMIT
 
+  docker logs ${container_name}
+
   docker container exec -t ${container_name} timeout $LIMIT bash -c "until curl --max-time 30  --data '{\"jsonrpc\": \"2.0\",\"method\": \"database_api.get_dynamic_global_properties\",\"id\": 1}' ${CONTAINER_IP}:8090; do sleep 3 ; done"
 }
 
