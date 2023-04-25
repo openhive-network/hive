@@ -70,7 +70,9 @@ add_library( hive_chain
              util/operation_extractor.cpp
              util/data_filter.cpp
 
+             rc/rc_utility.cpp
              rc/resource_user.cpp
+
              ${HEADERS}
            )
 

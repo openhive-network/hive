@@ -4,7 +4,7 @@
 #include <hive/protocol/config.hpp>
 #include <hive/plugins/rc/rc_export_objects.hpp>
 #include <hive/plugins/rc/rc_stats.hpp>
-#include <hive/plugins/rc/rc_utility.hpp>
+#include <hive/chain/rc/rc_utility.hpp>
 #include <hive/plugins/rc/resource_count.hpp>
 #include <hive/chain/database.hpp>
 

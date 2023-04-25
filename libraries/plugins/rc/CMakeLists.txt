@@ -2,7 +2,6 @@ file(GLOB HEADERS "include/hive/plugins/rc/*.hpp")
 
 add_library( rc_plugin
              rc_plugin.cpp
-             rc_utility.cpp
              resource_count.cpp
              resource_sizes.cpp
              rc_curve.cpp

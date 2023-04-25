@@ -1,12 +1,14 @@
 
 #pragma once
-#include <hive/plugins/rc/rc_utility.hpp>
+#include <hive/chain/rc/rc_utility.hpp>
 
 #include <hive/protocol/types.hpp>
 
 #include <fc/time.hpp>
 
 namespace hive { namespace plugins { namespace rc {
+
+using hive::chain::rc_price_curve_params;
 
 struct rc_curve_gen_params
 {
@@ -22,7 +24,7 @@ struct rc_curve_gen_params
 
 void generate_rc_curve_params(
   rc_price_curve_params& price_curve_params,
-  const rd_dynamics_params& resource_dynamics_params,
+  const hive::chain::util::rd_dynamics_params& resource_dynamics_params,
   const rc_curve_gen_params& curve_gen_params
   );
 

@@ -255,7 +255,7 @@ int64_t rc_plugin_impl::calculate_cost_of_resources( int64_t total_vests, rc_inf
       int64_t pool_regen_share = fc::uint128_to_int64( ( uint128_t( rc_regen ) * pool_obj.get_weight(i) ) / pool_obj.get_weight_divisor() );
       if( pool_regen_share > 0 )
       {
-        usage_info.cost[i] = compute_rc_cost_of_resource( params.price_curve_params, pool, usage_info.usage[i], pool_regen_share );
+        usage_info.cost[i] = resource_credits::compute_cost( params.price_curve_params, pool, usage_info.usage[i], pool_regen_share );
         total_cost += usage_info.cost[i];
       }
     }
