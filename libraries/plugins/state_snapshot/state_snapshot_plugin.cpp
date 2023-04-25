@@ -7,6 +7,8 @@
 #include <chainbase/state_snapshot_support.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/util/decoded_types_data_storage.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -39,7 +41,7 @@
 
 namespace bpo = boost::program_options;
 
-#define SNAPSHOT_FORMAT_VERSION "2.0"
+#define SNAPSHOT_FORMAT_VERSION "2.1"
 
 namespace {
 
@@ -928,7 +930,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       void store_snapshot_manifest(const bfs::path& actualStoragePath, const std::vector<std::unique_ptr<index_dump_writer>>& builtWriters,
         const snapshot_dump_supplement_helper& dumpHelper) const;
 
-      std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> load_snapshot_manifest(const bfs::path& actualStoragePath);
+      std::tuple<snapshot_manifest, plugin_external_data_index, std::string, uint32_t> load_snapshot_manifest(const bfs::path& actualStoragePath);
       void load_snapshot_external_data(const plugin_external_data_index& idx);
 
       void load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs);
@@ -1007,6 +1009,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
   ::rocksdb::ColumnFamilyHandle* manifestCF = db.create_column_family("INDEX_MANIFEST");
   ::rocksdb::ColumnFamilyHandle* externalDataCF = db.create_column_family("EXTERNAL_DATA");
   ::rocksdb::ColumnFamilyHandle* snapshotManifestCF = db.create_column_family("IRREVERSIBLE_STATE");
+  ::rocksdb::ColumnFamilyHandle* StateDefinitionsDataCF = db.create_column_family("STATE_DEFINITIONS_DATA");
 
   ::rocksdb::WriteOptions writeOptions;
 
@@ -1086,10 +1089,25 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
     }
   }
 
+    {
+    const std::string json = _mainDb.get_decoded_state_objects_data();
+    Slice key("STATE_DEFINITIONS_DATA");
+    Slice value(json);
+    auto status = db->Put(writeOptions, StateDefinitionsDataCF, key, value);
+
+    if(status.ok() == false)
+    {
+      elog("Cannot write an index manifest entry to output file: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+      ilog("Failing key value: \"STATE_DEFINITIONS_DATA\"");
+
+      throw std::exception();
+    }
+  }
+
   db.close();
   }
 
-std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
+std::tuple<snapshot_manifest, plugin_external_data_index, std::string, uint32_t> state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath)
 {
   bfs::path manifestDbPath(actualStoragePath);
   manifestDbPath /= "snapshot-manifest";
@@ -1111,6 +1129,10 @@ std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> state_snapsh
 
   cfDescriptor = ::rocksdb::ColumnFamilyDescriptor();
   cfDescriptor.name = "IRREVERSIBLE_STATE";
+  cfDescriptors.push_back(cfDescriptor);
+
+  cfDescriptor = ::rocksdb::ColumnFamilyDescriptor();
+  cfDescriptor.name = "STATE_DEFINITIONS_DATA";
   cfDescriptors.push_back(cfDescriptor);
 
   std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
@@ -1236,6 +1258,23 @@ std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> state_snapsh
     FC_ASSERT(irreversibleStateIterator->Valid() == false, "Unexpected entries specifying irreversible block ?");
   }
 
+  std::string state_definitions_data;
+
+  {
+    ::rocksdb::ReadOptions rOptions;
+
+    std::unique_ptr<::rocksdb::Iterator> stateDefinitionsDataIterator(manifestDb->NewIterator(rOptions, cfHandles[4]));
+    stateDefinitionsDataIterator->SeekToFirst();
+    FC_ASSERT(stateDefinitionsDataIterator->Valid(), "No entry for STATE_DEFINITIONS_DATA. Probably used old snapshot format (must be regenerated).");
+
+    Slice keySlice = stateDefinitionsDataIterator->key();
+    auto valueSlice = stateDefinitionsDataIterator->value();
+
+    std::string keyName = keySlice.ToString();
+    FC_ASSERT(keyName == "STATE_DEFINITIONS_DATA", "Broken snapshot - no entry for STATE_DEFINITIONS_DATA");
+    state_definitions_data = valueSlice.ToString();
+  }
+
   for(auto* cfh : cfHandles)
   {
     status = manifestDb->DestroyColumnFamilyHandle(cfh);
@@ -1248,7 +1287,7 @@ std::tuple<snapshot_manifest, plugin_external_data_index, uint32_t> state_snapsh
   manifestDb->Close();
   manifestDbPtr.release();
 
-  return std::make_tuple(retVal, extDataIdx, lib);
+  return std::make_tuple(retVal, extDataIdx, std::move(state_definitions_data), lib);
 }
 
 void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_external_data_index& idx)
@@ -1382,6 +1421,36 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
 
   auto snapshotManifest = load_snapshot_manifest(actualStoragePath);
 
+  {
+    const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
+    chain::util::decoded_types_data_storage dtds(_mainDb.get_decoded_state_objects_data());
+
+    auto result = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(loaded_decoded_type_data);
+    if (!result.first)
+    {
+      std::fstream loaded_decoded_types_details, current_decoded_types_details;
+      constexpr char current_data_filename[] = "current_decoded_types_details.log";
+      constexpr char loaded_data_filename[] = "loaded_from_snapshot_decoded_types_details.log";
+
+      loaded_decoded_types_details.open(loaded_data_filename, std::ios::out | std::ios::trunc);
+      if (loaded_decoded_types_details.good())
+        loaded_decoded_types_details << dtds.generate_decoded_types_data_pretty_string(loaded_decoded_type_data);
+      loaded_decoded_types_details.flush();
+      loaded_decoded_types_details.close();
+
+      current_decoded_types_details.open(current_data_filename, std::ios::out | std::ios::trunc);
+      if (current_decoded_types_details.good())
+        current_decoded_types_details << dtds.generate_decoded_types_data_pretty_string();
+      current_decoded_types_details.flush();
+      current_decoded_types_details.close();
+
+      FC_THROW_EXCEPTION(chain::state_object_definitions_mismatch,
+        "State objects definitions from snapshot mismatch state object definitions from binary.\nDetails:\n ${details}\n"
+        "Full data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
+        ("details", result.second)(current_data_filename)(loaded_data_filename));
+    }
+  }
+
   _mainDb.resetState(openArgs);
 
   const auto& indices = _mainDb.get_abstract_index_cntr();
@@ -1425,7 +1494,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     load_snapshot_external_data(extDataIdx);
   }
 
-  auto last_irr_block = std::get<2>(snapshotManifest);
+  auto last_irr_block = std::get<3>(snapshotManifest);
   // set irreversible block number after database::resetState
   _mainDb.set_last_irreversible_block_num(last_irr_block);
 
