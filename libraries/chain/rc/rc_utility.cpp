@@ -1,14 +1,14 @@
 
-#include <hive/plugins/rc/rc_utility.hpp>
+#include <hive/chain/rc/rc_utility.hpp>
 
 #include <fc/reflect/variant.hpp>
 #include <fc/uint128.hpp>
 
-namespace hive { namespace plugins { namespace rc {
+namespace hive { namespace chain {
 
 using fc::uint128_t;
 
-int64_t compute_rc_cost_of_resource(
+int64_t resource_credits::compute_cost(
   const rc_price_curve_params& curve_params,
   int64_t current_pool,
   int64_t resource_count,
@@ -16,7 +16,7 @@ int64_t compute_rc_cost_of_resource(
   )
 {
   /*
-  ilog( "compute_rc_cost_of_resources( ${params}, ${pool}, ${res}, ${reg} )",
+  ilog( "resource_credits::compute_cost( ${params}, ${pool}, ${res}, ${reg} )",
     ("params", curve_params)
     ("pool", current_pool)
     ("res", resource_count)
@@ -27,7 +27,7 @@ int64_t compute_rc_cost_of_resource(
   if( resource_count <= 0 )
   {
     if( resource_count < 0 )
-      return -compute_rc_cost_of_resource( curve_params, current_pool, -resource_count, rc_regen );
+      return -compute_cost( curve_params, current_pool, -resource_count, rc_regen );
     return 0;
   }
   uint128_t num = uint128_t( rc_regen );
@@ -51,4 +51,4 @@ int64_t compute_rc_cost_of_resource(
   return fc::uint128_to_uint64(num_denom)+1;
 }
 
-} } }
+} }
