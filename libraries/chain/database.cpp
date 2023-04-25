@@ -5417,6 +5417,12 @@ void database::update_global_dynamic_data( const signed_block& b )
 ;
   assert( missed_blocks != 0 );
   missed_blocks--;
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+  // For non-mainnet configurations generation of virtual operations related to missed blocks
+  // is optional and configurable, see comments to configuration::generate_missed_block_operations
+  if( configuration_data.get_generate_missed_block_operations() )
+#endif
   if( head_block_num() != 0 )
   {
     auto start_time = fc::time_point::now();
@@ -5433,25 +5439,20 @@ void database::update_global_dynamic_data( const signed_block& b )
             if( head_block_num() - w.last_confirmed_block_num  > HIVE_WITNESS_SHUTDOWN_THRESHOLD )
             {
               w.signing_key = public_key_type();
-#ifdef USE_ALTERNATE_CHAIN_ID
-              if( configuration_data.get_generate_missed_block_operations() )
-#endif
-                push_virtual_operation( shutdown_witness_operation( w.owner ) );
+              push_virtual_operation( shutdown_witness_operation( w.owner ) );
             }
           }
-#ifdef USE_ALTERNATE_CHAIN_ID
-          if( configuration_data.get_generate_missed_block_operations() )
-#endif
-            push_virtual_operation( producer_missed_operation( w.owner ) );
+          push_virtual_operation( producer_missed_operation( w.owner ) );
         } );
       }
     }
-
+    
     if (missed_blocks != 0)
     {
       fc::microseconds loop_time = fc::time_point::now() - start_time;
-      ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)", 
-        (missed_blocks)("ms", loop_time.count()/1000)("us", loop_time) );
+      if( loop_time.count() > 1000000ll ) // Report delay longer than 1s.
+        ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)", 
+          (missed_blocks)("ms", loop_time.count()/1000)("us", loop_time) );
     }
   }
 
