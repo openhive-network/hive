@@ -222,4 +222,9 @@ std::pair<bool, std::string> decoded_types_data_storage::check_if_decoded_types_
   return std::pair<bool, std::string>(no_difference_detected, error_ss.str());
 }
 
+decoded_types_data_storage::decoded_types_data_storage(const std::string& decoded_types_data_json)
+{
+  decoded_types_data_map = generate_data_map_from_json(decoded_types_data_json);
+}
+
 } } } // hive::chain::util

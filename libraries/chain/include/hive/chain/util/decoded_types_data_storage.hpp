@@ -81,7 +81,8 @@ class decoded_types_data_storage final
   public:
     // stores data about decoded types.
     using decoded_types_map_t = std::map<std::string, decoded_type_data>;
-
+    decoded_types_data_storage() = default;
+    decoded_types_data_storage(const std::string& decoded_types_data_json);
     ~decoded_types_data_storage();
 
     template <typename T>
