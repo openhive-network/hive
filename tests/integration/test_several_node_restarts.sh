@@ -23,8 +23,6 @@ wait_for_instance() {
 EOF
 
   echo "Querying for service status..."
-
-  docker container exec -t ${container_name} timeout $LIMIT bash -c "until curl --max-time 30  --data '{\"jsonrpc\": \"2.0\",\"method\": \"database_api.get_dynamic_global_properties\",\"id\": 1}' 127.0.0.1:8090; do sleep 3 ; done"
 }
 
 #SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -49,3 +47,20 @@ docker network ls
 
 wait_for_instance haf-instance-5M
 
+docker logs haf-instance-5M -f &
+
+sleep 180
+CONTAINER_IP=$(docker inspect haf-instance-5M --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' || true)
+curl $CONTAINER_IP:8090
+
+container_name=haf-instance-5M
+LIMIT=300
+docker container exec -t ${container_name} timeout $LIMIT bash -c "ps -auxw"
+
+docker network ls -q | xargs -n 1 -I {} docker inspect {}
+docker ps -a
+hostname -i
+context ls
+
+docker container exec -t ${container_name} timeout $LIMIT bash -c "curl --verbose 127.0.0.1:8091"
+docker container exec -t ${container_name} timeout $LIMIT bash -c "curl --verbose 127.0.0.1:8090"
