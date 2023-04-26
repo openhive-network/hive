@@ -26,12 +26,12 @@ echo "Create replay environment..."
 "$SCRIPTS_PATH/ci-helpers/prepare_data_and_shm_dir.sh" --data-base-dir="$SOURCE_DATA_DIR" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR_5M" --config-ini-source="$CONFIG_INI_SOURCE"
 
 echo "Start first replay: "
-"$SCRIPTS_PATH"/run_hived_img.sh "$HIVED_IMAGE_NAME" --data-dir="$SOURCE_DATA_DIR"/datadir --name=$instance_name --docker-option="--network=bridge" --replay --stop-replay-at-block=1000000 --detach
+"$SCRIPTS_PATH"/run_hived_img.sh "$HIVED_IMAGE_NAME" --data-dir="$SOURCE_DATA_DIR"/datadir --name=$instance_name --docker-option="--network=bridge" --replay --stop-replay-at-block=1000000 --detach --no-rm
 wait_for_instance $instance_name $first_replay_block_limit
 test "$(docker wait $instance_name)" = 0
 
 echo "Start second replay: "
-"$SCRIPTS_PATH"/run_hived_img.sh "$HIVED_IMAGE_NAME" --data-dir="$SOURCE_DATA_DIR"/datadir --name=$instance_name --docker-option="--network=bridge" --replay --stop-replay-at-block=1500000 --detach
+"$SCRIPTS_PATH"/run_hived_img.sh "$HIVED_IMAGE_NAME" --data-dir="$SOURCE_DATA_DIR"/datadir --name=$instance_name --docker-option="--network=bridge" --replay --stop-replay-at-block=1500000 --detach --no-rm
 wait_for_instance $instance_name $second_replay_block_limit
 test "$(docker wait $instance_name)" = 0
 
