@@ -28,7 +28,7 @@ EOF
 
   echo "Querying for service status..."
   docker logs ${container_name}
-  docker container exec -t ${container_name} timeout $LIMIT bash -c "until curl --max-time 30  --data '{\"jsonrpc\": \"2.0\",\"method\": \"database_api.get_dynamic_global_properties\",\"id\": 1}' ${CONTAINER_IP}:8090  | grep -o '\"head_block_number\":${number_of_blocks_to_replay},'; do sleep 3 ; done"
+  docker container exec -t ${container_name} timeout $LIMIT bash -c "until curl --max-time 30  --data '{\"jsonrpc\": \"2.0\",\"method\": \"database_api.get_dynamic_global_properties\",\"id\": 1}' localhost:8090  | grep -o '\"head_block_number\":${number_of_blocks_to_replay},'; do sleep 3 ; done"
   docker stop ${container_name}
 }
 
