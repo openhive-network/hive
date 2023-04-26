@@ -1,11 +1,13 @@
 #pragma once
 
-#include <hive/plugins/rc/resource_count.hpp>
+#include <hive/chain/rc/resource_count.hpp>
+
+#include <hive/protocol/operations.hpp>
 
 #include <fc/int_array.hpp>
 #include <fc/reflect/reflect.hpp>
 
-namespace hive { namespace plugins { namespace rc {
+namespace hive { namespace chain {
 
 constexpr auto HIVE_RC_NUM_OPERATIONS = hive::protocol::operation::tag< hive::protocol::fill_convert_request_operation >::value;
 constexpr auto HIVE_RC_NUM_PAYER_RANKS = 8;
@@ -47,15 +49,15 @@ struct rc_payer_stats
   }
 };
 
-} } } // hive::plugins::rc
+} } // hive::chain
 
-FC_REFLECT( hive::plugins::rc::rc_op_stats,
+FC_REFLECT( hive::chain::rc_op_stats,
   (usage)
   (cost)
   (count)
 )
 
-FC_REFLECT( hive::plugins::rc::rc_payer_stats,
+FC_REFLECT( hive::chain::rc_payer_stats,
   (usage)
   (cost)
   (less_than_5_percent)
