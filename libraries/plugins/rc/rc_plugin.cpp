@@ -2,10 +2,11 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/block_data_export/block_data_export_plugin.hpp>
+#include <hive/plugins/block_data_export/exportable_block_data.hpp>
 
 #include <hive/protocol/config.hpp>
 #include <hive/chain/rc/rc_curve.hpp>
-#include <hive/plugins/rc/rc_export_objects.hpp>
+#include <hive/chain/rc/rc_export_objects.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/rc/rc_operations.hpp>
@@ -34,6 +35,45 @@
 namespace hive { namespace plugins { namespace rc {
 
 using hive::plugins::block_data_export::block_data_export_plugin;
+using hive::plugins::block_data_export::exportable_block_data;
+
+struct exp_rc_data : public exportable_block_data
+{
+  exp_rc_data() {}
+  virtual ~exp_rc_data() {}
+
+  virtual void to_variant( fc::variant& v )const override
+  {
+    fc::to_variant( *this, v );
+  }
+
+  void add_tx_info( const rc_transaction_info& tx_info )
+  {
+    if( !txs.valid() )
+      txs = std::vector< rc_transaction_info >();
+    txs->emplace_back( tx_info );
+  }
+  void add_opt_action_info( const rc_optional_action_info& action_info )
+  {
+    if( !opt_actions.valid() )
+      opt_actions = std::vector< rc_optional_action_info >();
+    opt_actions->emplace_back( action_info );
+  }
+
+  rc_block_info                                      block;
+  optional< std::vector< rc_transaction_info > >     txs;
+  optional< std::vector< rc_optional_action_info > > opt_actions;
+};
+
+} } } // namespace hive::plugins::rc
+
+FC_REFLECT( hive::plugins::rc::exp_rc_data,
+  ( block )
+  ( txs )
+  ( opt_actions )
+)
+
+namespace hive { namespace plugins { namespace rc {
 
 template< typename OpType >
 bool prepare_differential_usage( const OpType& op, const database& db, count_resources_result& result );
@@ -1464,14 +1504,6 @@ fc::variant_object rc_plugin::get_report( report_type rt, bool pending ) const
 {
   const rc_stats_object& stats = my->_db.get< rc_stats_object >( pending ? RC_PENDING_STATS_ID : RC_ARCHIVE_STATS_ID );
   return my->get_report( rt, stats );
-}
-
-exp_rc_data::exp_rc_data() {}
-exp_rc_data::~exp_rc_data() {}
-
-void exp_rc_data::to_variant( fc::variant& v )const
-{
-  fc::to_variant( *this, v );
 }
 
 void rc_stats_object::archive_and_reset_stats( rc_stats_object& archive, const rc_pool_object& pool_obj,
