@@ -67,6 +67,7 @@ while [ $# -gt 0 ]; do
         HIVED_DATADIR="${1#*=}"
         add_docker_arg "-v ${HIVED_DATADIR}:/home/hived/datadir/"
         ;;
+
     --shared-file-dir=*)
         HIVED_SHM_FILE_DIR="${1#*=}"
         ;;
@@ -90,8 +91,12 @@ while [ $# -gt 0 ]; do
         add_hived_arg "$1"
         ;;
      *)
-        IMAGE_NAME="${1}"
-        echo "Using image name: $IMAGE_NAME"
+        if [ -z "$IMAGE_NAME" ]; then
+            IMAGE_NAME="${1}"
+            echo "Using image name: $IMAGE_NAME"
+        else
+          add_hived_arg "${1}"
+        fi
         ;;
     esac
     shift
