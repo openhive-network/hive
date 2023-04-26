@@ -13,22 +13,9 @@ wait_for_instance() {
 
   echo "Waiting for instance hosted by container: ${container_name}."
 
-  CONTAINER_IP=$(docker inspect ${container_name} --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' || true)
-  echo "container ip: $CONTAINER_IP"
-
-  timeout $LIMIT bash <<EOF
-  until [ ! -z "$CONTAINER_IP" ]
-  do
-    echo "Unable to get ${container_name} container IP.."
-    docker inspect ${container_name} || true
-    CONTAINER_IP=$(docker inspect ${container_name} --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' || true)
-    sleep 3
-  done
-EOF
-
   echo "Querying for service status..."
   docker logs ${container_name}
-  docker container exec -t ${container_name} timeout $LIMIT bash -c "until curl --max-time 30  --data '{\"jsonrpc\": \"2.0\",\"method\": \"database_api.get_dynamic_global_properties\",\"id\": 1}' ${CONTAINER_IP}:8090  | grep -o '\"head_block_number\":${number_of_blocks_to_replay},'; do sleep 3 ; done"
+  docker container exec -t ${container_name} timeout $LIMIT bash -c "until curl --max-time 30  --data '{\"jsonrpc\": \"2.0\",\"method\": \"database_api.get_dynamic_global_properties\",\"id\": 1}' localhost:8090  | grep -o '\"head_block_number\":${number_of_blocks_to_replay},'; do sleep 3 ; done"
   docker stop ${container_name}
 }
 
