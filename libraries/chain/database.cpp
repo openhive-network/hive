@@ -4052,9 +4052,10 @@ void database::check_state_objects_definitions()
       current_decoded_types_details.flush();
       current_decoded_types_details.close();
 
-      FC_THROW_EXCEPTION(state_object_definitions_mismatch, "State objects definitions mismatch.\nDetails:\n ${details}\n"
-                                                            "Full data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-                                                            ("details", result.second)(current_data_filename)(loaded_data_filename));
+      FC_THROW_EXCEPTION(shm_state_definitions_mismatch_exception,
+                         "Details:\n ${details}"
+                         "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
+                         ("details", result.second)(current_data_filename)(loaded_data_filename));
     }
   }
 

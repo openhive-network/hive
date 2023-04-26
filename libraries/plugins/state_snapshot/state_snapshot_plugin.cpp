@@ -1444,9 +1444,9 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
       current_decoded_types_details.flush();
       current_decoded_types_details.close();
 
-      FC_THROW_EXCEPTION(chain::state_object_definitions_mismatch,
-        "State objects definitions from snapshot mismatch state object definitions from binary.\nDetails:\n ${details}\n"
-        "Full data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
+      FC_THROW_EXCEPTION(chain::snapshot_state_definitions_mismatch_exception,
+        "Details:\n ${details}"
+        "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
         ("details", result.second)(current_data_filename)(loaded_data_filename));
     }
   }
