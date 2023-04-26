@@ -805,3 +805,15 @@ mirrornet-replay:
 mirrornet-data-cleanup:
   extends: .data-cleanup-template
   stage: cleanup
+
+several_node_restarts_tests:
+  extends: .prepare_hived_data_5m
+  stage: test
+  variables:
+    CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
+    HIVED_IMAGE_NAME: registry.gitlab.syncad.com/hive/hive/instance:instance-f7e1d658072ed8db9252c0b481599870442f7c90
+
+  script:
+    - ./tests/integration/test_several_node_restarts.sh hive-instance-5m 1000000 1500000
+  tags:
+    - public-runner-docker
