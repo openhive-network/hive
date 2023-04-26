@@ -4,7 +4,6 @@ add_library( rc_plugin
              rc_plugin.cpp
              resource_count.cpp
              resource_sizes.cpp
-             rc_curve.cpp
              rc_operations.cpp
              ${HEADERS}
            )
