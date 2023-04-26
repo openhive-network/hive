@@ -1,6 +1,6 @@
 #pragma once
 #include <hive/plugins/json_rpc/utility.hpp>
-#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects.hpp>
 
 #include <hive/protocol/types.hpp>
 
@@ -12,6 +12,8 @@
 #define RC_API_SINGLE_QUERY_LIMIT 1000
 
 namespace hive { namespace plugins { namespace rc {
+
+using namespace hive::chain;
 
 namespace detail
 {

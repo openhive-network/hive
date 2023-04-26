@@ -8,7 +8,7 @@
 #include <hive/chain/rc/rc_curve.hpp>
 #include <hive/chain/rc/rc_export_objects.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
-#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects.hpp>
 #include <hive/plugins/rc/rc_operations.hpp>
 
 #include <hive/plugins/rc/resource_count.hpp>
@@ -36,6 +36,7 @@ namespace hive { namespace plugins { namespace rc {
 
 using hive::plugins::block_data_export::block_data_export_plugin;
 using hive::plugins::block_data_export::exportable_block_data;
+using namespace hive::chain;
 
 struct exp_rc_data : public exportable_block_data
 {
@@ -137,7 +138,6 @@ class rc_plugin_impl
 
     fc::variant_object get_report( report_type rt, const rc_stats_object& stats ) const;
 
-    bool has_expired_delegation() const;
     void handle_expired_delegations();
 
     void update_rc_for_custom_action( std::function<void()>&& callback, const account_name_type& account_name ) const;
@@ -1506,76 +1506,6 @@ fc::variant_object rc_plugin::get_report( report_type rt, bool pending ) const
   return my->get_report( rt, stats );
 }
 
-void rc_stats_object::archive_and_reset_stats( rc_stats_object& archive, const rc_pool_object& pool_obj,
-  uint32_t _block_num, int64_t _regen )
-{
-  //copy all data to archive (but not the id)
-  {
-    auto _id = archive.id;
-    archive = copy_chain_object();
-    archive.id = _id;
-  }
-
-  block_num = _block_num;
-  regen = _regen;
-  budget = pool_obj.get_last_known_budget();
-  pool = pool_obj.get_pool();
-  for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
-    share[i] = pool_obj.count_share(i);
-  for( int i = 0; i < 3; ++i )
-    if( op_stats[i].count > 0 ) //leave old value if there is no new data
-      average_cost[i] = op_stats[i].average_cost();
-
-  op_stats = {};
-  payer_stats = {};
-}
-
-void rc_stats_object::add_stats( const rc_info& tx_info )
-{
-  int _op_idx = op_stats.size() - 1; //multiop transaction by default
-  if( tx_info.op.valid() )
-    _op_idx = tx_info.op.value();
-  rc_op_stats& _op_stats = op_stats[ _op_idx ];
-
-  _op_stats.count += 1;
-  for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
-  {
-    _op_stats.cost[i] += tx_info.cost[i];
-    _op_stats.usage[i] += tx_info.usage[i];
-  }
-
-  if( tx_info.max > 0 )
-  {
-    int _payer_rank = log10( tx_info.max ) - 9;
-    if( _payer_rank < 0 )
-      _payer_rank = 0;
-    if( _payer_rank >= HIVE_RC_NUM_PAYER_RANKS )
-      _payer_rank = HIVE_RC_NUM_PAYER_RANKS - 1;
-    rc_payer_stats& _payer_stats = payer_stats[ _payer_rank ];
-
-    _payer_stats.count += 1;
-    for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
-    {
-      _payer_stats.cost[i] += tx_info.cost[i];
-      _payer_stats.usage[i] += tx_info.usage[i];
-    }
-    // since it is just statistics we can do rough calculations:
-    int64_t low_rc = tx_info.max / 20; // 5%
-    if( tx_info.rc < low_rc )
-      _payer_stats.less_than_5_percent += 1;
-    low_rc <<= 1; // 10%
-    if( tx_info.rc < low_rc )
-      _payer_stats.less_than_10_percent += 1;
-    low_rc <<= 1; // 20%
-    if( tx_info.rc < low_rc )
-      _payer_stats.less_than_20_percent += 1;
-
-    for( int i = 0; i < 3; ++i )
-      if( tx_info.rc < average_cost[i] )
-        _payer_stats.cant_afford[i] += 1;
-  }
-}
-
 void update_account_after_rc_delegation( database& _db, const account_object& account,
   uint32_t now, int64_t delta, bool regenerate_mana )
 {
@@ -1648,11 +1578,3 @@ void remove_delegations( database& _db, int64_t& delegation_overflow, account_id
 }
 
 } } } // hive::plugins::rc
-
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_expired_delegation_index)
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_resource_param_index)
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_pool_index)
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_stats_index)
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_pending_data_index)
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_direct_delegation_index)
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::rc::rc_usage_bucket_index)

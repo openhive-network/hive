@@ -1,15 +1,4 @@
-
-#include <hive/chain/hive_object_types.hpp>
-
 #include <hive/chain/index.hpp>
-
-#include <hive/chain/block_summary_object.hpp>
-#include <hive/chain/pending_required_action_object.hpp>
-#include <hive/chain/pending_optional_action_object.hpp>
-#include <hive/chain/smt_objects.hpp>
-#include <hive/chain/hive_objects.hpp>
-#include <hive/chain/transaction_object.hpp>
-#include <hive/chain/witness_schedule.hpp>
 
 namespace hive { namespace chain {
 
@@ -24,6 +13,8 @@ void initialize_core_indexes_08( database& db );
 void initialize_core_indexes_09( database& db );
 void initialize_core_indexes_10( database& db );
 void initialize_core_indexes_11( database& db );
+void initialize_core_indexes_12( database& db );
+void initialize_core_indexes_13( database& db );
 
 void initialize_core_indexes( database& db )
 {
@@ -38,6 +29,8 @@ void initialize_core_indexes( database& db )
   initialize_core_indexes_09( db );
   initialize_core_indexes_10( db );
   initialize_core_indexes_11( db );
+  initialize_core_indexes_12( db );
+  initialize_core_indexes_13( db );
 }
 
 index_info::index_info() {}

@@ -15,7 +15,7 @@
 #include <hive/plugins/follow/follow_operations.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 #include <hive/wallet/misc_utilities.hpp>
-#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects.hpp>
 #include <hive/plugins/rc/rc_operations.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
