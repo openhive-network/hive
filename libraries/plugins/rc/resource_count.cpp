@@ -1,7 +1,7 @@
 
 #include <hive/plugins/rc/resource_count.hpp>
 #include <hive/plugins/rc/resource_sizes.hpp>
-#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects.hpp>
 #include <hive/plugins/rc/rc_operations.hpp>
 
 #include <hive/protocol/operations.hpp>

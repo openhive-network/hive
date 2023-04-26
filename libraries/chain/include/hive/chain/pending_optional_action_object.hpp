@@ -21,6 +21,8 @@ class pending_optional_action_object : public object< pending_optional_action_ob
   CHAINBASE_UNPACK_CONSTRUCTOR(pending_optional_action_object);
 };
 
+struct by_execution;
+
 typedef multi_index_container<
   pending_optional_action_object,
   indexed_by<

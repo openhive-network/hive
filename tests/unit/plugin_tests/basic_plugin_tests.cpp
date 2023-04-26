@@ -6,7 +6,6 @@
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
 #include <hive/plugins/follow/follow_objects.hpp>
 #include <hive/plugins/market_history/market_history_plugin.hpp>
-#include <hive/plugins/rc/rc_objects.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/tags/tags_plugin.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
@@ -148,29 +147,6 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
   BOOST_CHECK_EQUAL( sizeof( market_history::order_history_object ), 88u ); //permanent, growing with executed limit_order_object, 2.5M atm
   BOOST_CHECK_EQUAL( sizeof( market_history::order_history_index::MULTIINDEX_NODE_TYPE ), 152u );
 
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_resource_param_object ), 368u ); //singleton
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_resource_param_index::MULTIINDEX_NODE_TYPE ), 400u );
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_object ), 176u ); //singleton
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_pool_index::MULTIINDEX_NODE_TYPE ), 208u );
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_stats_object ), 5520u //two objects
-#ifdef HIVE_ENABLE_SMT
-    + 616u
-#endif
-  );
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_stats_index::MULTIINDEX_NODE_TYPE ), 5552u
-#ifdef HIVE_ENABLE_SMT
-    + 616u
-#endif
-  );
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_pending_data ), 128u ); //singleton
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_pending_data_index::MULTIINDEX_NODE_TYPE ), 160u );
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_usage_bucket_object ), 48u ); //always HIVE_RC_WINDOW_BUCKET_COUNT objects
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_usage_bucket_index::MULTIINDEX_NODE_TYPE ), 112u );
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_direct_delegation_object ), 24u ); //lasting, most likely more popular than regular delegation so count should be expected in the millions
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_direct_delegation_index::MULTIINDEX_NODE_TYPE ), 88u );
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_expired_delegation_object ), 16u ); //temporary, none most of the time (only used in very specific case)
-  BOOST_CHECK_EQUAL( sizeof( rc::rc_expired_delegation_index::MULTIINDEX_NODE_TYPE ), 80u );
-
   BOOST_CHECK_EQUAL( sizeof( reputation::reputation_object ), 32u ); //lasting, as many as account_object, 1.3M atm
   BOOST_CHECK_EQUAL( sizeof( reputation::reputation_index::MULTIINDEX_NODE_TYPE ), 96u );
 
@@ -203,11 +179,6 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::reputation_object>(dtds), "49ee99bdff6ef39bc07ec1c8512a2e8818c74c8b" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::follow::follow_count_object>(dtds), "e1411fd1ee8d2fff1f8e825162e93728edd35bbf" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::order_history_object>(dtds), "d44984762f037d0a93007dfc3f172c0cca5cf8f2" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_resource_param_object>(dtds), "f69f64d7e12147d2f2dc9615ec505d755164f2df" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_pool_object>(dtds), "13bb3709c6288a5c8456147c3e7ca2f415018932" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_pending_data>(dtds), "14ec7fb2db706f9031e1e1336649cbca7e6228a4" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_direct_delegation_object>(dtds), "2a3b2b9ef27ebc0069d05fcdba5206f9c9097b4d" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_usage_bucket_object>(dtds), "11320f8e96a49b16f18e55f24fc1d6624ee79a81" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::reputation::reputation_object>(dtds), "cacdc6e0294f4098f4cef0c3e0bc06e4d7ede488" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::tag_object>(dtds), "3b2e46494852fc71120a3da6d4530083ed046a3f" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::tags::tag_stats_object>(dtds), "0de2c00c5633f9c1c7d79b5de15045b9016c772f" );
@@ -217,10 +188,8 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
 
   #ifdef HIVE_ENABLE_SMT
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::bucket_object>(dtds), "0ed6488aad10a231f02e7e58a5f7733362821c72" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_stats_object>(dtds), "99d4a9eaa914ddab85390759d598e449a2c3e176" );
   #else
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::bucket_object>(dtds), "fc8f56ad056d2594e97aac6e7e618007a1bfecfb" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::rc::rc_stats_object>(dtds), "ec39a73776c12779ca1694a60aaa85b5c836abec" );
   #endif
 }
 

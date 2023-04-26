@@ -6,7 +6,7 @@
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
 #include <hive/plugins/follow/follow_objects.hpp>
 #include <hive/plugins/market_history/market_history_plugin.hpp>
-#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/tags/tags_plugin.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
@@ -74,6 +74,12 @@ void do_job()
     dtds.register_new_type<hive::chain::witness_vote_object>();
     dtds.register_new_type<hive::chain::witness_schedule_object>();
     dtds.register_new_type<hive::chain::witness_object>();
+    dtds.register_new_type<hive::chain::rc_resource_param_object>();
+    dtds.register_new_type<hive::chain::rc_pool_object>();
+    dtds.register_new_type<hive::chain::rc_stats_object>();
+    dtds.register_new_type<hive::chain::rc_pending_data>();
+    dtds.register_new_type<hive::chain::rc_direct_delegation_object>();
+    dtds.register_new_type<hive::chain::rc_usage_bucket_object>();
     dtds.register_new_type<hive::plugins::account_by_key::key_lookup_object>();
     dtds.register_new_type<hive::plugins::account_history_rocksdb::volatile_operation_object>();
     dtds.register_new_type<hive::plugins::block_log_info::block_log_hash_state_object>();
@@ -86,12 +92,6 @@ void do_job()
     dtds.register_new_type<hive::plugins::follow::follow_count_object>();
     dtds.register_new_type<hive::plugins::market_history::bucket_object>();
     dtds.register_new_type<hive::plugins::market_history::order_history_object>();
-    dtds.register_new_type<hive::plugins::rc::rc_resource_param_object>();
-    dtds.register_new_type<hive::plugins::rc::rc_pool_object>();
-    dtds.register_new_type<hive::plugins::rc::rc_stats_object>();
-    dtds.register_new_type<hive::plugins::rc::rc_pending_data>();
-    dtds.register_new_type<hive::plugins::rc::rc_direct_delegation_object>();
-    dtds.register_new_type<hive::plugins::rc::rc_usage_bucket_object>();
     dtds.register_new_type<hive::plugins::reputation::reputation_object>();
     dtds.register_new_type<hive::plugins::tags::tag_object>();
     dtds.register_new_type<hive::plugins::tags::tag_stats_object>();

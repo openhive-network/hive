@@ -5,8 +5,7 @@
 #include <hive/chain/rc/rc_export_objects.hpp>
 #include <hive/chain/rc/rc_stats.hpp>
 #include <hive/chain/rc/rc_utility.hpp>
-#include <hive/plugins/rc/resource_count.hpp>
-#include <hive/chain/database.hpp>
+#include <hive/chain/rc/resource_count.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/hive_object_types.hpp>
@@ -14,31 +13,11 @@
 #include <fc/int_array.hpp>
 
 namespace hive { namespace chain {
+
 struct by_account;
 class remove_guard;
-} }
 
-namespace hive { namespace plugins { namespace rc {
-
-using namespace std;
-using namespace hive::chain;
 using hive::protocol::asset;
-
-#ifndef HIVE_RC_SPACE_ID
-#define HIVE_RC_SPACE_ID 16
-#endif
-
-enum rc_object_types
-{
-  rc_resource_param_object_type     = ( HIVE_RC_SPACE_ID << 8 ),
-  rc_pool_object_type               = ( HIVE_RC_SPACE_ID << 8 ) + 1,
-  rc_account_object_type            = ( HIVE_RC_SPACE_ID << 8 ) + 2,
-  rc_direct_delegation_object_type  = ( HIVE_RC_SPACE_ID << 8 ) + 3,
-  rc_usage_bucket_object_type       = ( HIVE_RC_SPACE_ID << 8 ) + 4,
-  rc_pending_data_type              = ( HIVE_RC_SPACE_ID << 8 ) + 5,
-  rc_stats_object_type              = ( HIVE_RC_SPACE_ID << 8 ) + 6,
-  rc_expired_delegation_object_type = ( HIVE_RC_SPACE_ID << 8 ) + 7
-};
 
 class rc_resource_param_object : public object< rc_resource_param_object_type, rc_resource_param_object >
 {
@@ -46,10 +25,8 @@ class rc_resource_param_object : public object< rc_resource_param_object_type, r
   public:
     CHAINBASE_DEFAULT_CONSTRUCTOR( rc_resource_param_object )
 
-    fc::int_array< rc_resource_params, HIVE_RC_NUM_RESOURCE_TYPES >
-                    resource_param_array;
+    fc::int_array< rc_resource_params, HIVE_RC_NUM_RESOURCE_TYPES > resource_param_array;
 };
-typedef oid_ref< rc_resource_param_object > rc_resource_param_id_type;
 
 /**
   * Represents pools of resources (singleton).
@@ -142,7 +119,6 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
 
   CHAINBASE_UNPACK_CONSTRUCTOR( rc_pool_object );
 };
-typedef oid_ref< rc_pool_object > rc_pool_id_type;
 
 /**
   * Collects statistics to generate daily report.
@@ -191,7 +167,6 @@ class rc_stats_object : public object< rc_stats_object_type, rc_stats_object >
 
   CHAINBASE_UNPACK_CONSTRUCTOR( rc_stats_object );
 };
-typedef oid_ref< rc_stats_object > rc_stats_id_type;
 const rc_stats_id_type RC_PENDING_STATS_ID( oid< rc_stats_object >(0) );
 const rc_stats_id_type RC_ARCHIVE_STATS_ID( oid< rc_stats_object >(1) );
 
@@ -266,7 +241,6 @@ class rc_pending_data : public object< rc_pending_data_type, rc_pending_data >
 
   CHAINBASE_UNPACK_CONSTRUCTOR( rc_pending_data );
 };
-typedef oid_ref< rc_pending_data > rc_pending_data_id_type;
 
 class rc_direct_delegation_object : public object< rc_direct_delegation_object_type, rc_direct_delegation_object >
 {
@@ -282,9 +256,6 @@ class rc_direct_delegation_object : public object< rc_direct_delegation_object_t
     uint64_t        delegated_rc = 0;
   CHAINBASE_UNPACK_CONSTRUCTOR(rc_direct_delegation_object);
 };
-typedef oid_ref< rc_direct_delegation_object > rc_direct_delegtion_id_type;
-
-void update_account_after_rc_delegation( database& _db, const account_object& account, uint32_t now, int64_t delta, bool regenerate_mana = false );
 
 /**
   * When delegation overflow happens (see check_for_rc_delegation_overflow) some direct rc delegations need to be removed.
@@ -306,10 +277,6 @@ class rc_expired_delegation_object : public object< rc_expired_delegation_object
     uint64_t        expired_delegation = 0;
   CHAINBASE_UNPACK_CONSTRUCTOR( rc_expired_delegation_object );
 };
-typedef oid_ref< rc_expired_delegation_object > rc_expired_delegtion_id_type;
-
-bool has_expired_delegation( const database& _db, const account_object& account );
-void remove_delegations( database& _db, int64_t& delegation_overflow, account_id_type delegator_id, uint32_t now, remove_guard& obj_perf );
 
 /**
   * Holds HIVE_RC_BUCKET_TIME_LENGTH of cumulative usage of resources.
@@ -353,7 +320,6 @@ class rc_usage_bucket_object : public object< rc_usage_bucket_object_type, rc_us
 
   CHAINBASE_UNPACK_CONSTRUCTOR( rc_usage_bucket_object );
 };
-typedef oid_ref< rc_usage_bucket_object > rc_cost_bucket_id_type;
 
 typedef multi_index_container<
   rc_resource_param_object,
@@ -432,12 +398,12 @@ typedef multi_index_container<
   allocator< rc_usage_bucket_object >
 > rc_usage_bucket_index;
 
-} } } // hive::plugins::rc
+} } // hive::chain
 
-FC_REFLECT( hive::plugins::rc::rc_resource_param_object, (id)(resource_param_array) )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_resource_param_object, hive::plugins::rc::rc_resource_param_index )
+FC_REFLECT( hive::chain::rc_resource_param_object, (id)(resource_param_array) )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_resource_param_object, hive::chain::rc_resource_param_index )
 
-FC_REFLECT( hive::plugins::rc::rc_pool_object,
+FC_REFLECT( hive::chain::rc_pool_object,
   (id)
   (pool_array)
   (usage_in_window)
@@ -445,9 +411,9 @@ FC_REFLECT( hive::plugins::rc::rc_pool_object,
   (resource_weights)
   (sum_of_resource_weights)
 )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_pool_object, hive::plugins::rc::rc_pool_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_pool_object, hive::chain::rc_pool_index )
 
-FC_REFLECT( hive::plugins::rc::rc_stats_object,
+FC_REFLECT( hive::chain::rc_stats_object,
   (id)
   (block_num)
   (regen)
@@ -458,35 +424,35 @@ FC_REFLECT( hive::plugins::rc::rc_stats_object,
   (payer_stats)
   (average_cost)
 )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_stats_object, hive::plugins::rc::rc_stats_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_stats_object, hive::chain::rc_stats_index )
 
-FC_REFLECT( hive::plugins::rc::rc_pending_data,
+FC_REFLECT( hive::chain::rc_pending_data,
   (id)
   (tx_count)
   (pending_usage)
   (pending_cost)
   (differential_usage)
 )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_pending_data, hive::plugins::rc::rc_pending_data_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_pending_data, hive::chain::rc_pending_data_index )
 
-FC_REFLECT( hive::plugins::rc::rc_direct_delegation_object,
+FC_REFLECT( hive::chain::rc_direct_delegation_object,
   (id)
   (from)
   (to)
   (delegated_rc)
   )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_direct_delegation_object, hive::plugins::rc::rc_direct_delegation_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_direct_delegation_object, hive::chain::rc_direct_delegation_index )
 
-FC_REFLECT( hive::plugins::rc::rc_expired_delegation_object,
+FC_REFLECT( hive::chain::rc_expired_delegation_object,
   (id)
   (from)
   (expired_delegation)
   )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_expired_delegation_object, hive::plugins::rc::rc_expired_delegation_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_expired_delegation_object, hive::chain::rc_expired_delegation_index )
 
-FC_REFLECT( hive::plugins::rc::rc_usage_bucket_object,
+FC_REFLECT( hive::chain::rc_usage_bucket_object,
   (id)
   (timestamp)
   (usage)
 )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::rc::rc_usage_bucket_object, hive::plugins::rc::rc_usage_bucket_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_usage_bucket_object, hive::chain::rc_usage_bucket_index )

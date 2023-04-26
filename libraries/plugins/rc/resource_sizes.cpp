@@ -5,7 +5,7 @@
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
-#include <hive/plugins/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects.hpp>
 
 namespace hive { namespace plugins { namespace rc {
 

@@ -31,6 +31,8 @@ add_library( hive_chain
              index-09.cpp
              index-10.cpp
              index-11.cpp
+             index-12.cpp
+             index-13.cpp
 
              full_block.cpp
              full_transaction.cpp
@@ -71,6 +73,7 @@ add_library( hive_chain
              util/data_filter.cpp
 
              rc/rc_curve.cpp
+             rc/rc_objects.cpp
              rc/rc_utility.cpp
              rc/resource_user.cpp
 

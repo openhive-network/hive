@@ -80,6 +80,15 @@ enum object_type
   comment_cashout_object_type,
   comment_cashout_ex_object_type,
   recurrent_transfer_object_type,
+  // RC objects
+  rc_resource_param_object_type,
+  rc_pool_object_type,
+  rc_direct_delegation_object_type,
+  rc_usage_bucket_object_type,
+  rc_pending_data_type,
+  rc_stats_object_type,
+  rc_expired_delegation_object_type,
+
 #ifdef HIVE_ENABLE_SMT
   // SMT objects
   smt_token_object_type,
@@ -122,9 +131,19 @@ class vesting_delegation_object;
 class vesting_delegation_expiration_object;
 class pending_required_action_object;
 class pending_optional_action_object;
+class proposal_object;
+class proposal_vote_object;
 class comment_cashout_object;
 class comment_cashout_ex_object;
 class recurrent_transfer_object;
+
+class rc_resource_param_object;
+class rc_pool_object;
+class rc_direct_delegation_object;
+class rc_usage_bucket_object;
+class rc_pending_data;
+class rc_stats_object;
+class rc_expired_delegation_object;
 
 #ifdef HIVE_ENABLE_SMT
 class smt_token_object;
@@ -135,9 +154,6 @@ class smt_token_emissions_object;
 class smt_contribution_object;
 class smt_ico_object;
 #endif
-
-class proposal_object;
-class proposal_vote_object;
 
 typedef oid_ref< dynamic_global_property_object         > dynamic_global_property_id_type;
 typedef oid_ref< account_object                         > account_id_type;
@@ -169,10 +185,20 @@ typedef oid_ref< vesting_delegation_object              > vesting_delegation_id_
 typedef oid_ref< vesting_delegation_expiration_object   > vesting_delegation_expiration_id_type;
 typedef oid_ref< pending_required_action_object         > pending_required_action_id_type;
 typedef oid_ref< pending_optional_action_object         > pending_optional_action_id_type;
+typedef oid_ref< proposal_object                        > proposal_id_type;
+typedef oid_ref< proposal_vote_object                   > proposal_vote_id_type;
 typedef oid_ref< comment_cashout_object                 > comment_cashout_id_type;
 typedef oid_ref< comment_cashout_ex_object              > comment_cashout_ex_id_type;
 typedef oid_ref< recurrent_transfer_object              > recurrent_transfer_id_type;
 typedef oid_ref< witness_schedule_object                > witness_schedule_object_id_type;
+
+typedef oid_ref< rc_resource_param_object               > rc_resource_param_id_type;
+typedef oid_ref< rc_pool_object                         > rc_pool_id_type;
+typedef oid_ref< rc_direct_delegation_object            > rc_direct_delegtion_id_type;
+typedef oid_ref< rc_usage_bucket_object                 > rc_cost_bucket_id_type;
+typedef oid_ref< rc_pending_data                        > rc_pending_data_id_type;
+typedef oid_ref< rc_stats_object                        > rc_stats_id_type;
+typedef oid_ref< rc_expired_delegation_object           > rc_expired_delegtion_id_type;
 
 #ifdef HIVE_ENABLE_SMT
 typedef oid_ref< smt_token_object                       > smt_token_id_type;
@@ -183,9 +209,6 @@ typedef oid_ref< smt_token_emissions_object             > smt_token_emissions_id
 typedef oid_ref< smt_contribution_object                > smt_contribution_id_type;
 typedef oid_ref< smt_ico_object                         > smt_ico_id_type;
 #endif
-
-typedef oid_ref< proposal_object                        > proposal_id_type;
-typedef oid_ref< proposal_vote_object                   > proposal_vote_id_type;
 
 enum bandwidth_type
 {
@@ -337,6 +360,14 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (comment_cashout_object_type)
             (comment_cashout_ex_object_type)
             (recurrent_transfer_object_type)
+
+            (rc_resource_param_object_type)
+            (rc_pool_object_type)
+            (rc_direct_delegation_object_type)
+            (rc_usage_bucket_object_type)
+            (rc_pending_data_type)
+            (rc_stats_object_type)
+            (rc_expired_delegation_object_type)
 
 #ifdef HIVE_ENABLE_SMT
             (smt_token_object_type)
