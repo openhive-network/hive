@@ -34,6 +34,6 @@ several_node_restarts_tests:
     HIVED_IMAGE_NAME: registry.gitlab.syncad.com/hive/hive/instance:instance-f7e1d658072ed8db9252c0b481599870442f7c90
 
   script:
-    - ./tests/integration/test_several_node_restarts.sh
+    - ./tests/integration/test_several_node_restarts.sh hive-instance-5m 1000000 1500000
   tags:
     - public-runner-docker
