@@ -1,5 +1,5 @@
 
-#include <hive/plugins/rc/rc_curve.hpp>
+#include <hive/chain/rc/rc_curve.hpp>
 #include <hive/protocol/config.hpp>
 
 #include <fc/exception/exception.hpp>
@@ -8,7 +8,7 @@
 
 #include <cstdint>
 
-namespace hive { namespace plugins { namespace rc {
+namespace hive { namespace chain {
 
 void rc_curve_gen_params::validate()const
 {
@@ -31,7 +31,7 @@ void rc_curve_gen_params::validate()const
 
 void generate_rc_curve_params(
   rc_price_curve_params& price_curve_params,
-  const hive::chain::util::rd_dynamics_params& resource_dynamics_params,
+  const util::rd_dynamics_params& resource_dynamics_params,
   const rc_curve_gen_params& curve_gen_params )
 {
   // Fillin curve_params based on computations
@@ -97,4 +97,4 @@ void generate_rc_curve_params(
   price_curve_params.coeff_b = fc::uint128_to_uint64(u128_B);
 }
 
-} } } //hive::plugins::rc
+} } //hive::chain
