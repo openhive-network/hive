@@ -1,3 +1,5 @@
+from cpython cimport array
+import array
 
 cpdef void info(str param):
     print("This is info: {}".format(param))
@@ -13,3 +15,12 @@ cdef extern from "cpython_interface.hpp":
 
 def py_add_two_numbers( param_1, param_2 ):
     return add_two_numbers( param_1, param_2 )
+
+cdef extern from "cpython_interface.hpp":
+    int cpp_validate_operation( char* content )
+
+def validate_operation(operation: bytes) -> bool | None:
+    cdef array.array _operation = array.array('b', operation)
+    _operation.append(0)
+
+    return cpp_validate_operation( _operation.data.as_chars )
