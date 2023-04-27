@@ -1309,7 +1309,8 @@ asset database_fixture::get_vest_rewards_as_hive( const string& account_name )co
   return db->get_account( account_name ).get_vest_rewards_as_hive();
 }
 
-void database_fixture::post_comment_internal( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body, const std::string& _parent_permlink, const fc::ecc::private_key& _key )
+void database_fixture::post_comment_internal( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body,
+  const std::string& _parent_author, const std::string& _parent_permlink, const fc::ecc::private_key& _key )
 {
   comment_operation comment;
 
@@ -1317,25 +1318,28 @@ void database_fixture::post_comment_internal( const std::string& _author, const 
   comment.permlink = _permlink;
   comment.title = _title;
   comment.body = _body;
+  comment.parent_author = _parent_author;
   comment.parent_permlink = _parent_permlink;
 
-  signed_transaction trx;
-  trx.operations.push_back( comment );
-  trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  push_transaction( trx, _key );
-  trx.operations.clear();
+  push_transaction( comment, _key );
 }
 
 void database_fixture::post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key)
 {
   generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
-  post_comment_internal( _author, _permlink, _title, _body, _parent_permlink, _key );
+  post_comment_internal( _author, _permlink, _title, _body, "", _parent_permlink, _key );
 }
 
 void database_fixture::post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key)
 {
-  post_comment_internal( _author, _permlink, _title, _body, _parent_permlink, _key );
+  post_comment_internal( _author, _permlink, _title, _body, "", _parent_permlink, _key );
+}
+
+void database_fixture::post_comment_to_comment( const std::string& author, const std::string& permlink, const std::string& title, const std::string& body,
+  const std::string& parent_author, const std::string& parent_permlink, const fc::ecc::private_key& key )
+{
+  post_comment_internal( author, permlink, title, body, parent_author, parent_permlink, key );
 }
 
 void database_fixture::delete_comment( std::string _author, std::string _permlink, const fc::ecc::private_key& _key )

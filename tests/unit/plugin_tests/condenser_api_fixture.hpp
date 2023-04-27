@@ -163,6 +163,16 @@ struct condenser_api_fixture : database_fixture
    */
   void decline_voting_rights_scenario( check_point_tester_t check_point_tester );
 
+  /**
+   * Operations tested here:
+   *  comment_operation (to another comment/post), account_create_operation (by previously created account),
+   *  decline_voting_rights_operation (cancelling previous one).
+   * Also tested here:
+   *  account_created_operation, transfer_to_vesting_operation, transfer_to_vesting_completed_operation,
+   *  delegate_vesting_shares_operation, decline_voting_rights_operation & producer_reward_operation
+   */
+  void combo_1_scenario( check_point_tester_t check_point_tester1, check_point_tester_t check_point_tester2 );
+
 };
 
 #endif

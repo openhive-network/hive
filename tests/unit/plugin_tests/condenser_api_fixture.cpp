@@ -493,4 +493,27 @@ void condenser_api_fixture::decline_voting_rights_scenario( check_point_tester_t
   check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
 }
 
+void condenser_api_fixture::combo_1_scenario( check_point_tester_t check_point_tester1, check_point_tester_t check_point_tester2 )
+{
+  db->set_hardfork( HIVE_HARDFORK_1_27 );
+  generate_block();
+
+  PREP_ACTOR( alice12ah );
+  account_create( "alice12ah", alice12ah_public_key );
+  post_comment( "alice12ah", "permlink12-1", "Title 12-1", "Body 12-1", "parentpermlink12", alice12ah_private_key );
+
+  PREP_ACTOR( ben12ah );
+  account_create( "ben12ah", "alice12ah", alice12ah_private_key, 0, ben12ah_public_key, ben12ah_public_key, "{\"relation\":\"sibling\"}" );
+  delegate_vest( "alice12ah", "ben12ah", asset( 1507, VESTS_SYMBOL ), alice12ah_private_key );
+  post_comment_to_comment( "ben12ah", "permlink12-2", "Title 12-1", "Body 12-1", "alice12ah", "permlink12-1", ben12ah_private_key );
+
+  decline_voting_rights( "alice12ah", true, alice12ah_private_key );
+
+  check_point_tester1( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+
+  decline_voting_rights( "alice12ah", false, alice12ah_private_key ); // Changed her mind
+
+  check_point_tester2( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
+}
+
 #endif
