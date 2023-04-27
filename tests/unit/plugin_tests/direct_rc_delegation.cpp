@@ -8,8 +8,7 @@
 #include <hive/protocol/hive_operations.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
-#include <hive/protocol/config.hpp>
-#include <hive/plugins/rc/rc_operations.hpp>
+#include <hive/chain/rc/rc_operations.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 

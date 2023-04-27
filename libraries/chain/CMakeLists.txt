@@ -74,6 +74,7 @@ add_library( hive_chain
 
              rc/rc_curve.cpp
              rc/rc_objects.cpp
+             rc/rc_operations.cpp
              rc/rc_utility.cpp
              rc/resource_sizes.cpp
              rc/resource_user.cpp
