@@ -1633,12 +1633,12 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     custom_op.required_posting_auths.insert( "bob" );
     op.from = "bob";
     custom_op.json = fc::json::to_string( rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "!_db.is_in_control() || !rc.has_expired_delegation( from_account )" );
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "carol" );
     op.from = "carol";
     custom_op.json = fc::json::to_string( rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !rc.has_expired_delegation( from_account )" );
 
     // but we can test that dedelegation while previous one did not end just adds to the object
     // (note that execution of dedelegation will in itself stop at removal limit and only excess
@@ -1658,12 +1658,12 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     custom_op.required_posting_auths.insert( "bob" );
     op.from = "bob";
     custom_op.json = fc::json::to_string( rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_private_key ), "!_db.is_in_control() || !rc.has_expired_delegation( from_account )" );
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "carol" );
     op.from = "carol";
     custom_op.json = fc::json::to_string( rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !rc.has_expired_delegation( from_account )" );
 
     generate_block();
     BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 5 * removal_limit );
@@ -1681,7 +1681,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     custom_op.required_posting_auths.insert( "carol" );
     op.from = "carol";
     custom_op.json = fc::json::to_string( rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !has_expired_delegation( _db, from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_private_key ), "!_db.is_in_control() || !rc.has_expired_delegation( from_account )" );
 
     generate_block();
     BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 7 * removal_limit + 1 );
