@@ -1,5 +1,5 @@
 
-#include <hive/plugins/rc/resource_count.hpp>
+#include <hive/chain/rc/resource_count.hpp>
 #include <hive/chain/rc/resource_sizes.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/rc/rc_operations.hpp>
@@ -10,10 +10,9 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/witness_objects.hpp>
 
-namespace hive { namespace plugins { namespace rc {
+namespace hive { namespace chain {
 
 using namespace hive::protocol;
-using namespace hive::chain;
 
 struct count_differential_operation_visitor
 {
@@ -727,7 +726,7 @@ void count_resources(
 }
 
 template< typename OpType >
-void count_resource_usage(
+void count_resources(
   const OpType& op,
   count_resources_result& result,
   const fc::time_point_sec now
@@ -751,6 +750,6 @@ void count_resource_usage(
 }
 
 template
-void count_resource_usage< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
+void count_resources< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
 
-} } } // hive::plugins::rc
+} } // hive::chain

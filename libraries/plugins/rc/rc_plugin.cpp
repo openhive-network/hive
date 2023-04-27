@@ -11,7 +11,7 @@
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/rc/rc_operations.hpp>
 
-#include <hive/plugins/rc/resource_count.hpp>
+#include <hive/chain/rc/resource_count.hpp>
 #include <hive/chain/rc/resource_user.hpp>
 
 #include <hive/chain/account_object.hpp>
@@ -75,12 +75,6 @@ FC_REFLECT( hive::plugins::rc::exp_rc_data,
 )
 
 namespace hive { namespace plugins { namespace rc {
-
-template< typename OpType >
-bool prepare_differential_usage( const OpType& op, const database& db, count_resources_result& result );
-void count_resources( const optional_automated_action& action, const size_t size, count_resources_result& result, const fc::time_point_sec now );
-template< typename OpType >
-void count_resource_usage( const OpType& op, count_resources_result& result, const fc::time_point_sec now );
 
 namespace detail {
 
@@ -1051,7 +1045,7 @@ void rc_plugin_impl::post_apply_custom_op_type( const custom_operation_notificat
   op->visit( vtor );
 
   count_resources_result extra_usage;
-  count_resource_usage( *op, extra_usage, _db.head_block_time() );
+  count_resources( *op, extra_usage, _db.head_block_time() );
   _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
   {
     //the extra cost is stored on the same counters as differential usage (but as positive values);
