@@ -1,5 +1,5 @@
 
-#include <hive/plugins/rc/resource_sizes.hpp>
+#include <hive/chain/rc/resource_sizes.hpp>
 
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/hive_objects.hpp>
@@ -7,9 +7,7 @@
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
 
-namespace hive { namespace plugins { namespace rc {
-
-using namespace hive::chain;
+namespace hive { namespace chain {
 
 // when uncommented the sizes of multiindex nodes will not be calculated dynamically, but will use fixed given values;
 // this is how it should be on production; dynamic sizes should only be compared with fixed values used temporarily
@@ -249,4 +247,4 @@ operation_exec_info::operation_exec_info()
 
 {}
 
-} } } // hive::plugins::rc
+} } // hive::chain

@@ -1,7 +1,7 @@
 #include <hive/plugins/rc_api/rc_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
 
-#include <hive/plugins/rc/resource_sizes.hpp>
+#include <hive/chain/rc/resource_sizes.hpp>
 
 #include <hive/chain/account_object.hpp>
 

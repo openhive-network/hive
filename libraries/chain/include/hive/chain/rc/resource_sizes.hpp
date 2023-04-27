@@ -5,7 +5,7 @@
 // This header defines the resource sizes.  It is an implementation detail of resource_count.cpp,
 // but you may want it if you are re-implementing resource_count.cpp in a client library.
 
-namespace hive { namespace plugins { namespace rc {
+namespace hive { namespace chain {
 
 struct state_object_size_info
 {
@@ -161,9 +161,9 @@ struct operation_exec_info
 
 };
 
-} } }
+} }
 
-FC_REFLECT( hive::plugins::rc::state_object_size_info,
+FC_REFLECT( hive::chain::state_object_size_info,
   ( TEMPORARY_STATE_BYTE )
   ( LASTING_STATE_BYTE )
   ( PERSISTENT_STATE_BYTE )
@@ -201,7 +201,7 @@ FC_REFLECT( hive::plugins::rc::state_object_size_info,
   ( delegate_rc_base_size )
   )
 
-FC_REFLECT( hive::plugins::rc::operation_exec_info,
+FC_REFLECT( hive::chain::operation_exec_info,
   ( account_create_time )
   ( account_create_with_delegation_time )
   ( account_witness_vote_time )
