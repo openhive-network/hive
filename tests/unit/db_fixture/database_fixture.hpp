@@ -451,12 +451,15 @@ struct database_fixture {
 
 private:
 
-  void post_comment_internal( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body, const std::string& _parent_permlink, const fc::ecc::private_key& _key );
+  void post_comment_internal( const std::string& _author, const std::string& _permlink, const std::string& _title, const std::string& _body,
+                              const std::string& _parent_author, const std::string& _parent_permlink, const fc::ecc::private_key& _key );
 
 public:
 
   void post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key );
   void post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key);
+  void post_comment_to_comment( const std::string& author, const std::string& permlink, const std::string& title, const std::string& body,
+                                const std::string& parent_author, const std::string& parent_permlink, const fc::ecc::private_key& key );
   void delete_comment( std::string _author, std::string _permlink, const fc::ecc::private_key& _key );
   void set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout, uint16_t percent_hbd,
                             bool allow_curation_rewards, bool allow_votes, const fc::ecc::private_key& key );

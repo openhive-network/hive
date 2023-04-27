@@ -1314,6 +1314,81 @@ BOOST_AUTO_TEST_CASE( get_account_history_decline_voting_rights )
 
 } FC_LOG_AND_RETHROW() }
 
+/**
+ * Uses combo_1_scenario to test:
+ * - accounts impactec by account creation (by another regular account)
+ * - comment to another comment/post
+ * - cancelling decline_voting_rights_operation on second thought
+ */
+BOOST_AUTO_TEST_CASE( get_account_history_combo_1 )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_account_history with combo_1_scenario" );
+
+  auto check_point_tester1 = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_block();
+  };
+
+  auto check_point_tester2 = [ this ]( uint32_t generate_no_further_than )
+  {
+    generate_until_irreversible_block( 4 );
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+
+    expected_t expected_alice12ah_history = { {
+      R"~([0,{"trx_id":"1abb51849339ddedd0668a95c7384ec546fd4f30","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"alice12ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C",1]]},"memo_key":"TST5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C","json_metadata":""}},"operation_id":0}])~",
+      R"~([0,{"trx_id":"1abb51849339ddedd0668a95c7384ec546fd4f30","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["account_create",{"fee":"0.000 TESTS","creator":"initminer","new_account_name":"alice12ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C",1]]},"memo_key":"TST5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C","json_metadata":""}]}])~"
+      }, {
+      R"~([1,{"trx_id":"1abb51849339ddedd0668a95c7384ec546fd4f30","block":3,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"account_created_operation","value":{"new_account_name":"alice12ah","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([1,{"trx_id":"1abb51849339ddedd0668a95c7384ec546fd4f30","block":3,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["account_created",{"new_account_name":"alice12ah","creator":"initminer","initial_vesting_shares":"0.000000 VESTS","initial_delegation":"0.000000 VESTS"}]}])~"
+      }, {
+      R"~([4,{"trx_id":"70f6b11367e582cb7bb7265e86c964f7c04657be","block":3,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"comment_operation","value":{"parent_author":"","parent_permlink":"parentpermlink12","author":"alice12ah","permlink":"permlink12-1","title":"Title 12-1","body":"Body 12-1","json_metadata":""}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"70f6b11367e582cb7bb7265e86c964f7c04657be","block":3,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["comment",{"parent_author":"","parent_permlink":"parentpermlink12","author":"alice12ah","permlink":"permlink12-1","title":"Title 12-1","body":"Body 12-1","json_metadata":""}]}])~"
+      }, {
+      R"~([5,{"trx_id":"2f3b134af6270fda2b156b0f44a107ea4a5e6fb9","block":3,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"alice12ah","new_account_name":"ben12ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"memo_key":"TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3","json_metadata":"{\"relation\":\"sibling\"}"}},"operation_id":0}])~",
+      R"~([5,{"trx_id":"2f3b134af6270fda2b156b0f44a107ea4a5e6fb9","block":3,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["account_create",{"fee":"0.000 TESTS","creator":"alice12ah","new_account_name":"ben12ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"memo_key":"TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3","json_metadata":"{\"relation\":\"sibling\"}"}]}])~"
+      }, {
+      R"~([6,{"trx_id":"2f3b134af6270fda2b156b0f44a107ea4a5e6fb9","block":3,"trx_in_block":3,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"account_created_operation","value":{"new_account_name":"ben12ah","creator":"alice12ah","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([6,{"trx_id":"2f3b134af6270fda2b156b0f44a107ea4a5e6fb9","block":3,"trx_in_block":3,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["account_created",{"new_account_name":"ben12ah","creator":"alice12ah","initial_vesting_shares":"0.000000 VESTS","initial_delegation":"0.000000 VESTS"}]}])~"
+      }, {
+      R"~([7,{"trx_id":"b69d5a7e8bf07e64a302153228ee9cfd69da36b0","block":3,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"delegate_vesting_shares_operation","value":{"delegator":"alice12ah","delegatee":"ben12ah","vesting_shares":{"amount":"1507","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([7,{"trx_id":"b69d5a7e8bf07e64a302153228ee9cfd69da36b0","block":3,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["delegate_vesting_shares",{"delegator":"alice12ah","delegatee":"ben12ah","vesting_shares":"0.001507 VESTS"}]}])~"
+      }, {
+      R"~([8,{"trx_id":"a286bf7a924da9fb33597fa3dacb31237ebf6210","block":3,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"comment_operation","value":{"parent_author":"alice12ah","parent_permlink":"permlink12-1","author":"ben12ah","permlink":"permlink12-2","title":"Title 12-1","body":"Body 12-1","json_metadata":""}},"operation_id":0}])~",
+      R"~([8,{"trx_id":"a286bf7a924da9fb33597fa3dacb31237ebf6210","block":3,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["comment",{"parent_author":"alice12ah","parent_permlink":"permlink12-1","author":"ben12ah","permlink":"permlink12-2","title":"Title 12-1","body":"Body 12-1","json_metadata":""}]}])~"
+      }, {
+      R"~([9,{"trx_id":"0fef2c9a880d02c893c2b750a1d0238f478ee0e5","block":3,"trx_in_block":6,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"decline_voting_rights_operation","value":{"account":"alice12ah","decline":true}},"operation_id":0}])~",
+      R"~([9,{"trx_id":"0fef2c9a880d02c893c2b750a1d0238f478ee0e5","block":3,"trx_in_block":6,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["decline_voting_rights",{"account":"alice12ah","decline":true}]}])~"
+      }, {
+      R"~([10,{"trx_id":"2250a4003a3b895b75bb51fca0f6b31cdb5a5950","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"decline_voting_rights_operation","value":{"account":"alice12ah","decline":false}},"operation_id":0}])~",
+      R"~([10,{"trx_id":"2250a4003a3b895b75bb51fca0f6b31cdb5a5950","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":["decline_voting_rights",{"account":"alice12ah","decline":false}]}])~"
+      } };
+
+    expected_t expected_ben12ah_history = { {
+      R"~([0,{"trx_id":"2f3b134af6270fda2b156b0f44a107ea4a5e6fb9","block":3,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"alice12ah","new_account_name":"ben12ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"memo_key":"TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3","json_metadata":"{\"relation\":\"sibling\"}"}},"operation_id":0}])~",
+      R"~([0,{"trx_id":"2f3b134af6270fda2b156b0f44a107ea4a5e6fb9","block":3,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["account_create",{"fee":"0.000 TESTS","creator":"alice12ah","new_account_name":"ben12ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3",1]]},"memo_key":"TST5MSvdqbA7scw5RTBx5UGpDAUKxpF53VjBBP1MkAMMfTMw9tLp3","json_metadata":"{\"relation\":\"sibling\"}"}]}])~"
+      }, {
+      R"~([1,{"trx_id":"2f3b134af6270fda2b156b0f44a107ea4a5e6fb9","block":3,"trx_in_block":3,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":{"type":"account_created_operation","value":{"new_account_name":"ben12ah","creator":"alice12ah","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([1,{"trx_id":"2f3b134af6270fda2b156b0f44a107ea4a5e6fb9","block":3,"trx_in_block":3,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:06","op":["account_created",{"new_account_name":"ben12ah","creator":"alice12ah","initial_vesting_shares":"0.000000 VESTS","initial_delegation":"0.000000 VESTS"}]}])~"
+      }, {
+      R"~([2,{"trx_id":"b69d5a7e8bf07e64a302153228ee9cfd69da36b0","block":3,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"delegate_vesting_shares_operation","value":{"delegator":"alice12ah","delegatee":"ben12ah","vesting_shares":{"amount":"1507","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
+      R"~([2,{"trx_id":"b69d5a7e8bf07e64a302153228ee9cfd69da36b0","block":3,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["delegate_vesting_shares",{"delegator":"alice12ah","delegatee":"ben12ah","vesting_shares":"0.001507 VESTS"}]}])~"
+      }, {
+      R"~([3,{"trx_id":"a286bf7a924da9fb33597fa3dacb31237ebf6210","block":3,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":{"type":"comment_operation","value":{"parent_author":"alice12ah","parent_permlink":"permlink12-1","author":"ben12ah","permlink":"permlink12-2","title":"Title 12-1","body":"Body 12-1","json_metadata":""}},"operation_id":0}])~",
+      R"~([3,{"trx_id":"a286bf7a924da9fb33597fa3dacb31237ebf6210","block":3,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:06","op":["comment",{"parent_author":"alice12ah","parent_permlink":"permlink12-1","author":"ben12ah","permlink":"permlink12-2","title":"Title 12-1","body":"Body 12-1","json_metadata":""}]}])~"
+      } };
+
+    // Filter out usual transfer to vesting (completed)_operations checked in other tests.
+    uint64_t filter_low = -1ull & ~GET_LOW_OPERATION( transfer_to_vesting_operation );
+    uint64_t filter_high = -1ull & ~GET_HIGH_OPERATION( transfer_to_vesting_completed_operation );
+    test_get_account_history( *this, { "alice12ah", "ben12ah" }, { expected_alice12ah_history, expected_ben12ah_history },
+      1000, 1000, filter_low, filter_high );
+  };
+
+  combo_1_scenario( check_point_tester1, check_point_tester2 );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_get_account_history_tests
 
 #endif
