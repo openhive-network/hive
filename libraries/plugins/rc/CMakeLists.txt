@@ -3,7 +3,6 @@ file(GLOB HEADERS "include/hive/plugins/rc/*.hpp")
 add_library( rc_plugin
              rc_plugin.cpp
              resource_count.cpp
-             rc_operations.cpp
              ${HEADERS}
            )
 

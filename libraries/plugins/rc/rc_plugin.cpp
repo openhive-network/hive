@@ -9,7 +9,7 @@
 #include <hive/chain/rc/rc_export_objects.hpp>
 #include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
-#include <hive/plugins/rc/rc_operations.hpp>
+#include <hive/chain/rc/rc_operations.hpp>
 
 #include <hive/plugins/rc/resource_count.hpp>
 #include <hive/chain/rc/resource_user.hpp>
@@ -148,7 +148,7 @@ class rc_plugin_impl
     uint32_t                      _enable_at_block = 1;
     bool                          _enable_rc_stats = false; //needs to be false by default
 
-    std::shared_ptr< generic_custom_operation_interpreter< hive::plugins::rc::rc_custom_operation > > _custom_operation_interpreter;
+    std::shared_ptr< generic_custom_operation_interpreter< hive::chain::rc_custom_operation > > _custom_operation_interpreter;
 
     boost::signals2::connection   _pre_reindex_conn;
     boost::signals2::connection   _post_reindex_conn;
@@ -1322,7 +1322,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 
     // Each plugin needs its own evaluator registry.
-    my->_custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::plugins::rc::rc_custom_operation > >( my->_db, name() );
+    my->_custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::chain::rc_custom_operation > >( my->_db, name() );
 
     // Add each operation evaluator to the registry
     my->_custom_operation_interpreter->register_evaluator< delegate_rc_evaluator >( this );

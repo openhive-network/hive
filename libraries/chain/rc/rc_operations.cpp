@@ -1,7 +1,7 @@
 #include <hive/protocol/config.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
-#include <hive/plugins/rc/rc_operations.hpp>
+#include <hive/chain/rc/rc_operations.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database.hpp>
@@ -11,9 +11,7 @@
 
 #include <hive/protocol/operation_util_impl.hpp>
 
-namespace hive { namespace plugins { namespace rc {
-
-using namespace hive::chain;
+namespace hive { namespace chain {
 
 void delegate_rc_operation::validate()const
 {
@@ -111,6 +109,6 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   } );
 }
 
-} } } // hive::plugins::rc
+} } // hive::chain
 
-HIVE_DEFINE_OPERATION_TYPE( hive::plugins::rc::rc_custom_operation )
+HIVE_DEFINE_OPERATION_TYPE( hive::chain::rc_custom_operation )
