@@ -3,21 +3,6 @@ import array
 
 from typing import Tuple
 
-cpdef void info(str param):
-    print("This is info: {}".format(param))
-
-cdef extern from "cpython_interface.hpp":
-    int add_three_assets( int param_1, int param_2, int param_3 )
-
-def py_add_three_assets( param_1, param_2, param_3 ):
-    return add_three_assets( param_1, param_2, param_3 )
-
-cdef extern from "cpython_interface.hpp":
-    int add_two_numbers( int param_1, int param_2 )
-
-def py_add_two_numbers( param_1, param_2 ):
-    return add_two_numbers( param_1, param_2 )
-
 cdef extern from "cpython_interface.hpp":
     int cpp_validate_operation( char* content )
 
@@ -52,3 +37,20 @@ def validate_transaction(transaction: bytes) -> bool | None:
     _transaction.append(0)
 
     return bool(cpp_validate_transaction( _transaction.data.as_chars ))
+
+cdef extern from "cpython_interface.hpp":
+    int cpp_serialize_transaction( char* content, unsigned char* serialized_transaction )
+
+def serialize_transaction(transaction: bytes) -> bool | None:
+    cdef array.array _transaction = array.array('b', transaction)
+    _transaction.append(0)
+
+    _DIGEST_SIZE = 50000
+    _buffer = '0' * _DIGEST_SIZE
+    __buffer = bytes(_buffer, 'ascii')
+
+    cdef array.array _ser_buffer = array.array('B', __buffer)
+
+    _result = bool(cpp_serialize_transaction( _transaction.data.as_chars, _ser_buffer.data.as_uchars ))
+
+    return _result, ''.join(str(c) for c in _ser_buffer)
