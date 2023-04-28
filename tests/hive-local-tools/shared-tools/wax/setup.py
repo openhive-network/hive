@@ -1,10 +1,10 @@
 from pathlib import Path
-from setuptools import setup, find_packages
+from setuptools import setup
 from distutils.command.build import build
-from shutil import which, rmtree, copyfile
+from shutil import which, copyfile
 from subprocess import run as run_process
 from multiprocessing import cpu_count
-
+from os import environ
 
 class CustomBuild(build):
     binary_name = "wax.cpython-310-x86_64-linux-gnu.so"
@@ -15,6 +15,9 @@ class CustomBuild(build):
     logs_dir = build_dir / "logs"
 
     def run(self) -> None:
+        if "WAX_SKIP_BUILD" in environ:
+            return super().run()
+
         configure_command = which("cmake")
         assert configure_command is not None, "cannot find cmake"
         configure_args = ["-GNinja"]
