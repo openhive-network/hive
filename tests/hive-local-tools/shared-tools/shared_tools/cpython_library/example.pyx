@@ -43,3 +43,12 @@ def calculate_digest(transaction: bytes) -> Tuple[bool, str] | None:
     _result = bool(cpp_calculate_digest( _transaction.data.as_chars, _digest.data.as_uchars ))
 
     return _result, ''.join('{:02x}'.format(c) for c in _digest)
+
+cdef extern from "cpython_interface.hpp":
+    int cpp_validate_transaction( char* content )
+
+def validate_transaction(transaction: bytes) -> bool | None:
+    cdef array.array _transaction = array.array('b', transaction)
+    _transaction.append(0)
+
+    return bool(cpp_validate_transaction( _transaction.data.as_chars ))
