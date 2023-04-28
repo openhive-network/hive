@@ -90,6 +90,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_reversible_comment_and_reward )
       R"~([13,{"trx_id":"ffc153bf5535d3e60622498e66c23809e8dd5ba8","block":14,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:39","op":{"type":"claim_reward_balance_operation","value":{"account":"edgar0ah","reward_hive":{"amount":"0","precision":3,"nai":"@@000000021"},"reward_hbd":{"amount":"1","precision":3,"nai":"@@000000013"},"reward_vests":{"amount":"1","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
     };
 
+    BOOST_REQUIRE_EQUAL(get_last_irreversible_block_num(), 0);
     test_get_account_history_reversible( *this, { "dan0ah", "edgar0ah" }, { expected_dan0ah_history, expected_edgar0ah_history } );
   };
 
