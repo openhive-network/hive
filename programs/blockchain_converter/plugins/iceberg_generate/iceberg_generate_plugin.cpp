@@ -222,6 +222,8 @@ namespace detail {
 
     ilog("Initial supply requirements met");
 
+    start_block_num = init_start_block_num;
+
     // The actual conversion:
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
