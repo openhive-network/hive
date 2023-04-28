@@ -286,6 +286,11 @@ struct database_fixture {
     bool generate_sparsely, uint32_t skip );
 
   /**
+    * @brief Returns number of the last irreversible block
+    */
+  uint32_t get_last_irreversible_block_num();
+
+  /**
     * @brief Generates block_count blocks
     * @param block_count number of blocks to generate
     */

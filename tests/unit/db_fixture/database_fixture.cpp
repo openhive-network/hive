@@ -406,6 +406,11 @@ void database_fixture::generate_until_irreversible_block( uint32_t block_num )
     generate_block();
 }
 
+uint32_t database_fixture::get_last_irreversible_block_num()
+{
+  return db->get_last_irreversible_block_num();
+}
+
 fc::string database_fixture::get_current_time_iso_string() const
 {
   fc::time_point_sec current_time = db->head_block_time();
