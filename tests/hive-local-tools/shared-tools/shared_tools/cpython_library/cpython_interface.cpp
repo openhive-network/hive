@@ -88,3 +88,23 @@ int cpp_calculate_digest( char* content, unsigned char* digest )
 
   return _result;
 }
+
+int cpp_validate_transaction( char* content )
+{
+  if( !content )
+    return false;
+
+  int _result = 0;
+
+  try
+  {
+    fc::variant _v = fc::json::from_string( content );
+    hive::protocol::transaction _transaction = _v.as<hive::protocol::transaction>();
+
+    _transaction.validate();
+
+    _result = 1;
+  } FC_CAPTURE_AND_LOG(( content ))
+
+  return _result;
+}
