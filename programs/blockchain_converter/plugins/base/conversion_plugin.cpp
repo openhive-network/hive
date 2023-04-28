@@ -49,7 +49,7 @@ namespace hive { namespace converter { namespace plugins {
 
   void conversion_plugin_impl::display_error_response_data()const
   {
-    if( error_response_count )
+    if( total_request_count )
       wlog("${errors} (${percent}% of total ${total}) node errors detected",
         ("errors", error_response_count)("percent", int(float(error_response_count) / total_request_count * 100))("total", total_request_count));
   }
