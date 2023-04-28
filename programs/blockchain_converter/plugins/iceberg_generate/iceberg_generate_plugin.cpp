@@ -206,15 +206,19 @@ namespace detail {
     update_lib_id();
     int64_t virtual_supply = gpo["virtual_supply"].as< hp::asset >().amount.value;
     int64_t current_hbd_supply = gpo["current_hbd_supply"].as< hp::asset >().amount.value;
+    int64_t init_hbd_supply = gpo["init_hbd_supply"].as< hp::asset >().amount.value;
+
+    // Use current hbd supply if there is any, otherwise use init hbd supply (can be either 0 or the value from the alternate chain properties file)
+    int64_t real_hbd_supply = current_hbd_supply == 0 ? init_hbd_supply : current_hbd_supply;
 
     ilog("Init supply: [${is} HIVE required, available: ${vs} HIVE], HBD Init supply: [${his} HBD required, available: ${hvs} HBD]",
       ("is", init_assets[HIVE_NAI_HIVE])("vs", virtual_supply)
-      ("his", init_assets[HIVE_NAI_HBD])("hvs", current_hbd_supply)
+      ("his", init_assets[HIVE_NAI_HBD])("hvs", real_hbd_supply)
     );
 
     // XXX: Should we also handle HIVE_NAI_VESTS?
     FC_ASSERT( virtual_supply >= init_assets[HIVE_NAI_HIVE], "Insufficient initial supply in the output node blockchain" );
-    FC_ASSERT( current_hbd_supply >= init_assets[HIVE_NAI_HBD], "Insufficient HBD initial supply in the output node blockchain" );
+    FC_ASSERT( real_hbd_supply >= init_assets[HIVE_NAI_HBD], "Insufficient HBD initial supply in the output node blockchain" );
 
     ilog("Initial supply requirements met");
 
