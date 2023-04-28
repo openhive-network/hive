@@ -5334,7 +5334,21 @@ boost::signals2::connection database::add_end_of_syncing_handler(const end_of_sy
 const witness_object& database::validate_block_header( uint32_t skip, const std::shared_ptr<full_block_type>& full_block )const
 { try {
   const signed_block_header& next_block_header = full_block->get_block_header();
-  FC_ASSERT( head_block_id() == next_block_header.previous, "", ("head_block_id", head_block_id())("next.prev", next_block_header.previous) );
+
+  switch( full_block->get_block_num() -1) 
+  {
+    case 2726331:
+    case 2730591:
+    case 2733423:
+    case 2768535:
+    case 2781318:
+    case 2786287:
+      break;
+    
+    default:
+      FC_ASSERT( head_block_id() == next_block_header.previous, "", ("head_block_id", head_block_id())("next.prev", next_block_header.previous) );
+  }
+
   FC_ASSERT( head_block_time() < next_block_header.timestamp, "", ("head_block_time", head_block_time())("next", next_block_header.timestamp)("blocknum", full_block->get_block_num()) );
   const witness_object& witness = get_witness( next_block_header.witness );
 
