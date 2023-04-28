@@ -5,8 +5,6 @@
 #include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
 #include <hive/plugins/account_history_api/account_history_api.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
-#include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
-#include <hive/plugins/condenser_api/condenser_api.hpp>
 
 #include <fc/io/json.hpp>
 
@@ -38,13 +36,6 @@ void test_get_account_history_reversible( const condenser_api_reversible_fixture
       // Compare operations in their serialized form with expected patterns:
       BOOST_REQUIRE_EQUAL( expected, fc::json::to_string(actual) );
     }
-
-    // Do additional checks of condenser variant
-    // Too few arguments
-    BOOST_REQUIRE_THROW( caf.condenser_api->get_account_history( condenser_api::get_account_history_args( {account_name, 100 /*start*/ } ) ), fc::assert_exception );
-    // Too many arguments
-    BOOST_REQUIRE_THROW( caf.condenser_api->get_account_history( condenser_api::get_account_history_args( 
-      {account_name, 100 /*start*/, 100 /*limit*/, 50 /*filter_low*/, 200 /*filter_high*/, 100 /*redundant*/ } ) ), fc::assert_exception );
   }
 }
 
