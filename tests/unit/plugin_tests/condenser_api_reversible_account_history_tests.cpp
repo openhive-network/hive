@@ -11,6 +11,7 @@
 #include <fc/io/json.hpp>
 
 #include <boost/test/unit_test.hpp>
+#include <boost/range/combine.hpp>
 
 typedef std::vector< std::string > expected_t;
 
@@ -21,26 +22,21 @@ void test_get_account_history_reversible( const condenser_api_reversible_fixture
 {
   // For each requested account ...
   BOOST_REQUIRE_EQUAL( expected_operations.size(), account_names.size() );
-  for( size_t account_index = 0; account_index < account_names.size(); ++account_index)
+  for(const auto [account_name, expected_for_account] : boost::combine(account_names, expected_operations))
   {
-    const auto& account_name = account_names[ account_index ];
-    const auto& expected_for_account = expected_operations[ account_index ];
-
     auto ah1 = caf.account_history_api->get_account_history( {account_name, start, limit, true /*include_reversible*/, filter_low, filter_high } );
     BOOST_REQUIRE_EQUAL( expected_for_account.size(), ah1.history.size() );
     ilog( "${n} operation(s) in account ${account} history", ("n", ah1.history.size())("account", account_name) );
 
     // For each event (operation) in account history ...
-    auto it_ah = ah1.history.begin();
-    for (auto it : ah1.history)
+    for (const auto& it : ah1.history)
     {
       ilog("ah op: ${op}", ("op", it));
     }
-    for( size_t op_index = 0; it_ah != ah1.history.end(); ++it_ah, ++op_index )
+    for(const auto [actual, expected] : boost::combine(ah1.history, expected_for_account))
     {
       // Compare operations in their serialized form with expected patterns:
-      const auto expected = expected_for_account[ op_index ];
-      BOOST_REQUIRE_EQUAL( expected, fc::json::to_string(*it_ah) );
+      BOOST_REQUIRE_EQUAL( expected, fc::json::to_string(actual) );
     }
 
     // Do additional checks of condenser variant
