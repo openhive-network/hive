@@ -326,6 +326,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::set_decoded_state_objects_data(const std::string& json)
   {
+    assert(_is_open);
     environment_check* const env = _segment->find< environment_check >( "environment" ).first;
     assert(env);
 
@@ -337,6 +338,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   std::string database::get_decoded_state_objects_data() const
   {
+    assert(_is_open);
     const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
     assert(env);
     return std::string(env->decoded_state_objects_data_json.c_str());
