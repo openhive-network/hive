@@ -1422,12 +1422,12 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   dumper.initialize([](benchmark_dumper::database_object_sizeof_cntr_t&) {}, "state_snapshot_load.json");
 
   auto snapshotManifest = load_snapshot_manifest(actualStoragePath);
+  const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
 
   {
-    const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
     chain::util::decoded_types_data_storage dtds(_mainDb.get_decoded_state_objects_data());
-
     auto result = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(loaded_decoded_type_data);
+
     if (!result.first)
     {
       std::fstream loaded_decoded_types_details, current_decoded_types_details;
@@ -1454,6 +1454,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   }
 
   _mainDb.resetState(openArgs);
+  _mainDb.set_decoded_state_objects_data(loaded_decoded_type_data);
 
   const auto& indices = _mainDb.get_abstract_index_cntr();
 
