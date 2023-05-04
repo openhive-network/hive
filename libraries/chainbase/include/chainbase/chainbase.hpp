@@ -1292,12 +1292,11 @@ namespace chainbase {
         { return _index_list; }
 
       std::string get_decoded_state_objects_data() const;
+      void set_decoded_state_objects_data(const std::string& json);
 
     protected:
       bool get_is_open() const
         { return _is_open; }
-
-      void set_decoded_state_objects_data(const std::string& json);
 
     private:
       template<typename MultiIndexType>
