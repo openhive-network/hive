@@ -1291,7 +1291,7 @@ namespace chainbase {
       const abstract_index_cntr_t& get_abstract_index_cntr() const
         { return _index_list; }
 
-      std::string get_decoded_state_objects_data() const;
+      std::string get_decoded_state_objects_data_from_shm() const;
       void set_decoded_state_objects_data(const std::string& json);
 
     protected:

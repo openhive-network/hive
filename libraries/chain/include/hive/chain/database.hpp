@@ -94,6 +94,7 @@ namespace chain {
     std::vector< std::string > replay_memory_indices{};
     bool enable_block_log_compression = true;
     int block_log_compression_level = 15;
+    bool load_snapshot = false;
 
     // The following fields are only used on reindexing
     uint32_t stop_replay_at = 0;
@@ -202,6 +203,8 @@ namespace chain {
       bool is_included_block_unlocked(const block_id_type& block_id);
 
       void begin_type_register_process(util::abstract_type_registrar& r);
+
+      void verify_match_of_state_objects_definitions_from_shm();
 
     public:
       std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
@@ -634,7 +637,8 @@ namespace chain {
       // Reset irreversible state (unaffected by undo)
       void initialize_irreversible_storage();
 
-      void check_state_objects_definitions();
+      // For snapshot plugin. Decoded types data hold by database will be erased after using.
+      std::string get_current_decoded_types_data_json();
 
       void resetState(const open_args& args);
 
