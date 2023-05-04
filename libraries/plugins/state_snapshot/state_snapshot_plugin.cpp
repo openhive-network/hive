@@ -1092,7 +1092,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
   }
 
     {
-    const std::string json = _mainDb.get_decoded_state_objects_data();
+    const std::string json = _mainDb.get_decoded_state_objects_data_from_shm();
     Slice key("STATE_DEFINITIONS_DATA");
     Slice value(json);
     auto status = db->Put(writeOptions, StateDefinitionsDataCF, key, value);
@@ -1425,7 +1425,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
 
   {
-    chain::util::decoded_types_data_storage dtds(_mainDb.get_decoded_state_objects_data());
+    chain::util::decoded_types_data_storage dtds(_mainDb.get_current_decoded_types_data_json());
     auto result = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(loaded_decoded_type_data);
 
     if (!result.first)

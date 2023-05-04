@@ -336,7 +336,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     env->decoded_state_objects_data_json = json.c_str();
   }
 
-  std::string database::get_decoded_state_objects_data() const
+  std::string database::get_decoded_state_objects_data_from_shm() const
   {
     assert(_is_open);
     const environment_check* const env = _segment->find< environment_check >( "environment" ).first;

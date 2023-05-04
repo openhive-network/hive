@@ -162,7 +162,6 @@ void database::open( const open_args& args )
 {
   try
   {
-    _my->create_new_decoded_types_data_storage();
     init_schema();
 
     helpers::environment_extension_resources environment_extension(
@@ -180,8 +179,14 @@ void database::open( const open_args& args )
 
 void database::initialize_state_independent_data(const open_args& args)
 {
+  _my->create_new_decoded_types_data_storage();
+  _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();
+
   initialize_indexes();
-  check_state_objects_definitions();
+
+  if (!args.load_snapshot)
+    verify_match_of_state_objects_definitions_from_shm();
+
   initialize_evaluators();
   initialize_irreversible_storage();
 
@@ -4021,12 +4026,10 @@ void database::initialize_irreversible_storage()
   irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
 }
 
-void database::check_state_objects_definitions()
+void database::verify_match_of_state_objects_definitions_from_shm()
 {
   FC_ASSERT(_my->_decoded_types_data_storage);
-  _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();
-
-  const std::string decoded_state_objects_data = get_decoded_state_objects_data();
+  const std::string decoded_state_objects_data = get_decoded_state_objects_data_from_shm();
 
   if (decoded_state_objects_data.empty())
     set_decoded_state_objects_data(_my->_decoded_types_data_storage->generate_decoded_types_data_json_string());
@@ -4060,6 +4063,14 @@ void database::check_state_objects_definitions()
   }
 
   _my->delete_decoded_types_data_storage();
+}
+
+std::string database::get_current_decoded_types_data_json()
+{
+  FC_ASSERT(_my->_decoded_types_data_storage);
+  const std::string decoded_types_data_json = _my->_decoded_types_data_storage->generate_decoded_types_data_json_string();
+  _my->delete_decoded_types_data_storage();
+  return decoded_types_data_json;
 }
 
 void database::resetState(const open_args& args)
