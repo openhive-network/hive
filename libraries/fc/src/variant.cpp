@@ -486,7 +486,7 @@ variants&         variant::get_array()
   if( get_type() == array_type )
      return **reinterpret_cast<variants**>(this);
 
-  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Array", ("type",get_type()) );
+  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Array, the variant is ${th}", ("type",get_type())("th",*this) );
 }
 blob&         variant::get_blob()
 {
@@ -534,7 +534,7 @@ const variants&       variant::get_array()const
 {
   if( get_type() == array_type )
      return **reinterpret_cast<const const_variants_ptr*>(this);
-  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Array", ("type",get_type()) );
+  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Array, the variant is ${th}", ("type",get_type())("th",*this) );
 }
 
 

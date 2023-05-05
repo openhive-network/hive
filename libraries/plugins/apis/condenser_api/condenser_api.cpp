@@ -784,13 +784,25 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_potential_signatures )
   {
     CHECK_ARG_SIZE( 1 )
-    return _database_api->get_potential_signatures( { signed_transaction( args.at(0).as< legacy_signed_transaction >() ) } ).keys;
+    signed_transaction trn;
+    {
+      // We're expecting (and forcing) input in legacy serialization mode.
+      hive::protocol::serialization_mode_controller::mode_guard guard( transaction_serialization_type::legacy );
+      trn = args.at(0).as< legacy_signed_transaction >();
+    }
+    return _database_api->get_potential_signatures( { trn } ).keys;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, verify_authority )
   {
     CHECK_ARG_SIZE( 1 )
-    return _database_api->verify_authority( { signed_transaction( args.at(0).as< legacy_signed_transaction >() ) } ).valid;
+    signed_transaction trn;
+    {
+      // We're expecting (and forcing) input in legacy serialization mode.
+      hive::protocol::serialization_mode_controller::mode_guard guard( transaction_serialization_type::legacy );
+      trn = args.at(0).as< legacy_signed_transaction >();
+    }
+    return _database_api->verify_authority( { trn } ).valid;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, verify_account_authority )
@@ -952,7 +964,14 @@ namespace detail
   {
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
-    return _network_broadcast_api->broadcast_transaction( { signed_transaction( args.at(0).as< legacy_signed_transaction >() ) } );
+    ilog("condenser_api_impl.broadcast_transaction.args.at(0) ${a}", ("a", args.at(0)));
+    signed_transaction trn;
+    {
+      // We're expecting (and forcing) input in legacy serialization mode.
+      hive::protocol::serialization_mode_controller::mode_guard guard( transaction_serialization_type::legacy );
+      trn = args.at(0).as< legacy_signed_transaction >();
+    }
+    return _network_broadcast_api->broadcast_transaction( { trn } );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, broadcast_transaction_synchronous )
@@ -962,7 +981,12 @@ namespace detail
     FC_ASSERT( _p2p != nullptr, "p2p_plugin not enabled." );
 
     fc::time_point api_start_time = fc::time_point::now();
-    signed_transaction trx = args.at(0).as< legacy_signed_transaction >();
+    signed_transaction trx;
+    {
+      // We're expecting (and forcing) input in legacy serialization mode.
+      hive::protocol::serialization_mode_controller::mode_guard guard( transaction_serialization_type::legacy );
+      trx = args.at(0).as< legacy_signed_transaction >();
+    }
     boost::promise< broadcast_transaction_synchronous_return > p;
     fc::time_point callback_setup_time;
     full_transaction_ptr full_transaction;

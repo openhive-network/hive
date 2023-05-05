@@ -45,6 +45,7 @@ namespace hive { namespace plugins { namespace condenser_api {
 
   using namespace hive::protocol;
 
+  typedef transfer_operation                     legacy_transfer_operation;
   typedef account_update_operation               legacy_account_update_operation;
   typedef account_update2_operation              legacy_account_update2_operation;
   typedef comment_operation                      legacy_comment_operation;
@@ -282,34 +283,6 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool              allow_curation_rewards;
     legacy_comment_options_extensions_type extensions;
   };
-
-
-  struct legacy_transfer_operation
-  {
-    legacy_transfer_operation() {}
-    legacy_transfer_operation( const transfer_operation& op ) :
-      from( op.from ),
-      to( op.to ),
-      amount( legacy_asset::from_asset( op.amount ) ),
-      memo( op.memo )
-    {}
-
-    operator transfer_operation()const
-    {
-      transfer_operation op;
-      op.from = from;
-      op.to = to;
-      op.amount = amount;
-      op.memo = memo;
-      return op;
-    }
-
-    account_name_type from;
-    account_name_type to;
-    legacy_asset      amount;
-    string            memo;
-  };
-
   struct legacy_escrow_transfer_operation
   {
     legacy_escrow_transfer_operation() {}
@@ -1715,12 +1688,7 @@ namespace hive { namespace plugins { namespace condenser_api {
     bool operator()( const witness_block_approve_operation& op )const          { l_op = op; return true; }
     bool operator()( const legacy_proxy_cleared_operation& op )const           { l_op = op; return true; }
     bool operator()( const legacy_declined_voting_rights_operation& op )const  { l_op = op; return true; }
-
-    bool operator()( const transfer_operation& op )const
-    {
-      l_op = legacy_transfer_operation( op );
-      return true;
-    }
+    bool operator()( const transfer_operation& op )const                       { l_op = op; return true; }
 
     bool operator()( const transfer_to_vesting_operation& op )const
     {
@@ -2034,11 +2002,6 @@ struct convert_from_legacy_operation_visitor
   convert_from_legacy_operation_visitor() {}
 
   typedef operation result_type;
-
-  operation operator()( const legacy_transfer_operation& op )const
-  {
-    return operation( transfer_operation( op ) );
-  }
 
   operation operator()( const legacy_transfer_to_vesting_operation& op )const
   {
@@ -2447,7 +2410,6 @@ FC_REFLECT( hive::plugins::condenser_api::legacy_account_create_with_delegation_
         (json_metadata)
         (extensions) )
 
-FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_operation, (from)(to)(amount)(memo) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_to_vesting_operation, (from)(to)(amount) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_transfer_to_vesting_completed_operation, (from_account)(to_account)(hive_vested)(vesting_shares_received) )
 FC_REFLECT( hive::plugins::condenser_api::legacy_withdraw_vesting_operation, (account)(vesting_shares) )

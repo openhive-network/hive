@@ -144,7 +144,15 @@ namespace fc
   {
     bool operator()( const fc::variant& v, update_proposal_extension& s ) const
     {
-      return extended_serialization_functor< update_proposal_extension >().serialize( v, s );
+      // If this update_proposal_operation is supposed to be legacy-serialized completely 
+      // and its extension is legacy-serialized, we'll allow it.
+      if( hive::protocol::serialization_mode_controller::legacy_enabled() &&
+          v.is_array() )
+      {
+        return extended_serialization_functor< update_proposal_extension >().serialize( v, s );
+      }
+      else // Otherwise force the extension to be hf26-serialized.
+        return false;
     }
   };
 
