@@ -458,6 +458,8 @@ void application::exec()
   {
     main_io_handler.attach_signals();
 
+    hive::notify_hived_status("signals attached");
+
     main_io_handler.run();
   }
   else
