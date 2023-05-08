@@ -9,7 +9,7 @@ namespace consensus_state_provider
     {
     public:
         bool has_context(const char* context) const;
-        void add(const char* context, hive::chain::database& a_db);
+        void add(const char* context, hive::chain::database* a_db);
         void remove(const char* context);
         hive::chain::database& get_db(const char* context) const;
 

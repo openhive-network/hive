@@ -2193,37 +2193,34 @@ namespace consensus_state_provider
 {
 
 namespace{
- std::unordered_map <std::string,  hive::plugins::database_api::database_api_impl> haf_database_api_impls;
+ std::unordered_map <std::string,  std::unique_ptr<hive::chain::database>> chain_databases;
 }
 
 
 bool cache::has_context(const char* context) const
 {
-    return haf_database_api_impls.find(context) != haf_database_api_impls.end();
+    return chain_databases.find(context) != chain_databases.end();
 }
 
 void cache::remove(const char* context)
 {
-    haf_database_api_impls.erase(context);
+    chain_databases.erase(context);
 }
 
 
 hive::chain::database& cache::get_db(const char* context) const
 {
-    hive::plugins::database_api::database_api_impl& db_api_impl = haf_database_api_impls[context];
-    hive::chain::database& db = db_api_impl._db;
-    return db;
+  return  *(chain_databases[context]);
 }
 
-hive::plugins::database_api::database_api_impl& get_database_api_impl(const cache&,  const char* context)
+hive::plugins::database_api::database_api_impl get_database_api_impl(const cache&,  const char* context)
 {
-  return haf_database_api_impls[context];
+  return hive::plugins::database_api::database_api_impl(*(chain_databases[context]));
 }
 
-
-void cache::add(const char* context, hive::chain::database& db)
+void cache::add(const char* context, hive::chain::database* db)
 {
-  haf_database_api_impls.emplace(std::make_pair(std::string(context), hive::plugins::database_api::database_api_impl(db)));
+  chain_databases.emplace(std::make_pair(std::string(context), std::unique_ptr<hive::chain::database>(db)));
 }
 
 
@@ -2231,12 +2228,8 @@ void cache::add(const char* context, hive::chain::database& db)
 
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
-  wlog("mtlk inside  pid=${pid}", ("pid", getpid()));
 
-
-  hive::plugins::database_api::database_api_impl& db_api_impl = get_database_api_impl(consensus_state_provider::get_cache(), context);
-
-
+  hive::plugins::database_api::database_api_impl db_api_impl = get_database_api_impl(consensus_state_provider::get_cache(), context);
 
   hive::plugins::database_api::list_accounts_args args;
   
