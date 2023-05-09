@@ -15,6 +15,7 @@
 #include <hive/utilities/git_revision.hpp>
 
 #include <hive/plugins/database_api/consensus_state_provider_cache.hpp>
+#include "fc/variant.hpp"
 
 
 
@@ -2225,9 +2226,16 @@ void cache::add(const char* context, hive::chain::database* db)
 
 
 
-collected_account_balances_collection_t collect_current_account_balance(const char* acount, const char* context)
+collected_account_balances_collection_t collect_current_account_balance(const char* account, const char* context)
 {
+  hive::plugins::database_api::find_accounts_args args;
+  collected_account_balances_collection_t r;
+  hive::plugins::database_api::database_api_impl db_api_impl = get_database_api_impl(consensus_state_provider::get_cache(), context);
+  
+  args.accounts.emplace_back(account);
+  hive::plugins::database_api::find_accounts_return db_api_impl_result = db_api_impl.find_accounts(args);
 
+  return r;
 }
 
 
