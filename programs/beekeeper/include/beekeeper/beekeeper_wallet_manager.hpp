@@ -5,7 +5,9 @@
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
+
 #include <chrono>
+#include <thread>
 
 namespace fc { class variant; }
 
@@ -21,6 +23,39 @@ struct info
 {
   std::string now;
   std::string timeout_time;
+};
+
+class time_manager
+{
+   private:
+
+      using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
+      using method_type = std::function<void()>;
+
+      std::chrono::seconds timeout  = std::chrono::seconds::max(); ///< how long to wait before calling lock_all()
+      timepoint_t timeout_time      = timepoint_t::max(); ///< when to call lock_all()
+
+      bool stop_requested = false;
+
+      method_type lock_method;
+      method_type notification_method;
+
+      std::mutex methods_mutex;
+      std::unique_ptr<std::thread> notification_thread;
+
+      void check_timeout_impl( bool allow_update_timeout_time );
+
+   public:
+
+      time_manager( method_type&& lock_method );
+      ~time_manager();
+
+      void set_timeout( const std::chrono::seconds& t );
+
+      /// Verify timeout has not occurred and reset timeout if not.
+      /// Calls lock_all() if timeout has passed.
+      void check_timeout();
+      info get_info();
 };
 
 /// Provides associate of wallet name to wallet and manages the interaction with each wallet.
@@ -130,18 +165,12 @@ public:
    info get_info();
 
 private:
-   /// Verify timeout has not occurred and reset timeout if not.
-   /// Calls lock_all() if timeout has passed.
-   void check_timeout();
-
-private:
-   using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
    std::map<std::string, std::unique_ptr<beekeeper_wallet_base>> wallets;
-   std::chrono::seconds timeout = std::chrono::seconds::max(); ///< how long to wait before calling lock_all()
-   mutable timepoint_t timeout_time = timepoint_t::max(); ///< when to call lock_all()
    boost::filesystem::path dir = ".";
    boost::filesystem::path lock_path = dir / "wallet.lock";
    std::unique_ptr<boost::interprocess::file_lock> wallet_dir_lock;
+
+   time_manager time;
 
    void start_lock_watch(std::shared_ptr<boost::asio::deadline_timer> t);
    void initialize_lock();
