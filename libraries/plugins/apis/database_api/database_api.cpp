@@ -2225,6 +2225,11 @@ void cache::add(const char* context, hive::chain::database* db)
 
 
 
+collected_account_balances_collection_t collect_current_account_balance(const char* acount, const char* context)
+{
+
+}
+
 
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {

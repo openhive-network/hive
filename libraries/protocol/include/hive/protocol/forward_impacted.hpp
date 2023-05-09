@@ -88,5 +88,6 @@ namespace consensus_state_provider
   };
   typedef std::vector<collected_account_balances_t> collected_account_balances_collection_t;
   collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context);
+  collected_account_balances_collection_t collect_current_account_balance(const char* acount, const char* context);
 }
 
