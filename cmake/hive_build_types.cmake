@@ -26,7 +26,7 @@ endif()
 STRING(TOUPPER "RelWithDebInfo" asanBaseConfig)
 
 SET(HIVE_ASAN_COMPILE_OPTIONS -fsanitize=address -fno-omit-frame-pointer -fno-ipa-icf -fno-optimize-sibling-calls)
-SET(HIVE_ASAN_LINK_OPTIONS "-fsanitize=address")
+SET(HIVE_ASAN_LINK_OPTIONS -static-libasan -fsanitize=address)
 
 set(CMAKE_C_FLAGS_ASAN
     "${CMAKE_C_FLAGS_${asanBaseConfig}} " CACHE STRING
