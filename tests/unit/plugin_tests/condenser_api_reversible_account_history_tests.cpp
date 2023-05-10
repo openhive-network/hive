@@ -59,6 +59,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_all_reversible )
   // Note that comment_payout_beneficiaries occur in both account's comment_options_operation patterns.
   auto check_point_2_tester = [ this ]( uint32_t generate_no_further_than )
   {
+    // Generate a single block for claim_reward_balance_operation. All blocks are still reversible.
     generate_block();
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
@@ -115,6 +116,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_claim_reward_balanc
   // Note that comment_payout_beneficiaries occur in both account's comment_options_operation patterns.
   auto check_point_2_tester = [ this ]( uint32_t generate_no_further_than )
   {
+    // Generate blocks so that all comment related operations are in irreversible blocks, but claim_reward_balance_operation is still in reversible block.
     generate_until_irreversible_block( 7 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
@@ -169,6 +171,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_all_irreversible )
   // Note that comment_payout_beneficiaries occur in both account's comment_options_operation patterns.
   auto check_point_2_tester = [ this ]( uint32_t generate_no_further_than )
   {
+    // Generate blocks so that all comment operations and claim_reward_balance_operation are in irreversible blocks.
     generate_until_irreversible_block( 29 );
     BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
 
