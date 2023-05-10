@@ -89,21 +89,26 @@ int cpp_validate_transaction( char* content )
   return _result;
 }
 
-int cpp_serialize_transaction( char* content, unsigned char* serialized_transaction )
+int cpp_serialize_transaction( char* content, unsigned char* serialized_transaction, unsigned int* dest_size )
 {
-  if( !content )
+  if( !content || !serialized_transaction || !dest_size )
     return false;
 
   int _result = 0;
 
   try
   {
+    hive::protocol::serialization_mode_controller::mode_guard guard( hive::protocol::transaction_serialization_type::hf26 );
+    hive::protocol::serialization_mode_controller::set_pack( hive::protocol::transaction_serialization_type::hf26 );
+
     fc::variant _v = fc::json::from_string( content );
     hive::protocol::transaction _transaction = _v.as<hive::protocol::transaction>();
 
-    std::string _str = fc::to_hex( fc::raw::pack_to_vector( _transaction ) );
+    auto _packed = fc::raw::pack_to_vector( _transaction );
 
-    memcpy( serialized_transaction, _str.data(), _str.size() );
+    memcpy( serialized_transaction, _packed.data(), _packed.size() );
+
+    *dest_size = _packed.size();
 
     _result = 1;
   } FC_CAPTURE_AND_LOG(( content ))
