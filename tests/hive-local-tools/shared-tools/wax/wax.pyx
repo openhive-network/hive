@@ -13,11 +13,14 @@ def validate_operation(operation: bytes) -> bool | None:
     return bool(cpp_validate_operation( _operation.data.as_chars ))
 
 cdef extern from "cpython_interface.hpp":
-    int cpp_calculate_digest( char* content, unsigned char* digest )
+    int cpp_calculate_digest( char* content, unsigned char* digest, const char* chain_id );
 
-def calculate_digest(transaction: bytes) -> Tuple[bool, str] | None:
+def calculate_digest(transaction: bytes, chain_id: bytes) -> Tuple[bool, str] | None:
     cdef array.array _transaction = array.array('b', transaction)
     _transaction.append(0)
+
+    cdef array.array _chain_id = array.array('b', chain_id)
+    _chain_id.append(0)
 
     _DIGEST_SIZE = 32
     _buffer = '0' * _DIGEST_SIZE
@@ -25,7 +28,7 @@ def calculate_digest(transaction: bytes) -> Tuple[bool, str] | None:
 
     cdef array.array _digest = array.array('B', __buffer)
 
-    _result = bool(cpp_calculate_digest( _transaction.data.as_chars, _digest.data.as_uchars ))
+    _result = bool(cpp_calculate_digest( _transaction.data.as_chars, _digest.data.as_uchars, _chain_id.data.as_chars ))
 
     return _result, ''.join('{:02x}'.format(c) for c in _digest)
 
