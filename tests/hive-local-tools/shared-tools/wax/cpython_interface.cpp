@@ -1,6 +1,6 @@
 #include "cpython_interface.hpp"
 
-#include <hive/protocol/asset.hpp>
+#include <hive/protocol/types.hpp>
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/transaction.hpp>
 
@@ -45,7 +45,7 @@ int cpp_validate_operation( char* content )
   return _result;
 }
 
-int cpp_calculate_digest( char* content, unsigned char* digest )
+int cpp_calculate_digest( char* content, unsigned char* digest, const char* chain_id )
 {
   if( !content )
     return false;
@@ -54,17 +54,13 @@ int cpp_calculate_digest( char* content, unsigned char* digest )
 
   try
   {
-    if( digest )
-    {
-      fc::variant _v = fc::json::from_string( content );
-      hive::protocol::transaction _transaction = _v.as<hive::protocol::transaction>();
-
-      hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
-      hive::protocol::digest_type::encoder enc;
-      fc::raw::pack( enc, _transaction );
-      hive::protocol::digest_type _digest = enc.result();
-
-      memcpy( digest, _digest.data(), _digest.data_size() );
+    if (digest) {
+      const auto _transaction =
+          fc::json::from_string(content).as<hive::protocol::transaction>();
+      const auto _digest = _transaction.sig_digest(
+          hive::protocol::chain_id_type(chain_id),
+          hive::protocol::pack_type::hf26);
+      memcpy(digest, _digest.data(), _digest.data_size());
     }
 
     _result = 1;
