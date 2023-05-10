@@ -42,18 +42,21 @@ def validate_transaction(transaction: bytes) -> bool | None:
     return bool(cpp_validate_transaction( _transaction.data.as_chars ))
 
 cdef extern from "cpython_interface.hpp":
-    int cpp_serialize_transaction( char* content, unsigned char* serialized_transaction )
+    int cpp_serialize_transaction( char* content, unsigned char* serialized_transaction, unsigned int* dest_size )
 
 def serialize_transaction(transaction: bytes) -> bool | None:
     cdef array.array _transaction = array.array('b', transaction)
     _transaction.append(0)
 
-    _DIGEST_SIZE = 50000
+    _DIGEST_SIZE = 1000000 #temporary
     _buffer = '0' * _DIGEST_SIZE
     __buffer = bytes(_buffer, 'ascii')
 
     cdef array.array _ser_buffer = array.array('B', __buffer)
 
-    _result = bool(cpp_serialize_transaction( _transaction.data.as_chars, _ser_buffer.data.as_uchars ))
+    cdef unsigned int dest_size = 0;
+    cdef unsigned int *_dest_size = &dest_size
 
-    return _result, ''.join(str(c) for c in _ser_buffer)
+    _result = bool(cpp_serialize_transaction( _transaction.data.as_chars, _ser_buffer.data.as_uchars, _dest_size ))
+
+    return _result, _ser_buffer[:dest_size].tobytes().hex()

@@ -8,7 +8,7 @@ int cpp_calculate_digest( char* content, unsigned char* digest, const char* chai
 
 int cpp_validate_transaction( char* content );
 
-int cpp_serialize_transaction( char* content, unsigned char* serialized_transaction );
+int cpp_serialize_transaction( char* content, unsigned char* serialized_transaction, unsigned int* dest_size );
 
 #ifdef __cplusplus
 }
