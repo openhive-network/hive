@@ -125,8 +125,6 @@ class rc_plugin_impl
       return (_db.count< rc_resource_param_object >() == 0);
     }
 
-    int64_t calculate_cost_of_resources( int64_t total_vests, rc_info& usage_info );
-
     fc::variant_object get_report( report_type rt, const rc_stats_object& stats ) const;
 
     void update_rc_for_custom_action( std::function<void()>&& callback, const account_name_type& account_name ) const;
@@ -183,116 +181,6 @@ void rc_plugin_impl::set_auto_report( const std::string& _option_type, const std
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report output" );
 }
 
-void use_account_rcs(
-  database& db,
-  const dynamic_global_property_object& gpo,
-  rc_info& tx_info,
-  int64_t rc )
-{
-  const account_name_type& account_name = tx_info.payer;
-  if( account_name == account_name_type() )
-  {
-    if( db.is_in_control() )
-    {
-      HIVE_ASSERT( false, plugin_exception,
-        "Tried to execute transaction with no resource user",
-        );
-    }
-    return;
-  }
-
-  // ilog( "use_account_rcs( ${n}, ${rc} )", ("n", account_name)("rc", rc) );
-  const account_object& account = db.get_account( account_name );
-
-  manabar_params mbparams;
-  auto max_mana = account.get_maximum_rc().value;
-  mbparams.max_mana = max_mana;
-  tx_info.max = max_mana;
-  tx_info.rc = account.rc_manabar.current_mana; // initialize before regen in case of exception
-  mbparams.regen_time = HIVE_RC_REGEN_TIME;
-
-  try{
-
-  db.modify( account, [&]( account_object& acc )
-  {
-    acc.rc_manabar.regenerate_mana< true >( mbparams, gpo.time.sec_since_epoch() );
-    tx_info.rc = acc.rc_manabar.current_mana; // update after regeneration
-    bool has_mana = acc.rc_manabar.has_mana( rc );
-
-#ifdef USE_ALTERNATE_CHAIN_ID
-    if( configuration_data.allow_not_enough_rc == false )
-#endif
-    {
-      if( db.is_in_control() )
-      {
-        HIVE_ASSERT( has_mana, not_enough_rc_exception,
-          "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
-          ("account", account_name)
-          ("rc_needed", rc)
-          ("rc_current", tx_info.rc)
-          );
-      }
-      else
-      {
-        if( !has_mana && db.is_processing_block() && db.has_hardfork( HIVE_HARDFORK_1_26 ) )
-        {
-          //when we didn't have is_processing_block as part of condition the messages below would also
-          //be produced when pending transactions were reapplied after new block arrived even though
-          //they are not part of any block yet;
-          //if we put that part of condition as alternative for db.is_in_control() above it would mean
-          //the transactions that were validated before but started to lack RC after new block arrived,
-          //would be dropped from mempool (note the difference: when user lacks RC while sending transaction
-          //he can notice and react to it; however when his transaction is rejected after validation due
-          //to changes in RC, it seems better to retry tx execution like we currently do)
-          const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
-          ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
-            ("account", account_name)
-            ("rc_needed", rc)
-            ("rc_current", tx_info.rc)
-            ("b", gpo.head_block_number)
-            ("w", gpo.current_witness)
-            );
-        }
-      }
-    }
-
-    acc.rc_manabar.use_mana( rc );
-    tx_info.rc = acc.rc_manabar.current_mana;
-  } );
-  }FC_CAPTURE_AND_RETHROW( (tx_info) )
-}
-
-int64_t rc_plugin_impl::calculate_cost_of_resources( int64_t total_vests, rc_info& usage_info )
-{
-  // How many RC does this transaction cost?
-  const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
-  const rc_pool_object& pool_obj = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
-
-  int64_t rc_regen = ( total_vests / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
-
-  int64_t total_cost = 0;
-
-  // When rc_regen is 0, everything is free
-  if( rc_regen > 0 )
-  {
-    for( size_t i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
-    {
-      const rc_resource_params& params = params_obj.resource_param_array[i];
-      int64_t pool = pool_obj.get_pool(i);
-
-      usage_info.usage[i] *= int64_t( params.resource_dynamics_params.resource_unit );
-      int64_t pool_regen_share = fc::uint128_to_int64( ( uint128_t( rc_regen ) * pool_obj.get_weight(i) ) / pool_obj.get_weight_divisor() );
-      if( pool_regen_share > 0 )
-      {
-        usage_info.cost[i] = resource_credits::compute_cost( params.price_curve_params, pool, usage_info.usage[i], pool_regen_share );
-        total_cost += usage_info.cost[i];
-      }
-    }
-  }
-
-  return total_cost;
-}
-
 void rc_plugin_impl::on_pre_apply_transaction( const transaction_notification& note )
 {
   if( before_first_block() )
@@ -309,6 +197,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   if( before_first_block() )
     return;
 
+  resource_credits rc( _db );
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
 
@@ -322,7 +211,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
     tx_info.op = note.transaction.operations.front().which();
 
   // How many RC does this transaction cost?
-  int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, tx_info );
+  int64_t total_cost = rc.compute_cost( &tx_info );
   note.full_transaction->set_rc_cost( total_cost );
 
   _db.modify( pending_data, [&]( rc_pending_data& data )
@@ -332,7 +221,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // Who pays the cost?
   tx_info.payer = get_resource_user( note.transaction );
-  use_account_rcs( _db, gpo, tx_info, total_cost );
+  rc.use_account_rcs( &tx_info, total_cost );
 
   if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
   {
@@ -1078,6 +967,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   if( before_first_block() )
     return;
 
+  resource_credits rc( _db );
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
 
@@ -1093,7 +983,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   count_resources( note.action, fc::raw::pack_size( note.action ), opt_action_info.usage, _db.head_block_time() );
 
   // How many RC do these actions cost?
-  int64_t total_cost = calculate_cost_of_resources( gpo.total_vesting_shares.amount.value, opt_action_info );
+  int64_t total_cost = rc.compute_cost( &opt_action_info );
 
   _db.modify( pending_data, [&]( rc_pending_data& data )
   {
@@ -1102,7 +992,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // Who pays the cost?
   opt_action_info.payer = get_resource_user( note.action );
-  use_account_rcs( _db, gpo, opt_action_info, total_cost );
+  rc.use_account_rcs( &opt_action_info, total_cost );
 
   if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
   {

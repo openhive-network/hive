@@ -1,7 +1,7 @@
-
 #include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/util/remove_guard.hpp>
 
 #include <fc/reflect/variant.hpp>
@@ -52,6 +52,38 @@ int64_t resource_credits::compute_cost(
   // err on the side of rounding not in the user's favor
   // ilog( "result: ${r}", ("r", num_denom.to_uint64()+1) );
   return fc::uint128_to_uint64(num_denom)+1;
+}
+
+int64_t resource_credits::compute_cost( rc_info* usage_info ) const
+{
+  const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
+  const rc_resource_param_object& params_obj = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+  const rc_pool_object& pool_obj = db.get< rc_pool_object, by_id >( rc_pool_id_type() );
+
+  int64_t total_vests = dgpo.get_total_vesting_shares().amount.value;
+  int64_t rc_regen = ( total_vests / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
+
+  int64_t total_cost = 0;
+
+  // When rc_regen is 0, everything is free
+  if( rc_regen > 0 )
+  {
+    for( size_t i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+    {
+      const rc_resource_params& params = params_obj.resource_param_array[i];
+      int64_t pool = pool_obj.get_pool(i);
+
+      usage_info->usage[i] *= int64_t( params.resource_dynamics_params.resource_unit );
+      int64_t pool_regen_share = fc::uint128_to_int64( ( uint128_t( rc_regen ) * pool_obj.get_weight(i) ) / pool_obj.get_weight_divisor() );
+      if( pool_regen_share > 0 )
+      {
+        usage_info->cost[i] = compute_cost( params.price_curve_params, pool, usage_info->usage[i], pool_regen_share );
+        total_cost += usage_info->cost[i];
+      }
+    }
+  }
+
+  return total_cost;
 }
 
 void resource_credits::update_account_after_rc_delegation( const account_object& account,
@@ -154,6 +186,77 @@ void resource_credits::update_account_after_vest_change( const account_object& a
         acc.rc_manabar.current_mana = acc.last_max_rc.value;
     } );
   }
+}
+
+void resource_credits::use_account_rcs( rc_info* tx_info, int64_t rc ) const
+{
+  const account_name_type& account_name = tx_info->payer;
+  if( account_name == account_name_type() )
+  {
+    if( db.is_in_control() )
+      HIVE_ASSERT( false, plugin_exception, "Tried to execute transaction with no resource user", );
+    return;
+  }
+
+  const account_object& account = db.get_account( account_name );
+  const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
+
+  util::manabar_params mbparams;
+  auto max_mana = account.get_maximum_rc().value;
+  mbparams.max_mana = max_mana;
+  tx_info->max = max_mana;
+  tx_info->rc = account.rc_manabar.current_mana; // initialize before regen in case of exception
+  mbparams.regen_time = HIVE_RC_REGEN_TIME;
+
+  try
+  {
+
+    db.modify( account, [&]( account_object& acc )
+    {
+      acc.rc_manabar.regenerate_mana< true >( mbparams, dgpo.time.sec_since_epoch() );
+      tx_info->rc = acc.rc_manabar.current_mana; // update after regeneration
+      bool has_mana = acc.rc_manabar.has_mana( rc );
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+      if( configuration_data.allow_not_enough_rc == false )
+#endif
+      {
+        if( db.is_in_control() )
+        {
+          HIVE_ASSERT( has_mana, not_enough_rc_exception,
+            "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
+            ( "account", account_name )
+            ( "rc_needed", rc )
+            ( "rc_current", tx_info->rc )
+          );
+        }
+        else
+        {
+          if( !has_mana && db.is_processing_block() && db.has_hardfork( HIVE_HARDFORK_1_26 ) )
+          {
+            //when we didn't have is_processing_block as part of condition the messages below would also
+            //be produced when pending transactions were reapplied after new block arrived even though
+            //they are not part of any block yet;
+            //if we put that part of condition as alternative for db.is_in_control() above it would mean
+            //the transactions that were validated before but started to lack RC after new block arrived,
+            //would be dropped from mempool (note the difference: when user lacks RC while sending transaction
+            //he can notice and react to it; however when his transaction is rejected after validation due
+            //to changes in RC, it seems better to retry tx execution like we currently do)
+            ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
+              ( "account", account_name )
+              ( "rc_needed", rc )
+              ( "rc_current", tx_info->rc )
+              ( "b", dgpo.head_block_number )
+              ( "w", dgpo.current_witness )
+            );
+          }
+        }
+      }
+
+      acc.rc_manabar.use_mana( rc );
+      tx_info->rc = acc.rc_manabar.current_mana;
+    } );
+  } FC_CAPTURE_AND_RETHROW( (*tx_info) )
 }
 
 bool resource_credits::has_expired_delegation( const account_object& account ) const
