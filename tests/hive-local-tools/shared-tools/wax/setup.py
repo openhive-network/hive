@@ -6,6 +6,7 @@ from subprocess import run as run_process
 from multiprocessing import cpu_count
 from os import environ
 
+
 class CustomBuild(build):
     binary_name = "wax.cpython-310-x86_64-linux-gnu.so"
     current_dir = Path(__file__).parent.absolute()
@@ -31,9 +32,7 @@ class CustomBuild(build):
         self.build_dir.mkdir(exist_ok=True)
         print(f"build will be performed in: {self.build_dir}")
         self.logs_dir.mkdir(exist_ok=True)
-        with (self.logs_dir / "stdout.log").open("w") as stdout, (
-            self.logs_dir / "stderr.log"
-        ).open("w") as stderr:
+        with (self.logs_dir / "stdout.log").open("w") as stdout, (self.logs_dir / "stderr.log").open("w") as stderr:
             print(f"all build logs will be saved to: {self.logs_dir.as_posix()}")
             print(f"configuring with {configure_command}")
             run_process(
@@ -73,4 +72,5 @@ if __name__ == "__main__":
         package_dir={"": "package"},
         package_data={"": [CustomBuild.binary_name, "wax.pyi"]},
         cmdclass={"build": CustomBuild},
+        install_requires=["cython==0.29.34", "setuptools==59.6.0", "scikit-build==0.17.2"],
     )
