@@ -2,6 +2,8 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <appbase/application.hpp>
 
+#include <hive/chain/rc/rc_utility.hpp>
+
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 namespace hive { namespace chain { class account_object; } }
@@ -42,14 +44,7 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 
     void update_rc_for_custom_action( std::function<void()>&& callback, const protocol::account_name_type& account_name ) const;
 
-    enum class report_type
-    {
-      NONE, //no report
-      MINIMAL, //just basic stats - no operation or payer stats
-      REGULAR, //no detailed operation stats
-      FULL //everything
-    };
-    fc::variant_object get_report( report_type rt, bool pending = false ) const;
+    fc::variant_object get_report( hive::chain::resource_credits::report_type rt, bool pending = false ) const;
 
   private:
     std::unique_ptr< detail::rc_plugin_impl > my;

@@ -11,6 +11,93 @@ namespace hive { namespace chain {
 
 using fc::uint128_t;
 
+fc::variant_object resource_credits::get_report( report_type rt, const rc_stats_object& stats )
+{
+  if( rt == report_type::NONE )
+    return fc::variant_object();
+
+  fc::variant_object_builder report;
+  report
+    ( "block", stats.get_starting_block() )
+    ( "regen", stats.get_global_regen() )
+    ( "budget", stats.get_budget() )
+    ( "pool", stats.get_pool() )
+    ( "share", stats.get_share() )
+    // note: these are average costs from the start of current set of blocks (so from
+    // previous set); they might be different from costs calculated for current set
+    ( "vote", stats.get_archive_average_cost(0) )
+    ( "comment", stats.get_archive_average_cost(1) )
+    ( "transfer", stats.get_archive_average_cost(2) );
+  if( rt != report_type::MINIMAL )
+  {
+    fc::variant_object_builder ops;
+    for( int i = 0; i <= HIVE_RC_NUM_OPERATIONS; ++i )
+    {
+      const auto& op_stats = stats.get_op_stats(i);
+      if( op_stats.count == 0 )
+        continue;
+      fc::variant_object_builder op;
+      op( "count", op_stats.count );
+      if( rt != report_type::FULL )
+      {
+        op( "avg_cost", op_stats.average_cost() );
+      }
+      else
+      {
+        op
+          ( "cost", op_stats.cost )
+          ( "usage", op_stats.usage );
+      }
+      if( i == HIVE_RC_NUM_OPERATIONS )
+      {
+        ops( "multiop", op.get() );
+      }
+      else
+      {
+        hive::protocol::operation _op;
+        _op.set_which(i);
+        std::string op_name = _op.get_stored_type_name( true );
+        ops( op_name, op.get() );
+      }
+    }
+    report( "ops", ops.get() );
+
+    fc::variants payers;
+    for( int i = 0; i < HIVE_RC_NUM_PAYER_RANKS; ++i )
+    {
+      const auto& payer_stats = stats.get_payer_stats(i);
+      fc::variant_object_builder payer;
+      payer
+        ( "rank", i )
+        ( "count", payer_stats.count );
+      if( rt == report_type::FULL )
+      {
+        payer
+          ( "cost", payer_stats.cost )
+          ( "usage", payer_stats.usage );
+      }
+      if( payer_stats.less_than_5_percent )
+        payer( "lt5", payer_stats.less_than_5_percent );
+      if( payer_stats.less_than_10_percent )
+        payer( "lt10", payer_stats.less_than_10_percent );
+      if( payer_stats.less_than_20_percent )
+        payer( "lt20", payer_stats.less_than_20_percent );
+      if( payer_stats.was_dry() )
+      {
+        fc::variant_object_builder dry;
+        dry
+          ( "vote", payer_stats.cant_afford[0] )
+          ( "comment", payer_stats.cant_afford[1] )
+          ( "transfer", payer_stats.cant_afford[2] );
+        payer( "cant_afford", dry.get() );
+      }
+      payers.emplace_back( payer.get() );
+    }
+    report( "payers", payers );
+  }
+  return report.get();
+}
+
 int64_t resource_credits::compute_cost(
   const rc_price_curve_params& curve_params,
   int64_t current_pool,
