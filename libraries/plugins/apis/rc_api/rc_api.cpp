@@ -2,6 +2,7 @@
 #include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <hive/chain/rc/resource_sizes.hpp>
+#include <hive/chain/rc/rc_utility.hpp>
 
 #include <hive/chain/account_object.hpp>
 
@@ -176,7 +177,7 @@ DEFINE_API_IMPL( rc_api_impl, get_rc_stats )
   // stats won't be enabled until RC plugin starts working (plus they are not enabled in testnet)
   FC_ASSERT( rc_plugin.is_rc_stats_enabled(), "Gathering of RC stats not enabled." );
   // FULL report would not be useful in itself - it'd have to be supplemented like in get_rc_operation_stats
-  result.rc_stats = rc_plugin.get_report( rc::rc_plugin::report_type::REGULAR );
+  result.rc_stats = rc_plugin.get_report( resource_credits::report_type::REGULAR );
 
   return result;
 }

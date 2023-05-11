@@ -31,6 +31,16 @@ class resource_credits
   public:
     resource_credits( database& _db ) : db( _db ) {}
 
+    enum class report_type
+    {
+      NONE, //no report
+      MINIMAL, //just basic stats - no operation or payer stats
+      REGULAR, //no detailed operation stats
+      FULL //everything
+    };
+    // builds JSON (variant) representation of given RC stats
+    static fc::variant_object get_report( report_type rt, const rc_stats_object& stats );
+
     // calculates cost of resource given curve params, current pool level, how much was used and regen rate
     static int64_t compute_cost(
       const rc_price_curve_params& curve_params,
