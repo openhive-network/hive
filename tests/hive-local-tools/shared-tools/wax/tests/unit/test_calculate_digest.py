@@ -9,4 +9,4 @@ def test_proper_digest(trx_id: str) -> None:
         VALID_IDS_WITH_TRANSACTIONS[trx_id].encode(ENCODING), MAINNET_CHAIN_ID
     )
     assert result is True
-    assert digest == trx_id
+    assert digest.decode(ENCODING) == trx_id
