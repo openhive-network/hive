@@ -1129,7 +1129,7 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   auto keySlice = it->key();
   auto keyValue = ah_op_by_id_slice_t::unpackSlice(keySlice);
 
-  number_of_irreversible_ops = keyValue.second + 1;
+  number_of_irreversible_ops = keyValue.second ;
   if(include_reversible)
     count += find_reversible_account_history_data(name, start, limit, number_of_irreversible_ops, processor);
 
@@ -1197,9 +1197,18 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
     // offset by one because of one extra item
     signed_start += start_offset;
 
-    for(int i = signed_start-number_of_irreversible_ops; i>=start_offset; i--)
+    for(int j = signed_start-number_of_irreversible_ops; j>=start_offset; j--)
     {
-      rocksdb_operation_object oObj = ops_for_this_account[i];
+      int i = j;
+      if(number_of_irreversible_ops == 0)
+      {
+#ifdef IS_TEST_NET
+        i -= 1;
+#else
+        FC_ASSERT(false, "amount of irreversible blocks cannot be 0, where is our legacy!?!");
+#endif //IS_TEST_NET
+      }
+      rocksdb_operation_object oObj = ops_for_this_account[j];
       if(processor(number_of_irreversible_ops + i, oObj))
       {
         ++count;
