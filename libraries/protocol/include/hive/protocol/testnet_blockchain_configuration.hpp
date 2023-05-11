@@ -232,7 +232,7 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
          witness_shutdown_threshold = threshold;
       }
 
-# ifdef IS_TEST_NET
+#ifdef IS_TEST_NET
       uint64_t init_supply = int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 );
       uint64_t hbd_init_supply = int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 );
 #else // hive converter build
@@ -245,6 +245,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       fc::microseconds min_reply_interval_hf20 = fc::seconds(3);
       fc::microseconds min_comment_edit_interval = fc::seconds(3);
       uint64_t         witness_custom_op_block_limit = 5;
+
+      bool allow_not_enough_rc = false;
   };
 
   extern configuration configuration_data;

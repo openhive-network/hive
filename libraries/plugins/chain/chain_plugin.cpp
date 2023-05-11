@@ -980,8 +980,11 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     if( alternate_chain_spec.get_object().contains("min_comment_edit_interval") )
       configuration_data.min_comment_edit_interval = fc::seconds( alternate_chain_spec["min_comment_edit_interval"].as< uint64_t >() );
 
-    if( alternate_chain_spec.get_object().contains("witness_custom_op_block_limi") )
-      configuration_data.witness_custom_op_block_limit = alternate_chain_spec["witness_custom_op_block_limi"].as< uint64_t >();
+    if( alternate_chain_spec.get_object().contains("witness_custom_op_block_limit") )
+      configuration_data.witness_custom_op_block_limit = alternate_chain_spec["witness_custom_op_block_limit"].as< uint64_t >();
+
+    if( alternate_chain_spec.get_object().contains( "allow_not_enough_rc" ) )
+      configuration_data.allow_not_enough_rc = alternate_chain_spec[ "allow_not_enough_rc" ].as< bool >();
 
     std::vector< string > init_witnesses;
     if( alternate_chain_spec.get_object().contains("init_witnesses") )

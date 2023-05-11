@@ -97,10 +97,7 @@ class rc_plugin_impl
     rc_plugin_impl( rc_plugin& _plugin ) :
       _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin )
-    {
-      _skip.skip_reject_not_enough_rc = 0;
-      _skip.skip_reject_unknown_delta_vests = 1;
-    }
+    {}
 
     void on_pre_reindex( const reindex_notification& node );
     void on_post_reindex( const reindex_notification& note );
@@ -137,7 +134,6 @@ class rc_plugin_impl
     database&                     _db;
     rc_plugin&                    _self;
 
-    rc_plugin_skip_flags          _skip;
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
     bool                          _enable_rc_stats = false; //needs to be false by default
@@ -191,8 +187,7 @@ void use_account_rcs(
   database& db,
   const dynamic_global_property_object& gpo,
   rc_info& tx_info,
-  int64_t rc,
-  rc_plugin_skip_flags skip )
+  int64_t rc )
 {
   const account_name_type& account_name = tx_info.payer;
   if( account_name == account_name_type() )
@@ -224,7 +219,9 @@ void use_account_rcs(
     tx_info.rc = acc.rc_manabar.current_mana; // update after regeneration
     bool has_mana = acc.rc_manabar.has_mana( rc );
 
-    if( !skip.skip_reject_not_enough_rc )
+#ifdef USE_ALTERNATE_CHAIN_ID
+    if( configuration_data.allow_not_enough_rc == false )
+#endif
     {
       if( db.is_in_control() )
       {
@@ -335,7 +332,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
   // Who pays the cost?
   tx_info.payer = get_resource_user( note.transaction );
-  use_account_rcs( _db, gpo, tx_info, total_cost, _skip );
+  use_account_rcs( _db, gpo, tx_info, total_cost );
 
   if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
   {
@@ -594,7 +591,6 @@ struct pre_apply_operation_visitor
   uint32_t                                 _current_block_number = 0;
   account_name_type                        _current_witness;
   fc::optional< price >                    _vesting_share_price;
-  rc_plugin_skip_flags                     _skip;
 
   pre_apply_operation_visitor( database& db ) : _db(db)
   {
@@ -623,19 +619,16 @@ struct pre_apply_operation_visitor
 
     if( mbparams.max_mana != account.last_max_rc )
     {
+#ifdef USE_ALTERNATE_CHAIN_ID
       // this situation indicates a bug in RC code, most likely some operation that affects RC was not
       // properly handled by setting new value for last_max_rc after RC changed
-      if( !_skip.skip_reject_unknown_delta_vests )
-      {
-        HIVE_ASSERT( false, plugin_exception,
-          "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
-          ("a", account.get_name())("old", account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
-      }
-      else
-      {
-        wlog( "NOTIFYALERT! Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
-          ("a", account.get_name())("old", account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
-      }
+      HIVE_ASSERT( false, plugin_exception,
+        "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
+        ("a", account.get_name())("old", account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
+#else
+      wlog( "NOTIFYALERT! Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
+        ("a", account.get_name())("old", account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
+#endif
     }
 
     _db.modify( account, [&]( account_object& acc )
@@ -974,7 +967,6 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
     vtor._vesting_share_price = gpo.get_vesting_share_price();
 
   vtor._current_witness = gpo.current_witness;
-  vtor._skip = _skip;
 
   // ilog( "Calling pre-vtor on ${op}", ("op", note.op) );
   note.op.visit( vtor );
@@ -1005,7 +997,6 @@ void rc_plugin_impl::pre_apply_custom_op_type( const custom_operation_notificati
     vtor._vesting_share_price = gpo.get_vesting_share_price();
 
   vtor._current_witness = gpo.current_witness;
-  vtor._skip = _skip;
 
   op->visit( vtor );
 
@@ -1069,7 +1060,6 @@ void rc_plugin_impl::on_pre_apply_optional_action( const optional_action_notific
   pre_apply_optional_action_vistor vtor( _db );
 
   vtor._current_witness = gpo.current_witness;
-  vtor._skip = _skip;
 
   note.action.visit( vtor );
 
@@ -1112,7 +1102,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
 
   // Who pays the cost?
   opt_action_info.payer = get_resource_user( note.action );
-  use_account_rcs( _db, gpo, opt_action_info, total_cost, _skip );
+  use_account_rcs( _db, gpo, opt_action_info, total_cost );
 
   if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
   {
@@ -1247,12 +1237,8 @@ rc_plugin::~rc_plugin() {}
 void rc_plugin::set_program_options( options_description& cli, options_description& cfg )
 {
   cfg.add_options()
-    ("rc-skip-reject-not-enough-rc", bpo::value<bool>()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
     ("rc-stats-report-type", bpo::value<string>()->default_value("REGULAR"), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
     ("rc-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY. Default ILOG." )
-    ;
-  cli.add_options()
-    ("rc-skip-reject-not-enough-rc", bpo::bool_switch()->default_value( false ), "Skip rejecting transactions when account has insufficient RCs. This is not recommended." )
     ;
 }
 
@@ -1307,7 +1293,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
     fc::mutable_variant_object state_opts;
 
-    my->_skip.skip_reject_not_enough_rc = options.at( "rc-skip-reject-not-enough-rc" ).as< bool >();
 #ifndef IS_TEST_NET
     my->_enable_at_block = HIVE_HF20_BLOCK_NUM; // testnet starts RC at 1
     my->_enable_rc_stats = true; // testnet rarely has enough useful RC data to collect and report
@@ -1353,16 +1338,6 @@ void rc_plugin::plugin_shutdown()
 bool rc_plugin::is_active() const
 {
   return !my->before_first_block();
-}
-
-void rc_plugin::set_rc_plugin_skip_flags( rc_plugin_skip_flags skip )
-{
-  my->_skip = skip;
-}
-
-const rc_plugin_skip_flags& rc_plugin::get_rc_plugin_skip_flags() const
-{
-  return my->_skip;
 }
 
 void rc_plugin::set_enable_rc_stats( bool enable )

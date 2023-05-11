@@ -18,14 +18,6 @@ using namespace appbase;
 
 #define HIVE_RC_PLUGIN_NAME "rc"
 
-struct rc_plugin_skip_flags
-{
-  //if set it disables check if payer has enough RC mana; node that has it set is not allowed to produce blocks or broadcast transactions
-  uint32_t skip_reject_not_enough_rc       : 1; //should be false for mainnet and true for unit tests
-  //if set the RC bug caused by missing proper update of last_max_rc in some operation will not stop the node
-  uint32_t skip_reject_unknown_delta_vests : 1; //should be true for mainnet and false for unit tests
-};
-
 class rc_plugin : public appbase::plugin< rc_plugin >
 {
   public:
@@ -43,8 +35,6 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 
     bool is_active() const; ///< tells if RC already started
 
-    void set_rc_plugin_skip_flags( rc_plugin_skip_flags skip );
-    const rc_plugin_skip_flags& get_rc_plugin_skip_flags() const;
     void set_enable_rc_stats( bool enable = true );
     bool is_rc_stats_enabled() const;
 
