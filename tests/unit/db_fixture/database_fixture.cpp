@@ -121,10 +121,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
     BOOST_REQUIRE( db );
   } );
   
-  hive::plugins::rc::rc_plugin_skip_flags rc_skip;
-  rc_skip.skip_reject_not_enough_rc = 1;
-  rc_skip.skip_reject_unknown_delta_vests = 0;
-  rc_plugin->set_rc_plugin_skip_flags( rc_skip );
+  configuration_data.allow_not_enough_rc = true;
 
   init_account_pub_key = init_account_priv_key.get_public_key();
 

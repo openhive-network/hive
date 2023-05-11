@@ -325,10 +325,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     BOOST_TEST_MESSAGE( "Testing rc resource cost of single recover_account_operation" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
-    skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_reject_unknown_delta_vests = 0;
-    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( (agent)(victim)(thief) )
     generate_block(); 
@@ -443,10 +440,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     BOOST_TEST_MESSAGE( "Testing rc resource cost of many recover_account_operations" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
-    skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_reject_unknown_delta_vests = 0;
-    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( (agent)(victim1)(victim2)(victim3)(thief1)(thief2)(thief3) )
     generate_block();
@@ -599,10 +593,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
     BOOST_TEST_MESSAGE( "Testing rc resource cost of recover_account_operation with complex authority" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
-    skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_reject_unknown_delta_vests = 0;
-    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+    configuration_data.allow_not_enough_rc = false;
 
     static_assert( HIVE_MAX_SIG_CHECK_DEPTH >= 2 );
     static_assert( HIVE_MAX_SIG_CHECK_ACCOUNTS >= 3 * HIVE_MAX_AUTHORITY_MEMBERSHIP );
@@ -794,10 +785,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     BOOST_TEST_MESSAGE( "Testing different transaction order in pending transactions vs actual block" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
-    skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_reject_unknown_delta_vests = 0;
-    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( (alice)(bob) )
     generate_block();
@@ -903,10 +891,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     BOOST_TEST_MESSAGE( "Testing if rc_pending_data resets properly" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
-    skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_reject_unknown_delta_vests = 0;
-    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( (alice)(bob) )
     generate_block();
@@ -1027,10 +1012,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     BOOST_TEST_MESSAGE( "Testing differential RC usage for selected operations" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
-    skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_reject_unknown_delta_vests = 0;
-    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+    configuration_data.allow_not_enough_rc = false;
 
     generate_block();
     const auto& pending_data = db->get< rc_pending_data >();
@@ -1312,10 +1294,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     BOOST_TEST_MESSAGE( "Testing differential RC usage with potentially negative value" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
-    skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_reject_unknown_delta_vests = 0;
-    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+    configuration_data.allow_not_enough_rc = false;
 
     generate_block();
     const auto& pending_data = db->get< rc_pending_data >();
@@ -1506,10 +1485,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
     BOOST_TEST_MESSAGE( "Testing differential RC usage with multiple operations" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
-    skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_reject_unknown_delta_vests = 0;
-    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( (alice)(carol) )
     generate_block();
@@ -1573,10 +1549,7 @@ BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
   {
     BOOST_TEST_MESSAGE("Testing exception throw during rc_account modify");
     inject_hardfork(HIVE_BLOCKCHAIN_VERSION.minor_v());
-    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
-    skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_reject_unknown_delta_vests = 0;
-    rc_plugin->set_rc_plugin_skip_flags(skip_flags);
+    configuration_data.allow_not_enough_rc = false;
 
     ACTORS((dave))
     generate_block();

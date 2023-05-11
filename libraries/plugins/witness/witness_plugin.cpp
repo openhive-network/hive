@@ -614,13 +614,6 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
   if (my->_production_enabled)
     wlog("warning: stale production is enabled, make sure you know what you are doing.");
 
-  if( my->_witnesses.size() > 0 )
-  {
-    // It is safe to access rc plugin here because of APPBASE_REQUIRES_PLUGIN
-    FC_ASSERT( !appbase::app().get_plugin< rc::rc_plugin >().get_rc_plugin_skip_flags().skip_reject_not_enough_rc,
-      "rc-skip-reject-not-enough-rc=false is required to produce blocks" );
-  }
-
   if( options.count( "required-participation" ) )
   {
     my->_required_witness_participation = HIVE_1_PERCENT * options.at( "required-participation" ).as< uint32_t >();

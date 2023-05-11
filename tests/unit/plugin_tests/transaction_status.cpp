@@ -76,10 +76,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );
     generate_block();
-    auto skip_flags = rc_plugin->get_rc_plugin_skip_flags();
-    skip_flags.skip_reject_not_enough_rc = 0;
-    skip_flags.skip_reject_unknown_delta_vests = 0;
-    rc_plugin->set_rc_plugin_skip_flags( skip_flags );
+    configuration_data.allow_not_enough_rc = false;
 
     vest( "initminer", 10000 );
 
