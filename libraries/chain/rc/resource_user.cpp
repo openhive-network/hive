@@ -1,5 +1,6 @@
 
 #include <hive/chain/rc/resource_user.hpp>
+#include <hive/chain/rc/rc_utility.hpp>
 
 #include <hive/protocol/transaction.hpp>
 
@@ -47,6 +48,11 @@ struct get_resource_user_visitor
 
 account_name_type get_resource_user( const signed_transaction& tx )
 {
+  return resource_credits::get_resource_user( tx );
+}
+
+account_name_type resource_credits::get_resource_user( const signed_transaction& tx )
+{
   get_resource_user_visitor vtor;
 
   for( const operation& op : tx.operations )
@@ -58,7 +64,7 @@ account_name_type get_resource_user( const signed_transaction& tx )
   return account_name_type();
 }
 
-account_name_type get_resource_user( const optional_automated_action& action )
+account_name_type resource_credits::get_resource_user( const optional_automated_action& action )
 {
   get_resource_user_visitor vtor;
 

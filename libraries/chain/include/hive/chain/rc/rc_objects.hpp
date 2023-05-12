@@ -237,7 +237,7 @@ class rc_pending_data : public object< rc_pending_data_type, rc_pending_data >
     resource_cost_type pending_cost;
 
     //negative value of resources used by selected existing state before transaction is applied (since reset in pre-apply transaction)
-    resource_count_type differential_usage; //see prepare_differential_usage routine for detailed description
+    resource_count_type differential_usage; //see resource_credits::prepare_differential_usage routine for detailed description
 
   CHAINBASE_UNPACK_CONSTRUCTOR( rc_pending_data );
 };

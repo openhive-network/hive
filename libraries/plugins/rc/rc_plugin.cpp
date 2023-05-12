@@ -203,7 +203,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   tx_info.usage = pending_data.get_differential_usage();
 
   // How many resources does the transaction use?
-  count_resources( note.transaction, note.full_transaction->get_transaction_size(), tx_info.usage, _db.head_block_time() );
+  rc.count_resources( note.transaction, note.full_transaction->get_transaction_size(), tx_info.usage, _db.head_block_time() );
   if( note.transaction.operations.size() == 1 )
     tx_info.op = note.transaction.operations.front().which();
 
@@ -217,7 +217,7 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   } );
 
   // Who pays the cost?
-  tx_info.payer = get_resource_user( note.transaction );
+  tx_info.payer = rc.get_resource_user( note.transaction );
   rc.use_account_rcs( &tx_info, total_cost );
 
   if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
@@ -691,8 +691,9 @@ struct post_apply_operation_visitor
     bool _fill_new_mana = true, bool _check_for_rc_delegation_overflow = false ) const
   {
     const account_object& account = _db.get_account( account_name );
-    resource_credits( _db ).update_account_after_vest_change( account,
-      _current_time, _fill_new_mana, _check_for_rc_delegation_overflow );
+    resource_credits rc( _db );
+    rc.update_account_after_vest_change( account, _current_time, _fill_new_mana,
+      _check_for_rc_delegation_overflow );
   }
   void operator()( const account_create_with_delegation_operation& op )const
   {
@@ -858,7 +859,8 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
   note.op.visit( vtor );
 
   count_resources_result differential_usage;
-  if( prepare_differential_usage( note.op, _db, differential_usage ) )
+  resource_credits rc( _db );
+  if( rc.prepare_differential_usage( note.op, differential_usage ) )
   {
     _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
     {
@@ -887,7 +889,8 @@ void rc_plugin_impl::pre_apply_custom_op_type( const custom_operation_notificati
   op->visit( vtor );
 
   count_resources_result differential_usage;
-  if( prepare_differential_usage( *op, _db, differential_usage ) )
+  resource_credits rc( _db );
+  if( rc.prepare_differential_usage( *op, differential_usage ) )
   {
     _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
     {
@@ -922,7 +925,7 @@ void rc_plugin_impl::post_apply_custom_op_type( const custom_operation_notificat
   op->visit( vtor );
 
   count_resources_result extra_usage;
-  count_resources( *op, extra_usage, _db.head_block_time() );
+  resource_credits::count_resources( *op, extra_usage, _db.head_block_time() );
   _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
   {
     //the extra cost is stored on the same counters as differential usage (but as positive values);
@@ -954,7 +957,8 @@ void rc_plugin_impl::on_pre_apply_optional_action( const optional_action_notific
     data.reset_differential_usage();
 
     count_resources_result differential_usage;
-    if( prepare_differential_usage( note.action, _db, differential_usage ) )
+    resource_credits rc( _db );
+    if( rc.prepare_differential_usage( note.action, differential_usage ) )
       data.add_differential_usage( differential_usage );
   } );
 }
@@ -977,7 +981,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   opt_action_info.usage = pending_data.get_differential_usage();
 
   // How many resources do the optional actions use?
-  count_resources( note.action, fc::raw::pack_size( note.action ), opt_action_info.usage, _db.head_block_time() );
+  rc.count_resources( note.action, fc::raw::pack_size( note.action ), opt_action_info.usage, _db.head_block_time() );
 
   // How many RC do these actions cost?
   int64_t total_cost = rc.compute_cost( &opt_action_info );
@@ -988,7 +992,7 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
   } );
 
   // Who pays the cost?
-  opt_action_info.payer = get_resource_user( note.action );
+  opt_action_info.payer = rc.get_resource_user( note.action );
   rc.use_account_rcs( &opt_action_info, total_cost );
 
   if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )

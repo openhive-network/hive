@@ -1,8 +1,11 @@
 #pragma once
 
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/rc/resource_count.hpp>
 
 #include <hive/chain/util/rd_dynamics.hpp>
+
+#include <hive/protocol/optional_automated_actions.hpp>
 
 #include <fc/reflect/reflect.hpp>
 
@@ -41,6 +44,34 @@ class resource_credits
     // builds JSON (variant) representation of given RC stats
     static fc::variant_object get_report( report_type rt, const rc_stats_object& stats );
 
+    // scans transaction for used resources
+    static void count_resources(
+      const hive::protocol::signed_transaction& tx,
+      const size_t size,
+      count_resources_result& result,
+      const fc::time_point_sec now );
+
+    // scans optional automated action for used resources
+    static void count_resources(
+      const hive::protocol::optional_automated_action& action,
+      const size_t size,
+      count_resources_result& result,
+      const fc::time_point_sec now );
+
+    // scans single nonstandard operation for used resource (implemented for rc_custom_operation)
+    template< typename OpType >
+    static void count_resources(
+      const OpType& op,
+      count_resources_result& result,
+      const fc::time_point_sec now );
+
+    /** scans database for state related to given operation (implemented for operation, rc_custom_operationand optional_automated_action)
+      * see comment in definition for more details
+      * Note: only selected operations consuming significant state handle differential usage
+      */
+    template< typename OpType >
+    bool prepare_differential_usage( const OpType& op, count_resources_result& result ) const;
+
     // calculates cost of resource given curve params, current pool level, how much was used and regen rate
     static int64_t compute_cost(
       const rc_price_curve_params& curve_params,
@@ -50,6 +81,11 @@ class resource_credits
 
     // calculates cost of given resource consumption, applies resource units and adds detailed cost to buffer
     int64_t compute_cost( rc_info* usage_info ) const;
+
+    // returns account that is RC payer for given transaction (first operation decides)
+    static hive::protocol::account_name_type get_resource_user( const hive::protocol::signed_transaction& tx );
+    // returns account that is RC payer for given optional automated action
+    static hive::protocol::account_name_type get_resource_user( const hive::protocol::optional_automated_action& action );
 
     // updates RC related data on account after change in RC delegation
     void update_account_after_rc_delegation(

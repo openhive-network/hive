@@ -2,6 +2,8 @@
 
 #include <fc/variant.hpp>
 
+#include <fc/exception/exception.hpp>
+
 #include <limits>
 #include <vector>
 
