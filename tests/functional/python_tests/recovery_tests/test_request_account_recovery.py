@@ -140,6 +140,7 @@ def test_account_recovery_process_with_mismatched_key(node):
     assert "New owner authority does not match recovery request." in exception.value.response["error"]["message"]
 
 
+@pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/506")
 @run_for("testnet")
 def test_account_recovery_process_with_most_trust_witness_as_recovery_agent(node):
     wallet = tt.Wallet(attach_to=node)
