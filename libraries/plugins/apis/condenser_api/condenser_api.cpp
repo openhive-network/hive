@@ -47,6 +47,13 @@ namespace detail
 
       legacy_substitutes_type create_legacy_substitutes();
 
+      template< typename T > 
+      T force_legacy_serialization( const fc::variant& input )
+      {
+        hive::protocol::serialization_mode_controller::mode_guard guard( transaction_serialization_type::legacy );
+        return input.as< T >();
+      }
+
     public:
       condenser_api_impl() :
         legacy_substitutes( create_legacy_substitutes() ),
@@ -759,10 +766,8 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_transaction_hex )
   {
     CHECK_ARG_SIZE( 1 )
-    return _database_api->get_transaction_hex(
-    {
-      signed_transaction( args.at(0).as< legacy_signed_transaction >() )
-    }).hex;
+    annotated_signed_transaction trn = force_legacy_serialization< annotated_signed_transaction >( args.at(0) );
+    return _database_api->get_transaction_hex( { trn } ).hex;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_transaction )
@@ -776,32 +781,21 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_required_signatures )
   {
     CHECK_ARG_SIZE( 2 )
-    return _database_api->get_required_signatures( {
-      signed_transaction( args.at(0).as< legacy_signed_transaction >() ),
-      args.at(1).as< flat_set< public_key_type > >() } ).keys;
+    annotated_signed_transaction trn = force_legacy_serialization< annotated_signed_transaction >( args.at(0) );
+    return _database_api->get_required_signatures( { trn, args.at(1).as< flat_set< public_key_type > >() } ).keys;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_potential_signatures )
   {
     CHECK_ARG_SIZE( 1 )
-    signed_transaction trn;
-    {
-      // We're expecting (and forcing) input in legacy serialization mode.
-      hive::protocol::serialization_mode_controller::mode_guard guard( transaction_serialization_type::legacy );
-      trn = args.at(0).as< legacy_signed_transaction >();
-    }
+    annotated_signed_transaction trn = force_legacy_serialization< annotated_signed_transaction >( args.at(0) );
     return _database_api->get_potential_signatures( { trn } ).keys;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, verify_authority )
   {
     CHECK_ARG_SIZE( 1 )
-    signed_transaction trn;
-    {
-      // We're expecting (and forcing) input in legacy serialization mode.
-      hive::protocol::serialization_mode_controller::mode_guard guard( transaction_serialization_type::legacy );
-      trn = args.at(0).as< legacy_signed_transaction >();
-    }
+    annotated_signed_transaction trn = force_legacy_serialization< annotated_signed_transaction >( args.at(0) );
     return _database_api->verify_authority( { trn } ).valid;
   }
 
@@ -965,12 +959,7 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
     ilog("condenser_api_impl.broadcast_transaction.args.at(0) ${a}", ("a", args.at(0)));
-    signed_transaction trn;
-    {
-      // We're expecting (and forcing) input in legacy serialization mode.
-      hive::protocol::serialization_mode_controller::mode_guard guard( transaction_serialization_type::legacy );
-      trn = args.at(0).as< legacy_signed_transaction >();
-    }
+    annotated_signed_transaction trn = force_legacy_serialization< annotated_signed_transaction >( args.at(0) );
     return _network_broadcast_api->broadcast_transaction( { trn } );
   }
 
@@ -981,12 +970,7 @@ namespace detail
     FC_ASSERT( _p2p != nullptr, "p2p_plugin not enabled." );
 
     fc::time_point api_start_time = fc::time_point::now();
-    signed_transaction trx;
-    {
-      // We're expecting (and forcing) input in legacy serialization mode.
-      hive::protocol::serialization_mode_controller::mode_guard guard( transaction_serialization_type::legacy );
-      trx = args.at(0).as< legacy_signed_transaction >();
-    }
+    annotated_signed_transaction trx = force_legacy_serialization< annotated_signed_transaction >( args.at(0) );
     boost::promise< broadcast_transaction_synchronous_return > p;
     fc::time_point callback_setup_time;
     full_transaction_ptr full_transaction;

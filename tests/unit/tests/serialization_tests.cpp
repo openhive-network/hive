@@ -635,7 +635,7 @@ BOOST_AUTO_TEST_CASE( min_block_size )
 
 BOOST_AUTO_TEST_CASE( legacy_signed_transaction )
 {
-  using hive::plugins::condenser_api::legacy_signed_transaction;
+  using hive::plugins::condenser_api::annotated_signed_transaction;
 
   signed_transaction tx;
   vote_operation op;
@@ -648,8 +648,10 @@ BOOST_AUTO_TEST_CASE( legacy_signed_transaction )
   tx.expiration = fc::time_point_sec( 1514764800 );
   tx.operations.push_back( op );
 
-  signed_transaction tx2 = signed_transaction( fc::json::from_string( "{\"ref_block_num\":4000,\"ref_block_prefix\":4000000000,\"expiration\":\"2018-01-01T00:00:00\",\"operations\":[[\"vote\",{\"voter\":\"alice\",\"author\":\"bob\",\"permlink\":\"foobar\",\"weight\":10000}]],\"extensions\":[],\"signatures\":[\"\"]}" ).as< legacy_signed_transaction >() );
-
+  signed_transaction tx2 = signed_transaction( serialize_with_legacy< annotated_signed_transaction >(
+      "{\"ref_block_num\":4000,\"ref_block_prefix\":4000000000,\"expiration\":\"2018-01-01T00:00:00\",\"operations\":[[\"vote\",{\"voter\":\"alice\",\"author\":\"bob\",\"permlink\":\"foobar\",\"weight\":10000}]],\"extensions\":[],\"signatures\":[\"\"]}",
+      transaction_serialization_type::legacy ) );
+  
   auto _tx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy, false /* cache this transaction */);
   auto _tx2 = hive::chain::full_transaction_type::create_from_signed_transaction( tx2, hive::protocol::pack_type::legacy, false /* cache this transaction */);
   BOOST_REQUIRE( _tx->get_transaction_id() == _tx2->get_transaction_id() );
@@ -663,13 +665,16 @@ BOOST_AUTO_TEST_CASE( legacy_signed_transaction )
     Hence the key `TST1111111111111111111111111111111114T1Anm` is not allowed.
   */
   BOOST_CHECK_THROW(
-   fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" )
-     .as< legacy_signed_transaction >(), fc::exception
+    serialize_with_legacy< annotated_signed_transaction >(
+      "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST1111111111111111111111111111111114T1Anm\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}",
+      transaction_serialization_type::legacy ),
+    fc::exception
   );
 
   BOOST_CHECK_NO_THROW(
-   fc::json::from_string( "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST82m7LE1Hxf4SqGUYiUzL62mLyqAZmcGNEz33hJ1P3FTa6a8hws\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}" )
-     .as< legacy_signed_transaction >()
+    serialize_with_legacy< annotated_signed_transaction >(
+      "{\"ref_block_num\": 41047, \"ref_block_prefix\": 4089157749, \"expiration\": \"2018-03-28T19:05:47\", \"operations\": [[\"witness_update\", {\"owner\": \"test\", \"url\": \"foo\", \"block_signing_key\": \"TST82m7LE1Hxf4SqGUYiUzL62mLyqAZmcGNEz33hJ1P3FTa6a8hws\", \"props\": {\"account_creation_fee\": \"0.500 TESTS\", \"maximum_block_size\": 65536, \"hbd_interest_rate\": 0}, \"fee\": \"0.000 TESTS\"}]], \"extensions\": [], \"signatures\": [\"1f1b2d47427a46513777ae9ed032b761b504423b18350e673beb991a1b52d2381c26c36368f9cc4a72c9de3cc16bca83b269c2ea1960e28647caf151e17c35bf3f\"]}",
+      transaction_serialization_type::legacy )
   );
 }
 
