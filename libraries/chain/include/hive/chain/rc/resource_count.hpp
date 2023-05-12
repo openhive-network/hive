@@ -1,7 +1,5 @@
 #pragma once
 
-#include <hive/protocol/optional_automated_actions.hpp>
-
 #include <fc/int_array.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <vector>
@@ -52,25 +50,12 @@ void count_resources(
   count_resources_result& result,
   const fc::time_point_sec now );
 
-// scans optional automated action for used resources
-void count_resources(
-  const hive::protocol::optional_automated_action& action,
-  const size_t size,
-  count_resources_result& result,
-  const fc::time_point_sec now );
-
 // scans single nonstandard operation for used resource (implemented for rc_custom_operation)
 template< typename OpType >
 void count_resources(
   const OpType& op,
   count_resources_result& result,
   const fc::time_point_sec now );
-
-// scans database for state related to given operation (implemented for operation, rc_custom_operation and optional_automated_action)
-// see comment in definition for more details
-// Note: only selected operations consuming significant state handle differential usage
-template< typename OpType >
-bool prepare_differential_usage( const OpType& op, const database& db, count_resources_result& result );
 
 } } // hive::chain
 

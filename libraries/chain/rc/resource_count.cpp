@@ -3,6 +3,7 @@
 #include <hive/chain/rc/resource_sizes.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/rc/rc_operations.hpp>
+#include <hive/chain/rc/rc_utility.hpp>
 
 #include <hive/protocol/operations.hpp>
 
@@ -132,7 +133,7 @@ struct count_differential_operation_visitor
 };
 
 template< typename OpType >
-bool prepare_differential_usage( const OpType& op, const database& db, count_resources_result& result )
+bool resource_credits::prepare_differential_usage( const OpType& op, count_resources_result& result ) const
 {
   //call before each operation is applied to state to compute resource usage prior to change;
   //the idea is that RC usage for some operations can't be properly evaluated from the operation alone,
@@ -168,11 +169,11 @@ bool prepare_differential_usage( const OpType& op, const database& db, count_res
 }
 
 template
-bool prepare_differential_usage< operation >( const operation& op, const database& db, count_resources_result& result );
+bool resource_credits::prepare_differential_usage< operation >( const operation& op, count_resources_result& result ) const;
 template
-bool prepare_differential_usage< rc_custom_operation >( const rc_custom_operation& op, const database& db, count_resources_result& result );
+bool resource_credits::prepare_differential_usage< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result ) const;
 template
-bool prepare_differential_usage< optional_automated_action >( const optional_automated_action& op, const database& db, count_resources_result& result );
+bool resource_credits::prepare_differential_usage< optional_automated_action >( const optional_automated_action& op, count_resources_result& result ) const;
 
 struct count_operation_visitor
 {
@@ -649,6 +650,16 @@ void count_resources(
   const size_t size,
   count_resources_result& result,
   const fc::time_point_sec now
+)
+{
+  resource_credits::count_resources( tx, size, result, now );
+}
+
+void resource_credits::count_resources(
+  const signed_transaction& tx,
+  const size_t size,
+  count_resources_result& result,
+  const fc::time_point_sec now
   )
 {
   static const state_object_size_info size_info;
@@ -693,7 +704,7 @@ void count_resources(
   prevent_negative( result );
 }
 
-void count_resources(
+void resource_credits::count_resources(
   const optional_automated_action& action,
   const size_t size,
   count_resources_result& result,
@@ -729,6 +740,15 @@ template< typename OpType >
 void count_resources(
   const OpType& op,
   count_resources_result& result,
+  const fc::time_point_sec now )
+{
+  resource_credits::count_resources( op, result, now );
+}
+
+template< typename OpType >
+void resource_credits::count_resources(
+  const OpType& op,
+  count_resources_result& result,
   const fc::time_point_sec now
 )
 {
@@ -751,5 +771,8 @@ void count_resources(
 
 template
 void count_resources< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
+
+template
+void resource_credits::count_resources< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
 
 } } // hive::chain
