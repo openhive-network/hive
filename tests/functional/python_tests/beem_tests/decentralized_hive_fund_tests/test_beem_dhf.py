@@ -57,7 +57,7 @@ def create_proposal(node, creator_account, receiver_account, wif, subject):
     try:
         ret = node.finalizeOp(op, creator["name"], "active")
     except Exception as ex:
-        tt.logger.exception(f"Exception: {ex}")
+        tt.logger.error(f"Exception: {ex}")
         raise ex
 
     assert ret["operations"][0][1]["creator"] == creator["name"]
@@ -138,7 +138,7 @@ def vote_proposal(node, account, wif, subject):
     try:
         ret = node.finalizeOp(op, account, "active")
     except Exception as ex:
-        tt.logger.exception(f"Exception: {ex}")
+        tt.logger.error(f"Exception: {ex}")
         raise ex
 
     assert ret["operations"][0][1]["voter"] == account
@@ -180,7 +180,7 @@ def remove_proposal(node, account, wif, subject):
     try:
         node.finalizeOp(op, account, "active")
     except Exception as ex:
-        tt.logger.exception(f"Exception: {ex}")
+        tt.logger.error(f"Exception: {ex}")
         raise ex
 
     # try to find our special proposal
@@ -237,7 +237,7 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
         try:
             node.finalizeOp(op, creator["name"], "active")
         except Exception as ex:
-            tt.logger.exception(f"Exception: {ex}")
+            tt.logger.error(f"Exception: {ex}")
             raise ex
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
@@ -295,7 +295,7 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
             try:
                 node.finalizeOp(op, creator["name"], "active")
             except Exception as ex:
-                tt.logger.exception(f"Exception: {ex}")
+                tt.logger.error(f"Exception: {ex}")
                 raise ex
             hive_utils.common.wait_n_blocks(node.rpc.url, 3)
 
@@ -318,7 +318,7 @@ def update_proposal(node, creator, wif):
     try:
         node.finalizeOp(op, creator, "active")
     except Exception as ex:
-        tt.logger.exception(f"Exception: {ex}")
+        tt.logger.error(f"Exception: {ex}")
         raise ex
     hive_utils.common.wait_n_blocks(node.rpc.url, 3)
 
@@ -344,7 +344,7 @@ def update_proposal(node, creator, wif):
     try:
         node.finalizeOp(op, creator, "active")
     except Exception as ex:
-        tt.logger.exception(f"Exception: {ex}")
+        tt.logger.error(f"Exception: {ex}")
         raise ex
     hive_utils.common.wait_n_blocks(node.rpc.url, 3)
 
