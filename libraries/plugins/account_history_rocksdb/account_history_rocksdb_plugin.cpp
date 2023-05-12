@@ -1129,7 +1129,7 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
   auto keySlice = it->key();
   auto keyValue = ah_op_by_id_slice_t::unpackSlice(keySlice);
 
-  number_of_irreversible_ops = keyValue.second ;
+  number_of_irreversible_ops = keyValue.second + 1;
   if(include_reversible)
     count += find_reversible_account_history_data(name, start, limit, number_of_irreversible_ops, processor);
 
@@ -1171,12 +1171,10 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
       rangeBegin = 1;
     uint32_t rangeEnd = _mainDb.head_block_num() + 1;
 
-    auto reversibleOps = collectReversibleOps(&rangeBegin, &rangeEnd, &collectedIrreversibleBlock);
+    const auto reversibleOps = collectReversibleOps(&rangeBegin, &rangeEnd, &collectedIrreversibleBlock);
 
     std::vector<rocksdb_operation_object> ops_for_this_account;
-    ops_for_this_account.emplace_back(); // push empty, never reachable rocksdb op object, to gently shift index by one
-    const int start_offset = ops_for_this_account.size();
-    ops_for_this_account.reserve(reversibleOps.size() + ops_for_this_account.size());
+    ops_for_this_account.reserve(reversibleOps.size());
     for(const auto& obj : reversibleOps)
     {
       hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
@@ -1185,30 +1183,14 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
         ops_for_this_account.push_back(obj);
     };
 
-    // -2 is because of `size() - 1` gets last index of reversible ops and
-    // next -1 is because of extra element in vector
-    int64_t signed_start = static_cast<int64_t>(start);
-    const int64_t last_index_of_all_account_operations = std::max<int64_t>(0l, number_of_irreversible_ops + (ops_for_this_account.size() - 1l) - start_offset);
-
+    const int64_t last_index_of_all_account_operations = std::max<int64_t>(0l, number_of_irreversible_ops + (ops_for_this_account.size() - 1l));
     // this if protects from out_of_bound exception (e.x. start = static_cast<uint32_t>(-1))
-    if(start > last_index_of_all_account_operations)
-      signed_start = last_index_of_all_account_operations;
+    const int64_t signed_start = (start > last_index_of_all_account_operations) ? last_index_of_all_account_operations : static_cast<int64_t>(start);
 
-    // offset by one because of one extra item
-    signed_start += start_offset;
 
-    for(int j = signed_start-number_of_irreversible_ops; j>=start_offset; j--)
+    for(int i = signed_start-number_of_irreversible_ops; i >= 0; i--)
     {
-      int i = j;
-      if(number_of_irreversible_ops == 0)
-      {
-#ifdef IS_TEST_NET
-        i -= 1;
-#else
-        FC_ASSERT(false, "amount of irreversible blocks cannot be 0, where is our legacy!?!");
-#endif //IS_TEST_NET
-      }
-      rocksdb_operation_object oObj = ops_for_this_account[j];
+      rocksdb_operation_object oObj = ops_for_this_account[i];
       if(processor(number_of_irreversible_ops + i, oObj))
       {
         ++count;
