@@ -2,7 +2,6 @@ file(GLOB HEADERS "include/hive/condenser_api_plugin/*.hpp")
 add_library( condenser_api_plugin
              condenser_api.cpp
              condenser_api_plugin.cpp
-             condenser_api_legacy_operations.cpp
              ${HEADERS} )
 
 target_link_libraries( condenser_api_plugin
