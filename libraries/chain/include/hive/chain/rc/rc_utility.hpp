@@ -103,6 +103,9 @@ class resource_credits
       bool _fill_new_mana = true,
       bool _check_for_rc_delegation_overflow = false ) const;
 
+    // updates RC mana and other related data before and after custom code - used by debug plugin
+    void update_rc_for_custom_action( std::function<void()>&& callback, const account_object& account ) const;
+
     // consumes RC mana from payer account (or throws exception if not enough), supplements buffer with payer RC mana
     void use_account_rcs( rc_info* tx_info, int64_t rc ) const;
 

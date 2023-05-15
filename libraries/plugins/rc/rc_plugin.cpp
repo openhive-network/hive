@@ -124,8 +124,6 @@ class rc_plugin_impl
       return (_db.count< rc_resource_param_object >() == 0);
     }
 
-    void update_rc_for_custom_action( std::function<void()>&& callback, const account_name_type& account_name ) const;
-
     database&                     _db;
     rc_plugin&                    _self;
 
@@ -195,7 +193,6 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
     return;
 
   resource_credits rc( _db );
-  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
 
   rc_transaction_info tx_info;
@@ -931,7 +928,6 @@ void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notifi
     return;
 
   resource_credits rc( _db );
-  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
 
   // There is no transaction equivalent for actions, so post apply transaction logic for actions goes here.
@@ -982,17 +978,6 @@ void rc_plugin_impl::validate_database()
       "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
       ("a", account.get_name())("old", account.last_max_rc)("new", max_rc)("b", _db.head_block_num()) );
   }
-}
-
-void rc_plugin_impl::update_rc_for_custom_action( std::function<void()>&& callback, const protocol::account_name_type& account_name ) const
-{
-  pre_apply_operation_visitor _pre_vtor( _db );
-  _pre_vtor.regenerate( account_name );
-
-  callback();
-
-  post_apply_operation_visitor _post_vtor( _db );
-  _post_vtor.update_after_vest_change( account_name );
 }
 
 } // detail
@@ -1119,11 +1104,6 @@ bool rc_plugin::is_rc_stats_enabled() const
 void rc_plugin::validate_database()
 {
   my->validate_database();
-}
-
-void rc_plugin::update_rc_for_custom_action( std::function<void()>&& callback, const protocol::account_name_type& account_name ) const
-{
-  my->update_rc_for_custom_action( std::move( callback ), account_name );
 }
 
 fc::variant_object rc_plugin::get_report( resource_credits::report_type rt, bool pending ) const
