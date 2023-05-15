@@ -424,6 +424,9 @@ void rc_plugin_impl::on_first_block()
 
   const auto& pool_obj = _db.create< rc_pool_object >( params_obj, resource_count_type() );
   ilog( "Genesis pool is ${o}", ( "o", pool_obj.get_pool() ) );
+#ifndef IS_TEST_NET
+  _enable_rc_stats = true; // testnet rarely has enough useful RC data to collect and report
+#endif
   _db.create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
   _db.create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
   _db.create< rc_pending_data >();
@@ -1046,7 +1049,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
 #ifndef IS_TEST_NET
     my->_enable_at_block = HIVE_HF20_BLOCK_NUM; // testnet starts RC at 1
-    my->_enable_rc_stats = true; // testnet rarely has enough useful RC data to collect and report
 #endif
 
     appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
