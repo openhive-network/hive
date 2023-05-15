@@ -473,55 +473,17 @@ struct pre_apply_operation_visitor
   typedef void result_type;
 
   database&                                _db;
+  resource_credits                         _rc;
   uint32_t                                 _current_time = 0;
   uint32_t                                 _current_block_number = 0;
   account_name_type                        _current_witness;
   fc::optional< price >                    _vesting_share_price;
 
-  pre_apply_operation_visitor( database& db ) : _db(db)
+  pre_apply_operation_visitor( database& db ) : _db(db), _rc( db )
   {
     const auto& gpo = _db.get_dynamic_global_properties();
     _current_time = gpo.time.sec_since_epoch();
     _current_block_number = gpo.head_block_number;
-  }
-
-  void regenerate( const account_object& account )const
-  {
-    //
-    // Since RC tracking is non-consensus, we must rely on consensus to forbid
-    // transferring / delegating VESTS that haven't regenerated voting power.
-    //
-    // TODO:  Issue number
-    //
-    static_assert( HIVE_RC_REGEN_TIME <= HIVE_VOTING_MANA_REGENERATION_SECONDS, "RC regen time must be smaller than vote regen time" );
-
-    // ilog( "regenerate(${a})", ("a", account.get_name()) );
-
-    manabar_params mbparams;
-    mbparams.max_mana = account.get_maximum_rc().value;
-    mbparams.regen_time = HIVE_RC_REGEN_TIME;
-
-    try {
-
-    if( mbparams.max_mana != account.last_max_rc )
-    {
-#ifdef USE_ALTERNATE_CHAIN_ID
-      // this situation indicates a bug in RC code, most likely some operation that affects RC was not
-      // properly handled by setting new value for last_max_rc after RC changed
-      HIVE_ASSERT( false, plugin_exception,
-        "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
-        ("a", account.get_name())("old", account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
-#else
-      wlog( "NOTIFYALERT! Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
-        ("a", account.get_name())("old", account.last_max_rc)("new", mbparams.max_mana)("b", _db.head_block_num()) );
-#endif
-    }
-
-    _db.modify( account, [&]( account_object& acc )
-    {
-      acc.rc_manabar.regenerate_mana< true >( mbparams, _current_time );
-    } );
-    } FC_CAPTURE_AND_RETHROW( (account)(mbparams.max_mana) )
   }
 
   template< bool account_may_not_exist = false >
@@ -538,7 +500,7 @@ struct pre_apply_operation_visitor
       FC_ASSERT( account != nullptr, "Unexpectedly, account ${a} does not exist", ("a", name) );
     }
 
-    regenerate( *account );
+    _rc.regenerate_rc_mana( *account, _current_time );
   }
 
   void operator()( const account_create_with_delegation_operation& op )const

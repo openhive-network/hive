@@ -87,6 +87,9 @@ class resource_credits
     // returns account that is RC payer for given optional automated action
     static hive::protocol::account_name_type get_resource_user( const hive::protocol::optional_automated_action& action );
 
+    // regenerates RC mana on given account - must be called before any operation that changes max RC mana
+    void regenerate_rc_mana( const account_object& account, uint32_t now ) const;
+
     // updates RC related data on account after change in RC delegation
     void update_account_after_rc_delegation(
       const account_object& account,

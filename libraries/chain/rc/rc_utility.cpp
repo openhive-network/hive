@@ -173,6 +173,40 @@ int64_t resource_credits::compute_cost( rc_info* usage_info ) const
   return total_cost;
 }
 
+void resource_credits::regenerate_rc_mana( const account_object& account, uint32_t now ) const
+{
+  // Since RC tracking is non-consensus, we must rely on consensus to forbid
+  // transferring / delegating VESTS that haven't regenerated voting power.
+  static_assert( HIVE_RC_REGEN_TIME <= HIVE_VOTING_MANA_REGENERATION_SECONDS,
+    "RC regen time must be smaller than vote regen time" );
+
+  util::manabar_params mbparams;
+  mbparams.max_mana = account.get_maximum_rc().value;
+  mbparams.regen_time = HIVE_RC_REGEN_TIME;
+
+  try
+  {
+    if( mbparams.max_mana != account.last_max_rc )
+    {
+#ifdef USE_ALTERNATE_CHAIN_ID
+      // this situation indicates a bug in RC code, most likely some operation that affects RC was not
+      // properly handled by setting new value for last_max_rc after RC changed
+      HIVE_ASSERT( false, plugin_exception,
+        "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
+        ( "a", account.get_name() )( "old", account.last_max_rc )( "new", mbparams.max_mana )( "b", db.head_block_num() ) );
+#else
+      wlog( "NOTIFYALERT! Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
+        ( "a", account.get_name() )( "old", account.last_max_rc )( "new", mbparams.max_mana )( "b", db.head_block_num() ) );
+#endif
+    }
+
+    db.modify( account, [&]( account_object& acc )
+    {
+      acc.rc_manabar.regenerate_mana< true >( mbparams, now );
+    } );
+  } FC_CAPTURE_AND_RETHROW( (account)(mbparams.max_mana) )
+}
+
 void resource_credits::update_account_after_rc_delegation( const account_object& account,
   uint32_t now, int64_t delta, bool regenerate_mana ) const
 {
