@@ -309,6 +309,15 @@ void resource_credits::update_account_after_vest_change( const account_object& a
   }
 }
 
+void resource_credits::update_rc_for_custom_action( std::function<void()>&& callback,
+  const account_object& account ) const
+{
+  uint32_t now = db.head_block_time().sec_since_epoch();
+  regenerate_rc_mana( account, now );
+  callback();
+  update_account_after_vest_change( account, now );
+}
+
 void resource_credits::use_account_rcs( rc_info* tx_info, int64_t rc ) const
 {
   const account_name_type& account_name = tx_info->payer;

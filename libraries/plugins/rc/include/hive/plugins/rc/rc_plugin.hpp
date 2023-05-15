@@ -42,8 +42,6 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 
     void validate_database();
 
-    void update_rc_for_custom_action( std::function<void()>&& callback, const protocol::account_name_type& account_name ) const;
-
     fc::variant_object get_report( hive::chain::resource_credits::report_type rt, bool pending = false ) const;
 
   private:
