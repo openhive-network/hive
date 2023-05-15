@@ -27,6 +27,9 @@
 #include <boost/type.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/container/flat_set.hpp>
+#include <boost/range/adaptor/indexed.hpp>
+#include <boost/range/adaptor/sliced.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 #include <condition_variable>
 #include <mutex>
@@ -1189,11 +1192,16 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
     // this if protects from out_of_bound exception (e.x. start = static_cast<uint32_t>(-1))
     const int64_t signed_start = (start > last_index_of_all_account_operations) ? last_index_of_all_account_operations : static_cast<int64_t>(start);
 
-
-    for(int i = signed_start-number_of_irreversible_ops; i >= 0; i--)
+    /**
+     * Iterate over range [0, last) of ops_for_this_account and pass them to processor
+     * with indices [number_of_irreversible_ops, number_of_irreversible_ops+1, ...] in reverse order.
+     * last has +1, because we want to include element at index signed_start.
+     */
+    const auto last = signed_start - number_of_irreversible_ops + 1;
+    using namespace boost::adaptors;
+    for (const auto [idx, oObj] : ops_for_this_account | sliced(0, last) | indexed(number_of_irreversible_ops) | reversed)
     {
-      rocksdb_operation_object oObj = ops_for_this_account[i];
-      if(processor(number_of_irreversible_ops + i, oObj))
+      if(processor(idx, oObj))
       {
         ++count;
         if(count >= limit)
