@@ -529,15 +529,13 @@ BOOST_AUTO_TEST_CASE( legacy_operation_test )
 {
   try
   {
-    using hive::plugins::condenser_api::legacy_transfer_operation;
-
     transfer_operation op_new, op_legacy;
 
     BOOST_CHECK_NO_THROW(
       op_legacy = serialize_with_legacy< operation >(
         "[\"transfer\",{\"from\":\"alice\",\"to\":\"bob\",\"amount\":\"1.234 TESTS\",\"memo\":\"test\"}]", // condenser_api output
         hive::protocol::transaction_serialization_type::legacy
-      ).get< legacy_transfer_operation >();
+      ).get< transfer_operation >();
     );
 
     BOOST_CHECK_NO_THROW(
