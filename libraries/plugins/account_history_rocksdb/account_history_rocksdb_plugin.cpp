@@ -1183,7 +1183,9 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
         ops_for_this_account.push_back(obj);
     };
 
-    const int64_t last_index_of_all_account_operations = std::max<int64_t>(0l, number_of_irreversible_ops + (ops_for_this_account.size() - 1l));
+    // There's always at least one operation for each account: account_create_operation
+    FC_ASSERT(number_of_irreversible_ops + ops_for_this_account.size() > 0);
+    const int64_t last_index_of_all_account_operations = number_of_irreversible_ops + (ops_for_this_account.size() - 1l);
     // this if protects from out_of_bound exception (e.x. start = static_cast<uint32_t>(-1))
     const int64_t signed_start = (start > last_index_of_all_account_operations) ? last_index_of_all_account_operations : static_cast<int64_t>(start);
 
