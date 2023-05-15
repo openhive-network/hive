@@ -1191,14 +1191,14 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
     // Cannot be negative due to above
     const uint64_t last_index_of_all_account_operations = (number_of_irreversible_ops + ops_for_this_account.size()) - 1l;
     // this if protects from out_of_bound exception (e.x. start = static_cast<uint32_t>(-1))
-    const uint64_t signed_start = std::min(start, last_index_of_all_account_operations);
+    const uint64_t start_min = std::min(start, last_index_of_all_account_operations);
 
     /**
      * Iterate over range [0, last) of ops_for_this_account and pass them to processor
      * with indices [number_of_irreversible_ops, number_of_irreversible_ops+1, ...] in reverse order.
-     * last has +1, because we want to include element at index signed_start.
+     * last has +1, because we want to include element at index start_min.
      */
-    const uint64_t last = signed_start - number_of_irreversible_ops + 1;
+    const uint64_t last = start_min - number_of_irreversible_ops + 1;
     FC_ASSERT(last <= ops_for_this_account.size());
     using namespace boost::adaptors;
     for (const auto [idx, oObj] : ops_for_this_account | sliced(0, last) | indexed(number_of_irreversible_ops) | reversed)
