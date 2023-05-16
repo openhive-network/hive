@@ -4,4 +4,4 @@
 report.xml
 .tox
 .hived
-
+.python-version
