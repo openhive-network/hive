@@ -1,10 +1,7 @@
 #pragma once
 
 #include <beekeeper/beekeeper_wallet_base.hpp>
-
-#include <boost/asio/deadline_timer.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/interprocess/sync/file_lock.hpp>
+#include <beekeeper/singleton_beekeeper.hpp>
 
 #include <chrono>
 #include <thread>
@@ -73,10 +70,7 @@ public:
 
    /// Set the path for location of wallet files.
    /// @param p path to override default ./ location of wallet files.
-   void set_dir(const boost::filesystem::path& p) {
-      dir = p;
-      initialize_lock();
-   }
+   void start( const boost::filesystem::path& p );
 
    /// Set the timeout for locking all wallets.
    /// If set then after t seconds of inactivity then lock_all().
@@ -165,15 +159,10 @@ public:
    info get_info();
 
 private:
+
    std::map<std::string, std::unique_ptr<beekeeper_wallet_base>> wallets;
-   boost::filesystem::path dir = ".";
-   boost::filesystem::path lock_path = dir / "wallet.lock";
-   std::unique_ptr<boost::interprocess::file_lock> wallet_dir_lock;
-
    time_manager time;
-
-   void start_lock_watch(std::shared_ptr<boost::asio::deadline_timer> t);
-   void initialize_lock();
+   std::unique_ptr<singleton_beekeeper> singleton;
 };
 
 } //beekeeper
