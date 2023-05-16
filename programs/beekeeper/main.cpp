@@ -62,7 +62,7 @@ class beekeeper_app
                 dir = app.data_dir() / dir;
             if( !bfs::exists(dir) )
                 bfs::create_directories(dir);
-            wallet_manager_ptr->set_dir(dir);
+            wallet_manager_ptr->start(dir);
           }
 
           if (_args.count("unlock-timeout"))

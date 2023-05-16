@@ -12,7 +12,6 @@ namespace beekeeper {
 
 namespace bfs = boost::filesystem;
 
-constexpr auto file_ext = ".wallet";
 constexpr auto password_prefix = "PW";
 
 std::string gen_password() {
@@ -94,10 +93,14 @@ beekeeper_wallet_manager::beekeeper_wallet_manager(): time( [this](){ lock_all()
 {
 }
 
-beekeeper_wallet_manager::~beekeeper_wallet_manager() {
-   //not really required, but may spook users
-   if(wallet_dir_lock)
-      bfs::remove(lock_path);
+beekeeper_wallet_manager::~beekeeper_wallet_manager()
+{
+}
+
+void beekeeper_wallet_manager::start( const boost::filesystem::path& p )
+{
+  singleton = std::make_unique<singleton_beekeeper>( p );
+  singleton->start();
 }
 
 void beekeeper_wallet_manager::set_timeout(const std::chrono::seconds& t)
@@ -109,8 +112,9 @@ std::string beekeeper_wallet_manager::create(const std::string& name, fc::option
    time.check_timeout();
 
    FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
+   FC_ASSERT( singleton );
 
-   auto wallet_filename = dir / (name + file_ext);
+   auto wallet_filename = singleton->create_wallet_filename( name );
 
    FC_ASSERT( !fc::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
 
@@ -143,10 +147,11 @@ void beekeeper_wallet_manager::open(const std::string& name) {
    time.check_timeout();
 
    FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
+   FC_ASSERT( singleton );
 
    wallet_data d;
    auto wallet = std::make_unique<beekeeper_wallet>(d);
-   auto wallet_filename = dir / (name + file_ext);
+   auto wallet_filename = singleton->create_wallet_filename( name );
    wallet->set_wallet_filename(wallet_filename.string());
    FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));
 
@@ -276,40 +281,6 @@ signature_type beekeeper_wallet_manager::sign_digest(const digest_type& digest, 
 void beekeeper_wallet_manager::own_and_use_wallet(const string& name, std::unique_ptr<beekeeper_wallet_base>&& wallet) {
    FC_ASSERT( wallets.find(name) == wallets.end(), "Tried to use wallet name that already exists.");
    wallets.emplace(name, std::move(wallet));
-}
-
-void beekeeper_wallet_manager::start_lock_watch(std::shared_ptr<boost::asio::deadline_timer> t)
-{
-   t->async_wait([t, this](const boost::system::error_code& /*ec*/)
-   {
-      boost::system::error_code ec;
-      auto rc = bfs::status(lock_path, ec);
-      if(ec != boost::system::error_code()) {
-         if(rc.type() == bfs::file_not_found) {
-            appbase::app().generate_interrupt_request();
-            FC_ASSERT( false, "Lock file removed while keosd still running.  Terminating.");
-         }
-      }
-      t->expires_from_now(boost::posix_time::seconds(1));
-      start_lock_watch(t);
-   });
-}
-
-void beekeeper_wallet_manager::initialize_lock() {
-   //This is technically somewhat racy in here -- if multiple keosd are in this function at once.
-   //I've considered that an acceptable tradeoff to maintain cross-platform boost constructs here
-   lock_path = dir / "wallet.lock";
-   {
-      std::ofstream x(lock_path.string());
-      FC_ASSERT( !x.fail(), "Failed to open wallet lock file at ${f}", ("f", lock_path.string()));
-   }
-   wallet_dir_lock = std::make_unique<boost::interprocess::file_lock>(lock_path.string().c_str());
-   if(!wallet_dir_lock->try_lock()) {
-      wallet_dir_lock.reset();
-      FC_ASSERT( false, "Failed to lock access to wallet directory; is another keosd running?");
-   }
-   auto timer = std::make_shared<boost::asio::deadline_timer>(appbase::app().get_io_service(), boost::posix_time::seconds(1));
-   start_lock_watch(timer);
 }
 
 info beekeeper_wallet_manager::get_info()
