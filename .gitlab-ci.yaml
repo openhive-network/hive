@@ -300,6 +300,8 @@ plugin_test:
       paths:
         - "**/generated_during_*"
         - "**/generated_by_package_fixtures"
+      exclude:
+        - "**/generated_during_*/**/block_log"
       when: always
       expire_in: 1 week
     rules:
