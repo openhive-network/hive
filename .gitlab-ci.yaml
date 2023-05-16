@@ -301,7 +301,7 @@ plugin_test:
         - "**/generated_during_*"
         - "**/generated_by_package_fixtures"
       exclude:
-        - "**/generated_during_*/**/block_log"
+        - "**/generated_during_*/**/blockchain"
       when: always
       expire_in: 1 week
     rules:
