@@ -43,6 +43,8 @@ condenser_api_fixture::condenser_api_fixture()
 
     db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
     BOOST_REQUIRE( db );
+    database_api = app.get_plugin< hive::plugins::database_api::database_api_plugin >().api;
+    BOOST_REQUIRE( database_api );
 
     ah_plugin->plugin_startup();
 
