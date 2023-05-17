@@ -2,6 +2,8 @@
 
 #include <appbase/application.hpp>
 
+#include <fc/io/json.hpp>
+
 #include <boost/filesystem.hpp>
 
 namespace beekeeper {
@@ -20,6 +22,7 @@ namespace beekeeper {
         bfs::remove( lock_path_file );
 
     bfs::remove( pid_file );
+    bfs::remove( connection_file );
   }
 
   void singleton_beekeeper::start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t )
@@ -61,17 +64,19 @@ namespace beekeeper {
     start_lock_watch(timer);
   }
 
-  void singleton_beekeeper::save_pid()
+
+  template<typename content_type>
+  void singleton_beekeeper::write_to_file( const boost::filesystem::path& file_name, const content_type& content )
   {
-    std::ofstream _file( pid_file.string() );
-    _file << getpid();
+    std::ofstream _file( file_name.string() );
+    _file << content;
     _file.flush();
     _file.close();
   }
 
-  void singleton_beekeeper::save_connection_data()
+  void singleton_beekeeper::save_pid()
   {
-
+    write_to_file( pid_file, getpid() );
   }
 
   void singleton_beekeeper::start()
@@ -79,7 +84,6 @@ namespace beekeeper {
     initialize_lock();
 
     save_pid();
-    save_connection_data();
   }
 
   void singleton_beekeeper::close()
@@ -97,4 +101,9 @@ namespace beekeeper {
     return instance_started;
   }
 
+  void singleton_beekeeper::save_connection_details( const collector_t& values )
+  {
+    auto _json = fc::json::to_string( values );
+    write_to_file( connection_file, _json );
+  }
 }

@@ -288,4 +288,10 @@ info beekeeper_wallet_manager::get_info()
    return time.get_info();
 }
 
+void beekeeper_wallet_manager::save_connection_details( const collector_t& values )
+{
+   FC_ASSERT( singleton );
+   singleton->save_connection_details( values );
+}
+
 } //beekeeper
