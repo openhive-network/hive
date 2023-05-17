@@ -41,6 +41,5 @@ namespace beekeeper
       boost::filesystem::path create_wallet_filename( const std::string& wallet_name ) const;
 
       bool started() const;
-      void save_data();
   };
 }
