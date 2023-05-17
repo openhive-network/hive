@@ -6,6 +6,9 @@
 
 condenser_api_reversible_fixture::condenser_api_reversible_fixture()
 {
+    db->set_hardfork( HIVE_NUM_HARDFORKS );
+    generate_block();
+
     ACTORS((top1)(top2)(top3)(top4)(top5)(top6)(top7)(top8)(top9)(top10)
            (top11)(top12)(top13)(top14)(top15)(top16)(top17)(top18)(top19)(top20))
     ACTORS((backup1)(backup2)(backup3)(backup4)(backup5)(backup6)(backup7)(backup8)(backup9)(backup10))
