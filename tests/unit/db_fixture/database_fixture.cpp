@@ -400,6 +400,12 @@ void database_fixture::generate_days_blocks( uint32_t days, bool skip_interm_blo
   generate_seconds_blocks( days * 24 * 3600, skip_interm_blocks );
 }
 
+void database_fixture::generate_until_block( uint32_t block_num )
+{
+  while( db->head_block_num() < block_num )
+    generate_block();
+}
+
 void database_fixture::generate_until_irreversible_block( uint32_t block_num )
 {
   while( db->get_last_irreversible_block_num() < block_num )
