@@ -2,6 +2,8 @@
 
 #include "condenser_api_reversible_fixture.hpp"
 
+#include <hive/plugins/database_api/database_api.hpp>
+
 #include <boost/test/unit_test.hpp>
 
 condenser_api_reversible_fixture::condenser_api_reversible_fixture()
@@ -52,6 +54,10 @@ condenser_api_reversible_fixture::condenser_api_reversible_fixture()
     }
 
     generate_block();
+
+    generate_until_block(43);
+
+    BOOST_REQUIRE_EQUAL( database_api->get_active_witnesses({}).witnesses.size(), 21 );
 }
 
 condenser_api_reversible_fixture::~condenser_api_reversible_fixture()
