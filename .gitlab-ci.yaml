@@ -818,6 +818,8 @@ several_node_restarts_tests:
       - $CI_PROJECT_DIR/data_generated_during_hive_replay/datadir/docker_entrypoint.log
   tags:
     - public-runner-docker
+  rules:
+    - if: $RUN_MIRRORNET_PIPELINE == "false"
 
 recovery_tests:
   stage: test
@@ -842,3 +844,12 @@ operation_tests:
     - *run-pytest
   tags:
     - public-runner-docker
+
+refresh_mirrornet_block_log_manual:
+  stage: build
+  variables:
+    PARENT_PIPELINE_ID: $CI_PIPELINE_ID
+  trigger:
+    include:
+      - local: '/scripts/ci-helpers/convert_block_log.gitlab-ci.yml'
+  when: manual

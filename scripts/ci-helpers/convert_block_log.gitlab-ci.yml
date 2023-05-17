@@ -1,0 +1,45 @@
+convert_block_log:
+  stage: build
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  variables:
+    NUMBER_OF_BLOCKS: 5000000
+    BLOCK_LOG_SOURCE_DIR: /blockchain/block_log_5m
+    MIRRORNET_BLOCK_LOG_DIR: /cache/block_log_5m_mirrornet
+    MAINNET_TRUNCATED_DIR: "$CI_PROJECT_DIR/mainnet"
+    BINARIES_DIR: "hived-mirrornet-binaries"
+    NUMBER_OF_PROCESSES: 8
+  interruptible: true
+  needs:
+    - pipeline: $PARENT_PIPELINE_ID
+      job: "mirrornet_node_build"
+      artifacts: true
+  before_script:
+    - env
+    - export BLOCK_LOG_SOURCE_DIR=/blockchain/block_log_5m
+    - mkdir -p "$MAINNET_TRUNCATED_DIR"
+    - mkdir -p "$MIRRORNET_BLOCK_LOG_DIR"
+    - cd "$BINARIES_DIR"
+  script:
+    - echo "Compressing block log to $NUMBER_OF_BLOCKS blocks with $NUMBER_OF_PROCESSES processes"
+    - time ./compress_block_log
+      -i "$BLOCK_LOG_SOURCE_DIR"
+      -o "$MAINNET_TRUNCATED_DIR"
+      --decompress
+      -n $NUMBER_OF_BLOCKS
+      --jobs $NUMBER_OF_PROCESSES
+    - rm "$MIRRORNET_BLOCK_LOG_DIR/block_log" "$MIRRORNET_BLOCK_LOG_DIR/block_log.artifacts"
+    - echo "Converting block log to mirrornet format with $NUMBER_OF_PROCESSES processes"
+    - time ./blockchain_converter
+      --plugin block_log_conversion
+      -i "$MAINNET_TRUNCATED_DIR/block_log"
+      -o "$MIRRORNET_BLOCK_LOG_DIR/block_log"
+      --chain-id $MIRRORNET_CHAIN_ID
+      --private-key "$MIRRORNET_SKELETON_KEY"
+      --use-same-key
+      --jobs $NUMBER_OF_PROCESSES
+    - ls -lath "$MIRRORNET_BLOCK_LOG_DIR"
+  parallel:
+    matrix:
+        - TAGS: [hive-builder-4] # could be list of tags like [hive-builder-4, hive-builder-5]
+  tags:
+    - ${TAGS}
