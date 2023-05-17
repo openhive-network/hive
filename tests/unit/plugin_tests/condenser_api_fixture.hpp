@@ -13,6 +13,10 @@ namespace condenser_api {
   class condenser_api;
 }
 
+namespace database_api {
+  class database_api;
+}
+
 namespace account_history {
   class account_history_api;
 }
@@ -173,6 +177,7 @@ struct condenser_api_fixture : database_fixture
    */
   void combo_1_scenario( check_point_tester_t check_point_tester1, check_point_tester_t check_point_tester2 );
 
+  std::shared_ptr< hive::plugins::database_api::database_api > database_api;
 };
 
 #endif
