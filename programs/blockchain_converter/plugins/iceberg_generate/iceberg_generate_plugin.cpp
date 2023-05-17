@@ -20,8 +20,6 @@
 #include <hive/protocol/hardfork_block.hpp>
 #include <hive/protocol/forward_impacted.hpp>
 
-#include <hive/utilities/key_conversion.hpp>
-
 #include <boost/program_options.hpp>
 #include <boost/container/flat_set.hpp>
 
@@ -43,8 +41,6 @@ namespace hive {namespace converter { namespace plugins { namespace iceberg_gene
   namespace bpo = boost::program_options;
 
   namespace hp = hive::protocol;
-
-  using hive::utilities::wif_to_key;
 
 namespace detail {
 
@@ -394,7 +390,7 @@ namespace detail {
       FC_ASSERT( false, "Could not parse chain_id as hex string. Chain ID String: ${s}", ("s", chain_id_str) );
     }
 
-    const auto private_key = wif_to_key( options["private-key"].as< std::string >() );
+    const auto private_key = fc::ecc::private_key::wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
     my = std::make_unique< detail::iceberg_generate_plugin_impl >( output_v, *private_key, _hive_chain_id, options.count("strip-operations-content"), options.at( "jobs" ).as< size_t >() );

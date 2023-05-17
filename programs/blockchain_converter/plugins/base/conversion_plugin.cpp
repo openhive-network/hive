@@ -33,9 +33,6 @@ namespace hive { namespace converter { namespace plugins {
   using hive::protocol::private_key_type;
   using hive::protocol::authority;
 
-  using hive::utilities::wif_to_key;
-  using hive::utilities::key_to_wif;
-
   conversion_plugin_impl::conversion_plugin_impl( const private_key_type& _private_key, const chain_id_type& chain_id,
     size_t signers_size, bool increase_block_size )
     : converter( _private_key, chain_id, signers_size, increase_block_size ) {}
