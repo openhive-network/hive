@@ -304,6 +304,7 @@ struct database_fixture {
 
   void generate_seconds_blocks( uint32_t seconds, bool skip_interm_blocks = true );
   void generate_days_blocks( uint32_t days, bool skip_interm_blocks = true );
+  void generate_until_block( uint32_t block_num );
   void generate_until_irreversible_block( uint32_t block_num );
 
   fc::string get_current_time_iso_string() const;
