@@ -18,6 +18,8 @@ namespace beekeeper {
   {
     if( wallet_dir_lock )
         bfs::remove( lock_path_file );
+
+    bfs::remove( pid_file );
   }
 
   void singleton_beekeeper::start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t )
@@ -61,7 +63,10 @@ namespace beekeeper {
 
   void singleton_beekeeper::save_pid()
   {
-
+    std::ofstream _file( pid_file.string() );
+    _file << getpid();
+    _file.flush();
+    _file.close();
   }
 
   void singleton_beekeeper::save_connection_data()
@@ -72,6 +77,9 @@ namespace beekeeper {
   void singleton_beekeeper::start()
   {
     initialize_lock();
+
+    save_pid();
+    save_connection_data();
   }
 
   void singleton_beekeeper::close()
@@ -87,11 +95,6 @@ namespace beekeeper {
   bool singleton_beekeeper::started() const
   {
     return instance_started;
-  }
-
-  void singleton_beekeeper::save_data()
-  {
-
   }
 
 }
