@@ -145,6 +145,8 @@ class webserver_base
     virtual void stop_webserver() = 0;
     virtual ~webserver_base() {};
 
+    virtual boost::signals2::connection add_connection( std::function<void(const collector_t&)> ) = 0;
+
     optional< tcp::endpoint >                                 http_endpoint;
     optional< boost::asio::local::stream_protocol::endpoint > unix_endpoint;
     optional< tcp::endpoint >                                 ws_endpoint;
@@ -189,9 +191,15 @@ class webserver_plugin_impl : public webserver_base
 
     plugins::json_rpc::json_rpc_plugin* api = nullptr;
 
+    using signal_t = boost::signals2::signal<void(const collector_t &)>;
+    signal_t listen;
+    boost::signals2::connection add_connection( std::function<void(const collector_t&)> func ) override;
+
   private:
     void update_http_endpoint();
     void update_ws_endpoint();
+
+    void notify( const std::string& type, const optional< tcp::endpoint >& endpoint );
 };
 
 template<typename websocket_server_type>
@@ -211,6 +219,21 @@ void webserver_plugin_impl<websocket_server_type>::prepare_threads()
   for( uint32_t i = 0; i < thread_pool_size; ++i )
     thread_pool.create_thread( [&]() { fc::set_thread_name("api"); thread_pool_ios.run(); } );
 }
+
+template<typename websocket_server_type>
+void webserver_plugin_impl<websocket_server_type>::notify( const std::string& type, const optional< tcp::endpoint >& endpoint )
+{
+  collector_t collector;
+
+  collector.assign_values(
+    "type",     type,
+    "address",  endpoint->address().to_string(),
+    "port",     endpoint->port()
+  );
+
+  listen( collector );
+  hive::notify( "webserver listening", collector );
+};
 
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::start_webserver()
@@ -246,13 +269,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         }
         ilog( "start listening for ws requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *ws_endpoint ) ) );
 
-        hive::notify( "webserver listening",
-      // {
-          "type", "WS",
-          "address", ws_endpoint->address().to_string(),
-          "port", ws_endpoint->port()
-      // }
-      );
+        notify( "WS", ws_endpoint );
 
         ws_server.start_accept();
 
@@ -287,13 +304,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         update_http_endpoint();
         ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
 
-        hive::notify( "webserver listening",
-        // {
-            "type", "HTTP",
-            "address", http_endpoint->address().to_string(),
-            "port", http_endpoint->port()
-        // }
-        );
+        notify( "HTTP", http_endpoint );
 
         http_ios.run();
         ilog( "http io service exit" );
@@ -548,6 +559,12 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_request(websocket
   });
 }
 
+template<typename websocket_server_type>
+boost::signals2::connection webserver_plugin_impl<websocket_server_type>::add_connection( std::function<void(const collector_t&)> func )
+{
+  return listen.connect( func );
+}
+
 } // detail
 
 webserver_plugin::webserver_plugin()
@@ -652,6 +669,11 @@ void webserver_plugin::plugin_shutdown()
 void webserver_plugin::start_webserver()
 {
   my->start_webserver();
+}
+
+boost::signals2::connection webserver_plugin::add_connection( std::function<void(const collector_t &)> func )
+{
+  return my->add_connection( func );
 }
 
 } } } // hive::plugins::webserver

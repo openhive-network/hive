@@ -10,6 +10,8 @@ namespace fc { class variant; }
 
 namespace beekeeper {
 
+using collector_t = hive::utilities::notifications::collector_t;
+
 struct wallet_details
 {
   std::string name;
@@ -157,6 +159,8 @@ public:
 
    /// @return Current time and timeout time
    info get_info();
+
+   void save_connection_details( const collector_t& values );
 
 private:
 

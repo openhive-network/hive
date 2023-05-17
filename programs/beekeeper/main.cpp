@@ -112,7 +112,11 @@ class beekeeper_app
 
     appbase::initialization_result::result start()
     {
-      app.get_plugin<hive::plugins::webserver::webserver_plugin>().start_webserver();
+      auto& _webserver_plugin = app.get_plugin<hive::plugins::webserver::webserver_plugin>();
+
+      webserver_connection = _webserver_plugin.add_connection( [this](const hive::utilities::notifications::collector_t& collector){ wallet_manager_ptr->save_connection_details( collector ); } );
+
+      _webserver_plugin.start_webserver();
 
       app.startup();
       app.exec();
@@ -125,6 +129,12 @@ class beekeeper_app
 
     beekeeper_app(): app( appbase::app() )
     {
+    }
+
+    ~beekeeper_app()
+    {
+      if( webserver_connection.connected() )
+        webserver_connection.disconnect();
     }
 
     beekeeper::beekeeper_wallet_manager& get_wallet_manager()
@@ -142,6 +152,8 @@ class beekeeper_app
 
       return start();
     }
+    
+    boost::signals2::connection webserver_connection;
 };
 
 int main( int argc, char** argv )

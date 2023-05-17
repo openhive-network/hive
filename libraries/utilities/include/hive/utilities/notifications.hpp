@@ -17,27 +17,27 @@
 
 namespace hive { namespace utilities { namespace notifications {
 
-class notification_t
+class collector_t
 {
 public:
 
-  using key_t = fc::string;
+  using key_t   = fc::string;
   using value_t = fc::variant;
 
-  fc::time_point_sec time;
-  fc::string name;
   std::map<key_t, value_t> value;
 
+  collector_t(){}
+
+  collector_t(collector_t&& collector): value(collector.value) {}
+  collector_t(const collector_t& collector): value(collector.value) {}
+  collector_t(collector_t& collector): value(collector.value) {}
+
   template <typename... Values>
-  notification_t(const fc::string &name, Values &&...values):
-    time{fc::time_point::now()},
-    name{name}
+  collector_t(Values &&...values)
   {
     static_assert(sizeof...(values) % 2 == 0, "Inconsistency in amount of variadic arguments, expected even number ( series of pairs: [ fc::string, fc::variant ] )");
     assign_values(values...);
   }
-
-private:
 
   template <typename... Values>
   void assign_values(key_t key, value_t value, Values &&...values)
@@ -48,8 +48,33 @@ private:
     assign_values(values...);
   }
 
+private:
+
   // Specialization for end recursion
   void assign_values()
+  {
+  }
+};
+
+class notification_t : public collector_t
+{
+public:
+
+  fc::time_point_sec time;
+  fc::string name;
+
+  template <typename... Values>
+  notification_t(const fc::string &name, Values &&...values):
+    collector_t{values...},
+    time{fc::time_point::now()},
+    name{name}
+  {
+  }
+
+  notification_t(const fc::string &name, const collector_t& collector):
+    collector_t{collector},
+    time{fc::time_point::now()},
+    name{name}
   {
   }
 };
@@ -117,16 +142,28 @@ detail::notification_handler &get_notification_handler_instance();
 
 } } // utilities::notifications
 
+using namespace utilities::notifications;
+
 template <typename... KeyValuesTypes>
 inline void notify(
     const fc::string &name,
     KeyValuesTypes &&...key_value_pairs) noexcept
 {
-  using namespace utilities::notifications;
-
   detail::error_handler([&]{
     get_notification_handler_instance().broadcast(
       notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+    );
+  });
+}
+
+inline void notify(
+    const fc::string &name,
+    const collector_t& collector) noexcept
+{
+
+  detail::error_handler([&]{
+    get_notification_handler_instance().broadcast(
+      notification_t(name, collector)
     );
   });
 }
@@ -136,4 +173,5 @@ void notify_hived_error(const fc::string &error_message) noexcept;
 
 } // hive
 
-FC_REFLECT(hive::utilities::notifications::notification_t, (time)(name)(value));
+FC_REFLECT(hive::utilities::notifications::collector_t, (value));
+FC_REFLECT_DERIVED(hive::utilities::notifications::notification_t, (hive::utilities::notifications::collector_t), (time)(name));
