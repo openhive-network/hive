@@ -48,7 +48,7 @@ class beekeeper_app
             ;
     }
 
-    void initialize_program_options()
+    bool initialize_program_options()
     {
       ilog("initializing options");
       try {
@@ -62,7 +62,9 @@ class beekeeper_app
                 dir = app.data_dir() / dir;
             if( !bfs::exists(dir) )
                 bfs::create_directories(dir);
-            wallet_manager_ptr->start(dir);
+
+            if( !wallet_manager_ptr->start(dir) )
+              return false;
           }
 
           if (_args.count("unlock-timeout"))
@@ -81,6 +83,7 @@ class beekeeper_app
               ilog( "Backtrace on segfault is enabled." );
             }
           }
+          return true;
       } FC_LOG_AND_RETHROW()
     }
 
@@ -103,7 +106,8 @@ class beekeeper_app
         wallet_manager_ptr  = std::make_unique<beekeeper::beekeeper_wallet_manager>();
         api_ptr             = std::make_unique<beekeeper::beekeeper_wallet_api>( get_wallet_manager() );
 
-        initialize_program_options();
+        if( !initialize_program_options() )
+          return { init_status, true };
 
         hive::notify_hived_status("starting");
         return { appbase::initialization_result::result::ok, false };

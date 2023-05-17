@@ -97,10 +97,10 @@ beekeeper_wallet_manager::~beekeeper_wallet_manager()
 {
 }
 
-void beekeeper_wallet_manager::start( const boost::filesystem::path& p )
+bool beekeeper_wallet_manager::start( const boost::filesystem::path& p )
 {
   singleton = std::make_unique<singleton_beekeeper>( p );
-  singleton->start();
+  return singleton->start();
 }
 
 void beekeeper_wallet_manager::set_timeout(const std::chrono::seconds& t)
