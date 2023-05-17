@@ -76,7 +76,14 @@ namespace beekeeper {
 
   void singleton_beekeeper::save_pid()
   {
-    write_to_file( pid_file, getpid() );
+    std::stringstream ss;
+    ss << getpid();
+
+    std::map<std::string, std::string> _map;
+    _map["pid"] = ss.str();
+
+    auto _json = fc::json::to_string( _map );
+    write_to_file( pid_file, _json );
   }
 
   void singleton_beekeeper::start()
