@@ -34,7 +34,11 @@ namespace beekeeper
       template<typename content_type>
       void write_to_file( const boost::filesystem::path& file_name, const content_type& content );
 
+      fc::variant read_file( const boost::filesystem::path& file_name );
+
       void save_pid();
+
+      void send_fail_notification();
 
     public:
 
