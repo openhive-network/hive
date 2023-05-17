@@ -4,6 +4,7 @@
 
 #include <fc/io/json.hpp>
 
+#include <boost/exception/diagnostic_information.hpp>
 #include <boost/filesystem.hpp>
 
 namespace beekeeper {
@@ -84,6 +85,38 @@ namespace beekeeper {
     _file.close();
   }
 
+  fc::variant singleton_beekeeper::read_file( const boost::filesystem::path& file_name )
+  {
+    try
+    {
+      return fc::json::from_file( file_name.string() );
+    }
+    catch ( const boost::exception& e )
+    {
+      auto _message = boost::diagnostic_information(e);
+      std::cerr << _message << "\n";
+      return _message;
+    }
+    catch ( const fc::exception& e )
+    {
+      auto _message = e.to_detail_string();
+      std::cerr << _message << "\n";
+      return _message;
+    }
+    catch ( const std::exception& e )
+    {
+      auto _message = e.what();
+      std::cerr << _message << "\n";
+      return _message;
+    }
+    catch ( ... )
+    {
+      auto _message = "unknown exception\n";
+      std::cerr << _message << "\n";
+      return _message;
+    }
+  }
+
   void singleton_beekeeper::save_pid()
   {
     std::stringstream ss;
@@ -96,12 +129,30 @@ namespace beekeeper {
     write_to_file( pid_file, _json );
   }
 
+  void singleton_beekeeper::send_fail_notification()
+  {
+    std::vector<fc::variant> _content;
+
+    fc::variant _pid_v        = read_file( pid_file );
+    fc::variant _connection_v = read_file( connection_file );
+
+    _content.push_back( "Opening beekeeper failed" );
+    _content.push_back( _pid_v );
+    _content.push_back( _connection_v );
+
+    auto _json = fc::json::to_string( _content );
+
+    hive::notify_hived_status( _json );
+  }
+
   bool singleton_beekeeper::start()
   {
     initialize_lock();
 
     if( instance_started )
       save_pid();
+    else
+      send_fail_notification();
 
     return instance_started;
   }
