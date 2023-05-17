@@ -72,7 +72,7 @@ public:
 
    /// Set the path for location of wallet files.
    /// @param p path to override default ./ location of wallet files.
-   void start( const boost::filesystem::path& p );
+   bool start( const boost::filesystem::path& p );
 
    /// Set the timeout for locking all wallets.
    /// If set then after t seconds of inactivity then lock_all().

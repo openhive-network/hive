@@ -41,12 +41,9 @@ namespace beekeeper
       singleton_beekeeper( const boost::filesystem::path& _wallet_directory );
       ~singleton_beekeeper();
 
-      void start();
-      void close();
+      bool start();
 
       boost::filesystem::path create_wallet_filename( const std::string& wallet_name ) const;
-
-      bool started() const;
 
       void save_connection_details( const collector_t& values );
   };

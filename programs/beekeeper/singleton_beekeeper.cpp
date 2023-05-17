@@ -18,11 +18,14 @@ namespace beekeeper {
 
   singleton_beekeeper::~singleton_beekeeper()
   {
-    if( wallet_dir_lock )
-        bfs::remove( lock_path_file );
+    if( instance_started )
+    {
+      if( wallet_dir_lock )
+          bfs::remove( lock_path_file );
 
-    bfs::remove( pid_file );
-    bfs::remove( connection_file );
+      bfs::remove( pid_file );
+      bfs::remove( connection_file );
+    }
   }
 
   void singleton_beekeeper::start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t )
@@ -36,7 +39,7 @@ namespace beekeeper {
           if( rc.type() == bfs::file_not_found )
           {
               appbase::app().generate_interrupt_request();
-              FC_ASSERT( false, "Lock file removed while keosd still running.  Terminating.");
+              FC_ASSERT( false, "Lock file removed while `beekeeper` still running. Terminating.");
           }
         }
         t->expires_from_now( boost::posix_time::seconds(1) );
@@ -50,15 +53,22 @@ namespace beekeeper {
     //I've considered that an acceptable tradeoff to maintain cross-platform boost constructs here
     {
         std::ofstream x( lock_path_file.string() );
-        FC_ASSERT( !x.fail(), "Failed to open wallet lock file at ${f}", ("f", lock_path_file.string()));
+        if( x.fail() )
+        {
+          wlog( "Failed to open wallet lock file at ${f}", ("f", lock_path_file.string()) );
+          return;
+        }
     }
 
     wallet_dir_lock = std::make_unique<boost::interprocess::file_lock>( lock_path_file.string().c_str() );
     if( !wallet_dir_lock->try_lock() )
     {
         wallet_dir_lock.reset();
-        FC_ASSERT( false, "Failed to lock access to wallet directory; is another keosd running?");
+        wlog( "Failed to lock access to wallet directory; is another `beekeeper` running?" );
+        return;
     }
+
+    instance_started = true;
 
     auto timer = std::make_shared<boost::asio::deadline_timer>( appbase::app().get_io_service(), boost::posix_time::seconds(1) );
     start_lock_watch(timer);
@@ -86,16 +96,14 @@ namespace beekeeper {
     write_to_file( pid_file, _json );
   }
 
-  void singleton_beekeeper::start()
+  bool singleton_beekeeper::start()
   {
     initialize_lock();
 
-    save_pid();
-  }
+    if( instance_started )
+      save_pid();
 
-  void singleton_beekeeper::close()
-  {
-
+    return instance_started;
   }
 
   boost::filesystem::path singleton_beekeeper::create_wallet_filename( const std::string& wallet_name ) const
@@ -103,14 +111,12 @@ namespace beekeeper {
     return wallet_directory / ( wallet_name + file_ext );
   }
 
-  bool singleton_beekeeper::started() const
-  {
-    return instance_started;
-  }
-
   void singleton_beekeeper::save_connection_details( const collector_t& values )
   {
-    auto _json = fc::json::to_string( values );
-    write_to_file( connection_file, _json );
+    if( instance_started )
+    {
+      auto _json = fc::json::to_string( values );
+      write_to_file( connection_file, _json );
+    }
   }
 }
