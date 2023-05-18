@@ -27,12 +27,9 @@ void test_get_account_history_reversible( const condenser_api_reversible_fixture
     ilog( "${n} operation(s) in account ${account} history", ("n", ah1.history.size())("account", account_name) );
 
     // For each event (operation) in account history ...
-    for (const auto& it : ah1.history)
-    {
-      ilog("ah op: ${op}", ("op", it));
-    }
     for(const auto [actual, expected] : boost::combine(ah1.history, expected_for_account))
     {
+      ilog("ah op: ${op}", ("op", actual));
       // Compare operations in their serialized form with expected patterns:
       BOOST_REQUIRE_EQUAL( expected, fc::json::to_string(actual) );
     }
