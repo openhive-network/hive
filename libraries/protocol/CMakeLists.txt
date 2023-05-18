@@ -60,11 +60,11 @@ add_library( hive_protocol STATIC ${SOURCES} )
 target_link_libraries( hive_protocol PUBLIC hive_schema_core fc_core )
 
 target_link_libraries ( hive_protocol PUBLIC
-  $<IF:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>, hive_schema_shared_boost, hive_schema>
+   $<IF:$<OR:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,MODULE_LIBRARY>>, hive_schema_shared_boost, hive_schema>
 )
 
 target_link_libraries ( hive_protocol PUBLIC
-  $<IF:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>, fc_shared_boost, fc>
+$<IF:$<OR:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,MODULE_LIBRARY>>, fc_shared_boost, fc>
 )
 
 target_include_directories( hive_protocol
