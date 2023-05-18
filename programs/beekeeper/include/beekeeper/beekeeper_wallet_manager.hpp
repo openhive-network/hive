@@ -2,6 +2,7 @@
 
 #include <beekeeper/beekeeper_wallet_base.hpp>
 #include <beekeeper/singleton_beekeeper.hpp>
+#include <beekeeper/time_manager.hpp>
 
 #include <chrono>
 #include <thread>
@@ -16,45 +17,6 @@ struct wallet_details
 {
   std::string name;
   bool unlocked = false;
-};
-
-struct info
-{
-  std::string now;
-  std::string timeout_time;
-};
-
-class time_manager
-{
-   private:
-
-      using timepoint_t = std::chrono::time_point<std::chrono::system_clock>;
-      using method_type = std::function<void()>;
-
-      std::chrono::seconds timeout  = std::chrono::seconds::max(); ///< how long to wait before calling lock_all()
-      timepoint_t timeout_time      = timepoint_t::max(); ///< when to call lock_all()
-
-      bool stop_requested = false;
-
-      method_type lock_method;
-      method_type notification_method;
-
-      std::mutex methods_mutex;
-      std::unique_ptr<std::thread> notification_thread;
-
-      void check_timeout_impl( bool allow_update_timeout_time );
-
-   public:
-
-      time_manager( method_type&& lock_method );
-      ~time_manager();
-
-      void set_timeout( const std::chrono::seconds& t );
-
-      /// Verify timeout has not occurred and reset timeout if not.
-      /// Calls lock_all() if timeout has passed.
-      void check_timeout();
-      info get_info();
 };
 
 /// Provides associate of wallet name to wallet and manages the interaction with each wallet.
@@ -186,4 +148,3 @@ private:
 } //beekeeper
 
 FC_REFLECT( beekeeper::wallet_details, (name)(unlocked) )
-FC_REFLECT( beekeeper::info, (now)(timeout_time) )
