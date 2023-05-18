@@ -294,4 +294,13 @@ void beekeeper_wallet_manager::save_connection_details( const collector_t& value
    singleton->save_connection_details( values );
 }
 
+string beekeeper_wallet_manager::create_session( const string& salt, const string& notification_server )
+{
+   return "nothing";
+}
+
+void beekeeper_wallet_manager::close_session( const string& token )
+{
+}
+
 } //beekeeper

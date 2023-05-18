@@ -35,6 +35,8 @@ class beekeeper_api_impl
       (get_public_keys)
       (sign_digest)
       (get_info)
+      (create_session)
+      (close_session)
     )
 
     beekeeper::beekeeper_wallet_manager& _wallet_mgr;
@@ -117,6 +119,17 @@ DEFINE_API_IMPL( beekeeper_api_impl, get_info )
   return _wallet_mgr.get_info();
 }
 
+DEFINE_API_IMPL( beekeeper_api_impl, create_session )
+{
+  return { _wallet_mgr.create_session( args.salt, args.notification_server ) };
+}
+
+DEFINE_API_IMPL( beekeeper_api_impl, close_session )
+{
+  _wallet_mgr.close_session( args.token );
+  return close_session_return();
+}
+
 } // detail
 
 beekeeper_wallet_api::beekeeper_wallet_api( beekeeper::beekeeper_wallet_manager& wallet_mgr ): my( new detail::beekeeper_api_impl( wallet_mgr ) )
@@ -141,6 +154,8 @@ DEFINE_LOCKLESS_APIS( beekeeper_wallet_api,
   (get_public_keys)
   (sign_digest)
   (get_info)
+  (create_session)
+  (close_session)
   )
 
 } // beekeeper

@@ -162,6 +162,20 @@ public:
 
    void save_connection_details( const collector_t& values );
 
+   /** Create a session by token generating. That token is used in every endpoint that requires unlocking wallet.
+    *
+    * @param salt random data that is used as an additional input so as to create token. Can be empty.
+    * @param notification_server a server attached to given session. It's used to receive notifications. Can be empty.
+    * @returns a token that is attached to newly created session
+    */
+   string create_session( const string& salt, const string& notification_server );
+
+   /** Close a session according to given token.
+    *
+    * @param token represents a session. After closing the session expires.
+    */
+   void close_session( const string& token );
+
 private:
 
    std::map<std::string, std::unique_ptr<beekeeper_wallet_base>> wallets;

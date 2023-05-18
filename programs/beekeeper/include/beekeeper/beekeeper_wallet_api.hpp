@@ -108,6 +108,20 @@ struct sign_digest_return
 
 using get_info_args   = void_type;
 using get_info_return = info;
+
+struct create_session_args
+{
+  std::string salt;
+  std::string notification_server;
+};
+struct session_token_type
+{
+  std::string token;
+};
+using create_session_return = session_token_type;
+using close_session_args = session_token_type;
+using close_session_return = void_type;
+
 class beekeeper_wallet_api
 {
   public:
@@ -129,6 +143,8 @@ class beekeeper_wallet_api
       (get_public_keys)
       (sign_digest)
       (get_info)
+      (create_session)
+      (close_session)
     )
 
   private:
@@ -150,3 +166,5 @@ FC_REFLECT( beekeeper::list_keys_return, (keys) )
 FC_REFLECT( beekeeper::get_public_keys_return, (keys) )
 FC_REFLECT( beekeeper::sign_digest_args, (digest)(public_key) )
 FC_REFLECT( beekeeper::sign_digest_return, (signature) )
+FC_REFLECT( beekeeper::create_session_args, (salt)(notification_server) )
+FC_REFLECT( beekeeper::session_token_type, (token) )
