@@ -1,5 +1,6 @@
 #include <beekeeper/beekeeper_wallet_manager.hpp>
 #include <beekeeper/beekeeper_wallet.hpp>
+#include <beekeeper/token_generator.hpp>
 
 #include <appbase/application.hpp>
 
@@ -296,7 +297,7 @@ void beekeeper_wallet_manager::save_connection_details( const collector_t& value
 
 string beekeeper_wallet_manager::create_session( const string& salt, const string& notification_server )
 {
-   return "nothing";
+  return token_generator::generate_token( salt, 32/*length*/ );
 }
 
 void beekeeper_wallet_manager::close_session( const string& token )
