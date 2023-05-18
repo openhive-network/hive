@@ -2,7 +2,7 @@
 
 #include <beekeeper/beekeeper_wallet_base.hpp>
 #include <beekeeper/singleton_beekeeper.hpp>
-#include <beekeeper/time_manager.hpp>
+#include <beekeeper/session_manager.hpp>
 
 #include <chrono>
 #include <thread>
@@ -116,13 +116,8 @@ public:
    /// @return The public key of the created key
    string create_key(const std::string& name);
 
-   /// Takes ownership of a wallet to use
-   void own_and_use_wallet(const string& name, std::unique_ptr<beekeeper_wallet_base>&& wallet);
-
    /// @return Current time and timeout time
    info get_info();
-
-   void save_connection_details( const collector_t& values );
 
    /** Create a session by token generating. That token is used in every endpoint that requires unlocking wallet.
     *
@@ -138,10 +133,12 @@ public:
     */
    void close_session( const string& token );
 
+   void save_connection_details( const collector_t& values );
+
 private:
 
    std::map<std::string, std::unique_ptr<beekeeper_wallet_base>> wallets;
-   time_manager time;
+   session_manager sessions;
    std::unique_ptr<singleton_beekeeper> singleton;
 };
 

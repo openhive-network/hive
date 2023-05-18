@@ -9,6 +9,8 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper
                       singleton_beekeeper.cpp
                       token_generator.cpp
                       time_manager.cpp
+                      session.cpp
+                      session_manager.cpp
                       LIBRARIES appbase webserver_plugin hive_utilities
 )
 

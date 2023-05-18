@@ -8,7 +8,7 @@ namespace beekeeper {
 
 namespace bfs = boost::filesystem;
 
-time_manager::time_manager( method_type&& lock_method )
+time_manager::time_manager( types::method_type&& lock_method )
                :  lock_method( lock_method ),
                   notification_method( [](){ hive::notify_hived_status("Attempt of closing all wallets"); } )
 {

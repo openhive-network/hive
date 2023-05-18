@@ -18,6 +18,8 @@ file(GLOB UNIT_TESTS
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/singleton_beekeeper.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/token_generator.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/time_manager.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/session.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/session_manager.cpp
 )
 
 include(BoostTestTargets.cmake)
