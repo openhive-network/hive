@@ -189,11 +189,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   // BOOST_CHECK(find(pks.cbegin(), pks.cend(), pkey2.get_public_key()) != pks.cend());
 
   BOOST_CHECK_EQUAL(3u, wm.get_public_keys(_token).size());
-  wm.set_timeout(_token, chrono::seconds(0));
+  wm.set_timeout(_token, 0);
   BOOST_CHECK_THROW(wm.get_public_keys(_token), fc::exception);
   BOOST_CHECK_THROW(wm.list_keys(_token, "test", pw), fc::exception);
 
-  wm.set_timeout(_token, chrono::seconds(15));
+  wm.set_timeout(_token, 15);
 
   wm.create(_token, "testgen");
   wm.create_key(_token, "testgen");

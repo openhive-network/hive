@@ -39,7 +39,7 @@ class beekeeper_app
             ("wallet-dir", bpo::value<boost::filesystem::path>()->default_value("."),
               "The path of the wallet files (absolute path or relative to application data dir)")
 
-            ("unlock-timeout", bpo::value<int64_t>()->default_value(900),
+            ("unlock-timeout", bpo::value<uint64_t>()->default_value(900),
               "Timeout for unlocked wallet in seconds (default 900 (15 minutes)). "
               "Wallets will automatically lock after specified number of seconds of inactivity. "
               "Activity is defined as any wallet command e.g. list-wallets.")
@@ -73,19 +73,16 @@ class beekeeper_app
           if( !bfs::exists( _dir ) )
               bfs::create_directories( _dir );
 
-          if( !wallet_manager_ptr->start( _dir ) )
-            return { false, "" };
-
           FC_ASSERT( _args.count("unlock-timeout") );
-          auto _timeout = _args.at("unlock-timeout").as<int64_t>();
-          FC_ASSERT( _timeout > 0, "Please specify a positive timeout ${t}", ("t", _timeout));
-          std::chrono::seconds _t( _timeout );
+          auto _timeout = _args.at("unlock-timeout").as<uint64_t>();
+
+          if( !wallet_manager_ptr->start( _dir, _timeout ) )
+            return { false, "" };
 
           FC_ASSERT( _args.count("salt") );
           auto _salt = _args.at("salt").as<std::string>();
 
           auto _token = wallet_manager_ptr->create_session( _salt, _notification );
-          wallet_manager_ptr->set_timeout( _token, _t );
 
           FC_ASSERT( _args.count("backtrace") );
           if( _args.at( "backtrace" ).as<std::string>() == "yes" )
