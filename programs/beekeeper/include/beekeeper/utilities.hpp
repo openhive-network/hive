@@ -7,6 +7,12 @@
 
 namespace beekeeper {
 
+struct wallet_details
+{
+  std::string name;
+  bool unlocked = false;
+};
+
 struct info
 {
   std::string now;
@@ -21,4 +27,5 @@ namespace types
 
 }
 
+FC_REFLECT( beekeeper::wallet_details, (name)(unlocked) )
 FC_REFLECT( beekeeper::info, (now)(timeout_time) )

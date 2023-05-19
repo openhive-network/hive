@@ -1,23 +1,15 @@
 #pragma once
 
 #include <beekeeper/beekeeper_wallet_base.hpp>
-#include <beekeeper/singleton_beekeeper.hpp>
+
 #include <beekeeper/session_manager.hpp>
+#include <beekeeper/wallet_manager_impl.hpp>
 
-#include <chrono>
-#include <thread>
-
-namespace fc { class variant; }
+#include <hive/utilities/notifications.hpp>
 
 namespace beekeeper {
 
 using collector_t = hive::utilities::notifications::collector_t;
-
-struct wallet_details
-{
-  std::string name;
-  bool unlocked = false;
-};
 
 /// Provides associate of wallet name to wallet and manages the interaction with each wallet.
 ///
@@ -25,12 +17,12 @@ struct wallet_details
 /// No const methods because timeout may cause lock_all() to be called.
 class beekeeper_wallet_manager {
 public:
-   beekeeper_wallet_manager();
+   beekeeper_wallet_manager(){}
    beekeeper_wallet_manager(const beekeeper_wallet_manager&) = delete;
    beekeeper_wallet_manager(beekeeper_wallet_manager&&) = delete;
    beekeeper_wallet_manager& operator=(const beekeeper_wallet_manager&) = delete;
    beekeeper_wallet_manager& operator=(beekeeper_wallet_manager&&) = delete;
-   ~beekeeper_wallet_manager();
+   ~beekeeper_wallet_manager(){}
 
    /// Set the path for location of wallet files.
    /// @param command_line_wallet_dir path to override default ./ location of wallet files.
@@ -137,11 +129,9 @@ private:
 
    uint64_t unlock_timeout = 900;
 
-   std::map<std::string, std::unique_ptr<beekeeper_wallet_base>> wallets;
+   std::unique_ptr<wallet_manager_impl> wallet_impl;
+
    session_manager sessions;
-   std::unique_ptr<singleton_beekeeper> singleton;
 };
 
 } //beekeeper
-
-FC_REFLECT( beekeeper::wallet_details, (name)(unlocked) )
