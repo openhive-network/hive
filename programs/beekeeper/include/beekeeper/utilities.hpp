@@ -15,7 +15,8 @@ struct info
 
 namespace types
 {
-  using method_type = std::function<void()>;
+  using notification_method_type = std::function<void()>;
+  using lock_method_type = std::function<void(const std::string&)>;
 }
 
 }

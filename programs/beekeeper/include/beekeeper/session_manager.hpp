@@ -21,7 +21,7 @@ class session_manager
 
   public:
 
-    std::string create_session( const std::string& salt, const std::string& notification_server, types::method_type&& lock_method );
+    std::string create_session( const std::string& salt, const std::string& notifications_endpoint, types::lock_method_type&& lock_method );
     void close_session( const std::string& token );
 
     void set_timeout( const std::chrono::seconds& t, const std::string& token );
