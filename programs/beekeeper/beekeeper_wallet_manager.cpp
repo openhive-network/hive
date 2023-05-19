@@ -1,5 +1,7 @@
 #include <beekeeper/beekeeper_wallet_manager.hpp>
 
+#include <appbase/application.hpp>
+
 namespace beekeeper {
 
 bool beekeeper_wallet_manager::start( const boost::filesystem::path& command_line_wallet_dir, uint64_t command_line_unlock_timeout )
@@ -133,7 +135,11 @@ string beekeeper_wallet_manager::create_session( const string& salt, const strin
 
 void beekeeper_wallet_manager::close_session( const string& token )
 {
-  sessions.close_session( token );
+  if( sessions.close_session( token ) )
+  {
+    //Close beekeeper, because there aren't any sessions.
+    std::raise(SIGINT);
+  }
 }
 
 } //beekeeper
