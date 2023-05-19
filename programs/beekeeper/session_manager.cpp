@@ -25,11 +25,10 @@ namespace beekeeper {
 
   void session_manager::close_session( const std::string& token )
   {
-    auto _found = get_session( token );
-    sessions.erase( _found );
+    sessions.erase( get_session( token ) );
   }
 
-  void session_manager::set_timeout( const std::chrono::seconds& t, const std::string& token )
+  void session_manager::set_timeout( const std::string& token, const std::chrono::seconds& t )
   {
     get_session( token )->second->set_timeout( t );
   }

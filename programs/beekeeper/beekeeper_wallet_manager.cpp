@@ -35,15 +35,17 @@ beekeeper_wallet_manager::~beekeeper_wallet_manager()
 {
 }
 
-bool beekeeper_wallet_manager::start( const boost::filesystem::path& p )
+bool beekeeper_wallet_manager::start( const boost::filesystem::path& command_line_wallet_dir, uint64_t command_line_unlock_timeout )
 {
-  singleton = std::make_unique<singleton_beekeeper>( p );
+  unlock_timeout = command_line_unlock_timeout;
+
+  singleton = std::make_unique<singleton_beekeeper>( command_line_wallet_dir );
   return singleton->start();
 }
 
-void beekeeper_wallet_manager::set_timeout( const std::string& token, const std::chrono::seconds& t )
+void beekeeper_wallet_manager::set_timeout( const std::string& token, uint64_t secs )
 {
-  sessions.set_timeout( t, token );
+  sessions.set_timeout( token, std::chrono::seconds( secs ) );
 }
 
 std::string beekeeper_wallet_manager::create( const std::string& token, const std::string& name, fc::optional<std::string> password )
@@ -251,7 +253,10 @@ info beekeeper_wallet_manager::get_info( const std::string& token )
 
 string beekeeper_wallet_manager::create_session( const string& salt, const string& notifications_endpoint )
 {
-  return sessions.create_session( salt, notifications_endpoint, [this]( const std::string& token ){ lock_all( token ); } );
+  auto _token = sessions.create_session( salt, notifications_endpoint, [this]( const std::string& token ){ lock_all( token ); } );
+  set_timeout( _token, unlock_timeout );
+
+  return _token;
 }
 
 void beekeeper_wallet_manager::close_session( const string& token )

@@ -33,17 +33,15 @@ public:
    ~beekeeper_wallet_manager();
 
    /// Set the path for location of wallet files.
-   /// @param p path to override default ./ location of wallet files.
-   bool start( const boost::filesystem::path& p );
+   /// @param command_line_wallet_dir path to override default ./ location of wallet files.
+   /// @param command_line_unlock_timeout timeout for unlocked wallet [s]
+   bool start( const boost::filesystem::path& command_line_wallet_dir, uint64_t command_line_unlock_timeout );
 
    /// Set the timeout for locking all wallets.
    /// If set then after t seconds of inactivity then lock_all().
    /// Activity is defined as any beekeeper_wallet_manager method call below.
-   void set_timeout( const std::string& token, const std::chrono::seconds& t );
-
-   /// @see beekeeper_wallet_manager::set_timeout(const std::chrono::seconds& t)
    /// @param secs The timeout in seconds.
-   void set_timeout( const std::string& token, int64_t secs ) { set_timeout( token, std::chrono::seconds(secs) ); }
+   void set_timeout( const std::string& token, uint64_t secs );
 
    /// Sign digest with the private keys specified via their public keys.
    /// @param digest the digest to sign.
@@ -136,6 +134,8 @@ public:
    void save_connection_details( const collector_t& values );
 
 private:
+
+   uint64_t unlock_timeout = 900;
 
    std::map<std::string, std::unique_ptr<beekeeper_wallet_base>> wallets;
    session_manager sessions;
