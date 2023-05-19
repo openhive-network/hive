@@ -2,8 +2,8 @@
 
 namespace beekeeper {
 
-  session::session( const std::string& notification_server, types::method_type&& lock_method )
-          : notification_server( notification_server ), time( std::move( lock_method ) )
+  session::session( const std::string& token, const std::string& notifications_endpoint, types::lock_method_type&& lock_method )
+          : notifications_endpoint( notifications_endpoint ), time( token, std::move( lock_method ) )
   {
 
   }

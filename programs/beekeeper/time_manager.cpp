@@ -8,8 +8,9 @@ namespace beekeeper {
 
 namespace bfs = boost::filesystem;
 
-time_manager::time_manager( types::method_type&& lock_method )
-               :  lock_method( lock_method ),
+time_manager::time_manager( const std::string& token, types::lock_method_type&& lock_method )
+               :  token( token ),
+                  lock_method( lock_method ),
                   notification_method( [](){ hive::notify_hived_status("Attempt of closing all wallets"); } )
 {
    notification_thread = std::make_unique<std::thread>( [this]()
@@ -46,7 +47,7 @@ void time_manager::check_timeout_impl( bool allow_update_timeout_time )
       {
          {
             std::lock_guard<std::mutex> guard( methods_mutex );
-            lock_method();
+            lock_method( token );
             notification_method();
             allow_update_timeout_time = true;
          }

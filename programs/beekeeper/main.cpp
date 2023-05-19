@@ -44,46 +44,57 @@ class beekeeper_app
               "Wallets will automatically lock after specified number of seconds of inactivity. "
               "Activity is defined as any wallet command e.g. list-wallets.")
 
-            ("backtrace", bpo::value< string >()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" )
+            ("salt", bpo::value<std::string>()->default_value(""),
+              "Random data that is used as an additional input so as to create token")
+
+            ("backtrace", bpo::value<std::string>()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" )
             ;
     }
 
-    bool initialize_program_options()
+    std::pair<bool, std::string> initialize_program_options()
     {
       ilog("initializing options");
       try {
           const boost::program_options::variables_map& _args = app.get_args();
           hive::utilities::notifications::setup_notifications( _args );
 
-          if (_args.count("wallet-dir"))
+          std::string _notification;
+          if( _args.count("notifications-endpoint") )
           {
-            auto dir = _args.at("wallet-dir").as<boost::filesystem::path>();
-            if (dir.is_relative())
-                dir = app.data_dir() / dir;
-            if( !bfs::exists(dir) )
-                bfs::create_directories(dir);
-
-            if( !wallet_manager_ptr->start(dir) )
-              return false;
+            auto _notifications = _args.at("notifications-endpoint").as<std::vector<std::string>>();
+            if( !_notifications.empty() )
+              _notification = *_notifications.begin();
           }
 
-          if (_args.count("unlock-timeout"))
+          FC_ASSERT( _args.count("wallet-dir") );
+          auto _dir = _args.at("wallet-dir").as<boost::filesystem::path>();
+          if(_dir.is_relative() )
+              _dir = app.data_dir() / _dir;
+          if( !bfs::exists( _dir ) )
+              bfs::create_directories( _dir );
+
+          if( !wallet_manager_ptr->start( _dir ) )
+            return { false, "" };
+
+          FC_ASSERT( _args.count("unlock-timeout") );
+          auto _timeout = _args.at("unlock-timeout").as<int64_t>();
+          FC_ASSERT( _timeout > 0, "Please specify a positive timeout ${t}", ("t", _timeout));
+          std::chrono::seconds _t( _timeout );
+
+          FC_ASSERT( _args.count("salt") );
+          auto _salt = _args.at("salt").as<std::string>();
+
+          auto _token = wallet_manager_ptr->create_session( _salt, _notification );
+          wallet_manager_ptr->set_timeout( _token, _t );
+
+          FC_ASSERT( _args.count("backtrace") );
+          if( _args.at( "backtrace" ).as<std::string>() == "yes" )
           {
-            auto timeout = _args.at("unlock-timeout").as<int64_t>();
-            FC_ASSERT(timeout > 0, "Please specify a positive timeout ${t}", ("t", timeout));
-            std::chrono::seconds t(timeout);
-            wallet_manager_ptr->set_timeout(t);
+            fc::print_stacktrace_on_segfault();
+            ilog( "Backtrace on segfault is enabled." );
           }
 
-          if( _args.count("backtrace") )
-          {
-            if( _args.at( "backtrace" ).as< string >() == "yes" )
-            {
-              fc::print_stacktrace_on_segfault();
-              ilog( "Backtrace on segfault is enabled." );
-            }
-          }
-          return true;
+          return { true, _token };
       } FC_LOG_AND_RETHROW()
     }
 
@@ -106,10 +117,11 @@ class beekeeper_app
         wallet_manager_ptr  = std::make_unique<beekeeper::beekeeper_wallet_manager>();
         api_ptr             = std::make_unique<beekeeper::beekeeper_wallet_api>( get_wallet_manager() );
 
-        if( !initialize_program_options() )
+        auto _initialization = initialize_program_options();
+        if( !_initialization.first )
           return { init_status, true };
 
-        hive::notify_hived_status("starting");
+        hive::notify_hived_status( "starting with token: " + _initialization.second );
         return { appbase::initialization_result::result::ok, false };
       }
     }
