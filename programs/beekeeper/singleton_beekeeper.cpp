@@ -166,7 +166,7 @@ namespace beekeeper {
   {
     if( instance_started )
     {
-      auto _json = fc::json::to_string( values );
+      auto _json = fc::json::to_string( values.value );
       write_to_file( connection_file, _json );
     }
   }
