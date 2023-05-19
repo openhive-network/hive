@@ -77,9 +77,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   constexpr auto key2 = "5Ju5RTcVDo35ndtzHioPMgebvBM6LkJ6tvuU6LTNQv8yaz3ggZr";
   constexpr auto key3 = "5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3";
 
-  const std::string _token = "abc";
-
   beekeeper_wallet_manager wm;
+
+  BOOST_CHECK( wm.start( ".", 900 ) );
+  std::string _token = wm.create_session( "this is salt", "127.0.0.1:666" );
+
   BOOST_CHECK_EQUAL(0u, wm.list_wallets(_token).size());
   BOOST_CHECK_THROW(wm.get_public_keys(_token), fc::exception);
   BOOST_CHECK_NO_THROW(wm.lock_all(_token));
@@ -227,9 +229,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test) {
   try {
     if (fc::exists("test.wallet")) fc::remove("test.wallet");
 
-    const std::string _token = "xyz";
-
     beekeeper_wallet_manager wm;
+
+    BOOST_CHECK( wm.start( ".", 900 ) );
+    std::string _token = wm.create_session( "this is salt", "127.0.0.1:666" );
+
     wm.create(_token, "test");
     constexpr auto key1 = "5JktVNHnRX48BUdtewU7N1CyL4Z886c42x7wYW7XhNWkDQRhdcS";
     wm.import_key(_token, "test", key1);
