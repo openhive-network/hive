@@ -1,46 +1,15 @@
 #include <beekeeper/beekeeper_wallet_manager.hpp>
-#include <beekeeper/beekeeper_wallet.hpp>
-
-#include <appbase/application.hpp>
-
-#include <fc/filesystem.hpp>
-
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
 
 namespace beekeeper {
-
-namespace bfs = boost::filesystem;
-
-constexpr auto password_prefix = "PW";
-
-std::string gen_password()
-{
-   auto key = private_key_type::generate();
-   return password_prefix + key.key_to_wif();
-}
-
-bool valid_filename(const string& name)
-{
-   if (name.empty()) return false;
-   if (std::find_if(name.begin(), name.end(), !boost::algorithm::is_alnum() && !boost::algorithm::is_any_of("._-")) != name.end()) return false;
-   return bfs::path(name).filename().string() == name;
-}
-
-beekeeper_wallet_manager::beekeeper_wallet_manager()
-{
-}
-
-beekeeper_wallet_manager::~beekeeper_wallet_manager()
-{
-}
 
 bool beekeeper_wallet_manager::start( const boost::filesystem::path& command_line_wallet_dir, uint64_t command_line_unlock_timeout )
 {
   unlock_timeout = command_line_unlock_timeout;
 
-  singleton = std::make_unique<singleton_beekeeper>( command_line_wallet_dir );
-  return singleton->start();
+  wallet_impl = std::make_unique<wallet_manager_impl>( command_line_wallet_dir );
+
+  FC_ASSERT( wallet_impl );
+  return wallet_impl->start();
 }
 
 void beekeeper_wallet_manager::set_timeout( const std::string& token, uint64_t secs )
@@ -50,205 +19,108 @@ void beekeeper_wallet_manager::set_timeout( const std::string& token, uint64_t s
 
 std::string beekeeper_wallet_manager::create( const std::string& token, const std::string& name, fc::optional<std::string> password )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
-   FC_ASSERT( singleton );
-
-   auto wallet_filename = singleton->create_wallet_filename( name );
-
-   FC_ASSERT( !fc::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
-
-   if(!password)
-      password = gen_password();
-
-   wallet_data d;
-   auto wallet = make_unique<beekeeper_wallet>(d);
-   wallet->set_password(*password);
-   wallet->set_wallet_filename(wallet_filename.string());
-   wallet->unlock(*password);
-   wallet->lock();
-   wallet->unlock(*password);
-
-   // Explicitly save the wallet file here, to ensure it now exists.
-   wallet->save_wallet_file();
-
-   // If we have name in our map then remove it since we want the emplace below to replace.
-   // This can happen if the wallet file is removed while eos-walletd is running.
-   auto it = wallets.find(name);
-   if (it != wallets.end())
-   {
-      wallets.erase(it);
-   }
-   wallets.emplace(name, std::move(wallet));
-
-   return *password;
+  FC_ASSERT( wallet_impl );
+  return wallet_impl->create( token, name, password );
 }
 
 void beekeeper_wallet_manager::open( const std::string& token, const std::string& name )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
-   FC_ASSERT( singleton );
-
-   wallet_data d;
-   auto wallet = std::make_unique<beekeeper_wallet>(d);
-   auto wallet_filename = singleton->create_wallet_filename( name );
-   wallet->set_wallet_filename(wallet_filename.string());
-   FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));
-
-   // If we have name in our map then remove it since we want the emplace below to replace.
-   // This can happen if the wallet file is added while eos-walletd is running.
-   auto it = wallets.find(name);
-   if (it != wallets.end())
-   {
-      wallets.erase(it);
-   }
-   wallets.emplace(name, std::move(wallet));
+  FC_ASSERT( wallet_impl );
+  wallet_impl->open( token, name );
 }
 
 std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::string& token )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   std::vector<wallet_details> result;
-   for (const auto& i : wallets)
-   {
-      result.emplace_back( wallet_details{ i.first, !i.second->is_locked() } );
-   }
-   return result;
+  FC_ASSERT( wallet_impl );
+  return wallet_impl->list_wallets( token );
 }
 
 map<std::string, std::string> beekeeper_wallet_manager::list_keys( const std::string& token, const string& name, const string& pw )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
-   auto& w = wallets.at(name);
-   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
-   w->check_password(pw); //throws if bad password
-   return w->list_keys();
+  FC_ASSERT( wallet_impl );
+  return wallet_impl->list_keys( token, name, pw );
 }
 
 flat_set<std::string> beekeeper_wallet_manager::get_public_keys( const std::string& token )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   FC_ASSERT( !wallets.empty(), "You don't have any wallet!");
-   flat_set<std::string> result;
-   bool is_all_wallet_locked = true;
-   for (const auto& i : wallets)
-   {
-      if (!i.second->is_locked())
-      {
-         result.merge(i.second->list_public_keys());
-      }
-      is_all_wallet_locked &= i.second->is_locked();
-   }
-   FC_ASSERT( !is_all_wallet_locked, "You don't have any unlocked wallet!");
-   return result;
+  FC_ASSERT( wallet_impl );
+  return wallet_impl->get_public_keys( token );
 }
 
 
 void beekeeper_wallet_manager::lock_all( const std::string& token )
 {
-   // no call to check_timeout since we are locking all anyway
-   for (auto& i : wallets)
-   {
-      if (!i.second->is_locked())
-      {
-         i.second->lock();
-      }
-   }
+  FC_ASSERT( wallet_impl );
+  wallet_impl->lock_all( token );
 }
 
 void beekeeper_wallet_manager::lock( const std::string& token, const std::string& name )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
-   auto& w = wallets.at(name);
-   if (w->is_locked())
-   {
-      return;
-   }
-   w->lock();
+  FC_ASSERT( wallet_impl );
+  wallet_impl->lock( token, name );
 }
 
 void beekeeper_wallet_manager::unlock( const std::string& token, const std::string& name, const std::string& password )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   if (wallets.count(name) == 0)
-   {
-      open( token, name );
-   }
-   auto& w = wallets.at(name);
-   FC_ASSERT( w->is_locked(), "Wallet is already unlocked: ${w}", ("w", name));
-
-   w->unlock(password);
+  FC_ASSERT( wallet_impl );
+  wallet_impl->unlock( token, name, password );
 }
 
 string beekeeper_wallet_manager::import_key( const std::string& token, const std::string& name, const std::string& wif_key )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
-
-   auto& w = wallets.at(name);
-   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
-
-   return w->import_key(wif_key);
+  FC_ASSERT( wallet_impl );
+  return wallet_impl->import_key( token, name, wif_key );
 }
 
 void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& key )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
-
-   auto& w = wallets.at(name);
-   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
-
-   w->check_password(password); //throws if bad password
-   w->remove_key(key);
+  FC_ASSERT( wallet_impl );
+  wallet_impl->remove_key( token, name, password, key );
 }
 
 string beekeeper_wallet_manager::create_key( const std::string& token, const std::string& name )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
-
-   auto& w = wallets.at(name);
-   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
-
-   return w->create_key();
+  FC_ASSERT( wallet_impl );
+  return wallet_impl->create_key( token, name );
 }
 
 signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const digest_type& digest, const public_key_type& key )
 {
-   sessions.check_timeout( token );
+  sessions.check_timeout( token );
 
-   try {
-      for (const auto& i : wallets)
-      {
-         if (!i.second->is_locked())
-         {
-            std::optional<signature_type> sig = i.second->try_sign_digest(digest, key);
-            if (sig)
-               return *sig;
-         }
-      }
-   } FC_LOG_AND_RETHROW();
-
-   FC_ASSERT( false, "Public key not found in unlocked wallets ${k}", ("k", key));
+  FC_ASSERT( wallet_impl );
+  return wallet_impl->sign_digest( token, digest, key );
 }
 
 info beekeeper_wallet_manager::get_info( const std::string& token )
 {
-   return sessions.get_info( token );
+  return sessions.get_info( token );
+}
+
+void beekeeper_wallet_manager::save_connection_details( const collector_t& values )
+{
+  FC_ASSERT( wallet_impl );
+  wallet_impl->save_connection_details( values );
 }
 
 string beekeeper_wallet_manager::create_session( const string& salt, const string& notifications_endpoint )
@@ -262,12 +134,6 @@ string beekeeper_wallet_manager::create_session( const string& salt, const strin
 void beekeeper_wallet_manager::close_session( const string& token )
 {
   sessions.close_session( token );
-}
-
-void beekeeper_wallet_manager::save_connection_details( const collector_t& values )
-{
-   FC_ASSERT( singleton );
-   singleton->save_connection_details( values );
 }
 
 } //beekeeper
