@@ -19,22 +19,27 @@ namespace detail
 using hive::plugins::json_rpc::void_type;
 using beekeeper::signature_type;
 
-struct wallet_args
+struct session_token_type
+{
+  std::string token;
+};
+
+struct wallet_args: public session_token_type
 {
   std::string wallet_name;
 };
-struct wallet_password_args
+struct wallet_password_args: public session_token_type
 {
   std::string wallet_name;
   std::string password;
 };
 
-struct create_args
+struct create_args: public session_token_type
 {
   std::string wallet_name;
   fc::optional<std::string> password{};
 };
-struct create_return
+struct create_return: public session_token_type
 {
   std::string password;
 };
@@ -42,13 +47,13 @@ struct create_return
 using open_args   = wallet_args;
 using open_return = void_type;
 
-struct set_timeout_args
+struct set_timeout_args: public session_token_type
 {
   int64_t seconds;
 };
 using set_timeout_return = void_type;
 
-using lock_all_args   = void_type;
+using lock_all_args   = session_token_type;
 using lock_all_return = void_type;
 
 using lock_args   = wallet_args;
@@ -57,7 +62,7 @@ using lock_return = void_type;
 using unlock_args   = wallet_password_args;
 using unlock_return = void_type;
 
-struct remove_key_args
+struct remove_key_args: public session_token_type
 {
   std::string wallet_name;
   std::string password;
@@ -71,14 +76,14 @@ struct create_key_return
   std::string public_key;
 };
 
-struct import_key_args
+struct import_key_args: public session_token_type
 {
   std::string wallet_name;
   std::string wif_key;
 };
 using import_key_return = create_key_return;
 
-using list_wallets_args = void_type;
+using list_wallets_args = session_token_type;
 struct list_wallets_return
 {
   std::vector<wallet_details> wallets;
@@ -90,13 +95,13 @@ struct list_keys_return
   map<std::string, std::string> keys;
 };
 
-using get_public_keys_args = void_type;
+using get_public_keys_args = session_token_type;
 struct get_public_keys_return
 {
   flat_set<std::string> keys;
 };
 
-struct sign_digest_args
+struct sign_digest_args: public session_token_type
 {
   std::string digest;
   std::string public_key;
@@ -106,17 +111,13 @@ struct sign_digest_return
   signature_type signature;
 };
 
-using get_info_args   = void_type;
+using get_info_args   = session_token_type;
 using get_info_return = info;
 
 struct create_session_args
 {
   std::string salt;
-  std::string notification_server;
-};
-struct session_token_type
-{
-  std::string token;
+  std::string notifications_endpoint;
 };
 using create_session_return = session_token_type;
 using close_session_args = session_token_type;
@@ -153,18 +154,18 @@ class beekeeper_wallet_api
 
 } // beekeeper
 
-FC_REFLECT( beekeeper::wallet_args, (wallet_name) )
-FC_REFLECT( beekeeper::wallet_password_args, (wallet_name)(password) )
-FC_REFLECT( beekeeper::create_args, (wallet_name)(password) )
+FC_REFLECT( beekeeper::session_token_type, (token) )
+FC_REFLECT_DERIVED( beekeeper::wallet_args, (beekeeper::session_token_type), (wallet_name) )
+FC_REFLECT_DERIVED( beekeeper::wallet_password_args, (beekeeper::session_token_type), (wallet_name)(password) )
+FC_REFLECT_DERIVED( beekeeper::create_args, (beekeeper::session_token_type), (wallet_name)(password) )
 FC_REFLECT( beekeeper::create_return, (password) )
-FC_REFLECT( beekeeper::set_timeout_args, (seconds) )
-FC_REFLECT( beekeeper::import_key_args, (wallet_name)(wif_key) )
-FC_REFLECT( beekeeper::remove_key_args, (wallet_name)(password)(public_key) )
+FC_REFLECT_DERIVED( beekeeper::set_timeout_args, (beekeeper::session_token_type), (seconds) )
+FC_REFLECT_DERIVED( beekeeper::import_key_args, (beekeeper::session_token_type), (wallet_name)(wif_key) )
+FC_REFLECT_DERIVED( beekeeper::remove_key_args, (beekeeper::session_token_type), (wallet_name)(password)(public_key) )
 FC_REFLECT( beekeeper::create_key_return, (public_key) )
 FC_REFLECT( beekeeper::list_wallets_return, (wallets) )
 FC_REFLECT( beekeeper::list_keys_return, (keys) )
 FC_REFLECT( beekeeper::get_public_keys_return, (keys) )
-FC_REFLECT( beekeeper::sign_digest_args, (digest)(public_key) )
+FC_REFLECT_DERIVED( beekeeper::sign_digest_args, (beekeeper::session_token_type), (digest)(public_key) )
 FC_REFLECT( beekeeper::sign_digest_return, (signature) )
-FC_REFLECT( beekeeper::create_session_args, (salt)(notification_server) )
-FC_REFLECT( beekeeper::session_token_type, (token) )
+FC_REFLECT( beekeeper::create_session_args, (salt)(notifications_endpoint) )

@@ -21,8 +21,10 @@ class time_manager
 
       bool stop_requested = false;
 
-      types::method_type lock_method;
-      types::method_type notification_method;
+      const std::string token;
+
+      types::lock_method_type lock_method;
+      types::notification_method_type notification_method;
 
       std::mutex methods_mutex;
       std::unique_ptr<std::thread> notification_thread;
@@ -31,7 +33,7 @@ class time_manager
 
    public:
 
-      time_manager( types::method_type&& lock_method );
+      time_manager( const std::string& token, types::lock_method_type&& lock_method );
       ~time_manager();
 
       void set_timeout( const std::chrono::seconds& t );

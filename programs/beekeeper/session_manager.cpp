@@ -14,11 +14,11 @@ namespace beekeeper {
     return _found;
   }
 
-  std::string session_manager::create_session( const std::string& salt, const std::string& notification_server, types::method_type&& lock_method )
+  std::string session_manager::create_session( const std::string& salt, const std::string& notifications_endpoint, types::lock_method_type&& lock_method )
   {
     auto _token = token_generator::generate_token( salt, token_length );
 
-    sessions.emplace( _token, std::make_unique<session>( notification_server, std::move( lock_method ) ) );
+    sessions.emplace( _token, std::make_unique<session>( _token, notifications_endpoint, std::move( lock_method ) ) );
 
     return _token;
   }
