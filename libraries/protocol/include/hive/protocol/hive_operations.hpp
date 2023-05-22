@@ -1273,6 +1273,7 @@ FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extension
 #endif
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
+FC_REFLECT_TYPENAME( hive::protocol::recurrent_transfer_extension )
 FC_REFLECT( hive::protocol::witness_block_approve_operation, (witness)(block_id) );
 FC_REFLECT( hive::protocol::recurrent_transfer_pair_id, (pair_id) );
 
