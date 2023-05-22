@@ -4,12 +4,16 @@
 
 namespace beekeeper {
 
-bool beekeeper_wallet_manager::start( const boost::filesystem::path& command_line_wallet_dir, uint64_t command_line_unlock_timeout )
+beekeeper_wallet_manager::beekeeper_wallet_manager( const boost::filesystem::path& command_line_wallet_dir, uint64_t command_line_unlock_timeout, close_all_sessions_action_method method )
+                          : close_all_sessions_action( method )
 {
   unlock_timeout = command_line_unlock_timeout;
 
   wallet_impl = std::make_unique<wallet_manager_impl>( command_line_wallet_dir );
+}
 
+bool beekeeper_wallet_manager::start()
+{
   FC_ASSERT( wallet_impl );
   return wallet_impl->start();
 }
@@ -138,8 +142,7 @@ void beekeeper_wallet_manager::close_session( const string& token )
   sessions.close_session( token );
   if( sessions.empty() )
   {
-    //Close beekeeper, because there aren't any sessions.
-    std::raise(SIGINT);
+    close_all_sessions_action();
   }
 }
 

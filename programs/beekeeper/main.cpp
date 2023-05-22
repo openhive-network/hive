@@ -25,7 +25,7 @@ namespace bfs = boost::filesystem;
 class beekeeper_app
 {
     bpo::options_description                              options;
-    std::unique_ptr<beekeeper::beekeeper_wallet_manager>  wallet_manager_ptr;
+    std::shared_ptr<beekeeper::beekeeper_wallet_manager>  wallet_manager_ptr;
     std::unique_ptr<beekeeper::beekeeper_wallet_api>      api_ptr;
 
     appbase::application&                   app;
@@ -76,7 +76,10 @@ class beekeeper_app
           FC_ASSERT( _args.count("unlock-timeout") );
           auto _timeout = _args.at("unlock-timeout").as<uint64_t>();
 
-          if( !wallet_manager_ptr->start( _dir, _timeout ) )
+          wallet_manager_ptr  = std::make_shared<beekeeper::beekeeper_wallet_manager>( _dir, _timeout );
+          api_ptr             = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr );
+
+          if( !wallet_manager_ptr->start() )
             return { false, "" };
 
           FC_ASSERT( _args.count("salt") );
@@ -111,9 +114,6 @@ class beekeeper_app
         return { init_status, true };
       else
       {
-        wallet_manager_ptr  = std::make_unique<beekeeper::beekeeper_wallet_manager>();
-        api_ptr             = std::make_unique<beekeeper::beekeeper_wallet_api>( get_wallet_manager() );
-
         auto _initialization = initialize_program_options();
         if( !_initialization.first )
           return { init_status, true };
@@ -148,11 +148,6 @@ class beekeeper_app
     {
       if( webserver_connection.connected() )
         webserver_connection.disconnect();
-    }
-
-    beekeeper::beekeeper_wallet_manager& get_wallet_manager()
-    {
-      return *wallet_manager_ptr;
     }
 
     int run( int argc, char** argv )
