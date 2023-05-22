@@ -719,6 +719,8 @@ namespace chain {
     public:
       void modern_apply_block(const std::shared_ptr<full_block_type>& full_block, pqxx::result::const_iterator& current_operation, uint32_t skip = skip_nothing );
     private:
+      void _modern_apply_block(const std::shared_ptr<full_block_type>& full_block, pqxx::result::const_iterator& current_operation);
+
       void switch_forks(item_ptr new_head);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block);
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);

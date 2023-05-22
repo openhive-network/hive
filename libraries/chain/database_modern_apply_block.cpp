@@ -59,6 +59,16 @@ namespace hive { namespace chain {
 
 void database::modern_apply_block(const std::shared_ptr<full_block_type>& full_block, pqxx::result::const_iterator& current_operation, uint32_t skip)
 {
+
+  detail::with_skip_flags( *this, skip, [&]()
+  {
+    _modern_apply_block(full_block, current_operation);
+  } );
+
+}
+
+void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_block, pqxx::result::const_iterator& current_operation)
+{
   const signed_block& block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
   block_notification note(full_block);
@@ -95,6 +105,17 @@ void database::modern_apply_block(const std::shared_ptr<full_block_type>& full_b
 
     update_blockchain_state(block, signing_witness, block_size, block_num, req_actions, opt_actions);
     process_transactions(full_block, skip);
+
+  //   for(; current_operation != operations.end() && current_operation["block_num"].as<int>() == block_num;
+  //       ++current_operation)
+  //   {
+  //     //add_operation_variant(current_operation, varbin_operations);
+  //     pqxx::binarystring bs(current_operation["bin_body"]);
+
+  //     //a string __cpp_lib_string_view
+  //     //zastosuj string view 
+
+
 
     _current_trx_in_block = -1;
     _current_op_in_trx = 0;
