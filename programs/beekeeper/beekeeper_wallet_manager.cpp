@@ -107,7 +107,7 @@ void beekeeper_wallet_manager::save_connection_details( const collector_t& value
 
 string beekeeper_wallet_manager::create_session( const string& salt, const string& notifications_endpoint )
 {
-  auto _token = sessions.create_session( salt, notifications_endpoint, [this]( const std::string& token ){ lock_all( token ); } );
+  auto _token = sessions.create_session( salt, notifications_endpoint );
   set_timeout( _token, unlock_timeout );
 
   return _token;

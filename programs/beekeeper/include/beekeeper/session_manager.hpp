@@ -10,7 +10,7 @@ class session_manager
 {
   private:
 
-    using items = std::map<std::string/*token*/, std::unique_ptr<session>>;
+    using items = std::map<std::string/*token*/, std::shared_ptr<session>>;
 
     const unsigned int token_length = 32;
 

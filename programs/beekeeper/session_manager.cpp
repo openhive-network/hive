@@ -23,13 +23,12 @@ std::string session_manager::create_session( const std::string& salt, const std:
 {
   auto _token = token_generator::generate_token( salt, token_length );
 
-  hive::utilities::notifications::setup::extend_setup_notifications( { notifications_endpoint } );
-
-  sessions.emplace( _token, std::make_unique<session>( _token, time ) );
+  std::shared_ptr<session> _session = std::make_shared<session>( notifications_endpoint, _token, time );
+  sessions.emplace( _token, _session );
 
   time->add(  _token,
               [this, _token](){ get_wallet( _token )->lock_all(); },
-              [notifications_endpoint](){ hive::notify_hived_status("Attempt of closing all wallets", notifications_endpoint); }
+              [notifications_endpoint, _session](){ hive::dynamic_notify( _session->get_notification_handler(), "Attempt of closing all wallets"); }
               );
 
   return _token;
