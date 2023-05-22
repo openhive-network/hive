@@ -10,6 +10,7 @@ def test_delegate_vesting_shares_without_voting_rights(node):
     Problem description: https://gitlab.syncad.com/hive/hive/-/issues/463
     """
     node.restart(time_offset="+0h x5")
+    node.wait_number_of_blocks(2)
     wallet = tt.Wallet(attach_to=node)
 
     stabilize_the_price(node)
@@ -29,6 +30,7 @@ def test_delegate_vesting_shares_without_voting_rights(node):
 @run_for("testnet")
 def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_rights(node):
     node.restart(time_offset="+0h x5")
+    node.wait_number_of_blocks(2)
     wallet = tt.Wallet(attach_to=node)
 
     stabilize_the_price(node)
@@ -51,6 +53,7 @@ def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_right
 @run_for("testnet")
 def test_vote_for_comment_with_vests_from_delegation_when_decline_voting_rights_is_being_executed(node):
     node.restart(time_offset="+0h x5")
+    node.wait_number_of_blocks(2)
     wallet = tt.Wallet(attach_to=node)
 
     stabilize_the_price(node)
@@ -72,6 +75,7 @@ def test_vote_for_comment_with_vests_from_delegation_when_decline_voting_rights_
 @run_for("testnet")
 def test_vote_for_comment_with_vests_from_delegation_after_creating_a_decline_voting_rights_request(node):
     node.restart(time_offset="+0h x5")
+    node.wait_number_of_blocks(2)
     wallet = tt.Wallet(attach_to=node)
 
     stabilize_the_price(node)
