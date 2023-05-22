@@ -583,6 +583,77 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order_reversible )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order_reversible_paged_and_filtered )
+{ try {
+
+  BOOST_TEST_MESSAGE( "testing get_account_history with convert_and_limit_order_scenario" );
+
+  auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
+  {
+    // Produce enough blocks for fill_convert_request_operation to appear.
+    // It will be in reversible block and all previous operations will be in irreversible blocks.
+    generate_until_block(130);
+    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_EQUAL(get_last_irreversible_block_num(), 111);
+
+    // carol3ah tests:
+    {
+      BOOST_TEST_MESSAGE( "Getting carol3ah's nonexistent fill_convert_request_operation" );
+      expected_t expected_carol3ah_history = {
+        // empty
+      };
+      uint64_t filter_low = GET_LOW_OPERATION( fill_convert_request_operation );
+      uint64_t filter_high = 0;
+      test_get_account_history_reversible( *this, { "carol3ah" }, { expected_carol3ah_history }, -1, 1, filter_low, filter_high);
+    }
+    {
+      BOOST_TEST_MESSAGE( "Getting carol3ah's limit_order_create operations" );
+      expected_t expected_carol3ah_history = {
+        R"~([6,{"trx_id":"852acd7f9163180341672e01f1d78ed6acfb4f5a","block":47,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:18","op":{"type":"limit_order_create_operation","value":{"owner":"carol3ah","orderid":1,"amount_to_sell":{"amount":"11400","precision":3,"nai":"@@000000021"},"min_to_receive":{"amount":"11650","precision":3,"nai":"@@000000013"},"fill_or_kill":false,"expiration":"2016-01-29T00:02:18"}},"operation_id":0}])~",
+        R"~([7,{"trx_id":"a7680eb9e2138bfa6cf4eca6de2799b79fb55f81","block":47,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:18","op":{"type":"limit_order_create2_operation","value":{"owner":"carol3ah","orderid":2,"amount_to_sell":{"amount":"22075","precision":3,"nai":"@@000000021"},"exchange_rate":{"base":{"amount":"10","precision":3,"nai":"@@000000021"},"quote":{"amount":"10","precision":3,"nai":"@@000000013"}},"fill_or_kill":false,"expiration":"2016-01-29T00:02:18"}},"operation_id":0}])~",
+      };
+      uint64_t filter_low = GET_LOW_OPERATION( limit_order_create_operation ) | GET_LOW_OPERATION( limit_order_create2_operation );
+      uint64_t filter_high = 0;
+      test_get_account_history_reversible( *this, { "carol3ah" }, { expected_carol3ah_history }, 8, 4, filter_low, filter_high);
+    }
+    {
+      BOOST_TEST_MESSAGE( "Getting carol3ah's limit_order_cancel operations" );
+      expected_t expected_carol3ah_history = {
+        R"~([9,{"trx_id":"aac967d7009504d7cef3da7f563b617b109df85e","block":47,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:18","op":{"type":"limit_order_cancel_operation","value":{"owner":"carol3ah","orderid":1}},"operation_id":0}])~",
+        R"~([10,{"trx_id":"aac967d7009504d7cef3da7f563b617b109df85e","block":47,"trx_in_block":5,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:18","op":{"type":"limit_order_cancelled_operation","value":{"seller":"carol3ah","orderid":1,"amount_back":{"amount":"11400","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+      };
+      uint64_t filter_low = GET_LOW_OPERATION( limit_order_cancel_operation );
+      uint64_t filter_high = GET_HIGH_OPERATION( limit_order_cancelled_operation );
+      test_get_account_history_reversible( *this, { "carol3ah" }, { expected_carol3ah_history }, 10, 2, filter_low, filter_high);
+    }
+
+    // edgar3ah tests:
+    {
+      BOOST_TEST_MESSAGE( "Getting edgar3ah's fill_convert_request_operation" );
+      expected_t expected_edgar3ah_history = {
+        R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":130,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:06:30","op":{"type":"fill_convert_request_operation","value":{"owner":"edgar3ah","requestid":0,"amount_in":{"amount":"11201","precision":3,"nai":"@@000000013"},"amount_out":{"amount":"11201","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+      };
+      uint64_t filter_low = GET_LOW_OPERATION( fill_convert_request_operation );
+      uint64_t filter_high = 0;
+      test_get_account_history_reversible( *this, { "edgar3ah" }, { expected_edgar3ah_history }, -1, 1, filter_low, filter_high);
+    }
+    {
+      BOOST_TEST_MESSAGE( "Getting edgar3ah's two last operations" );
+      expected_t expected_edgar3ah_history = {
+        R"~([6,{"trx_id":"11b6fe0005871e4b902dae32dc690b5935dd52a4","block":47,"trx_in_block":4,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:18","op":{"type":"fill_order_operation","value":{"current_owner":"edgar3ah","current_orderid":3,"current_pays":{"amount":"22075","precision":3,"nai":"@@000000013"},"open_owner":"carol3ah","open_orderid":2,"open_pays":{"amount":"22075","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+        R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":130,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:06:30","op":{"type":"fill_convert_request_operation","value":{"owner":"edgar3ah","requestid":0,"amount_in":{"amount":"11201","precision":3,"nai":"@@000000013"},"amount_out":{"amount":"11201","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+      };
+      uint64_t filter_low = -1ull;
+      uint64_t filter_high = -1ull;
+      test_get_account_history_reversible( *this, { "edgar3ah" }, { expected_edgar3ah_history }, -1, 2, filter_low, filter_high);
+    }
+
+  };
+
+  convert_and_limit_order_scenario( check_point_tester );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_reversible_get_account_history_tests
 
 #endif
