@@ -357,6 +357,11 @@ namespace hive { namespace chain {
         return trigger_date;
       }
 
+      time_point_sec get_final_trigger_date() const
+      {
+        return trigger_date + fc::hours( recurrence * ( remaining_executions - 1 ) );
+      }
+
       // if the recurrence changed, we must update the trigger_date
       void set_recurrence_trigger_date( const time_point_sec& _head_block_time, uint16_t _recurrence )
       {

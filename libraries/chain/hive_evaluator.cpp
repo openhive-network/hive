@@ -3166,7 +3166,9 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     FC_ASSERT( from_account.open_recurrent_transfers < HIVE_MAX_OPEN_RECURRENT_TRANSFERS, "Account can't have more than ${rt} recurrent transfers", ( "rt", HIVE_MAX_OPEN_RECURRENT_TRANSFERS ) );
     // If the recurrent transfer is not found and the amount is 0 it means the user wants to delete a transfer that doesn't exist
     FC_ASSERT( op.amount.amount != 0, "Cannot create a recurrent transfer with 0 amount" );
-    _db.create< recurrent_transfer_object >(_db.head_block_time(), from_account, to_account, op.amount, op.memo, op.recurrence, op.executions, rtp_id);
+    const auto& recurrent_transfer = _db.create< recurrent_transfer_object >( _db.head_block_time(), from_account, to_account, op.amount, op.memo, op.recurrence, op.executions, rtp_id );
+    FC_ASSERT( recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ),
+      "Cannot set a transfer that would last for longer than ${days} days", ( "days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE ) );
 
     _db.modify(from_account, [](account_object& a )
     {
@@ -3184,13 +3186,16 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   }
   else
   {
-    _db.modify( *itr, [&]( recurrent_transfer_object& rt )
+    const auto& recurrent_transfer = *itr;
+    _db.modify( recurrent_transfer, [&]( recurrent_transfer_object& rt )
     {
       rt.amount = op.amount;
       from_string( rt.memo, op.memo );
       rt.set_recurrence_trigger_date( _db.head_block_time(), op.recurrence );
       rt.remaining_executions = op.executions;
     } );
+    FC_ASSERT( recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ),
+      "Cannot set a transfer that would last for longer than ${days} days", ( "days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE ) );
   }
 }
 
