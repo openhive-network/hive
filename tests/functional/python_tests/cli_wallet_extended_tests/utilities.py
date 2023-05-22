@@ -9,12 +9,12 @@ def check_sell_price( node, base, quote ):
     assert 'quote' in _sell_price
     _sell_price['quote'] == quote
 
-def check_recurrence_transfer_data( node ):
+def check_recurrent_transfer_data( node ):
     _op = node['operations'][0]
     assert _op[0] == 'recurrent_transfer'
     return _op[1]
 
-def check_recurrence_transfer( node, _from, to, amount, memo, recurrence, executions_key, executions_number, pair_id ):
+def check_recurrent_transfer( node, _from, to, amount, memo, recurrence, executions_key, executions_number, pair_id ):
     assert node['from'] == _from
     assert node['to'] == to
     assert node['amount'] == amount
