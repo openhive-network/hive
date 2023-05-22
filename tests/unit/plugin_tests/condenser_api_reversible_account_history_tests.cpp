@@ -244,7 +244,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging )
 
     // dan0ah paging tests:
     {
-      BOOST_TEST_MESSAGE( "Getting dan0ah's two last operations" );
+      BOOST_TEST_MESSAGE( "Getting dan0ah's two last operations (irreversible)" );
       expected_t expected_dan0ah_history = {
         R"~([9,{"trx_id":"0000000000000000000000000000000000000000","block":48,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:02:24","op":{"type":"curation_reward_operation","value":{"curator":"dan0ah","reward":{"amount":"2379069375285","precision":6,"nai":"@@000000037"},"comment_author":"edgar0ah","comment_permlink":"permlink1","payout_must_be_claimed":true}},"operation_id":0}])~",
         R"~([10,{"trx_id":"0000000000000000000000000000000000000000","block":48,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:02:24","op":{"type":"comment_benefactor_reward_operation","value":{"benefactor":"dan0ah","author":"edgar0ah","permlink":"permlink1","hbd_payout":{"amount":"602","precision":3,"nai":"@@000000013"},"hive_payout":{"amount":"0","precision":3,"nai":"@@000000021"},"vesting_payout":{"amount":"595260926679","precision":6,"nai":"@@000000037"},"payout_must_be_claimed":true}},"operation_id":0}])~",
@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging )
       test_get_account_history_reversible( *this, { "dan0ah" }, { expected_dan0ah_history }, 10, 2);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting dan0ah's three next to last ooperations" );
+      BOOST_TEST_MESSAGE( "Getting dan0ah's three next to last operations (irreversible)" );
       expected_t expected_dan0ah_history = {
         R"~([7,{"trx_id":"a349b0bad1f8b170174971206b4bce1808f5359e","block":45,"trx_in_block":7,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"vote_operation","value":{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":10000}},"operation_id":0}])~",
         R"~([8,{"trx_id":"a349b0bad1f8b170174971206b4bce1808f5359e","block":45,"trx_in_block":7,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"effective_comment_vote_operation","value":{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":1924331626,"rshares":1924331626,"total_vote_weight":1924331626,"pending_payout":{"amount":"0","precision":3,"nai":"@@000000013"}}},"operation_id":0}])~",
@@ -263,14 +263,14 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging )
 
     // edgar0ah paging tests:
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's last operation" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's last operation (reversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([14,{"trx_id":"72eabb13250cd9f473df1dd5df96bd715cf062c0","block":55,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:42","op":{"type":"claim_reward_balance_operation","value":{"account":"edgar0ah","reward_hive":{"amount":"0","precision":3,"nai":"@@000000021"},"reward_hbd":{"amount":"1","precision":3,"nai":"@@000000013"},"reward_vests":{"amount":"1","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
       };
       test_get_account_history_reversible( *this, { "edgar0ah" }, { expected_edgar0ah_history }, 14, 1);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's two last operations" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's two last operations (both ir/reversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([13,{"trx_id":"0000000000000000000000000000000000000000","block":48,"trx_in_block":4294967295,"op_in_trx":6,"virtual_op":true,"timestamp":"2016-01-01T00:02:24","op":{"type":"comment_payout_update_operation","value":{"author":"edgar0ah","permlink":"permlink1"}},"operation_id":0}])~",
         R"~([14,{"trx_id":"72eabb13250cd9f473df1dd5df96bd715cf062c0","block":55,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:42","op":{"type":"claim_reward_balance_operation","value":{"account":"edgar0ah","reward_hive":{"amount":"0","precision":3,"nai":"@@000000021"},"reward_hbd":{"amount":"1","precision":3,"nai":"@@000000013"},"reward_vests":{"amount":"1","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging )
       test_get_account_history_reversible( *this, { "edgar0ah" }, { expected_edgar0ah_history }, 14, 2);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's three last operations" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's three last operations (both ir/reversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([12,{"trx_id":"0000000000000000000000000000000000000000","block":48,"trx_in_block":4294967295,"op_in_trx":5,"virtual_op":true,"timestamp":"2016-01-01T00:02:24","op":{"type":"comment_reward_operation","value":{"author":"edgar0ah","permlink":"permlink1","payout":{"amount":"4820","precision":3,"nai":"@@000000013"},"author_rewards":1205,"total_payout_value":{"amount":"1205","precision":3,"nai":"@@000000013"},"curator_payout_value":{"amount":"2410","precision":3,"nai":"@@000000013"},"beneficiary_payout_value":{"amount":"1205","precision":3,"nai":"@@000000013"}}},"operation_id":0}])~",
         R"~([13,{"trx_id":"0000000000000000000000000000000000000000","block":48,"trx_in_block":4294967295,"op_in_trx":6,"virtual_op":true,"timestamp":"2016-01-01T00:02:24","op":{"type":"comment_payout_update_operation","value":{"author":"edgar0ah","permlink":"permlink1"}},"operation_id":0}])~",
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_filterin
 
     // dan0ah filtering tests:
     {
-      BOOST_TEST_MESSAGE( "Getting dan0ah's operations related to account creation" );
+      BOOST_TEST_MESSAGE( "Getting dan0ah's operations related to account creation (irreversible)" );
       expected_t expected_dan0ah_history = {
         R"~([0,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"dan0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6HMjs2nWJ6gLw7eyoUySVHGN2uAoSc3CmCjer489SPC3Kwt1UW",1]]},"memo_key":"TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","json_metadata":""}},"operation_id":0}])~",
         R"~([1,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_created_operation","value":{"new_account_name":"dan0ah","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
@@ -328,7 +328,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_filterin
       test_get_account_history_reversible( *this, { "dan0ah" }, { expected_dan0ah_history }, 1000, 1000, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting dan0ah's non-comment operations" );
+      BOOST_TEST_MESSAGE( "Getting dan0ah's non-comment operations (irreversible)" );
       expected_t expected_dan0ah_history = {
         R"~([0,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"dan0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6HMjs2nWJ6gLw7eyoUySVHGN2uAoSc3CmCjer489SPC3Kwt1UW",1]]},"memo_key":"TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","json_metadata":""}},"operation_id":0}])~",
         R"~([1,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_created_operation","value":{"new_account_name":"dan0ah","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
@@ -343,7 +343,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_filterin
       test_get_account_history_reversible( *this, { "dan0ah" }, { expected_dan0ah_history }, 1000, 1000, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting dan0ah's non-voting operations" );
+      BOOST_TEST_MESSAGE( "Getting dan0ah's non-voting operations (irreversible)" );
       expected_t expected_dan0ah_history = {
         R"~([0,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"dan0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6HMjs2nWJ6gLw7eyoUySVHGN2uAoSc3CmCjer489SPC3Kwt1UW",1]]},"memo_key":"TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","json_metadata":""}},"operation_id":0}])~",
         R"~([1,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_created_operation","value":{"new_account_name":"dan0ah","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
@@ -360,7 +360,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_filterin
 
     // edgar0ah filtering tests:
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's operations related to account creation" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's operations related to account creation (irreversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([0,{"trx_id":"7640d52e665a4f0f8f682f4caeff036670e0ca05","block":45,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"edgar0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST8ZCsvwKqttXivgPyJ1MYS4q1r3fBZJh3g1SaBxVbfsqNcmnvD3",1]]},"memo_key":"TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ","json_metadata":""}},"operation_id":0}])~",
         R"~([1,{"trx_id":"7640d52e665a4f0f8f682f4caeff036670e0ca05","block":45,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_created_operation","value":{"new_account_name":"edgar0ah","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_filterin
       test_get_account_history_reversible( *this, { "edgar0ah" }, { expected_edgar0ah_history }, 1000, 1000, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's claim_reward_balance_operation operation" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's claim_reward_balance_operation operation (reversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([14,{"trx_id":"72eabb13250cd9f473df1dd5df96bd715cf062c0","block":55,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:42","op":{"type":"claim_reward_balance_operation","value":{"account":"edgar0ah","reward_hive":{"amount":"0","precision":3,"nai":"@@000000021"},"reward_hbd":{"amount":"1","precision":3,"nai":"@@000000013"},"reward_vests":{"amount":"1","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
       };
@@ -379,7 +379,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_filterin
       test_get_account_history_reversible( *this, { "edgar0ah" }, { expected_edgar0ah_history }, 1000, 1000, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's operations except claim_reward_balance_operation" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's operations except claim_reward_balance_operation (irreversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([0,{"trx_id":"7640d52e665a4f0f8f682f4caeff036670e0ca05","block":45,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"edgar0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST8ZCsvwKqttXivgPyJ1MYS4q1r3fBZJh3g1SaBxVbfsqNcmnvD3",1]]},"memo_key":"TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ","json_metadata":""}},"operation_id":0}])~",
         R"~([1,{"trx_id":"7640d52e665a4f0f8f682f4caeff036670e0ca05","block":45,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_created_operation","value":{"new_account_name":"edgar0ah","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
@@ -401,7 +401,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_filterin
       test_get_account_history_reversible( *this, { "edgar0ah" }, { expected_edgar0ah_history }, 1000, 1000, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's comment operations" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's comment operations (irreversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([4,{"trx_id":"49a3e629bc5c9aaa954f0cf6510a2bdde4f697a0","block":45,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"comment_operation","value":{"parent_author":"","parent_permlink":"parentpermlink1","author":"edgar0ah","permlink":"permlink1","title":"Title 1","body":"Body 1","json_metadata":""}},"operation_id":0}])~",
         R"~([5,{"trx_id":"4e724b453d278d2ac777ffff07d45fbb9b691d4b","block":45,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"comment_options_operation","value":{"author":"edgar0ah","permlink":"permlink1","max_accepted_payout":{"amount":"10000000","precision":3,"nai":"@@000000013"},"percent_hbd":10000,"allow_votes":true,"allow_curation_rewards":true,"extensions":[{"type":"comment_payout_beneficiaries","value":{"beneficiaries":[{"account":"dan0ah","weight":5000}]}}]}},"operation_id":0}])~",
@@ -416,7 +416,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_filterin
       test_get_account_history_reversible( *this, { "edgar0ah" }, { expected_edgar0ah_history }, 1000, 1000, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's vote operations" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's vote operations (irreversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([6,{"trx_id":"f6c6bbf72b4f516e9e655ba031f1c679b30f16f4","block":45,"trx_in_block":6,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"vote_operation","value":{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":-10000}},"operation_id":0}])~",
         R"~([7,{"trx_id":"f6c6bbf72b4f516e9e655ba031f1c679b30f16f4","block":45,"trx_in_block":6,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"effective_comment_vote_operation","value":{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":0,"rshares":-1924331626,"total_vote_weight":0,"pending_payout":{"amount":"0","precision":3,"nai":"@@000000013"}}},"operation_id":0}])~",
@@ -458,7 +458,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging_a
 
     // dan0ah paging and filtering tests:
     {
-      BOOST_TEST_MESSAGE( "Getting dan0ah's operations related to account creation" );
+      BOOST_TEST_MESSAGE( "Getting dan0ah's operations related to account creation (irreversible)" );
       expected_t expected_dan0ah_history = {
         R"~([0,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"dan0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST6HMjs2nWJ6gLw7eyoUySVHGN2uAoSc3CmCjer489SPC3Kwt1UW",1]]},"memo_key":"TST7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","json_metadata":""}},"operation_id":0}])~",
         R"~([1,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_created_operation","value":{"new_account_name":"dan0ah","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
@@ -468,7 +468,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging_a
       test_get_account_history_reversible( *this, { "dan0ah" }, { expected_dan0ah_history }, -1, 3, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting dan0ah's operations except comment_benefactor_reward_operation" );
+      BOOST_TEST_MESSAGE( "Getting dan0ah's operations except comment_benefactor_reward_operation (irreversible)" );
       expected_t expected_dan0ah_history = {
         R"~([8,{"trx_id":"a349b0bad1f8b170174971206b4bce1808f5359e","block":45,"trx_in_block":7,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"effective_comment_vote_operation","value":{"voter":"dan0ah","author":"edgar0ah","permlink":"permlink1","weight":1924331626,"rshares":1924331626,"total_vote_weight":1924331626,"pending_payout":{"amount":"0","precision":3,"nai":"@@000000013"}}},"operation_id":0}])~",
         R"~([9,{"trx_id":"0000000000000000000000000000000000000000","block":48,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:02:24","op":{"type":"curation_reward_operation","value":{"curator":"dan0ah","reward":{"amount":"2379069375285","precision":6,"nai":"@@000000037"},"comment_author":"edgar0ah","comment_permlink":"permlink1","payout_must_be_claimed":true}},"operation_id":0}])~",
@@ -480,7 +480,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging_a
 
     // edgar0ah paging and filtering tests:
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's operations related to account creation" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's operations related to account creation (irreversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([1,{"trx_id":"7640d52e665a4f0f8f682f4caeff036670e0ca05","block":45,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_created_operation","value":{"new_account_name":"edgar0ah","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
       };
@@ -489,7 +489,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging_a
       test_get_account_history_reversible( *this, { "edgar0ah" }, { expected_edgar0ah_history }, 14, 1, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's operations related to account creation with bigger limit" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's operations related to account creation with bigger limit (irreversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([0,{"trx_id":"7640d52e665a4f0f8f682f4caeff036670e0ca05","block":45,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"edgar0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["TST8ZCsvwKqttXivgPyJ1MYS4q1r3fBZJh3g1SaBxVbfsqNcmnvD3",1]]},"memo_key":"TST8R8maxJxeBMR3JYmap1n3Pypm886oEUjLYdsetzcnPDFpiq3pZ","json_metadata":""}},"operation_id":0}])~",
         R"~([1,{"trx_id":"7640d52e665a4f0f8f682f4caeff036670e0ca05","block":45,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:12","op":{"type":"account_created_operation","value":{"new_account_name":"edgar0ah","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
@@ -499,7 +499,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging_a
       test_get_account_history_reversible( *this, { "edgar0ah" }, { expected_edgar0ah_history }, 14, 10, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's claim_reward_balance_operation operation" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's claim_reward_balance_operation operation (reversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([14,{"trx_id":"72eabb13250cd9f473df1dd5df96bd715cf062c0","block":55,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:42","op":{"type":"claim_reward_balance_operation","value":{"account":"edgar0ah","reward_hive":{"amount":"0","precision":3,"nai":"@@000000021"},"reward_hbd":{"amount":"1","precision":3,"nai":"@@000000013"},"reward_vests":{"amount":"1","precision":6,"nai":"@@000000037"}}},"operation_id":0}])~",
       };
@@ -508,7 +508,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging_a
       test_get_account_history_reversible( *this, { "edgar0ah" }, { expected_edgar0ah_history }, -1, 10, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting edgar0ah's comment_payout_update_operation and comment_reward_operation operations" );
+      BOOST_TEST_MESSAGE( "Getting edgar0ah's last three operations except for comment_payout_update_operation and comment_reward_operation operations (both ir/reversible)" );
       expected_t expected_edgar0ah_history = {
         R"~([10,{"trx_id":"0000000000000000000000000000000000000000","block":48,"trx_in_block":4294967295,"op_in_trx":3,"virtual_op":true,"timestamp":"2016-01-01T00:02:24","op":{"type":"comment_benefactor_reward_operation","value":{"benefactor":"dan0ah","author":"edgar0ah","permlink":"permlink1","hbd_payout":{"amount":"602","precision":3,"nai":"@@000000013"},"hive_payout":{"amount":"0","precision":3,"nai":"@@000000021"},"vesting_payout":{"amount":"595260926679","precision":6,"nai":"@@000000037"},"payout_must_be_claimed":true}},"operation_id":0}])~",
         R"~([11,{"trx_id":"0000000000000000000000000000000000000000","block":48,"trx_in_block":4294967295,"op_in_trx":4,"virtual_op":true,"timestamp":"2016-01-01T00:02:24","op":{"type":"author_reward_operation","value":{"author":"edgar0ah","permlink":"permlink1","hbd_payout":{"amount":"602","precision":3,"nai":"@@000000013"},"hive_payout":{"amount":"0","precision":3,"nai":"@@000000021"},"vesting_payout":{"amount":"595260926679","precision":6,"nai":"@@000000037"},"curators_vesting_payout":{"amount":"2379069375285","precision":6,"nai":"@@000000037"},"payout_must_be_claimed":true}},"operation_id":0}])~",
@@ -607,7 +607,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order_reversible_pag
       test_get_account_history_reversible( *this, { "carol3ah" }, { expected_carol3ah_history }, -1, 1, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting carol3ah's limit_order_create operations" );
+      BOOST_TEST_MESSAGE( "Getting carol3ah's limit_order_create operations (irreversible)" );
       expected_t expected_carol3ah_history = {
         R"~([6,{"trx_id":"852acd7f9163180341672e01f1d78ed6acfb4f5a","block":47,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:18","op":{"type":"limit_order_create_operation","value":{"owner":"carol3ah","orderid":1,"amount_to_sell":{"amount":"11400","precision":3,"nai":"@@000000021"},"min_to_receive":{"amount":"11650","precision":3,"nai":"@@000000013"},"fill_or_kill":false,"expiration":"2016-01-29T00:02:18"}},"operation_id":0}])~",
         R"~([7,{"trx_id":"a7680eb9e2138bfa6cf4eca6de2799b79fb55f81","block":47,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:18","op":{"type":"limit_order_create2_operation","value":{"owner":"carol3ah","orderid":2,"amount_to_sell":{"amount":"22075","precision":3,"nai":"@@000000021"},"exchange_rate":{"base":{"amount":"10","precision":3,"nai":"@@000000021"},"quote":{"amount":"10","precision":3,"nai":"@@000000013"}},"fill_or_kill":false,"expiration":"2016-01-29T00:02:18"}},"operation_id":0}])~",
@@ -617,7 +617,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order_reversible_pag
       test_get_account_history_reversible( *this, { "carol3ah" }, { expected_carol3ah_history }, 8, 4, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting carol3ah's limit_order_cancel operations" );
+      BOOST_TEST_MESSAGE( "Getting carol3ah's limit_order_cancel operations (irreversible)" );
       expected_t expected_carol3ah_history = {
         R"~([9,{"trx_id":"aac967d7009504d7cef3da7f563b617b109df85e","block":47,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:18","op":{"type":"limit_order_cancel_operation","value":{"owner":"carol3ah","orderid":1}},"operation_id":0}])~",
         R"~([10,{"trx_id":"aac967d7009504d7cef3da7f563b617b109df85e","block":47,"trx_in_block":5,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:18","op":{"type":"limit_order_cancelled_operation","value":{"seller":"carol3ah","orderid":1,"amount_back":{"amount":"11400","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
@@ -629,7 +629,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order_reversible_pag
 
     // edgar3ah tests:
     {
-      BOOST_TEST_MESSAGE( "Getting edgar3ah's fill_convert_request_operation" );
+      BOOST_TEST_MESSAGE( "Getting edgar3ah's fill_convert_request_operation (reversible)" );
       expected_t expected_edgar3ah_history = {
         R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":130,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:06:30","op":{"type":"fill_convert_request_operation","value":{"owner":"edgar3ah","requestid":0,"amount_in":{"amount":"11201","precision":3,"nai":"@@000000013"},"amount_out":{"amount":"11201","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
       };
@@ -638,7 +638,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order_reversible_pag
       test_get_account_history_reversible( *this, { "edgar3ah" }, { expected_edgar3ah_history }, -1, 1, filter_low, filter_high);
     }
     {
-      BOOST_TEST_MESSAGE( "Getting edgar3ah's two last operations" );
+      BOOST_TEST_MESSAGE( "Getting edgar3ah's two last operations (both ir/reversible)" );
       expected_t expected_edgar3ah_history = {
         R"~([6,{"trx_id":"11b6fe0005871e4b902dae32dc690b5935dd52a4","block":47,"trx_in_block":4,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:02:18","op":{"type":"fill_order_operation","value":{"current_owner":"edgar3ah","current_orderid":3,"current_pays":{"amount":"22075","precision":3,"nai":"@@000000013"},"open_owner":"carol3ah","open_orderid":2,"open_pays":{"amount":"22075","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
         R"~([7,{"trx_id":"0000000000000000000000000000000000000000","block":130,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:06:30","op":{"type":"fill_convert_request_operation","value":{"owner":"edgar3ah","requestid":0,"amount_in":{"amount":"11201","precision":3,"nai":"@@000000013"},"amount_out":{"amount":"11201","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
