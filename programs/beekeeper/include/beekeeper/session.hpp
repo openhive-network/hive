@@ -24,15 +24,19 @@ class session
 
     std::shared_ptr<time_manager> time;
 
+    hive::utilities::notifications::detail::notification_handler notification_handler;
+
   public:
 
-    session( const std::string& token, std::shared_ptr<time_manager> time );
+    session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager> time );
 
     void set_timeout( const std::chrono::seconds& t );
     void check_timeout();
     info get_info();
 
     std::shared_ptr<wallet_manager_impl>& get_wallet();
+
+    hive::utilities::notifications::detail::notification_handler& get_notification_handler();
 };
 
 } //beekeeper

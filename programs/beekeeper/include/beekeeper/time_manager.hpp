@@ -16,6 +16,7 @@ namespace beekeeper {
 
   using boost::multi_index::multi_index_container;
   using boost::multi_index::indexed_by;
+  using boost::multi_index::ordered_non_unique;
   using boost::multi_index::ordered_unique;
   using boost::multi_index::tag;
   using boost::multi_index::member;
@@ -38,7 +39,7 @@ class time_manager
     typedef multi_index_container<
       session_data,
       indexed_by<
-        ordered_unique< tag< by_time >,
+        ordered_non_unique< tag< by_time >,
           member< session_data, types::timepoint_t, &session_data::time > >,
         ordered_unique< tag< by_token >,
           member< session_data, std::string, &session_data::token > >

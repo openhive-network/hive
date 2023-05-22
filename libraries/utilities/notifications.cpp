@@ -33,13 +33,7 @@ void setup_notifications(const boost::program_options::variables_map &args)
   if( !check_is_flag_set(args) ) return;
   const auto& address_pool = args[ get_flag() ].as<std::vector<fc::string>>();
 
-  std::vector<fc::ip::endpoint> epool;
-  epool.reserve(address_pool.size());
-
-  for(const fc::string& x : address_pool)
-    epool.emplace_back( fc::resolve_string_to_ip_endpoints(x)[0] );
-
-  hive::utilities::notifications::get_notification_handler_instance().setup(epool);
+  hive::utilities::notifications::get_notification_handler_instance().setup(address_pool);
 }
 
 namespace detail
@@ -67,21 +61,43 @@ notification_handler &instance()
   return instance;
 }
 
-void notification_handler::setup(const std::vector<fc::ip::endpoint> &address_pool)
+
+void notification_handler::setup(const std::vector<std::string> &address_pool)
 {
-  if (address_pool.empty()) network.reset();
+  const std::vector<fc::ip::endpoint> _address_pool = create_endpoints(address_pool);
+
+  if (_address_pool.empty()) network.reset();
   else
   {
-    const size_t ap_size = address_pool.size();
+    const size_t ap_size = _address_pool.size();
     ilog("setting up notification handler for ${count} address${fix}", ("count", ap_size)( "fix", (ap_size > 1 ? "es" : "") ));
 
-    network = std::make_unique<network_broadcaster>(address_pool, on_send);
+    network = std::make_unique<network_broadcaster>(_address_pool, on_send);
   }
+}
+
+void notification_handler::register_endpoints( const std::vector<std::string> &pool )
+{
+  if( !network )
+    network = std::make_unique<network_broadcaster>(create_endpoints(pool), on_send);
+  else
+    network->register_endpoints(create_endpoints(pool));
 }
 
 bool notification_handler::is_broadcasting_active() const
 {
   return network.get() != nullptr;
+}
+
+std::vector<fc::ip::endpoint> notification_handler::create_endpoints( const std::vector<std::string>& address_pool )
+{
+  std::vector<fc::ip::endpoint> epool;
+  epool.reserve(address_pool.size());
+
+  for(const fc::string& x : address_pool)
+    epool.emplace_back( fc::resolve_string_to_ip_endpoints(x)[0] );
+
+  return epool;
 }
 
 void notification_handler::network_broadcaster::broadcast(const notification_t &notification) noexcept
@@ -108,6 +124,13 @@ void notification_handler::network_broadcaster::broadcast(const notification_t &
     else address.second = 0;
   }
 }
+
+void notification_handler::network_broadcaster::register_endpoints( const std::vector<fc::ip::endpoint> &pool )
+{
+  for (const fc::ip::endpoint &addr : pool)
+    address_pool[addr] = 0;
+}
+
 } // detail
 
 detail::notification_handler &get_notification_handler_instance() { return detail::instance(); }

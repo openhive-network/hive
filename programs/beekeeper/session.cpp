@@ -2,10 +2,11 @@
 
 namespace beekeeper {
 
-session::session( const std::string& token, std::shared_ptr<time_manager> time )
+session::session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager> time )
         : token(token), time( time )
 {
   wallet = std::make_shared<wallet_manager_impl>();
+  notification_handler.register_endpoints( { notifications_endpoint } );
 }
 
 void session::set_timeout( const std::chrono::seconds& t )
@@ -40,6 +41,11 @@ info session::get_info()
 std::shared_ptr<wallet_manager_impl>& session::get_wallet()
 {
   return wallet;
+}
+
+hive::utilities::notifications::detail::notification_handler& session::get_notification_handler()
+{
+  return notification_handler;
 }
 
 } //beekeeper
