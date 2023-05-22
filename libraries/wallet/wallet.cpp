@@ -2906,14 +2906,15 @@ wallet_signed_transaction wallet_api::remove_proposal(const account_name_type& d
 }
 
 wallet_signed_transaction wallet_api::recurrent_transfer_with_id(
- const account_name_type& from,
- const account_name_type& to,
- const wallet_serializer_wrapper<hive::protocol::asset>& amount,
- const string& memo,
- uint16_t recurrence,
- uint16_t executions,
- uint8_t pair_id,
- bool broadcast ) {
+  const account_name_type& from,
+  const account_name_type& to,
+  const wallet_serializer_wrapper<hive::protocol::asset>& amount,
+  const string& memo,
+  uint16_t recurrence,
+  uint16_t executions,
+  uint8_t pair_id,
+  bool broadcast )
+{
   try {
     FC_ASSERT( !is_locked() );
     check_memo( memo, get_account( from ).value );
@@ -2940,30 +2941,15 @@ wallet_signed_transaction wallet_api::recurrent_transfer_with_id(
 }
 
 wallet_signed_transaction wallet_api::recurrent_transfer(
- const account_name_type& from,
- const account_name_type& to,
- const wallet_serializer_wrapper<hive::protocol::asset>& amount,
- const string& memo,
- uint16_t recurrence,
- uint16_t executions,
- bool broadcast ) {
-  try {
-    FC_ASSERT( !is_locked() );
-    check_memo( memo, get_account( from ).value );
-    recurrent_transfer_operation op;
-    op.from = from;
-    op.to = to;
-    op.amount = amount.value;
-    op.memo = get_encrypted_memo( from, to, memo );
-    op.recurrence = recurrence;
-    op.executions = executions;
-
-    signed_transaction tx;
-    tx.operations.push_back( op );
-    tx.validate();
-
-    return { my->sign_transaction( tx, broadcast ) };
-  } FC_CAPTURE_AND_RETHROW( (from)(to)(amount)(memo)(recurrence)(executions)(broadcast) )
+  const account_name_type& from,
+  const account_name_type& to,
+  const wallet_serializer_wrapper<hive::protocol::asset>& amount,
+  const string& memo,
+  uint16_t recurrence,
+  uint16_t executions,
+  bool broadcast )
+{
+  return recurrent_transfer_with_id( from, to, amount, memo, recurrence, executions, 0, broadcast );
 }
 
 wallet_serializer_wrapper<vector< database_api::api_recurrent_transfer_object >> wallet_api::find_recurrent_transfers( fc::variant from )
