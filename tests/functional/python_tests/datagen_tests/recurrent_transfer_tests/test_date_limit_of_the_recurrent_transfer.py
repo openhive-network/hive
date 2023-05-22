@@ -17,10 +17,14 @@ from hive_local_tools.constants import MAX_RECURRENT_TRANSFER_END_DATE
 def test_exceed_date_limit_of_recurrent_transfers(node, executions):
     """
     By default, the maximum recurrence time to execute all sent recurrent transfers is 2 years (730 days).
-    Because the first execution happens instantly, the maximum is 730 days with two executions
+    Because the first execution happens instantly on new recurrent transfer, the maximum is 730 days with two executions.
+    The edge case for new recurrent transfer is recurrence = MAX_RECURRENT_TRANSFER_END_DATE * 24 / (executions - 1)
+    which is still valid (exactly 730 days).
+    It becomes more complicated with edits of existing recurrent transfer, because first execution after
+    edit happens on previous schedule or after recurrence time when that parameter is changed, but the idea
+    is the same - last transfer has to be scheduled for execution not further into the future than 2 years.
 
-    If the maximum recurrence time is equal or greater than ceil ((730 days * 24 hours) / (executions number - 1)) then
-    the exception 'Cannot set a transfer that would last for longer than 730 days' is thrown.
+    If the maximum is exceeded, the exception 'Cannot set a transfer that would last for longer than 730 days' is thrown.
     """
     wallet = tt.Wallet(attach_to=node)
 
@@ -34,7 +38,7 @@ def test_exceed_date_limit_of_recurrent_transfers(node, executions):
                                       "receiver",
                                       tt.Asset.Test(0.001),
                                       f"recurrent transfer to receiver",
-                                      math.ceil((MAX_RECURRENT_TRANSFER_END_DATE * 24 / (executions - 1))), # 730 * 24 / 729 yields sub-hour results, so we increase it to the nearest higher
+                                      math.ceil(MAX_RECURRENT_TRANSFER_END_DATE * 24 / (executions - 1)) + 1, # 730 * 24 / 729 yields sub-hour results, so we increase it to the nearest higher
                                       executions)
 
     expected_error_message = f"Cannot set a transfer that would last for longer than " \
