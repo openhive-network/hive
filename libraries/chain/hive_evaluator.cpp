@@ -3122,18 +3122,18 @@ struct recurrent_transfer_extension_visitor
   recurrent_transfer_extension_visitor( database& db ) : _db( db ) {}
 
   database& _db;
-  typedef uint8_t result_type;
+  uint8_t pair_id = 0; // default recurrent transfer id is 0
 
-  uint32_t operator()( const recurrent_transfer_pair_id& recurrent_transfer_pair_id ) const
+  typedef void result_type;
+
+  void operator()( const recurrent_transfer_pair_id& recurrent_transfer_pair_id )
   {
     FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_28 ), "recurrent_transfer_pair_id extension requires hardfork ${hf}",
       ( "hf", HIVE_HARDFORK_1_28 ) );
-    return recurrent_transfer_pair_id.pair_id;
+    pair_id = recurrent_transfer_pair_id.pair_id;
   }
-  uint32_t operator()(const hive::void_t&) const
-  {
-    return 0;
-  }
+
+  void operator()( const hive::void_t& ) {}
 };
 
 void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation& op )
@@ -3141,45 +3141,46 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_25 ), "Recurrent transfers are not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_1_25) );
 
   // Legacy faulty validation see https://gitlab.syncad.com/hive/hive/-/issues/456 once hf28 has been released, we can remove it
-  if (_db.has_hardfork( HIVE_HARDFORK_1_28 ) == false) {
-    FC_ASSERT( fc::hours(op.recurrence * op.executions).to_seconds()  < fc::days(HIVE_MAX_RECURRENT_TRANSFER_END_DATE).to_seconds(), "Cannot set a transfer that would last for longer than ${days} days", ("days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE) );
+  if( _db.has_hardfork( HIVE_HARDFORK_1_28 ) == false )
+  {
+    FC_ASSERT( fc::hours( op.recurrence * op.executions ).to_seconds() < fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ).to_seconds(),
+      "Cannot set a transfer that would last for longer than ${days} days", ( "days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE ) );
   }
 
-  const auto& from_account = _db.get_account(op.from );
+  const auto& from_account = _db.get_account( op.from );
   const auto& to_account = _db.get_account( op.to );
 
   asset available = _db.get_balance( from_account, op.amount.symbol );
   FC_ASSERT( available >= op.amount, "Account does not have enough tokens for the first transfer, has ${has} needs ${needs}", ("has",  available)("needs", op.amount) );
 
-  uint8_t rtp_id = 0;
-  for(const auto& e : op.extensions )
-  {
-    rtp_id = e.visit(recurrent_transfer_extension_visitor(_db));
-  }
+  recurrent_transfer_extension_visitor vtor( _db );
+  for( const auto& e : op.extensions )
+    e.visit( vtor );
+  uint8_t rtp_id = vtor.pair_id;
 
   const auto& rt_idx = _db.get_index< recurrent_transfer_index, by_from_to_id >();
-  auto itr = rt_idx.find(boost::make_tuple(from_account.get_id(), to_account.get_id(), rtp_id));
+  auto itr = rt_idx.find( boost::make_tuple( from_account.get_id(), to_account.get_id(), rtp_id ) );
 
   if( itr == rt_idx.end() )
   {
     FC_ASSERT( from_account.open_recurrent_transfers < HIVE_MAX_OPEN_RECURRENT_TRANSFERS, "Account can't have more than ${rt} recurrent transfers", ( "rt", HIVE_MAX_OPEN_RECURRENT_TRANSFERS ) );
     // If the recurrent transfer is not found and the amount is 0 it means the user wants to delete a transfer that doesn't exist
-    FC_ASSERT( op.amount.amount != 0, "Cannot create a recurrent transfer with 0 amount");
+    FC_ASSERT( op.amount.amount != 0, "Cannot create a recurrent transfer with 0 amount" );
     _db.create< recurrent_transfer_object >(_db.head_block_time(), from_account, to_account, op.amount, op.memo, op.recurrence, op.executions, rtp_id);
 
     _db.modify(from_account, [](account_object& a )
     {
       a.open_recurrent_transfers++;
-    });
+    } );
   }
   else if( op.amount.amount == 0 )
   {
     _db.remove( *itr );
-    _db.modify(from_account, [&](account_object& a )
+    _db.modify( from_account, [&](account_object& a )
     {
       FC_ASSERT( a.open_recurrent_transfers > 0 );
       a.open_recurrent_transfers--;
-    });
+    } );
   }
   else
   {
@@ -3187,9 +3188,9 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     {
       rt.amount = op.amount;
       from_string( rt.memo, op.memo );
-      rt.set_recurrence_trigger_date(_db.head_block_time(), op.recurrence);
+      rt.set_recurrence_trigger_date( _db.head_block_time(), op.recurrence );
       rt.remaining_executions = op.executions;
-    });
+    } );
   }
 }
 
