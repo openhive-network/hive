@@ -9,13 +9,12 @@ beekeeper_wallet_manager::beekeeper_wallet_manager( const boost::filesystem::pat
 {
   unlock_timeout = command_line_unlock_timeout;
 
-  wallet_impl = std::make_unique<wallet_manager_impl>( command_line_wallet_dir );
+  singleton = std::make_unique<singleton_beekeeper>( command_line_wallet_dir );
 }
 
 bool beekeeper_wallet_manager::start()
 {
-  FC_ASSERT( wallet_impl );
-  return wallet_impl->start();
+  return singleton->start();
 }
 
 void beekeeper_wallet_manager::set_timeout( const std::string& token, uint64_t secs )
@@ -27,95 +26,74 @@ std::string beekeeper_wallet_manager::create( const std::string& token, const st
 {
   sessions.check_timeout( token );
 
-  FC_ASSERT( wallet_impl );
-  return wallet_impl->create( token, name, password );
+  return sessions.get_wallet( token )->create( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name, password );
 }
 
 void beekeeper_wallet_manager::open( const std::string& token, const std::string& name )
 {
   sessions.check_timeout( token );
 
-  FC_ASSERT( wallet_impl );
-  wallet_impl->open( token, name );
+  sessions.get_wallet( token )->open( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name );
 }
 
 std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::string& token )
 {
   sessions.check_timeout( token );
-
-  FC_ASSERT( wallet_impl );
-  return wallet_impl->list_wallets( token );
+  return sessions.get_wallet( token )->list_wallets();
 }
 
 map<std::string, std::string> beekeeper_wallet_manager::list_keys( const std::string& token, const string& name, const string& pw )
 {
   sessions.check_timeout( token );
-
-  FC_ASSERT( wallet_impl );
-  return wallet_impl->list_keys( token, name, pw );
+  return sessions.get_wallet( token )->list_keys( name, pw );
 }
 
 flat_set<std::string> beekeeper_wallet_manager::get_public_keys( const std::string& token )
 {
   sessions.check_timeout( token );
-
-  FC_ASSERT( wallet_impl );
-  return wallet_impl->get_public_keys( token );
+  return sessions.get_wallet( token )->get_public_keys();
 }
 
 
 void beekeeper_wallet_manager::lock_all( const std::string& token )
 {
-  FC_ASSERT( wallet_impl );
-  wallet_impl->lock_all( token );
+  sessions.get_wallet( token )->lock_all();
 }
 
 void beekeeper_wallet_manager::lock( const std::string& token, const std::string& name )
 {
   sessions.check_timeout( token );
-
-  FC_ASSERT( wallet_impl );
-  wallet_impl->lock( token, name );
+  sessions.get_wallet( token )->lock( name );
 }
 
 void beekeeper_wallet_manager::unlock( const std::string& token, const std::string& name, const std::string& password )
 {
   sessions.check_timeout( token );
-
-  FC_ASSERT( wallet_impl );
-  wallet_impl->unlock( token, name, password );
+  sessions.get_wallet( token )->unlock( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name, password );
 }
 
 string beekeeper_wallet_manager::import_key( const std::string& token, const std::string& name, const std::string& wif_key )
 {
   sessions.check_timeout( token );
-
-  FC_ASSERT( wallet_impl );
-  return wallet_impl->import_key( token, name, wif_key );
+  return sessions.get_wallet( token )->import_key( name, wif_key );
 }
 
 void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& key )
 {
   sessions.check_timeout( token );
-
-  FC_ASSERT( wallet_impl );
-  wallet_impl->remove_key( token, name, password, key );
+  sessions.get_wallet( token )->remove_key( name, password, key );
 }
 
 string beekeeper_wallet_manager::create_key( const std::string& token, const std::string& name )
 {
   sessions.check_timeout( token );
-
-  FC_ASSERT( wallet_impl );
-  return wallet_impl->create_key( token, name );
+  return sessions.get_wallet( token )->create_key( name );
 }
 
 signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const digest_type& digest, const public_key_type& key )
 {
   sessions.check_timeout( token );
-
-  FC_ASSERT( wallet_impl );
-  return wallet_impl->sign_digest( token, digest, key );
+  return sessions.get_wallet( token )->sign_digest( digest, key );
 }
 
 info beekeeper_wallet_manager::get_info( const std::string& token )
@@ -125,8 +103,7 @@ info beekeeper_wallet_manager::get_info( const std::string& token )
 
 void beekeeper_wallet_manager::save_connection_details( const collector_t& values )
 {
-  FC_ASSERT( wallet_impl );
-  wallet_impl->save_connection_details( values );
+  singleton->save_connection_details( values );
 }
 
 string beekeeper_wallet_manager::create_session( const string& salt, const string& notifications_endpoint )
