@@ -3,7 +3,6 @@
 #include <beekeeper/beekeeper_wallet_base.hpp>
 
 #include <beekeeper/session_manager.hpp>
-#include <beekeeper/wallet_manager_impl.hpp>
 
 #include <hive/utilities/notifications.hpp>
 
@@ -139,7 +138,7 @@ private:
 
   uint64_t unlock_timeout = 900;
 
-  std::unique_ptr<wallet_manager_impl> wallet_impl;
+  std::unique_ptr<singleton_beekeeper> singleton;
 
   session_manager sessions;
 };
