@@ -135,7 +135,8 @@ string beekeeper_wallet_manager::create_session( const string& salt, const strin
 
 void beekeeper_wallet_manager::close_session( const string& token )
 {
-  if( sessions.close_session( token ) )
+  sessions.close_session( token );
+  if( sessions.empty() )
   {
     //Close beekeeper, because there aren't any sessions.
     std::raise(SIGINT);

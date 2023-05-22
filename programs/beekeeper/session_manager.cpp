@@ -23,10 +23,13 @@ namespace beekeeper {
     return _token;
   }
 
-  bool session_manager::close_session( const std::string& token )
+  void session_manager::close_session( const std::string& token )
   {
     sessions.erase( get_session( token ) );
+  }
 
+  bool session_manager::empty() const
+  {
     return sessions.empty();
   }
 
