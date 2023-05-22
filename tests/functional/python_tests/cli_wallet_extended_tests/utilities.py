@@ -23,10 +23,12 @@ def check_recurrent_transfer( node, _from, to, amount, memo, recurrence, executi
     assert node[executions_key] == executions_number
 
     # pair_id check
+    extension_pair_id = 0
     if "extensions" in node:
         for ext in node['extensions']:
             if ext['type'] == 'recurrent_transfer_pair_id':
-                assert ext['value']['pair_id'] == pair_id
+                extension_pair_id = ext['value']['pair_id']
+    assert extension_pair_id == pair_id, f'Expected pair_id={pair_id}'
 
 def check_ask( node, base, quote ):
     assert 'order_price' in node
