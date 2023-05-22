@@ -117,6 +117,8 @@ class notification_handler
     }
 
     void broadcast(const notification_t &ev) noexcept;
+
+    void register_endpoints( const std::vector<fc::ip::endpoint> &pool );
   };
 
 public:
@@ -127,13 +129,15 @@ public:
 
     on_send(notification);
   }
-  void setup(const std::vector<fc::ip::endpoint> &address_pool);
+  void setup(const std::vector<std::string> &address_pool);
+  void register_endpoints( const std::vector<std::string> &pool );
 
 private:
   signal_t on_send;
   std::unique_ptr<network_broadcaster> network;
 
   bool is_broadcasting_active() const;
+  std::vector<fc::ip::endpoint> create_endpoints( const std::vector<std::string>& address_pool );
 };
 
 } // detail
@@ -168,6 +172,18 @@ inline void notify(
   });
 }
 
+template <typename... KeyValuesTypes>
+inline void dynamic_notify(
+    utilities::notifications::detail::notification_handler& handler,
+    const fc::string &name,
+    KeyValuesTypes &&...key_value_pairs) noexcept
+{
+  detail::error_handler([&]{
+    handler.broadcast(
+      notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+    );
+  });
+}
 void notify_hived_status(const fc::string &current_status) noexcept;
 void notify_hived_error(const fc::string &error_message) noexcept;
 

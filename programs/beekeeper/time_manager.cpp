@@ -22,8 +22,8 @@ time_manager::time_manager()
 
 time_manager::~time_manager()
 {
-   stop_requested = true;
-   notification_thread->join();
+  stop_requested = true;
+  notification_thread->join();
 }
 
 void time_manager::run()
