@@ -9672,20 +9672,9 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_validate )
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
     op.from = "alice";
 
-    BOOST_TEST_MESSAGE( " --- recurrence * executions is too high with recurrence being every day" );
-    op.executions = HIVE_MAX_RECURRENT_TRANSFER_END_DATE * 2 + 1; // one day too many
-    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
-
-    BOOST_TEST_MESSAGE( " --- recurrence * executions is too high with recurrence being every two days" );
-    op.recurrence = 48;
-    op.executions = HIVE_MAX_RECURRENT_TRANSFER_END_DATE + 1; // one day too many
-    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
-
-    BOOST_TEST_MESSAGE( " --- executions is 2 and recurrence * (execution - 1) leads to a result inferior to HIVE_MAX_RECURRENT_TRANSFER_END_DATE " );
-    op.executions = 2;
-    op.recurrence = (HIVE_MAX_RECURRENT_TRANSFER_END_DATE - 1) * 2;
-    op.validate();
-
+    //ABW: we might consider moving that check to execution and allow 1 execution in case of edit, so users
+    //can modify amount on last transfer without changing schedule (like last lease payment is usually connected
+    //with buyout sum, so it is larger than usual)
     BOOST_TEST_MESSAGE( " --- executions is less than 2" );
     op.executions = 1;
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
@@ -10274,6 +10263,134 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_same_pair_id_different_receivers )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( recurrent_transfer_exact_max )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "recurrent_transfer with exactly max allowed end date" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    fund( "alice", ASSET( "200.000 TBD" ) );
+    fund( "bob", ASSET( "200.000 TESTS" ) );
+
+    recurrent_transfer_operation op;
+    op.from = "alice";
+    op.to = "bob";
+    op.memo = "test ok";
+    op.amount = ASSET( "10.000 TBD" );
+    op.recurrence = fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ).to_seconds() / fc::hours( 1 ).to_seconds();
+    op.executions = 2;
+    // two transfers, one immediately and one after 2 years which is max
+    push_transaction( op, alice_private_key );
+
+    generate_block();
+    const auto& rt = *( db->get_index< recurrent_transfer_index, by_id >().begin() );
+    BOOST_REQUIRE_EQUAL( rt.remaining_executions, 1 );
+    BOOST_REQUIRE_EQUAL( rt.get_trigger_date().sec_since_epoch(),
+      ( db->head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ) - fc::seconds( HIVE_BLOCK_INTERVAL ) ).sec_since_epoch() );
+    //ABW: note that first transfer did not execute at timestamp of transaction being pushed (during tx evaluation - timestamp of current head block)
+    //but only at timestamp of block that finally contained it (during block application - timestamp of the new block), however it was scheduled for the former;
+    //also next execution is scheduled to occur after recurrence, so slippage does not accumulate
+
+    op.from = "bob";
+    op.to = "alice";
+    op.memo = "test fail";
+    op.amount = ASSET( "10.000 TESTS" );
+    BOOST_REQUIRE_EQUAL( HIVE_MAX_RECURRENT_TRANSFER_END_DATE, 730 ); // if max value is changed, adjust values below accordingly
+    op.recurrence = 2503;
+    op.executions = 8;
+    // 8 transfers, one immediately and the rest after 2503 hours each, with last at 17521 hours after start, which is 1 hour above limit
+    HIVE_REQUIRE_ASSERT( push_transaction( op, bob_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE )" );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( recurrent_transfer_edit_overextended )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "recurrent_transfer edit that overextends duration" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    fund( "alice", ASSET( "200.000 TBD" ) );
+
+    // make the same r.transfer as in previous test
+    recurrent_transfer_operation op;
+    op.from = "alice";
+    op.to = "bob";
+    op.memo = "test ok";
+    op.amount = ASSET( "1.000 TBD" );
+    op.recurrence = fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ).to_seconds() / fc::hours( 1 ).to_seconds();
+    op.executions = 2;
+    // two transfers, one immediately and one after 2 years which is max
+    push_transaction( op, alice_private_key );
+
+    // ups, the amount was wrong
+    op.amount = ASSET( "10.000 TBD" );
+    // note that edit - we will do something similar in next test and it will fail;
+    // it works here because we are not changing recurrence and no transfer happened yet
+    push_transaction( op, alice_private_key );
+
+    generate_block();
+    // first transfer of two already happened, let's wait some more
+    generate_blocks( db->head_block_time() + fc::hours( 1 ) );
+
+    op.memo = "test fail";
+    // try to extend duration - it should fail since number of executions would reset to two, but first of them
+    // would not happen immediately like in case of new r.transfer, but at previous schedule after two years (and
+    // second after another two years)
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE )" );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( recurrent_transfer_full_edit_overextended )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "recurrent_transfer edit that overextends duration with change of recurrence" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    fund( "alice", ASSET( "200.000 TBD" ) );
+
+    // make short duration r.transfer
+    recurrent_transfer_operation op;
+    op.from = "alice";
+    op.to = "bob";
+    op.memo = "test ok";
+    op.amount = ASSET( "10.000 TBD" );
+    op.recurrence = 24;
+    op.executions = 2;
+    // two transfers, one immediately and one after 1 day
+    push_transaction( op, alice_private_key );
+
+    // try to edit it immediately, before first transfer actually happened
+    op.memo = "test fail";
+    op.recurrence = fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ).to_seconds() / fc::hours( 1 ).to_seconds();
+    // since we are changing recurrence, even though no transfer happened yet, first transfer of the edit will
+    // happen one full cycle after current head block, which is two years after now (and second transfer will be
+    // after next two years - far to overextended);
+    // compare to previous test to see why it worked then but does not work here
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE )" );
+
+    generate_block();
+    // waiting for first execution does not change anything - the r.transfer edit is still overextending time even more
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE )" );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
 
 BOOST_AUTO_TEST_CASE( account_witness_block_approve_authorities )
 {
