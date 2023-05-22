@@ -278,8 +278,6 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test) {
 
 BOOST_AUTO_TEST_CASE(wallet_manager_sessions) {
   try {
-    if (fc::exists("test.wallet")) fc::remove("test.wallet");
-
     const std::string _port = "127.0.0.1:666";
     const std::string _dir = ".";
     const uint64_t _timeout = 90;
@@ -336,6 +334,60 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions) {
       BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token" ), fc::exception );
       BOOST_REQUIRE_THROW( wm.list_wallets( _token_00 ), fc::exception );
       BOOST_REQUIRE_THROW( wm.list_wallets( _token_01 ), fc::exception );
+    }
+
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(wallet_manager_info) {
+  try {
+
+    const std::string _port = "127.0.0.1:666";
+    const std::string _dir = ".";
+    const uint64_t _timeout = 90;
+
+    {
+      bool _checker = false;
+      beekeeper_wallet_manager wm(  _dir, _timeout, [&_checker](){ _checker = true; } );
+      BOOST_REQUIRE( wm.start() );
+
+      auto _token_00 = wm.create_session( "aaaa", _port );
+
+      std::this_thread::sleep_for( std::chrono::seconds(3) );
+
+      auto _token_01 = wm.create_session( "bbbb", _port );
+
+      auto _info_00 = wm.get_info( _token_00 );
+      auto _info_01 = wm.get_info( _token_01 );
+
+      BOOST_TEST_MESSAGE( _info_00.timeout_time );
+      BOOST_TEST_MESSAGE( _info_01.timeout_time );
+
+      auto _time_00 = fc::time_point::from_iso_string( _info_00.timeout_time );
+      auto _time_01 = fc::time_point::from_iso_string( _info_01.timeout_time );
+
+      BOOST_REQUIRE( _time_01 >_time_00 );
+
+      wm.close_session( _token_01 );
+      BOOST_REQUIRE( !_checker );
+
+      auto _token_02 = wm.create_session( "cccc", _port );
+
+      auto _info_02 = wm.get_info( _token_02 );
+
+      BOOST_TEST_MESSAGE( _info_02.timeout_time );
+
+      auto _time_02 = fc::time_point::from_iso_string( _info_02.timeout_time );
+
+      BOOST_REQUIRE( _time_02 >_time_00 );
+
+      wm.close_session( _token_02 );
+      BOOST_REQUIRE( !_checker );
+
+      wm.close_session( _token_00 );
+      BOOST_REQUIRE( _checker );
+
+      BOOST_REQUIRE_THROW( wm.close_session( _token_00 ), fc::exception );
     }
 
   } FC_LOG_AND_RETHROW()
