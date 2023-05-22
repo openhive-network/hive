@@ -54,7 +54,6 @@ flat_set<std::string> beekeeper_wallet_manager::get_public_keys( const std::stri
   return sessions.get_wallet( token )->get_public_keys();
 }
 
-
 void beekeeper_wallet_manager::lock_all( const std::string& token )
 {
   sessions.get_wallet( token )->lock_all();
