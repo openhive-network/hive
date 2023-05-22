@@ -174,7 +174,6 @@ mirrornet_replay_test:
 
 chain_test:
   stage: test
-  when: manual
   needs:
     - job: testnet_node_build
       artifacts: true
