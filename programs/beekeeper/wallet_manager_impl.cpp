@@ -27,18 +27,11 @@ bool wallet_manager_impl::valid_filename(const string& name)
   return bfs::path(name).filename().string() == name;
 }
 
-wallet_manager_impl::wallet_manager_impl( const boost::filesystem::path& command_line_wallet_dir )
-{
-   singleton = std::make_unique<singleton_beekeeper>( command_line_wallet_dir );
-}
-
-std::string wallet_manager_impl::create( const std::string& token, const std::string& name, fc::optional<std::string> password )
+std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_filename_creator, const std::string& name, fc::optional<std::string> password )
 {
   FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
-  FC_ASSERT( singleton );
 
-  auto wallet_filename = singleton->create_wallet_filename( name );
-
+  auto wallet_filename = wallet_filename_creator( name );
   FC_ASSERT( !fc::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
 
   if(!password)
@@ -67,14 +60,13 @@ std::string wallet_manager_impl::create( const std::string& token, const std::st
   return *password;
 }
 
-void wallet_manager_impl::open( const std::string& token, const std::string& name )
+void wallet_manager_impl::open( wallet_filename_creator_type wallet_filename_creator, const std::string& name )
 {
   FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
-  FC_ASSERT( singleton );
 
   wallet_data d;
   auto wallet = std::make_unique<beekeeper_wallet>(d);
-  auto wallet_filename = singleton->create_wallet_filename( name );
+  auto wallet_filename = wallet_filename_creator( name );
   wallet->set_wallet_filename(wallet_filename.string());
   FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));
 
@@ -88,7 +80,7 @@ void wallet_manager_impl::open( const std::string& token, const std::string& nam
   wallets.emplace(name, std::move(wallet));
 }
 
-std::vector<wallet_details> wallet_manager_impl::list_wallets( const std::string& token )
+std::vector<wallet_details> wallet_manager_impl::list_wallets()
 {
   std::vector<wallet_details> result;
   for (const auto& i : wallets)
@@ -98,7 +90,7 @@ std::vector<wallet_details> wallet_manager_impl::list_wallets( const std::string
   return result;
 }
 
-map<std::string, std::string> wallet_manager_impl::list_keys( const std::string& token, const string& name, const string& pw )
+map<std::string, std::string> wallet_manager_impl::list_keys( const string& name, const string& pw )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
   auto& w = wallets.at(name);
@@ -107,7 +99,7 @@ map<std::string, std::string> wallet_manager_impl::list_keys( const std::string&
   return w->list_keys();
 }
 
-flat_set<std::string> wallet_manager_impl::get_public_keys( const std::string& token )
+flat_set<std::string> wallet_manager_impl::get_public_keys()
 {
   FC_ASSERT( !wallets.empty(), "You don't have any wallet!");
   flat_set<std::string> result;
@@ -124,7 +116,7 @@ flat_set<std::string> wallet_manager_impl::get_public_keys( const std::string& t
   return result;
 }
 
-void wallet_manager_impl::lock_all( const std::string& token )
+void wallet_manager_impl::lock_all()
 {
   // no call to check_timeout since we are locking all anyway
   for (auto& i : wallets)
@@ -136,7 +128,7 @@ void wallet_manager_impl::lock_all( const std::string& token )
   }
 }
 
-void wallet_manager_impl::lock( const std::string& token, const std::string& name )
+void wallet_manager_impl::lock( const std::string& name )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
   auto& w = wallets.at(name);
@@ -147,11 +139,11 @@ void wallet_manager_impl::lock( const std::string& token, const std::string& nam
   w->lock();
 }
 
-void wallet_manager_impl::unlock( const std::string& token, const std::string& name, const std::string& password )
+void wallet_manager_impl::unlock( wallet_filename_creator_type wallet_filename_creator, const std::string& name, const std::string& password )
 {
   if (wallets.count(name) == 0)
   {
-    open( token, name );
+    open( wallet_filename_creator, name );
   }
   auto& w = wallets.at(name);
   FC_ASSERT( w->is_locked(), "Wallet is already unlocked: ${w}", ("w", name));
@@ -159,7 +151,7 @@ void wallet_manager_impl::unlock( const std::string& token, const std::string& n
   w->unlock(password);
 }
 
-string wallet_manager_impl::import_key( const std::string& token, const std::string& name, const std::string& wif_key )
+string wallet_manager_impl::import_key( const std::string& name, const std::string& wif_key )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
@@ -169,7 +161,7 @@ string wallet_manager_impl::import_key( const std::string& token, const std::str
   return w->import_key(wif_key);
 }
 
-void wallet_manager_impl::remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& key )
+void wallet_manager_impl::remove_key( const std::string& name, const std::string& password, const std::string& key )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
@@ -180,7 +172,7 @@ void wallet_manager_impl::remove_key( const std::string& token, const std::strin
   w->remove_key(key);
 }
 
-string wallet_manager_impl::create_key( const std::string& token, const std::string& name )
+string wallet_manager_impl::create_key( const std::string& name )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
@@ -190,7 +182,7 @@ string wallet_manager_impl::create_key( const std::string& token, const std::str
   return w->create_key();
 }
 
-signature_type wallet_manager_impl::sign_digest( const std::string& token, const digest_type& digest, const public_key_type& key )
+signature_type wallet_manager_impl::sign_digest( const digest_type& digest, const public_key_type& key )
 {
   try {
     for (const auto& i : wallets)
@@ -205,17 +197,6 @@ signature_type wallet_manager_impl::sign_digest( const std::string& token, const
   } FC_LOG_AND_RETHROW();
 
   FC_ASSERT( false, "Public key not found in unlocked wallets ${k}", ("k", key));
-}
-
-bool wallet_manager_impl::start()
-{
-  return singleton->start();
-}
-
-void wallet_manager_impl::save_connection_details( const collector_t& values )
-{
-  FC_ASSERT( singleton );
-  singleton->save_connection_details( values );
 }
 
 } //beekeeper

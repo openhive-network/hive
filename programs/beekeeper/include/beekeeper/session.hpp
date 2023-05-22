@@ -2,6 +2,7 @@
 
 #include <beekeeper/time_manager.hpp>
 #include <beekeeper/utilities.hpp>
+#include <beekeeper/wallet_manager_impl.hpp>
 
 #include <string>
 
@@ -15,6 +16,8 @@ class session
 
     time_manager time;
 
+    std::shared_ptr<wallet_manager_impl> wallet;
+
   public:
 
     session( const std::string& token, const std::string& notifications_endpoint, types::lock_method_type&& lock_method );
@@ -22,6 +25,8 @@ class session
     void set_timeout( const std::chrono::seconds& t );
     void check_timeout();
     info get_info();
+
+    std::shared_ptr<wallet_manager_impl>& get_wallet();
 };
 
 } //beekeeper

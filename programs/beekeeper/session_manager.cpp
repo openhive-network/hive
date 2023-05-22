@@ -48,4 +48,9 @@ namespace beekeeper {
     return get_session( token )->second->get_info();
   }
 
+  std::shared_ptr<wallet_manager_impl>& session_manager::get_wallet( const std::string& token )
+  {
+    return get_session( token )->second->get_wallet();
+  }
+
 } //beekeeper
