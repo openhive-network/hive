@@ -8,19 +8,16 @@ namespace beekeeper {
 
 namespace bfs = boost::filesystem;
 
-time_manager::time_manager( const std::string& token, types::lock_method_type&& lock_method )
-               :  token( token ),
-                  lock_method( lock_method ),
-                  notification_method( [](){ hive::notify_hived_status("Attempt of closing all wallets"); } )
+time_manager::time_manager()
 {
-   notification_thread = std::make_unique<std::thread>( [this]()
+  notification_thread = std::make_unique<std::thread>( [this]()
+    {
+      while( !stop_requested )
       {
-         while( !stop_requested )
-         {
-            check_timeout_impl( false/*allow_update_timeout_time*/ );
-            std::this_thread::sleep_for( std::chrono::milliseconds(200) );
-         }
-      } );
+        run();
+        std::this_thread::sleep_for( std::chrono::milliseconds(200) );
+      }
+    } );
 }
 
 time_manager::~time_manager()
@@ -29,48 +26,52 @@ time_manager::~time_manager()
    notification_thread->join();
 }
 
-void time_manager::set_timeout( const std::chrono::seconds& t )
+void time_manager::run()
 {
-   timeout = t;
-   auto now = std::chrono::system_clock::now();
-   timeout_time = now + timeout;
-   FC_ASSERT( timeout_time >= now && timeout_time.time_since_epoch().count() > 0, "Overflow on timeout_time, specified ${t}, now ${now}, timeout_time ${timeout_time}",
-             ("t", t.count())("now", now.time_since_epoch().count())("timeout_time", timeout_time.time_since_epoch().count()));
-}
+  std::lock_guard<std::mutex> guard( methods_mutex );
 
-void time_manager::check_timeout_impl( bool allow_update_timeout_time )
-{
-   if( timeout_time != timepoint_t::max() )
-   {
-      const auto& now = std::chrono::system_clock::now();
-      if( now >= timeout_time )
-      {
-         {
-            std::lock_guard<std::mutex> guard( methods_mutex );
-            lock_method( token );
-            notification_method();
-            allow_update_timeout_time = true;
-         }
-      }
-      if( allow_update_timeout_time )
-         timeout_time = now + timeout;
-   }
-}
+  const auto& now = std::chrono::system_clock::now();
 
-void time_manager::check_timeout()
-{
-   check_timeout_impl( true/*allow_update_timeout_time*/ );
-}
+  auto& _idx = items.get<by_time>();
 
-info time_manager::get_info()
-{
-  auto to_string = []( const std::chrono::system_clock::time_point& tp )
+  auto _it = _idx.begin();
+  while( _it != _idx.end() )
   {
-    fc::time_point_sec _time( tp.time_since_epoch() / std::chrono::milliseconds(1000) );
-    return _time.to_iso_string();
-  };
+    if( now >= _it->time )
+    {
+      _it->lock_method();
+      _it->notification_method();
+      _idx.modify( _it, []( session_data &sd ){ sd.time = types::timepoint_t::max(); });
+    }
+    ++_it;
+  }
 
-  return { to_string( std::chrono::system_clock::now() ), to_string( timeout_time ) };
+}
+
+void time_manager::add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method )
+{
+  std::lock_guard<std::mutex> guard( methods_mutex );
+
+  auto& _idx = items.get<by_token>();
+  _idx.emplace( session_data{ token, lock_method, notification_method } );
+}
+
+void time_manager::change( const std::string& token, const types::timepoint_t& time )
+{
+  std::lock_guard<std::mutex> guard( methods_mutex );
+
+  auto& _idx = items.get<by_token>();
+  const auto& _found = _idx.find( token );
+
+  _idx.modify( _found, [&time]( session_data &sd ){ sd.time = time; });
+}
+
+void time_manager::close( const std::string& token )
+{
+  std::lock_guard<std::mutex> guard( methods_mutex );
+
+  auto& _idx = items.get<by_token>();
+  _idx.erase( token );
 }
 
 } //beekeeper
