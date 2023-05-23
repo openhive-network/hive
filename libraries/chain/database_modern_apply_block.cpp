@@ -103,7 +103,7 @@ void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_
     required_automated_actions req_actions;
     optional_automated_actions opt_actions;
 
-    update_blockchain_state(sign_block, block_size, block_num, req_actions, opt_actions);
+    modern_update_blockchain_state(sign_block, block_size, block_num, req_actions, opt_actions);
     //process_transactions(full_block, skip);
 
 
@@ -132,5 +132,36 @@ void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_
   } 
   FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) )
 }
+
+void database::modern_update_blockchain_state(const signed_block& sign_block, uint32_t block_size, int block_num, required_automated_actions& req_actions, optional_automated_actions& opt_actions)
+{
+    const auto& gprops = get_dynamic_global_properties();
+    
+    if( has_hardfork( HIVE_HARDFORK_0_12 ) )
+        FC_ASSERT(block_size <= gprops.maximum_block_size, "Block size is larger than voted on block size", (block_num)(block_size)("max",gprops.maximum_block_size));
+
+    if( block_size < HIVE_MIN_BLOCK_SIZE )
+        elog("Block size is too small", (block_num)(block_size)("min", HIVE_MIN_BLOCK_SIZE));
+
+    /// modify current witness so transaction evaluators can know who included the transaction,
+    /// this is mostly for POW operations which must pay the current_witness
+    modify( gprops, [&]( dynamic_global_property_object& dgp ){
+        dgp.current_witness = sign_block.witness;
+    });
+
+    
+    /// parse witness version reporting
+    process_header_extensions( sign_block, req_actions, opt_actions );
+
+    if( has_hardfork( HIVE_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
+    {
+        const auto& witness = get_witness( sign_block.witness );
+        const auto& hardfork_state = get_hardfork_property_object();
+        FC_ASSERT(witness.running_version >= hardfork_state.current_hardfork_version,
+            "Block produced by witness that is not running current hardfork",
+            (witness)(sign_block.witness)(hardfork_state));
+    }
+}
+
 
 }}
