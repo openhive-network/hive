@@ -12,15 +12,21 @@ class session
 {
   private:
 
-    const std::string notifications_endpoint;
 
-    time_manager time;
+    std::chrono::seconds timeout    = std::chrono::seconds::max(); ///< how long to wait before calling lock_all()
+    types::timepoint_t timeout_time = types::timepoint_t::max(); ///< when to call lock_all()
+
+    const std::string token;
 
     std::shared_ptr<wallet_manager_impl> wallet;
 
+    void check_timeout_impl( bool allow_update_timeout_time );
+
+    std::shared_ptr<time_manager> time;
+
   public:
 
-    session( const std::string& token, const std::string& notifications_endpoint, types::lock_method_type&& lock_method );
+    session( const std::string& token, std::shared_ptr<time_manager> time );
 
     void set_timeout( const std::chrono::seconds& t );
     void check_timeout();

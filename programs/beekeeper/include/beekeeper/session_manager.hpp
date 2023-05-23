@@ -14,13 +14,17 @@ class session_manager
 
     const unsigned int token_length = 32;
 
+    std::shared_ptr<time_manager> time;
+
     items sessions;
 
     items::iterator get_session( const std::string& token );
 
   public:
 
-    std::string create_session( const std::string& salt, const std::string& notifications_endpoint, types::lock_method_type&& lock_method );
+    session_manager();
+
+    std::string create_session( const std::string& salt, const std::string& notifications_endpoint );
     void close_session( const std::string& token );
     bool empty() const;
 
