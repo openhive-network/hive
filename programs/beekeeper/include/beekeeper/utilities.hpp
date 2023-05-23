@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <string>
+#include <chrono>
 
 namespace beekeeper {
 
@@ -21,8 +22,10 @@ struct info
 
 namespace types
 {
-  using notification_method_type = std::function<void()>;
-  using lock_method_type = std::function<void(const std::string&)>;
+  using basic_method_type         = std::function<void()>;
+  using notification_method_type  = basic_method_type;
+  using lock_method_type          = basic_method_type;
+  using timepoint_t               = std::chrono::time_point<std::chrono::system_clock>;
 }
 
 }
