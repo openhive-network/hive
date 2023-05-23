@@ -69,7 +69,7 @@ void database::modern_apply_block(const std::shared_ptr<full_block_type>& full_b
 
 void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops)
 {
-  const signed_block& block = full_block->get_block();
+  const signed_block& sign_block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
   block_notification note(full_block);
 
@@ -90,20 +90,20 @@ void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_
 
     if( BOOST_UNLIKELY( block_num == 1 ) )
     {
-      process_hardforks_at_genesis(block_num, block);
+      process_hardforks_at_genesis(block_num, sign_block);
     }
 
-    process_merkle_check(block, skip, block_num, full_block);
+    //process_merkle_check(sign_block, skip, block_num, full_block);
 
     const witness_object& signing_witness = validate_block_header(skip, full_block);
 
-    const auto& gprops = get_dynamic_global_properties();
+    
     uint32_t block_size = full_block->get_uncompressed_block().raw_size;
 
     required_automated_actions req_actions;
     optional_automated_actions opt_actions;
 
-    update_blockchain_state(block, signing_witness, block_size, block_num, req_actions, opt_actions);
+    update_blockchain_state(sign_block, block_size, block_num, req_actions, opt_actions);
     //process_transactions(full_block, skip);
 
 
@@ -126,7 +126,7 @@ void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_
     _current_op_in_trx = 0;
 
     uint32_t old_last_irreversible;
-    execute_operations_after_block_application(full_block, note, signing_witness, block, old_last_irreversible, req_actions, opt_actions );
+    execute_operations_after_block_application(full_block, note, signing_witness, sign_block, old_last_irreversible, req_actions, opt_actions );
 
     finalize_block_application(note, old_last_irreversible);
   } 
