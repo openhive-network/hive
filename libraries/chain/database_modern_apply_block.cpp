@@ -57,17 +57,17 @@
 
 namespace hive { namespace chain {
 
-void database::modern_apply_block(const std::shared_ptr<full_block_type>& full_block, pqxx::result::const_iterator& current_operation, const pqxx::result::const_iterator& end_it, uint32_t skip)
+void database::modern_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops, uint32_t skip)
 {
 
   detail::with_skip_flags( *this, skip, [&]()
   {
-    _modern_apply_block(full_block, current_operation, end_it);
+    _modern_apply_block(full_block, ops);
   } );
 
 }
 
-void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_block, pqxx::result::const_iterator& current_operation, const pqxx::result::const_iterator& end_it)
+void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops)
 {
   const signed_block& block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
@@ -106,33 +106,21 @@ void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_
     update_blockchain_state(block, signing_witness, block_size, block_num, req_actions, opt_actions);
     //process_transactions(full_block, skip);
 
-    for(; current_operation != end_it && current_operation["block_num"].as<int>() == block_num;
-        ++current_operation)
+
+    // process the operations
+    for(const auto& op_vector : ops)
     {
-      //add_operation_variant(current_operation, varbin_operations);
-      pqxx::binarystring bs(current_operation["bin_body"]);
-      using hive::protocol::operation;
+        const char* raw_data = op_vector.data();
+        uint32_t data_length = op_vector.size();
 
-      const char* raw_data = reinterpret_cast<const char*>(bs.data());
-      uint32_t data_length = bs.size();
+        hive::protocol::operation op = fc::raw::unpack_from_char_array<hive::protocol::operation>(raw_data, data_length);
 
-      operation op = fc::raw::unpack_from_char_array<operation>(raw_data, data_length);
-
-      //conensus_op_visitor_type conensus_op_visitor;
-      //op.visit(conensus_op_visitor);
-
-      //Finally process the operations
-      //_current_op_in_trx = 0;
-      try {
-        apply_operation(op);
-        //++_current_op_in_trx;
-      } FC_CAPTURE_AND_RETHROW( (op) ) 
-
-  //     //a string __cpp_lib_string_view
-  //     //zastosuj string view 
+        //_current_op_in_trx = 0;
+        try {
+            apply_operation(op);
+            //++_current_op_in_trx;
+        } FC_CAPTURE_AND_RETHROW( (op) )
     }
-
-
 
     _current_trx_in_block = -1;
     _current_op_in_trx = 0;

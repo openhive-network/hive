@@ -24,7 +24,6 @@
 
 #include <functional>
 #include <map>
-#include <pqxx/pqxx>
 
 namespace hive {
 
@@ -717,9 +716,9 @@ namespace chain {
 
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
     public:
-      void modern_apply_block(const std::shared_ptr<full_block_type>& full_block, pqxx::result::const_iterator& current_operation, const pqxx::result::const_iterator& end_it, uint32_t skip = skip_nothing );
+      void modern_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops, uint32_t skip = skip_nothing);
     private:
-      void _modern_apply_block(const std::shared_ptr<full_block_type>& full_block, pqxx::result::const_iterator& current_operation, const pqxx::result::const_iterator& end_it);
+      void _modern_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops);
 
       void switch_forks(item_ptr new_head);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block);
