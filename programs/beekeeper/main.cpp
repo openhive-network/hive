@@ -32,6 +32,8 @@ class beekeeper_app
     appbase::application&                   app;
     appbase::initialization_result::result  init_status = appbase::initialization_result::result::ok;
 
+    const uint32_t session_limit = 64;
+
     void set_program_options()
     {
       hive::utilities::notifications::add_program_options( options );
@@ -49,10 +51,13 @@ class beekeeper_app
               "Random data that is used as an additional input so as to create token")
 
             ("export-keys-wallet-name", bpo::value<std::string>()->default_value(""),
-              "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required" )
+              "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required. By default is empty." )
 
             ("export-keys-wallet-password", bpo::value<std::string>()->default_value(""),
-              "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required" )
+              "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required. By default is empty." )
+
+            //("session-limit", bpo::value<uint32_t>()->default_value(64),
+            //"Number of concurrent sessions is limited. Reaching the limit triggers an exception. By default is 64." )
 
             ("backtrace", bpo::value<std::string>()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" )
             ;
@@ -127,7 +132,10 @@ class beekeeper_app
           FC_ASSERT( _args.count("unlock-timeout") );
           auto _timeout = _args.at("unlock-timeout").as<uint64_t>();
 
-          wallet_manager_ptr  = std::make_shared<beekeeper::beekeeper_wallet_manager>( _dir, _timeout );
+          // FC_ASSERT( _args.count("session-limit") );
+          // auto _session_limit = _args.at("session-limit").as<uint32_t>();
+
+          wallet_manager_ptr  = std::make_shared<beekeeper::beekeeper_wallet_manager>( _dir, _timeout, session_limit );
           api_ptr             = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr );
 
           if( !wallet_manager_ptr->start() )
