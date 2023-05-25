@@ -1,6 +1,6 @@
 #pragma once
 
-#include <fc/crypto/elliptic.hpp>
+
 #include <fc/container/flat_fwd.hpp>
 #include <hive/protocol/config.hpp>
 

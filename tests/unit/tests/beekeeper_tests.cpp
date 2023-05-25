@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   constexpr auto key2 = "5Ju5RTcVDo35ndtzHioPMgebvBM6LkJ6tvuU6LTNQv8yaz3ggZr";
   constexpr auto key3 = "5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3";
 
-  beekeeper_wallet_manager wm( ".", 900 );
+  beekeeper_wallet_manager wm( ".", 900, 3 );
 
   BOOST_REQUIRE( wm.start() );
   std::string _token = wm.create_session( "this is salt", "127.0.0.1:666" );
@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test) {
   try {
     if (fc::exists("test.wallet")) fc::remove("test.wallet");
 
-    beekeeper_wallet_manager wm( ".", 900 );
+    beekeeper_wallet_manager wm( ".", 900, 3 );
 
     BOOST_REQUIRE( wm.start() );
     std::string _token = wm.create_session( "this is salt", "127.0.0.1:666" );
@@ -281,10 +281,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions) {
     const std::string _port = "127.0.0.1:666";
     const std::string _dir = ".";
     const uint64_t _timeout = 90;
+    const uint32_t _limit = 3;
 
     {
       bool _checker = false;
-      beekeeper_wallet_manager wm( _dir, _timeout, [&_checker](){ _checker = true; } );
+      beekeeper_wallet_manager wm( _dir, _timeout, _limit, [&_checker](){ _checker = true; } );
 
       auto _token = wm.create_session( "this is salt", _port );
       wm.close_session( _token );
@@ -292,7 +293,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions) {
     }
     {
       bool _checker = false;
-      beekeeper_wallet_manager wm(  _dir, _timeout, [&_checker](){ _checker = true; } );
+      beekeeper_wallet_manager wm(  _dir, _timeout, _limit, [&_checker](){ _checker = true; } );
 
       auto _token_00 = wm.create_session( "this is salt", _port );
       auto _token_01 = wm.create_session( "this is salt", _port );
@@ -303,7 +304,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions) {
     }
     {
       bool _checker = false;
-      beekeeper_wallet_manager wm(  _dir, _timeout, [&_checker](){ _checker = true; } );
+      beekeeper_wallet_manager wm(  _dir, _timeout, _limit, [&_checker](){ _checker = true; } );
       BOOST_REQUIRE( wm.start() );
 
       auto _token_00 = wm.create_session( "aaaa", _port );
@@ -345,10 +346,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_info) {
     const std::string _port = "127.0.0.1:666";
     const std::string _dir = ".";
     const uint64_t _timeout = 90;
+    const uint32_t _limit = 3;
 
     {
       bool _checker = false;
-      beekeeper_wallet_manager wm(  _dir, _timeout, [&_checker](){ _checker = true; } );
+      beekeeper_wallet_manager wm(  _dir, _timeout, _limit, [&_checker](){ _checker = true; } );
       BOOST_REQUIRE( wm.start() );
 
       auto _token_00 = wm.create_session( "aaaa", _port );
@@ -389,6 +391,54 @@ BOOST_AUTO_TEST_CASE(wallet_manager_info) {
 
       BOOST_REQUIRE_THROW( wm.close_session( _token_00 ), fc::exception );
     }
+
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(wallet_manager_session_limit) {
+  try {
+
+    const std::string _port = "127.0.0.1:666";
+    const std::string _dir = ".";
+    const uint64_t _timeout = 90;
+    const uint32_t _session_limit = 64;
+
+    bool _checker = false;
+    beekeeper_wallet_manager wm(  _dir, _timeout, _session_limit, [&_checker](){ _checker = true; } );
+    BOOST_REQUIRE( wm.start() );
+
+    std::vector<std::string> _tokens;
+    for( uint32_t i = 0; i < _session_limit; ++i )
+    {
+      _tokens.emplace_back( wm.create_session( "salt", _port ) );
+    }
+    BOOST_REQUIRE_THROW( wm.create_session( "salt", _port ), fc::exception );
+
+    BOOST_REQUIRE( _tokens.size() == _session_limit );
+
+    wm.close_session( _tokens[0] );
+    wm.close_session( _tokens[1] );
+    _tokens.erase( _tokens.begin() );
+    _tokens.erase( _tokens.begin() );
+
+    _tokens.emplace_back( wm.create_session( "salt", _port ) );
+    _tokens.emplace_back( wm.create_session( "salt", _port ) );
+
+    BOOST_REQUIRE_THROW( wm.create_session( "salt", _port ), fc::exception );
+
+    BOOST_REQUIRE( _tokens.size() == _session_limit );
+
+    BOOST_REQUIRE( _checker == false );
+
+    for( auto& token : _tokens )
+    {
+      wm.close_session( token );
+    }
+
+    BOOST_REQUIRE( _checker == true );
+
+    _tokens.emplace_back( wm.create_session( "salt", _port ) );
+    _tokens.emplace_back( wm.create_session( "salt", _port ) );
 
   } FC_LOG_AND_RETHROW()
 }

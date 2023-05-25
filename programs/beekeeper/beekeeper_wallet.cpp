@@ -11,7 +11,6 @@
 #include <list>
 
 #include <fc/container/deque.hpp>
-#include <fc/crypto/elliptic.hpp>
 #include <fc/git_revision.hpp>
 #include <fc/io/json.hpp>
 #include <fc/crypto/aes.hpp>
@@ -26,15 +25,6 @@
 namespace beekeeper {
 
 namespace detail {
-
-private_key_type derive_private_key( const std::string& prefix_string,
-                                         int sequence_number )
-{
-  std::string sequence_string = std::to_string(sequence_number);
-  fc::sha512 h = fc::sha512::hash(prefix_string + " " + sequence_string);
-  fc::ecc::private_key derived_key = fc::ecc::private_key::regenerate(fc::sha256::hash(h));
-  return derived_key;
-}
 
 class beekeeper_impl
 {
