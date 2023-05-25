@@ -19,7 +19,6 @@ class beekeeper_wallet_manager
 private:
 
   using close_all_sessions_action_method = std::function<void()>;
-  close_all_sessions_action_method  close_all_sessions_action;
 
 public:
 
@@ -27,7 +26,8 @@ public:
   /// @param command_line_wallet_dir path to override default ./ location of wallet files.
   /// @param command_line_unlock_timeout timeout for unlocked wallet [s]
   /// @param method an action that will be executed when all sessions are closed
-  beekeeper_wallet_manager( const boost::filesystem::path& command_line_wallet_dir, uint64_t command_line_unlock_timeout, close_all_sessions_action_method method = [](){ std::raise(SIGINT); } );
+  beekeeper_wallet_manager( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit,
+                            close_all_sessions_action_method&& method = [](){ std::raise(SIGINT); } );
 
   beekeeper_wallet_manager(const beekeeper_wallet_manager&) = delete;
   beekeeper_wallet_manager(beekeeper_wallet_manager&&) = delete;
@@ -137,6 +137,11 @@ public:
 private:
 
   uint64_t unlock_timeout = 900;
+
+  uint32_t  session_cnt   = 0;
+  uint32_t  session_limit = 0;
+
+  close_all_sessions_action_method  close_all_sessions_action;
 
   std::unique_ptr<singleton_beekeeper> singleton;
 

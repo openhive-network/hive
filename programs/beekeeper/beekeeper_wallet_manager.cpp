@@ -4,12 +4,12 @@
 
 namespace beekeeper {
 
-beekeeper_wallet_manager::beekeeper_wallet_manager( const boost::filesystem::path& command_line_wallet_dir, uint64_t command_line_unlock_timeout, close_all_sessions_action_method method )
-                          : close_all_sessions_action( method )
+beekeeper_wallet_manager::beekeeper_wallet_manager( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit,
+                                                    close_all_sessions_action_method&& method
+                                                  )
+                          : unlock_timeout( cmd_unlock_timeout ), session_limit( cmd_session_limit ), close_all_sessions_action( method )
 {
-  unlock_timeout = command_line_unlock_timeout;
-
-  singleton = std::make_unique<singleton_beekeeper>( command_line_wallet_dir );
+  singleton = std::make_unique<singleton_beekeeper>( cmd_wallet_dir );
 }
 
 bool beekeeper_wallet_manager::start()
@@ -107,8 +107,12 @@ void beekeeper_wallet_manager::save_connection_details( const collector_t& value
 
 string beekeeper_wallet_manager::create_session( const string& salt, const string& notifications_endpoint )
 {
+  FC_ASSERT( session_cnt < session_limit, "Number of concurrent sessions reached a limit ==`${session_limit}`. Close previous sessions so as to open the new one.", (session_limit) );
+
   auto _token = sessions.create_session( salt, notifications_endpoint );
   set_timeout( _token, unlock_timeout );
+
+  ++session_cnt;
 
   return _token;
 }
@@ -120,6 +124,8 @@ void beekeeper_wallet_manager::close_session( const string& token )
   {
     close_all_sessions_action();
   }
+
+  --session_cnt;
 }
 
 } //beekeeper
