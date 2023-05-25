@@ -89,12 +89,6 @@ struct list_wallets_return
   std::vector<wallet_details> wallets;
 };
 
-using list_keys_args = wallet_password_args;
-struct list_keys_return
-{
-  map<std::string, std::string> keys;
-};
-
 using get_public_keys_args = session_token_type;
 struct get_public_keys_return
 {
@@ -140,7 +134,6 @@ class beekeeper_wallet_api
       (remove_key)
       (create_key)
       (list_wallets)
-      (list_keys)
       (get_public_keys)
       (sign_digest)
       (get_info)
@@ -164,7 +157,6 @@ FC_REFLECT_DERIVED( beekeeper::import_key_args, (beekeeper::session_token_type),
 FC_REFLECT_DERIVED( beekeeper::remove_key_args, (beekeeper::session_token_type), (wallet_name)(password)(public_key) )
 FC_REFLECT( beekeeper::create_key_return, (public_key) )
 FC_REFLECT( beekeeper::list_wallets_return, (wallets) )
-FC_REFLECT( beekeeper::list_keys_return, (keys) )
 FC_REFLECT( beekeeper::get_public_keys_return, (keys) )
 FC_REFLECT_DERIVED( beekeeper::sign_digest_args, (beekeeper::session_token_type), (digest)(public_key) )
 FC_REFLECT( beekeeper::sign_digest_return, (signature) )

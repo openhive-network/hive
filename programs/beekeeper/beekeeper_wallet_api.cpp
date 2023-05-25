@@ -31,7 +31,6 @@ class beekeeper_api_impl
       (remove_key)
       (create_key)
       (list_wallets)
-      (list_keys)
       (get_public_keys)
       (sign_digest)
       (get_info)
@@ -98,11 +97,6 @@ DEFINE_API_IMPL( beekeeper_api_impl, list_wallets )
   return { _wallet_mgr->list_wallets( args.token ) };
 }
 
-DEFINE_API_IMPL( beekeeper_api_impl, list_keys )
-{
-  return { _wallet_mgr->list_keys( args.token, args.wallet_name, args.password) };
-}
-
 DEFINE_API_IMPL( beekeeper_api_impl, get_public_keys )
 {
   return { _wallet_mgr->get_public_keys( args.token ) };
@@ -150,7 +144,6 @@ DEFINE_LOCKLESS_APIS( beekeeper_wallet_api,
   (remove_key)
   (create_key)
   (list_wallets)
-  (list_keys)
   (get_public_keys)
   (sign_digest)
   (get_info)

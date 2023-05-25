@@ -14,6 +14,7 @@
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/scope_exit.hpp>
 
 #include <iostream>
 #include <csignal>
@@ -47,8 +48,58 @@ class beekeeper_app
             ("salt", bpo::value<std::string>()->default_value(""),
               "Random data that is used as an additional input so as to create token")
 
+            ("export-keys-wallet-name", bpo::value<std::string>()->default_value(""),
+              "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required" )
+
+            ("export-keys-wallet-password", bpo::value<std::string>()->default_value(""),
+              "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required" )
+
             ("backtrace", bpo::value<std::string>()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" )
             ;
+    }
+
+    void save_keys( const std::string& token, const std::string& wallet_name, const std::string& wallet_password )
+    {
+      if( token.empty() || wallet_name.empty() || wallet_password.empty() )
+        return;
+
+      const std::string _filename = wallet_name + ".keys";
+
+      ilog("Try to save keys into `${_filename}` file.", (_filename));
+
+      BOOST_SCOPE_EXIT(&wallet_manager_ptr, &token, &wallet_name)
+      {
+        wallet_manager_ptr->lock( token, wallet_name );
+      } BOOST_SCOPE_EXIT_END
+
+      try
+      {
+        wallet_manager_ptr->unlock( token, wallet_name, wallet_password );
+        auto _result = wallet_manager_ptr->list_keys( token, wallet_name, wallet_password );
+
+        fc::path _file( _filename );
+        fc::json::save_to_file( _result, _file );
+
+        ilog( "Keys have been saved.", (_filename) );
+        return;
+      }
+      catch ( const boost::exception& e )
+      {
+        wlog( boost::diagnostic_information(e) );
+      }
+      catch ( const fc::exception& e )
+      {
+        wlog( e.to_detail_string() );
+      }
+      catch ( const std::exception& e )
+      {
+        wlog( e.what() );
+      }
+      catch ( ... )
+      {
+        wlog( "Unknown error. Saving keys into a `${_filename}` file failed.",(_filename) );
+      }
+      wlog( "A problem occured during saving keys into `${_filename}` file.", (_filename) );
     }
 
     std::pair<bool, std::string> initialize_program_options()
@@ -93,6 +144,10 @@ class beekeeper_app
             fc::print_stacktrace_on_segfault();
             ilog( "Backtrace on segfault is enabled." );
           }
+
+          FC_ASSERT( _args.count("export-keys-wallet-name") );
+          FC_ASSERT( _args.count("export-keys-wallet-password") );
+          save_keys( _token, _args.at( "export-keys-wallet-name" ).as<std::string>(), _args.at( "export-keys-wallet-password" ).as<std::string>() );
 
           return { true, _token };
       } FC_LOG_AND_RETHROW()
