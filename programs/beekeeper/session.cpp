@@ -38,7 +38,7 @@ info session::get_info()
   return { to_string( std::chrono::system_clock::now() ), to_string( timeout_time ) };
 }
 
-std::shared_ptr<wallet_manager_impl>& session::get_wallet()
+std::shared_ptr<wallet_manager_impl> session::get_wallet()
 {
   return wallet;
 }

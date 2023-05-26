@@ -34,7 +34,7 @@ class session
     void check_timeout();
     info get_info();
 
-    std::shared_ptr<wallet_manager_impl>& get_wallet();
+    std::shared_ptr<wallet_manager_impl> get_wallet();
 
     hive::utilities::notifications::detail::notification_handler& get_notification_handler();
 };
