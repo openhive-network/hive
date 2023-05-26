@@ -97,3 +97,7 @@ filters_enum_virtual_ops = {
     "escrow_rejected_operation": 0x10000000000,
     "proxy_cleared_operation": 0x20000000000,
 }
+
+VESTING_WITHDRAW_INTERVALS: Final[int] = 13  # 13 * VESTING_WITHDRAW_INTERVAL_SECONDS in testnet and mainnet
+
+VESTING_WITHDRAW_INTERVAL_SECONDS: Final[int] = 60 * 60  # 60 min in testnet / 7 days on mainnet
