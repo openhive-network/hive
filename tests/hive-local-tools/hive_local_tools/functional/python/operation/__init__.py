@@ -54,6 +54,11 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.Test, price: float, toleran
     return tt.Asset.Range(vests, tolerance=tolerance)
 
 
+def convert_vest_to_hive_range(vest_amount: tt.Asset.Vest, price: float, tolerance: int = 5) -> tt.Asset.Range:
+    hive = tt.Asset.from_({'amount': vest_amount.amount / price, 'precision': 3, 'nai': '@@000000021'})
+    return tt.Asset.Range(hive, tolerance=tolerance)
+
+
 def get_virtual_operation(node: tt.InitNode, vop: str) -> list:
     return node.api.account_history.enum_virtual_ops(
         # To stabilize operation costs while creating a test environment, the initminer performs the
