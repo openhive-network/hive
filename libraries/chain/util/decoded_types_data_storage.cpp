@@ -38,7 +38,7 @@ decoded_type_data::decoded_type_data(const std::string_view _checksum, const std
   if (name.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - field name must be specified." );
   //at the moment only hive::void_t is reflected structure with no members.
-  if (members->empty() && name != HIVE_VOID_T)
+  if ((!members || members->empty()) && name != HIVE_VOID_T)
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Members have to be specified. Type name: ${name}", (name) );
   if (!align_of)
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - align_of must be set");
@@ -55,7 +55,7 @@ decoded_type_data::decoded_type_data(const std::string_view _checksum, const std
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - checksum cannot be empty");
   if (name.empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Decoded type - field name must be specified." );
-  if (enum_values->empty())
+  if (!enum_values || enum_values->empty())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Enum values have to be specified. Type name: ${name}", (name) );
 
   reflected = true;
@@ -86,9 +86,9 @@ decoded_type_data::decoded_type_data(const std::string& json)
   else if (!reflected && (members || enum_values))
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with non reflected decoded type contains data for reflected type. ${json}", (json));
   
-  if (enum_values->empty() && (!size_of || !align_of))
+  if ((!enum_values || enum_values->empty()) && (!size_of || !align_of))
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with decoded type should contains data about sizeof and alignof if type is not an reflected enum. ${json}", (json));
-  else if (!enum_values->empty() && (size_of || align_of))
+  else if ((enum_values && !enum_values->empty()) && (size_of || align_of))
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with decoded reflected type should not contains data about sizeof and alignof. ${json}", (json));
 }
 
