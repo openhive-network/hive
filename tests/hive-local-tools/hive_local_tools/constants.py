@@ -100,3 +100,7 @@ filters_enum_virtual_ops = {
 }
 
 MIN_RECURRENT_TRANSFERS_RECURRENCE = 24
+
+VESTING_WITHDRAW_INTERVALS: Final[int] = 13  # 13 * VESTING_WITHDRAW_INTERVAL_SECONDS in testnet and mainnet
+
+VESTING_WITHDRAW_INTERVAL_SECONDS: Final[int] = 60 * 60  # 60 min in testnet / 7 days on mainnet
