@@ -12,6 +12,7 @@ using private_key_type  = fc::ecc::private_key;
 using public_key_type   = fc::ecc::public_key;
 using signature_type    = fc::ecc::compact_signature;
 using digest_type       = fc::sha256;
+using chain_id_type     = hive::protocol::chain_id_type;
 
 using fc::flat_set;
 
@@ -104,7 +105,11 @@ class beekeeper_wallet_base
 
       /** Returns a signature given the digest and public_key, if this wallet can sign via that public key
        */
-      virtual std::optional<signature_type> try_sign_digest( const digest_type digest, const public_key_type public_key ) = 0;
+      virtual std::optional<signature_type> try_sign_digest( const public_key_type& public_key, const digest_type& sig_digest ) = 0;
+
+      /** Returns a signature using a serialized transaction, a chain id and a public key. A parameter sig_digest is used for verification.
+       */
+      virtual std::optional<signature_type> try_sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest ) = 0;
 };
 
 }
