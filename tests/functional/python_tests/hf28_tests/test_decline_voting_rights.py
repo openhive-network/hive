@@ -4,17 +4,17 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD, TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
-from hive_local_tools.functional.python.operation import get_virtual_operations, get_current_mana
+from hive_local_tools.functional.python.operation import get_virtual_operations, get_rc_current_mana
 
 
 @run_for("testnet")
 def test_decline_voting_rights(prepare_environment):
     node, wallet = prepare_environment
 
-    mana_before_decline = get_current_mana(node, VOTER_ACCOUNT)
+    mana_before_decline = get_rc_current_mana(node, VOTER_ACCOUNT)
 
     transaction = wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
-    assert get_current_mana(node, VOTER_ACCOUNT) < mana_before_decline
+    assert get_rc_current_mana(node, VOTER_ACCOUNT) < mana_before_decline
     assert transaction["rc_cost"] > 0
 
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT])["requests"]) == 1

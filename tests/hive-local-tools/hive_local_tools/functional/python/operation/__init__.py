@@ -48,7 +48,7 @@ class Account:
 
     def get_rc_current_mana(self):
         self.update_account_info()
-        return get_current_mana(self._node, self._name)
+        return get_rc_current_mana(self._node, self._name)
 
     def update_account_info(self):
         self._acc_info = self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]
@@ -84,16 +84,16 @@ class _RcManabar:
         self.max_rc = rc_manabar["max_rc"]
 
     def assert_rc_current_mana_is_unchanged(self):
-        assert get_current_mana(self._node, self._name) == self.current_rc_mana, f"The {self._name} account rc_current_mana has been changed."
+        assert get_rc_current_mana(self._node, self._name) == self.current_rc_mana, f"The {self._name} account rc_current_mana has been changed."
 
     def assert_rc_current_mana_is_reduced(self, operation_rc_cost: int, operation_timestamp=None):
         err = f"The account {self._name} did not incur the operation cost."
         if operation_timestamp:
             mana_before_operation = self.calculate_current_value(
                 operation_timestamp - tt.Time.seconds(3))
-            assert mana_before_operation == get_current_mana(self._node, self._name) + operation_rc_cost, err
+            assert mana_before_operation == get_rc_current_mana(self._node, self._name) + operation_rc_cost, err
         else:
-            assert get_current_mana(self._node, self._name) + operation_rc_cost == self.current_rc_mana, err
+            assert get_rc_current_mana(self._node, self._name) + operation_rc_cost == self.current_rc_mana, err
 
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
@@ -134,7 +134,7 @@ def get_hive_power(node: tt.InitNode, account_name: str) -> tt.Asset.Vest:
     return tt.Asset.from_(node.api.database.find_accounts(accounts=[account_name])['accounts'][0]['vesting_shares'])
 
 
-def get_current_mana(node: tt.InitNode, account_name: str) -> int:
+def get_rc_current_mana(node: tt.InitNode, account_name: str) -> int:
     return int(node.api.rc.find_rc_accounts(accounts=[account_name])['rc_accounts'][0]['rc_manabar']['current_mana'])
 
 
