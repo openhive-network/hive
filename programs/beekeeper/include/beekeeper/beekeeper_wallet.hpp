@@ -165,14 +165,6 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        */
       bool remove_key( string key ) override;
 
-       /** Creates a key within the wallet to be used to sign transactions by an account.
-       *
-       * example: create_key K1
-       *
-       * @returns a string containing the public key of the created key
-       */
-      string create_key() override;
-
       /* Attempts to sign a digest via the given public_key
       */
       std::optional<signature_type> try_sign_digest( const public_key_type& public_key, const digest_type& sig_digest ) override;

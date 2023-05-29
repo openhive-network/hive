@@ -184,12 +184,6 @@ public:
     FC_ASSERT( false, "Key not in wallet" );
   }
 
-  string create_key()
-  {
-    private_key_type priv_key = fc::ecc::private_key::generate();
-    return import_key(priv_key.key_to_wif());
-  }
-
   bool load_wallet_file(string wallet_filename = "")
   {
     // TODO:  Merge imported wallet with existing wallet,
@@ -298,15 +292,6 @@ bool beekeeper_wallet::remove_key(string key)
     return true;
   }
   return false;
-}
-
-string beekeeper_wallet::create_key()
-{
-  FC_ASSERT( !is_locked(), "Unable to create key on a locked wallet");
-
-  string ret = my->create_key();
-  save_wallet_file();
-  return ret;
 }
 
 bool beekeeper_wallet::load_wallet_file( string wallet_filename )
