@@ -448,10 +448,27 @@ void chain_plugin_impl::start_write_processing()
               if (write_lock_held_duration > fc::milliseconds(write_lock_hold_time))
               {
                 wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
-                     "held lock for ${write_lock_held_duration}μs",
-                     (write_lock_hold_time)
-                     ("write_lock_held_duration", write_lock_held_duration.count()));
-                break;
+                    "held lock for ${write_lock_held_duration}μs",
+                    (write_lock_hold_time)
+                    ("write_lock_held_duration", write_lock_held_duration.count()));
+
+                if ( is_running() ) {
+                  break;
+                }
+
+                /**
+                * Ensure the loop empties the write queue when the application is closing.
+                * When the application is closing, the P2P plugin relies on the shutdown_mgr::wait
+                * method to process all the blocks it pushed to the queue before exiting. In cases
+                * where processing a block takes too long and the application is in the process of
+                * closing (not running), the remaining blocks in the queue must be processed by the
+                * 'req_visitor' in order to release the pending shutdown_mgr::wait. The blocks themselves
+                * will not be modified, as the visitor's 'visit' method immediately returns when a
+                * closing is pending. Instead, only the promises associated with the blocks will be triggered,
+                * advancing the shutdown_mgr::wait process. Without this mechanism, the application would hang
+                * while waiting for new blocks from the P2P plugin, even though they will no longer arrive
+                * because the P2P plugin has already disconnected from the network.
+                */
               }
             }
 
