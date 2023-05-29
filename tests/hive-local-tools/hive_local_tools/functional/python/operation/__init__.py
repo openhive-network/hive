@@ -27,7 +27,7 @@ def get_hive_power(node: tt.InitNode, account_name: str) -> tt.Asset.Vest:
     return tt.Asset.from_(node.api.database.find_accounts(accounts=[account_name])['accounts'][0]['vesting_shares'])
 
 
-def get_current_mana(node: tt.InitNode, account_name: str) -> int:
+def get_rc_current_mana(node: tt.InitNode, account_name: str) -> int:
     return node.api.rc.find_rc_accounts(accounts=[account_name])['rc_accounts'][0]['rc_manabar']['current_mana']
 
 
