@@ -433,14 +433,9 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
     block_attributes_t attributes;
   };
 
-#define ARTIFACTS_LOCKFREE // no locks on the reader side of the queue (reader is always the limiting factor)
-#ifdef ARTIFACTS_LOCKFREE
   typedef boost::lockfree::queue<full_block_with_artifacts*> queue_type;
   queue_type full_block_queue{10000};
   std::atomic<int> queue_size = { 0 }; // approx full_block_queue size
-#else
-  std::queue<full_block_with_artifacts*, std::list<full_block_with_artifacts*>> full_block_queue;
-#endif
   constexpr int max_blocks_to_prefetch = 10000;
 
   std::thread writer_thread([&]() {
@@ -453,7 +448,7 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
       full_block_with_artifacts* work_raw_ptr = nullptr;
       {
         std::unique_lock<std::mutex> lock(queue_mutex);
-#ifdef ARTIFACTS_LOCKFREE
+
         while (!appbase::app().is_interrupt_request() && !full_block_queue.pop(work_raw_ptr))
           queue_condition.wait(lock);
         if (appbase::app().is_interrupt_request() || !work_raw_ptr)
@@ -463,21 +458,6 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
           break;
         }
         queue_size.fetch_sub(1, std::memory_order_relaxed);
-#else
-        while (!appbase::app().is_interrupt_request() && full_block_queue.empty())
-          queue_condition.wait(lock);
-        work_raw_ptr = full_block_queue.front();
-        full_block_queue.pop();
-        if (appbase::app().is_interrupt_request())
-        {
-          if(work_raw_ptr != nullptr)
-            interrupted_at_block = work_raw_ptr->full_block->get_block_num();
-          break;
-        }
-
-        if (!work_raw_ptr)
-          break;
-#endif
       }
       queue_condition.notify_one();
 
@@ -510,7 +490,6 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
 
     if (block_num > last_block)
       return true;
-#ifdef ARTIFACTS_LOCKFREE
     if (!appbase::app().is_interrupt_request() &&
         queue_size.load(std::memory_order_relaxed) >= max_blocks_to_prefetch)
     {
@@ -526,18 +505,6 @@ void block_log_artifacts::impl::generate_file(const block_log& source_block_prov
 
     full_block_queue.push(new full_block_with_artifacts{full_block, block_pos, attributes});
     queue_size.fetch_add(1, std::memory_order_relaxed);
-#else
-    std::unique_lock<std::mutex> lock(queue_mutex);
-    while (!appbase::app().is_interrupt_request() && full_block_queue.size() >= max_blocks_to_prefetch)
-      queue_condition.wait(lock);
-    if (appbase::app().is_interrupt_request())
-    {
-      interrupted_at_block = full_block->get_block_num();
-      return false;
-    }
-
-    full_block_queue.push(new full_block_with_artifacts{full_block, block_pos, attributes});
-#endif
     blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation);
     queue_condition.notify_one();
     return true;
