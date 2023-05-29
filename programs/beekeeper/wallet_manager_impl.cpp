@@ -182,21 +182,32 @@ string wallet_manager_impl::create_key( const std::string& name )
   return w->create_key();
 }
 
-signature_type wallet_manager_impl::sign_digest( const digest_type& digest, const public_key_type& key )
+signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const public_key_type& public_key )
 {
-  try {
-    for (const auto& i : wallets)
+  try
+  {
+    for( const auto& i : wallets )
     {
-      if (!i.second->is_locked())
+      if( !i.second->is_locked() )
       {
-        std::optional<signature_type> sig = i.second->try_sign_digest(digest, key);
-        if (sig)
+        std::optional<signature_type> sig = sign_method( i.second );
+        if( sig )
           return *sig;
       }
     }
   } FC_LOG_AND_RETHROW();
 
-  FC_ASSERT( false, "Public key not found in unlocked wallets ${k}", ("k", key));
+  FC_ASSERT( false, "Public key not found in unlocked wallets ${public_key}", (public_key));
+}
+
+signature_type wallet_manager_impl::sign_digest( const public_key_type& public_key, const digest_type& sig_digest )
+{
+  return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_digest( public_key, sig_digest ); }, public_key );
+}
+
+signature_type wallet_manager_impl::sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest )
+{
+  return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_transaction( transaction, chain_id, public_key, sig_digest ); }, public_key );
 }
 
 } //beekeeper

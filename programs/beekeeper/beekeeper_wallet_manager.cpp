@@ -89,10 +89,16 @@ string beekeeper_wallet_manager::create_key( const std::string& token, const std
   return sessions.get_wallet( token )->create_key( name );
 }
 
-signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const digest_type& digest, const public_key_type& key )
+signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const public_key_type& public_key, const digest_type& sig_digest )
 {
   sessions.check_timeout( token );
-  return sessions.get_wallet( token )->sign_digest( digest, key );
+  return sessions.get_wallet( token )->sign_digest( public_key, sig_digest );
+}
+
+signature_type beekeeper_wallet_manager::sign_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest )
+{
+  sessions.check_timeout( token );
+  return sessions.get_wallet( token )->sign_transaction( transaction, chain_id, public_key, sig_digest );
 }
 
 info beekeeper_wallet_manager::get_info( const std::string& token )

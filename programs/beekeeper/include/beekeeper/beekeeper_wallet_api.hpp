@@ -95,15 +95,23 @@ struct get_public_keys_return
   flat_set<std::string> keys;
 };
 
-struct sign_digest_args: public session_token_type
-{
-  std::string digest;
-  std::string public_key;
-};
-struct sign_digest_return
+struct signature_return
 {
   signature_type signature;
 };
+struct sign_digest_args: public session_token_type
+{
+  std::string public_key;
+  std::string sig_digest;
+};
+using sign_digest_return = signature_return;
+
+struct sign_transaction_args: public sign_digest_args
+{
+  std::string transaction;
+  chain_id_type chain_id;
+};
+using sign_transaction_return = signature_return;
 
 using get_info_args   = session_token_type;
 using get_info_return = info;
@@ -136,6 +144,7 @@ class beekeeper_wallet_api
       (list_wallets)
       (get_public_keys)
       (sign_digest)
+      (sign_transaction)
       (get_info)
       (create_session)
       (close_session)
@@ -158,6 +167,7 @@ FC_REFLECT_DERIVED( beekeeper::remove_key_args, (beekeeper::session_token_type),
 FC_REFLECT( beekeeper::create_key_return, (public_key) )
 FC_REFLECT( beekeeper::list_wallets_return, (wallets) )
 FC_REFLECT( beekeeper::get_public_keys_return, (keys) )
-FC_REFLECT_DERIVED( beekeeper::sign_digest_args, (beekeeper::session_token_type), (digest)(public_key) )
-FC_REFLECT( beekeeper::sign_digest_return, (signature) )
+FC_REFLECT_DERIVED( beekeeper::sign_digest_args, (beekeeper::session_token_type), (public_key)(sig_digest) )
+FC_REFLECT( beekeeper::signature_return, (signature) )
+FC_REFLECT_DERIVED( beekeeper::sign_transaction_args, (beekeeper::sign_digest_args), (transaction)(chain_id) )
 FC_REFLECT( beekeeper::create_session_args, (salt)(notifications_endpoint) )
