@@ -118,13 +118,6 @@ public:
   /// @throws fc::exception if wallet not found or locked or key is not removed.
   void remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& key );
 
-  /// Creates a key within the specified wallet.
-  /// Wallet must be opened and unlocked
-  /// @param name of the wallet to create key in
-  /// @throws fc::exception if wallet not found or locked, or if the wallet cannot create said type of key
-  /// @return The public key of the created key
-  string create_key( const std::string& token, const std::string& name );
-
   /// @return Current time and timeout time
   info get_info( const std::string& token );
 

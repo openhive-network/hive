@@ -83,12 +83,6 @@ void beekeeper_wallet_manager::remove_key( const std::string& token, const std::
   sessions.get_wallet( token )->remove_key( name, password, key );
 }
 
-string beekeeper_wallet_manager::create_key( const std::string& token, const std::string& name )
-{
-  sessions.check_timeout( token );
-  return sessions.get_wallet( token )->create_key( name );
-}
-
 signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const public_key_type& public_key, const digest_type& sig_digest )
 {
   sessions.check_timeout( token );
