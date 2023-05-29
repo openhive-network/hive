@@ -172,16 +172,6 @@ void wallet_manager_impl::remove_key( const std::string& name, const std::string
   w->remove_key(key);
 }
 
-string wallet_manager_impl::create_key( const std::string& name )
-{
-  FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
-
-  auto& w = wallets.at(name);
-  FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
-
-  return w->create_key();
-}
-
 signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const public_key_type& public_key )
 {
   try

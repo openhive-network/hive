@@ -140,7 +140,6 @@ class beekeeper_wallet_api
       (unlock)
       (import_key)
       (remove_key)
-      (create_key)
       (list_wallets)
       (get_public_keys)
       (sign_digest)

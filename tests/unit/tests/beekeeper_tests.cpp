@@ -198,20 +198,10 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   wm.set_timeout(_token, 15);
 
   wm.create(_token, "testgen");
-  wm.create_key(_token, "testgen");
   wm.lock(_token, "testgen");
   fc::remove("testgen.wallet");
 
   pw = wm.create(_token, "testgen");
-
-  //check that the public key returned looks legit through a string conversion
-  // (would throw otherwise)
-  public_key_type create_key_pub( fc::ecc::public_key::from_base58_with_prefix( wm.create_key(_token, "testgen"), HIVE_ADDRESS_PREFIX ) );
-
-  //now pluck out the private key from the wallet and see if the public key of said
-  // private key matches what was returned earlier from the create_key() call
-  auto create_key_priv = private_key_type::wif_to_key( wm.list_keys(_token, "testgen", pw).cbegin()->second );
-  BOOST_REQUIRE_EQUAL(create_key_pub.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ), create_key_priv->get_public_key().to_base58_with_prefix( HIVE_ADDRESS_PREFIX ));
 
   wm.lock(_token, "testgen");
   BOOST_REQUIRE(fc::exists("testgen.wallet"));

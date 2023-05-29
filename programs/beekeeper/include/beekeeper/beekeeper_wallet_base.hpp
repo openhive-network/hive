@@ -95,14 +95,6 @@ class beekeeper_wallet_base
        */
       virtual bool remove_key( string key ) = 0;
 
-       /** Creates a key within the wallet to be used to sign transactions by an account.
-       *
-       * example: create_key
-       *
-       * @returns a string containing the public key of the created key
-       */
-      virtual string create_key() = 0;
-
       /** Returns a signature given the digest and public_key, if this wallet can sign via that public key
        */
       virtual std::optional<signature_type> try_sign_digest( const public_key_type& public_key, const digest_type& sig_digest ) = 0;
