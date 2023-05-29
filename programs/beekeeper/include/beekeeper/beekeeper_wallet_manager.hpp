@@ -49,7 +49,17 @@ public:
   /// @param key the public key of the corresponding private key to sign the digest with
   /// @return signature over the digest
   /// @throws fc::exception if corresponding private keys not found in unlocked wallets
-  signature_type sign_digest( const std::string& token, const digest_type& digest, const public_key_type& key );
+  signature_type sign_digest( const std::string& token, const public_key_type& public_key, const digest_type& sig_digest );
+
+  /// Sign transaction with the private keys specified via their public keys.
+  /// @param token represents a session
+  /// @param transaction the transaction in binary form.
+  /// @param chain_id the chain_id to sign transaction with.
+  /// @param public_key the public key of the corresponding private key to sign the digest with
+  /// @param sig_digest the digest used to verification  
+  /// @return signature over the transaction
+  /// @throws fc::exception if corresponding private keys not found in unlocked wallets
+  signature_type sign_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest );
 
   /// Create a new wallet.
   /// A new wallet is created in file dir/{name}.wallet see set_dir.

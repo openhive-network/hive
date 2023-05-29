@@ -28,7 +28,8 @@ class wallet_manager_impl {
     string import_key( const std::string& name, const std::string& wif_key );
     void remove_key( const std::string& name, const std::string& password, const std::string& key );
     string create_key( const std::string& name );
-    signature_type sign_digest( const digest_type& digest, const public_key_type& key );
+    signature_type sign_digest( const public_key_type& public_key, const digest_type& sig_digest );
+    signature_type sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest );
 
   private:
 
@@ -36,6 +37,8 @@ class wallet_manager_impl {
 
     std::string gen_password();
     bool valid_filename( const string& name );
+
+    signature_type sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const public_key_type& public_key );
 };
 
 } //beekeeper
