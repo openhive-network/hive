@@ -36,6 +36,13 @@ void beekeeper_wallet_manager::open( const std::string& token, const std::string
   sessions.get_wallet_manager( token )->open( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name );
 }
 
+void beekeeper_wallet_manager::close( const std::string& token, const std::string& name )
+{
+  sessions.check_timeout( token );
+
+  sessions.get_wallet_manager( token )->close( name );
+}
+
 std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::string& token )
 {
   sessions.check_timeout( token );

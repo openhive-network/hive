@@ -80,6 +80,13 @@ void wallet_manager_impl::open( wallet_filename_creator_type wallet_filename_cre
   wallets.emplace(name, std::move(wallet));
 }
 
+void wallet_manager_impl::close( const std::string& name )
+{
+  FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
+  lock( name );
+  wallets.erase( name );
+}
+
 std::vector<wallet_details> wallet_manager_impl::list_wallets()
 {
   std::vector<wallet_details> result;
