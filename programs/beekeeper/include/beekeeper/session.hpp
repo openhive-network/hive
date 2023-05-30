@@ -18,7 +18,7 @@ class session
 
     const std::string token;
 
-    std::shared_ptr<wallet_manager_impl> wallet;
+    std::shared_ptr<wallet_manager_impl> wallet_mgr;
 
     void check_timeout_impl( bool allow_update_timeout_time );
 
@@ -34,7 +34,7 @@ class session
     void check_timeout();
     info get_info();
 
-    std::shared_ptr<wallet_manager_impl> get_wallet();
+    std::shared_ptr<wallet_manager_impl> get_wallet_manager();
 
     hive::utilities::notifications::detail::notification_handler& get_notification_handler();
 };

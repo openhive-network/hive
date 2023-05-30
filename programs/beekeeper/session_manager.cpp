@@ -31,10 +31,10 @@ std::string session_manager::create_session( const std::string& salt, const std:
               {
                 FC_ASSERT( _session, "lock: session is empty." );
 
-                auto _wallet = _session->get_wallet();
-                FC_ASSERT( _wallet, "wallet is empty." );
+                auto _wallet_mgr = _session->get_wallet_manager();
+                FC_ASSERT( _wallet_mgr, "wallet manager is empty." );
 
-                _wallet->lock_all();
+                _wallet_mgr->lock_all();
               },
               [notifications_endpoint, _session]()
               {
@@ -73,9 +73,9 @@ info session_manager::get_info( const std::string& token )
   return get_session( token )->get_info();
 }
 
-std::shared_ptr<wallet_manager_impl> session_manager::get_wallet( const std::string& token )
+std::shared_ptr<wallet_manager_impl> session_manager::get_wallet_manager( const std::string& token )
 {
-  return get_session( token )->get_wallet();
+  return get_session( token )->get_wallet_manager();
 }
 
 } //beekeeper
