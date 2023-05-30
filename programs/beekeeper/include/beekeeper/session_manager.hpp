@@ -32,7 +32,7 @@ class session_manager
     void check_timeout( const std::string& token );
     info get_info( const std::string& token );
 
-    std::shared_ptr<wallet_manager_impl> get_wallet( const std::string& token );
+    std::shared_ptr<wallet_manager_impl> get_wallet_manager( const std::string& token );
 };
 
 } //beekeeper

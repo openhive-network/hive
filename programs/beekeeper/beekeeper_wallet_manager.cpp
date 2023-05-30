@@ -26,73 +26,73 @@ std::string beekeeper_wallet_manager::create( const std::string& token, const st
 {
   sessions.check_timeout( token );
 
-  return sessions.get_wallet( token )->create( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name, password );
+  return sessions.get_wallet_manager( token )->create( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name, password );
 }
 
 void beekeeper_wallet_manager::open( const std::string& token, const std::string& name )
 {
   sessions.check_timeout( token );
 
-  sessions.get_wallet( token )->open( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name );
+  sessions.get_wallet_manager( token )->open( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name );
 }
 
 std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::string& token )
 {
   sessions.check_timeout( token );
-  return sessions.get_wallet( token )->list_wallets();
+  return sessions.get_wallet_manager( token )->list_wallets();
 }
 
 map<std::string, std::string> beekeeper_wallet_manager::list_keys( const std::string& token, const string& name, const string& pw )
 {
   sessions.check_timeout( token );
-  return sessions.get_wallet( token )->list_keys( name, pw );
+  return sessions.get_wallet_manager( token )->list_keys( name, pw );
 }
 
 flat_set<std::string> beekeeper_wallet_manager::get_public_keys( const std::string& token )
 {
   sessions.check_timeout( token );
-  return sessions.get_wallet( token )->get_public_keys();
+  return sessions.get_wallet_manager( token )->get_public_keys();
 }
 
 void beekeeper_wallet_manager::lock_all( const std::string& token )
 {
-  sessions.get_wallet( token )->lock_all();
+  sessions.get_wallet_manager( token )->lock_all();
 }
 
 void beekeeper_wallet_manager::lock( const std::string& token, const std::string& name )
 {
   sessions.check_timeout( token );
-  sessions.get_wallet( token )->lock( name );
+  sessions.get_wallet_manager( token )->lock( name );
 }
 
 void beekeeper_wallet_manager::unlock( const std::string& token, const std::string& name, const std::string& password )
 {
   sessions.check_timeout( token );
-  sessions.get_wallet( token )->unlock( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name, password );
+  sessions.get_wallet_manager( token )->unlock( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name, password );
 }
 
 string beekeeper_wallet_manager::import_key( const std::string& token, const std::string& name, const std::string& wif_key )
 {
   sessions.check_timeout( token );
-  return sessions.get_wallet( token )->import_key( name, wif_key );
+  return sessions.get_wallet_manager( token )->import_key( name, wif_key );
 }
 
 void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& key )
 {
   sessions.check_timeout( token );
-  sessions.get_wallet( token )->remove_key( name, password, key );
+  sessions.get_wallet_manager( token )->remove_key( name, password, key );
 }
 
 signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const public_key_type& public_key, const digest_type& sig_digest )
 {
   sessions.check_timeout( token );
-  return sessions.get_wallet( token )->sign_digest( public_key, sig_digest );
+  return sessions.get_wallet_manager( token )->sign_digest( public_key, sig_digest );
 }
 
 signature_type beekeeper_wallet_manager::sign_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest )
 {
   sessions.check_timeout( token );
-  return sessions.get_wallet( token )->sign_transaction( transaction, chain_id, public_key, sig_digest );
+  return sessions.get_wallet_manager( token )->sign_transaction( transaction, chain_id, public_key, sig_digest );
 }
 
 info beekeeper_wallet_manager::get_info( const std::string& token )
