@@ -1,5 +1,11 @@
 #include <appbase/application.hpp>
 
+#include <hive/utilities/logging_config.hpp>
+#include <hive/utilities/notifications.hpp>
+#include <hive/utilities/options_description_ex.hpp>
+
+#include <fc/thread/thread.hpp>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/asio/signal_set.hpp>
@@ -9,8 +15,6 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
-
-#include <hive/utilities/notifications.hpp>
 
 namespace appbase {
 
@@ -121,14 +125,18 @@ void io_handler::run()
 
 class application_impl {
   public:
-    application_impl():_app_options("Application Options"){
-    }
+    application_impl() : 
+      _app_options("Application Options"),
+      _logging_thread("logging_thread")
+    {}
     const variables_map*    _options = nullptr;
     options_description     _app_options;
     options_description     _cfg_options;
     variables_map           _args;
 
     bfs::path               _data_dir;
+
+    fc::thread              _logging_thread;
 };
 
 application::application()
@@ -144,6 +152,26 @@ application::application()
 }
 
 application::~application() { }
+
+fc::optional< fc::logging_config > application::load_logging_config()
+{
+  fc::optional< fc::logging_config > logging_config;
+  const variables_map& args = get_args();
+  my->_logging_thread.async( [args, &logging_config]{
+    try
+    {
+      logging_config = hive::utilities::load_logging_config( args, appbase::app().data_dir() );
+      if( logging_config )
+        fc::configure_logging( *logging_config );
+    }
+    catch( const fc::exception& e )
+    {
+      wlog( "Error parsing logging config. ${e}", ("e", e.to_string()) );
+    }
+  }).wait();
+  ilog("Logging thread started");
+  return logging_config;
+}
 
 void application::startup() {
 
@@ -425,6 +453,12 @@ void application::finish()
 
     std::cout << "Executing `shutdown` for all plugins..." << "\n";
     shutdown( _actual_plugin_name );
+
+    fc::promise<void>::ptr quitDone( new fc::promise<void>("Logging thread quit") );
+    my->_logging_thread.quit( quitDone.get() );
+    ilog("Waiting for logging_thread quit");
+    quitDone->wait();
+    ilog("logging_thread quit done");
   }
   catch ( const boost::exception& e )
   {

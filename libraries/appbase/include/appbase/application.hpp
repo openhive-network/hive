@@ -11,6 +11,9 @@
 
 #define APPBASE_VERSION_STRING ("appbase 1.0")
 
+namespace fc {
+  struct logging_config;
+}
 namespace appbase {
 
   namespace bpo = boost::program_options;
@@ -108,6 +111,8 @@ namespace appbase {
       {
         return initialize_impl( argc, argv, { find_plugin( Plugin::name() )... } );
       }
+
+      fc::optional< fc::logging_config > load_logging_config();
 
       void startup();
 

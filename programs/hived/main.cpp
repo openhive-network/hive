@@ -16,7 +16,6 @@
 #include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <fc/exception/exception.hpp>
-#include <fc/thread/thread.hpp>
 #include <fc/interprocess/signals.hpp>
 #include <fc/git_revision.hpp>
 #include <fc/stacktrace.hpp>
@@ -122,20 +121,9 @@ int main( int argc, char** argv )
     auto chainId = chainPlugin.db().get_chain_id();
     info(chainId);
 
-    auto& args = theApp.get_args();
+    theApp.load_logging_config();
 
-    try
-    {
-      fc::optional< fc::logging_config > logging_config = hive::utilities::load_logging_config( args, appbase::app().data_dir() );
-      if( logging_config )
-        fc::configure_logging( *logging_config );
-    }
-    catch( const fc::exception& e )
-    {
-      wlog( "Error parsing logging config. ${e}", ("e", e.to_string()) );
-    }
-
-    if( args.at( "backtrace" ).as< string >() == "yes" )
+    if( theApp.get_args().at( "backtrace" ).as< string >() == "yes" )
     {
       fc::print_stacktrace_on_segfault();
       ilog( "Backtrace on segfault is enabled." );
@@ -143,6 +131,7 @@ int main( int argc, char** argv )
 
     theApp.startup();
     theApp.exec();
+
     std::cout << "exited cleanly\n";
     
     return initializationResult.get_result_code();
