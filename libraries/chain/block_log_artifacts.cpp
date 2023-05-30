@@ -11,6 +11,7 @@
 
 #include <fc/bitutil.hpp>
 #include <fc/thread/thread.hpp>
+#include <fc/io/json.hpp>
 
 #include <boost/lockfree/queue.hpp>
 
@@ -222,6 +223,11 @@ public:
   }
 
   void truncate_file(uint32_t last_block);
+
+  const artifact_file_header& get_artifacts_header() const
+  {
+    return _header;
+  }
 
 private:
   bool load_header();
@@ -670,6 +676,58 @@ void block_log_artifacts::truncate(uint32_t new_head_block_num)
 {
   dlog("truncating block log to ${new_head_block_num} blocks", (new_head_block_num));
   _impl->truncate_file(new_head_block_num);
+}
+
+std::string block_log_artifacts::get_artifacts_contents(const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, bool header_only) const
+{
+  try
+  {
+    fc::mutable_variant_object result;
+
+    const auto header = _impl->get_artifacts_header();
+    const uint32_t artifacts_head_block_num = header.head_block_num;
+    {
+      fc::mutable_variant_object header_data;
+      header_data["head_block_num"] = artifacts_head_block_num;
+      header_data["git_version"] = header.git_version;
+      header_data["format_major_version"] = header.format_major_version;
+      header_data["format_minor_version"] = header.format_minor_version;
+      header_data["dirty_close"] = header.dirty_close;
+      header_data["tail_block_num"] = header.tail_block_num;
+      header_data["generating_interrupted_at_block"] = header.generating_interrupted_at_block;
+      result["header"] = header_data;
+    }
+
+    if (!header_only)
+    {
+      const uint32_t artifacts_head_block_number = read_head_block_num();
+      const uint32_t start_block_num = starting_block_number ? *starting_block_number : 1;
+      const uint32_t end_block_num = ending_block_number ? *ending_block_number : artifacts_head_block_number;
+
+      FC_ASSERT(start_block_num <= artifacts_head_block_number);
+      FC_ASSERT(end_block_num <= artifacts_head_block_number);
+      FC_ASSERT(start_block_num <= end_block_num);
+
+      std::vector<fc::variant> artifacts_data;
+      artifacts_data.reserve(artifacts_head_block_number);
+
+      for (uint32_t block_num = start_block_num; block_num <= end_block_num; ++block_num)
+      {
+        const auto artifacts = read_block_artifacts(block_num);
+        fc::mutable_variant_object obj;
+        obj["block_num"] = block_num;
+        obj["block_id"] = artifacts.block_id.str();
+        obj["attributes"] = fc::json::to_pretty_string(artifacts.attributes);
+        obj["pos"] = artifacts.block_log_file_pos;
+        obj["size"] = artifacts.block_serialized_data_size;
+        artifacts_data.push_back(obj);
+      }
+
+      result["artifacts"] = artifacts_data;
+    }
+    return fc::json::to_pretty_string(result);
+  }
+  FC_CAPTURE_AND_RETHROW()
 }
 
 }}

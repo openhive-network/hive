@@ -88,6 +88,10 @@ public:
                              const block_id_t& block_id);
 
   void truncate(uint32_t new_head_block_num);
+
+  // for block_log_util
+  std::string get_artifacts_contents(const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, bool header_only) const;
+
 private:
   class impl;
 
