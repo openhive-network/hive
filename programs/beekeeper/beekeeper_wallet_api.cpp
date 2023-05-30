@@ -23,6 +23,7 @@ class beekeeper_api_impl
     (
       (create)
       (open)
+      (close)
       (set_timeout)
       (lock_all)
       (lock)
@@ -50,6 +51,12 @@ DEFINE_API_IMPL( beekeeper_api_impl, open )
 {
   _wallet_mgr->open( args.token, args.wallet_name );
   return open_return();
+}
+
+DEFINE_API_IMPL( beekeeper_api_impl, close )
+{
+  _wallet_mgr->close( args.token, args.wallet_name );
+  return close_return();
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, set_timeout )
@@ -143,6 +150,7 @@ beekeeper_wallet_api::~beekeeper_wallet_api() {}
 DEFINE_LOCKLESS_APIS( beekeeper_wallet_api,
   (create)
   (open)
+  (close)
   (set_timeout)
   (lock_all)
   (lock)
