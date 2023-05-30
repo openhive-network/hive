@@ -341,33 +341,6 @@ struct chain_plugin_impl::write_request_visitor
   }
 };
 
-  struct write_request_failure_visitor
-  {
-
-    typedef void result_type;
-    const fc::exception global_failure{ fc::canceled_exception_code, "General block processing failure" };
-
-    void on_block( const block_flow_control* block_ctrl )
-    {
-      block_ctrl->on_failure( global_failure );
-    }
-
-    void operator()( std::shared_ptr< p2p_block_flow_control > p2p_block_ctrl )
-    {
-      p2p_block_ctrl->on_failure( global_failure );
-    }
-
-    void operator()( transaction_flow_control* tx_ctrl )
-    {
-      tx_ctrl->on_failure( global_failure );
-    }
-
-    void operator()( std::shared_ptr< generate_block_flow_control > generate_block_ctrl )
-    {
-      generate_block_ctrl->on_failure( global_failure );
-    }
-  };
-
 bool chain_plugin_impl::is_running() const
 {
   return running && !appbase::app().is_interrupt_request();
@@ -475,17 +448,14 @@ void chain_plugin_impl::start_write_processing()
               if (write_lock_held_duration > fc::milliseconds(write_lock_hold_time))
               {
                 wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
-                     "held lock for ${write_lock_held_duration}μs",
-                     (write_lock_hold_time)
-                     ("write_lock_held_duration", write_lock_held_duration.count()));
+                    "held lock for ${write_lock_held_duration}μs",
+                    (write_lock_hold_time)
+                    ("write_lock_held_duration", write_lock_held_duration.count()));
 
-                write_request_failure_visitor failure_visitor;
-                while( !write_queue.empty() ) {
-                  cxt = write_queue.front();
-                  cxt->req_ptr.visit( failure_visitor );
-                  write_queue.pop();
+                if ( is_running() ) {
+                  break;
                 }
-                break;
+                // let the loop empty write queue when application is closing
               }
             }
 
