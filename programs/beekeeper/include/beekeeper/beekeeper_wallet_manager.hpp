@@ -77,6 +77,12 @@ public:
   /// @throws fc::exception if unable to find/open the wallet file.
   void open( const std::string& token, const std::string& name );
 
+  /// Close an existing wallet file dir/{name}.wallet.
+  /// Note this locks the wallet, see beekeeper_wallet_manager::lock.
+  /// @param name of the wallet file (minus ext .wallet) to close.
+  /// @throws fc::exception if unable to find/close the wallet file.
+  void close( const std::string& token, const std::string& name );
+
   /// @return A list of wallet names with " *" appended if the wallet is unlocked.
   std::vector<wallet_details> list_wallets( const std::string& token );
 

@@ -47,6 +47,9 @@ struct create_return: public session_token_type
 using open_args   = wallet_args;
 using open_return = void_type;
 
+using close_args   = wallet_args;
+using close_return = void_type;
+
 struct set_timeout_args: public session_token_type
 {
   int64_t seconds;
@@ -132,6 +135,7 @@ class beekeeper_wallet_api
     DECLARE_API(
       (create)
       (open)
+      (close)
       (set_timeout)
       (lock_all)
       (lock)
