@@ -109,7 +109,7 @@ namespace fc {
                      fc::time_point_sec current_timestamp = fc::time_point_sec::from_iso_string( current_timestamp_str );
                      if( current_timestamp < start_time )
                      {
-                         if( current_timestamp < limit_time || file_size( current_filename ) <= 0 )
+                         if( current_timestamp < limit_time || file_size( link_filename.parent_path() / itr->filename() ) <= 0 )
                          {
                              remove_all( *itr );
                              continue;
