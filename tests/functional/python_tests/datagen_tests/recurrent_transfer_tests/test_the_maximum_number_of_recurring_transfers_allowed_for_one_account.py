@@ -23,7 +23,7 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
     replayed_node = replayed_node(
         block_log_directory,
         absolute_start_time=timestamp + tt.Time.days(2),
-        time_multiplier=90,
+        time_multiplier=10,
         timeout=600
     )
     wallet = tt.Wallet(attach_to=replayed_node)
