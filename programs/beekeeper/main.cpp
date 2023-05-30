@@ -80,8 +80,15 @@ class beekeeper_app
       try
       {
         wallet_manager_ptr->unlock( token, wallet_name, wallet_password );
-        auto _result = wallet_manager_ptr->list_keys( token, wallet_name, wallet_password );
+        auto _keys = wallet_manager_ptr->list_keys( token, wallet_name, wallet_password );
 
+        map<std::string, std::string> _result;
+        std::transform( _keys.begin(), _keys.end(), std::inserter( _result, _result.end() ),
+        []( const std::pair<beekeeper::public_key_type, beekeeper::private_key_type>& item )
+        {
+          return std::make_pair( item.first.to_base58(), item.second.key_to_wif() );
+        } );
+        
         fc::path _file( _filename );
         fc::json::save_to_file( _result, _file );
 
