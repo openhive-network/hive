@@ -81,10 +81,10 @@ public:
   std::vector<wallet_details> list_wallets( const std::string& token );
 
   /// @return A list of private keys from a wallet provided password is correct to said wallet
-  map<std::string, std::string> list_keys( const std::string& token, const string& name, const string& pw );
+  map<public_key_type, private_key_type> list_keys( const std::string& token, const string& name, const string& pw );
 
   /// @return A set of public keys from all unlocked wallets, use with chain_controller::get_required_keys.
-  flat_set<std::string> get_public_keys( const std::string& token );
+  flat_set<public_key_type> get_public_keys( const std::string& token );
 
   /// Locks all the unlocked wallets.
   void lock_all( const std::string& token );
@@ -114,9 +114,9 @@ public:
   /// Wallet must be opened and unlocked.
   /// @param name the name of the wallet to remove the key from.
   /// @param password the plaintext password returned from ::create.
-  /// @param key the Public Key to remove, e.g. STM51AaVqQTG1rUUWvgWxGDZrRGPHTW85grXhUqWCyuAYEh8fyfjm
+  /// @param public_key the Public Key to remove, e.g. STM51AaVqQTG1rUUWvgWxGDZrRGPHTW85grXhUqWCyuAYEh8fyfjm
   /// @throws fc::exception if wallet not found or locked or key is not removed.
-  void remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& key );
+  void remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& public_key );
 
   /// @return Current time and timeout time
   info get_info( const std::string& token );

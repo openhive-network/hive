@@ -106,12 +106,12 @@ class beekeeper_wallet final : public beekeeper_wallet_base
        * using \c import_key()
        * @returns a map containing the private keys, indexed by their public key
        */
-      map<std::string, std::string> list_keys() override;
+      map<public_key_type, private_key_type> list_keys() override;
 
       /** Dumps all public keys owned by the wallet.
        * @returns a vector containing the public keys
        */
-      flat_set<std::string> list_public_keys() override;
+      flat_set<public_key_type> list_public_keys() override;
 
       /** Loads a specified Graphene wallet.
        *

@@ -90,7 +90,7 @@ std::vector<wallet_details> wallet_manager_impl::list_wallets()
   return result;
 }
 
-map<std::string, std::string> wallet_manager_impl::list_keys( const string& name, const string& pw )
+map<public_key_type, private_key_type> wallet_manager_impl::list_keys( const string& name, const string& pw )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
   auto& w = wallets.at(name);
@@ -99,19 +99,22 @@ map<std::string, std::string> wallet_manager_impl::list_keys( const string& name
   return w->list_keys();
 }
 
-flat_set<std::string> wallet_manager_impl::get_public_keys()
+flat_set<public_key_type> wallet_manager_impl::get_public_keys()
 {
   FC_ASSERT( !wallets.empty(), "You don't have any wallet!");
-  flat_set<std::string> result;
+
+  flat_set<public_key_type> result;
   bool is_all_wallet_locked = true;
-  for (const auto& i : wallets)
+
+  for( const auto& i : wallets )
   {
-    if (!i.second->is_locked())
+    if( !i.second->is_locked() )
     {
-      result.merge(i.second->list_public_keys());
+      result.merge( i.second->list_public_keys() );
     }
     is_all_wallet_locked &= i.second->is_locked();
   }
+
   FC_ASSERT( !is_all_wallet_locked, "You don't have any unlocked wallet!");
   return result;
 }

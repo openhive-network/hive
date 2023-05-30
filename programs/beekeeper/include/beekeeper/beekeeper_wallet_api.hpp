@@ -70,8 +70,7 @@ struct remove_key_args: public session_token_type
 };
 using remove_key_return = void_type;
 
-using create_key_args   = wallet_args;
-struct create_key_return
+struct import_key_return
 {
   std::string public_key;
 };
@@ -81,7 +80,6 @@ struct import_key_args: public session_token_type
   std::string wallet_name;
   std::string wif_key;
 };
-using import_key_return = create_key_return;
 
 using list_wallets_args = session_token_type;
 struct list_wallets_return
@@ -92,7 +90,7 @@ struct list_wallets_return
 using get_public_keys_args = session_token_type;
 struct get_public_keys_return
 {
-  flat_set<std::string> keys;
+  flat_set<public_key_type> keys;
 };
 
 struct signature_return
@@ -163,7 +161,7 @@ FC_REFLECT( beekeeper::create_return, (password) )
 FC_REFLECT_DERIVED( beekeeper::set_timeout_args, (beekeeper::session_token_type), (seconds) )
 FC_REFLECT_DERIVED( beekeeper::import_key_args, (beekeeper::session_token_type), (wallet_name)(wif_key) )
 FC_REFLECT_DERIVED( beekeeper::remove_key_args, (beekeeper::session_token_type), (wallet_name)(password)(public_key) )
-FC_REFLECT( beekeeper::create_key_return, (public_key) )
+FC_REFLECT( beekeeper::import_key_return, (public_key) )
 FC_REFLECT( beekeeper::list_wallets_return, (wallets) )
 FC_REFLECT( beekeeper::get_public_keys_return, (keys) )
 FC_REFLECT_DERIVED( beekeeper::sign_digest_args, (beekeeper::session_token_type), (public_key)(sig_digest) )

@@ -42,13 +42,13 @@ std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::s
   return sessions.get_wallet_manager( token )->list_wallets();
 }
 
-map<std::string, std::string> beekeeper_wallet_manager::list_keys( const std::string& token, const string& name, const string& pw )
+map<public_key_type, private_key_type> beekeeper_wallet_manager::list_keys( const std::string& token, const string& name, const string& pw )
 {
   sessions.check_timeout( token );
   return sessions.get_wallet_manager( token )->list_keys( name, pw );
 }
 
-flat_set<std::string> beekeeper_wallet_manager::get_public_keys( const std::string& token )
+flat_set<public_key_type> beekeeper_wallet_manager::get_public_keys( const std::string& token )
 {
   sessions.check_timeout( token );
   return sessions.get_wallet_manager( token )->get_public_keys();
@@ -77,10 +77,10 @@ string beekeeper_wallet_manager::import_key( const std::string& token, const std
   return sessions.get_wallet_manager( token )->import_key( name, wif_key );
 }
 
-void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& key )
+void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& public_key )
 {
   sessions.check_timeout( token );
-  sessions.get_wallet_manager( token )->remove_key( name, password, key );
+  sessions.get_wallet_manager( token )->remove_key( name, password, public_key );
 }
 
 signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const public_key_type& public_key, const digest_type& sig_digest )
