@@ -72,12 +72,12 @@ class beekeeper_wallet_base
        * using \c import_key()
        * @returns a map containing the private keys, indexed by their public key
        */
-      virtual map<std::string, std::string> list_keys() = 0;
+      virtual map<public_key_type, private_key_type> list_keys() = 0;
 
       /** Dumps all public keys owned by the wallet.
        * @returns a vector containing the public keys
        */
-      virtual flat_set<std::string> list_public_keys() = 0;
+      virtual flat_set<public_key_type> list_public_keys() = 0;
 
       /** Imports a WIF Private Key into the wallet to be used to sign transactions by an account.
        *

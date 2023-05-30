@@ -73,9 +73,13 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   if (fc::exists("test2.wallet")) fc::remove("test2.wallet");
   if (fc::exists("testgen.wallet")) fc::remove("testgen.wallet");
 
-  constexpr auto key1 = "5JktVNHnRX48BUdtewU7N1CyL4Z886c42x7wYW7XhNWkDQRhdcS";
-  constexpr auto key2 = "5Ju5RTcVDo35ndtzHioPMgebvBM6LkJ6tvuU6LTNQv8yaz3ggZr";
-  constexpr auto key3 = "5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3";
+  const auto key1_str = "5JktVNHnRX48BUdtewU7N1CyL4Z886c42x7wYW7XhNWkDQRhdcS";
+  const auto key2_str = "5Ju5RTcVDo35ndtzHioPMgebvBM6LkJ6tvuU6LTNQv8yaz3ggZr";
+  const auto key3_str = "5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3";
+
+  const auto key1 = private_key_type::wif_to_key( key1_str ).value();
+  const auto key2 = private_key_type::wif_to_key( key2_str ).value();
+  const auto key3 = private_key_type::wif_to_key( key3_str ).value();
 
   beekeeper_wallet_manager wm( ".", 900, 3 );
 
@@ -103,42 +107,40 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   wm.unlock(_token, "test", pw);
   BOOST_REQUIRE_THROW(wm.unlock(_token, "test", pw), fc::exception);
   BOOST_REQUIRE(wm.list_wallets(_token)[0].unlocked);
-  wm.import_key(_token, "test", key1);
+  wm.import_key(_token, "test", key1_str);
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token).size());
   auto keys = wm.list_keys(_token, "test", pw);
 
-  auto pub_pri_pair = [](const char *key) -> auto {
-      auto prikey = private_key_type::wif_to_key( key );
-      return std::pair<const public_key_type, private_key_type>(prikey->get_public_key(), *prikey);
-  };
-
-  auto pub_pri_pair_str = [&](const char *key) -> auto {
-    auto _keys = pub_pri_pair( key );
-    return std::make_pair( _keys.first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ), _keys.second.key_to_wif() );
-  };
-
-  auto get_key = [&]( const char* key, const std::map<std::string, std::string>& keys )
+  auto pub_pri_pair = []( const private_key_type& private_key ) -> auto
   {
-    return std::find_if( keys.begin(), keys.end(), [&]( const std::pair<std::string, std::string>& item ){ return pub_pri_pair_str( key ) == item; } );
+      return std::pair<public_key_type, private_key_type>( private_key.get_public_key(), private_key );
   };
 
-  BOOST_REQUIRE( get_key( key1, keys ) != keys.end() );
+  auto cmp_keys = [&]( const private_key_type& private_key, const std::map<public_key_type, private_key_type>& keys )
+  {
+    return std::find_if( keys.begin(), keys.end(), [&]( const std::pair<public_key_type, private_key_type>& item )
+    {
+      return pub_pri_pair( private_key ) == item;
+    });
+  };
 
-  wm.import_key(_token, "test", key2);
+  BOOST_REQUIRE( cmp_keys( key1, keys ) != keys.end() );
+
+  wm.import_key(_token, "test", key2_str);
   keys = wm.list_keys(_token, "test", pw);
-  BOOST_REQUIRE( get_key( key1, keys ) != keys.end() );
-  BOOST_REQUIRE( get_key( key2, keys ) != keys.end() );
+  BOOST_REQUIRE( cmp_keys( key1, keys ) != keys.end() );
+  BOOST_REQUIRE( cmp_keys( key2, keys ) != keys.end() );
   // key3 was not automatically imported
-  BOOST_REQUIRE( get_key( key3, keys ) == keys.end() );
+  BOOST_REQUIRE( cmp_keys( key3, keys ) == keys.end() );
 
   wm.remove_key(_token, "test", pw, pub_pri_pair(key2).first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ));
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token).size());
   keys = wm.list_keys(_token, "test", pw);
-  BOOST_REQUIRE( get_key( key2, keys ) == keys.end() );
-  wm.import_key(_token, "test", key2);
+  BOOST_REQUIRE( cmp_keys( key2, keys ) == keys.end() );
+  wm.import_key(_token, "test", key2_str);
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
   keys = wm.list_keys(_token, "test", pw);
-  BOOST_REQUIRE( get_key( key2, keys ) != keys.end() );
+  BOOST_REQUIRE( cmp_keys( key2, keys ) != keys.end() );
   BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", pw, pub_pri_pair(key3).first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX )), fc::exception);
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
   BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", "PWnogood", pub_pri_pair(key2).first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX )), fc::exception);
@@ -158,37 +160,23 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_EQUAL(2u, wm.list_wallets(_token).size());
   // wallet has no keys when it is created
   BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token).size());
-  wm.import_key(_token, "test2", key3);
+  wm.import_key(_token, "test2", key3_str);
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token).size());
-  BOOST_REQUIRE_THROW(wm.import_key(_token, "test2", key3), fc::exception);
+  BOOST_REQUIRE_THROW(wm.import_key(_token, "test2", key3_str), fc::exception);
   keys = wm.list_keys(_token, "test2", pw2);
-  BOOST_REQUIRE( get_key( key1, keys ) == keys.end() );
-  BOOST_REQUIRE( get_key( key2, keys ) == keys.end() );
-  BOOST_REQUIRE( get_key( key3, keys ) != keys.end() );
+  BOOST_REQUIRE( cmp_keys( key1, keys ) == keys.end() );
+  BOOST_REQUIRE( cmp_keys( key2, keys ) == keys.end() );
+  BOOST_REQUIRE( cmp_keys( key3, keys ) != keys.end() );
   wm.unlock(_token, "test", pw);
   keys = wm.list_keys(_token, "test", pw);
   auto keys2 = wm.list_keys(_token, "test2", pw2);
   keys.insert(keys2.begin(), keys2.end());
-  BOOST_REQUIRE( get_key( key1, keys ) != keys.end() );
-  BOOST_REQUIRE( get_key( key2, keys ) != keys.end() );
-  BOOST_REQUIRE( get_key( key3, keys ) != keys.end() );
+  BOOST_REQUIRE( cmp_keys( key1, keys ) != keys.end() );
+  BOOST_REQUIRE( cmp_keys( key2, keys ) != keys.end() );
+  BOOST_REQUIRE( cmp_keys( key3, keys ) != keys.end() );
   BOOST_REQUIRE_EQUAL(3u, keys.size());
 
   BOOST_REQUIRE_THROW(wm.list_keys(_token, "test2", "PWnogood"), fc::exception);
-
-  // private_key_type pkey1 = *( private_key_type::wif_to_key( key1 ) );
-  //private_key_type pkey2 = *( private_key_type::wif_to_key( key2 ) );
-  // chain::signed_transaction trx;
-  // auto chain_id = genesis_state().compute_chain_id();
-  // flat_set<public_key_type> pubkeys;
-  // pubkeys.emplace(pkey1.get_public_key());
-  // pubkeys.emplace(pkey2.get_public_key());
-  // trx = wm.sign_transaction(trx, pubkeys, chain_id );
-  // flat_set<public_key_type> pks;
-  // trx.get_signature_keys(chain_id, fc::time_point::maximum(), pks);
-  // BOOST_REQUIRE_EQUAL(2u, pks.size());
-  // BOOST_REQUIRE(find(pks.cbegin(), pks.cend(), pkey1.get_public_key()) != pks.cend());
-  // BOOST_REQUIRE(find(pks.cbegin(), pks.cend(), pkey2.get_public_key()) != pks.cend());
 
   BOOST_REQUIRE_EQUAL(3u, wm.get_public_keys(_token).size());
   wm.set_timeout(_token, 0);

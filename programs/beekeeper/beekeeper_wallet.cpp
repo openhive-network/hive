@@ -369,31 +369,19 @@ void beekeeper_wallet::set_password( string password )
   lock();
 }
 
-map<std::string, std::string> beekeeper_wallet::list_keys()
+map<public_key_type, private_key_type> beekeeper_wallet::list_keys()
 {
   FC_ASSERT( !is_locked(), "Unable to list public keys of a locked wallet");
-
-  map<std::string, std::string> _result;
-  std::transform( my->_keys.begin(), my->_keys.end(), std::inserter( _result, _result.end() ),
-  []( const std::pair<public_key_type, private_key_type>& item )
-  {
-    return std::make_pair( item.first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ), item.second.key_to_wif() );
-  } );
-
-  return _result;
+  return my->_keys;
 }
 
-flat_set<std::string> beekeeper_wallet::list_public_keys()
+flat_set<public_key_type> beekeeper_wallet::list_public_keys()
 {
   FC_ASSERT( !is_locked(), "Unable to list private keys of a locked wallet");
   flat_set<public_key_type> keys;
-  boost::copy(my->_keys | boost::adaptors::map_keys, std::inserter(keys, keys.end()));
+  boost::copy( my->_keys | boost::adaptors::map_keys, std::inserter( keys, keys.end() ) );
 
-  flat_set<std::string> _result;
-  std::transform( keys.begin(), keys.end(), std::inserter( _result, _result.end() ),
-  []( const public_key_type& public_key ){ return public_key.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ); } );
-
-  return _result;
+  return keys;
 }
 
 private_key_type beekeeper_wallet::get_private_key( public_key_type pubkey )const
