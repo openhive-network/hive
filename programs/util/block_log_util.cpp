@@ -576,6 +576,33 @@ bool get_block(const fc::path& block_log_filename, uint32_t block_number, bool h
   FC_CAPTURE_AND_RETHROW()
 }
 
+bool get_block_artifacts(const fc::path& block_artifacts_filename, const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, bool header_only)
+{
+  try
+  {
+    fc::path block_log_filename = fc::path(block_artifacts_filename.parent_path().string() + "/" + "block_log");
+    hive::chain::block_log block_log;
+    block_log.open(block_log_filename, true, false);
+    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_filename, true, block_log, block_log.head()->get_block_num());
+    {
+      const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
+      if (starting_block_number && *starting_block_number > artifacts_block_head_num)
+      {
+        std::cerr << "[get_block_artifacts][error] starting_block_number - " << *starting_block_number << " is bigger than artifacts head block number: " << artifacts_block_head_num << ".\n";
+        return false;
+      }
+      if (ending_block_number && *ending_block_number > artifacts_block_head_num)
+      {
+        std::cerr << "[get_block_artifacts][error] ending_block_number - " << *ending_block_number << " is bigger than artifacts head block number: " << artifacts_block_head_num << ".\n";
+        return false;
+      }
+    }
+    std::cout << artifacts->get_artifacts_contents(starting_block_number, ending_block_number, header_only) << "\n";
+    return true;
+  }
+  FC_CAPTURE_AND_RETHROW()
+}
+
 int main(int argc, char** argv)
 {
   boost::program_options::options_description global_options("Global options");
@@ -654,6 +681,16 @@ int main(int argc, char** argv)
   get_block_positional_options.add("block-log", 1);
   get_block_positional_options.add("block-number", 1);
 
+  // args for get-block-artifacts subcommand
+  boost::program_options::options_description get_block_artifacts_options("get-block-artifacts options");
+  get_block_artifacts_options.add_options()("block-log-artifacts", boost::program_options::value<std::string>()->value_name("filename")->required(), "The block log artifacts to read from");
+  get_block_artifacts_options.add_options()("starting-block-number", boost::program_options::value<uint32_t>()->value_name("n"), "if present, app will return artifacts from given block number (inclusive)");
+  get_block_artifacts_options.add_options()("ending-block-number", boost::program_options::value<uint32_t>()->value_name("m"), "if present, app will return artifacts to given block number (inclusive)");
+  get_block_artifacts_options.add_options()("header-only", "only print the artifacts header");
+  boost::program_options::positional_options_description get_block_artifacts_positional_options;
+  get_block_artifacts_positional_options.add("block-log-artifacts", 1);
+  get_block_artifacts_positional_options.add("starting-block-number", 1);
+  get_block_artifacts_positional_options.add("ending-block-number", 1);
 
   const auto print_usage = [&]() {
     std::cout << global_options << "\n";
@@ -661,6 +698,7 @@ int main(int argc, char** argv)
     std::cout << "  cmp\n";
     std::cout << "  find-end\n";
     std::cout << "  get-block\n";
+    std::cout << "  get-block-artifacts\n";
     std::cout << "  get-block-ids\n";
     std::cout << "  get-head-block-number\n";
     std::cout << "  sha256sum\n";
@@ -669,6 +707,7 @@ int main(int argc, char** argv)
     std::cout << cmp_options << "\n";
     std::cout << find_end_options << "\n";
     std::cout << get_block_options << "\n";
+    std::cout << get_block_artifacts_options << "\n";
     std::cout << get_block_ids_options << "\n";
     std::cout << get_head_block_number_options << "\n";
     std::cout << sha256sum_options << "\n";
@@ -836,6 +875,34 @@ int main(int argc, char** argv)
       const bool binary = options_map.count("binary") != 0;
 
       return get_block(options_map["block-log"].as<std::string>(), block_number, header_only, pretty, binary) ? 0 : 1;
+    }
+    else if (command == "get-block-artifacts")
+    {
+      std::vector<std::string> subcommand_options = boost::program_options::collect_unrecognized(parsed_global_options.options, boost::program_options::include_positional);
+      subcommand_options.erase(subcommand_options.begin());
+
+      boost::program_options::parsed_options parsed_get_block_artifacts_options = boost::program_options::command_line_parser(subcommand_options).
+        options(get_block_artifacts_options).
+        positional(get_block_artifacts_positional_options).
+        run();
+      boost::program_options::store(parsed_get_block_artifacts_options, options_map);
+
+      const bool header_only = options_map.count("header-only") != 0;
+      std::optional<uint32_t> starting_block_number, ending_block_number;
+
+      if (!header_only && options_map.count("starting-block-number"))
+        starting_block_number = options_map["starting-block-number"].as<uint32_t>();
+      if (!header_only && options_map.count("ending-block-number"))
+      {
+        ending_block_number = options_map["ending-block-number"].as<uint32_t>();
+        if (starting_block_number && ending_block_number < starting_block_number)
+        {
+          std::cerr << "ending_block_number must be bigger or equal to starting_block_number\n";
+          return false;
+        }
+      }
+
+      return get_block_artifacts(options_map["block-log-artifacts"].as<std::string>(), starting_block_number, ending_block_number, header_only);
     }
     else
     {
