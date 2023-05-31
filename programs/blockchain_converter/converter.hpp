@@ -70,6 +70,8 @@ namespace hive { namespace converter {
 
     uint32_t cached_hf = 0;
 
+    uint64_t total_tx_count = 0;
+
   public:
     /// All converted blocks will be signed using given private key
     blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size = 1, bool increase_block_size = true );
@@ -81,6 +83,7 @@ namespace hive { namespace converter {
     const hp::block_id_type& get_converter_head_block_id()const;
     const hp::block_id_type& get_mainnet_head_block_id()const;
 
+    const uint64_t get_total_tx_count()const;
     uint32_t get_converter_head_block_num()const;
 
     void add_second_authority( hp::authority& _auth, hp::authority::classification type );

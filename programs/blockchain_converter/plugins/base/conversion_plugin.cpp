@@ -57,6 +57,8 @@ namespace hive { namespace converter { namespace plugins {
         wlog(" > [${val}]: \t\"${key}\"", (val)(key));
 #endif
     }
+    
+    ilog("Processed total of ${total_tx_count} transactions", ("total_tx_count", converter.get_total_tx_count()));
   }
 
   void conversion_plugin_impl::open( fc::http::connection& con, const fc::url& url )
