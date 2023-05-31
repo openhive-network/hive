@@ -47,8 +47,16 @@ namespace hive { namespace converter { namespace plugins {
   void conversion_plugin_impl::display_error_response_data()const
   {
     if( total_request_count )
+    {
       wlog("${errors} (${percent}% of total ${total}) node errors detected",
         ("errors", error_response_count)("percent", int(float(error_response_count) / total_request_count * 100))("total", total_request_count));
+    
+#ifdef HIVE_CONVERTER_POST_COUNT_ERRORS
+      wlog("Errors [count]: message");
+      for( const auto& [key, val] : error_types )
+        wlog(" > [${val}]: \t\"${key}\"", (val)(key));
+#endif
+    }
   }
 
   void conversion_plugin_impl::open( fc::http::connection& con, const fc::url& url )
@@ -126,11 +134,19 @@ namespace hive { namespace converter { namespace plugins {
 
       fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
       if( var_obj.contains( "error" ) )
+      {
+        const auto msg = var_obj["error"].get_object()["message"].get_string();
+
+#ifdef HIVE_CONVERTER_POST_COUNT_ERRORS
+        ++error_types[msg];
+#endif
+
         FC_THROW_EXCEPTION( error_response_from_node, " ${block_num}: ${msg}",
-                           ("msg", var_obj["error"].get_object()["message"].get_string())
+                           ("msg", msg)
                            ("detailed",var_obj["error"].get_object())
                            ("block_num", hp::block_header::num_from_id(converter.get_mainnet_head_block_id()) + 1)
                           );
+      }
 
       // By this point `result` should be present in the response
       FC_ASSERT( var_obj.contains( "result" ), "No result in JSON response", ("body", str_reply) );

@@ -7,11 +7,13 @@
 #include <fc/network/http/connection.hpp>
 
 #include <string>
+#include <map>
 
 #include "../../converter.hpp"
 
 // #define HIVE_CONVERTER_POST_DETAILED_LOGGING // Uncomment or define if you want to enable detailed logging along with the standard response message on error
 // #define HIVE_CONVERTER_POST_SUPPRESS_WARNINGS // Uncomment or define if you want to suppress converter warnings
+// #define HIVE_CONVERTER_POST_COUNT_ERRORS // Uncomment or define if you want to count error and their types and display them at the end
 
 namespace hive { namespace converter { namespace plugins {
 
@@ -22,6 +24,9 @@ namespace hive { namespace converter { namespace plugins {
   using hp::private_key_type;
 
   class conversion_plugin_impl {
+  private:
+    std::map<std::string, size_t> error_types;
+
   protected:
     blockchain_converter converter;
 
