@@ -86,7 +86,7 @@ class beekeeper_app
         std::transform( _keys.begin(), _keys.end(), std::inserter( _result, _result.end() ),
         []( const std::pair<beekeeper::public_key_type, beekeeper::private_key_type>& item )
         {
-          return std::make_pair( item.first.to_base58(), item.second.key_to_wif() );
+          return std::make_pair( beekeeper::public_key_type::to_base58( item.first, false/*is_sha256*/ ), item.second.key_to_wif() );
         } );
         
         fc::path _file( _filename );

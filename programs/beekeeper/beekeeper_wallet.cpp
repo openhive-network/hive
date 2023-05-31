@@ -164,7 +164,7 @@ public:
     if( itr == _keys.end() )
     {
       _keys[wif_pub_key] = *priv;
-      return wif_pub_key.to_base58_with_prefix( HIVE_ADDRESS_PREFIX );
+      return public_key_type::to_base58( wif_pub_key, false/*is_sha256*/ );
     }
     FC_ASSERT( false, "Key already in wallet" );
   }
@@ -174,7 +174,7 @@ public:
   //     account, false otherwise (but it is removed either way)
   bool remove_key(string key)
   {
-    public_key_type pub( public_key_type::from_base58_with_prefix( key, HIVE_ADDRESS_PREFIX ) );
+    public_key_type pub( public_key_type::from_base58( key, false/*is_sha256*/ ) );
     auto itr = _keys.find(pub);
     if( itr != _keys.end() )
     {
