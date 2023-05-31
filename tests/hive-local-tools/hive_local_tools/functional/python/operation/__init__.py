@@ -63,3 +63,7 @@ def get_virtual_operation(node: tt.InitNode, vop: str) -> list:
 
 def get_max_mana(node: tt.InitNode, account_name: str) -> int:
     return int(node.api.rc.find_rc_accounts(accounts=[account_name])['rc_accounts'][0]["max_rc"])
+
+
+def get_transaction_timestamp(node: tt.InitNode, transaction):
+    return tt.Time.parse(node.api.block.get_block(block_num=transaction["block_num"])["block"]["timestamp"])
