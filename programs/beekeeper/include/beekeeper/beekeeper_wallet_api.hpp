@@ -39,7 +39,7 @@ struct create_args: public session_token_type
   std::string wallet_name;
   fc::optional<std::string> password{};
 };
-struct create_return: public session_token_type
+struct create_return
 {
   std::string password;
 };
