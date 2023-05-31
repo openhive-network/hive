@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import test_tools as tt
 from hive_local_tools.constants import filters_enum_virtual_ops
 
@@ -40,14 +42,16 @@ def get_vesting_price(node: tt.InitNode) -> int:
     return int(total_vesting_shares) // int(total_vesting_fund_hive)
 
 
-def hive_to_vest_conversion_value(hive_amount: tt.Asset.Test, price: float) -> tt.Asset.Vest:
-    return tt.Asset.from_(
-        {
-            'amount': hive_amount.amount * price,
-            'precision': 6,
-            'nai': '@@000000037'
-        }
-    )
+def convert_hive_to_vest_range(hive_amount: tt.Asset.Test, price: float, tolerance: int = 5) -> tt.Asset.Range:
+    """
+     Converts Hive to VEST resources at the current exchange rate provided in the `price` parameter.
+    :param hive_amount: The amount of Hive resources to convert.
+    :param price: The current exchange rate for the conversion.
+    :param tolerance: The tolerance percent for the VEST conversion, defaults its 5%.
+    :return: The equivalent amount of VEST resources after the conversion, within the specified tolerance.
+    """
+    vests = tt.Asset.from_({"amount": hive_amount.amount * price, "precision": 6, "nai": "@@000000037"})
+    return tt.Asset.Range(vests, tolerance=tolerance)
 
 
 def get_virtual_operation(node: tt.InitNode, vop: str) -> list:
@@ -61,9 +65,13 @@ def get_virtual_operation(node: tt.InitNode, vop: str) -> list:
     )["ops"]
 
 
-def get_max_mana(node: tt.InitNode, account_name: str) -> int:
+def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
     return int(node.api.rc.find_rc_accounts(accounts=[account_name])['rc_accounts'][0]["max_rc"])
 
 
 def get_transaction_timestamp(node: tt.InitNode, transaction):
     return tt.Time.parse(node.api.block.get_block(block_num=transaction["block_num"])["block"]["timestamp"])
+
+
+def jump_to_date(node: tt.InitNode, time_offset: datetime) -> None:
+    node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.Time.TIME_OFFSET_FORMAT,))
