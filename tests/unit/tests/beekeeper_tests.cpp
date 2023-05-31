@@ -421,6 +421,105 @@ BOOST_AUTO_TEST_CASE(wallet_manager_session_limit) {
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(wallet_manager_close) {
+  try {
+
+    const std::string _port = "127.0.0.1:666";
+    const std::string _dir = ".";
+    const uint64_t _timeout = 90;
+    const uint32_t _session_limit = 64;
+
+    bool _checker = false;
+    beekeeper_wallet_manager wm(  _dir, _timeout, _session_limit, [&_checker](){ _checker = true; } );
+    BOOST_REQUIRE( wm.start() );
+
+    auto wallet_name_0 = "0";
+    auto wallet_name_1 = "1";
+
+    {
+      if (fc::exists("0.wallet")) fc::remove("0.wallet");
+      if (fc::exists("1.wallet")) fc::remove("1.wallet");
+
+      auto _token = wm.create_session( "salt", _port );
+      wm.create( _token, wallet_name_0 );
+
+      auto _wallets = wm.list_wallets( _token );
+      BOOST_REQUIRE( _wallets.size() == 1 );
+      BOOST_REQUIRE( _wallets[0].name == wallet_name_0 );
+
+      BOOST_REQUIRE_THROW( wm.close( _token, wallet_name_1 ), fc::exception );
+      wm.close( _token, wallet_name_0 );
+
+      _wallets = wm.list_wallets( _token );
+      BOOST_REQUIRE( _wallets.size() == 0 );
+
+      wm.create( _token, wallet_name_1 );
+
+      _wallets = wm.list_wallets( _token );
+      BOOST_REQUIRE( _wallets.size() == 1 );
+      BOOST_REQUIRE( _wallets[0].name == wallet_name_1 );
+
+      wm.close( _token, wallet_name_1 );
+
+      _wallets = wm.list_wallets( _token );
+      BOOST_REQUIRE( _wallets.size() == 0 );
+    }
+
+    {
+      if (fc::exists("0.wallet")) fc::remove("0.wallet");
+      if (fc::exists("1.wallet")) fc::remove("1.wallet");
+
+      auto _token = wm.create_session( "salt", _port );
+      wm.create( _token, wallet_name_0 );
+
+      wm.lock_all( _token );
+
+      auto _wallets = wm.list_wallets( _token );
+      BOOST_REQUIRE( _wallets.size() == 1 );
+      BOOST_REQUIRE( _wallets[0].name == wallet_name_0 );
+
+      wm.close( _token, wallet_name_0 );
+
+      _wallets = wm.list_wallets( _token );
+      BOOST_REQUIRE( _wallets.size() == 0 );
+    }
+
+    {
+      if (fc::exists("0.wallet")) fc::remove("0.wallet");
+      if (fc::exists("1.wallet")) fc::remove("1.wallet");
+
+      auto _token = wm.create_session( "salt", _port );
+      wm.create( _token, wallet_name_0 );
+      wm.create( _token, wallet_name_1 );
+
+      wm.lock( _token, wallet_name_1 );
+
+      auto _wallets = wm.list_wallets( _token );
+      BOOST_REQUIRE( _wallets.size() == 2 );
+      BOOST_REQUIRE( _wallets[0].name == wallet_name_0 );
+      BOOST_REQUIRE( _wallets[1].name == wallet_name_1 );
+
+      wm.close( _token, wallet_name_1 );
+
+      _wallets = wm.list_wallets( _token );
+      BOOST_REQUIRE( _wallets.size() == 1 );
+      BOOST_REQUIRE( _wallets[0].name == wallet_name_0 );
+
+      wm.lock( _token, wallet_name_0 );
+
+      _wallets = wm.list_wallets( _token );
+      BOOST_REQUIRE( _wallets.size() == 1 );
+      BOOST_REQUIRE( _wallets[0].name == wallet_name_0 );
+
+      wm.close( _token, wallet_name_0 );
+
+      _wallets = wm.list_wallets( _token );
+      BOOST_REQUIRE( _wallets.size() == 0 );
+    }
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
