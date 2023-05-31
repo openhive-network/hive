@@ -6,6 +6,7 @@
 
 #include <hive/utilities/logging_config.hpp>
 #include <hive/utilities/git_revision.hpp>
+#include <hive/utilities/options_description_ex.hpp>
 
 #include <hive/plugins/account_by_key/account_by_key_plugin.hpp>
 #include <hive/plugins/account_by_key_api/account_by_key_api_plugin.hpp>
@@ -83,7 +84,7 @@ int main( int argc, char** argv )
   try
   {
     // Setup logging config
-    bpo::options_description options;
+    hive::utilities::options_description_ex options;
 
     hive::utilities::set_logging_program_options( options );
     hive::utilities::notifications::add_program_options(options);
@@ -92,7 +93,7 @@ int main( int argc, char** argv )
 
     auto& theApp = appbase::app();
 
-    theApp.add_program_options( bpo::options_description(), options );
+    theApp.add_program_options( hive::utilities::options_description_ex(), options );
 
     hive::plugins::register_plugins();
 

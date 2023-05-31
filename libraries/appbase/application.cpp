@@ -36,6 +36,7 @@ private:
 namespace bpo = boost::program_options;
 using bpo::options_description;
 using bpo::variables_map;
+using hive::utilities::options_description_ex;
 using std::cout;
 
 io_handler::io_handler(application& _app, bool _allow_close_when_signal_is_received, final_action_type&& _final_action )
@@ -130,8 +131,8 @@ class application_impl {
       _logging_thread("logging_thread")
     {}
     const variables_map*    _options = nullptr;
-    options_description     _app_options;
-    options_description     _cfg_options;
+    options_description_ex  _app_options;
+    options_description_ex  _cfg_options;
     variables_map           _args;
 
     bfs::path               _data_dir;
@@ -232,8 +233,8 @@ void application::set_program_options()
     plugins_ss << p << ' ';
   }
 
-  options_description app_cfg_opts( "Application Config Options" );
-  options_description app_cli_opts( "Application Command Line Options" );
+  options_description_ex app_cfg_opts( "Application Config Options" );
+  options_description_ex app_cli_opts( "Application Command Line Options" );
   app_cfg_opts.add_options()
       ("plugin", bpo::value< vector<string> >()->composing()->default_value(default_plugins, plugins_ss.str())->value_name("plugin-name"), "Plugin(s) to enable, may be specified multiple times");
 
@@ -253,8 +254,8 @@ void application::set_program_options()
   my->_app_options.add(app_cli_opts);
 
   for(auto& plug : plugins) {
-    boost::program_options::options_description plugin_cli_opts("Command Line Options for " + plug.second->get_name());
-    boost::program_options::options_description plugin_cfg_opts("Config Options for " + plug.second->get_name());
+    options_description_ex plugin_cli_opts("Command Line Options for " + plug.second->get_name());
+    options_description_ex plugin_cfg_opts("Config Options for " + plug.second->get_name());
     plug.second->set_program_options(plugin_cli_opts, plugin_cfg_opts);
     if(plugin_cli_opts.options().size())
       my->_app_options.add(plugin_cli_opts);
