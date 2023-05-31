@@ -105,7 +105,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, get_public_keys )
   flat_set<std::string> _result;
 
   std::transform( _keys.begin(), _keys.end(), std::inserter( _result, _result.end() ),
-  []( const public_key_type& public_key ){ return public_key.to_base58(); } );
+  []( const public_key_type& public_key ){ return public_key_type::to_base58( public_key, false/*is_sha256*/ ); } );
 
   return { _result };
 }
@@ -113,13 +113,13 @@ DEFINE_API_IMPL( beekeeper_api_impl, get_public_keys )
 DEFINE_API_IMPL( beekeeper_api_impl, sign_digest )
 {
   using namespace beekeeper;
-  return { _wallet_mgr->sign_digest( args.token, public_key_type::from_base58_with_prefix( args.public_key, HIVE_ADDRESS_PREFIX ), digest_type( args.sig_digest ) ) };
+  return { _wallet_mgr->sign_digest( args.token, public_key_type::from_base58( args.public_key, false/*is_sha256*/ ), digest_type( args.sig_digest ) ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, sign_transaction )
 {
   using namespace beekeeper;
-  return { _wallet_mgr->sign_transaction( args.token, args.transaction, args.chain_id, public_key_type::from_base58_with_prefix( args.public_key, HIVE_ADDRESS_PREFIX ), digest_type( args.sig_digest ) ) };
+  return { _wallet_mgr->sign_transaction( args.token, args.transaction, args.chain_id, public_key_type::from_base58( args.public_key, false/*is_sha256*/ ), digest_type( args.sig_digest ) ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, get_info )
