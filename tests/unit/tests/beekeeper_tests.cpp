@@ -1,9 +1,13 @@
 #ifdef IS_TEST_NET
 
+#include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/transaction.hpp>
+
 #include <boost/test/unit_test.hpp>
 
 #include <fc/crypto/elliptic.hpp>
 #include <fc/filesystem.hpp>
+#include <fc/io/json.hpp>
 
 #include <beekeeper/beekeeper_wallet.hpp>
 #include <beekeeper/beekeeper_wallet_manager.hpp>
@@ -133,7 +137,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   // key3 was not automatically imported
   BOOST_REQUIRE( cmp_keys( key3, keys ) == keys.end() );
 
-  wm.remove_key(_token, "test", pw, pub_pri_pair(key2).first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX ));
+  wm.remove_key(_token, "test", pw, public_key_type::to_base58( pub_pri_pair(key2).first, false/*is_sha256*/ ) );
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token).size());
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key2, keys ) == keys.end() );
@@ -141,9 +145,9 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key2, keys ) != keys.end() );
-  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", pw, pub_pri_pair(key3).first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX )), fc::exception);
+  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", pw, public_key_type::to_base58( pub_pri_pair(key3).first, false/*is_sha256*/ ) ), fc::exception);
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
-  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", "PWnogood", pub_pri_pair(key2).first.to_base58_with_prefix( HIVE_ADDRESS_PREFIX )), fc::exception);
+  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", "PWnogood", public_key_type::to_base58( pub_pri_pair(key2).first, false/*is_sha256*/ ) ), fc::exception);
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
 
   wm.lock(_token, "test");
@@ -515,6 +519,65 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close) {
 
       _wallets = wm.list_wallets( _token );
       BOOST_REQUIRE( _wallets.size() == 0 );
+    }
+
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction) {
+  try {
+
+    {
+      hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
+
+      if (fc::exists("0.wallet")) fc::remove("0.wallet");
+
+      auto _private_key_str = "5JEADfzTuGSkZidDV5DJYjayK5YXd4CxGtvTi84g7CzfLMGzhk7";
+      auto _public_key_str  = "86iMbKqHgJMwWLfAnm2NbDe44HsjajJnCM38EAor9gFvLgFyaW";
+
+      const auto _private_key = private_key_type::wif_to_key( _private_key_str ).value();
+      const auto _public_key = public_key_type::from_base58( _public_key_str, false/*is_sha256*/ );
+
+      hive::protocol::digest_type _sig_digest;
+      std::string _trx_serialized;
+
+      hive::protocol::transfer_operation _op;
+      _op.to     = "alice";
+      _op.from   = "bob";
+      _op.amount = hive::protocol::asset( 6, HIVE_SYMBOL );
+
+      hive::protocol::transaction _trx;
+      _trx.operations.push_back( _op );
+
+      _sig_digest = _trx.sig_digest( HIVE_CHAIN_ID, hive::protocol::pack_type::hf26 );
+      _trx_serialized = fc::to_hex( fc::raw::pack_to_vector( _trx ) );
+
+      auto _trx_str = fc::json::to_string( _trx );
+
+      auto _signature_00 = _private_key.sign_compact( _sig_digest );
+
+      const std::string _port = "127.0.0.1:666";
+      const std::string _dir = ".";
+      const uint64_t _timeout = 90;
+      const uint32_t _session_limit = 64;
+
+      beekeeper_wallet_manager wm(  _dir, _timeout, _session_limit, [](){} );
+      BOOST_REQUIRE( wm.start() );
+
+      auto _token = wm.create_session( "salt", _port );
+      auto _password = wm.create( _token, "0" );
+      auto _imported_public_key = wm.import_key( _token, "0", _private_key_str );
+      BOOST_REQUIRE( _imported_public_key == _public_key_str );
+
+      auto _signature_01 = wm.sign_transaction( _token, _trx_serialized, HIVE_CHAIN_ID, _public_key, _sig_digest );
+
+      auto _signature_00_str = fc::json::to_string( _signature_00 );
+      auto _signature_01_str = fc::json::to_string( _signature_01 );
+
+      BOOST_TEST_MESSAGE( _signature_00_str );
+      BOOST_TEST_MESSAGE( _signature_01_str );
+      BOOST_REQUIRE( _signature_00 == _signature_01 );
+
     }
 
   } FC_LOG_AND_RETHROW()
