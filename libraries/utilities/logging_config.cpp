@@ -30,7 +30,7 @@ void set_logging_program_options( boost::program_options::options_description& o
 {
   std::vector< std::string > default_appender(
     { "{\"appender\":\"stderr\",\"stream\":\"std_error\",\"time_format\":\"iso_8601_microseconds\"}",
-      "{\"appender\":\"p2p\",\"file\":\"logs/p2p/p2p.log\",\"time_format\":\"iso_8601_milliseconds\", \"delta_times\": false}" } );
+      "{\"appender\":\"p2p\",\"file\":\"logs/p2p/p2p.log\",\"time_format\":\"iso_8601_milliseconds\"}" } );
   std::string str_default_appender = boost::algorithm::join( default_appender, " " );
 
   std::vector< std::string > default_logger(
@@ -41,7 +41,19 @@ void set_logging_program_options( boost::program_options::options_description& o
 
   options.add_options()
     ("log-appender", boost::program_options::value< std::vector< std::string > >()->composing()->default_value( default_appender, str_default_appender ),
-      "Appender definition json: {\"appender\", \"stream\", \"file\"} Can only specify a file OR a stream" )
+      "Appender definition JSON. Obligatory attributes:\n"
+      "\"appender\" - name of appender\n"
+      "\"stream\" - target stream, mutually exclusive with \"file\"\n"
+      "\"file\" - target filename (including path), mutually exclusive with \"stream\"\n"
+      "Optional attributes:\n"
+      "\"time_format\" - see time_format enum values (default: \"iso_8601_seconds\")\n"
+      "Optional attributes (applicable to file appender only):\n"
+      "\"delta_times\" - whether times should be printed as deltas since previous message (default: false)\n"
+      "\"flush\" - whether each log write should end with flush (default: true)\n"
+      "\"rotate\" - whether the log files should be rotated (default: true)\n"
+      "\"rotation_interval\" - microseconds between file rotation (default: 3600000000)\n"
+      "\"rotation_limit\" - microseconds before rotated file is removed (default: 86400000000)"
+      )
     ("log-console-appender", boost::program_options::value< std::vector< std::string > >()->composing() )
     ("log-file-appender", boost::program_options::value< std::vector< std::string > >()->composing() )
     ("log-logger", boost::program_options::value< std::vector< std::string > >()->composing()->default_value( default_logger, str_default_logger ),
@@ -109,16 +121,19 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
           if( file_name.is_relative() )
             file_name = fc::absolute( pwd ) / file_name;
           
-          // construct a default file appender config here
-          // filename will be taken from ini file, everything else hard-coded here
+          // construct file appender config using default values that may differ
+          // from the ones in file_appender::config definition
           fc::file_appender::config file_appender_config;
           file_appender_config.filename = file_name;
-          file_appender_config.flush = true;
-          file_appender_config.rotate = true;
-          file_appender_config.rotation_interval = fc::hours(1);
-          file_appender_config.rotation_limit = fc::days(1);
-          if (appender.time_format.length())
-            file_appender_config.time_format = fc::variant( appender.time_format ).as<fc::appender::time_format>();
+          file_appender_config.flush = appender.flush.value_or( true );
+          file_appender_config.rotate = appender.rotate.value_or( true );
+          file_appender_config.rotation_interval = 
+            fc::variant( appender.rotation_interval.value_or( 3600000000ull /*1 hour*/ ) ).as<fc::microseconds>();
+          file_appender_config.rotation_limit = 
+            fc::variant( appender.rotation_limit.value_or( 86400000000ull /*1 day*/ ) ).as<fc::microseconds>();
+          file_appender_config.time_format = appender.time_format.length() ?
+            fc::variant( appender.time_format ).as<fc::appender::time_format>() :
+            fc::appender::time_format::iso_8601_seconds;
           file_appender_config.delta_times = appender.delta_times.value_or(false);
           logging_config.appenders.push_back(
                                   fc::appender_config( appender.appender, "file", fc::variant( file_appender_config ) ) );

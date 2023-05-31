@@ -514,7 +514,12 @@ void application::write_default_config(const bfs::path& cfg_file)
   for(const boost::shared_ptr<bpo::option_description>& od : my->_cfg_options.options())
   {
     if(!od->description().empty())
-      out_cfg << "# " << od->description() << "\n";
+    {
+      std::string next_line;
+      std::stringstream ss( od->description() );
+      while( getline(ss, next_line, '\n') )
+        out_cfg << "# " << next_line << "\n";
+    }
     boost::any store;
     if(!od->semantic()->apply_default(store))
       out_cfg << "# " << od->long_name() << " = \n";
