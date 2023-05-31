@@ -222,6 +222,10 @@ def test_transfer_vests_twice(prepare_environment):
     price_after_time_change = get_vesting_price(node)
 
     second_transaction = wallet.api.transfer_to_vesting(sender, receiver, second_amount)
+    initial_time_second_operation = tt.Time.parse(
+        node.api.block.get_block(block_num=second_transaction["block_num"])["block"]["timestamp"]
+    )
+
 
     assert (
         sender_balance == get_hive_balance(node, sender) + second_amount
@@ -265,10 +269,10 @@ def test_transfer_vests_twice(prepare_environment):
         len(get_virtual_operation(node, "delayed_voting_operation")) > 0
     ), "The virtual operation: `delayed_voting_operation` is not generated."
 
-    # Jump to day 34
+    # Jump to day 34 (29 days after second power up operation)
     node.restart(
         time_offset=tt.Time.serialize(
-            initial_time_first_operation + timedelta(seconds=34 * DELAYED_VOTING_INTERVAL_SECONDS),
+            initial_time_second_operation + timedelta(seconds=29 * DELAYED_VOTING_INTERVAL_SECONDS),
             format_=tt.Time.TIME_OFFSET_FORMAT,
         )
     )
@@ -276,10 +280,10 @@ def test_transfer_vests_twice(prepare_environment):
         get_governance_voting_power(node, wallet, receiver) == governance_voting_power
     ), "The governance voting power is increased."
 
-    # Jump to day 35
+    # Jump to day 35 (30 days after second power up operation)
     node.restart(
         time_offset=tt.Time.serialize(
-            initial_time_first_operation + timedelta(seconds=35 * DELAYED_VOTING_INTERVAL_SECONDS),
+            initial_time_second_operation + timedelta(seconds=30 * DELAYED_VOTING_INTERVAL_SECONDS),
             format_=tt.Time.TIME_OFFSET_FORMAT,
         )
     )
