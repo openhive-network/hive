@@ -26,7 +26,7 @@
 
 #include <boost/lockfree/stack.hpp>
 
-#define HIVE_BC_TIME_BUFFER 10
+#define HIVE_BC_TIME_BUFFER 2
 
 namespace hive { namespace converter {
 
