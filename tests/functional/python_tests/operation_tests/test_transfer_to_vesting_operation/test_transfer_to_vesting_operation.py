@@ -6,6 +6,7 @@ from hive_local_tools.functional.python.operation import (
     get_hive_balance,
     get_hive_power,
     get_max_mana,
+    get_transaction_timestamp,
     get_vesting_price,
     get_virtual_operation,
     hive_to_vest_conversion_value,
@@ -185,10 +186,7 @@ def test_transfer_vests_twice(prepare_environment):
     initial_price = get_vesting_price(node)
 
     first_transaction = wallet.api.transfer_to_vesting(sender, receiver, first_amount)
-
-    initial_time_first_operation = tt.Time.parse(
-        node.api.block.get_block(block_num=first_transaction["block_num"])["block"]["timestamp"]
-    )
+    initial_time_first_operation = get_transaction_timestamp(node, first_transaction)
 
     assert (
         sender_initial_balance == get_hive_balance(node, sender) + first_amount
@@ -222,10 +220,7 @@ def test_transfer_vests_twice(prepare_environment):
     price_after_time_change = get_vesting_price(node)
 
     second_transaction = wallet.api.transfer_to_vesting(sender, receiver, second_amount)
-    initial_time_second_operation = tt.Time.parse(
-        node.api.block.get_block(block_num=second_transaction["block_num"])["block"]["timestamp"]
-    )
-
+    initial_time_second_operation = get_transaction_timestamp(node, second_transaction)
 
     assert (
         sender_balance == get_hive_balance(node, sender) + second_amount
