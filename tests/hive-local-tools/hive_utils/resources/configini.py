@@ -4,7 +4,7 @@
 
 class config:
 	def __init__(self, check_is_arg_exists : bool = True, **kwargs):
-		self.log_appender = '{"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}'
+		self.log_appender = '{"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds"}'
 		self.log_logger = '{"name":"default","level":"all","appender":"stderr"} {"name":"p2p","level":"all","appender":"p2p"}'
 		self.backtrace = 'yes'
 		self.plugin = 'witness database_api account_by_key_api network_broadcast_api condenser_api block_api transaction_status_api debug_node_api'

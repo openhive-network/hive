@@ -29,11 +29,11 @@ namespace fc {
    class appender : public fc::retainable {
       public:
          enum class time_format {
-           milliseconds_since_hour,
-           milliseconds_since_epoch,
-           iso_8601_seconds,
-           iso_8601_milliseconds,
-           iso_8601_microseconds
+           milliseconds_since_hour,    /// 344686ms (ca 5 minutes 44 seconds after full hour)
+           milliseconds_since_epoch,   /// 1685696704999ms
+           iso_8601_seconds,           /// 2023-06-02T09:05:41
+           iso_8601_milliseconds,      /// 2023-06-02T09:05:10.580
+           iso_8601_microseconds       /// 2023-06-02T09:05:06.894046
          };
 
          typedef fc::shared_ptr<appender> ptr;
