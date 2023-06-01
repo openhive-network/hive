@@ -1,5 +1,5 @@
-#include <beekeeper/beekeeper_wallet_api.hpp>
-#include <beekeeper/beekeeper_wallet_base.hpp>
+#include <extension/beekeeper_wallet_api.hpp>
+#include <core/beekeeper_wallet_base.hpp>
 
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 

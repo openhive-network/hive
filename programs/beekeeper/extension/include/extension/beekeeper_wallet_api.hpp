@@ -1,5 +1,5 @@
 #pragma once
-#include <beekeeper/beekeeper_wallet_manager.hpp>
+#include <core/beekeeper_wallet_manager.hpp>
 
 #include <hive/plugins/json_rpc/utility.hpp>
 

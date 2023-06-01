@@ -1,6 +1,6 @@
 #pragma once
 
-#include <beekeeper/session.hpp>
+#include <core/session.hpp>
 
 #include <string>
 

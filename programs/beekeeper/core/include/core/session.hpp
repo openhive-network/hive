@@ -1,8 +1,8 @@
 #pragma once
 
-#include <beekeeper/time_manager.hpp>
-#include <beekeeper/utilities.hpp>
-#include <beekeeper/wallet_manager_impl.hpp>
+#include <core/time_manager.hpp>
+#include <core/utilities.hpp>
+#include <core/wallet_manager_impl.hpp>
 
 #include <string>
 

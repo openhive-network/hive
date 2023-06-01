@@ -1,6 +1,6 @@
-#include <beekeeper/session_manager.hpp>
+#include <core/session_manager.hpp>
 
-#include <beekeeper/token_generator.hpp>
+#include <core/token_generator.hpp>
 
 #include <fc/exception/exception.hpp>
 

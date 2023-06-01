@@ -2,8 +2,8 @@
 
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 
-#include <beekeeper/beekeeper_wallet_manager.hpp>
-#include <beekeeper/beekeeper_wallet_api.hpp>
+#include <core/beekeeper_wallet_manager.hpp>
+#include <extension/beekeeper_wallet_api.hpp>
 
 #include <fc/exception/exception.hpp>
 #include <fc/thread/thread.hpp>

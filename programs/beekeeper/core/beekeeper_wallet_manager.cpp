@@ -1,4 +1,4 @@
-#include <beekeeper/beekeeper_wallet_manager.hpp>
+#include <core/beekeeper_wallet_manager.hpp>
 
 #include <appbase/application.hpp>
 

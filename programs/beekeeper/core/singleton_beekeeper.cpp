@@ -1,4 +1,4 @@
-#include <beekeeper/singleton_beekeeper.hpp>
+#include <core/singleton_beekeeper.hpp>
 
 #include <appbase/application.hpp>
 

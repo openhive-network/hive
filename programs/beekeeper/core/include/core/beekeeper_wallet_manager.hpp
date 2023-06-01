@@ -1,8 +1,8 @@
 #pragma once
 
-#include <beekeeper/beekeeper_wallet_base.hpp>
+#include <core/beekeeper_wallet_base.hpp>
 
-#include <beekeeper/session_manager.hpp>
+#include <core/session_manager.hpp>
 
 #include <hive/utilities/notifications.hpp>
 

@@ -9,8 +9,8 @@
 #include <fc/filesystem.hpp>
 #include <fc/io/json.hpp>
 
-#include <beekeeper/beekeeper_wallet.hpp>
-#include <beekeeper/beekeeper_wallet_manager.hpp>
+#include <core/beekeeper_wallet.hpp>
+#include <core/beekeeper_wallet_manager.hpp>
 
 using public_key_type           = beekeeper::public_key_type;
 using private_key_type          = beekeeper::private_key_type;
