@@ -10,14 +10,23 @@ from hive_local_tools.functional.python.operation import (
     get_rc_max_mana,
     get_transaction_timestamp,
     get_vesting_price,
-    get_virtual_operation,
-    convert_hive_to_vest_range,
     jump_to_date,
 )
 
 from hive_local_tools.constants import (
     DELAYED_VOTING_INTERVAL_SECONDS,
     DELAYED_VOTING_TOTAL_INTERVAL_SECONDS,
+)
+
+from hive_local_tools.functional.python.operation.assertions import (
+    __assert_governance_voting_power_is_increased,
+    __assert_governance_voting_power_is_not_increased,
+    __assert_hive_balance_is_reduced_by_amount,
+    __assert_hive_power_balance_is_increased,
+    __assert_minimal_operation_rc_cost,
+    __assert_power_up_exchange_rate,
+    __assert_rc_max_mana_is_increased,
+    __assert_virtual_operation_was_generated,
 )
 
 
@@ -53,7 +62,7 @@ def test_transfer_vests(prepare_environment, sender, receiver):
     __assert_governance_voting_power_is_not_increased(node, wallet, receiver, initial_governance_voting_power=0)
     # TODO: after resolve #Issue507 add assert for: `RC current_mana is reduced.`
     #  Error message: "The cost of RC was not charged for executing the transaction."
-    __assert_rc_max_mana_is_increased(node, receiver, initial_rc_max_mana=0)
+    __assert_rc_max_mana_is_increased(node, receiver, previous_rc_max_mana=0)
     __assert_minimal_operation_rc_cost(transaction)
 
     # Jump to day 29
@@ -99,7 +108,7 @@ def test_transfer_vests_twice(prepare_environment):
     __assert_virtual_operation_was_generated(node, "transfer_to_vesting_completed_operation",
                                              expected_number_of_virtual_operations=1)
     __assert_governance_voting_power_is_not_increased(node, wallet, receiver, 0)
-    __assert_rc_max_mana_is_increased(node, receiver, initial_rc_max_mana=receiver_initial_max_mana)
+    __assert_rc_max_mana_is_increased(node, receiver, previous_rc_max_mana=receiver_initial_max_mana)
     __assert_minimal_operation_rc_cost(first_transaction)
     # TODO: after resolve #Issue507 add assert for: `RC current_mana is reduced.`
     #  Error message: "The cost of RC was not charged for executing the transaction."
@@ -120,7 +129,7 @@ def test_transfer_vests_twice(prepare_environment):
     __assert_power_up_exchange_rate(node, receiver, first_amount + second_amount, price_after_time_change, tolerance=5)
     __assert_virtual_operation_was_generated(node, "transfer_to_vesting_completed_operation",
                                              expected_number_of_virtual_operations=2)
-    __assert_rc_max_mana_is_increased(node, receiver, initial_rc_max_mana=receiver_rc_max_mana)
+    __assert_rc_max_mana_is_increased(node, receiver, previous_rc_max_mana=receiver_rc_max_mana)
     __assert_minimal_operation_rc_cost(second_transaction)
     # TODO: after resolve #Issue507 add assert for: `RC current_mana is reduced.` (compare to RC after Power up 1).
     #  Error message: "The cost of RC was not charged for executing the transaction."
@@ -152,45 +161,3 @@ def test_transfer_vests_twice(prepare_environment):
                                                   initial_governance_voting_power=governance_voting_power)
     # The first virtual operation `delayed_voting_operation` is generated during the preparation of the test environment
     __assert_virtual_operation_was_generated(node, "delayed_voting_operation", expected_number_of_virtual_operations=3)
-
-
-def __assert_governance_voting_power_is_increased(node: tt.InitNode, wallet: tt.Wallet, account: str,
-                                                  initial_governance_voting_power: int = 0) -> None:
-    error_message = "The governance voting power is not increased."
-    assert get_governance_voting_power(node, wallet, account) > initial_governance_voting_power, error_message
-
-
-def __assert_governance_voting_power_is_not_increased(node: tt.InitNode, wallet: tt.Wallet, account: str,
-                                                      initial_governance_voting_power: int = 0) -> None:
-    error_message = "The governance voting power is increased."
-    assert get_governance_voting_power(node, wallet, account) == initial_governance_voting_power, error_message
-
-
-def __assert_hive_balance_is_reduced_by_amount(node: tt.InitNode, account: str, initial_balance, amount) -> None:
-    error_message = f"{account} HIVE balance is not reduced by {amount}."
-    assert get_hive_balance(node, account) + amount == initial_balance, error_message
-
-
-def __assert_hive_power_balance_is_increased(node, account: str, amount: tt.Asset.Vest) -> None:
-    assert get_hive_power(node, account) > amount, f"{account} HP balance is not increased by {amount}."
-
-
-def __assert_minimal_operation_rc_cost(transaction) -> None:
-    assert transaction["rc_cost"] > 0, "RC cost is less than or equal to zero."
-
-
-def __assert_power_up_exchange_rate(node: tt.InitNode, account: str, amount: tt.Asset.Test, price: int,
-                                    tolerance: int) -> None:
-    err = "The conversion is done using the wrong exchange rate."
-    assert get_hive_power(node, account) in convert_hive_to_vest_range(amount, price, tolerance=tolerance), err
-
-
-def __assert_rc_max_mana_is_increased(node: tt.InitNode, account: str, initial_rc_max_mana: int = 0) -> None:
-    assert get_rc_max_mana(node, account) > initial_rc_max_mana, "RC max_mana is not increased."
-
-
-def __assert_virtual_operation_was_generated(node: tt.InitNode,
-                                             virtual_operation_name: str,
-                                             expected_number_of_virtual_operations: int) -> None:
-    err = f"The virtual operation: {virtual_operation_name} is not generated."
-    assert (len(get_virtual_operation(node, f"{virtual_operation_name}")) == expected_number_of_virtual_operations), err
