@@ -51,8 +51,8 @@ void set_logging_program_options( boost::program_options::options_description& o
       "\"delta_times\" - whether times should be printed as deltas since previous message (default: false)\n"
       "\"flush\" - whether each log write should end with flush (default: true)\n"
       "\"rotate\" - whether the log files should be rotated (default: true)\n"
-      "\"rotation_interval\" - microseconds between file rotation (default: 3600000000)\n"
-      "\"rotation_limit\" - microseconds before rotated file is removed (default: 86400000000)"
+      "\"rotation_interval\" - seconds between file rotation (default: 3600)\n"
+      "\"rotation_limit\" - seconds before rotated file is removed (default: 86400)"
       )
     ("log-console-appender", boost::program_options::value< std::vector< std::string > >()->composing() )
     ("log-file-appender", boost::program_options::value< std::vector< std::string > >()->composing() )
@@ -128,9 +128,13 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
           file_appender_config.flush = appender.flush.value_or( true );
           file_appender_config.rotate = appender.rotate.value_or( true );
           file_appender_config.rotation_interval = 
-            fc::variant( appender.rotation_interval.value_or( 3600000000ull /*1 hour*/ ) ).as<fc::microseconds>();
+            fc::seconds(
+              fc::variant( appender.rotation_interval.value_or( 3600ull /*1 hour*/ ) ).as<uint64_t>()
+            );
           file_appender_config.rotation_limit = 
-            fc::variant( appender.rotation_limit.value_or( 86400000000ull /*1 day*/ ) ).as<fc::microseconds>();
+            fc::seconds(
+              fc::variant( appender.rotation_limit.value_or( 86400ull /*1 day*/ ) ).as<uint64_t>()
+            );
           file_appender_config.time_format = appender.time_format.length() ?
             fc::variant( appender.time_format ).as<fc::appender::time_format>() :
             fc::appender::time_format::iso_8601_seconds;
