@@ -22,8 +22,8 @@ struct appender_args
   fc::optional<bool> delta_times;
   fc::optional<bool> flush;
   fc::optional<bool> rotate;
-  fc::optional<uint64_t> rotation_interval; // microseconds
-  fc::optional<uint64_t> rotation_limit; // microseconds
+  fc::optional<uint64_t> rotation_interval; // seconds
+  fc::optional<uint64_t> rotation_limit; // seconds
 
   void validate();
 };
