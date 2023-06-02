@@ -131,18 +131,12 @@ namespace beekeeper {
 
   void singleton_beekeeper::send_fail_notification()
   {
-    std::vector<fc::variant> _content;
-
-    fc::variant _pid_v        = read_file( pid_file );
-    fc::variant _connection_v = read_file( connection_file );
-
-    _content.push_back( "Opening beekeeper failed" );
-    _content.push_back( _pid_v );
-    _content.push_back( _connection_v );
-
-    auto _json = fc::json::to_string( _content );
-
-    hive::notify_hived_status( _json );
+    hive::notify("opening_beekeeper_failed",
+    // {
+      "pid", read_file( pid_file ),
+      "connection", read_file( connection_file )
+    // }
+    );
   }
 
   bool singleton_beekeeper::start()
