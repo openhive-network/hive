@@ -46,6 +46,9 @@ prepare_hived_image:
   tags:
     - public-runner-docker
     - hived-for-tests
+  script:
+    - echo "HIVED_IMAGE_NAME=registry.gitlab.syncad.com/hive/hive/base_instance:base_instance-3684e08ca6669246a1f4ecb9dce0c022232b5c0f" >> docker_image_name.env
+    - echo "HIVED_IMAGE_NAME_COMMIT=3684e08ca6669246a1f4ecb9dce0c022232b5c0f" >> docker_image_name.env
   rules:
     - if: $RUN_MIRRORNET_PIPELINE == "false"
 
@@ -70,6 +73,17 @@ cleanup_hived_cache_manual:
   stage: cleanup
   variables:
     CLEANUP_PATH_PATTERN: "/cache/replay_data_hive_*"
+  resource_group: ${CI_COMMIT_SHA}
+  tags:
+    - hive-builder-4
+  rules:
+    - if: $RUN_MIRRORNET_PIPELINE == "false"
+
+cleanup_this_pipeline_cache:
+  extends: .cleanup_cache_manual
+  stage: cleanup
+  variables:
+    CLEANUP_PATH_PATTERN: "$DATA_CACHE_HIVE"
   resource_group: ${CI_COMMIT_SHA}
   tags:
     - hive-builder-4

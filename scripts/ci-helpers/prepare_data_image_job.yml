@@ -1,13 +1,13 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "27bf7a315f3cacdf45336501112e6ac414d39006"
+  CI_COMMON_JOB_VERSION: "38e949f541df72b5113d1996fa8d5b6b256532c0"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 27bf7a315f3cacdf45336501112e6ac414d39006 # develop
+    ref: 38e949f541df72b5113d1996fa8d5b6b256532c0 # develop
     file: '/templates/docker_image_jobs.gitlab-ci.yml'
 
 .docker_image_builder_job:
@@ -32,6 +32,7 @@ include:
   script:
     - echo "HOSTNAME is ${HOSTNAME} CI_CONCURRENT_ID ${CI_CONCURRENT_ID}"
     - du -h -d 1 /cache
+    - echo cleaning $CLEANUP_PATH_PATTERN
     - rm $CLEANUP_PATH_PATTERN -rf
   when: manual
 
@@ -74,7 +75,10 @@ include:
     - flock "$DATA_CACHE_HIVE_COMMIT" $SCRIPTS_PATH/ci-helpers/build_data.sh $HIVED_IMAGE_NAME
         --data-cache="$DATA_CACHE_HIVE_COMMIT" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" --config-ini-source="$CONFIG_INI_SOURCE"
     - mkdir "$DATA_CACHE_HIVE"
+    - id
+    - ls -lathR "$DATA_CACHE_HIVE_COMMIT" || true
     - cp "$DATA_CACHE_HIVE_COMMIT"/* "$DATA_CACHE_HIVE" -rp
+    - ls -lathR "$DATA_CACHE_HIVE" || true
     - cp "$DATA_CACHE_HIVE_COMMIT/datadir/docker_entrypoint.log" "$CI_PROJECT_DIR"
     - echo "HIVED_UID=$(id -u)" > hived_uid.env
     - cat hived_uid.env
