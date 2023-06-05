@@ -32,8 +32,8 @@ namespace hive { namespace converter {
 
   using hp::authority;
 
-  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& block_offset )
-    : converter( converter ), block_offset( block_offset.sec_since_epoch() ) {}
+  convert_operations_visitor::convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& block_offset, uint64_t account_creation_fee )
+    : converter( converter ), block_offset( block_offset.sec_since_epoch() ), account_creation_fee( account_creation_fee ) {}
 
   const hp::account_create_operation& convert_operations_visitor::operator()( hp::account_create_operation& op )const
   {
@@ -42,6 +42,9 @@ namespace hive { namespace converter {
     converter.add_second_authority( op.posting, authority::posting );
 
     converter.add_account( op.new_account_name );
+
+    if(this->account_creation_fee != uint64_t(-1))
+      op.fee.amount.value = this->account_creation_fee;
 
     return op;
   }
@@ -53,6 +56,17 @@ namespace hive { namespace converter {
     converter.add_second_authority( op.posting, authority::posting );
 
     converter.add_account( op.new_account_name );
+
+    if(this->account_creation_fee != uint64_t(-1))
+      op.fee.amount.value = this->account_creation_fee;
+
+    return op;
+  }
+
+  const hp::claim_account_operation& convert_operations_visitor::operator()( hp::claim_account_operation& op )const
+  {
+    if(this->account_creation_fee != uint64_t(-1))
+      op.fee.amount.value = this->account_creation_fee;
 
     return op;
   }
@@ -308,7 +322,7 @@ namespace hive { namespace converter {
 
 #define HIVE_BC_SAFETY_TIME_GAP (HIVE_BLOCK_INTERVAL * HIVE_BC_TIME_BUFFER)
 
-  std::shared_ptr< hc::full_block_type > blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time, bool alter_time_in_visitor )
+  std::shared_ptr< hc::full_block_type > blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time, bool alter_time_in_visitor, uint64_t account_creation_fee )
   {
     while( has_hardfork( cached_hf + 1, _signed_block ) )
       ++cached_hf;
@@ -352,7 +366,7 @@ namespace hive { namespace converter {
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, fc::time_point_sec{ alter_time_in_visitor ? uint32_t(block_offset.to_seconds()) : 0 } ) );
+      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, fc::time_point_sec{ alter_time_in_visitor ? uint32_t(block_offset.to_seconds()) : 0 }, account_creation_fee ) );
 
       transaction_itr->set_reference_block( previous_block_id );
 

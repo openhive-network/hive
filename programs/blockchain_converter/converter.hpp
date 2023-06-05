@@ -26,7 +26,7 @@
 
 #include <boost/lockfree/stack.hpp>
 
-#define HIVE_BC_TIME_BUFFER 2
+#define HIVE_BC_TIME_BUFFER 10
 
 namespace appbase {
   class application;
@@ -82,7 +82,7 @@ namespace hive { namespace converter {
     ~blockchain_converter();
 
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
-    std::shared_ptr< hc::full_block_type > convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time, bool alter_time_in_visitor = false );
+    std::shared_ptr< hc::full_block_type > convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time, bool alter_time_in_visitor = false, uint64_t account_creation_fee = uint64_t(-1) );
 
     const hp::block_id_type& get_converter_head_block_id()const;
     const hp::block_id_type& get_mainnet_head_block_id()const;
@@ -139,15 +139,18 @@ namespace hive { namespace converter {
   private:
     blockchain_converter& converter;
     uint32_t block_offset;
+    uint64_t account_creation_fee;
 
   public:
     typedef hp::operation result_type;
 
-    convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& block_offset );
+    convert_operations_visitor( blockchain_converter& converter, const fc::time_point_sec& block_offset, uint64_t account_creation_fee );
 
     const hp::account_create_operation& operator()( hp::account_create_operation& op )const;
 
     const hp::account_create_with_delegation_operation& operator()( hp::account_create_with_delegation_operation& op )const;
+
+    const hp::claim_account_operation& operator()( hp::claim_account_operation& op )const;
 
     const hp::account_update_operation& operator()( hp::account_update_operation& op )const;
 
