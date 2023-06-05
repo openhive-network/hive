@@ -13,12 +13,12 @@ session_manager::session_manager()
   time = std::make_shared<time_manager>();
 }
 
-std::shared_ptr<session> session_manager::get_session( const std::string& token )
+session& session_manager::get_session( const std::string& token )
 {
   auto _found = sessions.find( token );
   FC_ASSERT( _found != sessions.end(), "A session attached to ${token} doesn't exist", (token) );
 
-  return _found->second;
+  return *( _found->second );
 }
 
 std::string session_manager::create_session( const std::string& salt, const std::string& notifications_endpoint )
@@ -58,26 +58,6 @@ void session_manager::close_session( const std::string& token )
 bool session_manager::empty() const
 {
   return sessions.empty();
-}
-
-void session_manager::set_timeout( const std::string& token, const std::chrono::seconds& t )
-{
-  get_session( token )->set_timeout( t );
-}
-
-void session_manager::check_timeout( const std::string& token )
-{
-  get_session( token )->check_timeout();
-}
-
-info session_manager::get_info( const std::string& token )
-{
-  return get_session( token )->get_info();
-}
-
-std::shared_ptr<wallet_manager_impl> session_manager::get_wallet_manager( const std::string& token )
-{
-  return get_session( token )->get_wallet_manager();
 }
 
 } //beekeeper
