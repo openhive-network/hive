@@ -131,7 +131,7 @@ namespace beekeeper {
 
   void singleton_beekeeper::send_fail_notification()
   {
-    hive::notify("opening_beekeeper_failed",
+    appbase::app().notify("opening_beekeeper_failed",
     // {
       "pid", read_file( pid_file ),
       "connection", read_file( connection_file )

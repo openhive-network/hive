@@ -2,6 +2,8 @@
 
 #include <beekeeper/token_generator.hpp>
 
+#include <appbase/application.hpp>
+
 #include <fc/exception/exception.hpp>
 
 namespace beekeeper {
@@ -40,7 +42,7 @@ std::string session_manager::create_session( const std::string& salt, const std:
               {
                 FC_ASSERT( _session, "notification: session is empty." );
 
-                hive::dynamic_notify( _session->get_notification_handler(), "Attempt of closing all wallets");
+                appbase::app().dynamic_notify( _session->get_notification_handler(), "Attempt of closing all wallets");
               }
               );
 

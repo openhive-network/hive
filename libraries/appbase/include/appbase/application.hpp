@@ -223,6 +223,52 @@ namespace appbase {
       io_handler                 main_io_handler;
 
       std::atomic_bool _is_interrupt_request{false};
+
+      mutable hive::utilities::notifications::detail::notification_handler notification_handler;
+
+    public:
+
+      void notify_hived_status(const fc::string& current_status) const noexcept;
+      void notify_hived_error(const fc::string& error_message) const noexcept;
+      void setup_notifications(const boost::program_options::variables_map &args) const;
+
+      template <typename... KeyValuesTypes>
+      inline void notify(
+          const fc::string &name,
+          KeyValuesTypes &&...key_value_pairs) const noexcept
+      {
+        hive::utilities::notifications::detail::error_handler([&]{
+          notification_handler.broadcast(
+            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+          );
+        });
+      }
+
+      inline void notify(
+          const fc::string &name,
+          hive::utilities::notifications::collector_t&& collector) const noexcept
+      {
+
+        hive::utilities::notifications::detail::error_handler([&]{
+          notification_handler.broadcast(
+            hive::utilities::notifications::notification_t(name, std::forward<hive::utilities::notifications::collector_t>(collector))
+          );
+        });
+      }
+
+      template <typename... KeyValuesTypes>
+      inline void dynamic_notify(
+          hive::utilities::notifications::detail::notification_handler& handler,
+          const fc::string &name,
+          KeyValuesTypes &&...key_value_pairs) const noexcept
+      {
+        hive::utilities::notifications::detail::error_handler([&]{
+          handler.broadcast(
+            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+          );
+        });
+      }
+
   };
 
   application& app();

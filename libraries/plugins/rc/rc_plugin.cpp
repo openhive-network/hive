@@ -334,7 +334,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       switch( auto_report_output )
       {
       case report_output::NOTIFY:
-        hive::notify( "RC stats", "rc_stats", report );
+        appbase::app().notify( "RC stats", "rc_stats", report );
         break;
       case report_output::ILOG:
         ilog( "RC stats:${report}", ( report ) );

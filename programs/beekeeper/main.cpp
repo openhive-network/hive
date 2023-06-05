@@ -119,7 +119,7 @@ class beekeeper_app
       ilog("initializing options");
       try {
           const boost::program_options::variables_map& _args = app.get_args();
-          hive::utilities::notifications::setup_notifications( _args );
+          appbase::app().setup_notifications( _args );
 
           std::string _notification;
           if( _args.count("notifications-endpoint") )
@@ -188,7 +188,7 @@ class beekeeper_app
         if( !_initialization.first )
           return { init_status, true };
 
-        hive::notify_hived_status( "starting with token: " + _initialization.second );
+        appbase::app().notify_hived_status( "starting with token: " + _initialization.second );
         return { appbase::initialization_result::result::ok, false };
       }
     }
