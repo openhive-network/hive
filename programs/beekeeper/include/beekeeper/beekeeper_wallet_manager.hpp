@@ -152,7 +152,7 @@ private:
 
   close_all_sessions_action_method  close_all_sessions_action;
 
-  std::unique_ptr<singleton_beekeeper> singleton;
+  std::unique_ptr<beekeper_instance> singleton;
 
   session_manager sessions;
 };

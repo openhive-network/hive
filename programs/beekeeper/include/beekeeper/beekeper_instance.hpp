@@ -12,7 +12,7 @@ namespace beekeeper
 {
   using collector_t = hive::utilities::notifications::collector_t;
 
-  class singleton_beekeeper
+  class beekeper_instance
   {
     private:
 
@@ -42,8 +42,8 @@ namespace beekeeper
 
     public:
 
-      singleton_beekeeper( const boost::filesystem::path& _wallet_directory );
-      ~singleton_beekeeper();
+      beekeper_instance( const boost::filesystem::path& _wallet_directory );
+      ~beekeper_instance();
 
       bool start();
 

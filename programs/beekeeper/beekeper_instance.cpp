@@ -1,4 +1,4 @@
-#include <beekeeper/singleton_beekeeper.hpp>
+#include <beekeeper/beekeper_instance.hpp>
 
 #include <appbase/application.hpp>
 
@@ -10,14 +10,14 @@
 namespace beekeeper {
   namespace bfs = boost::filesystem;
 
-  singleton_beekeeper::singleton_beekeeper( const boost::filesystem::path& _wallet_directory ): wallet_directory( _wallet_directory )
+  beekeper_instance::beekeper_instance( const boost::filesystem::path& _wallet_directory ): wallet_directory( _wallet_directory )
   {
     pid_file        = wallet_directory / "beekeeper.pid";
     connection_file = wallet_directory / "beekeeper.connection";
     lock_path_file  = wallet_directory / "beekeeper.wallet.lock";
   }
 
-  singleton_beekeeper::~singleton_beekeeper()
+  beekeper_instance::~beekeper_instance()
   {
     if( instance_started )
     {
@@ -29,7 +29,7 @@ namespace beekeeper {
     }
   }
 
-  void singleton_beekeeper::start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t )
+  void beekeper_instance::start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t )
   {
     t->async_wait([t, this](const boost::system::error_code& /*ec*/)
     {
@@ -48,7 +48,7 @@ namespace beekeeper {
     });
   }
 
-  void singleton_beekeeper::initialize_lock()
+  void beekeper_instance::initialize_lock()
   {
     //This is technically somewhat racy in here -- if multiple keosd are in this function at once.
     //I've considered that an acceptable tradeoff to maintain cross-platform boost constructs here
@@ -77,7 +77,7 @@ namespace beekeeper {
 
 
   template<typename content_type>
-  void singleton_beekeeper::write_to_file( const boost::filesystem::path& file_name, const content_type& content )
+  void beekeper_instance::write_to_file( const boost::filesystem::path& file_name, const content_type& content )
   {
     std::ofstream _file( file_name.string() );
     _file << content;
@@ -85,7 +85,7 @@ namespace beekeeper {
     _file.close();
   }
 
-  fc::variant singleton_beekeeper::read_file( const boost::filesystem::path& file_name )
+  fc::variant beekeper_instance::read_file( const boost::filesystem::path& file_name )
   {
     try
     {
@@ -117,7 +117,7 @@ namespace beekeeper {
     }
   }
 
-  void singleton_beekeeper::save_pid()
+  void beekeper_instance::save_pid()
   {
     std::stringstream ss;
     ss << getpid();
@@ -129,7 +129,7 @@ namespace beekeeper {
     write_to_file( pid_file, _json );
   }
 
-  void singleton_beekeeper::send_fail_notification()
+  void beekeper_instance::send_fail_notification()
   {
     appbase::app().notify("opening_beekeeper_failed",
     // {
@@ -139,7 +139,7 @@ namespace beekeeper {
     );
   }
 
-  bool singleton_beekeeper::start()
+  bool beekeper_instance::start()
   {
     initialize_lock();
 
@@ -151,12 +151,12 @@ namespace beekeeper {
     return instance_started;
   }
 
-  boost::filesystem::path singleton_beekeeper::create_wallet_filename( const std::string& wallet_name ) const
+  boost::filesystem::path beekeper_instance::create_wallet_filename( const std::string& wallet_name ) const
   {
     return wallet_directory / ( wallet_name + file_ext );
   }
 
-  void singleton_beekeeper::save_connection_details( const collector_t& values )
+  void beekeper_instance::save_connection_details( const collector_t& values )
   {
     if( instance_started )
     {

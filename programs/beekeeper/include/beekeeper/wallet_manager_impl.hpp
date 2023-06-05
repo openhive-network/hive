@@ -2,7 +2,7 @@
 
 #include <beekeeper/beekeeper_wallet_base.hpp>
 #include <beekeeper/utilities.hpp>
-#include <beekeeper/singleton_beekeeper.hpp>
+#include <beekeeper/beekeper_instance.hpp>
 
 namespace fc { class variant; }
 

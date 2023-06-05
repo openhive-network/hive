@@ -9,7 +9,7 @@ beekeeper_wallet_manager::beekeeper_wallet_manager( const boost::filesystem::pat
                                                   )
                           : unlock_timeout( cmd_unlock_timeout ), session_limit( cmd_session_limit ), close_all_sessions_action( method )
 {
-  singleton = std::make_unique<singleton_beekeeper>( cmd_wallet_dir );
+  singleton = std::make_unique<beekeper_instance>( cmd_wallet_dir );
 }
 
 bool beekeeper_wallet_manager::start()

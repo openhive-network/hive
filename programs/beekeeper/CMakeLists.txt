@@ -6,7 +6,7 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper
                       beekeeper_wallet_api.cpp
                       beekeeper_wallet.cpp
                       beekeeper_wallet_manager.cpp
-                      singleton_beekeeper.cpp
+                      beekeper_instance.cpp
                       token_generator.cpp
                       time_manager.cpp
                       session.cpp
