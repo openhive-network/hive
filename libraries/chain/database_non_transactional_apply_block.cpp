@@ -57,25 +57,26 @@
 
 namespace hive { namespace chain {
 
-void database::non_transactional_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops, uint32_t skip)
+void database::non_transactional_apply_block(const std::shared_ptr<full_block_type>& full_block, op_iterator_ptr op_it, uint32_t skip)
 {
 
   detail::with_skip_flags( *this, skip, [&]()
   {
-    _apply_block(full_block, [this, ops](const std::shared_ptr<full_block_type>& full_block, uint32_t skip){ _process_operations(ops);});
+    _apply_block(full_block, [this, op_it](const std::shared_ptr<full_block_type>& full_block, uint32_t skip){ _process_operations(op_it);});
     
   } );
 
 }
 
 
-void database::_process_operations(const std::vector<std::vector<char>>& ops)
+void database::_process_operations(op_iterator_ptr op_it)
 {
-  // process the operations
-  for(const auto& op_vector : ops)
-  {
-    const char* raw_data = op_vector.data();
-    uint32_t data_length = op_vector.size();
+
+  while(op_it->has_next()) {
+    auto [data, length] = op_it->next();
+
+    const char* raw_data = static_cast<const char*>(data);
+    uint32_t data_length = length;
 
     hive::protocol::operation op =
         fc::raw::unpack_from_char_array<hive::protocol::operation>(raw_data, data_length);

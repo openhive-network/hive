@@ -9,6 +9,7 @@
 #include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
+#include <hive/chain/op_iterator.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
@@ -716,9 +717,9 @@ namespace chain {
 
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
     public:
-      void non_transactional_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops, uint32_t skip = skip_nothing);
+      void non_transactional_apply_block(const std::shared_ptr<full_block_type>& full_block, op_iterator_ptr op_it, uint32_t skip = skip_nothing);
     private:
-      void _process_operations(const std::vector<std::vector<char>>& ops);
+      void _process_operations(op_iterator_ptr op_it);
 
       void switch_forks(item_ptr new_head);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, std::function<void(const std::shared_ptr<full_block_type>&, uint32_t)> process_func);
