@@ -62,7 +62,8 @@ void database::non_transactional_apply_block(const std::shared_ptr<full_block_ty
 
   detail::with_skip_flags( *this, skip, [&]()
   {
-    _non_transactional_apply_block(full_block, ops);
+    _apply_block(full_block, [this, ops](const std::shared_ptr<full_block_type>& full_block, uint32_t skip){ _process_operations(ops);});
+    
   } );
 
 }
