@@ -292,7 +292,8 @@ namespace detail {
 
         auto block_converted = converter.convert_signed_block( block, lib_id,
           gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
-          true
+          true,
+          account_creation_fee.amount.value
         );
 
         print_progress( start_block_num - init_start_block_num, stop_block_num - init_start_block_num );
