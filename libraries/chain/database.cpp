@@ -4291,7 +4291,7 @@ void database::apply_block(const std::shared_ptr<full_block_type>& full_block, u
 
   detail::with_skip_flags( *this, skip, [&]()
   {
-    _apply_block(full_block);
+    _apply_block(full_block, [this](const std::shared_ptr<full_block_type>& full_block, uint32_t skip) {process_transactions(full_block, skip);});
   } );
 
   /*try
@@ -4374,7 +4374,8 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
   }
 }
 
-void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
+void database::_apply_block(const std::shared_ptr<full_block_type>& full_block,
+    std::function<void(const std::shared_ptr<full_block_type>&, uint32_t)> process_func)
 {
   const signed_block& block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
@@ -4493,20 +4494,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
               (witness)(block.witness)(hardfork_state));
   }
 
-  for( const std::shared_ptr<full_transaction_type>& trx : full_block->get_full_transactions() )
-  {
-    /* We do not need to push the undo state for each transaction
-      * because they either all apply and are valid or the
-      * entire block fails to apply.  We only need an "undo" state
-      * for transactions when validating broadcast transactions or
-      * when building a block.
-      */
-    apply_transaction( trx, skip );
-    ++_current_trx_in_block;
-  }
-
-  _current_trx_in_block = -1;
-  _current_op_in_trx = 0;
+  process_func(full_block, skip);
 
   update_global_dynamic_data(block);
   update_signing_witness(signing_witness, block);
@@ -4562,6 +4550,26 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   // reversible.
   migrate_irreversible_state(old_last_irreversible);
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) ) }
+
+void database::process_transactions(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
+{
+    _current_trx_in_block = 0;
+
+    for( const std::shared_ptr<full_transaction_type>& trx : full_block->get_full_transactions() )
+    {
+        /* We do not need to push the undo state for each transaction
+        * because they either all apply and are valid or the
+        * entire block fails to apply.  We only need an "undo" state
+        * for transactions when validating broadcast transactions or
+        * when building a block.
+        */
+        apply_transaction( trx, skip );
+        ++_current_trx_in_block;
+    }
+
+    _current_trx_in_block = -1;
+    _current_op_in_trx = 0;
+}
 
 struct process_header_visitor
 {

@@ -185,20 +185,9 @@ void database::_non_transactional_apply_block(const std::shared_ptr<full_block_t
               "Block produced by witness that is not running current hardfork",
               (witness)(block.witness)(hardfork_state));
   }
-    // process the operations
-    for(const auto& op_vector : ops)
-    {
-        const char* raw_data = op_vector.data();
-        uint32_t data_length = op_vector.size();
-
-        hive::protocol::operation op = fc::raw::unpack_from_char_array<hive::protocol::operation>(raw_data, data_length);
-
-        //_current_op_in_trx = 0;
-        try {
-            apply_operation(op);
-            //++_current_op_in_trx;
-        } FC_CAPTURE_AND_RETHROW( (op) )
-    }
+  // process the operations
+  _process_operations(ops);
+  // end process the operations
 
   _current_trx_in_block = -1;
   _current_op_in_trx = 0;
@@ -256,7 +245,30 @@ void database::_non_transactional_apply_block(const std::shared_ptr<full_block_t
   // last call of applying a block because it is the only thing that is not
   // reversible.
   migrate_irreversible_state(old_last_irreversible);
-} FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) ) }
+} FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) )
+}
+
+void database::_process_operations(const std::vector<std::vector<char>>& ops)
+{
+  // process the operations
+  for(const auto& op_vector : ops)
+  {
+    const char* raw_data = op_vector.data();
+    uint32_t data_length = op_vector.size();
+
+    hive::protocol::operation op =
+        fc::raw::unpack_from_char_array<hive::protocol::operation>(raw_data, data_length);
+
+    //_current_op_in_trx = 0;
+    try
+    {
+      apply_operation(op);
+      //++_current_op_in_trx;
+    }
+    FC_CAPTURE_AND_RETHROW((op))
+  }
+  // end process the operations
+}
 
 void database::non_transactional_update_blockchain_state(const signed_block& sign_block, uint32_t block_size, int block_num, required_automated_actions& req_actions, optional_automated_actions& opt_actions)
 {
