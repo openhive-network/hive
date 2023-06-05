@@ -1,5 +1,6 @@
 file(GLOB HEADERS "database_fixture.hpp")
-set(SOURCES database_fixture.cpp)
+set(SOURCES database_fixture.cpp
+            config_fixture.cpp)
 
 find_package( Gperftools QUIET )
 if( GPERFTOOLS_FOUND )
