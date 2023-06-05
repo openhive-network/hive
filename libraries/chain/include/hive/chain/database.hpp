@@ -719,7 +719,6 @@ namespace chain {
       void non_transactional_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops, uint32_t skip = skip_nothing);
     private:
       void _process_operations(const std::vector<std::vector<char>>& ops);
-      void non_transactional_update_blockchain_state(const signed_block& sign_block, uint32_t block_size, int block_num, required_automated_actions& req_actions, optional_automated_actions& opt_actions);
 
       void switch_forks(item_ptr new_head);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, std::function<void(const std::shared_ptr<full_block_type>&, uint32_t)> process_func);
