@@ -57,17 +57,17 @@
 
 namespace hive { namespace chain {
 
-void database::modern_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops, uint32_t skip)
+void database::non_transactional_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops, uint32_t skip)
 {
 
   detail::with_skip_flags( *this, skip, [&]()
   {
-    _modern_apply_block(full_block, ops);
+    _non_transactional_apply_block(full_block, ops);
   } );
 
 }
 
-void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops)
+void database::_non_transactional_apply_block(const std::shared_ptr<full_block_type>& full_block, const std::vector<std::vector<char>>& ops)
 {
   const signed_block& sign_block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
@@ -103,7 +103,7 @@ void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_
     required_automated_actions req_actions;
     optional_automated_actions opt_actions;
 
-    modern_update_blockchain_state(sign_block, block_size, block_num, req_actions, opt_actions);
+    non_transactional_update_blockchain_state(sign_block, block_size, block_num, req_actions, opt_actions);
     //process_transactions(full_block, skip);
 
 
@@ -133,7 +133,7 @@ void database::_modern_apply_block(const std::shared_ptr<full_block_type>& full_
   FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) )
 }
 
-void database::modern_update_blockchain_state(const signed_block& sign_block, uint32_t block_size, int block_num, required_automated_actions& req_actions, optional_automated_actions& opt_actions)
+void database::non_transactional_update_blockchain_state(const signed_block& sign_block, uint32_t block_size, int block_num, required_automated_actions& req_actions, optional_automated_actions& opt_actions)
 {
     const auto& gprops = get_dynamic_global_properties();
     
