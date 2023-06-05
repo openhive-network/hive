@@ -232,7 +232,7 @@ void webserver_plugin_impl<websocket_server_type>::notify( const std::string& ty
   );
 
   listen( collector );
-  hive::notify( "webserver listening", collector );
+  appbase::app().notify( "webserver listening", std::move( collector ) );
 };
 
 template<typename websocket_server_type>

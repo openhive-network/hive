@@ -28,12 +28,10 @@ void add_program_options(boost::program_options::options_description& options)
   );
 }
 
-void setup_notifications(const boost::program_options::variables_map &args)
+std::vector<fc::string> setup_notifications(const boost::program_options::variables_map &args)
 {
-  if( !check_is_flag_set(args) ) return;
-  const auto& address_pool = args[ get_flag() ].as<std::vector<fc::string>>();
-
-  hive::utilities::notifications::get_notification_handler_instance().setup(address_pool);
+  if( !hive::utilities::notifications::check_is_flag_set(args) ) return {};
+  return args[ hive::utilities::notifications::get_flag() ].as<std::vector<fc::string>>();
 }
 
 namespace detail
@@ -54,13 +52,6 @@ bool error_handler(const std::function<void ()> &foo)
   catch(...){ handle_exception("unknown exception"); }
   return !is_exception_occured;
 }
-
-notification_handler &instance()
-{
-  static notification_handler instance{};
-  return instance;
-}
-
 
 void notification_handler::setup(const std::vector<std::string> &address_pool)
 {
@@ -133,19 +124,7 @@ void notification_handler::network_broadcaster::register_endpoints( const std::v
 
 } // detail
 
-detail::notification_handler &get_notification_handler_instance() { return detail::instance(); }
-
 } // notifications
 } // utilities
-
-void notify_hived_status(const fc::string& current_status) noexcept
-{
-  notify("hived_status", "current_status", current_status);
-}
-
-void notify_hived_error(const fc::string& error_message) noexcept
-{
-  notify("error", "message", error_message);
-}
 
 } // hive

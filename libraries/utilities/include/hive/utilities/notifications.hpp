@@ -81,7 +81,7 @@ public:
 
 bool check_is_flag_set(const boost::program_options::variables_map &args);
 void add_program_options(boost::program_options::options_description &options);
-void setup_notifications(const boost::program_options::variables_map &args);
+std::vector<fc::string> setup_notifications(const boost::program_options::variables_map &args);
 
 namespace detail {
 
@@ -142,48 +142,7 @@ private:
 
 } // detail
 
-detail::notification_handler &get_notification_handler_instance();
-
 } } // utilities::notifications
-
-template <typename... KeyValuesTypes>
-inline void notify(
-    const fc::string &name,
-    KeyValuesTypes &&...key_value_pairs) noexcept
-{
-  utilities::notifications::detail::error_handler([&]{
-    utilities::notifications::get_notification_handler_instance().broadcast(
-      utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
-    );
-  });
-}
-
-inline void notify(
-    const fc::string &name,
-    const utilities::notifications::collector_t& collector) noexcept
-{
-
-  utilities::notifications::detail::error_handler([&]{
-    utilities::notifications::get_notification_handler_instance().broadcast(
-      utilities::notifications::notification_t(name, collector)
-    );
-  });
-}
-
-template <typename... KeyValuesTypes>
-inline void dynamic_notify(
-    utilities::notifications::detail::notification_handler& handler,
-    const fc::string &name,
-    KeyValuesTypes &&...key_value_pairs) noexcept
-{
-  utilities::notifications::detail::error_handler([&]{
-    handler.broadcast(
-      utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
-    );
-  });
-}
-void notify_hived_status(const fc::string &current_status) noexcept;
-void notify_hived_error(const fc::string &error_message) noexcept;
 
 } // hive
 

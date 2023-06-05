@@ -1,5 +1,7 @@
 #include <hive/chain/block_flow_control.hpp>
 
+#include <appbase/application.hpp>
+
 #include <hive/utilities/notifications.hpp>
 
 namespace hive { namespace chain {
@@ -55,7 +57,7 @@ void block_flow_control::on_worker_done() const
   switch (auto_report_output)
   {
   case report_output::NOTIFY:
-    hive::notify("Block stats", "block_stats", report);
+    appbase::app().notify("Block stats", "block_stats", report);
     break;
   case report_output::ILOG:
     ilog("Block stats:${report}", (report));

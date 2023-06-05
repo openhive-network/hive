@@ -80,7 +80,7 @@ void io_handler::close_signal()
 
 void application::generate_interrupt_request()
 {
-  hive::notify_hived_status("interrupted");
+  notify_hived_status("interrupted");
   _is_interrupt_request = true;
   ilog("interrupt requested!");
 }
@@ -458,7 +458,7 @@ void application::exec()
   {
     main_io_handler.attach_signals();
 
-    hive::notify_hived_status("signals attached");
+    notify_hived_status("signals attached");
 
     main_io_handler.run();
   }
@@ -611,7 +611,7 @@ abstract_plugin& application::get_plugin(const string& name)const
   auto ptr = find_plugin(name);
   if(!ptr)
   {
-    hive::notify_hived_error("Unable to find plugin: " + name);
+    notify_hived_error("Unable to find plugin: " + name);
     BOOST_THROW_EXCEPTION(std::runtime_error("unable to find plugin: " + name));
   }
   return *ptr;
@@ -643,5 +643,21 @@ std::set< std::string > application::get_plugins_names() const
 
   return res;
 }
+
+void application::notify_hived_status(const fc::string& current_status) const noexcept
+{
+  notify("hived_status", "current_status", current_status);
+}
+
+void application::notify_hived_error(const fc::string& error_message) const noexcept
+{
+  notify("error", "message", error_message);
+}
+
+void application::setup_notifications(const boost::program_options::variables_map &args) const
+{
+  notification_handler.setup( hive::utilities::notifications::setup_notifications( args ) );
+}
+
 
 } /// namespace appbase
