@@ -1,5 +1,5 @@
 #pragma once 
-#include <utility>
+#include <vector>
 #include <memory>
 
 class op_iterator
@@ -7,7 +7,7 @@ class op_iterator
  public:
   virtual ~op_iterator() = default;
   virtual bool has_next() const = 0;
-  virtual std::pair<const void*, std::size_t> next() = 0;
+  virtual std::vector<char> next() = 0;
 };
 
 

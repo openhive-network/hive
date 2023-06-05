@@ -73,13 +73,11 @@ void database::_process_operations(op_iterator_ptr op_it)
 {
 
   while(op_it->has_next()) {
-    auto [data, length] = op_it->next();
+    std::vector<char> opv  = op_it->next();
 
-    const char* raw_data = static_cast<const char*>(data);
-    uint32_t data_length = length;
 
     hive::protocol::operation op =
-        fc::raw::unpack_from_char_array<hive::protocol::operation>(raw_data, data_length);
+        fc::raw::unpack_from_char_array<hive::protocol::operation>(opv.data(), opv.size());
 
     //_current_op_in_trx = 0;
     try
