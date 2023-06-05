@@ -5,9 +5,10 @@
 class op_iterator
 {
  public:
+  using op_view_t = std::vector<char>;
   virtual ~op_iterator() = default;
   virtual bool has_next() const = 0;
-  virtual std::vector<char> next() = 0;
+  virtual op_view_t next() = 0;
 };
 
 
