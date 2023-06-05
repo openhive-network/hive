@@ -26,7 +26,7 @@ public:
 
   std::map<key_t, value_t> value;
 
-  collector_t(){}
+  collector_t() = default;
 
   collector_t(collector_t&& collector): value(collector.value) {}
   collector_t(const collector_t& collector): value(collector.value) {}
@@ -146,28 +146,26 @@ detail::notification_handler &get_notification_handler_instance();
 
 } } // utilities::notifications
 
-using namespace utilities::notifications;
-
 template <typename... KeyValuesTypes>
 inline void notify(
     const fc::string &name,
     KeyValuesTypes &&...key_value_pairs) noexcept
 {
-  detail::error_handler([&]{
-    get_notification_handler_instance().broadcast(
-      notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+  utilities::notifications::detail::error_handler([&]{
+    utilities::notifications::get_notification_handler_instance().broadcast(
+      utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
     );
   });
 }
 
 inline void notify(
     const fc::string &name,
-    const collector_t& collector) noexcept
+    const utilities::notifications::collector_t& collector) noexcept
 {
 
-  detail::error_handler([&]{
-    get_notification_handler_instance().broadcast(
-      notification_t(name, collector)
+  utilities::notifications::detail::error_handler([&]{
+    utilities::notifications::get_notification_handler_instance().broadcast(
+      utilities::notifications::notification_t(name, collector)
     );
   });
 }
@@ -178,9 +176,9 @@ inline void dynamic_notify(
     const fc::string &name,
     KeyValuesTypes &&...key_value_pairs) noexcept
 {
-  detail::error_handler([&]{
+  utilities::notifications::detail::error_handler([&]{
     handler.broadcast(
-      notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+      utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
     );
   });
 }
