@@ -2235,7 +2235,22 @@ collected_account_balances_collection_t collect_current_account_balance(const ch
   args.accounts.emplace_back(account);
   hive::plugins::database_api::find_accounts_return db_api_impl_result = db_api_impl.find_accounts(args);
 
+  if(!db_api_impl_result.accounts.empty())
+  {
+      const auto& a = db_api_impl_result.accounts[0];
+      collected_account_balances_t e;
+      e.account_name = a.name;
+
+      e.balance = a.balance.amount.value;
+      e.hbd_balance = a.hbd_balance.amount.value;
+      e.vesting_shares = a.vesting_shares.amount.value;
+      e.savings_hbd_balance = a.savings_hbd_balance.amount.value;
+      e.reward_hbd_balance = a.reward_hbd_balance.amount.value;
+      r.emplace_back(e);
+  }
+
   return r;
+   
 }
 
 
