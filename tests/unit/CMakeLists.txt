@@ -61,15 +61,6 @@ parse_unit_tests(TEST_CASES ${UNIT_TESTS})
 add_boost_test( chain_test
    SOURCES ${UNIT_TESTS}
    TESTS
-   automated_action_tests/push_pending_required_actions
-   automated_action_tests/push_pending_optional_actions
-   automated_action_tests/full_block
-   automated_action_tests/pending_required_execution
-   automated_action_tests/unexpected_required_action
-   automated_action_tests/missing_required_action
-   automated_action_tests/optional_action_expiration
-   automated_action_tests/unexpected_optional_action
-   automated_action_tests/reject_optional_action
    basic_tests/parse_size_test
    basic_tests/valid_name_test
    basic_tests/merkle_root
