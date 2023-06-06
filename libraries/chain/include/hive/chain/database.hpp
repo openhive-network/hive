@@ -726,9 +726,6 @@ namespace chain {
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
       void apply_operation( const operation& op );
 
-      void process_required_actions( const required_automated_actions& actions );
-      void process_optional_actions( const optional_automated_actions& actions );
-
       ///Steps involved in applying a new block
       ///@{
 
@@ -760,7 +757,7 @@ namespace chain {
       void clear_expired_transactions();
       void clear_expired_orders();
       void clear_expired_delegations();
-      void process_header_extensions( const signed_block& next_block, required_automated_actions& req_actions, optional_automated_actions& opt_actions );
+      void process_header_extensions( const signed_block& next_block );
       void process_genesis_accounts();
 
       void generate_required_actions();

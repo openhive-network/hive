@@ -14,11 +14,6 @@ typedef static_variant<
       void_t,
       version,
       hardfork_version_vote
-#ifdef IS_TEST_NET
-,
-      required_automated_actions,
-      optional_automated_actions
-#endif
     > legacy_block_header_extensions;
 
 typedef vector< legacy_block_header_extensions > legacy_block_header_extensions_type;
