@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+import pytest
+
 import test_tools as tt
 
 from hive_local_tools.constants import VESTING_WITHDRAW_INTERVALS, VESTING_WITHDRAW_INTERVAL_SECONDS
@@ -149,13 +151,20 @@ def test_cancel_power_down(node):
     __assert_rc_max_mana_is_increased(node, account, alice_rc_max_mana)
 
 
-def test_increase_the_value_of_the_power_down(node):
+@pytest.mark.parametrize(
+    "first_pd_amount, second_pd_amount",
+    [
+        (tt.Asset.Test(1_000), tt.Asset.Test(3_000)),
+        (tt.Asset.Test(3_000), tt.Asset.Test(1_000)),
+    ]
+)
+def test_updating_the_power_down_increase_decrease(node, first_pd_amount, second_pd_amount):
     """
-    User wants to increase the amount of Power down.
+    1) User wants to increase the amount of Power down.
+    2) User wants to decrease the amount of Power down.
     """
     wallet = tt.Wallet(attach_to=node)
 
-    first_pd_amount = tt.Asset.Test(1_000)
     first_pd_amount_as_vest = tt.Asset.from_(
         {"amount": first_pd_amount.amount / get_vesting_price(node), "precision": 6, "nai": "@@000000037"})
 
@@ -168,7 +177,6 @@ def test_increase_the_value_of_the_power_down(node):
         }
     )
 
-    second_pd_amount = tt.Asset.Test(3_000)
     second_pd_amount_as_vest = tt.Asset.from_(
         {"amount": second_pd_amount.amount / get_vesting_price(node), "precision": 6, "nai": "@@000000037"})
 
@@ -209,13 +217,19 @@ def test_increase_the_value_of_the_power_down(node):
 
     # Jump to 2.5 week after first power down operation
     jump_to_date(node, first_transaction_timestamp + timedelta(seconds=2.5 * VESTING_WITHDRAW_INTERVAL_SECONDS))
-    second_transaction = wallet.api.withdraw_vesting(account, second_pd_amount_as_vest)  # Cancel power down operation
+    second_transaction = wallet.api.withdraw_vesting(account, second_pd_amount_as_vest)
     second_transaction_timestamp = node.get_head_block_time()
 
     __assert_hive_power_balance_unchanged(node, account, alice_hive_power)
     __assert_hive_balance_unchanged(node, account, alice_balance)
-    __assert_rc_max_mana_is_reduced(node, account, alice_rc_max_mana)
     __assert_minimal_operation_rc_cost(second_transaction)
+    # The reason for RC equalization is that RC is charged upfront based on a higher PD amount.
+    # When the power down value is reduced, an adjustment is made to equalize the RC accordingly.
+    if first_pd_amount > second_pd_amount:
+        __assert_rc_max_mana_is_increased(node, account, alice_rc_max_mana)
+    else:
+        __assert_rc_max_mana_is_reduced(node, account, alice_rc_max_mana)
+
     node.wait_for_irreversible_block()
 
     # Jump to 3 weeks after first power down operation
