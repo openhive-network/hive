@@ -96,27 +96,14 @@ void database::_process_operations(op_iterator_ptr op_it)
 
   while(op_it->has_next()) 
   {
-  //   op_iterator::op_view_t opv  = 
-  //   auto [raw_data, data_length] = opv.first;
-  //   auto vectorek = opv.second;
-
-  // std::cout << "Inside _process_operations: " << std::endl;
-  //  std::cout << "raw_data in hex: \n" << to_hex(raw_data, data_length) << std::endl;
-  //   std::cout << "data_length in hex: \n" << std::hex << data_length << std::endl;
-  //   std::cout << "vectorek in hex: \n" << to_hex(vectorek.data(), vectorek.size()) << std::endl;
-
-
     hive::protocol::operation op = op_it->unpack_from_char_array_and_next();
 
-    //_current_op_in_trx = 0;
     try
     {
       apply_operation(op);
-      //++_current_op_in_trx;
     }
     FC_CAPTURE_AND_RETHROW((op))
   }
-  // end process the operations
 }
 
 
