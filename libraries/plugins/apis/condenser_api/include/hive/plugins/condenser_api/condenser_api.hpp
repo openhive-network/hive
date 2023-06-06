@@ -285,7 +285,6 @@ struct extended_dynamic_global_properties
     hbd_interest_rate( o.hbd_interest_rate ),
     hbd_print_rate( o.hbd_print_rate ),
     maximum_block_size( o.maximum_block_size ),
-    required_actions_partition_percent( o.required_actions_partition_percent ),
     current_aslot( o.current_aslot ),
     recent_slots_filled( o.recent_slots_filled ),
     participation_count( o.participation_count ),
@@ -337,7 +336,6 @@ struct extended_dynamic_global_properties
   uint16_t          hbd_print_rate = HIVE_100_PERCENT;
 
   uint32_t          maximum_block_size = 0;
-  uint16_t          required_actions_partition_percent = 0;
   uint64_t          current_aslot = 0;
   fc::uint128_t     recent_slots_filled = 0;
   uint8_t           participation_count = 0;
@@ -1115,7 +1113,7 @@ FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
         (total_vesting_fund_hive)(total_vesting_shares)
         (total_reward_fund_hive)(total_reward_shares2)(pending_rewarded_vesting_shares)(pending_rewarded_vesting_hive)
         (hbd_interest_rate)(hbd_print_rate)
-        (maximum_block_size)(required_actions_partition_percent)(current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
+        (maximum_block_size)(current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
         (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)(available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)
         (next_maintenance_time)(last_budget_time)(next_daily_maintenance_time)(content_reward_percent)(vesting_reward_percent)(proposal_fund_percent)(dhf_interval_ledger)
         (downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)

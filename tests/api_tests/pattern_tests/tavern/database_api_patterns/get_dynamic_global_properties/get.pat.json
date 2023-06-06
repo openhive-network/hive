@@ -52,7 +52,6 @@
     "precision": 6
   },
   "recent_slots_filled": "255209179042255236190010672587206549503",
-  "required_actions_partition_percent": 0,
   "reverse_auction_seconds": 1800,
   "proposal_fund_percent": 0,
   "dhf_interval_ledger": {

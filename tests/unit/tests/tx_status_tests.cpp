@@ -156,7 +156,6 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
       {
         dgpo.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT;
-        dgpo.required_actions_partition_percent = 0;
       } );
     } );
 

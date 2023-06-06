@@ -672,12 +672,12 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //singletons (size only affects performance)
   BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 112u );
   BOOST_CHECK_EQUAL( sizeof( reward_fund_index::MULTIINDEX_NODE_TYPE ), 176u );
-  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 384u
+  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 368u
 #ifdef HIVE_ENABLE_SMT
     + 16
 #endif
   );
-  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_index::MULTIINDEX_NODE_TYPE ), 416u
+  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_index::MULTIINDEX_NODE_TYPE ), 400u
 #ifdef HIVE_ENABLE_SMT
     + 16
 #endif
@@ -1191,11 +1191,11 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::smt_ico_object>(dtds), "6934ff28d7e63986e06dcfc9f3859095b978feca" );
 
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_object>(dtds), "2b3524a7e3cae469e96f8d9efccc6c97ac6d3730" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "08ca44497e456bc0af3fe7571cdc7aeecce6715f" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "c2d37e4721f3b90ac5022ab661a08d065117097f" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "2b92270c562e9506292c9ca336f626ff7f3a3be2" );
   #else
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_object>(dtds), "38b356fdf295b2a709ac9d77b94fbe0fcd3c9267" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "944109c07f30f38be1092374c7b0d3afaa994ccc" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "3cb44980ad38710ceb0099de520239dd03a0b3ce" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "62c2b2cae6bb2b346632a8ac9d3ba56f41bf1def" );
   #endif
 
