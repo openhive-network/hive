@@ -4537,10 +4537,8 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
     dgp.current_witness = block.witness;
   });
 
-  required_automated_actions req_actions;
-  optional_automated_actions opt_actions;
   /// parse witness version reporting
-  process_header_extensions( block, req_actions, opt_actions );
+  process_header_extensions( block );
 
   if( has_hardfork( HIVE_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
   {
@@ -4604,9 +4602,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   generate_required_actions();
   generate_optional_actions();
 
-  process_required_actions( req_actions );
-  process_optional_actions( opt_actions );
-
   process_hardforks();
 
   // notify observers that the block has been applied
@@ -4623,17 +4618,13 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
 struct process_header_visitor
 {
-  process_header_visitor( const std::string& witness, required_automated_actions& req_actions, optional_automated_actions& opt_actions, database& db ) :
+  process_header_visitor( const std::string& witness, database& db ) :
     _witness( witness ),
-    _req_actions( req_actions ),
-    _opt_actions( opt_actions ),
     _db( db ) {}
 
   typedef void result_type;
 
   const std::string& _witness;
-  required_automated_actions& _req_actions;
-  optional_automated_actions& _opt_actions;
   database& _db;
 
   void operator()( const void_t& obj ) const
@@ -4667,26 +4658,11 @@ struct process_header_visitor
         wo.hardfork_time_vote = hfv.hf_time;
       });
   }
-
-  void operator()( const required_automated_actions& req_actions ) const
-  {
-    FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "Automated actions are not enabled until SMT hardfork." );
-    std::copy( req_actions.begin(), req_actions.end(), std::back_inserter( _req_actions ) );
-  }
-
-FC_TODO( "Remove when optional automated actions are created" )
-#ifdef IS_TEST_NET
-  void operator()( const optional_automated_actions& opt_actions ) const
-  {
-    FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ), "Automated actions are not enabled until SMT hardfork." );
-    std::copy( opt_actions.begin(), opt_actions.end(), std::back_inserter( _opt_actions ) );
-  }
-#endif
 };
 
-void database::process_header_extensions( const signed_block& next_block, required_automated_actions& req_actions, optional_automated_actions& opt_actions )
+void database::process_header_extensions( const signed_block& next_block )
 {
-  process_header_visitor _v( next_block.witness, req_actions, opt_actions, *this );
+  process_header_visitor _v( next_block.witness, *this );
 
   for( const auto& e : next_block.extensions )
     e.visit( _v );
@@ -5065,50 +5041,6 @@ struct action_equal_visitor
   }
 };
 
-void database::process_required_actions( const required_automated_actions& actions )
-{
-  const auto& pending_action_idx = get_index< pending_required_action_index, by_id >();
-  auto actions_itr = actions.begin();
-  uint64_t total_actions_size = 0;
-
-  while( true )
-  {
-    auto pending_itr = pending_action_idx.begin();
-
-    if( actions_itr == actions.end() )
-    {
-      // We're done processing actions in the block.
-      if( pending_itr != pending_action_idx.end() && pending_itr->execution_time <= head_block_time() )
-      {
-        total_actions_size += fc::raw::pack_size( pending_itr->action );
-        const auto& gpo = get_dynamic_global_properties();
-        uint64_t required_actions_partition_size = 0;
-        FC_ASSERT( total_actions_size > required_actions_partition_size,
-          "Expected action was not included in block. total_actions_size: ${as}, required_actions_partition_action: ${rs}, pending_action: ${pa}",
-          ("as", total_actions_size)
-          ("rs", required_actions_partition_size)
-          ("pa", *pending_itr) );
-      }
-      break;
-    }
-
-    FC_ASSERT( pending_itr != pending_action_idx.end(),
-      "Block included required action that does not exist in queue" );
-
-    action_equal_visitor equal_visitor( pending_itr->action );
-    FC_ASSERT( actions_itr->visit( equal_visitor ),
-      "Unexpected action included. Expected: ${e} Observed: ${o}",
-      ("e", pending_itr->action)("o", *actions_itr) );
-
-    apply_required_action( *actions_itr );
-
-    total_actions_size += fc::raw::pack_size( *actions_itr );
-
-    remove( *pending_itr );
-    ++actions_itr;
-  }
-}
-
 void database::apply_required_action( const required_automated_action& a )
 {
   required_action_notification note( a );
@@ -5117,48 +5049,6 @@ void database::apply_required_action( const required_automated_action& a )
   _my->_req_action_evaluator_registry.get_evaluator( a ).apply( a );
 
   notify_post_apply_required_action( note );
-}
-
-void database::process_optional_actions( const optional_automated_actions& actions )
-{
-  if( !has_hardfork( HIVE_SMT_HARDFORK ) ) return;
-
-  static const action_validate_visitor validate_visitor;
-
-  for( auto actions_itr = actions.begin(); actions_itr != actions.end(); ++actions_itr )
-  {
-    actions_itr->visit( validate_visitor );
-
-    // There is no execution check because we don't have a good way of indexing into local
-    // optional actions from those contained in a block. It is the responsibility of the
-    // action evaluator to prevent early execution.
-    apply_optional_action( *actions_itr );
-  }
-
-  // This expiration is based on the timestamp of the last irreversible block. For historical
-  // blocks, generation of optional actions should be disabled and the expiration can be skipped.
-  // For reindexing of the first 2 million blocks, this unnecessary read consumes almost 30%
-  // of runtime.
-  FC_TODO( "Optimize expiration for reindex." );
-
-  // Clear out "expired" optional_actions. If the block when an optional action was generated
-  // has become irreversible then a super majority of witnesses have chosen to not include it
-  // and it is safe to delete.
-  const auto& pending_action_idx = get_index< pending_optional_action_index, by_execution >();
-  auto pending_itr = pending_action_idx.begin();
-  std::shared_ptr<full_block_type> lib = fetch_block_by_number(get_last_irreversible_block_num());
-
-  // This is always valid when running on mainnet because there are irreversible blocks
-  // Testnet and unit tests, not so much. Could be ifdeffed with IS_TEST_NET, but seems
-  // like a reasonable check and will be optimized via speculative execution.
-  if (lib)
-  {
-    while (pending_itr != pending_action_idx.end() && pending_itr->execution_time <= lib->get_block_header().timestamp)
-    {
-      remove( *pending_itr );
-      pending_itr = pending_action_idx.begin();
-    }
-  }
 }
 
 void database::apply_optional_action( const optional_automated_action& a )
