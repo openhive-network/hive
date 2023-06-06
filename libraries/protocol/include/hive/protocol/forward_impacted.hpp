@@ -90,5 +90,6 @@ namespace consensus_state_provider
   collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context);
   collected_account_balances_collection_t collect_current_all_accounts_balances_impl(const char* context, const char* shared_memory_bin_path);
   collected_account_balances_collection_t collect_current_account_balance(const char* acount, const char* context);
+  collected_account_balances_collection_t collect_current_account_balance_impl(const char* acount, const char* context, const char* shared_memory_bin_path);
 }
 
