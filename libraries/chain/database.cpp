@@ -5082,7 +5082,7 @@ void database::process_required_actions( const required_automated_actions& actio
       {
         total_actions_size += fc::raw::pack_size( pending_itr->action );
         const auto& gpo = get_dynamic_global_properties();
-        uint64_t required_actions_partition_size = ( gpo.maximum_block_size * gpo.required_actions_partition_percent ) / HIVE_100_PERCENT;
+        uint64_t required_actions_partition_size = 0;
         FC_ASSERT( total_actions_size > required_actions_partition_size,
           "Expected action was not included in block. total_actions_size: ${as}, required_actions_partition_action: ${rs}, pending_action: ${pa}",
           ("as", total_actions_size)
@@ -7065,11 +7065,6 @@ void database::apply_hardfork( uint32_t hardfork )
 #ifdef HIVE_ENABLE_SMT
       replenish_nai_pool( *this );
 #endif
-      modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
-      {
-        gpo.required_actions_partition_percent = 25 * HIVE_1_PERCENT;
-      });
-
       break;
     }
     default:

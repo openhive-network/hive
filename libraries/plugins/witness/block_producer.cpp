@@ -118,7 +118,7 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   size_t total_block_size = fc::raw::pack_size(pending_block_header) + 4;
   const auto& gpo = _db.get_dynamic_global_properties();
   uint64_t maximum_block_size = gpo.maximum_block_size; //HIVE_MAX_BLOCK_SIZE;
-  uint64_t maximum_transaction_partition_size = maximum_block_size -  ( maximum_block_size * gpo.required_actions_partition_percent ) / HIVE_100_PERCENT;
+  uint64_t maximum_transaction_partition_size = maximum_block_size;
 
   //
   // The following code throws away existing pending_tx_session and
