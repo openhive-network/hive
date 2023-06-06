@@ -27,10 +27,7 @@ public:
   std::map<key_t, value_t> value;
 
   collector_t() = default;
-
-  collector_t(collector_t&& collector): value(collector.value) {}
-  collector_t(const collector_t& collector): value(collector.value) {}
-  collector_t(collector_t& collector): value(collector.value) {}
+  collector_t(collector_t&& collector) = default;
 
   template <typename... Values>
   collector_t(Values &&...values)
@@ -71,8 +68,8 @@ public:
   {
   }
 
-  notification_t(const fc::string &name, const collector_t& collector):
-    collector_t{collector},
+  notification_t(const fc::string &name, collector_t&& collector):
+    collector_t{std::forward<collector_t>( collector )},
     time{fc::time_point::now()},
     name{name}
   {
