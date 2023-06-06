@@ -16,4 +16,4 @@ class op_iterator
 };
 
 
-using op_iterator_ptr = std::shared_ptr <op_iterator>;
+using op_iterator_ptr = std::unique_ptr<op_iterator>;

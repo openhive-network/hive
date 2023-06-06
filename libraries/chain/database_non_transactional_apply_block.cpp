@@ -80,7 +80,10 @@ void database::non_transactional_apply_block(const std::shared_ptr<full_block_ty
 
   detail::with_skip_flags( *this, skip, [&]()
   {
-    _apply_block(full_block, [this, op_it](const std::shared_ptr<full_block_type>& full_block, uint32_t skip){ _process_operations(op_it);});
+    _apply_block(full_block, [this, &op_it](const std::shared_ptr<full_block_type>& full_block, uint32_t skip) 
+    {
+       _process_operations(std::move(op_it));
+    });
     
   } );
 
