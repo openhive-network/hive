@@ -12,7 +12,7 @@ namespace hive { namespace chain {
 class account_object;
 class database;
 class remove_guard;
-struct rc_info;
+struct rc_transaction_info;
 
 struct rc_price_curve_params
 {
@@ -71,7 +71,7 @@ class resource_credits
       int64_t rc_regen );
 
     // calculates cost of given resource consumption, applies resource units and adds detailed cost to buffer
-    int64_t compute_cost( rc_info* usage_info ) const;
+    int64_t compute_cost( rc_transaction_info* usage_info ) const;
 
     // returns account that is RC payer for given transaction (first operation decides)
     static hive::protocol::account_name_type get_resource_user( const hive::protocol::signed_transaction& tx );
@@ -96,7 +96,7 @@ class resource_credits
     void update_rc_for_custom_action( std::function<void()>&& callback, const account_object& account ) const;
 
     // consumes RC mana from payer account (or throws exception if not enough), supplements buffer with payer RC mana
-    void use_account_rcs( rc_info* tx_info, int64_t rc ) const;
+    void use_account_rcs( rc_transaction_info* tx_info, int64_t rc ) const;
 
     // checks if account had excess RC delegations that failed to remove in single block and are still being removed
     bool has_expired_delegation( const account_object& account ) const;

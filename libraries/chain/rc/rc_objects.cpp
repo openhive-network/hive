@@ -26,7 +26,7 @@ void rc_stats_object::archive_and_reset_stats( rc_stats_object& archive, const r
   payer_stats = {};
 }
 
-void rc_stats_object::add_stats( const rc_info& tx_info )
+void rc_stats_object::add_stats( const rc_transaction_info& tx_info )
 {
   int _op_idx = op_stats.size() - 1; //multiop transaction by default
   if( tx_info.op.valid() )
