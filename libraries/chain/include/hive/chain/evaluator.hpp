@@ -57,41 +57,28 @@ class evaluator_impl : public evaluator<OperationType>
 #define HIVE_DEFINE_EVALUATOR( X )                                                       \
 class X ## _evaluator : public hive::chain::evaluator_impl< X ## _evaluator >            \
 {                                                                                        \
-  public:                                                                               \
-    typedef X ## _operation operation_type;                                            \
-                                                            \
-    X ## _evaluator( database& db )                                                    \
-      : hive::chain::evaluator_impl< X ## _evaluator >( db )                          \
-    {}                                                                                 \
-                                                            \
-    void do_apply( const X ## _operation& o );                                         \
-};
-
-#define HIVE_DEFINE_ACTION_EVALUATOR( X, ACTION )                                        \
-class X ## _evaluator : public hive::chain::evaluator_impl< X ## _evaluator, ACTION >    \
-{                                                                                        \
-  public:                                                                               \
-    typedef X ## _action operation_type;                                               \
-                                                            \
-    X ## _evaluator( database& db )                                                    \
-      : hive::chain::evaluator_impl< X ## _evaluator, ACTION >( db )                  \
-    {}                                                                                 \
-                                                            \
-    void do_apply( const X ## _action& o );                                            \
+  public:                                                                                \
+    typedef X ## _operation operation_type;                                              \
+                                                                                         \
+    X ## _evaluator( database& db )                                                      \
+      : hive::chain::evaluator_impl< X ## _evaluator >( db )                             \
+    {}                                                                                   \
+                                                                                         \
+    void do_apply( const X ## _operation& o );                                           \
 };
 
 #define HIVE_DEFINE_PLUGIN_EVALUATOR( PLUGIN, OPERATION, X )                             \
 class X ## _evaluator : public hive::chain::evaluator_impl< X ## _evaluator, OPERATION > \
 {                                                                                        \
-  public:                                                                               \
-    typedef X ## _operation operation_type;                                            \
-                                                            \
-    X ## _evaluator( hive::chain::database& db, PLUGIN* plugin )                       \
-      : hive::chain::evaluator_impl< X ## _evaluator, OPERATION >( db ),              \
-        _plugin( plugin )                                                             \
-    {}                                                                                 \
-                                                            \
-    void do_apply( const X ## _operation& o );                                         \
-                                                            \
-    PLUGIN* _plugin;                                                                   \
+  public:                                                                                \
+    typedef X ## _operation operation_type;                                              \
+                                                                                         \
+    X ## _evaluator( hive::chain::database& db, PLUGIN* plugin )                         \
+      : hive::chain::evaluator_impl< X ## _evaluator, OPERATION >( db ),                 \
+        _plugin( plugin )                                                                \
+    {}                                                                                   \
+                                                                                         \
+    void do_apply( const X ## _operation& o );                                           \
+                                                                                         \
+    PLUGIN* _plugin;                                                                     \
 };

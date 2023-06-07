@@ -670,8 +670,6 @@ namespace chain {
       void check_free_memory( bool force_print, uint32_t current_block_num );
 
       void apply_transaction( const std::shared_ptr<full_transaction_type>& trx, uint32_t skip = skip_nothing );
-      void apply_required_action( const required_automated_action& a );
-      void apply_optional_action( const optional_automated_action& a );
 
       optional< chainbase::database::session >& pending_transaction_session();
 
