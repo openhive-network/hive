@@ -45,8 +45,6 @@ add_library( hive_chain
              smt_objects/nai_pool.cpp
              hive_evaluator.cpp
              hive_objects.cpp
-             required_action_evaluator.cpp
-             optional_action_evaluator.cpp
 
              witness_schedule.cpp
              fork_database.cpp

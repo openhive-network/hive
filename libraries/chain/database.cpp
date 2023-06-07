@@ -14,10 +14,8 @@
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/global_property_object.hpp>
-#include <hive/chain/optional_action_evaluator.hpp>
 #include <hive/chain/pending_required_action_object.hpp>
 #include <hive/chain/pending_optional_action_object.hpp>
-#include <hive/chain/required_action_evaluator.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/hive_objects.hpp>
@@ -124,15 +122,13 @@ class database_impl
 
     database&                                         _self;
     evaluator_registry< operation >                   _evaluator_registry;
-    evaluator_registry< required_automated_action >   _req_action_evaluator_registry;
-    evaluator_registry< optional_automated_action >   _opt_action_evaluator_registry;
     std::map<account_name_type, block_id_type>        _last_fast_approved_block_by_witness;
     std::unique_ptr<util::decoded_types_data_storage> _decoded_types_data_storage;
     bool                                              _last_pushed_block_was_before_checkpoint = false; // just used for logging
 };
 
 database_impl::database_impl( database& self )
-  : _self(self), _evaluator_registry(self), _req_action_evaluator_registry(self), _opt_action_evaluator_registry(self) {}
+  : _self(self), _evaluator_registry(self) {}
 
 void database_impl::register_new_type(util::abstract_type_registrar& r)
 {
@@ -3966,13 +3962,6 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
   _my->_evaluator_registry.register_evaluator< recurrent_transfer_evaluator             >();
   _my->_evaluator_registry.register_evaluator< witness_block_approve_evaluator          >();
-
-
-#ifdef IS_TEST_NET
-  _my->_req_action_evaluator_registry.register_evaluator< example_required_evaluator    >();
-
-  _my->_opt_action_evaluator_registry.register_evaluator< example_optional_evaluator    >();
-#endif
 }
 
 
@@ -5020,16 +5009,6 @@ struct action_equal_visitor
     return action_a.get< Action >() == action_b;
   }
 };
-
-void database::apply_required_action( const required_automated_action& a )
-{
-  _my->_req_action_evaluator_registry.get_evaluator( a ).apply( a );
-}
-
-void database::apply_optional_action( const optional_automated_action& a )
-{
-  _my->_opt_action_evaluator_registry.get_evaluator( a ).apply( a );
-}
 
 template <typename TFunction> struct fcall {};
 
