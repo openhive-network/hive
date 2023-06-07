@@ -1,10 +1,8 @@
-#pragma once 
-#include <string_view>
-#include <vector>
-#include <memory>
+#pragma once
 #include <hive/protocol/operations.hpp>
+#include <memory>
 
-
+namespace hive { namespace chain {
 
 class op_iterator
 {
@@ -15,5 +13,6 @@ class op_iterator
   virtual op_view_t unpack_from_char_array_and_next() = 0;
 };
 
-
 using op_iterator_ptr = std::unique_ptr<op_iterator>;
+
+}}  // namespace hive::chain
