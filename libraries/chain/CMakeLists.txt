@@ -19,7 +19,6 @@ add_library( hive_chain
 
              # As database takes the longest to compile, start it first
              database.cpp
-             database_non_transactional_apply_block.cpp
              index.cpp
              index-01.cpp
              index-02.cpp

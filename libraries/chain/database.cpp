@@ -7665,5 +7665,34 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
   return result;
 }
 
+void database::non_transactional_apply_block(const std::shared_ptr<full_block_type>& full_block, op_iterator_ptr op_it, uint32_t skip)
+{
+
+  detail::with_skip_flags( *this, skip, [&]()
+  {
+    _apply_block(full_block, [this, &op_it](const std::shared_ptr<full_block_type>& full_block, uint32_t skip) 
+    {
+       _process_operations(std::move(op_it));
+    });
+    
+  } );
+
+}
+
+void database::_process_operations(op_iterator_ptr op_it)
+{
+
+  while(op_it->has_next()) 
+  {
+    hive::protocol::operation op = op_it->unpack_from_char_array_and_next();
+
+    try
+    {
+      apply_operation(op);
+    }
+    FC_CAPTURE_AND_RETHROW((op))
+  }
+}
+
 } } //hive::chain
 
