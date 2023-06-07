@@ -627,12 +627,6 @@ struct count_operation_visitor
   // Virtual Ops (their costs, be it hived or HM, should be added to operations that spawn them)
   void operator()( const virtual_operation& ) const {}
 
-  // Optional Actions
-#ifdef IS_TEST_NET
-  void operator()( const example_optional_action& ) const {}
-#endif
-
-
   // TODO:
   // Should following ops be market ops?
   // withdraw_vesting, convert, collateralized_convert, set_withdraw_vesting_route, limit_order_create2

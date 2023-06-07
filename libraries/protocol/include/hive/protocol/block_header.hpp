@@ -1,7 +1,6 @@
 #pragma once
-#include <hive/protocol/required_automated_actions.hpp>
-#include <hive/protocol/optional_automated_actions.hpp>
 #include <hive/protocol/base.hpp>
+#include <hive/protocol/operation_util.hpp>
 
 namespace hive { namespace protocol {
 

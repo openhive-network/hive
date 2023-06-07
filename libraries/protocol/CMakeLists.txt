@@ -31,8 +31,6 @@ SET( SOURCES testnet_blockchain_configuration.cpp
    smt_operations.cpp
    hive_operations.cpp
    dhf_operations.cpp
-   hive_required_actions.cpp
-   hive_optional_actions.cpp
    types.cpp
    schema_types.cpp
    authority.cpp

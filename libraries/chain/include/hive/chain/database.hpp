@@ -72,8 +72,6 @@ namespace chain {
 
   struct reindex_notification;
 
-  struct generate_optional_actions_notification {};
-
   typedef std::function<void(uint32_t, const chainbase::database::abstract_index_cntr_t&)> TBenchmarkMidReport;
   typedef std::pair<uint32_t, TBenchmarkMidReport> TBenchmark;
 
@@ -398,7 +396,6 @@ namespace chain {
       using irreversible_block_handler_t = std::function< void(uint32_t) >;
       using switch_fork_handler_t = std::function< void(uint32_t) >;
       using reindex_handler_t = std::function< void(const reindex_notification&) >;
-      using generate_optional_actions_handler_t = std::function< void(const generate_optional_actions_notification&) >;
       using prepare_snapshot_handler_t = std::function < void(const database&, const database::abstract_index_cntr_t&)>;
       using prepare_snapshot_data_supplement_handler_t = std::function < void(const prepare_snapshot_supplement_notification&) >;
       using load_snapshot_data_supplement_handler_t = std::function < void(const load_snapshot_supplement_notification&) >;
@@ -433,7 +430,6 @@ namespace chain {
       boost::signals2::connection add_switch_fork_handler               ( const switch_fork_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_generate_optional_actions_handler ( const generate_optional_actions_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_finish_push_block_handler          ( const push_block_handler_t&                func, const abstract_plugin& plugin, int32_t group = -1 );
@@ -737,9 +733,6 @@ namespace chain {
       void process_header_extensions( const signed_block& next_block );
       void process_genesis_accounts();
 
-      void generate_required_actions();
-      void generate_optional_actions();
-
       void init_hardforks();
       void process_hardforks();
       void apply_hardfork( uint32_t hardfork );
@@ -914,8 +907,6 @@ namespace chain {
         * Emitted when reindexing finishes
         */
       fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
-
-      fc::signal<void(const generate_optional_actions_notification& )> _generate_optional_actions_signal;
 
       fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
 
