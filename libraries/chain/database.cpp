@@ -1476,26 +1476,6 @@ void database::push_optional_action( const optional_automated_action& a )
   push_optional_action( a, head_block_time() );
 }
 
-void database::notify_pre_apply_required_action( const required_action_notification& note )
-{
-  HIVE_TRY_NOTIFY( _pre_apply_required_action_signal, note );
-}
-
-void database::notify_post_apply_required_action( const required_action_notification& note )
-{
-  HIVE_TRY_NOTIFY( _post_apply_required_action_signal, note );
-}
-
-void database::notify_pre_apply_optional_action( const optional_action_notification& note )
-{
-  HIVE_TRY_NOTIFY( _pre_apply_optional_action_signal, note );
-}
-
-void database::notify_post_apply_optional_action( const optional_action_notification& note )
-{
-  HIVE_TRY_NOTIFY( _post_apply_optional_action_signal, note );
-}
-
 void database::notify_post_apply_operation( const operation_notification& note )
 {
   HIVE_TRY_NOTIFY( _post_apply_operation_signal, note )
@@ -5043,22 +5023,12 @@ struct action_equal_visitor
 
 void database::apply_required_action( const required_automated_action& a )
 {
-  required_action_notification note( a );
-  notify_pre_apply_required_action( note );
-
   _my->_req_action_evaluator_registry.get_evaluator( a ).apply( a );
-
-  notify_post_apply_required_action( note );
 }
 
 void database::apply_optional_action( const optional_automated_action& a )
 {
-  optional_action_notification note( a );
-  notify_pre_apply_optional_action( note );
-
   _my->_opt_action_evaluator_registry.get_evaluator( a ).apply( a );
-
-  notify_post_apply_optional_action( note );
 }
 
 template <typename TFunction> struct fcall {};
@@ -5138,30 +5108,6 @@ boost::signals2::connection database::any_apply_operation_handler_impl( const ap
     return _pre_apply_operation_signal.connect(group, complex_func);
   else
     return _post_apply_operation_signal.connect(group, complex_func);
-}
-
-boost::signals2::connection database::add_pre_apply_required_action_handler( const apply_required_action_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
-{
-  return connect_impl<true>(_pre_apply_required_action_signal, func, plugin, group, "required_action");
-}
-
-boost::signals2::connection database::add_post_apply_required_action_handler( const apply_required_action_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
-{
-  return connect_impl<false>(_post_apply_required_action_signal, func, plugin, group, "required_action");
-}
-
-boost::signals2::connection database::add_pre_apply_optional_action_handler( const apply_optional_action_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
-{
-  return connect_impl<true>(_pre_apply_optional_action_signal, func, plugin, group, "optional_action");
-}
-
-boost::signals2::connection database::add_post_apply_optional_action_handler( const apply_optional_action_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
-{
-  return connect_impl<false>(_post_apply_optional_action_signal, func, plugin, group, "optional_action");
 }
 
 boost::signals2::connection database::add_pre_apply_operation_handler( const apply_operation_handler_t& func,
