@@ -172,8 +172,6 @@ template
 bool resource_credits::prepare_differential_usage< operation >( const operation& op, count_resources_result& result ) const;
 template
 bool resource_credits::prepare_differential_usage< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result ) const;
-template
-bool resource_credits::prepare_differential_usage< optional_automated_action >( const optional_automated_action& op, count_resources_result& result ) const;
 
 struct count_operation_visitor
 {
@@ -643,8 +641,6 @@ struct count_operation_visitor
   // claim_reward_balance, delegate_vesting_shares, any SMT operations
 };
 
-typedef count_operation_visitor count_optional_action_visitor;
-
 void count_resources(
   const signed_transaction& tx,
   const size_t size,
@@ -702,38 +698,6 @@ void resource_credits::count_resources(
     + exec_info.transaction_time + exec_info.verify_authority_time * tx.signatures.size();
 
   prevent_negative( result );
-}
-
-void resource_credits::count_resources(
-  const optional_automated_action& action,
-  const size_t size,
-  count_resources_result& result,
-  const fc::time_point_sec now
-){
-  static const state_object_size_info size_info;
-  static const operation_exec_info exec_info;
-  const int64_t action_size = int64_t( size );
-  count_optional_action_visitor vtor( size_info, exec_info, now );
-
-  action.visit( vtor );
-
-  //subsidized operations not expected (but even if they were, we won't subsidize them here, at least for now)
-
-  result[ resource_history_bytes ] += action_size;
-
-  // Not expecting actions to claim account tokens, but better to add it for completeness
-  result[ resource_new_accounts ] += vtor.new_account_op_count;
-
-  if( vtor.market_op_count > 0 )
-    result[ resource_market_bytes ] += action_size;
-
-  result[ resource_state_bytes ] += vtor.state_bytes_count;
-
-  result[ resource_execution_time ] += vtor.execution_time_count;
-
-  for( auto& usage : result )
-    if( usage < 0 )
-      usage = 0;
 }
 
 template< typename OpType >

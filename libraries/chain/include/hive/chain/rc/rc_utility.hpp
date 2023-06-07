@@ -5,8 +5,6 @@
 
 #include <hive/chain/util/rd_dynamics.hpp>
 
-#include <hive/protocol/optional_automated_actions.hpp>
-
 #include <fc/reflect/reflect.hpp>
 
 namespace hive { namespace chain {
@@ -51,13 +49,6 @@ class resource_credits
       count_resources_result& result,
       const fc::time_point_sec now );
 
-    // scans optional automated action for used resources
-    static void count_resources(
-      const hive::protocol::optional_automated_action& action,
-      const size_t size,
-      count_resources_result& result,
-      const fc::time_point_sec now );
-
     // scans single nonstandard operation for used resource (implemented for rc_custom_operation)
     template< typename OpType >
     static void count_resources(
@@ -65,7 +56,7 @@ class resource_credits
       count_resources_result& result,
       const fc::time_point_sec now );
 
-    /** scans database for state related to given operation (implemented for operation, rc_custom_operationand optional_automated_action)
+    /** scans database for state related to given operation (implemented for operation and rc_custom_operation)
       * see comment in definition for more details
       * Note: only selected operations consuming significant state handle differential usage
       */
@@ -84,8 +75,6 @@ class resource_credits
 
     // returns account that is RC payer for given transaction (first operation decides)
     static hive::protocol::account_name_type get_resource_user( const hive::protocol::signed_transaction& tx );
-    // returns account that is RC payer for given optional automated action
-    static hive::protocol::account_name_type get_resource_user( const hive::protocol::optional_automated_action& action );
 
     // regenerates RC mana on given account - must be called before any operation that changes max RC mana
     void regenerate_rc_mana( const account_object& account, uint32_t now ) const;

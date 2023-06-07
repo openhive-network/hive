@@ -23,7 +23,6 @@ struct rc_info
 };
 
 typedef rc_info rc_transaction_info;
-typedef rc_info rc_optional_action_info;
 
 struct rc_block_info
 {

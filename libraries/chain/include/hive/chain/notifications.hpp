@@ -49,20 +49,6 @@ struct operation_notification
   bool                virtual_op = false;
 };
 
-struct required_action_notification
-{
-  required_action_notification( const hive::protocol::required_automated_action& a ) : action(a) {}
-
-  const hive::protocol::required_automated_action& action;
-};
-
-struct optional_action_notification
-{
-  optional_action_notification( const hive::protocol::optional_automated_action& a ) : action(a) {}
-
-  const hive::protocol::optional_automated_action& action;
-};
-
 struct comment_reward_notification
 {
   comment_reward_notification( const share_type& _total_reward, share_type _author_tokens, share_type _curation_tokens )

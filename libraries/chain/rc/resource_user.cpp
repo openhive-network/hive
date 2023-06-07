@@ -64,11 +64,4 @@ account_name_type resource_credits::get_resource_user( const signed_transaction&
   return account_name_type();
 }
 
-account_name_type resource_credits::get_resource_user( const optional_automated_action& action )
-{
-  get_resource_user_visitor vtor;
-
-  return action.visit( vtor );
-}
-
 } } // hive::chain

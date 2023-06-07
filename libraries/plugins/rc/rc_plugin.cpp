@@ -54,16 +54,9 @@ struct exp_rc_data : public exportable_block_data
       txs = std::vector< rc_transaction_info >();
     txs->emplace_back( tx_info );
   }
-  void add_opt_action_info( const rc_optional_action_info& action_info )
-  {
-    if( !opt_actions.valid() )
-      opt_actions = std::vector< rc_optional_action_info >();
-    opt_actions->emplace_back( action_info );
-  }
 
   rc_block_info                                      block;
   optional< std::vector< rc_transaction_info > >     txs;
-  optional< std::vector< rc_optional_action_info > > opt_actions;
 };
 
 } } } // namespace hive::plugins::rc
@@ -71,7 +64,6 @@ struct exp_rc_data : public exportable_block_data
 FC_REFLECT( hive::plugins::rc::exp_rc_data,
   ( block )
   ( txs )
-  ( opt_actions )
 )
 
 namespace hive { namespace plugins { namespace rc {
@@ -106,8 +98,6 @@ class rc_plugin_impl
     void on_post_apply_transaction( const transaction_notification& note );
     void on_pre_apply_operation( const operation_notification& note );
     void on_post_apply_operation( const operation_notification& note );
-    void on_pre_apply_optional_action( const optional_action_notification& note );
-    void on_post_apply_optional_action( const optional_action_notification& note );
     void on_pre_apply_custom_operation( const custom_operation_notification& note );
     void on_post_apply_custom_operation( const custom_operation_notification& note );
 
@@ -141,8 +131,6 @@ class rc_plugin_impl
     boost::signals2::connection   _post_apply_transaction_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
     boost::signals2::connection   _post_apply_operation_conn;
-    boost::signals2::connection   _pre_apply_optional_action_conn;
-    boost::signals2::connection   _post_apply_optional_action_conn;
     boost::signals2::connection   _pre_apply_custom_operation_conn;
     boost::signals2::connection   _post_apply_custom_operation_conn;
 
@@ -630,8 +618,6 @@ struct pre_apply_operation_visitor
   void operator()( const Op& op )const {}
 };
 
-typedef pre_apply_operation_visitor pre_apply_optional_action_vistor;
-
 struct post_apply_operation_visitor
 {
   typedef void result_type;
@@ -801,8 +787,6 @@ struct post_apply_operation_visitor
   }
 };
 
-typedef post_apply_operation_visitor post_apply_optional_action_visitor;
-
 void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note )
 { try {
   if( before_first_block() )
@@ -902,74 +886,6 @@ void rc_plugin_impl::on_post_apply_custom_operation( const custom_operation_noti
   post_apply_custom_op_type< rc_custom_operation >( note );
 }
 
-void rc_plugin_impl::on_pre_apply_optional_action( const optional_action_notification& note )
-{
-  if( before_first_block() )
-    return;
-
-  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
-  pre_apply_optional_action_vistor vtor( _db );
-
-  vtor._current_witness = gpo.current_witness;
-
-  note.action.visit( vtor );
-
-  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
-  {
-    data.reset_differential_usage();
-
-    count_resources_result differential_usage;
-    resource_credits rc( _db );
-    if( rc.prepare_differential_usage( note.action, differential_usage ) )
-      data.add_differential_usage( differential_usage );
-  } );
-}
-
-void rc_plugin_impl::on_post_apply_optional_action( const optional_action_notification& note )
-{
-  if( before_first_block() )
-    return;
-
-  resource_credits rc( _db );
-  const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-
-  // There is no transaction equivalent for actions, so post apply transaction logic for actions goes here.
-  post_apply_optional_action_visitor vtor( _db );
-  note.action.visit( vtor );
-
-  rc_optional_action_info opt_action_info;
-  // Initialize with (negative) usage for state that was updated by action
-  opt_action_info.usage = pending_data.get_differential_usage();
-
-  // How many resources do the optional actions use?
-  rc.count_resources( note.action, fc::raw::pack_size( note.action ), opt_action_info.usage, _db.head_block_time() );
-
-  // How many RC do these actions cost?
-  int64_t total_cost = rc.compute_cost( &opt_action_info );
-
-  _db.modify( pending_data, [&]( rc_pending_data& data )
-  {
-    data.add_pending_usage( opt_action_info.usage, opt_action_info.cost );
-  } );
-
-  // Who pays the cost?
-  opt_action_info.payer = rc.get_resource_user( note.action );
-  rc.use_account_rcs( &opt_action_info, total_cost );
-
-  if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
-  {
-    _db.modify( _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID ), [&]( rc_stats_object& stats_obj )
-    {
-      stats_obj.add_stats( opt_action_info );
-    } );
-  }
-
-  std::shared_ptr< exp_rc_data > export_data =
-    hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
-  if( export_data )
-    export_data->add_opt_action_info( opt_action_info );
-}
-
 void rc_plugin_impl::validate_database()
 {
   const auto& idx = _db.get_index< account_index >().indices().get< by_name >();
@@ -1028,10 +944,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
       { try { my->on_pre_apply_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note )
       { try { my->on_post_apply_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
-    my->_pre_apply_optional_action_conn = db.add_pre_apply_optional_action_handler( [&]( const optional_action_notification& note )
-      { try { my->on_pre_apply_optional_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
-    my->_post_apply_optional_action_conn = db.add_post_apply_optional_action_handler( [&]( const optional_action_notification& note )
-      { try { my->on_post_apply_optional_action( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_pre_apply_custom_operation_conn = db.add_pre_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
       { try { my->on_pre_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_custom_operation_conn = db.add_post_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
@@ -1082,8 +994,6 @@ void rc_plugin::plugin_shutdown()
   chain::util::disconnect_signal( my->_post_apply_transaction_conn );
   chain::util::disconnect_signal( my->_pre_apply_operation_conn );
   chain::util::disconnect_signal( my->_post_apply_operation_conn );
-  chain::util::disconnect_signal( my->_pre_apply_optional_action_conn );
-  chain::util::disconnect_signal( my->_post_apply_optional_action_conn );
   chain::util::disconnect_signal( my->_pre_apply_custom_operation_conn );
 
 }
