@@ -83,16 +83,13 @@ int main( int argc, char** argv )
 {
   try
   {
+    auto& theApp = appbase::app();
     // Setup logging config
-    hive::utilities::options_description_ex options;
+    theApp.add_logging_program_options();
 
-    hive::utilities::set_logging_program_options( options );
-    hive::utilities::notifications::add_program_options(options);
+    hive::utilities::options_description_ex options;
     options.add_options()
       ("backtrace", bpo::value< string >()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" );
-
-    auto& theApp = appbase::app();
-
     theApp.add_program_options( hive::utilities::options_description_ex(), options );
 
     hive::plugins::register_plugins();

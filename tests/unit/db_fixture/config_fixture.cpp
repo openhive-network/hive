@@ -11,19 +11,43 @@ namespace bpo = boost::program_options;
 
 namespace hive { namespace chain {
 
-config_fixture::config_fixture()
+config_fixture::config_fixture() {}
+
+void config_fixture::postponed_init( appender_override_t appender_override /*= appender_override_t()*/ )
 {
   try
   {
+    bpo::variables_map option_overrides;
+    if( not config_arg_overrides.empty() )
+    {
+      // In order to create boost::variables_map with overrides we need to:
+      // 1. Create the options descriptions (definitions), so that they will be recognized later.
+      bpo::options_description descriptions;
+      using multi_line_t = config_arg_override_t::value_type::second_type;
+      for( const auto& override : config_arg_overrides )
+      {
+        // override.first contains name of the option, e.g. "log-appender"
+        descriptions.add_options()
+          ( override.first.c_str(), bpo::value< multi_line_t >() );
+      }
+      // 2. Add the options actual "parsed" values.
+      bpo::parsed_options the_options( &descriptions );
+      for( const auto& override : config_arg_overrides )
+      {
+        bpo::option opt( override.first, override.second );
+        the_options.options.push_back( opt );
+      }
+      // 3. Use the only way to add options to variables_map.
+      bpo::store( the_options, option_overrides );
+    }
+
     auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
     {
       // Setup logging options.
-      hive::utilities::options_description_ex options;
-      hive::utilities::set_logging_program_options( options );
-      app.add_program_options( hive::utilities::options_description_ex(), options );
+      app.add_logging_program_options();
 
       // Initialize appbase. Note that no plugin is initialized here.
-      app.initialize( argc, argv );
+      app.initialize( argc, argv, option_overrides );
 
       // Load configuration file into logging config structure, used to create loggers & appenders.
       // Store the structure for further examination (in tests).

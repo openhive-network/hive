@@ -19,6 +19,12 @@ struct config_fixture : public database_fixture
   config_fixture();
   virtual ~config_fixture();
 
+  /** The uniqueness of this fixture & its tests is that the test provide parameters
+   *  for appbase initialization, thus forcing its postponement.
+   */
+  typedef std::vector< std::string > appender_override_t;
+  void postponed_init( appender_override_t appender_override = appender_override_t() );
+
   const fc::optional< fc::logging_config > get_logging_config() const { return _logging_config; }
 };
 

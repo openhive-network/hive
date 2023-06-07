@@ -107,9 +107,10 @@ namespace appbase {
         * @return true if the application and plugins were initialized, false or exception on error
         */
       template< typename... Plugin >
-      initialization_result initialize( int argc, char** argv )
+      initialization_result initialize( int argc, char** argv, 
+        const bpo::variables_map& arg_overrides = bpo::variables_map() )
       {
-        return initialize_impl( argc, argv, { find_plugin( Plugin::name() )... } );
+        return initialize_impl( argc, argv, { find_plugin( Plugin::name() )... }, arg_overrides );
       }
 
       fc::optional< fc::logging_config > load_logging_config();
@@ -167,6 +168,7 @@ namespace appbase {
       bfs::path data_dir()const;
 
       void add_program_options( const bpo::options_description& cli, const bpo::options_description& cfg );
+      void add_logging_program_options();
       const bpo::variables_map& get_args() const;
 
       void set_version_string( const string& version ) { version_info = version; }
@@ -188,7 +190,8 @@ namespace appbase {
       template< typename Impl >
       friend class plugin;
 
-      initialization_result initialize_impl( int argc, char** argv, vector< abstract_plugin* > autostart_plugins );
+      initialization_result initialize_impl( int argc, char** argv, 
+        vector< abstract_plugin* > autostart_plugins, const bpo::variables_map& arg_overrides );
 
       abstract_plugin* find_plugin( const string& name )const;
       abstract_plugin& get_plugin( const string& name )const;
