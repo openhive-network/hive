@@ -161,7 +161,8 @@ fc::optional< fc::logging_config > application::load_logging_config()
   my->_logging_thread.async( [args, &logging_config]{
     try
     {
-      logging_config = hive::utilities::load_logging_config( args, appbase::app().data_dir() );
+      logging_config = 
+        hive::utilities::load_logging_config( args, appbase::app().data_dir() );
       if( logging_config )
         fc::configure_logging( *logging_config );
     }
@@ -275,10 +276,15 @@ void application::set_program_options()
   }
 }
 
-initialization_result application::initialize_impl(int argc, char** argv, vector<abstract_plugin*> autostart_plugins)
+initialization_result application::initialize_impl( int argc, char** argv, 
+  vector<abstract_plugin*> autostart_plugins, const bpo::variables_map& arg_overrides )
 {
   try
   {
+    // Due to limitations of boost::program_options::store function (used twice below),
+    // the overrides need to land first in variables_map container (_args), before actual
+    // args to be overridden are processed.
+    my->_args = arg_overrides;
     set_program_options();
     bpo::store( bpo::parse_command_line( argc, argv, my->_app_options ), my->_args );
 
@@ -667,6 +673,15 @@ void application::add_program_options( const options_description& cli, const opt
   my->_app_options.add( cli );
   my->_app_options.add( cfg );
   my->_cfg_options.add( cfg );
+}
+
+void application::add_logging_program_options()
+{
+  hive::utilities::options_description_ex options;
+  hive::utilities::set_logging_program_options( options );
+  hive::utilities::notifications::add_program_options(options);
+  
+  add_program_options( hive::utilities::options_description_ex(), options );
 }
 
 const variables_map& application::get_args() const

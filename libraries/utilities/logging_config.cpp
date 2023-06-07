@@ -71,16 +71,16 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
     std::vector< string > all_appenders;
 
     if( args.count( "log-appender" ) )
-    {
+      {
       std::vector< string > appenders = args["log-appender"].as< vector< string > >();
       all_appenders.insert( all_appenders.end(), appenders.begin(), appenders.end() );
-    }
+      }
 
     if( args.count( "log-console-appender" ) )
-    {
+      {
       std::vector< string > console_appenders = args["log-console-appender"].as< vector< string > >();
       all_appenders.insert( all_appenders.end(), console_appenders.begin(), console_appenders.end() );
-    }
+      }
 
     if( args.count( "log-file-appender" ) )
     {
@@ -129,11 +129,11 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
           file_appender_config.rotate = appender.rotate.value_or( true );
           file_appender_config.rotation_interval = 
             fc::seconds(
-              fc::variant( appender.rotation_interval.value_or( 3600ull /*1 hour*/ ) ).as<uint64_t>()
+              fc::variant( appender.rotation_interval.value_or( 3600ll /*1 hour*/ ) ).as<int64_t>()
             );
           file_appender_config.rotation_limit = 
             fc::seconds(
-              fc::variant( appender.rotation_limit.value_or( 86400ull /*1 day*/ ) ).as<uint64_t>()
+              fc::variant( appender.rotation_limit.value_or( 86400ll /*1 day*/ ) ).as<int64_t>()
             );
           file_appender_config.time_format = appender.time_format.length() ?
             fc::variant( appender.time_format ).as<fc::appender::time_format>() :
