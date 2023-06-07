@@ -20,8 +20,6 @@ OBJECTS=( "account_authority"                \
           "liquidity_reward_balance"         \
           "operation"                        \
           "owner_authority_history"          \
-          "pending_optional_action"          \
-          "pending_required_action"          \
           "reward_fund"                      \
           "savings_withdraw"                 \
           "transaction"                      \

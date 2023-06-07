@@ -4515,9 +4515,6 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
   process_recurrent_transfers();
 
-  generate_required_actions();
-  generate_optional_actions();
-
   process_hardforks();
 
   // notify observers that the block has been applied
@@ -4940,23 +4937,6 @@ void database::apply_operation(const operation& op)
   notify_post_apply_operation( note );
 }
 
-struct action_equal_visitor
-{
-  typedef bool result_type;
-
-  const required_automated_action& action_a;
-
-  action_equal_visitor( const required_automated_action& a ) : action_a( a ) {}
-
-  template< typename Action >
-  bool operator()( const Action& action_b )const
-  {
-    if( action_a.which() != required_automated_action::tag< Action >::value ) return false;
-
-    return action_a.get< Action >() == action_b;
-  }
-};
-
 template <typename TFunction> struct fcall {};
 
 template <typename TResult, typename... TArgs>
@@ -5118,12 +5098,6 @@ boost::signals2::connection database::add_finish_push_block_handler( const push_
   const abstract_plugin& plugin, int32_t group )
 {
   return connect_impl<false>(_finish_push_block_signal, func, plugin, group, "block");
-}
-
-boost::signals2::connection database::add_generate_optional_actions_handler(const generate_optional_actions_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
-{
-  return connect_impl<true>(_generate_optional_actions_signal, func, plugin, group, "generate_optional_actions");
 }
 
 boost::signals2::connection database::add_prepare_snapshot_handler(const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group)
@@ -6280,17 +6254,6 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
     default: // Note no savings balance for SMT per comments in issue 1682.
       FC_ASSERT( !"invalid symbol" );
   }
-}
-
-void database::generate_required_actions()
-{
-
-}
-
-void database::generate_optional_actions()
-{
-  static const generate_optional_actions_notification note;
-  HIVE_TRY_NOTIFY( _generate_optional_actions_signal, note );
 }
 
 void database::init_hardforks()
