@@ -12,7 +12,7 @@ namespace hive { namespace chain {
 
 using hive::protocol::account_name_type;
 
-struct rc_info
+struct rc_transaction_info
 {
   account_name_type         payer;
   resource_count_type       usage;
@@ -21,8 +21,6 @@ struct rc_info
   int64_t                   rc = 0; //current rc mana of payer (can be zero when payer is unknown)
   optional< uint8_t >       op; //only filled when there is just one operation in tx
 };
-
-typedef rc_info rc_transaction_info;
 
 struct rc_block_info
 {
@@ -40,7 +38,7 @@ struct rc_block_info
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::rc_info,
+FC_REFLECT( hive::chain::rc_transaction_info,
   (payer)
   (usage)
   (cost)

@@ -141,7 +141,7 @@ int64_t resource_credits::compute_cost(
   return fc::uint128_to_uint64(num_denom)+1;
 }
 
-int64_t resource_credits::compute_cost( rc_info* usage_info ) const
+int64_t resource_credits::compute_cost( rc_transaction_info* usage_info ) const
 {
   const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
   const rc_resource_param_object& params_obj = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
@@ -318,7 +318,7 @@ void resource_credits::update_rc_for_custom_action( std::function<void()>&& call
   update_account_after_vest_change( account, now );
 }
 
-void resource_credits::use_account_rcs( rc_info* tx_info, int64_t rc ) const
+void resource_credits::use_account_rcs( rc_transaction_info* tx_info, int64_t rc ) const
 {
   const account_name_type& account_name = tx_info->payer;
   if( account_name == account_name_type() )

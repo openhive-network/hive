@@ -136,7 +136,7 @@ class rc_stats_object : public object< rc_stats_object_type, rc_stats_object >
     void archive_and_reset_stats( rc_stats_object& archive, const rc_pool_object& pool_obj,
       uint32_t _block_num, int64_t _regen );
     //collects stats using given transaction data
-    void add_stats( const rc_info& tx_info );
+    void add_stats( const rc_transaction_info& tx_info );
 
     //starting block for statistics
     uint32_t get_starting_block() const { return block_num; }
