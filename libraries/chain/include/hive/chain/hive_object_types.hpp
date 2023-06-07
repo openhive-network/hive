@@ -73,8 +73,6 @@ enum object_type
   reward_fund_object_type,
   vesting_delegation_object_type,
   vesting_delegation_expiration_object_type,
-  pending_required_action_object_type,
-  pending_optional_action_object_type,
   proposal_object_type,
   proposal_vote_object_type,
   comment_cashout_object_type,
@@ -129,8 +127,6 @@ class block_stats_object;
 class reward_fund_object;
 class vesting_delegation_object;
 class vesting_delegation_expiration_object;
-class pending_required_action_object;
-class pending_optional_action_object;
 class proposal_object;
 class proposal_vote_object;
 class comment_cashout_object;
@@ -183,8 +179,6 @@ typedef oid_ref< block_stats_object                     > block_stats_id_type;
 typedef oid_ref< reward_fund_object                     > reward_fund_id_type;
 typedef oid_ref< vesting_delegation_object              > vesting_delegation_id_type;
 typedef oid_ref< vesting_delegation_expiration_object   > vesting_delegation_expiration_id_type;
-typedef oid_ref< pending_required_action_object         > pending_required_action_id_type;
-typedef oid_ref< pending_optional_action_object         > pending_optional_action_id_type;
 typedef oid_ref< proposal_object                        > proposal_id_type;
 typedef oid_ref< proposal_vote_object                   > proposal_vote_id_type;
 typedef oid_ref< comment_cashout_object                 > comment_cashout_id_type;
@@ -353,8 +347,6 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (reward_fund_object_type)
             (vesting_delegation_object_type)
             (vesting_delegation_expiration_object_type)
-            (pending_required_action_object_type)
-            (pending_optional_action_object_type)
             (proposal_object_type)
             (proposal_vote_object_type)
             (comment_cashout_object_type)

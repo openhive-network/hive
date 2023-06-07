@@ -40,8 +40,6 @@
 #include <hive/chain/util/reward.hpp>
 
 #include <hive/chain/util/decoded_types_data_storage.hpp>
-#include <hive/chain/pending_required_action_object.hpp>
-#include <hive/chain/pending_optional_action_object.hpp>
 
 #ifdef HIVE_ENABLE_SMT
 
@@ -718,10 +716,6 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //smt_token_emissions_object
   //smt_contribution_object
 
-  //only used in tests, but open for use in theory:
-  //pending_optional_action_object
-  //pending_required_action_object
-
   BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 456 ); //not a chain object but potentially very numerous
 
 }
@@ -1168,8 +1162,6 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::decline_voting_rights_request_object>(dtds), "4a7b6e131317bdbf49e169e959f913c5e837fdaa" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::reward_fund_object>(dtds), "0e5d4c0a0526b36c8216fcd97db675653f614e2b" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::recurrent_transfer_object>(dtds), "d3196040e50d8e61e8efff85623030d985f6e6f2" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::pending_required_action_object>(dtds), "ff5f1a1343cf129a4b78c58b160a06356da4bf11" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::pending_optional_action_object>(dtds), "8ff48849caa90bc7f169ace0899fe4643110734a" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::transaction_object>(dtds), "e731dc38c978db7dc455b5d7b58680534ece0d98" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::witness_vote_object>(dtds), "3e0889f0fb4a54d281437774045bc9344680bc11" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::witness_schedule_object>(dtds), "28d7d6f26a28bed89b63cf2b8fec1594f9172b55" );

@@ -14,8 +14,6 @@
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/global_property_object.hpp>
-#include <hive/chain/pending_required_action_object.hpp>
-#include <hive/chain/pending_optional_action_object.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/hive_objects.hpp>
@@ -1419,57 +1417,6 @@ void database::post_push_virtual_operation( const operation& op, const fc::optio
 void database::notify_pre_apply_operation( const operation_notification& note )
 {
   HIVE_TRY_NOTIFY( _pre_apply_operation_signal, note )
-}
-
-struct action_validate_visitor
-{
-  typedef void result_type;
-
-  template< typename Action >
-  void operator()( const Action& a )const
-  {
-    a.validate();
-  }
-};
-
-void database::push_required_action( const required_automated_action& a, time_point_sec execution_time )
-{
-  FC_ASSERT( execution_time >= head_block_time(), "Cannot push required action to execute in the past. head_block_time: ${h} execution_time: ${e}",
-    ("h", head_block_time())("e", execution_time) );
-
-  static const action_validate_visitor validate_visitor;
-  a.visit( validate_visitor );
-
-  create< pending_required_action_object >( [&]( pending_required_action_object& pending_action )
-  {
-    pending_action.action = a;
-    pending_action.execution_time = execution_time;
-  });
-}
-
-void database::push_required_action( const required_automated_action& a )
-{
-  push_required_action( a, head_block_time() );
-}
-
-void database::push_optional_action( const optional_automated_action& a, time_point_sec execution_time )
-{
-  FC_ASSERT( execution_time >= head_block_time(), "Cannot push optional action to execute in the past. head_block_time: ${h} execution_time: ${e}",
-    ("h", head_block_time())("e", execution_time) );
-
-  static const action_validate_visitor validate_visitor;
-  a.visit( validate_visitor );
-
-  create< pending_optional_action_object >( [&]( pending_optional_action_object& pending_action )
-  {
-    pending_action.action = a;
-    pending_action.execution_time = execution_time;
-  });
-}
-
-void database::push_optional_action( const optional_automated_action& a )
-{
-  push_optional_action( a, head_block_time() );
 }
 
 void database::notify_post_apply_operation( const operation_notification& note )

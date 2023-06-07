@@ -13,8 +13,6 @@
 #include <hive/plugins/witness/witness_plugin_objects.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/dhf_objects.hpp>
-#include <hive/chain/pending_required_action_object.hpp>
-#include <hive/chain/pending_optional_action_object.hpp>
 #include <hive/chain/transaction_object.hpp>
 
 #ifdef HIVE_ENABLE_SMT
@@ -68,8 +66,6 @@ void do_job()
     dtds.register_new_type<hive::chain::decline_voting_rights_request_object>();
     dtds.register_new_type<hive::chain::reward_fund_object>();
     dtds.register_new_type<hive::chain::recurrent_transfer_object>();
-    dtds.register_new_type<hive::chain::pending_required_action_object>();
-    dtds.register_new_type<hive::chain::pending_optional_action_object>();
     dtds.register_new_type<hive::chain::transaction_object>();
     dtds.register_new_type<hive::chain::witness_vote_object>();
     dtds.register_new_type<hive::chain::witness_schedule_object>();
