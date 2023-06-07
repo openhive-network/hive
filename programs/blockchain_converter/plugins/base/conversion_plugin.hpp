@@ -8,6 +8,7 @@
 
 #include <string>
 #include <map>
+#include <functional>
 
 #include "../../converter.hpp"
 
@@ -81,6 +82,8 @@ namespace hive { namespace converter { namespace plugins {
 
     uint64_t             error_response_count = 0;
     uint64_t             total_request_count = 0;
+
+    std::function<void(const fc::variant_object&)> on_node_error_caught = [](const fc::variant_object&) {};
 
   public:
     /// If use_private is set to true then private keys of the second authority will be same as the given private key

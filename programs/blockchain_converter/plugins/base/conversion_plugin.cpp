@@ -143,6 +143,10 @@ namespace hive { namespace converter { namespace plugins {
         ++error_types[msg];
 #endif
 
+        try {
+          this->on_node_error_caught( var_obj["error"].get_object() );
+        } catch (...) {}
+
         FC_THROW_EXCEPTION( error_response_from_node, " ${block_num}: ${msg}",
                            ("msg", msg)
                            ("detailed",var_obj["error"].get_object())

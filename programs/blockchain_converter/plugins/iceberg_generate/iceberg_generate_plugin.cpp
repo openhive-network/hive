@@ -243,7 +243,6 @@ namespace detail {
 
         for( size_t i = 0; i < block.transactions.size(); ++i )
         {
-          // Collecting impacted accounts should be always done before collecting permlinks
           boost::container::flat_set<hp::account_name_type> new_accounts;
           std::vector<ops_permlink_tracker_result_t> permlinks;
 
@@ -257,10 +256,10 @@ namespace detail {
             {
               if( handle_claim_account(block, i, j) )
               {
-                ++i;
+                --i;
                 break;
               }
-              ++j;
+              --j;
               continue;
             }
 
