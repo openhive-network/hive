@@ -2221,6 +2221,20 @@ void cache::add(const char* context, hive::chain::database* db)
   chain_databases.emplace(std::make_pair(std::string(context), std::unique_ptr<hive::chain::database>(db)));
 }
 
+ 
+
+collected_account_balances_t extract_account_balances(const hive:: plugins:: database_api::api_account_object& account) {
+  collected_account_balances_t account_balances;
+  account_balances.account_name = account.name;
+  account_balances.balance = account.balance.amount.value;
+  account_balances.hbd_balance = account.hbd_balance.amount.value;
+  account_balances.vesting_shares = account.vesting_shares.amount.value;
+  account_balances.savings_hbd_balance = account.savings_hbd_balance.amount.value;
+  account_balances.reward_hbd_balance = account.reward_hbd_balance.amount.value;
+
+  return account_balances;
+}
+
 collected_account_balances_collection_t collect_current_account_balances(
     const std::vector<std::string>& account_names, const char* context)
 {
@@ -2236,15 +2250,7 @@ collected_account_balances_collection_t collect_current_account_balances(
   collected_account_balances_collection_t collected_balances;
   for(const auto& account : found_accounts.accounts)
   {
-    collected_account_balances_t account_balances;
-    account_balances.account_name = account.name;
-    account_balances.balance = account.balance.amount.value;
-    account_balances.hbd_balance = account.hbd_balance.amount.value;
-    account_balances.vesting_shares = account.vesting_shares.amount.value;
-    account_balances.savings_hbd_balance = account.savings_hbd_balance.amount.value;
-    account_balances.reward_hbd_balance = account.reward_hbd_balance.amount.value;
-
-    collected_balances.emplace_back(account_balances);
+    collected_balances.emplace_back(extract_account_balances(account));
   }
 
   return collected_balances;
@@ -2279,15 +2285,7 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
                 continue;
             }
 
-            collected_account_balances_t account_balances;
-            account_balances.account_name = account.name;
-            account_balances.balance = account.balance.amount.value;
-            account_balances.hbd_balance = account.hbd_balance.amount.value;
-            account_balances.vesting_shares = account.vesting_shares.amount.value;
-            account_balances.savings_hbd_balance = account.savings_hbd_balance.amount.value;
-            account_balances.reward_hbd_balance = account.reward_hbd_balance.amount.value;
-
-            collected_balances.emplace_back(account_balances);
+            collected_balances.emplace_back(extract_account_balances(account));
             processed_accounts++;
         }
 
