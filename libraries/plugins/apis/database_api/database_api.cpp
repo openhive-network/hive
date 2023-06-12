@@ -8,16 +8,13 @@
 #include <hive/protocol/get_config.hpp>
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/transaction_util.hpp>
-#include <hive/protocol/forward_impacted.hpp>
 
 #include <hive/chain/util/smt_token.hpp>
 
 #include <hive/utilities/git_revision.hpp>
 
+#include <hive/protocol/forward_impacted.hpp>
 #include <hive/plugins/database_api/consensus_state_provider_cache.hpp>
-#include "fc/variant.hpp"
-
-
 
 namespace hive { namespace plugins { namespace database_api {
 
