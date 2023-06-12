@@ -2,6 +2,15 @@
 #include <hive/protocol/operations.hpp>
 #include <memory>
 
+/**
+ * @file
+ *
+ * @brief This header enables direct iteration over operations 
+ *        e,g, taken from a Postgres database.
+ *
+ */
+
+
 namespace hive { namespace chain {
 
 class op_iterator
