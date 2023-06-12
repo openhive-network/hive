@@ -18,7 +18,13 @@ namespace hive { namespace protocol {
 
   public_key_type::public_key_type( const std::string& base58str )
   {
-    key_data = fc::ecc::public_key::from_base58_with_prefix( base58str, HIVE_ADDRESS_PREFIX );
+    /*
+      In this context it's allowed that `key_data` == `empty_pub`.
+      Check assertions 'my->_key != empty_pub' in `fc::public_key`
+    */
+    std::string _empty_base58str = static_cast<std::string>( public_key_type() );
+    if( _empty_base58str != base58str )
+      key_data = fc::ecc::public_key::from_base58_with_prefix( base58str, HIVE_ADDRESS_PREFIX );
   };
 
   public_key_type::operator fc::ecc::public_key_data() const
