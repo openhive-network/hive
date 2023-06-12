@@ -2221,9 +2221,9 @@ void cache::add(const char* context, hive::chain::database* db)
   chain_databases.emplace(std::make_pair(std::string(context), std::unique_ptr<hive::chain::database>(db)));
 }
 
- 
-
-collected_account_balances_t extract_account_balances(const hive:: plugins:: database_api::api_account_object& account) {
+collected_account_balances_t extract_account_balances(
+    const hive::plugins::database_api::api_account_object& account)
+{
   collected_account_balances_t account_balances;
   account_balances.account_name = account.name;
   account_balances.balance = account.balance.amount.value;
@@ -2240,8 +2240,8 @@ collected_account_balances_collection_t collect_current_account_balances(
 {
   using namespace hive::plugins::database_api;
   find_accounts_args find_args;
-  for(const auto& account_name : account_names)
-   find_args.accounts.emplace_back(account_name);
+  for(const auto& account_name : account_names) 
+    find_args.accounts.emplace_back(account_name);
 
   database_api_impl db_api_impl =
       get_database_api_impl(consensus_state_provider::get_cache(), context);
@@ -2258,48 +2258,49 @@ collected_account_balances_collection_t collect_current_account_balances(
 
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
-    using namespace hive::plugins::database_api;
-    database_api_impl db_api_impl = get_database_api_impl(consensus_state_provider::get_cache(), context);
+  using namespace hive::plugins::database_api;
+  database_api_impl db_api_impl =
+      get_database_api_impl(consensus_state_provider::get_cache(), context);
 
-    list_accounts_args list_args;
-    list_args.start = "";
-    list_args.limit = 1000;
-    list_args.order = hive::plugins::database_api::by_name;
+  list_accounts_args list_args;
+  list_args.start = "";
+  list_args.limit = 1000;
+  list_args.order = hive::plugins::database_api::by_name;
 
-    collected_account_balances_collection_t collected_balances;
+  collected_account_balances_collection_t collected_balances;
 
-    while(true)
-    { 
-        auto listed_accounts = db_api_impl.list_accounts(list_args);
-        if(listed_accounts.accounts.empty())
-        {
-            break;
-        }
-
-        size_t processed_accounts = 0;
-        for(const auto& account : listed_accounts.accounts)
-        {
-            if(processed_accounts == 0 && (list_args.start != ""))
-            {
-                processed_accounts++;
-                continue;
-            }
-
-            collected_balances.emplace_back(extract_account_balances(account));
-            processed_accounts++;
-        }
-
-        list_args.start = listed_accounts.accounts.back().name;
-
-        if(processed_accounts < list_args.limit)
-        {
-            break;
-        }
+  while(true)
+  {
+    auto listed_accounts = db_api_impl.list_accounts(list_args);
+    if(listed_accounts.accounts.empty())
+    {
+      break;
     }
 
-    return collected_balances;
+    size_t processed_accounts = 0;
+    for(const auto& account : listed_accounts.accounts)
+    {
+      if(processed_accounts == 0 && (list_args.start != ""))
+      {
+        processed_accounts++;
+        continue;
+      }
+
+      collected_balances.emplace_back(extract_account_balances(account));
+      processed_accounts++;
+    }
+
+    list_args.start = listed_accounts.accounts.back().name;
+
+    if(processed_accounts < list_args.limit)
+    {
+      break;
+    }
+  }
+
+  return collected_balances;
 }
-}
+}  // namespace consensus_state_provider
 
 namespace
 {
