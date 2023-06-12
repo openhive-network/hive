@@ -2252,59 +2252,54 @@ collected_account_balances_collection_t collect_current_account_balances(
 
 collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
 {
+    using namespace hive::plugins::database_api;
+    database_api_impl db_api_impl = get_database_api_impl(consensus_state_provider::get_cache(), context);
 
-  hive::plugins::database_api::database_api_impl db_api_impl = get_database_api_impl(consensus_state_provider::get_cache(), context);
+    list_accounts_args list_args;
+    list_args.start = "";
+    list_args.limit = 1000;
+    list_args.order = hive::plugins::database_api::by_name;
 
-  hive::plugins::database_api::list_accounts_args args;
-  
-  collected_account_balances_collection_t r;
- 
-  
-  args.start = "";
-  args.limit = 1000;
-  args.order = hive::plugins::database_api::by_name;
+    collected_account_balances_collection_t collected_balances;
 
+    while(true)
+    { 
+        auto listed_accounts = db_api_impl.list_accounts(list_args);
+        if(listed_accounts.accounts.empty())
+        {
+            break;
+        }
 
-  while(true)
-  { 
-    hive::plugins::database_api::list_accounts_return db_api_impl_result = db_api_impl.list_accounts(args);
-    if(db_api_impl_result.accounts.empty())
-      break;
+        size_t processed_accounts = 0;
+        for(const auto& account : listed_accounts.accounts)
+        {
+            if(processed_accounts == 0 && (list_args.start != ""))
+            {
+                processed_accounts++;
+                continue;
+            }
 
+            collected_account_balances_t account_balances;
+            account_balances.account_name = account.name;
+            account_balances.balance = account.balance.amount.value;
+            account_balances.hbd_balance = account.hbd_balance.amount.value;
+            account_balances.vesting_shares = account.vesting_shares.amount.value;
+            account_balances.savings_hbd_balance = account.savings_hbd_balance.amount.value;
+            account_balances.reward_hbd_balance = account.reward_hbd_balance.amount.value;
 
+            collected_balances.emplace_back(account_balances);
+            processed_accounts++;
+        }
 
-    decltype(args.limit) cnt = 0;
-    for(const auto& a : db_api_impl_result.accounts)
-    {
-      if((cnt == 0) && (args.start != ""))
-      {
-        cnt++;
-        continue;
-      }
+        list_args.start = listed_accounts.accounts.back().name;
 
-      collected_account_balances_t e;
-      e.account_name = a.name;
-
-      e.balance = a.balance.amount.value;
-      e.hbd_balance = a.hbd_balance.amount.value;
-      e.vesting_shares = a.vesting_shares.amount.value;
-      e.savings_hbd_balance = a.savings_hbd_balance.amount.value;
-      e.reward_hbd_balance = a.reward_hbd_balance.amount.value;
-      r.emplace_back(e);
-      cnt++;
+        if(processed_accounts < list_args.limit)
+        {
+            break;
+        }
     }
 
-
-
-    args.start = db_api_impl_result.accounts[db_api_impl_result.accounts.size() - 1].name;
-
-
-    if(cnt < args.limit)
-      break;
-
-  }
-
-  return r;
+    return collected_balances;
 }
 }
 
