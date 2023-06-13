@@ -10,6 +10,7 @@
 #include <utility>
 #include <atomic>
 #include <array>
+#include <functional>
 
 #include <fc/exception/exception.hpp>
 #include <fc/optional.hpp>
@@ -31,6 +32,8 @@
 namespace appbase {
   class application;
 }
+
+#define HIVE_BC_SAFETY_TIME_GAP (HIVE_BLOCK_INTERVAL * HIVE_BC_TIME_BUFFER)
 
 namespace hive { namespace converter {
 
@@ -61,6 +64,8 @@ namespace hive { namespace converter {
     boost::lockfree::stack< sig_stack_in_type >  shared_signatures_stack_in;  // pair< trx index in block, signed transaction ptr to convert >
     boost::lockfree::stack< sig_stack_out_type > shared_signatures_stack_out; // pair< trx index in block, converted signature >
 
+    std::queue< std::shared_ptr< hc::full_transaction_type > > pow_transactions;
+
     bool increase_block_size;
 
     std::atomic_bool        signers_exit;
@@ -83,6 +88,15 @@ namespace hive { namespace converter {
 
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id
     std::shared_ptr< hc::full_block_type > convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& now_time, bool alter_time_in_visitor = false, uint64_t account_creation_fee = uint64_t(-1) );
+
+    /// This function does not alter the internal converter state (like for example cached hardfork number or mainner head block id. This is just an utility function).
+    /// If you are using it before HF17 make sure to use pop_helper_pow_transaction() and has_helper_pow_transaction() methods
+    std::shared_ptr< hc::full_transaction_type > convert_signed_transaction( hp::signed_transaction& tx, const hp::block_id_type& previous_block_id, const std::function<void(hp::transaction&)>& apply_trx_expiration_offset, uint32_t block_offset = 0, uint64_t account_creation_fee = uint64_t(-1), bool enable_signing = false );
+
+    bool has_helper_pow_transaction()const;
+    std::shared_ptr< hc::full_transaction_type > pop_helper_pow_transaction();
+
+    static uint32_t calculate_transaction_expiration( uint32_t head_block_time, uint32_t block_timestamp, uint32_t trx_expiration, uint32_t block_offset, uint32_t trx_time_offset = 0 );
 
     const hp::block_id_type& get_converter_head_block_id()const;
     const hp::block_id_type& get_mainnet_head_block_id()const;
