@@ -52,6 +52,7 @@
 #include <deque>
 #include <fstream>
 #include <functional>
+#include "hive/chain/block_log.hpp"
 
 #include <stdlib.h>
 
@@ -130,7 +131,15 @@ database_impl::database_impl( database& self )
   : _self(self), _evaluator_registry(self), _req_action_evaluator_registry(self), _opt_action_evaluator_registry(self) {}
 
 database::database()
-  : _my( new database_impl(*this) ) {}
+  : database(std::make_unique<block_log>())
+  {}
+
+database::database(std::unique_ptr<IBlockProvider> blocklog_provider_ptr)
+  : _my( new database_impl(*this) )
+  , _block_log_ptr(std::move(blocklog_provider_ptr))
+  , _block_log((*_block_log_ptr))
+   {}
+
 
 database::~database()
 {
@@ -180,7 +189,7 @@ void database::initialize_state_independent_data(const open_args& args)
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
 
-  if(!_postgres_not_block_log)
+  //if(!_postgres_not_block_log)
   {
     with_write_lock([&]()
     {
@@ -240,7 +249,7 @@ void database::load_state_initial_data(const open_args& args)
 
   if (head_block_num())
   {
-    if(!_postgres_not_block_log)
+    //if(!_postgres_not_block_log)
     {
       std::shared_ptr<full_block_type> head_block = _block_log.read_block_by_num(head_block_num());
       // This assertion should be caught and a reindex should occur
@@ -3861,7 +3870,10 @@ time_point_sec database::head_block_time()const
 
 uint32_t database::head_block_num()const
 {
-  return get_dynamic_global_properties().head_block_number;
+
+  auto hbn =  get_dynamic_global_properties().head_block_number;
+  //wlog("mtlk get_dynamic_global_properties().head_block_number ${hbn}", ( "hbn", hbn) );
+  return hbn;
 }
 
 block_id_type database::head_block_id()const

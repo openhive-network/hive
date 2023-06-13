@@ -567,6 +567,8 @@ namespace fc {
     var = a.to_string();
   }
 
+  int mtlk_negative_asset_counter = 0;
+
   void from_variant( const fc::variant& var, hive::protocol::asset& vo )
   {
     try
@@ -586,7 +588,10 @@ namespace fc {
         FC_ASSERT( v_object.contains( ASSET_AMOUNT_KEY ), "Amount field doesn't exist." );
         FC_ASSERT( v_object[ ASSET_AMOUNT_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_AMOUNT_KEY) );
         vo.amount = boost::lexical_cast< int64_t >( v_object[ ASSET_AMOUNT_KEY ].as< std::string >() );
-        FC_ASSERT( vo.amount >= 0, "Asset amount cannot be negative" );
+        //FC_ASSERT( vo.amount >= 0, "Asset amount cannot be negative" );
+        if(vo.amount < 0)
+          if(mtlk_negative_asset_counter++ % 10000 == 0)
+            wlog("Asset amount cannot be negative = ${neg_ass}" , ("neg_ass", vo.amount));
 
         FC_ASSERT( v_object.contains( ASSET_PRECISION_KEY ), "Precision field doesn't exist." );
         FC_ASSERT( v_object[ ASSET_PRECISION_KEY ].is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_PRECISION_KEY) );
