@@ -72,6 +72,11 @@ namespace hive { namespace converter { namespace plugins {
     hp::asset get_account_creation_fee( const fc::url& using_url );
 
     /**
+     * @brief Get account creation fee from the output node
+     */
+    bool account_exists( const fc::url& using_url, const hp::account_name_type& acc );
+
+    /**
      * @brief Get the id of the block preceding the one with the given number from the output node
      */
     hp::block_id_type get_previous_from_block( uint32_t num, const fc::url& using_url );

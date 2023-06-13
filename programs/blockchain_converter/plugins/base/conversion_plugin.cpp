@@ -193,6 +193,18 @@ namespace hive { namespace converter { namespace plugins {
     FC_CAPTURE_AND_RETHROW( (chain_id) )
   }
 
+  bool conversion_plugin_impl::account_exists( const fc::url& using_url, const hp::account_name_type& acc )
+  {
+    try
+    {
+      fc::http::connection local_output_con;
+      auto var_obj = post( local_output_con, using_url, "database_api.find_accounts", "{\"accounts\":[\"" + acc + "\"],\"delayed_votes_active\":true}" );
+
+      return var_obj.contains("accounts") && var_obj["accounts"].is_array() && var_obj["accounts"].get_array().size() > 0;
+    }
+    FC_CAPTURE_AND_RETHROW( (acc) )
+  }
+
   fc::variant_object conversion_plugin_impl::get_dynamic_global_properties( const fc::url& using_url )
   {
     try

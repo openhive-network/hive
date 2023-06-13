@@ -9,6 +9,7 @@
 #include <fc/log/logger.hpp>
 #include <fc/variant.hpp>
 #include <fc/network/url.hpp>
+#include <fc/thread/thread.hpp>
 
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/full_block.hpp>
@@ -59,9 +60,8 @@ namespace detail {
     void open( const fc::path& input );
     void close();
 
-    void on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc, const hp::asset& account_creation_fee );
+    hp::account_create_operation on_new_account_collected( const hp::account_name_type& acc, const hp::asset& account_creation_fee );
     void on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link );
-    bool handle_claim_account( hp::signed_block& b, size_t affected_tx_index, size_t affected_op_index );
   };
 
 
@@ -81,7 +81,7 @@ namespace detail {
     } FC_CAPTURE_AND_RETHROW( (input) );
   }
 
-  void iceberg_generate_plugin_impl::on_new_account_collected( hp::signed_block& b, const hp::account_name_type& acc, const hp::asset& account_creation_fee )
+  hp::account_create_operation iceberg_generate_plugin_impl::on_new_account_collected( const hp::account_name_type& acc, const hp::asset& account_creation_fee )
   {
     hp::account_create_operation op;
     op.fee = account_creation_fee;
@@ -89,11 +89,7 @@ namespace detail {
     op.new_account_name = acc;
     op.memo_key = converter.get_second_authority_key( hp::authority::classification::owner ).get_public_key();
 
-    hp::signed_transaction tx;
-    tx.signatures.emplace_back(); // null-sign to inform the converter that it should replace null-signature with the actual proper signature
-    tx.operations.emplace_back( op );
-
-    b.transactions.emplace( b.transactions.begin(), tx );
+    return op;
   }
 
   void iceberg_generate_plugin_impl::on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link )
@@ -110,22 +106,6 @@ namespace detail {
     tx.operations.emplace_back( op );
 
     b.transactions.emplace( b.transactions.begin(), tx );
-  }
-
-  bool iceberg_generate_plugin_impl::handle_claim_account( hp::signed_block& b, size_t affected_tx_index, size_t affected_op_index )
-  {
-    if( b.transactions.at(affected_tx_index).operations.size() == 1 )
-    {
-      b.transactions.erase(b.transactions.begin() + affected_tx_index);
-
-      return true;
-    }
-    else
-    {
-      b.transactions.at(affected_tx_index).operations.erase(b.transactions.at(affected_tx_index).operations.begin() + affected_op_index);
-
-      return false;
-    }
   }
 
   void iceberg_generate_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
@@ -166,7 +146,7 @@ namespace detail {
     uint32_t gpo_interval = 0;
 
     boost::container::flat_set<hp::account_name_type> all_accounts = {
-      HIVE_MINER_ACCOUNT, HIVE_NULL_ACCOUNT, HIVE_TEMP_ACCOUNT, HIVE_INIT_MINER_NAME, "steem"
+      HIVE_MINER_ACCOUNT, HIVE_NULL_ACCOUNT, HIVE_TEMP_ACCOUNT, HIVE_INIT_MINER_NAME, "steem", OBSOLETE_TREASURY_ACCOUNT, NEW_HIVE_TREASURY_ACCOUNT
     };
     boost::container::flat_set<author_and_permlink_hash_t> all_permlinks;
 
@@ -179,24 +159,95 @@ namespace detail {
 
     std::map< uint32_t, hp::share_type > init_assets;
 
-    // Pre-init: Detect required supply
+    fc::optional< hp::account_name_type > last_account_name;
+
+    // Pre-init: Detect required supply and dependent comments and accounts
     ilog("Checking required initial supply");
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
     {
-      std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
-      FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
+      try {
+        if( lib_num - last_witness_schedule_block_check >= HIVE_MAX_WITNESSES )
+        {
+          account_creation_fee = get_account_creation_fee( output_urls.at(0) );
+          last_witness_schedule_block_check = lib_num;
+        }
 
-      for( const auto& tx : _full_block->get_full_transactions() )
-        for(const auto& op : tx->get_transaction().operations)
-          for(const auto& balance : hive::app::operation_get_impacted_balances(op, blockchain_converter::has_hardfork( HIVE_HARDFORK_0_1, start_block_num )))
+        std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
+        FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
+
+        hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
+
+        boost::container::flat_set<hp::account_name_type> new_accounts;
+        hp::signed_transaction dependents_tx;
+
+        if( block.transactions.size() == 0 )
+          continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
+
+        for( size_t i = 0; i < block.transactions.size(); ++i )
+        {
+          for( size_t j = 0; j < block.transactions.at(i).operations.size(); ++j )
           {
-            uint32_t nai = balance.second.symbol.to_nai();
+            auto& op = block.transactions.at(i).operations.at(j);
 
-            if( init_assets.find(nai) == init_assets.end() )
-              init_assets[nai] = balance.second.amount.value;
-            else
-              init_assets[nai] += balance.second.amount.value;
+            for(const auto& balance : hive::app::operation_get_impacted_balances(op, blockchain_converter::has_hardfork( HIVE_HARDFORK_0_1, start_block_num )))
+            {
+              uint32_t nai = balance.second.symbol.to_nai();
+
+              if( init_assets.find(nai) == init_assets.end() )
+                init_assets[nai] = balance.second.amount.value;
+              else
+                init_assets[nai] += balance.second.amount.value;
+            }
+
+            op.visit( ops_impacted_accounts_visitor{ new_accounts, all_accounts, converter } );
           }
+
+          dependents_tx.operations.reserve(new_accounts.size());
+
+          for( const auto& acc : new_accounts )
+            if( all_accounts.insert(acc).second )
+              dependents_tx.operations.emplace_back(on_new_account_collected(acc, account_creation_fee));
+
+          if(new_accounts.size())
+            last_account_name = *new_accounts.rbegin();
+        }
+
+        const auto head_block_time = gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval);
+        uint32_t block_offset = std::abs( (head_block_time - block.timestamp).count() );
+
+        const auto tx_converted = converter.convert_signed_transaction( dependents_tx, lib_id,
+          [&](hp::transaction& trx) {
+            trx.expiration = head_block_time + HIVE_BC_SAFETY_TIME_GAP;
+          },
+          block_offset,
+          account_creation_fee.amount.value,
+          true
+        );
+
+        print_progress( start_block_num - init_start_block_num, stop_block_num - init_start_block_num );
+
+        transmit( *tx_converted, output_urls.at( 0 ) );
+
+        gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
+
+        if( gpo_interval == 0 )
+        {
+          update_lib_id();
+          converter.on_tapos_change();
+        }
+      }
+      catch( fc::exception& er )
+      {
+# ifdef HIVE_CONVERTER_POST_DETAILED_LOGGING
+        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_detail_string()) );
+# else
+        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_string()) );
+# endif
+      }
+      catch(...)
+      {
+        wlog( "Caught an unknown error during the conversion" );
+      }
     }
 
     update_lib_id();
@@ -217,6 +268,18 @@ namespace detail {
     FC_ASSERT( real_hbd_supply >= init_assets[HIVE_NAI_HBD], "Insufficient HBD initial supply in the output node blockchain" );
 
     ilog("Initial supply requirements met");
+
+    if (last_account_name.valid())
+    {
+      ilog("Waiting for the '${last_account_name}' account creation...", (last_account_name));
+      while( !account_exists(output_urls.at(0), *last_account_name) )
+      {
+        ilog("Account '${last_account_name}' does not exist. Retrying in one block interval...", (last_account_name));
+        fc::usleep(fc::seconds(HIVE_BLOCK_INTERVAL));
+      }
+
+      ilog("Account '${last_account_name}' created.", (last_account_name));
+    }
 
     start_block_num = init_start_block_num;
 
@@ -243,25 +306,11 @@ namespace detail {
 
         for( size_t i = 0; i < block.transactions.size(); ++i )
         {
-          boost::container::flat_set<hp::account_name_type> new_accounts;
           std::vector<ops_permlink_tracker_result_t> permlinks;
 
           for( size_t j = 0; j < block.transactions.at(i).operations.size(); ++j )
           {
             auto& op = block.transactions.at(i).operations.at(j);
-
-            op.visit( ops_impacted_accounts_visitor{ new_accounts, all_accounts, converter } );
-
-            if( op.which() == 22 || op.which() == 23 )
-            {
-              if( handle_claim_account(block, i, j) )
-              {
-                --i;
-                break;
-              }
-              --j;
-              continue;
-            }
 
             // Collecting permlinks
             const auto created_permlink_data = op.visit(created_permlinks_visitor{});
@@ -278,13 +327,6 @@ namespace detail {
             if( dependent_permlink_data.first.size() && all_permlinks.insert( compute_author_and_permlink_hash( dependent_permlink_data ) ).second )
             {
               on_comment_collected(block, dependent_permlink_data.first, dependent_permlink_data.second);
-              ++i;
-            }
-
-          for( const auto& acc : new_accounts )
-            if( all_accounts.insert(acc).second )
-            {
-              on_new_account_collected(block, acc, account_creation_fee);
               ++i;
             }
         }
