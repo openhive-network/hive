@@ -320,7 +320,63 @@ namespace hive { namespace converter {
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL
 #undef HIVE_BC_HF_FORK_APPLIER_GENERATOR
 
-#define HIVE_BC_SAFETY_TIME_GAP (HIVE_BLOCK_INTERVAL * HIVE_BC_TIME_BUFFER)
+  bool blockchain_converter::has_helper_pow_transaction()const
+  {
+    return pow_transactions.size() > 0;
+  }
+
+  std::shared_ptr< hc::full_transaction_type > blockchain_converter::pop_helper_pow_transaction()
+  {
+    FC_ASSERT(has_helper_pow_transaction());
+    const auto full_tx = pow_transactions.front();
+    pow_transactions.pop();
+    return full_tx;
+  }
+
+  std::shared_ptr< hc::full_transaction_type > blockchain_converter::convert_signed_transaction( hp::signed_transaction& tx, const hp::block_id_type& previous_block_id, const std::function<void(hp::transaction&)>& apply_trx_expiration_offset, uint32_t block_offset, uint64_t account_creation_fee, bool enable_signing )
+  {
+    for(auto& op : tx.operations)
+      op = op.visit( convert_operations_visitor{ *this, fc::time_point_sec{ block_offset }, account_creation_fee } );
+
+    tx.set_reference_block( previous_block_id );
+
+    apply_trx_expiration_offset(tx);
+
+    hive::protocol::signed_transaction helper_tx;
+    helper_tx.set_reference_block(previous_block_id);
+
+    post_convert_transaction(helper_tx);
+
+    if(!helper_tx.operations.empty())
+    {
+      apply_trx_expiration_offset(helper_tx);
+
+      auto full_helper_tx = hc::full_transaction_type::create_from_transaction( helper_tx, hp::pack_type::legacy );
+
+      sign_transaction(*full_helper_tx);
+
+      pow_transactions.push( full_helper_tx );
+    }
+
+    auto result = hc::full_transaction_type::create_from_transaction( tx, hp::pack_type::legacy );
+
+    if(enable_signing)
+      sign_transaction(*result);
+
+    return result;
+  }
+
+  uint32_t blockchain_converter::calculate_transaction_expiration( uint32_t head_block_time, uint32_t block_timestamp, uint32_t trx_expiration, uint32_t block_offset, uint32_t trx_time_offset )
+  {
+    trx_time_offset += block_offset;
+
+    return std::min(
+      // Apply either minimum transaction expiration value or the desired one
+      std::max(block_timestamp + trx_time_offset, trx_expiration + trx_time_offset),
+      // Subtract `(trx_time_offset - block_offset)` to avoid trx id duplication (we assume that there should not be more than 3600 txs in the block)
+      head_block_time + (HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP) - (trx_time_offset - block_offset)
+    );
+  }
 
   std::shared_ptr< hc::full_block_type > blockchain_converter::convert_signed_block( hp::signed_block& _signed_block, const hp::block_id_type& previous_block_id, const fc::time_point_sec& head_block_time, bool alter_time_in_visitor, uint64_t account_creation_fee )
   {
@@ -339,9 +395,9 @@ namespace hive { namespace converter {
 
     current_block_ptr = &_signed_block;
 
-    const fc::microseconds block_offset{ std::abs( (head_block_time - _signed_block.timestamp).count() ) };
+    const uint32_t block_offset = uint32_t( std::abs( (head_block_time - _signed_block.timestamp).to_seconds() ) );
 
-    fc::microseconds trx_time_offset = block_offset;
+    uint32_t trx_time_offset = 0;
 
     const auto apply_trx_expiration_offset = [&](hp::transaction& trx) {
       // Repeat until tx id is different
@@ -349,15 +405,12 @@ namespace hive { namespace converter {
       {
         // Add transactoin time offset to avoid txids duplication
         // (reference block numbers are the same, so the expiration time is the only value that we can change to introduce variety in tx ids)
-        trx_time_offset += fc::seconds(1);
+        ++trx_time_offset;
 
         // Apply either deduced transaction expiration value or the maximum one
-        trx.expiration = std::min(
-          // Apply either minimum transaction expiration value or the desired one
-          std::max(_signed_block.timestamp + trx_time_offset, trx.expiration + trx_time_offset),
-          // Subtract `(trx_time_offset - block_offset)` to avoid trx id duplication (we assume that there should not be more than 3600 txs in the block)
-          head_block_time + fc::seconds(HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP) - (trx_time_offset - block_offset)
-        );
+        trx.expiration = fc::time_point_sec{
+          calculate_transaction_expiration( head_block_time.sec_since_epoch(), _signed_block.timestamp.sec_since_epoch(), trx.expiration.sec_since_epoch(), block_offset, trx_time_offset )
+        };
       }
       while(!tapos_scope_tx_ids.insert( trx.id() ).second);
     };
@@ -366,30 +419,15 @@ namespace hive { namespace converter {
 
     for( auto transaction_itr = _signed_block.transactions.begin(); transaction_itr != _signed_block.transactions.end(); ++transaction_itr )
     {
-      transaction_itr->operations = transaction_itr->visit( convert_operations_visitor( *this, fc::time_point_sec{ alter_time_in_visitor ? uint32_t(block_offset.to_seconds()) : 0 }, account_creation_fee ) );
+      full_transactions.emplace_back( std::move( convert_signed_transaction( *transaction_itr, previous_block_id, apply_trx_expiration_offset, block_offset, account_creation_fee, false ) ) );
 
-      transaction_itr->set_reference_block( previous_block_id );
-
-      apply_trx_expiration_offset(*transaction_itr);
-
-      hive::protocol::signed_transaction helper_tx;
-      helper_tx.set_reference_block(previous_block_id);
-
-      post_convert_transaction(helper_tx);
-
-      full_transactions.emplace_back( hc::full_transaction_type::create_from_transaction( *transaction_itr, hp::pack_type::legacy ) );
-
-      if(!helper_tx.operations.empty())
+      while(has_helper_pow_transaction())
       {
-        apply_trx_expiration_offset(helper_tx);
-
-        full_transactions.emplace_back( hc::full_transaction_type::create_from_transaction( helper_tx, hp::pack_type::legacy ) );
-
-        sign_transaction(*full_transactions.back());
+        full_transactions.emplace_back( std::move( pop_helper_pow_transaction() ) );
 
         auto insert_pos = transaction_itr;
         ++insert_pos;
-        auto new_tx_pos = _signed_block.transactions.insert(insert_pos, helper_tx);
+        auto new_tx_pos = _signed_block.transactions.insert(insert_pos, full_transactions.back()->get_transaction());
 
         auto tx_pos = std::distance(_signed_block.transactions.begin(), new_tx_pos);
 
