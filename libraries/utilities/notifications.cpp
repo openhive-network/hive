@@ -124,6 +124,11 @@ void notification_handler::network_broadcaster::register_endpoints( const std::v
 
 } // detail
 
+bool error_handler( const std::function<void()>& foo )
+{
+  return detail::error_handler( foo );
+}
+
 } // notifications
 } // utilities
 
