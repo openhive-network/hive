@@ -228,8 +228,8 @@ namespace appbase {
 
     public:
 
-      void notify_hived_status(const fc::string& current_status) const noexcept;
-      void notify_hived_error(const fc::string& error_message) const noexcept;
+      void notify_status(const fc::string& current_status) const noexcept;
+      void notify_error(const fc::string& error_message) const noexcept;
       void setup_notifications(const boost::program_options::variables_map &args) const;
 
       template <typename... KeyValuesTypes>

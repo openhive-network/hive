@@ -116,7 +116,7 @@ int main( int argc, char** argv )
 
     if( !initializationResult.should_start_loop() ) 
       return initializationResult.get_result_code();
-    else appbase::app().notify_hived_status("starting");
+    else appbase::app().notify_status("starting");
 
     const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
     auto chainId = chainPlugin.db().get_chain_id();

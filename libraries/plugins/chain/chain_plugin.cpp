@@ -352,7 +352,7 @@ void chain_plugin_impl::start_write_processing()
   {
     try
     {
-      appbase::app().notify_hived_status("syncing");
+      appbase::app().notify_status("syncing");
       ilog("Write processing thread started.");
       fc::set_thread_name("write_queue");
       fc::thread::current().set_name("write_queue");
@@ -385,7 +385,7 @@ void chain_plugin_impl::start_write_processing()
       fc::time_point last_msg_time = last_popped_item_time;
       fc::time_point wait_start_time = last_popped_item_time;
 
-      appbase::app().notify_hived_status("syncing");
+      appbase::app().notify_status("syncing");
       while (true)
       {
         // print a message if we haven't gotten any new data in a while
@@ -494,7 +494,7 @@ void chain_plugin_impl::start_write_processing()
         {
           is_syncing = false;
           db.notify_end_of_syncing();
-          appbase::app().notify_hived_status("entering live mode");
+          appbase::app().notify_status("entering live mode");
           wlog("entering live mode");
         }
 
@@ -544,7 +544,7 @@ void chain_plugin_impl::start_write_processing()
 
 void chain_plugin_impl::stop_write_processing()
 {
-  appbase::app().notify_hived_status("finished syncing");
+  appbase::app().notify_status("finished syncing");
   {
     std::unique_lock<std::mutex> lock(queue_mutex);
     running = false;
@@ -563,9 +563,9 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing()
 {
-  appbase::app().notify_hived_status("replaying");
+  appbase::app().notify_status("replaying");
   bool replay_is_last_operation = replay_blockchain();
-  appbase::app().notify_hived_status("finished replaying");
+  appbase::app().notify_status("finished replaying");
 
   if( replay_is_last_operation )
   {
@@ -701,7 +701,7 @@ void chain_plugin_impl::open()
 
     wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
     wlog( " Error: ${e}", ("e", e) );
-    appbase::app().notify_hived_status("exitting with open database error");
+    appbase::app().notify_status("exitting with open database error");
     
     /// this exit shall be eliminated and exception caught inside application::startup, then force app exit with given code (but without calling exit function).
     exit(EXIT_FAILURE);
@@ -1128,7 +1128,7 @@ void chain_plugin::plugin_shutdown()
   my->stop_write_processing();
   my->db.close();
   ilog("database closed successfully");
-  appbase::app().notify_hived_status("finished syncing");
+  appbase::app().notify_status("finished syncing");
 }
 
 void chain_plugin::register_snapshot_provider(state_snapshot_provider& provider)

@@ -188,7 +188,7 @@ class beekeeper_app
         if( !_initialization.first )
           return { init_status, true };
 
-        appbase::app().notify_hived_status( "starting with token: " + _initialization.second );
+        appbase::app().notify_status( "starting with token: " + _initialization.second );
         return { appbase::initialization_result::result::ok, false };
       }
     }

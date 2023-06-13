@@ -1535,16 +1535,16 @@ void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive:
   {
     if(_do_immediate_load)
     {
-      appbase::app().notify_hived_status("loading snapshot");
+      appbase::app().notify_status("loading snapshot");
       load_snapshot(_snapshot_name, openArgs);
-      appbase::app().notify_hived_status("finished loading snapshot");
+      appbase::app().notify_status("finished loading snapshot");
     }
 
     if(_do_immediate_dump)
     {
-      appbase::app().notify_hived_status("dumping snapshot");
+      appbase::app().notify_status("dumping snapshot");
       prepare_snapshot(_snapshot_name);
-      appbase::app().notify_hived_status("finished dumping snapshot");
+      appbase::app().notify_status("finished dumping snapshot");
     }
   }
 
