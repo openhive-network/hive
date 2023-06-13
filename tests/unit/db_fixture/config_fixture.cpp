@@ -13,7 +13,8 @@ namespace hive { namespace chain {
 
 config_fixture::config_fixture() {}
 
-void config_fixture::postponed_init( appender_override_t appender_override /*= appender_override_t()*/ )
+void config_fixture::postponed_init( 
+  const config_arg_override_t& config_arg_overrides /*= config_arg_override_t()*/ )
 {
   try
   {
@@ -41,7 +42,7 @@ void config_fixture::postponed_init( appender_override_t appender_override /*= a
       bpo::store( the_options, option_overrides );
     }
 
-    auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
+    _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
     {
       // Setup logging options.
       app.add_logging_program_options();
