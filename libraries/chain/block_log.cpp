@@ -362,6 +362,8 @@ namespace hive { namespace chain {
 
   std::shared_ptr<full_block_type> block_log::read_block_by_num( uint32_t block_num )const
   {
+      wlog("From block_log::read_block_by_num");
+
     try
     {
       // first, check if it's the current head block; if so, we can just return it.  If the
