@@ -26,7 +26,7 @@ TRANSACTION_TEMPLATE: Final[dict] = {
     "transaction_num": 0,
 }
 
-BASE_ACCOUNTS: Final[list] = ['hive.fund', 'initminer', 'miners', 'null', 'steem.dao', 'temp']
+BASE_ACCOUNTS: Final[list] = ['hive.fund', 'initminer', 'miners', 'null', 'steem', 'steem.dao', 'temp']
 
 MAX_RECURRENT_TRANSFERS_PER_BLOCK: Final[int] = 1000
 
