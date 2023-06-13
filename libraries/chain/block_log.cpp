@@ -714,68 +714,50 @@ namespace hive { namespace chain {
   // calls your callback with every block, in reverse order
   void block_log::for_each_block_reverse(reverse_block_processor_t processor) const
   {
-    FC_ASSERT(is_open(), "Open block log first!");
-
-    if (my->block_log_size == 0)
-      return; /// Nothing to do for empty block log.
-
-    fc::time_point iteration_begin = fc::time_point::now();
-    std::shared_ptr<full_block_type> head_block = my->head;
+    FC_ASSERT(is_open(), "Open block log first !");
+    const auto head_block = my->head;
     FC_ASSERT(head_block);
-    
-    uint32_t head_block_num = head_block->get_block_num();
-    
-    // memory map for block log
-    char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
-    if (block_log_ptr == (char*)-1)
-      FC_THROW("Failed to mmap block log file: ${error}", ("error", strerror(errno)));
-    if (madvise(block_log_ptr, my->block_log_size, MADV_WILLNEED) == -1)
-      wlog("madvise failed: ${error}", ("error", strerror(errno)));
-    
-    // now walk backwards through the block log reading the starting positions of the blocks
-    uint64_t block_pos = my->block_log_size - sizeof(uint64_t);
+    const auto block_log_size = my->block_log_size;
+    FC_ASSERT(block_log_size);
 
-    ilog("Walking over block log starting from block: ${head_block_num}...", (head_block_num));
-    
-    for (uint32_t block_num = head_block_num; block_num >= 1; --block_num)
+    const uint32_t head_block_num = head_block->get_block_num();
+
+    std::vector<uint64_t> blocks_positions;
+    blocks_positions.reserve(head_block_num);
+
+    // memory map for block log
+    char *block_log_ptr = (char *)mmap(0, block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
+    if (block_log_ptr == (char *)-1)
+      FC_THROW("Failed to mmap block log file: ${error}", ("error", strerror(errno)));
+    if (madvise(block_log_ptr, block_log_size, MADV_WILLNEED) == -1)
+      wlog("madvise failed: ${error}", ("error", strerror(errno)));
+
+    uint64_t block_position = block_log_size - sizeof(uint64_t);
+    const uint64_t starting_block_position = block_position;
+    const auto start_time = std::chrono::steady_clock::now();
+    ilog("ZACZYNAMY POBIERANIE POZYCJI BLOKOW. Capacity vectora z pozycjami: ${capacity}", ("capacity", blocks_positions.capacity()));
+
+    while (starting_block_position >= block_position && !appbase::app().is_interrupt_request())
     {
-      // read the file offset of the start of the block from the block log
-      uint64_t higher_block_pos = block_pos;
-      // read next block pos offset from the block log
-      uint64_t block_pos_with_flags = *(uint64_t*)(block_log_ptr + block_pos);
-    
-      block_attributes_t attributes;
-      std::tie(block_pos, attributes) = detail::split_block_start_pos_with_flags(block_pos_with_flags);
-    
-      if (higher_block_pos <= block_pos) //this is a sanity check on index values stored in the block log
-        FC_THROW("bad block offset at block ${block_num} because higher block pos: ${higher_block_pos} <= lower block pos: ${block_pos}",
-                 (block_num)(higher_block_pos)(block_pos));
-    
-      uint32_t block_serialized_data_size = higher_block_pos - block_pos;
-    
-      std::unique_ptr<char[]> serialized_data(new char[block_serialized_data_size]);
-      memcpy(serialized_data.get(), block_log_ptr + block_pos, block_serialized_data_size);
-      std::shared_ptr<full_block_type> full_block = attributes.flags == block_flags::uncompressed ? 
-          full_block_type::create_from_uncompressed_block_data(std::move(serialized_data), block_serialized_data_size) : 
-          full_block_type::create_from_compressed_block_data(std::move(serialized_data), block_serialized_data_size, attributes);
-    
-      if (!processor(block_num, full_block, block_pos, attributes))
-      {
-        ilog("Stopping block position list walk on caller request... Last processed block: ${block_num}", (block_num));
-        break;
-      }
-    
-      /// Move to the offset of previous block
-      block_pos -= sizeof(uint64_t);
+      const uint64_t higher_block_position = block_position;
+      const uint64_t block_position_with_flags_data = *(uint64_t *)(block_log_ptr + block_position);
+      block_position = (block_position_with_flags_data & 0x0000ffffffffffffull);
+      FC_ASSERT(higher_block_position > block_position);
+      blocks_positions.push_back(block_position);
+      block_position -= sizeof(uint64_t);
     }
     
-    if (munmap(block_log_ptr, my->block_log_size) == -1)
-      elog("error unmapping block_log: ${error}", ("error", strerror(errno)));
-    
-    fc::time_point iteration_end = fc::time_point::now();
-    fc::microseconds iteration_duration = iteration_end - iteration_begin;
+    const auto end_time = std::chrono::steady_clock::now();
+    const auto operation_duration_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    ilog("[ASLOG] ZAKOŃCZONO ODCZYT POZYCJI BLOKOW. Rozmiar vectora z pozycjami: ${vector_size}, czas operacji czytania z dysku: ${operation_duration_time} ms.",
+    ("vector_size", blocks_positions.size())(operation_duration_time));
 
-    ilog("Block log walk finished in time: ${iteration_duration} s.", ("iteration_duration", iteration_duration.count() / 1000000));
+    if (munmap(block_log_ptr, block_log_size) == -1)
+      elog("error unmapping block_log: ${error}", ("error", strerror(errno)));
+    // ---------------------------------------------------
+
+    std::cerr << "Konczymy apke\n";
+    std::terminate();
   }
 
   void block_log::for_each_block(uint32_t starting_block_number, uint32_t ending_block_number,
