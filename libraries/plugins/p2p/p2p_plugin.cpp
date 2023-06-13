@@ -84,7 +84,7 @@ public:
     ilog("P2P plugin is closing...");
     shutdown_helper.shutdown();
     ilog("P2P plugin was closed...");
-    appbase::app().notify_hived_status("P2P stopped");
+    appbase::app().notify_status("P2P stopped");
   }
 
   bool is_included_block(const block_id_type& block_id);
@@ -537,7 +537,7 @@ void p2p_plugin::plugin_startup()
     );
   }).wait();
   ilog( "P2P Plugin started" );
-  appbase::app().notify_hived_status("P2P started");
+  appbase::app().notify_status("P2P started");
 }
 
 void p2p_plugin::plugin_pre_shutdown() {
