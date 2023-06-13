@@ -24,7 +24,7 @@ class session
 
     std::shared_ptr<time_manager> time;
 
-    hive::utilities::notifications::detail::notification_handler notification_handler;
+    hive::utilities::notifications::notification_handler_wrapper notification_handler;
 
   public:
 
@@ -36,7 +36,7 @@ class session
 
     std::shared_ptr<wallet_manager_impl> get_wallet_manager();
 
-    hive::utilities::notifications::detail::notification_handler& get_notification_handler();
+    hive::utilities::notifications::notification_handler_wrapper& get_notification_handler();
 };
 
 } //beekeeper

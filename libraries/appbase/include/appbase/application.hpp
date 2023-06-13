@@ -224,7 +224,7 @@ namespace appbase {
 
       std::atomic_bool _is_interrupt_request{false};
 
-      mutable hive::utilities::notifications::detail::notification_handler notification_handler;
+      mutable hive::utilities::notifications::notification_handler_wrapper notification_handler;
 
     public:
 
@@ -237,7 +237,7 @@ namespace appbase {
           const fc::string &name,
           KeyValuesTypes &&...key_value_pairs) const noexcept
       {
-        hive::utilities::notifications::detail::error_handler([&]{
+        hive::utilities::notifications::error_handler([&]{
           notification_handler.broadcast(
             hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
           );
@@ -249,7 +249,7 @@ namespace appbase {
           hive::utilities::notifications::collector_t&& collector) const noexcept
       {
 
-        hive::utilities::notifications::detail::error_handler([&]{
+        hive::utilities::notifications::error_handler([&]{
           notification_handler.broadcast(
             hive::utilities::notifications::notification_t(name, std::forward<hive::utilities::notifications::collector_t>(collector))
           );
@@ -258,11 +258,11 @@ namespace appbase {
 
       template <typename... KeyValuesTypes>
       inline void dynamic_notify(
-          hive::utilities::notifications::detail::notification_handler& handler,
+          hive::utilities::notifications::notification_handler_wrapper& handler,
           const fc::string &name,
           KeyValuesTypes &&...key_value_pairs) const noexcept
       {
-        hive::utilities::notifications::detail::error_handler([&]{
+        hive::utilities::notifications::error_handler([&]{
           handler.broadcast(
             hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
           );

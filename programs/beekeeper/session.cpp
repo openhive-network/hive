@@ -43,7 +43,7 @@ std::shared_ptr<wallet_manager_impl> session::get_wallet_manager()
   return wallet_mgr;
 }
 
-hive::utilities::notifications::detail::notification_handler& session::get_notification_handler()
+hive::utilities::notifications::notification_handler_wrapper& session::get_notification_handler()
 {
   return notification_handler;
 }

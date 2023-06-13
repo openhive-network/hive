@@ -139,6 +139,32 @@ private:
 
 } // detail
 
+class notification_handler_wrapper
+{
+  private:
+
+    detail::notification_handler handler;
+
+  public:
+
+    void broadcast( const notification_t& ev ) noexcept
+    {
+      handler.broadcast( ev );
+    }
+
+    void setup( const std::vector<std::string>& address_pool )
+    {
+      handler.setup( address_pool );
+    }
+    
+    void register_endpoints( const std::vector<std::string>& pool )
+    {
+      handler.register_endpoints( pool );
+    }
+};
+
+bool error_handler( const std::function<void()>& foo );
+
 } } // utilities::notifications
 
 } // hive
