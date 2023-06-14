@@ -130,7 +130,9 @@ database_impl::database_impl( database& self )
   : _self(self), _evaluator_registry(self), _req_action_evaluator_registry(self), _opt_action_evaluator_registry(self) {}
 
 database::database()
-  : _my( new database_impl(*this) ) {}
+  : _my( new database_impl(*this) )
+  , _block_log(_concrete_block_log)
+   {}
 
 database::~database()
 {

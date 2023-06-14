@@ -842,8 +842,8 @@ namespace chain {
 
       fork_database                 _fork_db;
       hardfork_versions             _hardfork_versions;
-
-      block_log                     _block_log;
+      block_log                     _concrete_block_log;
+      IBlockProvider&               _block_log;
 
       // this function needs access to _plugin_index_signal
       template< typename MultiIndexType >
