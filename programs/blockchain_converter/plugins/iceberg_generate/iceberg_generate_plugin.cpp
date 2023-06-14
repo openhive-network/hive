@@ -230,6 +230,13 @@ namespace detail {
         if( tx_converted->get_transaction().operations.size() > 0 )
           transmit( *tx_converted, output_urls.at( 0 ) );
 
+        while(converter.has_helper_pow_transaction())
+        {
+          const auto tx = converter.pop_helper_pow_transaction();
+
+          transmit( *tx, output_urls.at(0) );
+        }
+
         gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
 
         if( gpo_interval == 0 )
