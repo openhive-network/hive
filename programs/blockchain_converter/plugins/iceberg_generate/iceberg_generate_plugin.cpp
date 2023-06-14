@@ -214,7 +214,7 @@ namespace detail {
         }
 
         const auto head_block_time = gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval);
-        uint32_t block_offset = std::abs( (head_block_time - block.timestamp).count() );
+        uint32_t block_offset = uint32_t( std::abs( (head_block_time - block.timestamp).to_seconds() ) );
 
         const auto tx_converted = converter.convert_signed_transaction( dependents_tx, lib_id,
           [&](hp::transaction& trx) {

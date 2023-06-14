@@ -368,7 +368,7 @@ namespace hive { namespace converter {
 
   uint32_t blockchain_converter::calculate_transaction_expiration( uint32_t head_block_time, uint32_t block_timestamp, uint32_t trx_expiration, uint32_t block_offset, uint32_t trx_time_offset )
   {
-    trx_time_offset += block_offset; 
+    trx_time_offset += block_offset;
 
     return std::min(
       // Apply either minimum transaction expiration value or the desired one
@@ -395,7 +395,7 @@ namespace hive { namespace converter {
 
     current_block_ptr = &_signed_block;
 
-    const uint32_t block_offset = std::abs( (head_block_time - _signed_block.timestamp).count() );
+    const uint32_t block_offset = uint32_t( std::abs( (head_block_time - _signed_block.timestamp).to_seconds() ) );
 
     uint32_t trx_time_offset = 0;
 
