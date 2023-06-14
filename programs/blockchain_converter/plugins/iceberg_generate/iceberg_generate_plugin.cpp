@@ -206,10 +206,11 @@ namespace detail {
 
           for( const auto& acc : new_accounts )
             if( all_accounts.insert(acc).second )
+            {
               dependents_tx.operations.emplace_back(on_new_account_collected(acc, account_creation_fee));
 
-          if(new_accounts.size())
-            last_account_name = *new_accounts.rbegin();
+              last_account_name = acc;
+            }
         }
 
         const auto head_block_time = gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval);
@@ -217,7 +218,7 @@ namespace detail {
 
         const auto tx_converted = converter.convert_signed_transaction( dependents_tx, lib_id,
           [&](hp::transaction& trx) {
-            trx.expiration = head_block_time + HIVE_BC_SAFETY_TIME_GAP;
+            trx.expiration = head_block_time + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP;
           },
           block_offset,
           account_creation_fee.amount.value,
@@ -226,7 +227,8 @@ namespace detail {
 
         print_progress( start_block_num - init_start_block_num, stop_block_num - init_start_block_num );
 
-        transmit( *tx_converted, output_urls.at( 0 ) );
+        if( tx_converted->get_transaction().operations.size() > 0 )
+          transmit( *tx_converted, output_urls.at( 0 ) );
 
         gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
 
@@ -272,7 +274,7 @@ namespace detail {
     if (last_account_name.valid())
     {
       ilog("Waiting for the '${last_account_name}' account creation...", (last_account_name));
-      while( !account_exists(output_urls.at(0), *last_account_name) )
+      while( !account_exists(output_urls.at(0), *last_account_name) && !appbase::app().is_interrupt_request() )
       {
         ilog("Account '${last_account_name}' does not exist. Retrying in one block interval...", (last_account_name));
         fc::usleep(fc::seconds(HIVE_BLOCK_INTERVAL));
