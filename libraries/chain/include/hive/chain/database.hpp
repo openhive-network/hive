@@ -110,6 +110,7 @@ namespace chain {
   {
     public:
       database();
+      database(IBlockProvider& blocklog_provider);
       ~database();
 
       enum transaction_status
