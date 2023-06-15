@@ -7,7 +7,7 @@ from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 @pytest.fixture()
 def prepare_environment():
     init_node = tt.InitNode()
-    init_node.run(time_offset="+0h x5")
+    init_node.run()
 
     wallet_alice_agent = tt.Wallet(attach_to=init_node)
     wallet_alice_agent.create_account("alice.agent", vests=100)
