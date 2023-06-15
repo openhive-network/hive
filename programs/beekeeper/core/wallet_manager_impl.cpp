@@ -1,5 +1,5 @@
-#include <beekeeper/wallet_manager_impl.hpp>
-#include <beekeeper/beekeeper_wallet.hpp>
+#include <core/wallet_manager_impl.hpp>
+#include <core/beekeeper_wallet.hpp>
 
 #include <appbase/application.hpp>
 

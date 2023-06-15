@@ -1,6 +1,6 @@
 #pragma once
 
-#include <beekeeper/beekeeper_wallet_base.hpp>
+#include <core/beekeeper_wallet_base.hpp>
 
 #include <fc/real128.hpp>
 #include <fc/crypto/base58.hpp>

@@ -1,4 +1,4 @@
-#include <beekeeper/session.hpp>
+#include <core/session.hpp>
 
 namespace beekeeper {
 

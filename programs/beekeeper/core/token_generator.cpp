@@ -1,4 +1,4 @@
-#include <beekeeper/token_generator.hpp>
+#include <core/token_generator.hpp>
 
 #include <random>
 #include <sstream>

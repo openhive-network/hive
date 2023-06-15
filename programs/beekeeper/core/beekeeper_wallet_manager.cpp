@@ -1,4 +1,4 @@
-#include <beekeeper/beekeeper_wallet_manager.hpp>
+#include <core/beekeeper_wallet_manager.hpp>
 
 #include <appbase/application.hpp>
 
@@ -19,92 +19,92 @@ bool beekeeper_wallet_manager::start()
 
 void beekeeper_wallet_manager::set_timeout( const std::string& token, uint64_t secs )
 {
-  sessions.get_session( token ).set_timeout( std::chrono::seconds( secs ) );
+  sessions.set_timeout( token, std::chrono::seconds( secs ) );
 }
 
 std::string beekeeper_wallet_manager::create( const std::string& token, const std::string& name, fc::optional<std::string> password )
 {
-  sessions.get_session( token ).check_timeout();
+  sessions.check_timeout( token );
 
-  return sessions.get_session( token ).get_wallet_manager()->create( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name, password );
+  return sessions.get_wallet_manager( token )->create( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name, password );
 }
 
 void beekeeper_wallet_manager::open( const std::string& token, const std::string& name )
 {
-  sessions.get_session( token ).check_timeout();
+  sessions.check_timeout( token );
 
-  sessions.get_session( token ).get_wallet_manager()->open( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name );
+  sessions.get_wallet_manager( token )->open( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name );
 }
 
 void beekeeper_wallet_manager::close( const std::string& token, const std::string& name )
 {
-  sessions.get_session( token ).check_timeout();
+  sessions.check_timeout( token );
 
-  sessions.get_session( token ).get_wallet_manager()->close( name );
+  sessions.get_wallet_manager( token )->close( name );
 }
 
 std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::string& token )
 {
-  sessions.get_session( token ).check_timeout();
-  return sessions.get_session( token ).get_wallet_manager()->list_wallets();
+  sessions.check_timeout( token );
+  return sessions.get_wallet_manager( token )->list_wallets();
 }
 
 map<public_key_type, private_key_type> beekeeper_wallet_manager::list_keys( const std::string& token, const string& name, const string& pw )
 {
-  sessions.get_session( token ).check_timeout();
-  return sessions.get_session( token ).get_wallet_manager()->list_keys( name, pw );
+  sessions.check_timeout( token );
+  return sessions.get_wallet_manager( token )->list_keys( name, pw );
 }
 
 flat_set<public_key_type> beekeeper_wallet_manager::get_public_keys( const std::string& token )
 {
-  sessions.get_session( token ).check_timeout();
-  return sessions.get_session( token ).get_wallet_manager()->get_public_keys();
+  sessions.check_timeout( token );
+  return sessions.get_wallet_manager( token )->get_public_keys();
 }
 
 void beekeeper_wallet_manager::lock_all( const std::string& token )
 {
-  sessions.get_session( token ).get_wallet_manager()->lock_all();
+  sessions.get_wallet_manager( token )->lock_all();
 }
 
 void beekeeper_wallet_manager::lock( const std::string& token, const std::string& name )
 {
-  sessions.get_session( token ).check_timeout();
-  sessions.get_session( token ).get_wallet_manager()->lock( name );
+  sessions.check_timeout( token );
+  sessions.get_wallet_manager( token )->lock( name );
 }
 
 void beekeeper_wallet_manager::unlock( const std::string& token, const std::string& name, const std::string& password )
 {
-  sessions.get_session( token ).check_timeout();
-  sessions.get_session( token ).get_wallet_manager()->unlock( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name, password );
+  sessions.check_timeout( token );
+  sessions.get_wallet_manager( token )->unlock( [this]( const std::string& name ){ return singleton->create_wallet_filename( name ); }, name, password );
 }
 
 string beekeeper_wallet_manager::import_key( const std::string& token, const std::string& name, const std::string& wif_key )
 {
-  sessions.get_session( token ).check_timeout();
-  return sessions.get_session( token ).get_wallet_manager()->import_key( name, wif_key );
+  sessions.check_timeout( token );
+  return sessions.get_wallet_manager( token )->import_key( name, wif_key );
 }
 
 void beekeeper_wallet_manager::remove_key( const std::string& token, const std::string& name, const std::string& password, const std::string& public_key )
 {
-  sessions.get_session( token ).check_timeout();
-  sessions.get_session( token ).get_wallet_manager()->remove_key( name, password, public_key );
+  sessions.check_timeout( token );
+  sessions.get_wallet_manager( token )->remove_key( name, password, public_key );
 }
 
 signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const public_key_type& public_key, const digest_type& sig_digest )
 {
-  sessions.get_session( token ).check_timeout();
-  return sessions.get_session( token ).get_wallet_manager()->sign_digest( public_key, sig_digest );
+  sessions.check_timeout( token );
+  return sessions.get_wallet_manager( token )->sign_digest( public_key, sig_digest );
 }
 
 signature_type beekeeper_wallet_manager::sign_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest )
 {
-  sessions.get_session( token ).check_timeout();
-  return sessions.get_session( token ).get_wallet_manager()->sign_transaction( transaction, chain_id, public_key, sig_digest );
+  sessions.check_timeout( token );
+  return sessions.get_wallet_manager( token )->sign_transaction( transaction, chain_id, public_key, sig_digest );
 }
 
 info beekeeper_wallet_manager::get_info( const std::string& token )
 {
-  return sessions.get_session( token ).get_info();
+  return sessions.get_info( token );
 }
 
 void beekeeper_wallet_manager::save_connection_details( const collector_t& values )

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <beekeeper/beekeeper_wallet_base.hpp>
-#include <beekeeper/utilities.hpp>
-#include <beekeeper/beekeper_instance.hpp>
+#include <core/beekeeper_wallet_base.hpp>
+#include <core/utilities.hpp>
+#include <core/beekeper_instance.hpp>
 
 namespace fc { class variant; }
 

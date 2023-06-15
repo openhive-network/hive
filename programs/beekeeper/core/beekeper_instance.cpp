@@ -1,4 +1,4 @@
-#include <beekeeper/beekeper_instance.hpp>
+#include <core/beekeper_instance.hpp>
 
 #include <appbase/application.hpp>
 
@@ -131,12 +131,18 @@ namespace beekeeper {
 
   void beekeper_instance::send_fail_notification()
   {
-    appbase::app().notify("opening_beekeeper_failed",
-    // {
-      "pid", read_file( pid_file ),
-      "connection", read_file( connection_file )
-    // }
-    );
+    std::vector<fc::variant> _content;
+
+    fc::variant _pid_v        = read_file( pid_file );
+    fc::variant _connection_v = read_file( connection_file );
+
+    _content.push_back( "Opening beekeeper failed" );
+    _content.push_back( _pid_v );
+    _content.push_back( _connection_v );
+
+    auto _json = fc::json::to_string( _content );
+
+    appbase::app().notify_status( _json );
   }
 
   bool beekeper_instance::start()
