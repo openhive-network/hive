@@ -99,9 +99,9 @@ BOOST_AUTO_TEST_CASE( rotation_test )
     } } ),
     // Add p2p appender to default logger's appenders list.
     config_arg_override_t::value_type( {"log-logger", {
-      R"~({"name":"default","level":"info","appender":"stderr,p2p"})~",
-      R"~({"name":"user","level":"debug","appender":"stderr"})~",
-      R"~({"name":"p2p","level":"warn","appender":"p2p"})~"
+      R"~({"name":"default","level":"info","appenders":["stderr","p2p"]})~",
+      R"~({"name":"user","level":"debug","appender":"stderr"})~", // checking handling of obsolete form.
+      R"~({"name":"p2p","level":"warn","appenders":[]})~" // checking handling of empty list of appenders.
     } } )
   } );
 
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE( rotation_test )
     pattern_t( {
       R"~({"name":"default","level":"info","enabled":true,"additivity":false,"appenders":["stderr","p2p"]})~",
       R"~({"name":"user","level":"debug","enabled":true,"additivity":false,"appenders":["stderr"]})~",
-      R"~({"name":"p2p","level":"warn","enabled":true,"additivity":false,"appenders":["p2p"]})~"
+      R"~({"name":"p2p","level":"warn","enabled":true,"additivity":false,"appenders":[]})~"
     } )
   );
 

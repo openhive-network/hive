@@ -32,7 +32,9 @@ struct logger_args
 {
   std::string name;
   std::string level;
-  std::string appender;
+  // one of appender(s) must be provided (exclusively)
+  fc::optional< std::string > appender; // obsolete, use appenders (below)
+  fc::optional< std::vector< std::string > > appenders;
 
   void validate();
 };
@@ -45,4 +47,4 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
 
 FC_REFLECT( hive::utilities::appender_args, (appender)(file)(stream)(time_format)(delta_times)
   (flush)(rotate)(rotation_interval)(rotation_limit) )
-FC_REFLECT( hive::utilities::logger_args, (name)(level)(appender) )
+FC_REFLECT( hive::utilities::logger_args, (name)(level)(appender)(appenders) )
