@@ -23,7 +23,7 @@ void logger_args::validate()
 {
   FC_ASSERT( name.length(), "Must specify a logger name" );
   FC_ASSERT( level.length(), "Must specify a logger level" );
-  FC_ASSERT( appender.length(), "Must specify an appender name" );
+  FC_ASSERT( ( appender.valid() ) ^ ( appenders.valid() ), "Must specify at least one appender name" );
 }
 
 void set_logging_program_options( boost::program_options::options_description& options )
@@ -34,9 +34,9 @@ void set_logging_program_options( boost::program_options::options_description& o
   std::string str_default_appender = boost::algorithm::join( default_appender, " " );
 
   std::vector< std::string > default_logger(
-    { "{\"name\":\"default\",\"level\":\"info\",\"appender\":\"stderr\"}",
-      "{\"name\":\"user\",\"level\":\"debug\",\"appender\":\"stderr\"}",
-      "{\"name\":\"p2p\",\"level\":\"warn\",\"appender\":\"p2p\"}" } );
+    { "{\"name\":\"default\",\"level\":\"info\",\"appenders\":[\"stderr\"]}",
+      "{\"name\":\"user\",\"level\":\"debug\",\"appenders\":[\"stderr\"]}",
+      "{\"name\":\"p2p\",\"level\":\"warn\",\"appenders\":[\"p2p\"]}" } );
   std::string str_default_logger = boost::algorithm::join( default_logger, " " );
 
   options.add_options()
@@ -57,7 +57,11 @@ void set_logging_program_options( boost::program_options::options_description& o
     ("log-console-appender", boost::program_options::value< std::vector< std::string > >()->composing() )
     ("log-file-appender", boost::program_options::value< std::vector< std::string > >()->composing() )
     ("log-logger", boost::program_options::value< std::vector< std::string > >()->composing()->default_value( default_logger, str_default_logger ),
-      "Logger definition json: {\"name\", \"level\", \"appender\"}" )
+      "Logger definition JSON:\n"
+      "\"name\" - name of logger\n"
+      "\"level\" - level of reporting, see log_level enum values\n"
+      "\"appenders\" - list of designated appenders"
+      )
     ;
 }
 
@@ -156,12 +160,21 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
         while ((pos = s.find('{', pos)) != std::string::npos)
         {
           auto logger = fc::json::from_string( s.substr( pos++ ) ).as< logger_args >();
-
+          logger.validate();
           fc::logger_config logger_config( logger.name );
           logger_config.level = fc::variant( logger.level ).as< fc::log_level >();
-          boost::split( logger_config.appenders, logger.appender,
+          if( logger.appender.valid() )
+          {
+            // legacy approach
+            boost::split( logger_config.appenders, logger.appender.value(),
                     boost::is_any_of(" ,"),
                     boost::token_compress_on );
+          }
+          else
+          {
+            // logger_args::validate checked that one of appender(s) is valid.
+            logger_config.appenders = logger.appenders.value();
+          }
           logging_config.loggers.push_back( logger_config );
           found_logging_config = true;
         }
