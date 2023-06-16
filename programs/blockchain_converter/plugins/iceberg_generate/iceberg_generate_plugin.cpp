@@ -176,6 +176,7 @@ namespace detail {
         FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
 
         hp::signed_block block = _full_block->get_block(); // Copy required due to the const reference returned by the get_block function
+        converter.touch(block); // converter.convert_signed_transaction() does not apply hardforks, so we have to do it manually
 
         boost::container::flat_set<hp::account_name_type> new_accounts;
         hp::signed_transaction dependents_tx;
@@ -356,7 +357,19 @@ namespace detail {
           if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
             break;
           else
+          {
+            on_node_error_caught = [&](const fc::variant_object& vo) -> void {
+              auto get_posting = [&]( const string& name ) { return hp::authority{ 1, converter.get_second_authority_key( hp::authority::classification::posting ).get_public_key(), 1 };  };
+              const auto sigs = transactions.at(i)->get_signature_keys();
+
+              boost::container::flat_set<hp::public_key_type> avail;
+              hp::sign_state s(sigs, get_posting, avail);
+              const auto sigs_irrelevant = s.remove_unused_signatures();
+
+              ilog("${sigs} (sigs_irrelevant: ${sigs_irrelevant} for '${posting}') => ${tx}", (sigs)("posting", get_posting(""))(sigs_irrelevant)("tx", transactions.at(i)->get_transaction()));
+            };
             transmit( *transactions.at(i), output_urls.at( i % output_urls.size() ) );
+          }
 
         gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
 

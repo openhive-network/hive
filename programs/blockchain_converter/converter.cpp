@@ -513,7 +513,7 @@ namespace hive { namespace converter {
       transaction_signing_keys,
       chain_id,
       has_hardfork( HIVE_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical,
-      hp::pack_type::legacy
+      has_hardfork( HIVE_HARDFORK_1_26 ) ? hp::pack_type::hf26 : hp::pack_type::legacy
     );
   }
 
