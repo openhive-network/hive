@@ -110,7 +110,7 @@ namespace chain {
   {
     public:
       database();
-      database(IBlockProvider& blocklog_provider);
+      database(std::unique_ptr<IBlockProvider> blocklog_provider_ptr);
       ~database();
 
       enum transaction_status
@@ -843,8 +843,9 @@ namespace chain {
 
       fork_database                 _fork_db;
       hardfork_versions             _hardfork_versions;
-      block_log                     _concrete_block_log;
-      IBlockProvider&               _block_log;
+      std::unique_ptr<IBlockProvider>  _block_log_ptr;;
+      
+      IBlockProvider&                     _block_log;
 
       // this function needs access to _plugin_index_signal
       template< typename MultiIndexType >
