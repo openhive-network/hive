@@ -60,8 +60,11 @@ namespace detail {
     void open( const fc::path& input );
     void close();
 
-    hp::account_create_operation on_new_account_collected( const hp::account_name_type& acc, const hp::asset& account_creation_fee );
-    void on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link );
+    hp::transfer_to_vesting_operation generate_vesting_for_account( const hp::account_name_type& acc )const;
+    hp::transfer_operation generate_hbd_transfer_for_account( const hp::account_name_type& acc )const;
+    hp::transfer_operation generate_hive_transfer_for_account( const hp::account_name_type& acc )const;
+    hp::account_create_operation on_new_account_collected( const hp::account_name_type& acc, const hp::asset& account_creation_fee )const;
+    void on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link )const;
   };
 
 
@@ -81,7 +84,43 @@ namespace detail {
     } FC_CAPTURE_AND_RETHROW( (input) );
   }
 
-  hp::account_create_operation iceberg_generate_plugin_impl::on_new_account_collected( const hp::account_name_type& acc, const hp::asset& account_creation_fee )
+  hp::transfer_to_vesting_operation iceberg_generate_plugin_impl::generate_vesting_for_account( const hp::account_name_type& acc )const
+  {
+    static const uint64_t hive_precision = std::pow(10, HIVE_PRECISION_HIVE);
+
+    hp::transfer_to_vesting_operation op;
+    op.from = HIVE_INIT_MINER_NAME;
+    op.to = acc;
+    op.amount = hp::asset{ 100 * hive_precision, HIVE_SYMBOL };
+
+    return op;
+  }
+
+  hp::transfer_operation iceberg_generate_plugin_impl::generate_hbd_transfer_for_account( const hp::account_name_type& acc )const
+  {
+    static const uint64_t hbd_precision = std::pow(10, HIVE_PRECISION_HBD);
+
+    hp::transfer_operation op;
+    op.from = HIVE_INIT_MINER_NAME;
+    op.to = acc;
+    op.amount = hp::asset{ 100 * hbd_precision, HBD_SYMBOL };
+
+    return op;
+  }
+
+  hp::transfer_operation iceberg_generate_plugin_impl::generate_hive_transfer_for_account( const hp::account_name_type& acc )const
+  {
+    static const uint64_t hive_precision = std::pow(10, HIVE_PRECISION_HIVE);
+
+    hp::transfer_operation op;
+    op.from = HIVE_INIT_MINER_NAME;
+    op.to = acc;
+    op.amount = hp::asset{ 100 * hive_precision, HIVE_SYMBOL };
+
+    return op;
+  }
+
+  hp::account_create_operation iceberg_generate_plugin_impl::on_new_account_collected( const hp::account_name_type& acc, const hp::asset& account_creation_fee )const
   {
     hp::account_create_operation op;
     op.fee = account_creation_fee;
@@ -92,7 +131,7 @@ namespace detail {
     return op;
   }
 
-  void iceberg_generate_plugin_impl::on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link )
+  void iceberg_generate_plugin_impl::on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link )const
   {
     hp::comment_operation op;
     op.body = "#";
@@ -209,6 +248,9 @@ namespace detail {
             if( all_accounts.insert(acc).second )
             {
               dependents_tx.operations.emplace_back(on_new_account_collected(acc, account_creation_fee));
+              dependents_tx.operations.emplace_back(generate_vesting_for_account(acc));
+              dependents_tx.operations.emplace_back(generate_hbd_transfer_for_account(acc));
+              dependents_tx.operations.emplace_back(generate_hive_transfer_for_account(acc));
 
               last_account_name = acc;
             }
@@ -357,19 +399,7 @@ namespace detail {
           if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
             break;
           else
-          {
-            on_node_error_caught = [&](const fc::variant_object& vo) -> void {
-              auto get_posting = [&]( const string& name ) { return hp::authority{ 1, converter.get_second_authority_key( hp::authority::classification::posting ).get_public_key(), 1 };  };
-              const auto sigs = transactions.at(i)->get_signature_keys();
-
-              boost::container::flat_set<hp::public_key_type> avail;
-              hp::sign_state s(sigs, get_posting, avail);
-              const auto sigs_irrelevant = s.remove_unused_signatures();
-
-              ilog("${sigs} (sigs_irrelevant: ${sigs_irrelevant} for '${posting}') => ${tx}", (sigs)("posting", get_posting(""))(sigs_irrelevant)("tx", transactions.at(i)->get_transaction()));
-            };
             transmit( *transactions.at(i), output_urls.at( i % output_urls.size() ) );
-          }
 
         gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
 
