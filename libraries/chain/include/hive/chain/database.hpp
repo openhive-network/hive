@@ -843,9 +843,9 @@ namespace chain {
 
       fork_database                 _fork_db;
       hardfork_versions             _hardfork_versions;
-      std::unique_ptr<IBlockProvider>  _block_log_ptr;;
+      std::unique_ptr<IBlockProvider>  _block_log;
       
-      IBlockProvider&                     _block_log;
+      //const IBlockProvider&                     _block_log;
 
       // this function needs access to _plugin_index_signal
       template< typename MultiIndexType >
