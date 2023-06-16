@@ -64,7 +64,7 @@ namespace detail {
     hp::transfer_operation generate_hbd_transfer_for_account( const hp::account_name_type& acc )const;
     hp::transfer_operation generate_hive_transfer_for_account( const hp::account_name_type& acc )const;
     hp::account_create_operation on_new_account_collected( const hp::account_name_type& acc, const hp::asset& account_creation_fee )const;
-    void on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link )const;
+    hp::comment_operation on_comment_collected( const hp::account_name_type& acc, const std::string& link )const;
   };
 
 
@@ -131,7 +131,7 @@ namespace detail {
     return op;
   }
 
-  void iceberg_generate_plugin_impl::on_comment_collected( hp::signed_block& b, const hp::account_name_type& acc, const std::string& link )const
+  hp::comment_operation iceberg_generate_plugin_impl::on_comment_collected( const hp::account_name_type& acc, const std::string& link )const
   {
     hp::comment_operation op;
     op.body = "#";
@@ -140,11 +140,7 @@ namespace detail {
     op.author = acc;
     op.permlink = link;
 
-    hp::signed_transaction tx;
-    tx.signatures.emplace_back(); // null-sign to inform the converter that it should replace null-signature with the actual proper signature
-    tx.operations.emplace_back( op );
-
-    b.transactions.emplace( b.transactions.begin(), tx );
+    return op;
   }
 
   void iceberg_generate_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
@@ -219,12 +215,15 @@ namespace detail {
 
         boost::container::flat_set<hp::account_name_type> new_accounts;
         hp::signed_transaction dependents_tx;
+        hp::signed_transaction comments_tx;
 
         if( block.transactions.size() == 0 )
           continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
         for( size_t i = 0; i < block.transactions.size(); ++i )
         {
+          std::vector<ops_permlink_tracker_result_t> permlinks;
+
           for( size_t j = 0; j < block.transactions.at(i).operations.size(); ++j )
           {
             auto& op = block.transactions.at(i).operations.at(j);
@@ -240,9 +239,20 @@ namespace detail {
             }
 
             op.visit( ops_impacted_accounts_visitor{ new_accounts, all_accounts, converter } );
+
+            // Collecting permlinks
+            const auto created_permlink_data = op.visit(created_permlinks_visitor{});
+            all_permlinks.insert( compute_author_and_permlink_hash( created_permlink_data ) );
+
+            permlinks.emplace_back( op.visit(dependent_permlinks_visitor{}) );
+
+            // Stripping operations content
+            if( enable_op_content_strip )
+              op = op.visit( ops_strip_content );
           }
 
-          dependents_tx.operations.reserve(new_accounts.size());
+          dependents_tx.operations.reserve(new_accounts.size() * 4);
+          comments_tx.operations.reserve(permlinks.size());
 
           for( const auto& acc : new_accounts )
             if( all_accounts.insert(acc).second )
@@ -254,31 +264,45 @@ namespace detail {
 
               last_account_name = acc;
             }
+
+          for( const auto& dependent_permlink_data : permlinks )
+            if( dependent_permlink_data.first.size() && all_permlinks.insert( compute_author_and_permlink_hash( dependent_permlink_data ) ).second )
+              comments_tx.operations.emplace_back(on_comment_collected(dependent_permlink_data.first, dependent_permlink_data.second));
         }
 
         const auto head_block_time = gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval);
         uint32_t block_offset = uint32_t( std::abs( (head_block_time - block.timestamp).to_seconds() ) );
 
-        const auto tx_converted = converter.convert_signed_transaction( dependents_tx, lib_id,
-          [&](hp::transaction& trx) {
-            trx.expiration = head_block_time + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP;
-          },
-          block_offset,
-          account_creation_fee.amount.value,
-          true
-        );
+        // Note: We do not use pow transactions in the initial iceberg converter stage, so handling helper_pow_transaction is redundant
+        if( dependents_tx.operations.size() > 0 )
+        {
+          const auto tx_converted = converter.convert_signed_transaction( dependents_tx, lib_id,
+            [&](hp::transaction& trx) {
+              trx.expiration = head_block_time + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP;
+            },
+            block_offset,
+            account_creation_fee.amount.value,
+            true
+          );
+
+          transmit( *tx_converted, output_urls.at( 0 ) );
+        }
+
+        if( comments_tx.operations.size() > 0 )
+        {
+          const auto tx_converted = converter.convert_signed_transaction( comments_tx, lib_id,
+            [&](hp::transaction& trx) {
+              trx.expiration = head_block_time + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP;
+            },
+            block_offset,
+            account_creation_fee.amount.value,
+            true
+          );
+
+          transmit( *tx_converted, output_urls.at( 0 ) );
+        }
 
         print_progress( start_block_num - init_start_block_num, stop_block_num - init_start_block_num );
-
-        if( tx_converted->get_transaction().operations.size() > 0 )
-          transmit( *tx_converted, output_urls.at( 0 ) );
-
-        while(converter.has_helper_pow_transaction())
-        {
-          const auto tx = converter.pop_helper_pow_transaction();
-
-          transmit( *tx, output_urls.at(0) );
-        }
 
         gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
 
@@ -354,34 +378,10 @@ namespace detail {
         if( block.transactions.size() == 0 )
           continue; // Since we transmit only transactions, not entire blocks, we can skip block conversion if there are no transactions in the block
 
-        block.extensions.clear();
-
-        for( size_t i = 0; i < block.transactions.size(); ++i )
-        {
-          std::vector<ops_permlink_tracker_result_t> permlinks;
-
-          for( size_t j = 0; j < block.transactions.at(i).operations.size(); ++j )
-          {
-            auto& op = block.transactions.at(i).operations.at(j);
-
-            // Collecting permlinks
-            const auto created_permlink_data = op.visit(created_permlinks_visitor{});
-            all_permlinks.insert( compute_author_and_permlink_hash( created_permlink_data ) );
-
-            permlinks.emplace_back( op.visit(dependent_permlinks_visitor{}) );
-
-            // Stripping operations content
-            if( enable_op_content_strip )
-              op = op.visit( ops_strip_content );
-          }
-
-          for( const auto& dependent_permlink_data : permlinks )
-            if( dependent_permlink_data.first.size() && all_permlinks.insert( compute_author_and_permlink_hash( dependent_permlink_data ) ).second )
-            {
-              on_comment_collected(block, dependent_permlink_data.first, dependent_permlink_data.second);
-              ++i;
-            }
-        }
+        if( enable_op_content_strip )
+          for( auto& tx : block.transactions )
+            for( auto& op : tx.operations )
+                op = op.visit( ops_strip_content );
 
         auto block_converted = converter.convert_signed_block( block, lib_id,
           gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
