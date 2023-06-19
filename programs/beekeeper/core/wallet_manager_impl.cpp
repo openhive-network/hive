@@ -3,9 +3,6 @@
 
 #include <appbase/application.hpp>
 
-#include <fc/filesystem.hpp>
-
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
 namespace beekeeper {

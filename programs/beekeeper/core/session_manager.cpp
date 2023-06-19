@@ -4,8 +4,6 @@
 
 #include <appbase/application.hpp>
 
-#include <fc/exception/exception.hpp>
-
 namespace beekeeper {
 
 session_manager::session_manager()

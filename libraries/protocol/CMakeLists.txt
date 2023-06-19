@@ -27,7 +27,15 @@ generate_get_config(
 
 #############
 
-SET( SOURCES testnet_blockchain_configuration.cpp
+SET( SOURCES_1
+   misc_utilities.cpp
+   ${HEADERS}
+   ${hardfork_hpp_file}
+   "${CMAKE_CURRENT_BINARY_DIR}/include/hive/protocol/hardfork.hpp"
+)
+
+SET( SOURCES_2
+   testnet_blockchain_configuration.cpp
    smt_operations.cpp
    hive_operations.cpp
    dhf_operations.cpp
@@ -41,21 +49,26 @@ SET( SOURCES testnet_blockchain_configuration.cpp
    block.cpp
    asset.cpp
    version.cpp
-   misc_utilities.cpp
    forward_impacted.cpp
    fixed_string.cpp
    ${GET_CONFIG_CPP}
-   ${HEADERS}
-   ${hardfork_hpp_file}
-   "${CMAKE_CURRENT_BINARY_DIR}/include/hive/protocol/hardfork.hpp"
 )
+
+set( SOURCES ${SOURCES_1} )
+if( NOT WASM_COMPILE_MODE)
+  list(APPEND SOURCES ${SOURCES_2})
+endif()
 
 cmake_policy(SET CMP0041 NEW)
 
 ## SORT .cpp by most likely to change / break compile
 add_library( hive_protocol STATIC ${SOURCES} )
 
-target_link_libraries( hive_protocol PUBLIC hive_schema_core fc_core )
+if(WASM_COMPILE_MODE)
+   target_link_libraries( hive_protocol PUBLIC fc_core )
+else()
+   target_link_libraries( hive_protocol PUBLIC hive_schema_core fc_core )
+endif()
 
 target_link_libraries ( hive_protocol PUBLIC
    $<IF:$<OR:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,MODULE_LIBRARY>>, hive_schema_shared_boost, hive_schema>

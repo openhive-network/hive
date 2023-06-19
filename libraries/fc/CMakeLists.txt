@@ -143,9 +143,7 @@ ENDIF()
 
 option( UNITY_BUILD OFF )
 
-set( fc_sources
-     src/uint128.cpp
-     src/real128.cpp
+set( fc_sources_1
      src/variant.cpp
      src/exception.cpp
      src/variant_object.cpp
@@ -165,23 +163,11 @@ set( fc_sources
      src/utf8.cpp
      src/io/iostream.cpp
      src/io/datastream.cpp
-     src/io/buffered_iostream.cpp
      src/io/fstream.cpp
      src/io/sstream.cpp
      src/io/json.cpp
-     src/io/varint.cpp
      src/io/console.cpp
      src/filesystem.cpp
-     src/interprocess/signals.cpp
-     src/interprocess/file_mapping.cpp
-     src/interprocess/mmap_struct.cpp
-     src/interprocess/file_mutex.cpp
-     src/rpc/cli.cpp
-     src/rpc/http_api.cpp
-     src/rpc/json_connection.cpp
-     src/rpc/state.cpp
-     src/rpc/bstate.cpp
-     src/rpc/websocket_api.cpp
      src/log/log_message.cpp
      src/log/logger.cpp
      src/log/appender.cpp
@@ -194,7 +180,6 @@ set( fc_sources
      src/crypto/aes.cpp
      src/crypto/crc.cpp
      src/crypto/city.cpp
-     src/crypto/base32.cpp
      src/crypto/base36.cpp
      src/crypto/base58.cpp
      src/crypto/base64.cpp
@@ -204,12 +189,8 @@ set( fc_sources
      src/crypto/ripemd160.cpp
      src/crypto/cripemd160.cpp
      src/crypto/sha256.cpp
-     src/crypto/sha224.cpp
      src/crypto/sha512.cpp
-     src/crypto/blowfish.cpp
      src/crypto/elliptic_common.cpp
-     src/crypto/equihash.cpp
-     src/crypto/restartable_sha256.cpp
      ${ECC_REST}
      src/crypto/elliptic_${ECC_IMPL}.cpp
      src/crypto/rand.cpp
@@ -218,19 +199,47 @@ set( fc_sources
      src/network/http/http_connection.cpp
      src/network/http/http_server.cpp
      src/network/http/websocket.cpp
-     src/network/ntp.cpp
      src/network/ip.cpp
-     src/network/rate_limiting.cpp
      src/network/resolve.cpp
      src/network/url.cpp
-     src/network/gntp.cpp
-     src/compress/smaz.cpp
      src/compress/zlib.cpp
      src/reflect/typename.cpp
-     vendor/cyoencode-1.0.2/src/CyoDecode.c
-     vendor/cyoencode-1.0.2/src/CyoEncode.c
      vendor/simdjson/simdjson.cpp
      )
+
+set( fc_sources_2
+     src/uint128.cpp
+     src/real128.cpp
+     src/io/buffered_iostream.cpp
+     src/io/varint.cpp
+     src/interprocess/signals.cpp
+     src/interprocess/file_mapping.cpp
+     src/interprocess/mmap_struct.cpp
+     src/interprocess/file_mutex.cpp
+     src/rpc/cli.cpp
+     src/rpc/http_api.cpp
+     src/rpc/json_connection.cpp
+     src/rpc/state.cpp
+     src/rpc/bstate.cpp
+     src/rpc/websocket_api.cpp
+     src/crypto/base32.cpp
+     src/crypto/sha224.cpp
+     src/crypto/blowfish.cpp
+     src/crypto/equihash.cpp
+     src/crypto/restartable_sha256.cpp
+     src/network/ntp.cpp
+     src/network/rate_limiting.cpp
+     src/network/gntp.cpp
+     src/compress/smaz.cpp
+     vendor/cyoencode-1.0.2/src/CyoDecode.c
+     vendor/cyoencode-1.0.2/src/CyoEncode.c
+     )
+
+
+set( fc_sources ${fc_sources_1} )
+if( NOT WASM_COMPILE_MODE)
+  list(APPEND fc_sources ${fc_sources_2})
+endif()
 
 file( GLOB_RECURSE fc_headers ${CMAKE_CURRENT_SOURCE_DIR} *.hpp *.h )
 
@@ -243,7 +252,9 @@ list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
 list(APPEND sources ${fc_headers})
 
 add_subdirectory( vendor/websocketpp )
-add_subdirectory( vendor/equihash )
+if( NOT WASM_COMPILE_MODE)
+  add_subdirectory( vendor/equihash )
+endif()
 
 setup_library( fc_core SOURCES ${sources} LIBRARY_TYPE OBJECT DONT_INSTALL_LIBRARY )
 
@@ -324,18 +335,30 @@ SET( public_includes
         "${readline_includes}"
 )
 
-SET( private_includes
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/cyoencode-1.0.2/src
+SET( private_includes_1
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/simdjson
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/equihash
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/bitcoin/src
 )
 
+SET( private_includes_2
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/cyoencode-1.0.2/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/equihash
+)
+
+set( private_includes ${private_includes_1} )
+if( NOT WASM_COMPILE_MODE)
+  list(APPEND private_includes ${private_includes_2})
+endif( NOT )
+
 target_include_directories(fc_core PUBLIC ${public_includes} PRIVATE ${private_includes})
 
-target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
+if(WASM_COMPILE_MODE)
+  target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
+else()
+  target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
+endif()
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -351,7 +374,9 @@ ENDIF(MSVC)
 ENDIF()
 
 include_directories( vendor/websocketpp )
-include_directories( vendor/equihash )
+if( NOT WASM_COMPILE_MODE)
+  include_directories( vendor/equihash )
+endif()
 
 add_subdirectory(tests)
 

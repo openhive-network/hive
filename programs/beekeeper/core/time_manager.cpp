@@ -2,11 +2,7 @@
 
 #include <hive/utilities/notifications.hpp>
 
-#include <boost/filesystem.hpp>
-
 namespace beekeeper {
-
-namespace bfs = boost::filesystem;
 
 time_manager::time_manager()
 {

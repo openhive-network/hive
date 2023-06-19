@@ -1,3 +1,5 @@
+SET( WASM_COMPILE_MODE ON )
+
 file(GLOB HEADERS "../core/include/core/*.hpp")
 file(GLOB HEADERS "include/beekeeper_local/*.hpp")
 
@@ -15,7 +17,7 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper_local
                       ../core/wallet_manager_impl.cpp
                       ../core/beekeeper_app_base.cpp
                       ../core/beekeeper_app_init.cpp
-                      LIBRARIES appbase hive_utilities
+                      LIBRARIES appbase
 )
 
 target_include_directories( beekeeper_local PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../core/include" )

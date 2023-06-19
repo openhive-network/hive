@@ -4,7 +4,6 @@
 
 #include <thread>
 #include <string>
-#include <functional>
 #include <mutex>
 
 #include <boost/multi_index_container.hpp>

@@ -1,25 +1,13 @@
 #include <core/beekeeper_wallet.hpp>
 
-#include <algorithm>
-#include <cctype>
-#include <iomanip>
-#include <iostream>
 #include <fstream>
-#include <iterator>
-#include <sstream>
-#include <string>
-#include <list>
 
-#include <fc/container/deque.hpp>
-#include <fc/git_revision.hpp>
 #include <fc/io/json.hpp>
 #include <fc/crypto/aes.hpp>
-#include <fc/crypto/hex.hpp>
 
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 namespace beekeeper {
