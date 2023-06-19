@@ -9,7 +9,6 @@
 #include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
-#include <hive/chain/op_iterator.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
@@ -716,15 +715,8 @@ namespace chain {
       optional< chainbase::database::session > _pending_tx_session;
 
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
-    public:
-      void non_transactional_apply_block(const std::shared_ptr<full_block_type>& full_block, op_iterator_ptr op_it, uint32_t skip = skip_nothing);
-    private:
-      void _process_operations(op_iterator_ptr op_it);
-
       void switch_forks(item_ptr new_head);
-      void _apply_block(const std::shared_ptr<full_block_type>& full_block, std::function<void(const std::shared_ptr<full_block_type>&, uint32_t)> process_func);
-
-      void process_transactions(const std::shared_ptr<full_block_type>& full_block, uint32_t skip);
+      void _apply_block(const std::shared_ptr<full_block_type>& full_block);
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
       void apply_operation( const operation& op );
