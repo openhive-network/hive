@@ -30,7 +30,7 @@ set(sources_2
    )
 
 set( sources ${sources_1} )
-if( NOT WASM_COMPILE_MODE)
+if(NOT WASM_COMPILE_MODE)
   list(APPEND sources ${sources_2})
 endif()
 

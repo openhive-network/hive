@@ -237,7 +237,7 @@ set( fc_sources_2
 
 
 set( fc_sources ${fc_sources_1} )
-if( NOT WASM_COMPILE_MODE)
+if(NOT WASM_COMPILE_MODE)
   list(APPEND fc_sources ${fc_sources_2})
 endif()
 
@@ -252,7 +252,7 @@ list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
 list(APPEND sources ${fc_headers})
 
 add_subdirectory( vendor/websocketpp )
-if( NOT WASM_COMPILE_MODE)
+if(NOT WASM_COMPILE_MODE)
   add_subdirectory( vendor/equihash )
 endif()
 
@@ -348,15 +348,13 @@ SET( private_includes_2
 )
 
 set( private_includes ${private_includes_1} )
-if( NOT WASM_COMPILE_MODE)
+if(NOT WASM_COMPILE_MODE)
   list(APPEND private_includes ${private_includes_2})
 endif( NOT )
 
 target_include_directories(fc_core PUBLIC ${public_includes} PRIVATE ${private_includes})
 
-if(WASM_COMPILE_MODE)
-  target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
-else()
+if(NOT WASM_COMPILE_MODE)
   target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
 endif()
 
@@ -374,7 +372,7 @@ ENDIF(MSVC)
 ENDIF()
 
 include_directories( vendor/websocketpp )
-if( NOT WASM_COMPILE_MODE)
+if(NOT WASM_COMPILE_MODE)
   include_directories( vendor/equihash )
 endif()
 

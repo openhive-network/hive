@@ -1,8 +1,5 @@
 SET( WASM_COMPILE_MODE ON )
 
-file(GLOB HEADERS "../core/include/core/*.hpp")
-file(GLOB HEADERS "include/beekeeper_local/*.hpp")
-
 ADD_HIVE_EXECUTABLE ( NAME beekeeper_local
                       SOURCES
                       main.cpp
@@ -21,16 +18,3 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper_local
 )
 
 target_include_directories( beekeeper_local PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../core/include" )
-
-if( UNIX AND NOT APPLE )
-  set(rt_library rt )
-endif()
-
-# https://stackoverflow.com/a/40922025/11738218
-OPTION(ENABLE_PROFILING "If set additional flags are passed to compiler" OFF)
-if(ENABLE_PROFILING)
-    SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg" )
-    SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg" )
-    SET( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg" )
-    message( INFO "Profiling enabled" )
-endif()
