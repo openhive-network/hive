@@ -138,6 +138,7 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
 
     info_nodes = ", ".join(str(node) for node in nodes)
     tt.logger.info(f"Following nodes exist in whole network: {info_nodes}")
+    tt.logger.info(f"time_offsets: {time_offsets}")
     
     allow_external_time_offsets = time_offsets is not None and len(time_offsets) == len(nodes)
     tt.logger.info(f"External time offsets: {'enabled' if allow_external_time_offsets else 'disabled'}")
