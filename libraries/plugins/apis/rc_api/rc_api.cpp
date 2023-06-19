@@ -1,3 +1,5 @@
+#include "fc/time.hpp"
+#include "hive/chain/util/manabar.hpp"
 #include <hive/plugins/rc_api/rc_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
 
@@ -8,6 +10,7 @@
 
 #include <fc/variant_object.hpp>
 #include <fc/reflect/variant.hpp>
+#include <memory>
 
 namespace hive { namespace plugins { namespace rc {
 
@@ -88,6 +91,7 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
 
   find_rc_accounts_return result;
   result.rc_accounts.reserve( args.accounts.size() );
+  const auto now = _db.get_dynamic_global_properties().time.sec_since_epoch();
 
   const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
   if( rc_plugin.is_active() ) //for backward compatibility, but it would be better to just give error when not started yet
@@ -98,7 +102,15 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
 
       if( rc_account != nullptr )
       {
-        result.rc_accounts.emplace_back( *rc_account, _db );
+        auto emplaced = result.rc_accounts.emplace_back(*rc_account, _db );
+        if( args.refresh_mana )
+          emplaced.rc_manabar.regenerate_mana(
+            util::manabar_params(
+              rc_account->get_maximum_rc().value,
+              HIVE_RC_REGEN_TIME
+            ),
+          now
+        );
       }
     }
   }
@@ -113,6 +125,7 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
   list_rc_accounts_return result;
   result.rc_accounts.reserve( args.limit );
   account_name_type start = args.start.as< account_name_type >();
+  const auto now = _db.get_dynamic_global_properties().time.sec_since_epoch();
 
   const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
   if( rc_plugin.is_active() ) //for backward compatibility, but it would be better to just give error when not started yet
@@ -125,7 +138,17 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
     while( result.rc_accounts.size() < args.limit && itr != end )
     {
       if( filter( *itr ) )
-        result.rc_accounts.emplace_back( *itr, _db );
+      {
+        auto emplaced = result.rc_accounts.emplace_back( *itr, _db );
+        if( args.refresh_mana )
+          emplaced.rc_manabar.regenerate_mana(
+            util::manabar_params(
+              itr->get_maximum_rc().value,
+              HIVE_RC_REGEN_TIME
+            ),
+          now
+        );
+      }
 
       ++itr;
     }

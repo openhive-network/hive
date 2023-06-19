@@ -103,6 +103,7 @@ struct rc_direct_delegation_api_object
 struct find_rc_accounts_args
 {
   std::vector< account_name_type >                         accounts;
+  bool                                                     refresh_mana = false;
 };
 
 struct find_rc_accounts_return
@@ -110,7 +111,10 @@ struct find_rc_accounts_return
   std::vector< rc_account_api_object >                     rc_accounts;
 };
 
-typedef list_object_args_type list_rc_accounts_args;
+struct list_rc_accounts_args : public list_object_args_type
+{
+  bool              refresh_mana = false;
+};
 
 typedef find_rc_accounts_return list_rc_accounts_return;
 
@@ -193,6 +197,11 @@ FC_REFLECT( hive::plugins::rc::list_object_args_type,
             (limit)
             )
 
+FC_REFLECT_DERIVED( hive::plugins::rc::list_rc_accounts_args,
+            (hive::plugins::rc::list_object_args_type),
+            (refresh_mana)
+            )
+
 FC_REFLECT( hive::plugins::rc::get_resource_params_return,
   (resource_names)
   (resource_params)
@@ -225,6 +234,7 @@ FC_REFLECT( hive::plugins::rc::rc_direct_delegation_api_object,
 
 FC_REFLECT( hive::plugins::rc::find_rc_accounts_args,
   (accounts)
+  (refresh_mana)
   )
 
 FC_REFLECT( hive::plugins::rc::find_rc_accounts_return,
