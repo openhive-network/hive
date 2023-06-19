@@ -99,7 +99,6 @@ namespace chain {
     bool exit_after_replay = false;
     bool force_replay = false;
     bool validate_during_replay = false;
-    bool postgres_not_block_log = false;
   };
 
   /**
@@ -879,8 +878,6 @@ namespace chain {
       std::string                   _json_schema;
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
-
-      bool _postgres_not_block_log = false;
 
       fc::signal<void(const required_action_notification&)> _pre_apply_required_action_signal;
       fc::signal<void(const required_action_notification&)> _post_apply_required_action_signal;

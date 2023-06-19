@@ -150,8 +150,6 @@ void database::open( const open_args& args )
 {
   try
   {
-
-    _postgres_not_block_log = args.postgres_not_block_log;
     init_schema();
 
     helpers::environment_extension_resources environment_extension(
@@ -159,7 +157,7 @@ void database::open( const open_args& args )
                                                 appbase::app().get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay, _postgres_not_block_log);
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
     initialize_state_independent_data(args);
     load_state_initial_data(args);
@@ -189,15 +187,12 @@ void database::initialize_state_independent_data(const open_args& args)
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
 
-  //if(!_postgres_not_block_log)
-  {
     with_write_lock([&]()
     {
       _block_log.open(args.data_dir / "block_log");
       _block_log.set_compression(args.enable_block_log_compression);
       _block_log.set_compression_level(args.block_log_compression_level);
     });
-  }
   
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
@@ -249,8 +244,6 @@ void database::load_state_initial_data(const open_args& args)
 
   if (head_block_num())
   {
-    //if(!_postgres_not_block_log)
-    {
       std::shared_ptr<full_block_type> head_block = _block_log.read_block_by_num(head_block_num());
       // This assertion should be caught and a reindex should occur
       FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
@@ -258,7 +251,6 @@ void database::load_state_initial_data(const open_args& args)
       ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
 
       _fork_db.start_block(head_block);
-    }
   }
 
   with_read_lock([&]() {
