@@ -3870,10 +3870,7 @@ time_point_sec database::head_block_time()const
 
 uint32_t database::head_block_num()const
 {
-
-  auto hbn =  get_dynamic_global_properties().head_block_number;
-  //wlog("mtlk get_dynamic_global_properties().head_block_number ${hbn}", ( "hbn", hbn) );
-  return hbn;
+  return get_dynamic_global_properties().head_block_number;
 }
 
 block_id_type database::head_block_id()const
