@@ -141,9 +141,7 @@ class full_block_type;
 
       /// return true to continue processing, false to stop iteration.
       typedef std::function<bool(const std::shared_ptr<full_block_type>&)> block_processor_t;
-      
       // determines what processing for_each_block() asks the blockchain worker threads to perform
-      // enum class for_each_purpose { replay, decompressing };
 
       // process blocks in forward order, [starting_block_number, ending_block_number]
       void for_each_block(uint32_t starting_block_number, uint32_t ending_block_number,
