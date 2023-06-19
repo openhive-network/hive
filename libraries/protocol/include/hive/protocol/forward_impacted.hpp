@@ -63,15 +63,9 @@ void transaction_get_impacted_accounts(
   fc::flat_set<protocol::account_name_type>& result
   );
 
-
-
-
-
 bool is_keyauths_operation( const protocol::operation& op );
 
 bool is_metadata_operation( const protocol::operation& op );
-
-
 
 } } // hive::app
 
@@ -88,9 +82,9 @@ namespace consensus_state_provider
   };
   typedef std::vector<collected_account_balances_t> collected_account_balances_collection_t;
   collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context);
-  collected_account_balances_collection_t collect_current_all_accounts_balances_impl(const char* context, const char* shared_memory_bin_path);
+  collected_account_balances_collection_t collect_current_all_accounts_balances_impl(const char* context, const char* shared_memory_bin_path, const char* postgres_url);
   collected_account_balances_collection_t collect_current_account_balances(const std::vector<std::string>& accounts, const char* context);
-  collected_account_balances_collection_t collect_current_account_balances_impl(const std::vector<std::string>& accounts, const char* context, const char* shared_memory_bin_path);
+  collected_account_balances_collection_t collect_current_account_balances_impl(const std::vector<std::string>& accounts, const char* context, const char* shared_memory_bin_path, const char* postgres_url);
 
 }
 
