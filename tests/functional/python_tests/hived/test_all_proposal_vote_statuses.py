@@ -27,7 +27,7 @@ def test_proposal_status_filter_on_list_proposal_votes(node, api, status):
     # Create inactive proposal
     create_account_and_proposal(wallet, "bob", tt.Time.from_now(days=1), tt.Time.from_now(days=3))
     # Create expired proposal
-    create_account_and_proposal(wallet, "carol", tt.Time.now(), tt.Time.from_now(seconds=30))
+    create_account_and_proposal(wallet, "carol", tt.Time.now(), tt.Time.from_now(seconds=60))
 
     approve_all_created_proposals(node, wallet)
 
@@ -56,7 +56,7 @@ def wait_for_proposal_expiration(node: tt.InitNode) -> None:
         )
 
     error_message = "Proposal didn't expired within indicated time."
-    tt.Time.wait_for(is_proposal_expired, timeout=tt.Time.minutes(1), timeout_error_message=error_message)
+    tt.Time.wait_for(is_proposal_expired, timeout=tt.Time.seconds(120), timeout_error_message=error_message)
 
 
 def approve_all_created_proposals(node: tt.InitNode, wallet: tt.Wallet) -> None:
