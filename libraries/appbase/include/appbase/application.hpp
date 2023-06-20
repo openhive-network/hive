@@ -264,19 +264,6 @@ namespace appbase {
         });
       }
 
-      template <typename... KeyValuesTypes>
-      inline void dynamic_notify(
-          hive::utilities::notifications::notification_handler_wrapper& handler,
-          const fc::string &name,
-          KeyValuesTypes &&...key_value_pairs) const noexcept
-      {
-        hive::utilities::notifications::error_handler([&]{
-          handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
-          );
-        });
-      }
-
   };
 
   application& app();

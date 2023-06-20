@@ -1,5 +1,7 @@
 #pragma once
 
+#include <appbase/application.hpp>
+
 #include <core/beekeeper_app_init.hpp>
 #include <extension/beekeeper_wallet_api.hpp>
 
@@ -15,10 +17,16 @@ class beekeeper_app: public beekeeper_app_init
 
     std::unique_ptr<beekeeper::beekeeper_wallet_api> api_ptr;
 
+    appbase::application& app;
+
+    const boost::program_options::variables_map& get_args() const override;
+    bfs::path get_data_dir() const override;
+    void setup_notifications( const boost::program_options::variables_map& args ) override;
+
   protected:
 
-    std::pair<appbase::initialization_result::result, bool> initialize( int argc, char** argv ) override;
-    appbase::initialization_result::result start() override;
+    std::pair<bool, bool> initialize( int argc, char** argv ) override;
+    bool start() override;
 
   public:
 

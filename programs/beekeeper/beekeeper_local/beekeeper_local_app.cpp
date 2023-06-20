@@ -1,6 +1,10 @@
 #include <beekeeper_local/beekeeper_local_app.hpp>
 
+#include <boost/filesystem.hpp>
+
 namespace beekeeper {
+
+namespace bfs = boost::filesystem;
 
 beekeeper_local_app::beekeeper_local_app()
 {
@@ -10,34 +14,37 @@ beekeeper_local_app::~beekeeper_local_app()
 {
 }
 
-std::pair<appbase::initialization_result::result, bool> beekeeper_local_app::initialize( int argc, char** argv )
+std::pair<bool, bool> beekeeper_local_app::initialize( int argc, char** argv )
 {
-  app.add_program_options( bpo::options_description(), options );
-  app.set_app_name( "beekeeper" );
+  bpo::store( bpo::parse_command_line( argc, argv, options ), args );
+  auto _initialization = initialize_program_options();
+  if( !_initialization.first )
+    return { false, true };
 
-  auto initializationResult = app.initialize<>( argc, argv );
-  init_status = static_cast<appbase::initialization_result::result>( initializationResult.get_result_code() );
+  hive::utilities::notifications::dynamic_notify( notification_handler, "starting with token: " + _initialization.second );
 
-  if( !initializationResult.should_start_loop() )
-    return { init_status, true };
-  else
-  {
-    auto _initialization = initialize_program_options();
-    if( !_initialization.first )
-      return { init_status, true };
-
-    appbase::app().notify_status( "starting with token: " + _initialization.second );
-    return { appbase::initialization_result::result::ok, false };
-  }
+  return { true, false };
 }
 
-appbase::initialization_result::result beekeeper_local_app::start()
+bool beekeeper_local_app::start()
 {
-  app.startup();
-  app.exec();
-  std::cout << "exited cleanly\n";
+  std::cout << "Start in progress. Nothing to do\n";
+  return true;
+}
 
-  return init_status;
+const boost::program_options::variables_map& beekeeper_local_app::get_args() const
+{
+  return args;
+}
+
+bfs::path beekeeper_local_app::get_data_dir() const
+{
+  return bfs::current_path();
+}
+
+void beekeeper_local_app::setup_notifications( const boost::program_options::variables_map& args )
+{
+  notification_handler.setup( hive::utilities::notifications::setup_notifications( args ) );
 }
 
 }

@@ -40,7 +40,7 @@ std::string session_manager::create_session( const std::string& salt, const std:
               {
                 FC_ASSERT( _session, "notification: session is empty." );
 
-                appbase::app().dynamic_notify( _session->get_notification_handler(), "Attempt of closing all wallets");
+                hive::utilities::notifications::dynamic_notify( _session->get_notification_handler(), "Attempt of closing all wallets");
               }
               );
 

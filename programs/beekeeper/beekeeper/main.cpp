@@ -4,5 +4,6 @@
 
 int main( int argc, char** argv )
 {
-  return beekeeper::beekeeper_app_base::execute( std::make_unique<beekeeper::beekeeper_app>(), argc, argv );
+  beekeeper::beekeeper_app _app;
+  return _app.execute( argc, argv );
 }

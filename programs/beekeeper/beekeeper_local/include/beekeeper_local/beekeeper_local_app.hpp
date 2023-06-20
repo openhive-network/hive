@@ -8,11 +8,18 @@ class beekeeper_local_app: public beekeeper_app_init
 {
   private:
 
-    appbase::initialization_result::result init_status = appbase::initialization_result::result::ok;
+    hive::utilities::notifications::notification_handler_wrapper notification_handler;
+
+    boost::program_options::variables_map args;
+
   protected:
 
-    std::pair<appbase::initialization_result::result, bool> initialize( int argc, char** argv ) override;
-    appbase::initialization_result::result start() override;
+    std::pair<bool, bool> initialize( int argc, char** argv ) override;
+    bool start() override;
+
+    const boost::program_options::variables_map& get_args() const override;
+    bfs::path get_data_dir() const override;
+    void setup_notifications( const boost::program_options::variables_map& args ) override;
 
   public:
 

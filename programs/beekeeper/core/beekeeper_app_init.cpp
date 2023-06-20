@@ -100,8 +100,8 @@ std::pair<bool, std::string> beekeeper_app_init::initialize_program_options()
 {
   ilog("initializing options");
   try {
-      const boost::program_options::variables_map& _args = app.get_args();
-      appbase::app().setup_notifications( _args );
+      const boost::program_options::variables_map& _args = get_args();
+      setup_notifications( _args );
 
       std::string _notification;
       if( _args.count("notifications-endpoint") )
@@ -114,7 +114,7 @@ std::pair<bool, std::string> beekeeper_app_init::initialize_program_options()
       FC_ASSERT( _args.count("wallet-dir") );
       auto _dir = _args.at("wallet-dir").as<boost::filesystem::path>();
       if(_dir.is_relative() )
-          _dir = app.data_dir() / _dir;
+          _dir = get_data_dir() / _dir;
       if( !bfs::exists( _dir ) )
           bfs::create_directories( _dir );
 
@@ -146,4 +146,29 @@ std::pair<bool, std::string> beekeeper_app_init::initialize_program_options()
   } FC_LOG_AND_RETHROW()
 }
 
+int beekeeper_app_init::execute( int argc, char** argv )
+{
+  try
+  {
+    return run( argc, argv );
+  }
+  catch ( const boost::exception& e )
+  {
+    std::cerr << boost::diagnostic_information(e) << "\n";
+  }
+  catch ( const fc::exception& e )
+  {
+    std::cerr << e.to_detail_string() << "\n";
+  }
+  catch ( const std::exception& e )
+  {
+    std::cerr << e.what() << "\n";
+  }
+  catch ( ... )
+  {
+    std::cerr << "unknown exception\n";
+  }
+
+  return -1;
+}
 }
