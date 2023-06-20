@@ -1,7 +1,5 @@
 #include <core/beekeeper_wallet_manager.hpp>
 
-#include <appbase/application.hpp>
-
 namespace beekeeper {
 
 beekeeper_wallet_manager::beekeeper_wallet_manager( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit,
@@ -9,7 +7,7 @@ beekeeper_wallet_manager::beekeeper_wallet_manager( const boost::filesystem::pat
                                                   )
                           : unlock_timeout( cmd_unlock_timeout ), session_limit( cmd_session_limit ), close_all_sessions_action( method )
 {
-  singleton = std::make_unique<beekeper_instance>( cmd_wallet_dir );
+  singleton = std::make_unique<beekeeper_instance>( cmd_wallet_dir );
 }
 
 bool beekeeper_wallet_manager::start()

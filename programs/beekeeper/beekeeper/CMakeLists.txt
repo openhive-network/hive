@@ -9,7 +9,7 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper
                       ../extension/beekeeper_wallet_api.cpp
                       ../core/beekeeper_wallet.cpp
                       ../core/beekeeper_wallet_manager.cpp
-                      ../core/beekeper_instance.cpp
+                      ../core/beekeeper_instance.cpp
                       ../core/token_generator.cpp
                       ../core/time_manager.cpp
                       ../core/session.cpp

@@ -2,8 +2,6 @@
 
 #include <core/token_generator.hpp>
 
-#include <appbase/application.hpp>
-
 namespace beekeeper {
 
 session_manager::session_manager()

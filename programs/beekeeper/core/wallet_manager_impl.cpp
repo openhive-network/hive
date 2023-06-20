@@ -1,8 +1,6 @@
 #include <core/wallet_manager_impl.hpp>
 #include <core/beekeeper_wallet.hpp>
 
-#include <appbase/application.hpp>
-
 #include <boost/algorithm/string.hpp>
 
 namespace beekeeper {
