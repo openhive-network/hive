@@ -21,6 +21,7 @@ CALL_LIST_PROPOSAL_VOTES_TEMPLATE: Final[dict] = {
 @pytest.mark.parametrize("status", ["active", "all", "expired", "inactive", "votable"])
 def test_proposal_status_filter_on_list_proposal_votes(node, api, status):
     wallet = tt.Wallet(attach_to=node)
+    create_and_fund_voters(wallet, VOTERS_AMOUNT)
 
     # Create active proposal
     create_account_and_proposal(wallet, "alice", tt.Time.now(), tt.Time.from_now(days=1))
@@ -60,14 +61,12 @@ def wait_for_proposal_expiration(node: tt.InitNode) -> None:
 
 
 def approve_all_created_proposals(node: tt.InitNode, wallet: tt.Wallet) -> None:
-    voters = get_account_names(wallet.create_accounts(VOTERS_AMOUNT))
     proposals_amount = len(node.api.condenser.list_proposals([''], 100, 'by_creator', 'ascending', 'all'))
 
     with wallet.in_single_transaction():
-        for voter in voters:
-            wallet.api.transfer_to_vesting("initminer", voter, tt.Asset.Test(0.1))
+        for voter_number in range(VOTERS_AMOUNT):
             for proposal_id in range(proposals_amount):
-                wallet.api.update_proposal_votes(voter, [proposal_id], True)
+                wallet.api.update_proposal_votes(f"voter-{voter_number}", [proposal_id], True)
 
 
 def call_list_proposal_votes(node: tt.InitNode, api: str, status: str) -> dict:
@@ -102,6 +101,14 @@ def create_account_and_proposal(
         f"subject-{account_name}",
         f"permlink-{account_name}",
     )
+
+
+def create_and_fund_voters(wallet, number_of_voters):
+    voters = get_account_names(wallet.create_accounts(number_of_voters, name_base="voter"))
+
+    with wallet.in_single_transaction():
+        for voter in voters:
+            wallet.api.transfer_to_vesting("initminer", voter, tt.Asset.Test(0.1))
 
 
 def get_account_names(accounts: List[tt.Account]) -> List[str]:
