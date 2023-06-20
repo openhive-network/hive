@@ -41,6 +41,8 @@ def assert_no_duplicates(node, *nodes):
 
 
 def connect_sub_networks(sub_networks : list):
+    if len(sub_networks) == 1:
+        return
     assert len(sub_networks) > 1
 
     current_idx = 0
@@ -54,6 +56,8 @@ def connect_sub_networks(sub_networks : list):
 
 
 def disconnect_sub_networks(sub_networks: list):
+    if len(sub_networks) == 1:
+        return
     assert len(sub_networks) > 1
 
     current_idx = 0
