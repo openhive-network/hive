@@ -1,9 +1,9 @@
 SET( WASM_COMPILE_MODE ON )
 
-ADD_HIVE_EXECUTABLE ( NAME beekeeper_local
+ADD_HIVE_EXECUTABLE ( NAME beekeeper_wasm
                       SOURCES
                       main.cpp
-                      beekeeper_local_app.cpp
+                      beekeeper_wasm_app.cpp
                       ../core/beekeeper_wallet.cpp
                       ../core/beekeeper_wallet_manager.cpp
                       ../core/beekeper_instance.cpp
@@ -17,4 +17,4 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper_local
                       LIBRARIES appbase
 )
 
-target_include_directories( beekeeper_local PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../core/include" )
+target_include_directories( beekeeper_wasm PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../core/include" )

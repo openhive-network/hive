@@ -1,2 +1,2 @@
 add_subdirectory( beekeeper )
-add_subdirectory( beekeeper_local )
+add_subdirectory( beekeeper_wasm )

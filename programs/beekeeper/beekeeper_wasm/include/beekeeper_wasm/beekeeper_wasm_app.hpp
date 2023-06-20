@@ -4,7 +4,7 @@
 
 namespace beekeeper {
 
-class beekeeper_local_app: public beekeeper_app_init
+class beekeeper_wasm_app: public beekeeper_app_init
 {
   private:
 
@@ -23,8 +23,8 @@ class beekeeper_local_app: public beekeeper_app_init
 
   public:
 
-    beekeeper_local_app();
-    ~beekeeper_local_app() override;
+    beekeeper_wasm_app();
+    ~beekeeper_wasm_app() override;
 };
 
 }
