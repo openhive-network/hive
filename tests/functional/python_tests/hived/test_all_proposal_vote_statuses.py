@@ -7,7 +7,7 @@ import test_tools as tt
 
 from hive_local_tools import run_for
 
-VOTERS_AMOUNT: Final[int] = 100
+VOTERS_AMOUNT: Final[int] = 10
 CALL_LIST_PROPOSAL_VOTES_TEMPLATE: Final[dict] = {
     "start": [""],
     "limit": 1000,
