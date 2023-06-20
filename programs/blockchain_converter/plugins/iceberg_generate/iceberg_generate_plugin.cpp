@@ -194,7 +194,7 @@ namespace detail {
 
     std::map< uint32_t, hp::share_type > init_assets;
 
-    fc::optional< hp::account_name_type > last_account_name;
+    fc::optional<hp::transaction_id_type> last_init_tx_id;
 
     // Pre-init: Detect required supply and dependent comments and accounts
     ilog("Checking required initial supply");
@@ -261,8 +261,6 @@ namespace detail {
               dependents_tx.operations.emplace_back(generate_vesting_for_account(acc));
               dependents_tx.operations.emplace_back(generate_hbd_transfer_for_account(acc));
               dependents_tx.operations.emplace_back(generate_hive_transfer_for_account(acc));
-
-              last_account_name = acc;
             }
 
           for( const auto& dependent_permlink_data : permlinks )
@@ -286,6 +284,7 @@ namespace detail {
           );
 
           transmit( *tx_converted, output_urls.at( 0 ) );
+          last_init_tx_id = tx_converted->get_transaction_id();
         }
 
         if( comments_tx.operations.size() > 0 )
@@ -300,6 +299,7 @@ namespace detail {
           );
 
           transmit( *tx_converted, output_urls.at( 0 ) );
+          last_init_tx_id = tx_converted->get_transaction_id();
         }
 
         print_progress( start_block_num - init_start_block_num, stop_block_num - init_start_block_num );
@@ -345,16 +345,16 @@ namespace detail {
 
     ilog("Initial supply requirements met");
 
-    if (last_account_name.valid())
+    if (last_init_tx_id.valid())
     {
-      ilog("Waiting for the '${last_account_name}' account creation...", (last_account_name));
-      while( !account_exists(output_urls.at(0), *last_account_name) && !appbase::app().is_interrupt_request() )
+      ilog("Waiting for the '${last_init_tx_id}' tx to be applied...", (last_init_tx_id));
+      while( !transaction_applied(output_urls.at(0), *last_init_tx_id) && !appbase::app().is_interrupt_request() )
       {
-        ilog("Account '${last_account_name}' does not exist. Retrying in one block interval...", (last_account_name));
+        ilog("Transaction '${last_init_tx_id}' has not been applied. Retrying in one block interval...", (last_init_tx_id));
         fc::usleep(fc::seconds(HIVE_BLOCK_INTERVAL));
       }
 
-      ilog("Account '${last_account_name}' created.", (last_account_name));
+      ilog("Transaction '${last_init_tx_id}' applied in block.", (last_init_tx_id));
     }
 
     start_block_num = init_start_block_num;

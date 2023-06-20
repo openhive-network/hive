@@ -195,14 +195,61 @@ namespace hive { namespace converter { namespace plugins {
 
   bool conversion_plugin_impl::account_exists( const fc::url& using_url, const hp::account_name_type& acc )
   {
+    return accounts_exist(using_url, { acc });
+  }
+
+  bool conversion_plugin_impl::accounts_exist( const fc::url& using_url, const std::vector<hp::account_name_type>& accs )
+  {
+    try
+    {
+      fc::variant accounts_v;
+      fc::to_variant(accs, accounts_v);
+
+      fc::http::connection local_output_con;
+      auto var_obj = post( local_output_con, using_url, "database_api.find_accounts", "{\"accounts\":" + fc::json::to_string(accounts_v) + ",\"delayed_votes_active\":true}" );
+
+      return var_obj.contains("accounts") && var_obj["accounts"].is_array() && var_obj["accounts"].get_array().size() == accs.size();
+    }
+    FC_CAPTURE_AND_RETHROW( (accs) )
+  }
+
+  bool conversion_plugin_impl::post_exists( const fc::url& using_url, const find_comments_pair_t& post )
+  {
+    return posts_exist(using_url, { post });
+  }
+
+  bool conversion_plugin_impl::posts_exist( const fc::url& using_url, const std::vector<find_comments_pair_t>& posts )
+  {
+    try
+    {
+      fc::variant accounts_v;
+      fc::to_variant(posts, accounts_v);
+
+      fc::http::connection local_output_con;
+      auto var_obj = post( local_output_con, using_url, "database_api.find_comments", "{\"comments\":" + fc::json::to_string(accounts_v) + '}' );
+
+      return var_obj.contains("comments") && var_obj["comments"].is_array() && var_obj["comments"].get_array().size() == posts.size();
+    }
+    FC_CAPTURE_AND_RETHROW( (posts) )
+  }
+
+  bool conversion_plugin_impl::transaction_applied( const fc::url& using_url, const hp::transaction_id_type& txid )
+  {
     try
     {
       fc::http::connection local_output_con;
-      auto var_obj = post( local_output_con, using_url, "database_api.find_accounts", "{\"accounts\":[\"" + acc + "\"],\"delayed_votes_active\":true}" );
+      auto var_obj = post( local_output_con, using_url, "transaction_status_api.find_transaction", "{\"transaction_id\":" + txid.str() + '}' );
 
-      return var_obj.contains("accounts") && var_obj["accounts"].is_array() && var_obj["accounts"].get_array().size() > 0;
+      if(var_obj.contains("status") && var_obj["status"].is_string())
+      {
+        const auto status = var_obj["status"].get_string();
+
+        return status == "within_reversible_block" || status == "within_irreversible_block";
+      }
+
+      return false;
     }
-    FC_CAPTURE_AND_RETHROW( (acc) )
+    FC_CAPTURE_AND_RETHROW( (txid) )
   }
 
   fc::variant_object conversion_plugin_impl::get_dynamic_global_properties( const fc::url& using_url )
