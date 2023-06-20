@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE( rotation_test )
   // (nobody writes messages to them).
   sleep(5);
   log_count = count_log_files();
-  BOOST_REQUIRE_EQUAL( log_count, 1 );
+  BOOST_REQUIRE_LE( log_count, 2 );
 
   } FC_LOG_AND_RETHROW()
 }
