@@ -45,21 +45,18 @@ void beekeeper_app_init::set_program_options()
     ;
 }
 
-void beekeeper_app_init::save_keys( const std::string& token, const std::string& wallet_name, const std::string& wallet_password )
+bool beekeeper_app_init::save_keys( const std::string& token, const std::string& wallet_name, const std::string& wallet_password )
 {
+  bool _result = true;
+
   if( token.empty() || wallet_name.empty() || wallet_password.empty() )
-    return;
+    return _result;
 
   const std::string _filename = wallet_name + ".keys";
 
   ilog("Try to save keys into `${_filename}` file.", (_filename));
 
-  BOOST_SCOPE_EXIT(&wallet_manager_ptr, &token, &wallet_name)
-  {
-    wallet_manager_ptr->lock( token, wallet_name );
-  } BOOST_SCOPE_EXIT_END
-
-  try
+  auto _save_keys = [&]()
   {
     wallet_manager_ptr->unlock( token, wallet_name, wallet_password );
     auto _keys = wallet_manager_ptr->list_keys( token, wallet_name, wallet_password );
@@ -75,25 +72,49 @@ void beekeeper_app_init::save_keys( const std::string& token, const std::string&
     fc::json::save_to_file( _result, _file );
 
     ilog( "Keys have been saved.", (_filename) );
-    return;
-  }
-  catch ( const boost::exception& e )
+  };
+
+  auto _lock_wallet = [this, &token, &wallet_name]()
   {
-    wlog( boost::diagnostic_information(e) );
-  }
-  catch ( const fc::exception& e )
+    wallet_manager_ptr->lock( token, wallet_name );
+  };
+
+  auto _exec_action = [&_filename, &_result]( std::function<void()>&& call )
   {
-    wlog( e.to_detail_string() );
-  }
-  catch ( const std::exception& e )
+    try
+    {
+      call();
+    }
+    catch ( const boost::exception& e )
+    {
+      _result = false;
+      wlog( boost::diagnostic_information(e) );
+    }
+    catch ( const fc::exception& e )
+    {
+      _result = false;
+      wlog( e.to_detail_string() );
+    }
+    catch ( const std::exception& e )
+    {
+      _result = false;
+      wlog( e.what() );
+    }
+    catch ( ... )
+    {
+      _result = false;
+      wlog( "Unknown error. Saving keys into a `${_filename}` file failed.",(_filename) );
+    }
+  };
+
+  BOOST_SCOPE_EXIT(&wallet_manager_ptr, &_exec_action, &_lock_wallet)
   {
-    wlog( e.what() );
-  }
-  catch ( ... )
-  {
-    wlog( "Unknown error. Saving keys into a `${_filename}` file failed.",(_filename) );
-  }
-  wlog( "A problem occured during saving keys into `${_filename}` file.", (_filename) );
+    _exec_action( _lock_wallet );
+  } BOOST_SCOPE_EXIT_END
+
+  _exec_action( _save_keys );
+
+  return _result;
 }
 
 std::pair<bool, std::string> beekeeper_app_init::initialize_program_options()
@@ -140,9 +161,9 @@ std::pair<bool, std::string> beekeeper_app_init::initialize_program_options()
 
       FC_ASSERT( _args.count("export-keys-wallet-name") );
       FC_ASSERT( _args.count("export-keys-wallet-password") );
-      save_keys( _token, _args.at( "export-keys-wallet-name" ).as<std::string>(), _args.at( "export-keys-wallet-password" ).as<std::string>() );
+      bool _result = save_keys( _token, _args.at( "export-keys-wallet-name" ).as<std::string>(), _args.at( "export-keys-wallet-password" ).as<std::string>() );
 
-      return { true, _token };
+      return { _result, _token };
   } FC_LOG_AND_RETHROW()
 }
 
