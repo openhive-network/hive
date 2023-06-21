@@ -20,7 +20,7 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper
                       LIBRARIES appbase webserver_plugin hive_utilities
 )
 
-target_include_directories( beekeeper PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../extension/include" "${CMAKE_CURRENT_SOURCE_DIR}/../core/include" )
+target_include_directories( beekeeper PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../core/include" )
 
 if( UNIX AND NOT APPLE )
   set(rt_library rt )
