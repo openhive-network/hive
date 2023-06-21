@@ -250,7 +250,7 @@ void database::load_state_initial_data(const open_args& args)
       "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
       ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
 
-      // mtlk  _fork_db.start_block(head_block);
+      _fork_db.start_block(head_block);
   }
 
   with_read_lock([&]() {
