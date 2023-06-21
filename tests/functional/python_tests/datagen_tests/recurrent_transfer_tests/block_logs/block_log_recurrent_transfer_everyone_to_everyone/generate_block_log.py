@@ -61,7 +61,7 @@ def prepare_block_log():
     )
     tt.logger.info("All accounts founded")
 
-    tt.logger.info(f"created accounts: {node.api.condenser.get_account_count()}")
+    tt.logger.info(f"created accounts: {len(wallet.list_accounts())}")
     tt.logger.info(f"maximum_block_size: {node.api.database.get_witness_schedule()['median_props']['maximum_block_size']}")
 
     time_before_operations = __get_head_block_time(node)
