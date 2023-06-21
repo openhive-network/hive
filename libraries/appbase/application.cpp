@@ -254,22 +254,29 @@ void application::set_program_options()
   my->_app_options.add(app_cfg_opts);
   my->_app_options.add(app_cli_opts);
 
+  set_plugin_options( &my->_app_options, &my->_cfg_options );
+}
+
+void application::set_plugin_options(
+  bpo::options_description*  app_options,
+  bpo::options_description*  cfg_options ) const
+{
   for(auto& plug : plugins) {
     options_description_ex plugin_cli_opts("Command Line Options for " + plug.second->get_name());
     options_description_ex plugin_cfg_opts("Config Options for " + plug.second->get_name());
     plug.second->set_program_options(plugin_cli_opts, plugin_cfg_opts);
     if(plugin_cli_opts.options().size())
-      my->_app_options.add(plugin_cli_opts);
+      app_options->add(plugin_cli_opts);
     if(plugin_cfg_opts.options().size())
     {
-      my->_cfg_options.add(plugin_cfg_opts);
+      cfg_options->add(plugin_cfg_opts);
 
       for(const boost::shared_ptr<bpo::option_description>& od : plugin_cfg_opts.options())
       {
         // If the config option is not already present as a cli option, add it.
         if( plugin_cli_opts.find_nothrow( od->long_name(), false ) == nullptr )
         {
-          my->_app_options.add( od );
+          app_options->add( od );
         }
       }
     }

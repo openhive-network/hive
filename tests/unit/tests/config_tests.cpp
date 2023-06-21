@@ -2,14 +2,14 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "../db_fixture/config_fixture.hpp"
+#include "../db_fixture/hived_fixture.hpp"
 
 #include <boost/range/combine.hpp>
 
 using namespace hive::chain;
 
 typedef std::vector< std::string > pattern_t;
-void verify_logging_config_against_pattern( const config_fixture& cf, 
+void verify_logging_config_against_pattern( const hived_fixture& cf, 
   const pattern_t& appender_pattern,
   const pattern_t& logger_pattern )
 {
@@ -35,7 +35,7 @@ void verify_logging_config_against_pattern( const config_fixture& cf,
   }
 }
 
-BOOST_FIXTURE_TEST_SUITE( config_tests, config_fixture )
+BOOST_FIXTURE_TEST_SUITE( config_tests, hived_fixture )
 
 BOOST_AUTO_TEST_CASE( default_logging_config_test )
 { try {
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE( custom_logging_config_test )
 
   BOOST_TEST_MESSAGE( "Verifying logging-related settings from custom config.ini" );
   // Use non-default values for every available attribute.
-  postponed_init( { config_arg_override_t::value_type( {"log-appender", {
+  postponed_init( { config_line_t( {"log-appender", {
     R"~({"appender":"stderr","stream":"std_error","time_format":"milliseconds_since_hour"})~",
     R"~({"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"milliseconds_since_epoch","delta_times":true,"flush":false,})~",
     R"~({"appender":"3","file":"logs/p2p/p3p.log","time_format":"iso_8601_seconds","rotate":false})~",
@@ -93,12 +93,12 @@ BOOST_AUTO_TEST_CASE( rotation_test )
 
   postponed_init( { 
     // Set extremely low rotation values (1s/5s).
-    config_arg_override_t::value_type( {"log-appender", {
+    config_line_t( {"log-appender", {
       R"~({"appender":"stderr","stream":"std_error","time_format":"iso_8601_microseconds"})~",
       R"~({"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds","rotation_interval":1,"rotation_limit":5})~"
     } } ),
     // Add p2p appender to default logger's appenders list.
-    config_arg_override_t::value_type( {"log-logger", {
+    config_line_t( {"log-logger", {
       R"~({"name":"default","level":"info","appenders":["stderr","p2p"]})~",
       R"~({"name":"user","level":"debug","appender":"stderr"})~", // checking handling of obsolete form.
       R"~({"name":"p2p","level":"warn","appenders":[]})~" // checking handling of empty list of appenders.

@@ -11,12 +11,12 @@
 #include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
 #include <hive/plugins/market_history_api/market_history_api.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/hived_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::protocol;
 
-BOOST_FIXTURE_TEST_SUITE( market_history, database_fixture )
+BOOST_FIXTURE_TEST_SUITE( market_history, hived_fixture )
 
 BOOST_AUTO_TEST_CASE( mh_test )
 {
@@ -24,28 +24,20 @@ BOOST_AUTO_TEST_CASE( mh_test )
 
   try
   {
-    market_history_api* mh_api = nullptr;
-    auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
-    {
-      app.register_plugin< market_history_plugin >();
-      app.register_plugin< market_history_api_plugin >();
-      db_plugin = &app.register_plugin< hive::plugins::debug_node::debug_node_plugin >();
+    market_history_api_plugin* mh_plug = nullptr;
 
-      db_plugin->logging = false;
-      app.initialize<
-        hive::plugins::market_history::market_history_plugin,
-        hive::plugins::market_history::market_history_api_plugin,
-        hive::plugins::debug_node::debug_node_plugin
-      >( argc, argv );
+    postponed_init(
+      { 
+        config_line_t( { "plugin",
+          { HIVE_MARKET_HISTORY_PLUGIN_NAME, HIVE_MARKET_HISTORY_API_PLUGIN_NAME } } )
+      },
+      &mh_plug );
 
-      db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
-      mh_api = app.get_plugin< market_history_api_plugin >().api.get();
-      BOOST_REQUIRE( db );
-    } );
+    market_history_api* mh_api = mh_plug->api.get();
 
     init_account_pub_key = init_account_priv_key.get_public_key();
 
-    open_database( _data_dir );
+    open_database( get_data_dir() );
 
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );
