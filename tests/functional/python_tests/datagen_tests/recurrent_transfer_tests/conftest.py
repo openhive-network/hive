@@ -28,7 +28,7 @@ def replayed_node() -> ReplayedNodeMaker:
             time_offset += f" x{time_multiplier}"
 
         node = tt.InitNode()
-        node.config.shared_file_size = "16G"
+        node.config.shared_file_size = "3G"
         node.run(
             time_offset=time_offset,
             replay_from=block_log_directory / "block_log",
