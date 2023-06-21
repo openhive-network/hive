@@ -1,6 +1,6 @@
 file(GLOB HEADERS "database_fixture.hpp")
 set(SOURCES database_fixture.cpp
-            config_fixture.cpp)
+            hived_fixture.cpp)
 
 find_package( Gperftools QUIET )
 if( GPERFTOOLS_FOUND )
@@ -25,4 +25,5 @@ target_link_libraries(db_fixture
                       debug_node_plugin
                       condenser_api_plugin
                       fc
+                      hive_plugins
                       ${PLATFORM_SPECIFIC_LIBS})
