@@ -26,7 +26,7 @@ def prepare_block_log():
       4) waiting to be processed recurrent transfers.
     """
     node = tt.InitNode()
-    node.config.shared_file_size = "16G"
+    node.config.shared_file_size = "3G"
     node.run(time_offset="+0 x15")
 
     wallet = tt.Wallet(attach_to=node)
