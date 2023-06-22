@@ -52,7 +52,6 @@
 #include <deque>
 #include <fstream>
 #include <functional>
-#include "hive/chain/block_log.hpp"
 
 #include <stdlib.h>
 
@@ -131,15 +130,7 @@ database_impl::database_impl( database& self )
   : _self(self), _evaluator_registry(self), _req_action_evaluator_registry(self), _opt_action_evaluator_registry(self) {}
 
 database::database()
-  : database(std::make_unique<block_log>())
-  {}
-
-database::database(std::unique_ptr<IBlockProvider> blocklog_provider_ptr)
-  : _my( new database_impl(*this) )
-  , _block_log_ptr(std::move(blocklog_provider_ptr))
-  , _block_log((*_block_log_ptr))
-   {}
-
+  : _my( new database_impl(*this) ) {}
 
 database::~database()
 {
