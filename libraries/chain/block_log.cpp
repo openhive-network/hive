@@ -193,7 +193,12 @@ namespace hive { namespace chain {
       }
 
       if (auto_open_artifacts)
-        my->_artifacts = block_log_artifacts::open(file, read_only, *this, head_block_num);
+      {
+        if(read_only)
+          my->_artifacts = block_log_artifacts::open(file, *this, head_block_num, true);
+        else
+          my->_artifacts = block_log_artifacts::open(file, *this, head_block_num, false);
+      }
   }
 
   void block_log::close()

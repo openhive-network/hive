@@ -54,17 +54,21 @@ public:
 
   ~block_log_artifacts();
 
-  /** Allows to open a block log aartifacts file located in the same directory as specified block_log file itself.
+  /** Allows to open a block log artifacts file with read and write rights located in the same directory as specified block_log file itself.
   *   \param block_log_file_path location of source block_log file
-  *   \param read_only - if set, already existing artifacts file must match to pointed block log.
   *   \param source_block_provider - provides a block data to generate artifact file.
   *   \param head_block_num - max block number (head block) contained by given block_log.
+  *   \param read_only - determines if artifacts file are open in read_only mode.
   *   Built instance of `block_log_artifacts` will be automaticaly closed before destruction.
   * 
   *   Function throws on any error f.e. related to IO.
   */
-  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, const bool read_only,
-                                        const block_log& source_block_provider, const uint32_t head_block_num);
+  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, const block_log& source_block_provider, const uint32_t head_block_num, const bool read_only);
+
+  /** Allows to open a block log artifacts file in read only mode.
+  * \param block_log_artifacts_file_path - path to directory where artifacts file exists.
+  */
+  static block_log_artifacts_ptr_t open_read_only(const fc::path& block_log_artifacts_file_path);
 
   /// Allows to read a number of last block the artifacts are stored for.
   uint32_t read_head_block_num() const;

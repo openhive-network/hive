@@ -576,14 +576,11 @@ bool get_block(const fc::path& block_log_filename, uint32_t block_number, bool h
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_artifacts(const fc::path& block_artifacts_filename, const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, bool header_only)
+bool get_block_artifacts(const fc::path& block_log_artifacts_file_path, const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, bool header_only)
 {
   try
   {
-    fc::path block_log_filename = fc::path(block_artifacts_filename.parent_path().string() + "/" + "block_log");
-    hive::chain::block_log block_log;
-    block_log.open(block_log_filename, true, false);
-    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_filename, true, block_log, block_log.head()->get_block_num());
+    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open_read_only(block_log_artifacts_file_path);
     {
       const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
       if (starting_block_number && *starting_block_number > artifacts_block_head_num)

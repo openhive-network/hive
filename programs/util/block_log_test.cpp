@@ -26,7 +26,7 @@ void generate_artifacts(const fc::path& block_log_path, uint32_t blocks_to_proce
     blocks_to_process = head_block->get_block_num();
   }
 
-  auto bla = block_log_artifacts::open(block_log_path, false, bl, blocks_to_process);
+  auto bla = block_log_artifacts::open(block_log_path, bl, blocks_to_process, false);
 
   bla.reset();
 
