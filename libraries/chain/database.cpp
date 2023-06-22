@@ -171,23 +171,23 @@ void database::state_independent_open( const open_args& args)
   initialize_state_independent_data(args);
 }
 
-void database::state_dependent_open( const open_args& args)
+void database::state_dependent_open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func)
 {
     load_state_initial_data(args);
 }
 
-void full_database::state_dependent_open( const open_args& args )
+void full_database::state_dependent_open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func )
 {
     open_block_log(args);
     database::state_dependent_open(args);
 }
 
-void database::open( const open_args& args)
+void database::open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func)
 {
   try
   {
     state_independent_open(args);
-    state_dependent_open(args);
+    state_dependent_open(args, get_head_block_func);
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
@@ -240,7 +240,7 @@ void full_database::open_block_log(const open_args& args)
 }
 
 
-void database::load_state_initial_data(const open_args& args)
+void database::load_state_initial_data(const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func)
 {
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
@@ -276,7 +276,7 @@ void database::load_state_initial_data(const open_args& args)
 
   if (head_block_num())
   {
-    std::shared_ptr<full_block_type> head_block = get_head_block();
+    std::shared_ptr<full_block_type> head_block = get_head_block_func(*this);
     // This assertion should be caught and a reindex should occur
     FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
     "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
@@ -7603,10 +7603,6 @@ std::vector<block_id_type> full_database::get_block_ids(const std::vector<block_
   return result;
 }
 
-std::shared_ptr<full_block_type> full_database::get_head_block() const
-{
-  return _block_log.read_block_by_num(head_block_num());
-}
 
 } } //hive::chain
 

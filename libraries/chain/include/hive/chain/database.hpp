@@ -189,11 +189,13 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      void open( const open_args& args );
+    void open( const open_args& args,
+                std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func = {}
+               );
     private:      
       void state_independent_open( const open_args& args);
     protected:
-      virtual void state_dependent_open( const open_args& args);
+      virtual void state_dependent_open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func = {});
 
     private:
 
@@ -212,7 +214,9 @@ namespace chain {
     public:
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
-      void load_state_initial_data(const open_args& args);
+      void load_state_initial_data(
+          const open_args& args,
+          std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func = {});
 
 
       /**
@@ -588,7 +592,6 @@ namespace chain {
 
       void resetState(const open_args& args);
 
-      virtual std::shared_ptr<full_block_type> get_head_block() const = 0;
 
       void init_schema();
       void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
@@ -948,7 +951,7 @@ public:
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
   private:
-      void state_dependent_open( const open_args& args) override;
+      void state_dependent_open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func = {}) override;
 
   private:
     bool is_included_block_unlocked(const block_id_type& block_id);
@@ -995,7 +998,7 @@ public:
     std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
     std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
     std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
-    std::shared_ptr<full_block_type> get_head_block() const override;
+    
   private:
     void migrate_irreversible_state_perform(uint32_t old_last_irreversible) override; 
 
