@@ -411,9 +411,13 @@ void chain_plugin_impl::start_write_processing()
           if (!is_running()) // we woke because the node is shutting down
             break;
           if (wait_timed_out) // we timed out, restart the while loop to print a "No P2P data" message
+            {
+            ilog("AAA EMPTY QUEUE");
             continue;
+            }
           // otherwise, we woke because the write_queue is non-empty
           cxt = write_queue.front();
+          ilog("AAA write_queue POP 1");
           write_queue.pop();
         }
 
@@ -439,6 +443,7 @@ void chain_plugin_impl::start_write_processing()
           {
             req_visitor.cxt = cxt;
             cxt->req_ptr.visit( req_visitor );
+            ilog("AAA END VISIT ");
 
             ++write_queue_items_processed;
 
@@ -483,6 +488,7 @@ void chain_plugin_impl::start_write_processing()
               }
               cxt = write_queue.front();
               write_queue.pop();
+              ilog("AAA write_queue POP 2");
             }
 
             last_popped_item_time = fc::time_point::now();
