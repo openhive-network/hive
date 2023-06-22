@@ -192,6 +192,11 @@ namespace chain {
         apply_block(full_block, skip );
       }
 
+      void public_reset_fork_db()
+      {
+        _fork_db.reset();
+      }
+
     private:
 
       uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& full_block );
