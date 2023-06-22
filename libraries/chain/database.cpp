@@ -4019,12 +4019,7 @@ void database::initialize_irreversible_storage()
 void database::resetState(const open_args& args)
 {
   wipe(args.data_dir, args.shared_mem_dir, false);
-  open(args,
-    [](const database& db_instance)
-    {
-       return db_instance.get_head_block(); 
-    }
-  );
+  open(args);
 }
 
 const std::string& database::get_json_schema()const
