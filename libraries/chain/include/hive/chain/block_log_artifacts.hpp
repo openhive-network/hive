@@ -63,8 +63,8 @@ public:
   * 
   *   Function throws on any error f.e. related to IO.
   */
-  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, bool read_only,
-                                        const block_log& source_block_provider, uint32_t head_block_num);
+  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, const bool read_only,
+                                        const block_log& source_block_provider, const uint32_t head_block_num);
 
   /// Allows to read a number of last block the artifacts are stored for.
   uint32_t read_head_block_num() const;

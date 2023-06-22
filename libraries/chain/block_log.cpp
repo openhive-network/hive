@@ -711,71 +711,85 @@ namespace hive { namespace chain {
     ilog("Block position list walk finished in time: ${et} ms.", ("et", elapsed_time/1000));
   }
 
-  // calls your callback with every block, in reverse order
-  void block_log::for_each_block_reverse(reverse_block_processor_t processor) const
+  void block_log::read_blocks_data_for_artifacts_generation(artifacts_generation_processor processor, const uint32_t target_block_number, const uint32_t starting_block_number,
+                                                            const fc::optional<uint64_t> starting_block_position) const
   {
+    FC_ASSERT(target_block_number < starting_block_number);
+    FC_ASSERT(target_block_number != 0);
     FC_ASSERT(is_open(), "Open block log first!");
+    FC_ASSERT(my->block_log_size, "Cannot process blocks from empty block_log.");
 
-    if (my->block_log_size == 0)
-      return; /// Nothing to do for empty block log.
-
-    fc::time_point iteration_begin = fc::time_point::now();
-    std::shared_ptr<full_block_type> head_block = my->head;
+    const std::shared_ptr<full_block_type> head_block = my->head;
     FC_ASSERT(head_block);
-    
-    uint32_t head_block_num = head_block->get_block_num();
-    
+
+    const uint32_t head_block_num = head_block->get_block_num();
+    FC_ASSERT(starting_block_number <= head_block_num);
+
+    uint64_t block_position = 0;
+    uint32_t current_block_num = starting_block_number;
+
+    const bool starting_from_head_block = starting_block_number == head_block_num;
+
+    if (starting_from_head_block)
+      block_position = my->block_log_size;
+    else
+    {
+      FC_ASSERT(starting_block_position, "if starting_block_number is not head block, starting_block_position is mandatory");
+      block_position = *starting_block_position;
+      --current_block_num;
+    }
+
     // memory map for block log
     char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
     if (block_log_ptr == (char*)-1)
       FC_THROW("Failed to mmap block log file: ${error}", ("error", strerror(errno)));
     if (madvise(block_log_ptr, my->block_log_size, MADV_WILLNEED) == -1)
       wlog("madvise failed: ${error}", ("error", strerror(errno)));
-    
-    // now walk backwards through the block log reading the starting positions of the blocks
-    uint64_t block_pos = my->block_log_size - sizeof(uint64_t);
 
-    ilog("Walking over block log starting from block: ${head_block_num}...", (head_block_num));
+    ilog("Processing blocks in reverse order for artifact file from block: ${starting_block_number} (position: ${block_position}, is head: ${starting_from_head_block} ) to ${target_block_number} ...",
+      (starting_block_number)(block_position)(starting_from_head_block)(target_block_number));
     
-    for (uint32_t block_num = head_block_num; block_num >= 1; --block_num)
+    block_position -= sizeof(uint64_t);
+    const fc::time_point start_time = fc::time_point::now();
+
+    while (current_block_num >= target_block_number)
     {
       // read the file offset of the start of the block from the block log
-      uint64_t higher_block_pos = block_pos;
+      uint64_t higher_block_position = block_position;
       // read next block pos offset from the block log
-      uint64_t block_pos_with_flags = *(uint64_t*)(block_log_ptr + block_pos);
-    
+      uint64_t block_position_with_flags = *(uint64_t*)(block_log_ptr + block_position);
       block_attributes_t attributes;
-      std::tie(block_pos, attributes) = detail::split_block_start_pos_with_flags(block_pos_with_flags);
+      std::tie(block_position, attributes) = detail::split_block_start_pos_with_flags(block_position_with_flags);
     
-      if (higher_block_pos <= block_pos) //this is a sanity check on index values stored in the block log
-        FC_THROW("bad block offset at block ${block_num} because higher block pos: ${higher_block_pos} <= lower block pos: ${block_pos}",
-                 (block_num)(higher_block_pos)(block_pos));
+      if (higher_block_position <= block_position) //this is a sanity check on index values stored in the block log
+        FC_THROW("bad block offset at block ${current_block_num} because higher block pos: ${higher_block_pos} <= lower block pos: ${block_position}",
+                 (current_block_num)(higher_block_position)(block_position));
     
-      uint32_t block_serialized_data_size = higher_block_pos - block_pos;
+      uint32_t block_serialized_data_size = higher_block_position - block_position;
     
       std::unique_ptr<char[]> serialized_data(new char[block_serialized_data_size]);
-      memcpy(serialized_data.get(), block_log_ptr + block_pos, block_serialized_data_size);
+      memcpy(serialized_data.get(), block_log_ptr + block_position, block_serialized_data_size);
       std::shared_ptr<full_block_type> full_block = attributes.flags == block_flags::uncompressed ? 
           full_block_type::create_from_uncompressed_block_data(std::move(serialized_data), block_serialized_data_size) : 
           full_block_type::create_from_compressed_block_data(std::move(serialized_data), block_serialized_data_size, attributes);
-    
-      if (!processor(block_num, full_block, block_pos, attributes))
+
+      if (!processor(full_block, block_position, current_block_num, attributes))
       {
-        ilog("Stopping block position list walk on caller request... Last processed block: ${block_num}", (block_num));
+        ilog("Block log reading for artifacts stopped on caller request. Last read block: ${current_block_num}", (current_block_num));
         break;
       }
     
       /// Move to the offset of previous block
-      block_pos -= sizeof(uint64_t);
+      block_position -= sizeof(uint64_t);
+      --current_block_num;
     }
     
     if (munmap(block_log_ptr, my->block_log_size) == -1)
       elog("error unmapping block_log: ${error}", ("error", strerror(errno)));
     
-    fc::time_point iteration_end = fc::time_point::now();
-    fc::microseconds iteration_duration = iteration_end - iteration_begin;
-
-    ilog("Block log walk finished in time: ${iteration_duration} s.", ("iteration_duration", iteration_duration.count() / 1000000));
+    const fc::time_point end_time = fc::time_point::now();
+    const fc::microseconds iteration_duration = end_time - start_time;
+    ilog("Block log reading for artifacts finished in time: ${iteration_duration} s.", ("iteration_duration", iteration_duration.count() / 1000000));
   }
 
   void block_log::for_each_block(uint32_t starting_block_number, uint32_t ending_block_number,

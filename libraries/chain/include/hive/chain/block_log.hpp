@@ -105,9 +105,10 @@ namespace hive { namespace chain {
       void for_each_block_position(block_info_processor_t processor) const;
 
       /// return true to continue processing, false to stop iteration.
-      typedef std::function<bool(uint32_t, const std::shared_ptr<full_block_type>&, uint64_t, block_attributes_t)> reverse_block_processor_t;
+      typedef std::function<bool(const std::shared_ptr<full_block_type>&, const uint64_t, const uint32_t, const block_attributes_t)> artifacts_generation_processor;
       /// processes blocks in REVERSE order.  This only reads the block_log file, and can be used for rebuilding the artifacts/index file
-      void for_each_block_reverse(reverse_block_processor_t processor) const;
+      void read_blocks_data_for_artifacts_generation(artifacts_generation_processor processor, const uint32_t target_block_number, const uint32_t starting_block_number,
+                                                     const fc::optional<uint64_t> starting_block_position = fc::optional<uint64_t>()) const;
 
       /// return true to continue processing, false to stop iteration.
       typedef std::function<bool(const std::shared_ptr<full_block_type>&)> block_processor_t;
