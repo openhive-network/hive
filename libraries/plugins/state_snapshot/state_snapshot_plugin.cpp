@@ -1434,7 +1434,13 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   ilog("Setting chainbase revision to ${b} block... Loaded irreversible block is: ${lib}.", ("b", blockNo)("lib", last_irr_block));
 
   _mainDb.set_revision(blockNo);
-  _mainDb.load_state_initial_data(openArgs);
+  _mainDb.load_state_initial_data(openArgs,
+      [](const database& db_instance)
+    {
+       return db_instance.get_head_block(); 
+    }
+  );
+
 
   const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool) {});
   ilog("State snapshot load. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",

@@ -660,7 +660,13 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
-    db.open( db_open_args );
+    db.open( db_open_args,
+    [](const database& db_instance)
+    {
+       return db_instance.get_head_block(); 
+    }
+    );
+
 
     if( dump_memory_details )
     {
