@@ -186,11 +186,20 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      void open( const open_args& args );
-      
+      void open(
+          const open_args& args,
+          std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func =
+              [](const database& db) { return db.get_head_block(); }
+              );
+
       void public_apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing )
       {
         apply_block(full_block, skip );
+      }
+
+      void public_reset_fork_db()
+      {
+        _fork_db.reset();
       }
 
     private:
@@ -216,7 +225,10 @@ namespace chain {
       std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
-      void load_state_initial_data(const open_args& args);
+      void load_state_initial_data(
+          const open_args& args,
+          std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func =
+              [](const database& db) { return db.get_head_block(); });
 
       /**
         * @brief Check if replaying was finished and all blocks from `block_log` were processed.
@@ -622,6 +634,8 @@ namespace chain {
       std::string get_current_decoded_types_data_json();
 
       void resetState(const open_args& args);
+
+      std::shared_ptr<full_block_type> get_head_block() const;
 
       void init_schema();
       void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
