@@ -1284,6 +1284,8 @@ void chain_plugin::generate_block( const std::shared_ptr< generate_block_flow_co
   write_context cxt;
   cxt.req_ptr = generate_block_ctrl;
 
+  const boost::chrono::steady_clock::time_point start = boost::chrono::steady_clock::now();
+
   std::shared_ptr<boost::promise<void>> generate_block_promise = std::make_shared<boost::promise<void>>();
   boost::unique_future<void> generate_block_future(generate_block_promise->get_future());
   generate_block_ctrl->attach_promise( generate_block_promise );
@@ -1294,7 +1296,25 @@ void chain_plugin::generate_block( const std::shared_ptr< generate_block_flow_co
   }
   my->queue_condition_variable.notify_one();
 
-  generate_block_future.get();
+  boost::future_status status = boost::future_status::deferred;
+  const boost::chrono::milliseconds delay(500);
+  do {
+    switch (status = generate_block_future.wait_for(delay); status)
+    {
+      case boost::future_status::deferred:
+        break;
+      case boost::future_status::timeout:
+      {
+        auto end = boost::chrono::steady_clock::now();
+        boost::chrono::milliseconds d = boost::chrono::duration_cast<boost::chrono::milliseconds>(end - start);
+        if(d > delay)
+          wlog("Evaluation of produced block takes too long: ${duration} ms", ("duration", d.count()));
+        break;
+      }
+      case boost::future_status::ready:
+        break;
+    }
+  } while (status != boost::future_status::ready);
 
   generate_block_ctrl->rethrow_if_exception();
 }
