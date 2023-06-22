@@ -67,7 +67,7 @@ namespace detail {
     void on_finish_push_block( const chain::block_notification& note );
 
     void schedule_production_loop();
-    block_production_condition::block_production_condition_enum block_production_loop();
+    block_production_condition::block_production_condition_enum block_production_loop(const boost::system::error_code& e);
     block_production_condition::block_production_condition_enum maybe_produce_block(fc::mutable_variant_object& capture);
 
     bool     _production_enabled              = false;
@@ -401,12 +401,22 @@ namespace detail {
     if (time_to_sleep < 50000) // we must sleep for at least 50ms
         time_to_sleep += BLOCK_PRODUCTION_LOOP_SLEEP_TIME;
 
-    _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ) );
-    _timer.async_wait( boost::bind( &witness_plugin_impl::block_production_loop, this ) );
+    boost::system::error_code error_code;
+    size_t tasks_canceled = _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ), error_code);
+    ilog("expires_from_now returned: ${tasks_canceled}, error_code: ${ec}", (tasks_canceled)("ec", error_code.message()));
+    _timer.async_wait(boost::bind(&witness_plugin_impl::block_production_loop, this, boost::asio::placeholders::error));
+
   }
 
-  block_production_condition::block_production_condition_enum witness_plugin_impl::block_production_loop()
+  block_production_condition::block_production_condition_enum witness_plugin_impl::block_production_loop(const boost::system::error_code& error_code)
   {
+    if (error_code == boost::asio::error::operation_aborted)
+    {
+      ilog("witness_plugin_impl::block_production_loop has been CANCELLED - exititing");
+      schedule_production_loop();
+      return block_production_condition::exception_producing_block;
+    }
+    
     if( fc::time_point::now() < fc::time_point(HIVE_GENESIS_TIME) )
     {
       wlog( "waiting until genesis time to produce block: ${t}", ("t",HIVE_GENESIS_TIME) );
@@ -420,9 +430,10 @@ namespace detail {
     {
       result = maybe_produce_block(capture);
     }
-    catch( const fc::canceled_exception& )
+    catch( const fc::canceled_exception& e)
     {
       //We're trying to exit. Go ahead and let this one out.
+      ilog("Got canceled_exception while generating block:\n${e}", ("e", e.to_detail_string()));
       throw;
     }
     catch( const chain::unknown_hardfork_exception& e )
@@ -436,6 +447,32 @@ namespace detail {
       elog("Got exception while generating block:\n${e}", ("e", e.to_detail_string()));
       result = block_production_condition::exception_producing_block;
     }
+    catch (const std::exception& e)
+    {
+      elog("Got exception while generating block:\n${e}", ("e", e.what()));
+      result = block_production_condition::exception_producing_block;
+    }
+    catch (...)
+    {
+      auto eptr = std::current_exception();
+      if (eptr)
+      {
+        try
+        {
+           std::rethrow_exception(eptr);
+        }
+        catch (const std::exception& ex)
+        {
+          elog("Got exception while generating block:\n${e}", ("e", ex.what()));
+        }
+      }
+      else
+      {
+        elog("Got UNKNOWN exception while generating block...");
+      }
+
+      result = block_production_condition::exception_producing_block;
+    }
 
     switch(result)
     {
@@ -444,13 +481,13 @@ namespace detail {
         
         break;
       case block_production_condition::not_synced:
-  //         ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
+           ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
         break;
       case block_production_condition::not_my_turn:
-  //         ilog("Not producing block because it isn't my turn");
+           ilog("Not producing block because it isn't my turn");
         break;
       case block_production_condition::not_time_yet:
-  //         ilog("Not producing block because slot has not yet arrived");
+           ilog("Not producing block because slot has not yet arrived");
         break;
       case block_production_condition::no_private_key:
         ilog("Not producing block because I don't have the private key for ${scheduled_key}", ("scheduled_key", capture["scheduled_key"]) );
