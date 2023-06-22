@@ -1,5 +1,6 @@
 import math
 from pathlib import Path
+from typing import Final
 
 import pytest
 
@@ -7,6 +8,8 @@ import test_tools as tt
 
 from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 from hive_local_tools.constants import MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
+
+TIME_MULTIPLIER: Final[int] = 45
 
 @pytest.mark.skip
 def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(replayed_node: ReplayedNodeMaker):
@@ -39,3 +42,40 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
 
     for account_name in all_accounts_names:
         assert replayed_node.api.wallet_bridge.find_recurrent_transfers(account_name) == []
+
+
+def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account_REPAIRED_VERSION():
+    block_log_directory = Path(__file__).parent / "block_logs/block_log_recurrent_transfer_everyone_to_everyone"
+
+    with open(block_log_directory / "timestamp", encoding='utf-8') as file:
+        timestamp = tt.Time.parse(file.read())
+
+    network = tt.Network()
+    replayed_node = tt.InitNode(network=network)
+    replayed_node.config.shared_file_size = "3G"
+    api_node = tt.ApiNode(network=network)
+    api_node.config.shared_file_size = "3G"
+
+    tt.logger.info("Start replay InitNode...")
+    replayed_node.run(replay_from=block_log_directory / 'block_log', exit_before_synchronization=True)
+    tt.logger.info("Finish replay InitNode")
+
+    tt.logger.info("Start replay ApiNode...")
+    api_node.run(replay_from=block_log_directory / 'block_log', exit_before_synchronization=True)
+    tt.logger.info("Finish replay ApiNode")
+
+    tt.logger.info("")
+    network.run(time_offset=tt.Time.serialize(timestamp + tt.Time.days(2),
+                                              format_=tt.Time.TIME_OFFSET_FORMAT) + f" x{TIME_MULTIPLIER}")
+
+    wallet = tt.Wallet(attach_to=api_node)
+
+    all_accounts_names = wallet.list_accounts()
+
+    block_number = math.ceil(len(all_accounts_names) * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK)
+    tt.logger.info(f"start waiting, headblock: {api_node.get_last_block_number()}, blocks to wait for: {block_number}")
+    api_node.wait_number_of_blocks(block_number)
+    tt.logger.info(f"finish waiting, headblock: {api_node.get_last_block_number()}")
+
+    for account_name in all_accounts_names:
+        assert api_node.api.wallet_bridge.find_recurrent_transfers(account_name) == []
