@@ -199,6 +199,7 @@ public:
 
   void update_head_block(uint32_t block_num)
   {
+    FC_ASSERT(_is_writable, "Block log artifacts was opened in read only mode.");
     _header.head_block_num = block_num;
   }
 
@@ -536,6 +537,7 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
 
 void block_log_artifacts::impl::truncate_file(uint32_t last_block)
 {
+  FC_ASSERT(_is_writable, "Block log artifacts was opened in read only mode.");
   auto last_chunk_position = calculate_offset(last_block);
   /// File truncate should be done just after last data chunk stored.
   auto truncate_position = last_chunk_position + artifact_chunk_size;
@@ -569,6 +571,7 @@ void block_log_artifacts::impl::process_block_artifacts(uint32_t block_num, uint
 void block_log_artifacts::impl::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos,
                                                       const block_attributes_t& block_attrs, const block_id_t& block_id)
 {
+  FC_ASSERT(_is_writable, "Block log artifacts was opened in read only mode.");
   artifact_file_chunk data_chunk;
   data_chunk.pack_data(block_log_file_pos, block_attrs);
   data_chunk.pack_block_id(block_num, block_id);
