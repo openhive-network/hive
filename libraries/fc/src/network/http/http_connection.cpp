@@ -36,7 +36,7 @@ class fc::http::connection::impl
       return (p-buffer);
    }
 
-   fc::http::reply parse_reply() {
+   fc::http::reply parse_reply(const fc::string& method, const fc::string& url, const fc::string& body) {
       fc::http::reply rep;
       try {
         std::vector<char> line(1024*8);
@@ -65,7 +65,7 @@ class fc::http::connection::impl
         }
         return rep;
       } catch ( fc::exception& e ) {
-        elog( "${exception}", ("exception",e.to_detail_string() ) );
+        elog( "Http request: method: ${method}, body: ${body}, url: ${url} caught an exception: ${exception}", ("method", method)("body", body)("url", url)("exception", e.to_detail_string()));
         sock.close();
         rep.status = http::reply::InternalServerError;
         return rep;
@@ -125,7 +125,7 @@ http::reply connection::request( const fc::string& method,
       my->sock.close();
       return http::reply{};
     }
-    return my->parse_reply();
+    return my->parse_reply(method, url, body);
   } catch ( ... ) {
       my->sock.close();
       FC_THROW_EXCEPTION( exception, "Error Sending HTTP Request" ); // TODO: provide more info
