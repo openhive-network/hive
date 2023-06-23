@@ -15,11 +15,8 @@ endif(NOT HIVE_GIT_REVISION_DESCRIPTION)
 
 file(GLOB HEADERS "include/hive/utilities/*.hpp")
 
-set(sources_1
+set(sources
    notifications.cpp
-   ${HEADERS})
-
-set(sources_2
    benchmark_dumper.cpp
    string_escape.cpp
    tempdir.cpp
@@ -27,12 +24,7 @@ set(sources_2
    logging_config.cpp
    database_configuration.cpp
    io_primitives.cpp
-   )
-
-set( sources ${sources_1} )
-if(NOT WASM_COMPILE_MODE)
-  list(APPEND sources ${sources_2})
-endif()
+   ${HEADERS})
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/git_revision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp" @ONLY)
 list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")

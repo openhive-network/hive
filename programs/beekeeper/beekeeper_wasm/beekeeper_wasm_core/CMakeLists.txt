@@ -16,7 +16,4 @@ ADD_LIBRARY( beekeeper_wasm_core STATIC
 )
 
 TARGET_INCLUDE_DIRECTORIES( beekeeper_wasm_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../../core/include" )
-if( CMAKE_TOOLCHAIN_FILE )
-  TARGET_LINK_OPTIONS( beekeeper_wasm_core PUBLIC "-sFORCE_FILESYSTEM" )
-endif()
 TARGET_LINK_LIBRARIES( beekeeper_wasm_core appbase )
