@@ -403,7 +403,7 @@ namespace detail {
 
     boost::system::error_code error_code;
     size_t tasks_canceled = _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ), error_code);
-    ilog("expires_from_now returned: ${tasks_canceled}, error_code: ${ec}", (tasks_canceled)("ec", error_code.message()));
+    ilog("expires_from_now(${time_to_sleep}) returned: ${tasks_canceled}, error_code: ${ec}", ("time_to_sleep", time_to_sleep)(tasks_canceled)("ec", error_code.message()));
     _timer.async_wait(boost::bind(&witness_plugin_impl::block_production_loop, this, boost::asio::placeholders::error));
 
   }
