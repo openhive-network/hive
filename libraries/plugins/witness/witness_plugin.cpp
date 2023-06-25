@@ -16,7 +16,6 @@
 #include <fc/smart_ref_impl.hpp>
 
 #include <boost/asio.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <iostream>
 
@@ -26,6 +25,7 @@
 #define BLOCK_PRODUCTION_LOOP_SLEEP_TIME (200000)
 #define DEFAULT_WITNESS_PARTICIPATION (33)
 
+using namespace std::chrono_literals;
 
 namespace hive { namespace plugins { namespace witness {
 
@@ -77,7 +77,7 @@ namespace detail {
 
     std::map< hive::protocol::public_key_type, fc::ecc::private_key > _private_keys;
     std::set< hive::protocol::account_name_type >                     _witnesses;
-    boost::asio::deadline_timer                                        _timer;
+    boost::asio::steady_timer                                         _timer;
 
     plugins::chain::chain_plugin& _chain_plugin;
     chain::database&              _db;
@@ -396,14 +396,14 @@ namespace detail {
 
   void witness_plugin_impl::schedule_production_loop() {
     // Sleep for 200ms, before checking the block production
-    fc::time_point now = fc::time_point::now();
-    int64_t time_to_sleep = BLOCK_PRODUCTION_LOOP_SLEEP_TIME - (now.time_since_epoch().count() % BLOCK_PRODUCTION_LOOP_SLEEP_TIME);
+    auto now_micro = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now());
+
+    int64_t time_to_sleep = BLOCK_PRODUCTION_LOOP_SLEEP_TIME - (now_micro.time_since_epoch().count() % BLOCK_PRODUCTION_LOOP_SLEEP_TIME);
     if (time_to_sleep < 50000) // we must sleep for at least 50ms
         time_to_sleep += BLOCK_PRODUCTION_LOOP_SLEEP_TIME;
 
-    boost::system::error_code error_code;
-    size_t tasks_canceled = _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ), error_code);
-    ilog("expires_from_now(${time_to_sleep}) returned: ${tasks_canceled}, error_code: ${ec}", ("time_to_sleep", time_to_sleep)(tasks_canceled)("ec", error_code.message()));
+    size_t tasks_canceled = _timer.expires_after( std::chrono::microseconds( time_to_sleep ));
+    ilog("expires_from_now(${time_to_sleep}) returned: ${tasks_canceled}", ("time_to_sleep", time_to_sleep)(tasks_canceled));
     _timer.async_wait(boost::bind(&witness_plugin_impl::block_production_loop, this, boost::asio::placeholders::error));
 
   }
