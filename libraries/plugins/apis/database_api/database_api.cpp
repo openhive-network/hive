@@ -14,7 +14,6 @@
 #include <hive/utilities/git_revision.hpp>
 
 #include <hive/protocol/forward_impacted.hpp>
-#include <hive/plugins/database_api/consensus_state_provider_cache.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
 
@@ -2195,31 +2194,13 @@ namespace{
 }
 
 
-bool cache::has_context(const char* context) const
-{
-    return chain_databases.find(context) != chain_databases.end();
-}
-
-void cache::remove(const char* context)
-{
-    chain_databases.erase(context);
-}
 
 
-hive::chain::database& cache::get_db(const char* context) const
+hive::plugins::database_api::database_api_impl get_database_api_impl(csp_session_type* csp_session)
 {
-  return  *(chain_databases[context]);
+  return hive::plugins::database_api::database_api_impl(*csp_session->db);
 }
 
-hive::plugins::database_api::database_api_impl get_database_api_impl(const cache&,  const char* context)
-{
-  return hive::plugins::database_api::database_api_impl(*(chain_databases[context]));
-}
-
-void cache::add(const char* context, hive::chain::database* db)
-{
-  chain_databases.emplace(std::make_pair(std::string(context), std::unique_ptr<hive::chain::database>(db)));
-}
 
 collected_account_balances_t extract_account_balances(
     const hive::plugins::database_api::api_account_object& account)
@@ -2235,16 +2216,15 @@ collected_account_balances_t extract_account_balances(
   return account_balances;
 }
 
-collected_account_balances_collection_t collect_current_account_balances(
-    const std::vector<std::string>& account_names, const char* context)
+collected_account_balances_collection_t collect_current_account_balances(csp_session_type* csp_session,
+                                                                         const std::vector<std::string>& account_names)
 {
   using namespace hive::plugins::database_api;
   find_accounts_args find_args;
   for(const auto& account_name : account_names) 
     find_args.accounts.emplace_back(account_name);
 
-  database_api_impl db_api_impl =
-      get_database_api_impl(consensus_state_provider::get_cache(), context);
+  database_api_impl db_api_impl = get_database_api_impl(csp_session);
   auto found_accounts = db_api_impl.find_accounts(find_args);
 
   collected_account_balances_collection_t collected_balances;
@@ -2256,11 +2236,10 @@ collected_account_balances_collection_t collect_current_account_balances(
   return collected_balances;
 }
 
-collected_account_balances_collection_t collect_current_all_accounts_balances(const char* context)
+collected_account_balances_collection_t collect_current_all_accounts_balances(csp_session_type* csp_session)
 {
   using namespace hive::plugins::database_api;
-  database_api_impl db_api_impl =
-      get_database_api_impl(consensus_state_provider::get_cache(), context);
+  database_api_impl db_api_impl = get_database_api_impl(csp_session);
 
   list_accounts_args list_args;
   list_args.start = "";
@@ -2302,14 +2281,3 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(co
 }
 }  // namespace consensus_state_provider
 
-namespace
-{
-  consensus_state_provider::cache theCache;
-}
-
-
-
-consensus_state_provider::cache& consensus_state_provider::get_cache()
-{
-  return theCache;
-}
