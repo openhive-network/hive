@@ -36,7 +36,7 @@
 #include <fc/crypto/elliptic.hpp>
 #include <fc/reflect/variant.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 #include <cmath>
 

@@ -8,7 +8,7 @@
 #include <hive/protocol/exceptions.hpp>
 #include <hive/chain/database_exceptions.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::chain::util;

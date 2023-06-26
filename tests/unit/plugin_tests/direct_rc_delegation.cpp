@@ -10,7 +10,7 @@
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/rc/rc_operations.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 #include <chrono>
 

@@ -1,6 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/hive_objects.hpp>

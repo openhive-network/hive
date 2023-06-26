@@ -6,7 +6,7 @@
 
 #include <hive/chain/database_exceptions.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 using namespace hive;
 using namespace hive::chain;

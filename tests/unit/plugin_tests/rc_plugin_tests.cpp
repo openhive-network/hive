@@ -5,7 +5,7 @@
 #include <hive/chain/rc/rc_operations.hpp>
 #include <hive/chain/database_exceptions.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 #include <fc/log/appender.hpp>
 

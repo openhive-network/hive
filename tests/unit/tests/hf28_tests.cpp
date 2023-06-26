@@ -6,7 +6,7 @@
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/account_object.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::chain::util;

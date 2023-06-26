@@ -1,6 +1,7 @@
 file(GLOB HEADERS "database_fixture.hpp")
 set(SOURCES database_fixture.cpp
-            hived_fixture.cpp)
+            hived_fixture.cpp
+            clean_database_fixture.cpp)
 
 find_package( Gperftools QUIET )
 if( GPERFTOOLS_FOUND )
