@@ -12,56 +12,47 @@
 
 condenser_api_fixture::condenser_api_fixture()
 {
-  auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
-  {
-    // Set cashout values to absolute safe minimum to speed up the scenarios and their tests.
-    configuration_data.set_cashout_related_values( 0, 2, 4, 12, 1 );
-    configuration_data.set_feed_related_values( 1, 3*24*7 ); // see comment to set_feed_related_values
-    configuration_data.set_savings_related_values( 20 );
-    configuration_data.set_min_recurrent_transfers_recurrence( 1 );
-    configuration_data.set_generate_missed_block_operations( true );
-    configuration_data.set_witness_shutdown_threshold( 0 );
+  // Set cashout values to absolute safe minimum to speed up the scenarios and their tests.
+  configuration_data.set_cashout_related_values( 0, 2, 4, 12, 1 );
+  configuration_data.set_feed_related_values( 1, 3*24*7 ); // see comment to set_feed_related_values
+  configuration_data.set_savings_related_values( 20 );
+  configuration_data.set_min_recurrent_transfers_recurrence( 1 );
+  configuration_data.set_generate_missed_block_operations( true );
+  configuration_data.set_witness_shutdown_threshold( 0 );
 
-    ah_plugin = &app.register_plugin< ah_plugin_type >();
-    ah_plugin->set_destroy_database_on_startup();
-    ah_plugin->set_destroy_database_on_shutdown();
-    app.register_plugin< hive::plugins::account_history::account_history_api_plugin >();
-    app.register_plugin< hive::plugins::database_api::database_api_plugin >();
-    app.register_plugin< hive::plugins::condenser_api::condenser_api_plugin >();
-    db_plugin = &app.register_plugin< hive::plugins::debug_node::debug_node_plugin >();
+  hive::plugins::account_history::account_history_api_plugin* ah_api_plugin = nullptr;
+  hive::plugins::condenser_api::condenser_api_plugin* denser_api_plugin = nullptr;
+  hive::plugins::database_api::database_api_plugin* db_api_plugin = nullptr;
+  postponed_init(
+    { config_line_t( { "plugin",
+      { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
+        HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME,
+        HIVE_DATABASE_API_PLUGIN_NAME,
+        HIVE_CONDENSER_API_PLUGIN_NAME } } ) },
+    &ah_plugin,
+    &ah_api_plugin,
+    &db_api_plugin,
+    &denser_api_plugin
+  );
 
-    int test_argc = 1;
-    const char* test_argv[] = { boost::unit_test::framework::master_test_suite().argv[ 0 ] };
+  database_api = db_api_plugin->api;
+  BOOST_REQUIRE( database_api );
 
-    db_plugin->logging = false;
-    app.initialize<
-      ah_plugin_type,
-      hive::plugins::account_history::account_history_api_plugin,
-      hive::plugins::database_api::database_api_plugin,
-      hive::plugins::condenser_api::condenser_api_plugin,
-      hive::plugins::debug_node::debug_node_plugin >( test_argc, ( char** ) test_argv );
+  ah_plugin->set_destroy_database_on_startup();
+  ah_plugin->set_destroy_database_on_shutdown();
+  ah_plugin->plugin_startup();
 
-    db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
-    BOOST_REQUIRE( db );
-    database_api = app.get_plugin< hive::plugins::database_api::database_api_plugin >().api;
-    BOOST_REQUIRE( database_api );
+  ah_api_plugin->plugin_startup();
+  account_history_api = ah_api_plugin->api.get();
+  BOOST_REQUIRE( account_history_api );
 
-    ah_plugin->plugin_startup();
-
-    auto& account_history = app.get_plugin< hive::plugins::account_history::account_history_api_plugin > ();
-    account_history.plugin_startup();
-    account_history_api = account_history.api.get();
-    BOOST_REQUIRE( account_history_api );
-
-    auto& condenser = app.get_plugin< hive::plugins::condenser_api::condenser_api_plugin >();
-    condenser.plugin_startup(); //has to be called because condenser fills its variables then
-    condenser_api = condenser.api.get();
-    BOOST_REQUIRE( condenser_api );
-  } );
+  denser_api_plugin->plugin_startup(); //has to be called because condenser fills its variables then
+  condenser_api = denser_api_plugin->api.get();
+  BOOST_REQUIRE( condenser_api );
 
   init_account_pub_key = init_account_priv_key.get_public_key();
 
-  open_database( _data_dir/*, shared_file_size_in_mb_512*/ );
+  open_database( get_data_dir()/*, shared_file_size_in_mb_512*/ );
 
   generate_block();
   validate_database();

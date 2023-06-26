@@ -6,7 +6,7 @@
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/hived_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::protocol;

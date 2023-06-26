@@ -3,38 +3,27 @@
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/database_api/database_api.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/hived_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::protocol;
 
-struct database_api_fixture : database_fixture
+struct database_api_fixture : hived_fixture
 {
   database_api_fixture()
   {
-    auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
-    {
-      app.register_plugin< hive::plugins::database_api::database_api_plugin >();
-      db_plugin = &app.register_plugin< hive::plugins::debug_node::debug_node_plugin >();
+    hive::plugins::database_api::database_api_plugin* db_api_plugin = nullptr;
+    postponed_init(
+      { config_line_t( { "plugin", { HIVE_DATABASE_API_PLUGIN_NAME } } ) },
+      &db_api_plugin
+    );
 
-      int test_argc = 1;
-      const char* test_argv[] = { boost::unit_test::framework::master_test_suite().argv[ 0 ] };
-
-      db_plugin->logging = false;
-      app.initialize<
-        hive::plugins::database_api::database_api_plugin,
-        hive::plugins::debug_node::debug_node_plugin >( test_argc, ( char** ) test_argv );
-
-      db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
-      BOOST_REQUIRE( db );
-
-      database_api = app.get_plugin< hive::plugins::database_api::database_api_plugin >().api.get();
-      BOOST_REQUIRE( database_api );
-    } );
+    database_api = db_api_plugin->api.get();
+    BOOST_REQUIRE( database_api );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
 
-    open_database( _data_dir );
+    open_database( get_data_dir() );
 
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );

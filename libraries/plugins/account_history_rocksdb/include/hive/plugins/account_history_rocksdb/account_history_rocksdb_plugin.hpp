@@ -9,6 +9,8 @@
 #include <functional>
 #include <memory>
 
+#define HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME "account_history_rocksdb"
+
 namespace hive {
 
 namespace plugins { namespace account_history_rocksdb {
@@ -25,7 +27,7 @@ public:
   account_history_rocksdb_plugin();
   virtual ~account_history_rocksdb_plugin();
 
-  static const std::string& name() { static std::string name = "account_history_rocksdb"; return name; }
+  static const std::string& name() { static std::string name = HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME; return name; }
 
   virtual void set_program_options(
     boost::program_options::options_description &command_line_options,

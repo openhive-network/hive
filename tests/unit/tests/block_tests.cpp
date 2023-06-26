@@ -1084,7 +1084,7 @@ BOOST_FIXTURE_TEST_CASE( skip_block, clean_database_fixture )
   FC_LOG_AND_RETHROW();
 }
 
-BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
+BOOST_FIXTURE_TEST_CASE( hardfork_test, hived_fixture )
 {
   try
   {
@@ -1098,27 +1098,21 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
 
     try {
 
-    auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
-    {
-      ah_plugin = &app.register_plugin< ah_plugin_type >();
-      ah_plugin->set_destroy_database_on_startup();
-      ah_plugin->set_destroy_database_on_shutdown();
-      db_plugin = &app.register_plugin< hive::plugins::debug_node::debug_node_plugin >();
+    ah_plugin_type* ah_plugin = nullptr;
 
-      app.initialize<
-        ah_plugin_type,
-        hive::plugins::debug_node::debug_node_plugin
-      >( argc, argv );
+    postponed_init(
+      { config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ) },
+      &ah_plugin
+    );
 
-      db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
-      BOOST_REQUIRE( db );
-    } );
+    ah_plugin->set_destroy_database_on_startup();
+    ah_plugin->set_destroy_database_on_shutdown();
 
     init_account_pub_key = init_account_priv_key.get_public_key();
 
     ah_plugin->plugin_startup();
 
-    open_database( _data_dir );
+    open_database( get_data_dir() );
 
     generate_blocks( 2 );
 
