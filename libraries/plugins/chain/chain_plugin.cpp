@@ -662,7 +662,6 @@ void chain_plugin_impl::open()
 
     db.open( db_open_args );
 
-
     if( dump_memory_details )
     {
       setup_benchmark_dumper();
