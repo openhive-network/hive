@@ -8,7 +8,7 @@
 #include <hive/plugins/transaction_status_api/transaction_status_api_plugin.hpp>
 #include <hive/plugins/transaction_status_api/transaction_status_api.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/hived_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::protocol;
@@ -18,7 +18,7 @@ using namespace hive::protocol;
 #define TRANSACTION_STATUS_TEST_BLOCK_DEPTH 30
 #define TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR BOOST_PP_STRINGIZE( TRANSACTION_STATUS_TEST_BLOCK_DEPTH )
 
-BOOST_FIXTURE_TEST_SUITE( transaction_status, database_fixture );
+BOOST_FIXTURE_TEST_SUITE( transaction_status, hived_fixture );
 
 BOOST_AUTO_TEST_CASE( transaction_status_test )
 {
@@ -29,43 +29,24 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     hive::plugins::transaction_status_api::transaction_status_api_plugin* tx_status_api = nullptr;
     hive::plugins::transaction_status::transaction_status_plugin* tx_status = nullptr;
 
-    auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
-    {
-      app.register_plugin< transaction_status_plugin >();
-      app.register_plugin< hive::plugins::transaction_status_api::transaction_status_api_plugin >();
-      db_plugin = &app.register_plugin< hive::plugins::debug_node::debug_node_plugin >();
-      rc_plugin = &app.register_plugin< hive::plugins::rc::rc_plugin >();
-
-      // We create an argc/argv so that the transaction_status plugin can be initialized with a reasonable block depth
-      int test_argc = 5;
-      const char* test_argv[] = {
-        boost::unit_test::framework::master_test_suite().argv[ 0 ],
-        "--transaction-status-block-depth",
-        TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR,
-        "--transaction-status-track-after-block",
-        TRANSCATION_STATUS_TRACK_AFTER_BLOCK_STR
-      };
-
-      db_plugin->logging = false;
-      app.initialize<
-        hive::plugins::transaction_status_api::transaction_status_api_plugin,
-        hive::plugins::debug_node::debug_node_plugin,
-        hive::plugins::rc::rc_plugin
-      >( test_argc, ( char** ) test_argv );
-
-      db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
-      BOOST_REQUIRE( db );
-
-      tx_status_api = &app.get_plugin< hive::plugins::transaction_status_api::transaction_status_api_plugin >();
-      BOOST_REQUIRE( tx_status_api );
-
-      tx_status = &app.get_plugin< hive::plugins::transaction_status::transaction_status_plugin >();
-      BOOST_REQUIRE( tx_status );
-    } );
+     postponed_init(
+      { 
+        config_line_t( { "plugin",
+          { HIVE_TRANSACTION_STATUS_PLUGIN_NAME,
+            HIVE_TRANSACTION_STATUS_API_PLUGIN_NAME,
+            HIVE_RC_PLUGIN_NAME } } ),
+        config_line_t( { "transaction-status-block-depth",
+          { TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR } } ),
+        config_line_t( { "transaction-status-track-after-block",
+          { TRANSCATION_STATUS_TRACK_AFTER_BLOCK_STR } } )
+      },
+      &tx_status_api,
+      &tx_status
+    );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
 
-    open_database( _data_dir );
+    open_database( get_data_dir() );
 
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );

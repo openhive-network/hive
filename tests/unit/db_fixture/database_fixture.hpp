@@ -530,26 +530,6 @@ struct dhf_database
   };
 };
 
-struct json_rpc_database_fixture : public database_fixture
-{
-  private:
-    hive::plugins::json_rpc::json_rpc_plugin* rpc_plugin;
-
-    fc::variant get_answer( std::string& request );
-    void review_answer( fc::variant& answer, int64_t code, bool is_warning, bool is_fail, fc::optional< fc::variant > id,
-      const char* message = nullptr );
-
-  public:
-
-    json_rpc_database_fixture();
-    virtual ~json_rpc_database_fixture();
-
-    void make_array_request( std::string& request, int64_t code = 0, bool is_warning = false, bool is_fail = true );
-    fc::variant make_request( std::string& request, int64_t code = 0, bool is_warning = false, bool is_fail = true,
-      const char* message = nullptr );
-    void make_positive_request( std::string& request );
-};
-
 namespace test
 {
   std::shared_ptr<full_block_type> _generate_block( hive::plugins::chain::abstract_block_producer& bp, const fc::time_point_sec _block_ts, const hive::protocol::account_name_type& _wo,

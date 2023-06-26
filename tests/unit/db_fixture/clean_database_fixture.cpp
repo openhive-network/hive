@@ -19,34 +19,24 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
 {
   try {
 
-  auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
-  {
-    ah_plugin = &app.register_plugin< ah_plugin_type >();
-    ah_plugin->set_destroy_database_on_startup();
-    ah_plugin->set_destroy_database_on_shutdown();
-    db_plugin = &app.register_plugin< hive::plugins::debug_node::debug_node_plugin >();
-    rc_plugin = &app.register_plugin< hive::plugins::rc::rc_plugin >();
-    app.register_plugin< hive::plugins::witness::witness_plugin >();
+  postponed_init(
+    { config_line_t( { "plugin",
+      { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
+        HIVE_RC_PLUGIN_NAME,
+        HIVE_WITNESS_PLUGIN_NAME } } ) },
+    &ah_plugin,
+    &rc_plugin
+  );
 
-    db_plugin->logging = false;
-    app.initialize<
-      ah_plugin_type,
-      hive::plugins::debug_node::debug_node_plugin,
-      hive::plugins::rc::rc_plugin,
-      hive::plugins::witness::witness_plugin
-    >( argc, argv );
-
-    db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
-    BOOST_REQUIRE( db );
-  } );
-
+  ah_plugin->set_destroy_database_on_startup();
+  ah_plugin->set_destroy_database_on_shutdown();
+  ah_plugin->plugin_startup(); //ABW: we can't just use appbase::app().startup() because it conflicts with code below
+  
   configuration_data.allow_not_enough_rc = true;
 
   init_account_pub_key = init_account_priv_key.get_public_key();
 
-  ah_plugin->plugin_startup(); //ABW: we can't just use appbase::app().startup() because it conflicts with code below
-  
-  open_database( _data_dir, shared_file_size_in_mb );
+  open_database( get_data_dir(), shared_file_size_in_mb );
 
   inject_hardfork( hardfork.valid() ? ( *hardfork ) : HIVE_BLOCKCHAIN_VERSION.minor_v() );
 

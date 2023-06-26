@@ -2,7 +2,7 @@
 
 #if defined IS_TEST_NET
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/hived_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::plugins;
@@ -23,7 +23,7 @@ namespace account_history {
 
 } } // hive::plugins  
 
-struct condenser_api_fixture : database_fixture
+struct condenser_api_fixture : hived_fixture
 {
   condenser_api_fixture();
   virtual ~condenser_api_fixture();
