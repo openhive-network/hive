@@ -1305,6 +1305,7 @@ void chain_plugin::generate_block( const std::shared_ptr< generate_block_flow_co
   boost::future_status status = boost::future_status::deferred;
   const boost::chrono::milliseconds delay(500);
   do {
+    wlog( "MICKIEWICZ before wait_for block producing" );
     switch (status = generate_block_future.wait_for(delay); status)
     {
       case boost::future_status::deferred:
@@ -1320,6 +1321,7 @@ void chain_plugin::generate_block( const std::shared_ptr< generate_block_flow_co
       case boost::future_status::ready:
         break;
     }
+    wlog( "MICKIEWICZ after wait_for block producing" );
   } while (status != boost::future_status::ready);
 
   generate_block_ctrl->rethrow_if_exception();
