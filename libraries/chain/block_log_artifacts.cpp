@@ -236,6 +236,7 @@ private:
   void flush_header() const;
 
   void generate_artifacts_file(const block_log& source_block_provider);
+  void verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool use_block_log_head_num) const;
   
   void write_data(const std::vector<char>& buffer, off_t offset, const std::string& description) const
   {
@@ -324,6 +325,8 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
 
     if (_header.generating_interrupted_at_block)
       FC_THROW("Artifacts file generating process is not finished.");
+    
+    verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, false);
   }
 
   else
@@ -367,8 +370,13 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
 
         if (head_block_num < _header.head_block_num)
         {
-          wlog("block_log file is shorter ${head_block_num} than current block_log.artifact ${artifacts_head_block_num} file - the artifact file will be truncated.",
+          wlog("block_log head block num: ${head_block_num}, block_log.artifact head block num: ${artifacts_head_block_num}. Block log file is shorter, the artifact file will be truncated.",
               (head_block_num)("artifacts_head_block_num", _header.head_block_num));
+          
+          if (_header.generating_interrupted_at_block > head_block_num)
+            FC_THROW("Artifacts file has been filled up to ${interrupted_at_block} block, truncating artifacts file will result an empty file. Remove artifacts file and create artifacts from the beggining.", ("interrupted_at_block", _header.generating_interrupted_at_block));
+
+          verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, true);
           truncate_file(head_block_num);
 
           if (_header.generating_interrupted_at_block)
@@ -376,6 +384,8 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
         }
         else
         {
+          verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, false);
+
           if (_header.generating_interrupted_at_block)
             generate_artifacts_file(source_block_provider);
 
@@ -564,6 +574,56 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
 
   ilog("Block artifact file generation finished. Elapsed time: ${elapsed_time} ms. Processed blocks count: ${processed_blocks_count}. Generation interrupted: ${was_interrupted}.",
     (elapsed_time)(processed_blocks_count)("was_interrupted", (static_cast<bool>(_header.generating_interrupted_at_block))));
+}
+
+void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool use_block_log_head_num) const
+{
+  constexpr uint32_t BLOCKS_SAMPLE_AMOUNT = 10;
+
+  if (_header.head_block_num < BLOCKS_SAMPLE_AMOUNT + 1)
+    return;
+
+  const uint32_t first_block_to_verify = use_block_log_head_num ? source_block_provider.head()->get_block_num() - 1 : _header.head_block_num - 1;
+  const uint32_t last_block_num_to_verify = first_block_to_verify - BLOCKS_SAMPLE_AMOUNT;
+  FC_ASSERT(last_block_num_to_verify > _header.generating_interrupted_at_block, "Artifacts file must contains blocks artifacts which ones will be used for verification.");
+
+  ilog("Verifying if artefacts for blocks range: ${first_block_to_verify} : ${last_block_num_to_verify} matches block_log.", (first_block_to_verify)(last_block_num_to_verify));
+  uint32_t block_num = first_block_to_verify;
+
+  try
+  {
+    while(block_num > last_block_num_to_verify)
+    {
+      const auto block_artifacts = read_block_artifacts(block_num);
+      const auto full_block = source_block_provider.read_block_by_offset(block_artifacts.block_log_file_pos, block_artifacts.block_serialized_data_size, block_artifacts.attributes);
+      if (full_block->get_block_id() != block_artifacts.block_id)
+        FC_THROW("Full block got by offset has malformed ID");
+      if (full_block->has_compressed_block_data())
+      {
+        const auto& compressed_block_data = full_block->get_compressed_block();
+        if (compressed_block_data.compressed_size != block_artifacts.block_serialized_data_size)
+          FC_THROW("Full block got by offset has malformed compress block size!");
+        if (compressed_block_data.compression_attributes.flags != block_artifacts.attributes.flags)
+          FC_THROW("Full block got by offset has malformed compress block attributes flags!");
+        if (compressed_block_data.compression_attributes.dictionary_number != block_artifacts.attributes.dictionary_number)
+          FC_THROW("Full block got by offset has malformed compress block attributes dictionary number!");
+      }
+      else if (full_block->get_uncompressed_block_size() != block_artifacts.block_serialized_data_size)
+        FC_THROW("Full block got by offset has malformed uncompressed block size!");
+
+      --block_num;
+    }
+  }
+  catch (const fc::exception& e)
+  {
+    FC_THROW("Block_log doesn't match current artifacts file. Cannot get block: ${block_num} using already stored artifacts. Error: ${what}", (block_num)("what", e.what()));
+  }
+  catch (...)
+  {
+    FC_THROW("Block_log doesn't match current artifacts file. Cannot get block: ${block_num} using already stored artifacts.", (block_num));
+  }
+
+  ilog("Artifacts file matches block_log file.");
 }
 
 void block_log_artifacts::impl::truncate_file(uint32_t last_block)
