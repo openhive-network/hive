@@ -35,7 +35,6 @@ class config:
 		self.required_participation = '0'
 		self.witness = '"initminer"'
 		self.private_key = '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
-		self.witness_skip_enforce_bandwidth = '1'
 		self.snapshot_root_dir = '"/tmp/snapshots"'
 
 		for key, value in kwargs.items():
