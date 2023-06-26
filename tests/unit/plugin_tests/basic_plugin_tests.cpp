@@ -11,7 +11,7 @@
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
 #include <hive/plugins/witness/witness_plugin_objects.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 

@@ -40,7 +40,7 @@
 
 #include <fc/crypto/digest.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 using namespace hive;
 using namespace hive::chain;
@@ -1113,7 +1113,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
       db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
       BOOST_REQUIRE( db );
     } );
-    
+
     init_account_pub_key = init_account_priv_key.get_public_key();
 
     ah_plugin->plugin_startup();
