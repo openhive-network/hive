@@ -420,6 +420,10 @@ bool block_log_artifacts::impl::load_header()
   {
     read_data(&_header, 0, "Reading the artifact file header");
 
+    if (_header.format_major_version != FORMAT_MAJOR || _header.format_minor_version != FORMAT_MINOR)
+      FC_THROW("Artifacts file header version (${major}.${minor}) must match to expected version(${emajor}.${eminor}) by hived.",
+              ("major", _header.format_major_version)("minor", _header.format_minor_version)("emajor", FORMAT_MAJOR)("eminor", FORMAT_MINOR));
+
     ilog("Loaded header containing: git rev: ${gr}, format version: ${major}.${minor}, head_block_num: ${hb}, tail_block_num: ${tbn}, generating_interrupted_at_block: ${giat}",
          ("gr", _header.git_version)("major", _header.format_major_version)("minor", _header.format_minor_version)("hb", _header.head_block_num)("tbn", _header.tail_block_num)
          ("giat", _header.generating_interrupted_at_block));
