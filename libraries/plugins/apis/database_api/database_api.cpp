@@ -14,7 +14,6 @@
 #include <hive/utilities/git_revision.hpp>
 
 #include <hive/protocol/forward_impacted.hpp>
-#include <hive/plugins/database_api/consensus_state_provider_cache.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
 
@@ -2195,31 +2194,13 @@ namespace{
 }
 
 
-bool cache::has_context(const char* context) const
-{
-    return chain_databases.find(context) != chain_databases.end();
-}
 
-void cache::remove(const char* context)
-{
-    chain_databases.erase(context);
-}
-
-
-hive::chain::database& cache::get_db(const char* context) const
-{
-  return  *(chain_databases[context]);
-}
 
 hive::plugins::database_api::database_api_impl get_database_api_impl(csp_session_type* csp_session)
 {
   return hive::plugins::database_api::database_api_impl(*csp_session->db);
 }
 
-void cache::add(const char* context, hive::chain::database* db)
-{
-  chain_databases.emplace(std::make_pair(std::string(context), std::unique_ptr<hive::chain::database>(db)));
-}
 
 collected_account_balances_t extract_account_balances(
     const hive::plugins::database_api::api_account_object& account)
@@ -2300,14 +2281,3 @@ collected_account_balances_collection_t collect_current_all_accounts_balances(cs
 }
 }  // namespace consensus_state_provider
 
-namespace
-{
-  consensus_state_provider::cache theCache;
-}
-
-
-
-consensus_state_provider::cache& consensus_state_provider::get_cache()
-{
-  return theCache;
-}
