@@ -1,7 +1,5 @@
 #include <core/time_manager.hpp>
 
-#include <hive/utilities/notifications.hpp>
-
 namespace beekeeper {
 
 time_manager::time_manager()

@@ -1,4 +1,4 @@
-#include <core/beekeeper_instance.hpp>
+#include <beekeeper/beekeeper_instance.hpp>
 
 #include <appbase/application.hpp>
 
@@ -10,7 +10,8 @@
 namespace beekeeper {
   namespace bfs = boost::filesystem;
 
-  beekeeper_instance::beekeeper_instance( const boost::filesystem::path& _wallet_directory ): wallet_directory( _wallet_directory )
+  beekeeper_instance::beekeeper_instance( const boost::filesystem::path& _wallet_directory )
+                    : beekeeper_instance_base( _wallet_directory )
   {
     pid_file        = wallet_directory / "beekeeper.pid";
     connection_file = wallet_directory / "beekeeper.connection";
@@ -155,11 +156,6 @@ namespace beekeeper {
       send_fail_notification();
 
     return instance_started;
-  }
-
-  boost::filesystem::path beekeeper_instance::create_wallet_filename( const std::string& wallet_name ) const
-  {
-    return wallet_directory / ( wallet_name + file_ext );
   }
 
   void beekeeper_instance::save_connection_details( const collector_t& values )

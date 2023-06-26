@@ -1,15 +1,14 @@
-#include <core/session.hpp>
+#include <core/session_base.hpp>
 
 namespace beekeeper {
 
-session::session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager> time )
+session_base::session_base( const std::string& token, std::shared_ptr<time_manager> time )
         : token(token), time( time )
 {
   wallet_mgr = std::make_shared<wallet_manager_impl>();
-  notification_handler.register_endpoints( { notifications_endpoint } );
 }
 
-void session::set_timeout( const std::chrono::seconds& t )
+void session_base::set_timeout( const std::chrono::seconds& t )
 {
   timeout = t;
   auto now = std::chrono::system_clock::now();
@@ -21,13 +20,13 @@ void session::set_timeout( const std::chrono::seconds& t )
   time->change( token, timeout_time );
 }
 
-void session::check_timeout()
+void session_base::check_timeout()
 {
   FC_ASSERT( time );
   time->run();
 }
 
-info session::get_info()
+info session_base::get_info()
 {
   auto to_string = []( const std::chrono::system_clock::time_point& tp )
   {
@@ -38,14 +37,9 @@ info session::get_info()
   return { to_string( std::chrono::system_clock::now() ), to_string( timeout_time ) };
 }
 
-std::shared_ptr<wallet_manager_impl> session::get_wallet_manager()
+std::shared_ptr<wallet_manager_impl> session_base::get_wallet_manager()
 {
   return wallet_mgr;
-}
-
-hive::utilities::notifications::notification_handler_wrapper& session::get_notification_handler()
-{
-  return notification_handler;
 }
 
 } //beekeeper

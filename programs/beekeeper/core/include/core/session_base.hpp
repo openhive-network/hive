@@ -8,10 +8,9 @@
 
 namespace beekeeper {
 
-class session
+class session_base
 {
   private:
-
 
     std::chrono::seconds timeout    = std::chrono::seconds::max(); ///< how long to wait before calling lock_all()
     types::timepoint_t timeout_time = types::timepoint_t::max(); ///< when to call lock_all()
@@ -24,11 +23,10 @@ class session
 
     std::shared_ptr<time_manager> time;
 
-    hive::utilities::notifications::notification_handler_wrapper notification_handler;
-
   public:
 
-    session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager> time );
+    session_base( const std::string& token, std::shared_ptr<time_manager> time );
+    virtual ~session_base(){}
 
     void set_timeout( const std::chrono::seconds& t );
     void check_timeout();
@@ -36,7 +34,7 @@ class session
 
     std::shared_ptr<wallet_manager_impl> get_wallet_manager();
 
-    hive::utilities::notifications::notification_handler_wrapper& get_notification_handler();
+    virtual void prepare_notifications(){};
 };
 
 } //beekeeper

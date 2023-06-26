@@ -21,8 +21,6 @@ beekeeper_app_init::~beekeeper_app_init()
 
 void beekeeper_app_init::set_program_options()
 {
-  hive::utilities::notifications::add_program_options( options );
-
   options.add_options()
     ("wallet-dir", bpo::value<boost::filesystem::path>()->default_value("."),
       "The path of the wallet files (absolute path or relative to application data dir)")
@@ -142,7 +140,7 @@ std::pair<bool, std::string> beekeeper_app_init::initialize_program_options()
       FC_ASSERT( _args.count("unlock-timeout") );
       auto _timeout = _args.at("unlock-timeout").as<uint64_t>();
 
-      wallet_manager_ptr  = std::make_shared<beekeeper::beekeeper_wallet_manager>( _dir, _timeout, session_limit );
+      wallet_manager_ptr = create_wallet( _dir, _timeout, session_limit );
 
       if( !wallet_manager_ptr->start() )
         return { false, "" };

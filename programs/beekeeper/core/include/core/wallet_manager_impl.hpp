@@ -2,13 +2,10 @@
 
 #include <core/beekeeper_wallet_base.hpp>
 #include <core/utilities.hpp>
-#include <core/beekeeper_instance.hpp>
 
 namespace fc { class variant; }
 
 namespace beekeeper {
-
-using collector_t = hive::utilities::notifications::collector_t;
 
 class wallet_manager_impl {
   public:

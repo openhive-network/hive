@@ -1,14 +1,12 @@
 #pragma once
 
 #include <core/beekeeper_wallet_base.hpp>
+#include <core/beekeeper_instance_base.hpp>
+#include <core/session_manager_base.hpp>
 
-#include <core/session_manager.hpp>
-
-#include <hive/utilities/notifications.hpp>
+#include<csignal>
 
 namespace beekeeper {
-
-using collector_t = hive::utilities::notifications::collector_t;
 
 /// Provides associate of wallet name to wallet and manages the interaction with each wallet.
 ///
@@ -26,7 +24,7 @@ public:
   /// @param command_line_wallet_dir path to override default ./ location of wallet files.
   /// @param command_line_unlock_timeout timeout for unlocked wallet [s]
   /// @param method an action that will be executed when all sessions are closed
-  beekeeper_wallet_manager( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit,
+  beekeeper_wallet_manager( std::shared_ptr<session_manager_base> sessions, std::shared_ptr<beekeeper_instance_base> instance, const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit,
                             close_all_sessions_action_method&& method = [](){ std::raise(SIGINT); } );
 
   beekeeper_wallet_manager(const beekeeper_wallet_manager&) = delete;
@@ -141,8 +139,6 @@ public:
    */
   void close_session( const string& token );
 
-  void save_connection_details( const collector_t& values );
-
 private:
 
   uint64_t unlock_timeout = 900;
@@ -152,9 +148,8 @@ private:
 
   close_all_sessions_action_method  close_all_sessions_action;
 
-  std::unique_ptr<beekeeper_instance> singleton;
-
-  session_manager sessions;
+  std::shared_ptr<session_manager_base> sessions;
+  std::shared_ptr<beekeeper_instance_base> instance;
 };
 
 } //beekeeper

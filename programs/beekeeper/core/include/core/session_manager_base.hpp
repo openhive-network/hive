@@ -1,16 +1,16 @@
 #pragma once
 
-#include <core/session.hpp>
+#include <core/session_base.hpp>
 
 #include <string>
 
 namespace beekeeper {
 
-class session_manager
+class session_manager_base
 {
   private:
 
-    using items = std::map<std::string/*token*/, std::shared_ptr<session>>;
+    using items = std::map<std::string/*token*/, std::shared_ptr<session_base>>;
 
     const unsigned int token_length = 32;
 
@@ -18,11 +18,16 @@ class session_manager
 
     items sessions;
 
-    std::shared_ptr<session> get_session( const std::string& token );
+    std::shared_ptr<session_base> get_session( const std::string& token );
+
+  protected:
+
+    virtual std::shared_ptr<session_base> create_session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager> time );
 
   public:
 
-    session_manager();
+    session_manager_base();
+    virtual ~session_manager_base(){}
 
     std::string create_session( const std::string& salt, const std::string& notifications_endpoint );
     void close_session( const std::string& token );

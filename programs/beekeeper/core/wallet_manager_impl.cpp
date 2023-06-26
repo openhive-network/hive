@@ -2,6 +2,7 @@
 #include <core/beekeeper_wallet.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 
 namespace beekeeper {
 

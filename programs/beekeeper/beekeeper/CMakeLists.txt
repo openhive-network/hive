@@ -6,14 +6,16 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper
                       SOURCES
                       main.cpp
                       beekeeper_app.cpp
+                      beekeeper_instance.cpp
+                      session.cpp
+                      session_manager.cpp
+                      ../core/beekeeper_wallet_manager.cpp
                       ../core/beekeeper_wallet_api.cpp
                       ../core/beekeeper_wallet.cpp
-                      ../core/beekeeper_wallet_manager.cpp
-                      ../core/beekeeper_instance.cpp
                       ../core/token_generator.cpp
                       ../core/time_manager.cpp
-                      ../core/session.cpp
-                      ../core/session_manager.cpp
+                      ../core/session_base.cpp
+                      ../core/session_manager_base.cpp
                       ../core/wallet_manager_impl.cpp
                       ../core/beekeeper_app_base.cpp
                       ../core/beekeeper_app_init.cpp

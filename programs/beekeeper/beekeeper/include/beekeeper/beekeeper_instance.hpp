@@ -1,10 +1,12 @@
 #pragma once
 
-#include <hive/utilities/notifications.hpp>
+#include <core/beekeeper_instance_base.hpp>
 
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/filesystem/path.hpp>
+
+#include <hive/utilities/notifications.hpp>
 
 #include <string>
 
@@ -12,19 +14,15 @@ namespace beekeeper
 {
   using collector_t = hive::utilities::notifications::collector_t;
 
-  class beekeeper_instance
+  class beekeeper_instance: public beekeeper_instance_base
   {
     private:
 
       bool instance_started = false;
 
-      const std::string file_ext = ".wallet";
-
       boost::filesystem::path pid_file;
       boost::filesystem::path connection_file;
       boost::filesystem::path lock_path_file;
-
-      boost::filesystem::path wallet_directory;
 
       std::unique_ptr<boost::interprocess::file_lock> wallet_dir_lock;
 
@@ -45,9 +43,7 @@ namespace beekeeper
       beekeeper_instance( const boost::filesystem::path& _wallet_directory );
       ~beekeeper_instance();
 
-      bool start();
-
-      boost::filesystem::path create_wallet_filename( const std::string& wallet_name ) const;
+      bool start() override;
 
       void save_connection_details( const collector_t& values );
   };
