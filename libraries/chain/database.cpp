@@ -137,7 +137,9 @@ database::~database()
   clear_pending();
 }
 
-void database::open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func)
+void database::open( const open_args& args, 
+  std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func,
+  std::function<void(database&, const open_args&)> open_block_log_func)
 {
   try
   {
@@ -150,14 +152,14 @@ void database::open( const open_args& args, std::function<std::shared_ptr<full_b
                                               );
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
-    initialize_state_independent_data(args);
+    initialize_state_independent_data(args, std::move(open_block_log_func));
     load_state_initial_data(args, std::move(get_head_block_func));
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
-void database::initialize_state_independent_data(const open_args& args)
+void database::initialize_state_independent_data(const open_args& args, std::function<void(database&, const open_args&)> open_block_log_func)
 {
   initialize_indexes();
   initialize_evaluators();
@@ -178,13 +180,8 @@ void database::initialize_state_independent_data(const open_args& args)
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
 
-    with_write_lock([&]()
-    {
-      _block_log.open(args.data_dir / "block_log");
-      _block_log.set_compression(args.enable_block_log_compression);
-      _block_log.set_compression_level(args.block_log_compression_level);
-    });
-  
+  open_block_log_func(*this, args);
+
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
@@ -7652,6 +7649,16 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
 std::shared_ptr<full_block_type> database::get_head_block() const
 {
   return _block_log.read_block_by_num(head_block_num());
+}
+
+void database::open_block_log(const open_args& args)
+{
+  with_write_lock([&]()
+  {
+    _block_log.open(args.data_dir / "block_log");
+    _block_log.set_compression(args.enable_block_log_compression);
+    _block_log.set_compression_level(args.block_log_compression_level);
+  });
 }
 
 } } //hive::chain

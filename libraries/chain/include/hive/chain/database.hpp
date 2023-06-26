@@ -186,8 +186,10 @@ namespace chain {
         */
       void open(
           const open_args& args,
-          std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func =
-              [](const database& db) { return db.get_head_block(); }
+            std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func =
+              [](const database& db) { return db.get_head_block(); },
+            std::function<void(database&, const open_args&)> open_block_log_func =
+              [](database& db, const open_args& args) { db.open_block_log(args); }
               );
 
       void public_apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing )
@@ -209,8 +211,8 @@ namespace chain {
       void remove_proposal_votes_for_accounts_without_voting_rights();
 
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
-      void initialize_state_independent_data(const open_args& args);
-
+      void initialize_state_independent_data(const open_args& args, std::function<void(database&, const open_args&)> open_block_log_func);
+      
       bool is_included_block_unlocked(const block_id_type& block_id);
     public:
       std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
@@ -649,6 +651,7 @@ namespace chain {
       void resetState(const open_args& args);
 
       std::shared_ptr<full_block_type> get_head_block() const;
+      void open_block_log(const open_args& args);
 
       void init_schema();
       void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
