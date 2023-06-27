@@ -1354,8 +1354,6 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     // Testing mainnet feed values here.
     auto auto_reset( set_mainnet_feed_values() );
 
-    resize_shared_mem( 1024 * 1024 * 32 );
-
     ACTORS( (alice0)(alice1)(alice2)(alice3)(alice4)(alice5)(alice6) )
 
     BOOST_TEST_MESSAGE( "Setup" );
@@ -2641,8 +2639,6 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
         gpo.proposal_fund_percent = 0;
       });
     }, database::skip_witness_signature );
-
-    resize_shared_mem( 1024 * 1024 * 512 ); // Due to number of blocks in the test, it requires a large file. (64 MB)
 
     auto debug_key = "5JdouSvkK75TKWrJixYufQgePT21V7BAVWbNUWt3ktqhPmy8Z78"; //get_dev_key debug node
 
