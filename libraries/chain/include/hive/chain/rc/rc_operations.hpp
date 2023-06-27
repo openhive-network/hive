@@ -8,8 +8,6 @@ namespace hive { namespace chain {
 using hive::protocol::account_name_type;
 using hive::protocol::extensions_type;
 
-class rc_plugin;
-
 struct delegate_rc_operation : hive::protocol::base_operation
 {
   account_name_type             from;
@@ -26,6 +24,8 @@ typedef fc::static_variant<
 > rc_custom_operation;
 
 HIVE_DEFINE_PLUGIN_EVALUATOR( void, rc_custom_operation, delegate_rc );
+
+#define HIVE_RC_CUSTOM_OPERATION_ID "rc"
 
 } } // hive::chain
 
