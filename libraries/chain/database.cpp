@@ -152,8 +152,7 @@ database::~database()
   clear_pending();
 }
 
-void database::open( const open_args& args, 
-  std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func)
+void database::open( const open_args& args)
 {
   try
   {
@@ -167,7 +166,7 @@ void database::open( const open_args& args,
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
     initialize_state_independent_data(args);
-    load_state_initial_data(args, std::move(get_head_block_func));
+    load_state_initial_data(args);
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
@@ -210,7 +209,7 @@ void database::initialize_state_independent_data(const open_args& args)
   init_hardforks();
 }
 
-void database::load_state_initial_data(const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func)
+void database::load_state_initial_data(const open_args& args)
 {
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
@@ -246,7 +245,7 @@ void database::load_state_initial_data(const open_args& args, std::function<std:
 
   if (head_block_num())
   {
-      std::shared_ptr<full_block_type> head_block = get_head_block_func(*this);
+      std::shared_ptr<full_block_type> head_block = get_head_block();
       // This assertion should be caught and a reindex should occur
       FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
       "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
