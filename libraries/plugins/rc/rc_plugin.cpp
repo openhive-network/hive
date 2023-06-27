@@ -897,14 +897,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     my->_post_apply_custom_operation_conn = db.add_post_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
       { try { my->on_post_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
 
-    HIVE_ADD_PLUGIN_INDEX(db, rc_resource_param_index);
-    HIVE_ADD_PLUGIN_INDEX(db, rc_pool_index);
-    HIVE_ADD_PLUGIN_INDEX(db, rc_stats_index);
-    HIVE_ADD_PLUGIN_INDEX(db, rc_pending_data_index);
-    HIVE_ADD_PLUGIN_INDEX(db, rc_direct_delegation_index);
-    HIVE_ADD_PLUGIN_INDEX(db, rc_usage_bucket_index);
-    HIVE_ADD_PLUGIN_INDEX(db, rc_expired_delegation_index);
-
     fc::mutable_variant_object state_opts;
 
 #ifndef IS_TEST_NET

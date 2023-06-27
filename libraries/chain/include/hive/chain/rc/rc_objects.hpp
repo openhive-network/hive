@@ -1,4 +1,6 @@
 #pragma once
+#include <hive/chain/hive_fwd.hpp>
+
 #include <hive/chain/util/manabar.hpp>
 
 #include <hive/protocol/config.hpp>
