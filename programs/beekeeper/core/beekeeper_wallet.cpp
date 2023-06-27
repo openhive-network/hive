@@ -1,5 +1,7 @@
 #include <core/beekeeper_wallet.hpp>
 
+#include <hive/protocol/misc_utilities.hpp>
+
 #include <fstream>
 
 #include <fc/io/json.hpp>
@@ -118,8 +120,7 @@ public:
     std::vector<char> _v;
     from_variant( _trx, _v );
 
-    //IMPORTANT!!!!!!!!!!! TEMPORARY DISABLED
-    //hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
+    hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
     fc::raw::pack( enc, chain_id );
     enc.write( _v.data(), _v.size() );
 
