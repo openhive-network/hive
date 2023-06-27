@@ -1,9 +1,6 @@
 
 #include <hive/chain/hive_fwd.hpp>
 
-#include <hive/plugins/block_data_export/block_data_export_plugin.hpp>
-#include <hive/plugins/block_data_export/exportable_block_data.hpp>
-
 #include <hive/protocol/config.hpp>
 #include <hive/chain/rc/rc_curve.hpp>
 #include <hive/chain/rc/rc_export_objects.hpp>
@@ -34,39 +31,7 @@
 
 namespace hive { namespace plugins { namespace rc {
 
-using hive::plugins::block_data_export::block_data_export_plugin;
-using hive::plugins::block_data_export::exportable_block_data;
 using namespace hive::chain;
-
-struct exp_rc_data : public exportable_block_data
-{
-  exp_rc_data() {}
-  virtual ~exp_rc_data() {}
-
-  virtual void to_variant( fc::variant& v )const override
-  {
-    fc::to_variant( *this, v );
-  }
-
-  void add_tx_info( const rc_transaction_info& tx_info )
-  {
-    if( !txs.valid() )
-      txs = std::vector< rc_transaction_info >();
-    txs->emplace_back( tx_info );
-  }
-
-  rc_block_info                                      block;
-  optional< std::vector< rc_transaction_info > >     txs;
-};
-
-} } } // namespace hive::plugins::rc
-
-FC_REFLECT( hive::plugins::rc::exp_rc_data,
-  ( block )
-  ( txs )
-)
-
-namespace hive { namespace plugins { namespace rc {
 
 namespace detail {
 
@@ -213,10 +178,6 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
     } );
   }
 
-  std::shared_ptr< exp_rc_data > export_data =
-    hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
-  if( export_data )
-    export_data->add_tx_info( tx_info );
 } FC_CAPTURE_AND_RETHROW( (note.transaction) ) }
 
 void rc_plugin_impl::on_pre_apply_block( const block_notification& note )
@@ -362,23 +323,10 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       bucket.add_usage( i, block_info.usage[i] );
   } );
 
-  std::shared_ptr< exp_rc_data > export_data =
-    hive::plugins::block_data_export::find_export_data< exp_rc_data >( HIVE_RC_PLUGIN_NAME );
-  if( export_data )
-    export_data->block = block_info;
 } FC_CAPTURE_AND_RETHROW( (note.full_block->get_block()) ) }
 
 void rc_plugin_impl::on_first_block()
 {
-  // Only now enable exporting data - if it was enabled during plugin init it would produce tons of empty data
-  block_data_export_plugin* export_plugin = appbase::app().find_plugin< block_data_export_plugin >();
-  if( export_plugin != nullptr )
-  {
-    ilog( "Registering RC export data factory" );
-    export_plugin->register_export_data_factory( HIVE_RC_PLUGIN_NAME,
-      []() -> std::shared_ptr< exportable_block_data > { return std::make_shared< exp_rc_data >(); } );
-  }
-
   // Initial values are located at `libraries/jsonball/data/resource_parameters.json`
   std::string resource_params_json = hive::jsonball::get_resource_parameters();
   fc::variant resource_params_var = fc::json::from_string( resource_params_json, fc::json::strict_parser );
