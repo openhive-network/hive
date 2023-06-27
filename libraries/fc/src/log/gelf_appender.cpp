@@ -199,4 +199,10 @@ namespace fc
       assert(number_of_packets_sent == total_number_of_packets);
     }
   }
+
+  static bool reg_gelf_appender = []( __attribute__((unused)) bool* )->bool
+  {
+    return appender::register_appender<gelf_appender>( "gelf" );
+  }( &reg_gelf_appender );
+
 } // fc
