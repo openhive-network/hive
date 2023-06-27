@@ -24,7 +24,6 @@ set( fc_minimal_sources
         src/log/logger.cpp
         src/log/logger_config.cpp
         src/log/appender.cpp
-        src/log/gelf_appender.cpp
         src/log/file_appender.cpp
         src/log/console_appender.cpp
         src/crypto/elliptic_common.cpp
@@ -52,9 +51,6 @@ set( fc_minimal_sources
         src/thread/task.cpp
         src/thread/spin_lock.cpp
         vendor/simdjson/simdjson.cpp
-        src/network/udp_socket.cpp
-        src/network/ip.cpp
-        src/network/resolve.cpp
         src/compress/zlib.cpp
         ${ECC_REST}
      )
