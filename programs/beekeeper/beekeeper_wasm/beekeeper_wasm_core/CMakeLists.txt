@@ -15,4 +15,4 @@ ADD_LIBRARY( beekeeper_wasm_core STATIC
 )
 
 TARGET_INCLUDE_DIRECTORIES( beekeeper_wasm_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../../core/include" )
-TARGET_LINK_LIBRARIES( beekeeper_wasm_core fc hive_protocol )
+TARGET_LINK_LIBRARIES( beekeeper_wasm_core fc_minimal )

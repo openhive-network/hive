@@ -3,6 +3,8 @@
 #include <core/beekeeper_wallet_base.hpp>
 #include <core/utilities.hpp>
 
+#include <boost/filesystem.hpp>
+
 namespace fc { class variant; }
 
 namespace beekeeper {

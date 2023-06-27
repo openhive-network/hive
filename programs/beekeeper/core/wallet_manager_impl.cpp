@@ -1,6 +1,8 @@
 #include <core/wallet_manager_impl.hpp>
 #include <core/beekeeper_wallet.hpp>
 
+#include <fc/filesystem.hpp>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
@@ -28,7 +30,7 @@ std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_fil
   FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
 
   auto wallet_filename = wallet_filename_creator( name );
-  FC_ASSERT( !fc::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
+  FC_ASSERT( !bfs::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
 
   if(!password)
     password = gen_password();

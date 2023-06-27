@@ -1,4 +1,5 @@
 add_subdirectory( fc )
+add_subdirectory( fc_minimal )
 add_subdirectory( vendor )
 add_subdirectory( schema )
 add_subdirectory( jsonball )

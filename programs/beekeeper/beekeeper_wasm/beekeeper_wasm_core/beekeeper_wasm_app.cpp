@@ -2,6 +2,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include <iostream>
+
 namespace beekeeper {
 
 namespace bfs = boost::filesystem;

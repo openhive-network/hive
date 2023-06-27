@@ -4,6 +4,7 @@
 
 #include <fc/io/json.hpp>
 #include <fc/crypto/aes.hpp>
+#include <fc/io/raw.hpp>
 
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
@@ -117,7 +118,8 @@ public:
     std::vector<char> _v;
     from_variant( _trx, _v );
 
-    hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
+    //IMPORTANT!!!!!!!!!!! TEMPORARY DISABLED
+    //hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
     fc::raw::pack( enc, chain_id );
     enc.write( _v.data(), _v.size() );
 
