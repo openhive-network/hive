@@ -10,7 +10,7 @@ namespace hive { namespace plugins { namespace witness {
 class block_producer : public chain::abstract_block_producer
 {
 public:
-  block_producer(chain::database& db) : _db(db) {}
+  block_producer(chain::full_database& db) : _db(db) {}
 
   /**
     * This function contains block generation logic.
