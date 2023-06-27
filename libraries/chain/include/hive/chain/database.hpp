@@ -108,7 +108,7 @@ namespace chain {
   {
     public:
       database();
-      ~database();
+      virtual ~database();
 
       enum transaction_status
       {
