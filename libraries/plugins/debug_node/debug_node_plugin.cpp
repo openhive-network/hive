@@ -238,8 +238,7 @@ void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_pr
           account.vesting_shares += vest_modifier;
         });
       };
-      hive::chain::resource_credits rc( db );
-      rc.update_rc_for_custom_action( _update_initminer, miner_account );
+      db.rc.update_rc_for_custom_action( _update_initminer, miner_account );
 
       db.modify(dgpo, [&vest_modifier, &hive_modifier](hive::chain::dynamic_global_property_object& p)
         {

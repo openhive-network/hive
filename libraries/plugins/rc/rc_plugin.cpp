@@ -145,7 +145,6 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   if( before_first_block() )
     return;
 
-  resource_credits rc( _db );
   const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
 
   rc_transaction_info tx_info;
@@ -153,12 +152,12 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   tx_info.usage = pending_data.get_differential_usage();
 
   // How many resources does the transaction use?
-  rc.count_resources( note.transaction, note.full_transaction->get_transaction_size(), tx_info.usage, _db.head_block_time() );
+  _db.rc.count_resources( note.transaction, note.full_transaction->get_transaction_size(), tx_info.usage, _db.head_block_time() );
   if( note.transaction.operations.size() == 1 )
     tx_info.op = note.transaction.operations.front().which();
 
   // How many RC does this transaction cost?
-  int64_t total_cost = rc.compute_cost( &tx_info );
+  int64_t total_cost = _db.rc.compute_cost( &tx_info );
   note.full_transaction->set_rc_cost( total_cost );
 
   _db.modify( pending_data, [&]( rc_pending_data& data )
@@ -167,8 +166,8 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   } );
 
   // Who pays the cost?
-  tx_info.payer = rc.get_resource_user( note.transaction );
-  rc.use_account_rcs( &tx_info, total_cost );
+  tx_info.payer = _db.rc.get_resource_user( note.transaction );
+  _db.rc.use_account_rcs( &tx_info, total_cost );
 
   if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
   {
@@ -205,7 +204,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
     // delegations were introduced in HF26, so there is no point in checking them earlier;
     // also we are doing it in post apply block and not in pre, because otherwise transactions run
     // during block production would have different environment than when the block was applied
-    resource_credits( _db ).handle_expired_delegations();
+    _db.rc.handle_expired_delegations();
   }
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
@@ -409,13 +408,12 @@ struct pre_apply_operation_visitor
   typedef void result_type;
 
   database&                                _db;
-  resource_credits                         _rc;
   uint32_t                                 _current_time = 0;
   uint32_t                                 _current_block_number = 0;
   account_name_type                        _current_witness;
   fc::optional< price >                    _vesting_share_price;
 
-  pre_apply_operation_visitor( database& db ) : _db(db), _rc( db )
+  pre_apply_operation_visitor( database& db ) : _db(db)
   {
     const auto& gpo = _db.get_dynamic_global_properties();
     _current_time = gpo.time.sec_since_epoch();
@@ -436,7 +434,7 @@ struct pre_apply_operation_visitor
       FC_ASSERT( account != nullptr, "Unexpectedly, account ${a} does not exist", ("a", name) );
     }
 
-    _rc.regenerate_rc_mana( *account, _current_time );
+    _db.rc.regenerate_rc_mana( *account, _current_time );
   }
 
   void operator()( const account_create_with_delegation_operation& op )const
@@ -587,8 +585,7 @@ struct post_apply_operation_visitor
     bool _fill_new_mana = true, bool _check_for_rc_delegation_overflow = false ) const
   {
     const account_object& account = _db.get_account( account_name );
-    resource_credits rc( _db );
-    rc.update_account_after_vest_change( account, _current_time, _fill_new_mana,
+    _db.rc.update_account_after_vest_change( account, _current_time, _fill_new_mana,
       _check_for_rc_delegation_overflow );
   }
   void operator()( const account_create_with_delegation_operation& op )const
@@ -753,8 +750,7 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
   note.op.visit( vtor );
 
   count_resources_result differential_usage;
-  resource_credits rc( _db );
-  if( rc.prepare_differential_usage( note.op, differential_usage ) )
+  if( _db.rc.prepare_differential_usage( note.op, differential_usage ) )
   {
     _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
     {
@@ -783,8 +779,7 @@ void rc_plugin_impl::pre_apply_custom_op_type( const custom_operation_notificati
   op->visit( vtor );
 
   count_resources_result differential_usage;
-  resource_credits rc( _db );
-  if( rc.prepare_differential_usage( *op, differential_usage ) )
+  if( _db.rc.prepare_differential_usage( *op, differential_usage ) )
   {
     _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
     {

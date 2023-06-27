@@ -140,7 +140,7 @@ void database_impl::delete_decoded_types_data_storage()
 }
 
 database::database()
-  : _my( new database_impl(*this) ) {}
+  : rc(*this), _my( new database_impl(*this) ) {}
 
 void database::begin_type_register_process(util::abstract_type_registrar& r)
 {

@@ -47,8 +47,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   uint32_t now = gpo.time.sec_since_epoch();
   const account_object& from_account = _db.get_account( op.from );
   FC_ASSERT( from_account.rc_manabar.last_update_time == now );
-  resource_credits rc( _db );
-  FC_ASSERT( !_db.is_in_control() || !rc.has_expired_delegation( from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
+  FC_ASSERT( !_db.is_in_control() || !_db.rc.has_expired_delegation( from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
     // above is not strictly needed - we can handle new delegations during delayed undelegating just fine, however we want to discourage users
     // from using the scheme to temporarily "pump" amount of RC, also if it is not intentional they might be confused about fresh delegations
     // disappearing right after being formed (which might happen if we allow fresh delegations while previous were not yet cleared)
@@ -87,7 +86,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         } );
       }
     }
-    rc.update_account_after_rc_delegation( to_account, now, delta );
+    _db.rc.update_account_after_rc_delegation( to_account, now, delta );
     delta_total += delta;
   }
 
