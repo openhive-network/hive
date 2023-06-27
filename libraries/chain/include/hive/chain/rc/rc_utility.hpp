@@ -30,8 +30,6 @@ struct rc_resource_params
 class resource_credits
 {
   public:
-    resource_credits( database& _db ) : db( _db ) {}
-
     enum class report_type
     {
       NONE, //no report
@@ -111,7 +109,9 @@ class resource_credits
       uint32_t now,
       remove_guard& obj_perf ) const;
 
+    resource_credits( database& _db ) : db( _db ) {} //can only be used by database
     database& db;
+    friend class database;
 };
 
 } } // hive::chain

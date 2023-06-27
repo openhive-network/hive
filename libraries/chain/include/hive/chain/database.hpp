@@ -10,6 +10,8 @@
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
 
+#include <hive/chain/rc/rc_utility.hpp>
+
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/signal.hpp>
 #include <hive/chain/util/type_registrar.hpp>
@@ -807,6 +809,8 @@ namespace chain {
         begin_type_register_process(r);
       }
 
+    public:
+      resource_credits              rc;
     private:
 
       std::unique_ptr< database_impl > _my;
