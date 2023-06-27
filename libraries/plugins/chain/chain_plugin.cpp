@@ -186,7 +186,7 @@ class chain_plugin_impl
     fc::mutable_variant_object       plugin_state_opts;
     bfs::path                        database_cfg;
 
-    database  db;
+    full_database  db;
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
 
