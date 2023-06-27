@@ -5,7 +5,7 @@ add_library( rc_plugin
              ${HEADERS}
            )
 
-target_link_libraries( rc_plugin chain_plugin block_data_export_plugin hive_chain hive_jsonball hive_protocol )
+target_link_libraries( rc_plugin chain_plugin hive_chain hive_jsonball hive_protocol )
 target_include_directories( rc_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
