@@ -15,6 +15,7 @@
 #include <fc/macros.hpp>
 #include <fc/smart_ref_impl.hpp>
 
+#include <boost/scope_exit.hpp>
 #include <boost/asio.hpp>
 
 #include <iostream>
@@ -514,6 +515,8 @@ namespace detail {
 
   block_production_condition::block_production_condition_enum witness_plugin_impl::maybe_produce_block(fc::mutable_variant_object& capture)
   {
+    wlog( "MICKIEWICZ maybe_produce_block 1");
+    BOOST_SCOPE_EXIT(void) { wlog( "MICKIEWICZ maybe_produce_block exited"); } BOOST_SCOPE_EXIT_END
     fc::time_point now_fine = fc::time_point::now();
     fc::time_point_sec now = now_fine + fc::microseconds( 500000 );
 
@@ -552,8 +555,10 @@ namespace detail {
       return block_production_condition::not_my_turn;
     }
 
+    wlog( "MICKIEWICZ maybe_produce_block 2");
     fc::time_point_sec scheduled_time = _db.get_slot_time( slot );
     chain::public_key_type scheduled_key = _db.get< chain::witness_object, chain::by_name >(scheduled_witness).signing_key;
+    wlog( "MICKIEWICZ maybe_produce_block 3");
     auto private_key_itr = _private_keys.find( scheduled_key );
 
     if( private_key_itr == _private_keys.end() )
@@ -578,7 +583,9 @@ namespace detail {
 
     auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( scheduled_time,
       scheduled_witness, private_key_itr->second, _production_skip_flags );
+    wlog( "MICKIEWICZ maybe_produce_block 4");
     _chain_plugin.generate_block( generate_block_ctrl );
+    wlog( "MICKIEWICZ maybe_produce_block 5");
     const std::shared_ptr<full_block_type>& full_block = generate_block_ctrl->get_full_block();
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
 
