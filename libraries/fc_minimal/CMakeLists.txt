@@ -96,7 +96,6 @@ SET( public_includes
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${Boost_INCLUDE_DIR}
         ${OPENSSL_INCLUDE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
 )
 
 SET( private_includes
