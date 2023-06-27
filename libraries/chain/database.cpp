@@ -153,8 +153,7 @@ database::~database()
 }
 
 void database::open( const open_args& args, 
-  std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func,
-  std::function<void(database&, const open_args&)> open_block_log_func)
+  std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func)
 {
   try
   {
@@ -167,14 +166,14 @@ void database::open( const open_args& args,
                                               );
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
-    initialize_state_independent_data(args, std::move(open_block_log_func));
+    initialize_state_independent_data(args);
     load_state_initial_data(args, std::move(get_head_block_func));
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
-void database::initialize_state_independent_data(const open_args& args, std::function<void(database&, const open_args&)> open_block_log_func)
+void database::initialize_state_independent_data(const open_args& args)
 {
   _my->create_new_decoded_types_data_storage();
   _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();
@@ -202,7 +201,7 @@ void database::initialize_state_independent_data(const open_args& args, std::fun
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
 
-  open_block_log_func(*this, args);
+  open_block_log(args);
 
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;

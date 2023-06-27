@@ -188,9 +188,7 @@ namespace chain {
       void open(
           const open_args& args,
             std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func =
-              [](const database& db) { return db.get_head_block(); },
-            std::function<void(database&, const open_args&)> open_block_log_func =
-              [](database& db, const open_args& args) { db.open_block_log(args); }
+              [](const database& db) { return db.get_head_block(); }
               );
 
       void public_apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing )
@@ -212,7 +210,7 @@ namespace chain {
       void remove_proposal_votes_for_accounts_without_voting_rights();
 
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
-      void initialize_state_independent_data(const open_args& args, std::function<void(database&, const open_args&)> open_block_log_func);
+      void initialize_state_independent_data(const open_args& args);
       
       bool is_included_block_unlocked(const block_id_type& block_id);
 
