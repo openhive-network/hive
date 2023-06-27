@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime
-import math
 from pathlib import Path
 from typing import Final, List
 
 import test_tools as tt
 
-from hive_local_tools.constants import TRANSACTION_TEMPLATE, MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
+from hive_local_tools.constants import TRANSACTION_TEMPLATE
 from hive_local_tools.functional import VestPrice
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 
@@ -30,7 +29,7 @@ def prepare_block_log():
     node.run(time_offset="+0 x15")
 
     wallet = tt.Wallet(attach_to=node)
-
+    wallet.api.set_transaction_expiration(240)
     # this is required to minimanize inflation impact on vest price
     wallet.api.transfer_to_vesting(
         from_='initminer',
@@ -61,30 +60,36 @@ def prepare_block_log():
     )
     tt.logger.info("All accounts founded")
 
-    tt.logger.info(f"created accounts: {node.api.condenser.get_account_count()}")
+    tt.logger.info(f"created accounts: {len(wallet.list_accounts())}")
     tt.logger.info(f"maximum_block_size: {node.api.database.get_witness_schedule()['median_props']['maximum_block_size']}")
 
     time_before_operations = __get_head_block_time(node)
 
+    tt.logger.info("Order recurrent transfers for the first pack of accounts")
     execute_function_in_threads(
         __order_and_broadcast_recurrent_transfers,
         args=(wallet,),
-        args_sequences=(account_names,),
-        amount=AMOUNT_OF_ALL_ACCOUNTS,
+        args_sequences=(account_names[:255],),
+        amount=255,
+        chunk_size=ACCOUNTS_PER_CHUNK,
+        max_workers=MAX_WORKERS,
+    )
+    tt.logger.info(f"First pack: {account_names[:255]}")
+    tt.logger.info(f"Last head_block number: {node.get_last_block_number()}")
+
+    tt.logger.info("Order recurrent transfers for the rest of accounts")
+    execute_function_in_threads(
+        __order_and_broadcast_recurrent_transfers,
+        args=(wallet,),
+        args_sequences=(account_names[255:],),
+        amount=AMOUNT_OF_ALL_ACCOUNTS-255,
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
     )
 
+    wait_for_first_execution_of_recurrent_transfers(node, wallet)
+
     tt.logger.info(f'resource_pool: {node.api.rc.get_resource_pool()}')
-    assert __get_head_block_time(node) - time_before_operations < tt.Time.hours(24)
-
-    tt.logger.info("Waiting for the block with the last transaction to become irreversible...")
-    node.wait_for_irreversible_block()
-    tt.logger.info(f"Last block number after apply all rt: {node.get_last_block_number()}")
-
-    waiting_to_block_with_number = math.ceil(AMOUNT_OF_ALL_ACCOUNTS * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK)
-    tt.logger.info(f"Waiting till block {waiting_to_block_with_number} for pending recurrent transfers to be processed...")
-    node.wait_for_block_with_number(waiting_to_block_with_number)
 
     head_block_num = node.get_last_block_number()
     timestamp = node.api.block.get_block(block_num=head_block_num)["block"]["timestamp"]
@@ -94,12 +99,13 @@ def prepare_block_log():
     with open("timestamp", "w", encoding="utf-8") as file:
         file.write(f"{timestamp}")
 
+    assert __get_head_block_time(node) - time_before_operations < tt.Time.hours(24)
     node.close()
     node.block_log.copy_to(Path(__file__).parent)
 
 
 def __generate_recurrent_transfers_for_sender(sender: str, all_accounts: List[str], amount: tt.Asset.Test = tt.Asset.Test(0.001)) -> list:
-    operations=[]
+    operations = []
     for receiver in all_accounts:
         if sender != receiver:
             operations.append([
@@ -146,6 +152,14 @@ def __get_head_block_time(node: tt.AnyNode) -> datetime:
     last_block_number = node.get_last_block_number()
     timestamp = node.api.block.get_block(block_num=last_block_number)["block"]["timestamp"]
     return tt.Time.parse(timestamp)
+
+
+def wait_for_first_execution_of_recurrent_transfers(node: tt.InitNode, wallet: tt.Wallet):
+    def first_execution_of_recurrent_transfers() -> bool:
+        return node.api.wallet_bridge.find_recurrent_transfers("initminer")[0]["remaining_executions"] == 1
+
+    wallet.api.recurrent_transfer("initminer", "steem.dao", tt.Asset.Test(10), 'initminer-steem.dao', 24, 2)
+    tt.Time.wait_for(first_execution_of_recurrent_transfers, poll_time=0.2)
 
 
 if __name__ == "__main__":
