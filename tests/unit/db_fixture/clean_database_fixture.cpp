@@ -64,49 +64,6 @@ void clean_database_fixture::validate_database()
   rc_plugin->validate_database();
 }
 
-void clean_database_fixture::resize_shared_mem( uint64_t size, fc::optional<uint32_t> hardfork )
-{
-  db->wipe( data_dir->path(), data_dir->path(), true );
-  int argc = boost::unit_test::framework::master_test_suite().argc;
-  char** argv = boost::unit_test::framework::master_test_suite().argv;
-  for( int i=1; i<argc; i++ )
-  {
-    const std::string arg = argv[i];
-    if( arg == "--record-assert-trip" )
-      fc::enable_record_assert_trip = true;
-    if( arg == "--show-test-names" )
-      std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
-  }
-  init_account_pub_key = init_account_priv_key.get_public_key();
-
-  {
-    hive::chain::open_args args;
-    args.data_dir = data_dir->path();
-    args.shared_mem_dir = args.data_dir;
-    args.initial_supply = INITIAL_TEST_SUPPLY;
-    args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
-    args.shared_file_size = size;
-    args.database_cfg = hive::utilities::default_database_configuration();
-    db->open( args );
-  }
-
-  boost::program_options::variables_map options;
-
-  inject_hardfork( hardfork.valid() ? ( *hardfork ) : HIVE_BLOCKCHAIN_VERSION.minor_v() );
-
-  vest( "initminer", 10000 );
-
-  // Fill up the rest of the required miners
-  for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
-  {
-    account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_pub_key );
-    fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD.amount.value );
-    witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_priv_key, "foo.bar", init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
-  }
-
-  validate_database();
-}
-
 void clean_database_fixture::inject_hardfork( uint32_t hardfork )
 {
   generate_block();
