@@ -56,8 +56,8 @@ install_all_dev_packages() {
 }
 
 preconfigure_faketime() {
-  git clone --depth 1 --branch v0.9.10 https://github.com/wolfcw/libfaketime.git
-  pushd libfaketime && make
+  git clone --depth 1 --branch bw_timer_settime_fix https://gitlab.syncad.com/bwrona/faketime.git
+  pushd faketime && CFLAGS="-O2 -DFAKE_STATELESS=1" make
 
   sudo make install # install it into default location path.
 
