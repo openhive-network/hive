@@ -116,7 +116,7 @@ public:
   }
 
   // Exposed for backwards compatibility. In the future, plugins should manage their own internal database
-  database& db();
+  full_database& db();
   const database& db() const;
 
   // Emitted when the blockchain is syncing/live.

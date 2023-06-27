@@ -109,7 +109,7 @@ namespace chain {
   {
     public:
       database();
-      ~database();
+      virtual ~database();
 
       enum transaction_status
       {
@@ -185,51 +185,28 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      void open(
-          const open_args& args,
-            std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func =
-              [](const database& db) { return db.get_head_block(); },
-            std::function<void(database&, const open_args&)> open_block_log_func =
-              [](database& db, const open_args& args) { db.open_block_log(args); }
-              );
-
-      void public_apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing )
-      {
-        apply_block(full_block, skip );
-      }
-
-      void public_reset_fork_db()
-      {
-        _fork_db.reset();
-      }
+      virtual void open(const open_args& args) = 0;
+      void open_state_independent( const open_args& args);
+      void open_state_dependent( const open_args& args);
 
     private:
 
-      uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& full_block );
       void remove_expired_governance_votes();
 
       //Remove proposal votes for accounts that declined voting rights during HF28.
       void remove_proposal_votes_for_accounts_without_voting_rights();
 
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
-      void initialize_state_independent_data(const open_args& args, std::function<void(database&, const open_args&)> open_block_log_func);
-      
-      bool is_included_block_unlocked(const block_id_type& block_id);
+      void initialize_state_independent_data(const open_args& args);
 
       void begin_type_register_process(util::abstract_type_registrar& r);
 
       void verify_match_of_state_objects_definitions_from_shm();
 
     public:
-      std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
-      std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received);
-      std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
-      void load_state_initial_data(
-          const open_args& args,
-          std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func =
-              [](const database& db) { return db.get_head_block(); });
+      void load_state_initial_data(const open_args& args);
 
       /**
         * @brief Check if replaying was finished and all blocks from `block_log` were processed.
@@ -241,7 +218,6 @@ namespace chain {
         *
         * @return information if replaying was finished
         */
-      bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
 
       /**
         * @brief Rebuild object graph from block history and open detabase
@@ -251,7 +227,6 @@ namespace chain {
         *
         * @return the last replayed block number.
         */
-      uint32_t reindex( const open_args& args );
 
       /**
         * @brief wipe Delete database from disk, and potentially the raw chain as well.
@@ -260,7 +235,10 @@ namespace chain {
         * Will close the database before wiping. Database will be closed when this function returns.
         */
       void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
-      void close(bool rewind = true);
+      virtual void close(bool rewind = true) = 0;
+      void close_chainbase(bool rewind);
+      void close_forkbase(bool rewind);
+
 
       //////////////////// db_block.cpp ////////////////////
 
@@ -268,21 +246,14 @@ namespace chain {
         *  @return true if the block is in our fork DB or saved to disk as
         *  part of the official chain, otherwise return false
         */
-      bool                       is_known_block( const block_id_type& id )const;
     private:
-      bool                       is_known_block_unlocked(const block_id_type& id)const;
     public:
       bool                       is_known_transaction( const transaction_id_type& id )const;
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
-      block_id_type              find_block_id_for_num( uint32_t block_num )const;
     public:
-      block_id_type              get_block_id_for_num( uint32_t block_num )const;
-      std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
-      std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
-      std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
-                                                                        fc::microseconds wait_for_microseconds = fc::microseconds() );
-      /// mtlk         std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
+      void _push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip);
+
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
@@ -636,8 +607,7 @@ namespace chain {
 
       void resetState(const open_args& args);
 
-      std::shared_ptr<full_block_type> get_head_block() const;
-      void open_block_log(const open_args& args);
+      virtual std::shared_ptr<full_block_type> get_head_block() const = 0;
 
       void init_schema();
       void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
@@ -713,8 +683,10 @@ namespace chain {
 
     private:
       optional< chainbase::database::session > _pending_tx_session;
-
-      void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing );
+    
+    protected:
+      void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing ); 
+    private:
       void switch_forks(item_ptr new_head);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block);
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
@@ -748,7 +720,11 @@ namespace chain {
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
-      void migrate_irreversible_state(uint32_t old_last_irreversible);
+      virtual void migrate_irreversible_state(uint32_t old_last_irreversible) = 0;
+    protected:
+      void migrate_irreversible_state_check(uint32_t old_last_irreversible);
+      void migrate_irreversible_state_perform(uint32_t old_last_irreversible); 
+    private:
       void clear_expired_transactions();
       void clear_expired_orders();
       void clear_expired_delegations();
@@ -833,10 +809,11 @@ namespace chain {
 
       std::unique_ptr< database_impl > _my;
 
+    protected:
       fork_database                 _fork_db;
+    private:
       hardfork_versions             _hardfork_versions;
 
-      block_log                     _block_log;
 
       // this function needs access to _plugin_index_signal
       template< typename MultiIndexType >
@@ -870,8 +847,6 @@ namespace chain {
       std::string                   _json_schema;
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
-
-      bool _postgres_not_block_log = false;
 
       fc::signal<void(const operation_notification&)>       _pre_apply_operation_signal;
       /**
@@ -922,6 +897,7 @@ namespace chain {
         */
       fc::signal<void(const transaction_notification&)>     _post_apply_transaction_signal;
 
+    protected:
       /**
         * Emitted when reindexing starts
         */
@@ -931,6 +907,7 @@ namespace chain {
         * Emitted when reindexing finishes
         */
       fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
+    private:
 
       fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
 
@@ -969,6 +946,43 @@ namespace chain {
         *  This signal is emitted when pushing block is completely finished
         */
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
+  };
+
+
+  class full_database : public database
+  {
+    block_log _block_log;
+
+  public:
+      void open( const open_args& args) override;
+  private:
+    bool is_included_block_unlocked(const block_id_type& block_id);
+    uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block );
+  public:
+    std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
+    std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received); //by is_known_block_unlocked
+    std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
+    bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
+    uint32_t reindex( const open_args& args );
+    void close(bool rewind = true) override;
+    bool is_known_block( const block_id_type& id )const;
+  private:  
+    bool is_known_block_unlocked(const block_id_type& id)const;
+  public:  
+    block_id_type              find_block_id_for_num( uint32_t block_num )const;
+    block_id_type              get_block_id_for_num( uint32_t block_num )const;
+    std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
+    std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+    std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
+    std::shared_ptr<full_block_type> get_head_block() const override;
+  private:
+    void migrate_irreversible_state(uint32_t old_last_irreversible) override;
+
+    void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
+    void open_block_log(const open_args& args);
+
+
+
   };
 
   struct reindex_notification

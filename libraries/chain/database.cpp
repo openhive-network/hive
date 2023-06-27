@@ -152,9 +152,7 @@ database::~database()
   clear_pending();
 }
 
-void database::open( const open_args& args, 
-  std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func,
-  std::function<void(database&, const open_args&)> open_block_log_func)
+void database::open_state_independent( const open_args& args)
 {
   try
   {
@@ -167,14 +165,41 @@ void database::open( const open_args& args,
                                               );
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
-    initialize_state_independent_data(args, std::move(open_block_log_func));
-    load_state_initial_data(args, std::move(get_head_block_func));
+    initialize_state_independent_data(args);
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
-void database::initialize_state_independent_data(const open_args& args, std::function<void(database&, const open_args&)> open_block_log_func)
+
+void database::open_state_dependent( const open_args& args)
+{
+  try
+  {
+
+    load_state_initial_data(args);
+
+  }
+  FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+}
+
+
+
+void full_database::open( const open_args& args)
+{
+  try
+  {
+    open_state_independent(args);
+
+    open_block_log(args);
+
+    open_state_dependent(args);
+
+  }
+  FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+}
+
+void database::initialize_state_independent_data(const open_args& args)
 {
   _my->create_new_decoded_types_data_storage();
   _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();
@@ -202,8 +227,6 @@ void database::initialize_state_independent_data(const open_args& args, std::fun
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
 
-  open_block_log_func(*this, args);
-
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
@@ -211,7 +234,7 @@ void database::initialize_state_independent_data(const open_args& args, std::fun
   init_hardforks();
 }
 
-void database::load_state_initial_data(const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func)
+void database::load_state_initial_data(const open_args& args)
 {
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
@@ -247,7 +270,7 @@ void database::load_state_initial_data(const open_args& args, std::function<std:
 
   if (head_block_num())
   {
-      std::shared_ptr<full_block_type> head_block = get_head_block_func(*this);
+      std::shared_ptr<full_block_type> head_block = get_head_block();
       // This assertion should be caught and a reindex should occur
       FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
       "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
@@ -278,7 +301,7 @@ void database::load_state_initial_data(const open_args& args, std::function<std:
 #endif /// IS_TEST_NET
 }
 
-uint32_t database::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
+uint32_t full_database::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
 {
   uint64_t skip_flags = skip_validate_invariants | skip_block_log;
   if (args.validate_during_replay)
@@ -343,7 +366,7 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
   return last_applied_block->get_block_num();
 }
 
-bool database::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64_t* head_block_num_in_db ) const
+bool full_database::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64_t* head_block_num_in_db ) const
 {
   std::shared_ptr<full_block_type> head = _block_log.head();
   uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
@@ -362,7 +385,7 @@ bool database::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64
   return head_block_num_origin == head_block_num_state;
 }
 
-uint32_t database::reindex( const open_args& args )
+uint32_t full_database::reindex( const open_args& args )
 {
   reindex_notification note( args );
 
@@ -472,7 +495,7 @@ void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, b
   }
 }
 
-void database::close(bool rewind)
+void database::close_chainbase(bool rewind)
 {
   try
   {
@@ -493,9 +516,15 @@ void database::close(bool rewind)
     ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
 
     chainbase::database::close();
+  }
+  FC_CAPTURE_AND_RETHROW()
+}
 
-    _block_log.close();
 
+void database::close_forkbase(bool rewind)
+{
+  try
+  {
     _fork_db.reset();
 
     ilog( "Database is closed" );
@@ -503,8 +532,22 @@ void database::close(bool rewind)
   FC_CAPTURE_AND_RETHROW()
 }
 
+
+
+void full_database::close(bool rewind)
+{
+  try
+  {
+   close_chainbase(rewind);
+   _block_log.close();
+   close_forkbase(rewind);
+  }
+  FC_CAPTURE_AND_RETHROW()
+}
+
+
 //no chainbase lock required
-bool database::is_known_block(const block_id_type& id)const
+bool full_database::is_known_block(const block_id_type& id)const
 { try {
   if (_fork_db.fetch_block(id))
     return true;
@@ -516,7 +559,7 @@ bool database::is_known_block(const block_id_type& id)const
 } FC_CAPTURE_AND_RETHROW() }
 
 //no chainbase lock required, but fork database read lock is required
-bool database::is_known_block_unlocked(const block_id_type& id)const
+bool full_database::is_known_block_unlocked(const block_id_type& id)const
 { try {
   if (_fork_db.fetch_block_unlocked(id, true /* only search linked blocks */))
     return true;
@@ -539,7 +582,7 @@ bool database::is_known_transaction( const transaction_id_type& id )const
 } FC_CAPTURE_AND_RETHROW() }
 
 //no chainbase lock required
-block_id_type database::find_block_id_for_num( uint32_t block_num )const
+block_id_type full_database::find_block_id_for_num( uint32_t block_num )const
 {
   try
   {
@@ -569,7 +612,7 @@ block_id_type database::find_block_id_for_num( uint32_t block_num )const
 }
 
 //no chainbase lock required
-block_id_type database::get_block_id_for_num( uint32_t block_num )const
+block_id_type full_database::get_block_id_for_num( uint32_t block_num )const
 {
   block_id_type bid = find_block_id_for_num( block_num );
   if (bid == block_id_type())
@@ -578,7 +621,7 @@ block_id_type database::get_block_id_for_num( uint32_t block_num )const
 }
 
 //no chainbase lock required
-std::shared_ptr<full_block_type> database::fetch_block_by_id( const block_id_type& id )const
+std::shared_ptr<full_block_type> full_database::fetch_block_by_id( const block_id_type& id )const
 { try {
   shared_ptr<fork_item> fork_item = _fork_db.fetch_block( id );
   if (fork_item)
@@ -591,7 +634,7 @@ std::shared_ptr<full_block_type> database::fetch_block_by_id( const block_id_typ
 } FC_CAPTURE_AND_RETHROW() }
 
 //no chainbase lock required
-std::shared_ptr<full_block_type> database::fetch_block_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds )const
+std::shared_ptr<full_block_type> full_database::fetch_block_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds )const
 { try {
   shared_ptr<fork_item> forkdb_item = _fork_db.fetch_block_on_main_branch_by_number(block_num, wait_for_microseconds);
   if (forkdb_item)
@@ -601,7 +644,7 @@ std::shared_ptr<full_block_type> database::fetch_block_by_number( uint32_t block
 } FC_LOG_AND_RETHROW() }
 
 //no chainbase lock required
-std::vector<std::shared_ptr<full_block_type>> database::fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds )
+std::vector<std::shared_ptr<full_block_type>> full_database::fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds )
 { try {
   // for debugging, put the head block back so it should straddle the last irreversible
   // const uint32_t starting_block_num = head_block_num() - 30;
@@ -1264,6 +1307,21 @@ bool database::_push_block(const block_flow_control& block_ctrl)
   return false;
 } FC_CAPTURE_AND_RETHROW() }
 
+void database::_push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
+{
+  try
+  {
+
+    set_tx_status(hive::chain::database::TX_STATUS_BLOCK);
+    _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
+
+    apply_block(full_block, skip );
+    clear_tx_status();
+    set_revision(head_block_num());
+
+  }FC_CAPTURE_AND_RETHROW() 
+}
+
 bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 {
   const signed_transaction& trx = full_transaction->get_transaction();
@@ -1350,7 +1408,9 @@ void database::pop_block()
     std::shared_ptr<full_block_type> full_head_block;
     try
     {
-      full_head_block = fetch_block_by_id(head_id);
+      shared_ptr<fork_item> fork_item = _fork_db.fetch_block( head_id );
+      if(fork_item)
+          full_head_block =  fork_item->full_block;
     }
     FC_CAPTURE_AND_RETHROW()
 
@@ -4988,7 +5048,7 @@ boost::signals2::connection database::any_apply_operation_handler_impl( const ap
   const abstract_plugin& plugin, int32_t group )
 {
   std::string context = util::advanced_benchmark_dumper::generate_context_desc< IS_PRE_OPERATION >( plugin.get_name() );
-  auto complex_func = [this, func, &plugin, context]( const operation_notification& o )
+  auto complex_func = [this, func, context]( const operation_notification& o )
   {
     std::string name;
 
@@ -5548,7 +5608,9 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
   return old_last_irreversible;
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::migrate_irreversible_state(uint32_t old_last_irreversible)
+
+
+void database::migrate_irreversible_state_check(uint32_t old_last_irreversible)
 {
   // This method should happen atomically. We cannot prevent unclean shutdown in the middle
   // of the call, but all side effects happen at the end to minize the chance that state
@@ -5561,32 +5623,19 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
     if (fork_head)
       FC_ASSERT(fork_head->get_block_num() == dpo.head_block_number, "Fork Head Block Number: ${fork_head}, Chain Head Block Number: ${chain_head}",
                 ("fork_head", fork_head->get_block_num())("chain_head", dpo.head_block_number));
+  }
+  FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
+                                          elog( "An error occured during migrating an irreversible state. The node will be closed." );
+                                          appbase::app().generate_interrupt_request();
+                                       }, (old_last_irreversible) )
+}
 
-    if( !( get_node_properties().skip_flags & skip_block_log ) )
-    {
-      // output to block log based on new last irreverisible block num
-      std::shared_ptr<full_block_type> tmp_head = _block_log.head();
-      uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
-      vector<item_ptr> blocks_to_write;
+void database::migrate_irreversible_state_perform(uint32_t old_last_irreversible)
+{
+  try
+  {
+    const dynamic_global_property_object& dpo = get_dynamic_global_properties();
 
-      if( blocklog_head_num < get_last_irreversible_block_num() )
-      {
-        // Check for all blocks that we want to write out to the block log but don't write any
-        // unless we are certain they all exist in the fork db
-        while( blocklog_head_num < get_last_irreversible_block_num() )
-        {
-          item_ptr block_ptr = _fork_db.fetch_block_on_main_branch_by_number( blocklog_head_num + 1 );
-          FC_ASSERT( block_ptr, "Current fork in the fork database does not contain the last_irreversible_block" );
-          blocks_to_write.push_back( block_ptr );
-          blocklog_head_num++;
-        }
-
-        for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-          _block_log.append( block_itr->get()->full_block );
-
-        _block_log.flush();
-      }
-    }
 
     // This deletes blocks from the fork db
     //edump((dpo.head_block_number)(get_last_irreversible_block_num()));
@@ -5611,6 +5660,48 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
                                        }, (old_last_irreversible) )
 }
 
+void full_database::migrate_irreversible_state(uint32_t old_last_irreversible)
+{
+  try
+  {
+    migrate_irreversible_state_check(old_last_irreversible);
+    migrate_irreversible_state_to_blocklog(old_last_irreversible);
+    migrate_irreversible_state_perform(old_last_irreversible);
+  }
+  FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
+                                          elog( "An error occured during migrating an irreversible state. The node will be closed." );
+                                          appbase::app().generate_interrupt_request();
+                                       }, (old_last_irreversible) )
+}
+
+void full_database::migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible)
+{
+    if( !( get_node_properties().skip_flags & skip_block_log ) )
+    {
+      // output to block log based on new last irreverisible block num
+      std::shared_ptr<full_block_type> tmp_head = _block_log.head();
+      uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
+      vector<item_ptr> blocks_to_write;
+
+      if( blocklog_head_num < get_last_irreversible_block_num() )
+      {
+        // Check for all blocks that we want to write out to the block log but don't write any
+        // unless we are certain they all exist in the fork db
+        while( blocklog_head_num < get_last_irreversible_block_num() )
+        {
+          item_ptr block_ptr = _fork_db.fetch_block_on_main_branch_by_number( blocklog_head_num + 1 );
+          FC_ASSERT( block_ptr, "Current fork in the fork database does not contain the last_irreversible_block" );
+          blocks_to_write.push_back( block_ptr );
+          blocklog_head_num++;
+        }
+
+        for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
+            _block_log.append( block_itr->get()->full_block  );
+
+          _block_log.flush();
+      }
+    }
+}
 
 bool database::apply_order( const limit_order_object& new_order_object )
 {
@@ -7285,7 +7376,7 @@ void database::remove_expired_governance_votes()
 }
 
 //safe to call without chainbase lock
-std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point)
+std::vector<block_id_type> full_database::get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point)
 {
   fc::optional<uint32_t> block_number_needed_from_block_log;
   std::vector<block_id_type> synopsis = _fork_db.get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point, block_number_needed_from_block_log);
@@ -7320,7 +7411,7 @@ std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type
   return synopsis;
 }
 
-std::deque<block_id_type>::const_iterator database::find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received)
+std::deque<block_id_type>::const_iterator full_database::find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received)
 {
   return _fork_db.with_read_lock([&](){
     return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) {
@@ -7330,7 +7421,7 @@ std::deque<block_id_type>::const_iterator database::find_first_item_not_in_block
 }
 
 // requires forkdb read lock, does not require chainbase lock
-bool database::is_included_block_unlocked(const block_id_type& block_id)
+bool full_database::is_included_block_unlocked(const block_id_type& block_id)
 { try {
   uint32_t block_num = block_header::num_from_id(block_id);
   if (block_num == 0)
@@ -7351,7 +7442,7 @@ bool database::is_included_block_unlocked(const block_id_type& block_id)
 // a sequential list of block ids that builds off of the last item in the synopsis that we have in
 // common
 // no chainbase lock required
-std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit)
+std::vector<block_id_type> full_database::get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit)
 {
   uint32_t first_block_num_in_reply;
   uint32_t last_block_num_in_reply;
@@ -7443,12 +7534,12 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
   return result;
 }
 
-std::shared_ptr<full_block_type> database::get_head_block() const
+std::shared_ptr<full_block_type> full_database::get_head_block() const
 {
   return _block_log.read_block_by_num(head_block_num());
 }
 
-void database::open_block_log(const open_args& args)
+void full_database::open_block_log(const open_args& args)
 {
   with_write_lock([&]()
   {
@@ -7457,6 +7548,7 @@ void database::open_block_log(const open_args& args)
     _block_log.set_compression_level(args.block_log_compression_level);
   });
 }
+
 
 } } //hive::chain
 

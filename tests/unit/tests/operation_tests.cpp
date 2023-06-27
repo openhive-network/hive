@@ -1,6 +1,7 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
+#include <boost/scope_exit.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
 
@@ -210,6 +211,10 @@ BOOST_AUTO_TEST_CASE( account_update_validate )
 {
   try
   {
+    hive::protocol::details::truncation_controller::scoped_verification_state_backup backup;
+
+    account_name_type::set_verify( false );
+
     BOOST_TEST_MESSAGE( "Testing: account_update_validate" );
 
     ACTORS( (alice) )

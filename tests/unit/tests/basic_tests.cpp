@@ -23,6 +23,7 @@
   */
 
 #include <boost/test/unit_test.hpp>
+#include <boost/scope_exit.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
 
@@ -104,7 +105,8 @@ BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 
 BOOST_AUTO_TEST_CASE( fixed_string_verification )
 {
-  using hive::protocol::details::truncation_controller;
+
+  hive::protocol::details::truncation_controller::scoped_verification_state_backup backup;
 
   try
   {
