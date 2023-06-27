@@ -83,12 +83,6 @@ while [ $# -gt 0 ]; do
         HIVED_DATADIR="${1#*=}"
         add_docker_arg "-v ${HIVED_DATADIR}:/home/hived/datadir/"
         ;;
-    --data-dir)
-        shift
-        HIVED_DATADIR="${1}"
-        add_docker_arg "-v ${HIVED_DATADIR}:/home/hived/datadir/"
-        ;;
-
     --shared-file-dir=*)
         HIVED_SHM_FILE_DIR="${1#*=}"
         ;;

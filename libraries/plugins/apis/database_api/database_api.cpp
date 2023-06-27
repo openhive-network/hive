@@ -13,8 +13,6 @@
 
 #include <hive/utilities/git_revision.hpp>
 
-#include <hive/protocol/forward_impacted.hpp>
-
 namespace hive { namespace plugins { namespace database_api {
 
 api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_object& cc, const database&)
@@ -44,7 +42,6 @@ class database_api_impl
 {
   public:
     database_api_impl();
-    database_api_impl(chain::database& a_db);
     ~database_api_impl();
 
     DECLARE_API_IMPL
@@ -253,12 +250,6 @@ database_api::~database_api() {}
 
 database_api_impl::database_api_impl()
   : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
-
-
-database_api_impl::database_api_impl(chain::database& a_db)
-  : _db( a_db) {}
-
-
 
 database_api_impl::~database_api_impl() {}
 
@@ -2181,103 +2172,3 @@ DEFINE_READ_APIS( database_api,
 )
 
 } } } // hive::plugins::database_api
-
-
-
-
-
-namespace consensus_state_provider
-{
-
-namespace{
- std::unordered_map <std::string,  std::unique_ptr<hive::chain::database>> chain_databases;
-}
-
-
-
-
-hive::plugins::database_api::database_api_impl get_database_api_impl(csp_session_type* csp_session)
-{
-  return hive::plugins::database_api::database_api_impl(*csp_session->db);
-}
-
-
-collected_account_balances_t extract_account_balances(
-    const hive::plugins::database_api::api_account_object& account)
-{
-  collected_account_balances_t account_balances;
-  account_balances.account_name = account.name;
-  account_balances.balance = account.balance.amount.value;
-  account_balances.hbd_balance = account.hbd_balance.amount.value;
-  account_balances.vesting_shares = account.vesting_shares.amount.value;
-  account_balances.savings_hbd_balance = account.savings_hbd_balance.amount.value;
-  account_balances.reward_hbd_balance = account.reward_hbd_balance.amount.value;
-
-  return account_balances;
-}
-
-collected_account_balances_collection_t collect_current_account_balances(csp_session_type* csp_session,
-                                                                         const std::vector<std::string>& account_names)
-{
-  using namespace hive::plugins::database_api;
-  find_accounts_args find_args;
-  for(const auto& account_name : account_names) 
-    find_args.accounts.emplace_back(account_name);
-
-  database_api_impl db_api_impl = get_database_api_impl(csp_session);
-  auto found_accounts = db_api_impl.find_accounts(find_args);
-
-  collected_account_balances_collection_t collected_balances;
-  for(const auto& account : found_accounts.accounts)
-  {
-    collected_balances.emplace_back(extract_account_balances(account));
-  }
-
-  return collected_balances;
-}
-
-collected_account_balances_collection_t collect_current_all_accounts_balances(csp_session_type* csp_session)
-{
-  using namespace hive::plugins::database_api;
-  database_api_impl db_api_impl = get_database_api_impl(csp_session);
-
-  list_accounts_args list_args;
-  list_args.start = "";
-  list_args.limit = 1000;
-  list_args.order = hive::plugins::database_api::by_name;
-
-  collected_account_balances_collection_t collected_balances;
-
-  while(true)
-  {
-    auto listed_accounts = db_api_impl.list_accounts(list_args);
-    if(listed_accounts.accounts.empty())
-    {
-      break;
-    }
-
-    size_t processed_accounts = 0;
-    for(const auto& account : listed_accounts.accounts)
-    {
-      if(processed_accounts == 0 && (list_args.start != ""))
-      {
-        processed_accounts++;
-        continue;
-      }
-
-      collected_balances.emplace_back(extract_account_balances(account));
-      processed_accounts++;
-    }
-
-    list_args.start = listed_accounts.accounts.back().name;
-
-    if(processed_accounts < list_args.limit)
-    {
-      break;
-    }
-  }
-
-  return collected_balances;
-}
-}  // namespace consensus_state_provider
-
