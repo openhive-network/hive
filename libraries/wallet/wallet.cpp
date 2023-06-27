@@ -17,7 +17,6 @@
 #include <hive/wallet/misc_utilities.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/rc/rc_operations.hpp>
-#include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <algorithm>
@@ -2975,7 +2974,7 @@ wallet_signed_transaction wallet_api::delegate_rc(
 
   custom_json_operation op;
   op.json = fc::json::to_string( rc_custom_operation( dro ) );
-  op.id = HIVE_RC_PLUGIN_NAME;
+  op.id = HIVE_RC_CUSTOM_OPERATION_ID;
 
   flat_set< account_name_type > required_auths;
   dro.get_required_posting_authorities( required_auths );

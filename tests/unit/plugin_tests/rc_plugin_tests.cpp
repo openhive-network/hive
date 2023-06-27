@@ -1229,7 +1229,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     rc_delegation.max_rc = 10000000;
     custom_json_operation custom_json;
     custom_json.required_posting_auths.insert( "alice" );
-    custom_json.id = HIVE_RC_PLUGIN_NAME;
+    custom_json.id = HIVE_RC_CUSTOM_OPERATION_ID;
     custom_json.json = fc::json::to_string( rc_custom_operation( rc_delegation ) );
     push_transaction( custom_json, alice_owner_key );
     auto first_delegation_extra_usage = pending_data.get_differential_usage();
