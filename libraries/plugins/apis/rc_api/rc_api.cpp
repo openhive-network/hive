@@ -173,11 +173,11 @@ DEFINE_API_IMPL( rc_api_impl, get_rc_stats )
 {
   get_rc_stats_return result;
 
-  const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
-  // stats won't be enabled until RC plugin starts working (plus they are not enabled in testnet)
-  FC_ASSERT( rc_plugin.is_rc_stats_enabled(), "Gathering of RC stats not enabled." );
+  // stats won't be enabled until RC starts working (plus they are not enabled in testnet)
+  const auto* rc_stats = _db.find< rc_stats_object >( RC_ARCHIVE_STATS_ID );
+  FC_ASSERT( rc_stats, "Gathering of RC stats not enabled." );
   // FULL report would not be useful in itself - it'd have to be supplemented like in get_rc_operation_stats
-  result.rc_stats = rc_plugin.get_report( resource_credits::report_type::REGULAR );
+  result.rc_stats = resource_credits::get_report( resource_credits::report_type::REGULAR, *rc_stats );
 
   return result;
 }
@@ -186,9 +186,9 @@ DEFINE_API_IMPL( rc_api_impl, get_rc_operation_stats )
 {
   get_rc_operation_stats_return result;
 
-  const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
   // stats won't be enabled until RC plugin starts working (plus they are not enabled in testnet)
-  FC_ASSERT( rc_plugin.is_rc_stats_enabled(), "Gathering of RC stats not enabled." );
+  const auto* rc_stats = _db.find< rc_stats_object >( RC_ARCHIVE_STATS_ID );
+  FC_ASSERT( rc_stats, "Gathering of RC stats not enabled." );
 
   //compare with from_string defined in FC_REFLECT_ENUM - we don't have enum here but situation is similar
   int op_id = 0;
@@ -217,7 +217,7 @@ DEFINE_API_IMPL( rc_api_impl, get_rc_operation_stats )
     }
   }
 
-  const auto& op_stats = _db.get< rc_stats_object >( RC_ARCHIVE_STATS_ID ).get_op_stats( op_id );
+  const auto& op_stats = rc_stats->get_op_stats( op_id );
 
   result.count = op_stats.count;
   result.avg_cost_rc = op_stats.average_cost();
