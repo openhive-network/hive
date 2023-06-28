@@ -84,7 +84,6 @@ class rc_plugin_impl
 
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
-    bool                          _enable_rc_stats = false; //needs to be false by default
 
     std::shared_ptr< generic_custom_operation_interpreter< hive::chain::rc_custom_operation > > _custom_operation_interpreter;
 
@@ -169,9 +168,11 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   tx_info.payer = _db.rc.get_resource_user( note.transaction );
   _db.rc.use_account_rcs( &tx_info, total_cost );
 
-  if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
+  const rc_stats_object* rc_stats = nullptr;
+  if( ( _db.is_validating_block() || _db.is_replaying_block() ) &&
+    ( rc_stats = _db.find< rc_stats_object >( RC_PENDING_STATS_ID ) ) != nullptr )
   {
-    _db.modify( _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID ), [&]( rc_stats_object& stats_obj )
+    _db.modify( *rc_stats, [&]( rc_stats_object& stats_obj )
     {
       stats_obj.add_stats( tx_info );
     } );
@@ -285,9 +286,11 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       block_info.budget = pool_obj.get_last_known_budget();
   } );
 
-  if( _enable_rc_stats && ( note.block_num % HIVE_BLOCKS_PER_DAY ) == 0 )
+  const rc_stats_object* rc_stats = nullptr;
+  if( ( note.block_num % HIVE_BLOCKS_PER_DAY ) == 0 &&
+    ( rc_stats = _db.find< rc_stats_object >( RC_PENDING_STATS_ID ) ) != nullptr )
   {
-    const auto& new_stats_obj = _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID );
+    const auto& new_stats_obj = *rc_stats;
     if( auto_report_type != resource_credits::report_type::NONE && new_stats_obj.get_starting_block() )
     {
       fc::variant_object report = resource_credits::get_report( auto_report_type, new_stats_obj );
@@ -360,10 +363,10 @@ void rc_plugin_impl::on_first_block()
   const auto& pool_obj = _db.create< rc_pool_object >( params_obj, resource_count_type() );
   ilog( "Genesis pool is ${o}", ( "o", pool_obj.get_pool() ) );
 #ifndef IS_TEST_NET
-  _enable_rc_stats = true; // testnet rarely has enough useful RC data to collect and report
-#endif
+  // testnet rarely has enough useful RC data to collect and report
   _db.create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
   _db.create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
+#endif
   _db.create< rc_pending_data >();
 
   const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
@@ -938,25 +941,9 @@ bool rc_plugin::is_active() const
   return !my->before_first_block();
 }
 
-void rc_plugin::set_enable_rc_stats( bool enable )
-{
-  my->_enable_rc_stats = enable;
-}
-
-bool rc_plugin::is_rc_stats_enabled() const
-{
-  return my->_enable_rc_stats;
-}
-
 void rc_plugin::validate_database()
 {
   my->validate_database();
-}
-
-fc::variant_object rc_plugin::get_report( resource_credits::report_type rt, bool pending ) const
-{
-  const rc_stats_object& stats = my->_db.get< rc_stats_object >( pending ? RC_PENDING_STATS_ID : RC_ARCHIVE_STATS_ID );
-  return resource_credits::get_report( rt, stats );
 }
 
 } } } // hive::plugins::rc

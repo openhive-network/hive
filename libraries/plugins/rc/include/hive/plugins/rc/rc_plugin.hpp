@@ -37,12 +37,7 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 
     bool is_active() const; ///< tells if RC already started
 
-    void set_enable_rc_stats( bool enable = true );
-    bool is_rc_stats_enabled() const;
-
     void validate_database();
-
-    fc::variant_object get_report( hive::chain::resource_credits::report_type rt, bool pending = false ) const;
 
   private:
     std::unique_ptr< detail::rc_plugin_impl > my;
