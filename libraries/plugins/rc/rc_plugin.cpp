@@ -287,7 +287,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
   } );
 
   const rc_stats_object* rc_stats = nullptr;
-  if( ( note.block_num % HIVE_BLOCKS_PER_DAY ) == 0 &&
+  if( ( note.block_num % HIVE_RC_STATS_REPORT_FREQUENCY ) == 0 &&
     ( rc_stats = _db.find< rc_stats_object >( RC_PENDING_STATS_ID ) ) != nullptr )
   {
     const auto& new_stats_obj = *rc_stats;
