@@ -1001,6 +1001,9 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     if( alternate_chain_spec.get_object().contains( "allow_not_enough_rc" ) )
       configuration_data.allow_not_enough_rc = alternate_chain_spec[ "allow_not_enough_rc" ].as< bool >();
 
+    if( alternate_chain_spec.get_object().contains( "generate_missed_block_operations" ) )
+      configuration_data.set_generate_missed_block_operations( alternate_chain_spec[ "generate_missed_block_operations" ].as< bool >() );
+
     std::vector< string > init_witnesses;
     if( alternate_chain_spec.get_object().contains("init_witnesses") )
       init_witnesses = alternate_chain_spec["init_witnesses"].as< std::vector< string > >();
