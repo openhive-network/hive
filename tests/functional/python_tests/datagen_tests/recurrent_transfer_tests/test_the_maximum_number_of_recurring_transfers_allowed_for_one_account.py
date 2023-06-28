@@ -9,9 +9,10 @@ from hive_local_tools.constants import BASE_ACCOUNTS, MAX_OPEN_RECURRENT_TRANSFE
 from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 AMOUNT_SELECTED_ACCOUNTS: Final[int] = 250
+TIME_MULTIPLIER: Final[int] = 90
 
 
-@pytest.mark.parametrize("limited_run", [True])  # Change to False if you want to run a full test run
+@pytest.mark.parametrize("limited_run", [False])  # Change to False if you want to run a full test run
 def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(replayed_node: ReplayedNodeMaker, limited_run):
     """
     Test scenario: block log that was replayed contains ordered recurrent transfers.
@@ -32,7 +33,8 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
     replayed_node = replayed_node(
         block_log_directory,
         absolute_start_time=timestamp + tt.Time.days(2),
-        timeout=600
+        timeout=600,
+        time_multiplier=TIME_MULTIPLIER,
     )
 
     number_of_accounts_to_check = (
