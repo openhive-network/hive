@@ -1,8 +1,10 @@
+import functools
 import os
 import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Callable, Optional, Tuple, Any
 from functools import partial
+import concurrent.futures
 
 import test_tools as tt
 from .complex_networks_helper_functions import connect_sub_networks
@@ -142,22 +144,34 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
     allow_external_time_offsets = time_offsets is not None and len(time_offsets) == len(nodes)
     tt.logger.info(f"External time offsets: {'enabled' if allow_external_time_offsets else 'disabled'}")
 
+    # TODO: dwie pętle, pierwsza wczytuje block logi (--exit-before-sync), następnie druga pętla odpala wszystkie nody w jendym czasie (z time offsetem)
     if blocklog_directory is not None:
+        nodes[0].config.shared_file_size = "1G"
         nodes[0].run(wait_for_live=False, replay_from=block_log, time_offset=modify_time_offset(timestamp, time_offsets[0]) if allow_external_time_offsets else time_offset)
     else:
+        nodes[0].config.shared_file_size = "1G"
         nodes[0].run(wait_for_live=False)
     init_node_p2p_endpoint = nodes[0].p2p_endpoint
+    nodes[0].close()
     cnt_node = 1
     for node in nodes[1:]:
         node.config.p2p_seed_node.append(init_node_p2p_endpoint)
         if blocklog_directory is not None:
-            node.run(wait_for_live=False, replay_from=block_log, time_offset=modify_time_offset(timestamp, time_offsets[cnt_node]) if allow_external_time_offsets else time_offset)
+            node.config.shared_file_size = "1G"
+            # node.run(wait_for_live=False, replay_from=block_log, time_offset=modify_time_offset(timestamp, time_offsets[cnt_node]) if allow_external_time_offsets else time_offset)
+            node.run(replay_from=block_log, exit_before_synchronization=True)
         else:
+            node.config.shared_file_size = "1G"
             node.run(wait_for_live=False)
         cnt_node += 1
 
     for network in networks:
         network.is_running = True
+
+    tt.logger.info(">>>>>> STARTING ALL NODES >>>>>>")
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        executor.map(lambda node: node.run(wait_for_live=False, time_offset=modify_time_offset(timestamp, time_offsets[
+            cnt_node]) if allow_external_time_offsets else time_offset), nodes)
 
     for node in nodes:
         tt.logger.debug(f"Waiting for {node} to be live...")
