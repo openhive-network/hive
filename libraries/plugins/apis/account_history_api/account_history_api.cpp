@@ -16,7 +16,7 @@ class abstract_account_history_api_impl
     virtual get_account_history_return get_account_history( const get_account_history_args& ) = 0;
     virtual enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) = 0;
 
-    chain::database& _db;
+    chain::full_database& _db;
 };
 
 class account_history_api_rocksdb_impl : public abstract_account_history_api_impl
