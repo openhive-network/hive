@@ -32,8 +32,8 @@ namespace { /// anonymous
 using detail::block_flags;
 using detail::block_attributes_t;
 
-const uint16_t FORMAT_MAJOR = 1;
-const uint16_t FORMAT_MINOR = 1;
+constexpr uint16_t FORMAT_MAJOR = 1;
+constexpr uint16_t FORMAT_MINOR = 1;
 
 #define HANDLE_IO(stmt, msg) \
 { \
