@@ -588,9 +588,9 @@ bool get_block_artifacts(const fc::path& block_log_artifacts_file_path, const st
         std::cerr << "[get_block_artifacts][error] starting_block_number - " << *starting_block_number << " is bigger than artifacts head block number: " << artifacts_block_head_num << ".\n";
         return false;
       }
-      if (ending_block_number && *ending_block_number > artifacts_block_head_num)
+      if (ending_block_number && *ending_block_number > artifacts_block_head_num - 1)
       {
-        std::cerr << "[get_block_artifacts][error] ending_block_number - " << *ending_block_number << " is bigger than artifacts head block number: " << artifacts_block_head_num << ".\n";
+        std::cerr << "[get_block_artifacts][error] ending_block_number - " << *ending_block_number << " is bigger than artifacts head block number -1: " << artifacts_block_head_num << ".\n";
         return false;
       }
     }

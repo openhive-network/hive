@@ -646,6 +646,8 @@ void block_log_artifacts::impl::truncate_file(uint32_t last_block)
 
 void block_log_artifacts::impl::process_block_artifacts(uint32_t block_num, uint32_t count, artifact_file_chunk_processor_t processor) const
 {
+  FC_ASSERT(block_num != _header.head_block_num, "It's not possible to read head block artifacts.");
+
   auto chunk_position = calculate_offset(block_num);
 
   std::vector<artifact_file_chunk> chunk_buffer;
@@ -802,7 +804,7 @@ std::string block_log_artifacts::get_artifacts_contents(const std::optional<uint
     {
       const uint32_t artifacts_head_block_number = read_head_block_num();
       const uint32_t start_block_num = starting_block_number ? *starting_block_number : 1;
-      const uint32_t end_block_num = ending_block_number ? *ending_block_number : artifacts_head_block_number;
+      const uint32_t end_block_num = ending_block_number ? *ending_block_number : (artifacts_head_block_number - 1);
 
       FC_ASSERT(start_block_num <= artifacts_head_block_number);
       FC_ASSERT(end_block_num <= artifacts_head_block_number);
