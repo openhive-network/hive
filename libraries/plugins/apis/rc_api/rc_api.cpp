@@ -32,7 +32,7 @@ class rc_api_impl
       (get_rc_operation_stats)
     )
 
-    chain::database& _db;
+    chain::full_database& _db;
 };
 
 DEFINE_API_IMPL( rc_api_impl, get_resource_params )

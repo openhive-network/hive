@@ -80,7 +80,7 @@ namespace detail {
     boost::asio::deadline_timer                                        _timer;
 
     plugins::chain::chain_plugin& _chain_plugin;
-    chain::database&              _db;
+    chain::full_database&              _db;
     boost::signals2::connection   _post_apply_block_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
     boost::signals2::connection   _finish_push_block_conn;
@@ -183,9 +183,9 @@ namespace detail {
 
   struct operation_visitor
   {
-    operation_visitor( chain::database& db ) : _db( db ) {}
+    operation_visitor( chain::full_database& db ) : _db( db ) {}
 
-    chain::database& _db;
+    chain::full_database& _db;
 
     typedef void result_type;
 
