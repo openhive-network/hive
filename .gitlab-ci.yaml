@@ -61,7 +61,7 @@ prepare_hived_data:
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
   resource_group: ${CI_COMMIT_SHA}
   tags:
-    - hive-builder-4
+    - data-cache-storage
   rules:
     - if: $RUN_MIRRORNET_PIPELINE == "false"
 
@@ -72,7 +72,7 @@ cleanup_hived_cache_manual:
     CLEANUP_PATH_PATTERN: "/cache/replay_data_hive_*"
   resource_group: ${CI_COMMIT_SHA}
   tags:
-    - hive-builder-4
+    - data-cache-storage
   rules:
     - if: $RUN_MIRRORNET_PIPELINE == "false"
 
@@ -568,7 +568,7 @@ patterns_tests:
     expire_in: 6 hours
   resource_group: ${CI_COMMIT_SHA}
   tags:
-    - hive-builder-4
+    - data-cache-storage
 
 transaction_serialization_testnet_tests:
   stage: test
@@ -630,7 +630,7 @@ python_pattern_mainnet_tests:
     expire_in: 6 hours
   resource_group: ${CI_COMMIT_SHA}
   tags:
-    - hive-builder-4
+    - data-cache-storage
 
 .message_format_tests:
   stage: test
@@ -679,7 +679,7 @@ message_format_mainnet_5m_tests:
     expire_in: 1 week
   resource_group: ${CI_COMMIT_SHA}
   tags:
-    - hive-builder-4
+    - data-cache-storage
 
 message_format_live_mainnet_tests:
   extends: .message_format_tests
@@ -728,7 +728,7 @@ witness_tests:
     - cp $DATA_CACHE_HIVE/datadir/$CI_JOB_NAME.log $CI_PROJECT_DIR/docker_entrypoint.log
   resource_group: ${CI_COMMIT_SHA}
   tags:
-    - hive-builder-4
+    - data-cache-storage
 
 hf28_tests:
   stage: test
