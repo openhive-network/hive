@@ -12,6 +12,7 @@ namespace hive { namespace chain {
 class account_object;
 class database;
 class remove_guard;
+class witness_schedule_object;
 struct rc_transaction_info;
 
 struct rc_price_curve_params
@@ -109,6 +110,9 @@ class resource_credits
     bool has_expired_delegation( const account_object& account ) const;
     // processes all excess RC delegations for current block
     void handle_expired_delegations() const;
+
+    // resource_new_accounts pool is controlled by witnesses - this should be called after every change in witness schedule
+    void set_pool_params( const witness_schedule_object& wso ) const;
 
   private:
     // processes excess RC delegations of single delegator according to limits set by guard

@@ -4,6 +4,7 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/witness_schedule.hpp>
 
+#include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/util/rd_setup.hpp>
 
 #include <hive/protocol/config.hpp>
@@ -414,9 +415,13 @@ void update_witness_schedule(database& db)
         } );
 
         update_witness_schedule4(db, future_wso);
-        return;
       }
-      update_witness_schedule4(db, wso);
+      else
+      {
+        update_witness_schedule4(db, wso);
+      }
+      if( db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+        db.rc.set_pool_params( wso );
       return;
     }
 

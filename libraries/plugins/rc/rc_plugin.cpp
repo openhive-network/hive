@@ -178,26 +178,10 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
 
   auto now = _db.head_block_time();
   const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-  const witness_schedule_object& wso = _db.get_witness_schedule_object();
   const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
 
   rc_block_info block_info;
   block_info.regen = ( gpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
-
-  if( params_obj.resource_param_array[ resource_new_accounts ].resource_dynamics_params !=
-      wso.account_subsidy_rd )
-  {
-    dlog( "Copying changed subsidy params from consensus in block ${b}", ("b", gpo.head_block_number) );
-    _db.modify( params_obj, [&]( rc_resource_param_object& p )
-    {
-      p.resource_param_array[ resource_new_accounts ].resource_dynamics_params = wso.account_subsidy_rd;
-      // Hardcoded to use default values of rc_curve_gen_params() fields for now
-      generate_rc_curve_params(
-        p.resource_param_array[ resource_new_accounts ].price_curve_params,
-        p.resource_param_array[ resource_new_accounts ].resource_dynamics_params,
-        rc_curve_gen_params() );
-    } );
-  }
 
   const auto& bucket_idx = _db.get_index< rc_usage_bucket_index >().indices().get< by_timestamp >();
   const auto* active_bucket = &( *bucket_idx.rbegin() );
@@ -269,7 +253,7 @@ void rc_plugin_impl::on_first_block()
   fc::from_variant( resource_params_var, resource_params_pairs );
   fc::time_point_sec now = _db.get_dynamic_global_properties().time;
 
-  _db.create< rc_resource_param_object >(
+  const rc_resource_param_object& rc_params = _db.create< rc_resource_param_object >(
     [&]( rc_resource_param_object& params_obj )
     {
       for( auto& kv : resource_params_pairs )
@@ -282,8 +266,8 @@ void rc_plugin_impl::on_first_block()
 
       dlog( "Genesis params_obj is ${o}", ("o", params_obj) );
     } );
-
-  const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+  // override value for new account tokens using parameters provided by witnesses
+  _db.rc.set_pool_params( _db.get_witness_schedule_object() );
 
   //create usage statistics buckets (empty, but with proper timestamps, last bucket has current timestamp)
   time_point_sec timestamp = now - fc::seconds( HIVE_RC_BUCKET_TIME_LENGTH * ( HIVE_RC_WINDOW_BUCKET_COUNT - 1 ) );
@@ -293,7 +277,7 @@ void rc_plugin_impl::on_first_block()
     timestamp += fc::seconds( HIVE_RC_BUCKET_TIME_LENGTH );
   }
 
-  const auto& pool_obj = _db.create< rc_pool_object >( params_obj, resource_count_type() );
+  const auto& pool_obj = _db.create< rc_pool_object >( rc_params, resource_count_type() );
   ilog( "Genesis pool is ${o}", ( "o", pool_obj.get_pool() ) );
 #ifndef IS_TEST_NET
   // testnet rarely has enough useful RC data to collect and report
