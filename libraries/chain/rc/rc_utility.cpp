@@ -1,5 +1,6 @@
 #include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_curve.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/util/remove_guard.hpp>
@@ -542,6 +543,30 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
       new_stats.archive_and_reset_stats( old_stats, rc_pool, block_num, global_regen );
     } );
   } );
+}
+
+void resource_credits::set_pool_params( const witness_schedule_object& wso ) const
+{
+  //hardfork needs to be tested outside because the routine is actually also used right before HF20 activates
+
+  //temporary check until testnet also activates RC on HF20 instead of arbitrary block:
+  if( db.count< rc_resource_param_object >() == 0 )
+    return;
+
+  const auto& rc_params = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+  if( rc_params.resource_param_array[ resource_new_accounts ].resource_dynamics_params != wso.account_subsidy_rd )
+  {
+    dlog( "Activating new account subsidy params in block ${b}", ( "b", db.head_block_num() ) );
+    db.modify( rc_params, [&]( rc_resource_param_object& p )
+    {
+      p.resource_param_array[ resource_new_accounts ].resource_dynamics_params = wso.account_subsidy_rd;
+      // Hardcoded to use default values of rc_curve_gen_params() fields for now
+      generate_rc_curve_params(
+        p.resource_param_array[ resource_new_accounts ].price_curve_params,
+        p.resource_param_array[ resource_new_accounts ].resource_dynamics_params,
+        rc_curve_gen_params() );
+    } );
+  }
 }
 
 } }
