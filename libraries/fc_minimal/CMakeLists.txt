@@ -1,16 +1,6 @@
-PROJECT( fc_minimal )
-CMAKE_MINIMUM_REQUIRED( VERSION 2.8.12 )
 
-set( CMAKE_CXX_STANDARD 17 )
-set( CMAKE_CXX_EXTENSIONS OFF )
-set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
-set( CMAKE_C_STANDARD 99 )
-set( CMAKE_C_STANDARD_REQUIRED ON )
-
-cmake_policy(SET CMP0057 NEW)
-
-file(GLOB HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp")
+file(GLOB HEADERS "include/fc/*.hpp" )
 
 set( fc_minimal_sources
         src/variant.cpp
@@ -56,6 +46,7 @@ set( fc_minimal_sources
         vendor/simdjson/simdjson.cpp
         src/compress/zlib.cpp
         src/crypto/elliptic_impl_priv.cpp
+        ${HEADERS}
      )
 
 SET( BOOST_COMPONENTS )

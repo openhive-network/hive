@@ -21,7 +21,7 @@ class beekeeper_app_init : public beekeeper_app_base
     bpo::options_description                              options;
     std::shared_ptr<beekeeper::beekeeper_wallet_manager>  wallet_manager_ptr;
 
-    void set_program_options();
+    void set_program_options() override;
 
   protected:
 
@@ -39,7 +39,7 @@ class beekeeper_app_init : public beekeeper_app_base
     beekeeper_app_init();
     ~beekeeper_app_init() override;
 
-    int execute( int argc, char** argv );
+    int execute( int argc, char** argv ) override;
 };
 
 }
