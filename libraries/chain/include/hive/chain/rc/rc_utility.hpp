@@ -30,6 +30,7 @@ struct rc_resource_params
 class resource_credits
 {
   public:
+    enum class report_output { DLOG, ILOG, NOTIFY };
     enum class report_type
     {
       NONE, //no report
@@ -37,6 +38,14 @@ class resource_credits
       REGULAR, //no detailed operation stats
       FULL //everything
     };
+    // parses given config options for type and output of RC stats reports and sets them
+    static void set_auto_report( const std::string& _option_type, const std::string& _option_output );
+    // sets type of automatic report for all RC objects (note: there is usually one, just like database)
+    static void set_auto_report( report_type rt, report_output ro )
+    {
+      auto_report_type = rt;
+      auto_report_output = ro;
+    }
     // builds JSON (variant) representation of given RC stats
     static fc::variant_object get_report( report_type rt, const rc_stats_object& stats );
 
@@ -109,9 +118,17 @@ class resource_credits
       uint32_t now,
       remove_guard& obj_perf ) const;
 
+  public:
+    // generates RC stats report and rotates data - temporarily public, should be called after rc_pool was updated after current block
+    void handle_auto_report( uint32_t block_num, int64_t global_regen, const rc_pool_object& rc_pool ) const;
+
+  private:
     resource_credits( database& _db ) : db( _db ) {} //can only be used by database
     database& db;
     friend class database;
+
+    static report_type auto_report_type; //type of automatic daily rc stats reports
+    static report_output auto_report_output; //output of automatic daily rc stat reports
 };
 
 } } // hive::chain

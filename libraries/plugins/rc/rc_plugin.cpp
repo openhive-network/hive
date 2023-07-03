@@ -41,15 +41,6 @@ using hive::chain::util::manabar_params;
 class rc_plugin_impl
 {
   public:
-    enum class report_output { DLOG, ILOG, NOTIFY };
-
-    static void set_auto_report( const std::string& _option_type, const std::string& _option_output );
-    static void set_auto_report( resource_credits::report_type _type, report_output _output )
-    {
-      auto_report_type = _type;
-      auto_report_output = _output;
-    }
-
     rc_plugin_impl( rc_plugin& _plugin ) :
       _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin )
@@ -97,36 +88,7 @@ class rc_plugin_impl
     boost::signals2::connection   _post_apply_operation_conn;
     boost::signals2::connection   _pre_apply_custom_operation_conn;
     boost::signals2::connection   _post_apply_custom_operation_conn;
-
-    static resource_credits::report_type auto_report_type; //type of automatic daily rc stats reports
-    static report_output auto_report_output; //output of automatic daily rc stat reports
 };
-
-resource_credits::report_type rc_plugin_impl::auto_report_type = resource_credits::report_type::REGULAR;
-rc_plugin_impl::report_output rc_plugin_impl::auto_report_output = rc_plugin_impl::report_output::ILOG;
-
-void rc_plugin_impl::set_auto_report( const std::string& _option_type, const std::string& _option_output )
-{
-  if( _option_type == "NONE" )
-    auto_report_type = resource_credits::report_type::NONE;
-  else if( _option_type == "MINIMAL" )
-    auto_report_type = resource_credits::report_type::MINIMAL;
-  else if( _option_type == "REGULAR" )
-    auto_report_type = resource_credits::report_type::REGULAR;
-  else if( _option_type == "FULL" )
-    auto_report_type = resource_credits::report_type::FULL;
-  else
-    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report type" );
-
-  if( _option_output == "NOTIFY" )
-    auto_report_output = report_output::NOTIFY;
-  else if( _option_output == "ILOG" )
-    auto_report_output = report_output::ILOG;
-  else if( _option_output == "DLOG" )
-    auto_report_output = report_output::DLOG;
-  else
-    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report output" );
-}
 
 void rc_plugin_impl::on_pre_apply_transaction( const transaction_notification& note )
 {
@@ -286,36 +248,7 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
       block_info.budget = pool_obj.get_last_known_budget();
   } );
 
-  const rc_stats_object* rc_stats = nullptr;
-  if( ( note.block_num % HIVE_RC_STATS_REPORT_FREQUENCY ) == 0 &&
-    ( rc_stats = _db.find< rc_stats_object >( RC_PENDING_STATS_ID ) ) != nullptr )
-  {
-    const auto& new_stats_obj = *rc_stats;
-    if( auto_report_type != resource_credits::report_type::NONE && new_stats_obj.get_starting_block() )
-    {
-      fc::variant_object report = resource_credits::get_report( auto_report_type, new_stats_obj );
-      switch( auto_report_output )
-      {
-      case report_output::NOTIFY:
-        appbase::app().notify( "RC stats", "rc_stats", report );
-        break;
-      case report_output::ILOG:
-        ilog( "RC stats:${report}", ( report ) );
-        break;
-      default:
-        dlog( "RC stats:${report}", ( report ) );
-        break;
-      };
-    }
-    const auto& old_stats_obj = _db.get< rc_stats_object, by_id >( RC_ARCHIVE_STATS_ID );
-    _db.modify( old_stats_obj, [&]( rc_stats_object& old_stats )
-    {
-      _db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
-      {
-        new_stats.archive_and_reset_stats( old_stats, rc_pool, note.block_num, block_info.regen );
-      } );
-    } );
-  }
+  _db.rc.handle_auto_report( note.block_num, block_info.regen, rc_pool );
 
   _db.modify( *active_bucket, [&]( rc_usage_bucket_object& bucket )
   {
@@ -912,7 +845,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
     // Add the registry to the database so the database can delegate custom ops to the plugin
     my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
 
-    my->set_auto_report( options.at( "rc-stats-report-type" ).as<std::string>(),
+    my->_db.rc.set_auto_report( options.at( "rc-stats-report-type" ).as<std::string>(),
       options.at( "rc-stats-report-output" ).as<std::string>() );
 
     ilog( "RC's will be computed starting at block ${b}", ("b", my->_enable_at_block) );

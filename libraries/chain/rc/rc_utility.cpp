@@ -4,12 +4,45 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/util/remove_guard.hpp>
 
+#include <appbase/application.hpp>
+
 #include <fc/reflect/variant.hpp>
 #include <fc/uint128.hpp>
 
 namespace hive { namespace chain {
 
 using fc::uint128_t;
+
+resource_credits::report_type resource_credits::auto_report_type = resource_credits::report_type::REGULAR;
+resource_credits::report_output resource_credits::auto_report_output = resource_credits::report_output::ILOG;
+
+void resource_credits::set_auto_report( const std::string& _option_type, const std::string& _option_output )
+{
+  report_type rt = report_type::REGULAR;
+  report_output ro = report_output::ILOG;
+
+  if( _option_type == "NONE" )
+    rt = report_type::NONE;
+  else if( _option_type == "MINIMAL" )
+    rt = report_type::MINIMAL;
+  else if( _option_type == "REGULAR" )
+    rt = report_type::REGULAR;
+  else if( _option_type == "FULL" )
+    rt = report_type::FULL;
+  else
+    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report type" );
+
+  if( _option_output == "NOTIFY" )
+    ro = report_output::NOTIFY;
+  else if( _option_output == "ILOG" )
+    ro = report_output::ILOG;
+  else if( _option_output == "DLOG" )
+    ro = report_output::DLOG;
+  else
+    FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report output" );
+
+  set_auto_report( rt, ro );
+}
 
 fc::variant_object resource_credits::get_report( report_type rt, const rc_stats_object& stats )
 {
@@ -471,6 +504,44 @@ void resource_credits::remove_delegations( int64_t& delegation_overflow, account
 
     delegation_overflow -= delta_rc;
   }
+}
+
+void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_regen,
+  const rc_pool_object& rc_pool ) const
+{
+  if( ( block_num % HIVE_RC_STATS_REPORT_FREQUENCY ) != 0 )
+    return;
+
+  const rc_stats_object* rc_stats = db.find< rc_stats_object >( RC_PENDING_STATS_ID );
+  if( rc_stats == nullptr )
+    return;
+
+  const auto& new_stats_obj = *rc_stats;
+  if( auto_report_type != report_type::NONE && new_stats_obj.get_starting_block() )
+  {
+    fc::variant_object report = get_report( auto_report_type, new_stats_obj );
+    switch( auto_report_output )
+    {
+    case report_output::NOTIFY:
+      appbase::app().notify( "RC stats", "rc_stats", report );
+      break;
+    case report_output::ILOG:
+      ilog( "RC stats:${report}", ( report ) );
+      break;
+    default:
+      dlog( "RC stats:${report}", ( report ) );
+      break;
+    };
+  }
+
+  const auto& old_stats_obj = db.get< rc_stats_object, by_id >( RC_ARCHIVE_STATS_ID );
+  db.modify( old_stats_obj, [&]( rc_stats_object& old_stats )
+  {
+    db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
+    {
+      new_stats.archive_and_reset_stats( old_stats, rc_pool, block_num, global_regen );
+    } );
+  } );
 }
 
 } }
