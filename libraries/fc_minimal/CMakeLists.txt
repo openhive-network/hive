@@ -1,13 +1,16 @@
-# #
-# # Defines fc library target.
-
 PROJECT( fc_minimal )
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8.12 )
 
-file(GLOB HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp" )
+set( CMAKE_CXX_STANDARD 17 )
+set( CMAKE_CXX_EXTENSIONS OFF )
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
-SET( ECC_LIB secp256k1 )
-SET( ECC_REST src/crypto/elliptic_impl_priv.cpp )
+set( CMAKE_C_STANDARD 99 )
+set( CMAKE_C_STANDARD_REQUIRED ON )
+
+cmake_policy(SET CMP0057 NEW)
+
+file(GLOB HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp")
 
 set( fc_minimal_sources
         src/variant.cpp
@@ -27,7 +30,7 @@ set( fc_minimal_sources
         src/log/file_appender.cpp
         src/log/console_appender.cpp
         src/crypto/elliptic_common.cpp
-        src/crypto/elliptic_${ECC_IMPL}.cpp
+        src/crypto/elliptic_secp256k1.cpp
         src/crypto/sha512.cpp
         src/crypto/sha256.cpp
         src/crypto/aes.cpp
@@ -52,56 +55,57 @@ set( fc_minimal_sources
         src/thread/spin_lock.cpp
         vendor/simdjson/simdjson.cpp
         src/compress/zlib.cpp
-        ${ECC_REST}
+        src/crypto/elliptic_impl_priv.cpp
      )
 
-SET( SECP256K1_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp" )
-SET( SEC256K1_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp-build )
-
-include(ExternalProject)
-
-ExternalProject_Add( project_secp256k1_minimal
-PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
-SOURCE_DIR ${SECP256K1_SRC_DIR}
-BINARY_DIR ${SEC256K1_BINARY_DIR}
-CONFIGURE_COMMAND ${SECP256K1_SRC_DIR}/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no --enable-tests=no --enable-benchmark=no --enable-module-recovery --enable-experimental --enable-module-generator --enable-module-rangeproof
-BUILD_COMMAND make
-INSTALL_COMMAND true
-BUILD_BYPRODUCTS ${SEC256K1_BINARY_DIR}/.libs/libsecp256k1.a ${SEC256K1_BINARY_DIR}/.libs/libsecp256k1.so
+SET( BOOST_COMPONENTS )
+# Here define all boost libraries being used by Hive subprojects
+LIST( APPEND BOOST_COMPONENTS
+        atomic
+        date_time
+        filesystem
+        program_options
+        system
 )
 
-ExternalProject_Add_Step(project_secp256k1_minimal autogen
-WORKING_DIRECTORY ${SECP256K1_SRC_DIR}
-COMMAND ${SECP256K1_SRC_DIR}/autogen.sh
-DEPENDERS configure
-)
+set(BOOSTROOT "/home/mario/src/BOOST/sysroot/prebuilt_boost/")
+set(Boost_USE_STATIC_RUNTIME ON)
+#set(CMAKE_STATIC_LIBRARY_SUFFIX ".a;.bc")
+set(Boost_DIR ${BOOSTROOT}/lib/cmake/Boost-1.82.0)
+set(boost_atomic_DIR ${BOOSTROOT}/lib/cmake/boost_atomic-1.82.0)
+set(boost_date_time_DIR ${BOOSTROOT}/lib/cmake/boost_date_time-1.82.0)
+set(boost_filesystem_DIR ${BOOSTROOT}/lib/cmake/boost_filesystem-1.82.0)
+set(boost_headers_DIR ${BOOSTROOT}/lib/cmake/boost_headers-1.82.0)
+set(boost_program_options_DIR ${BOOSTROOT}/lib/cmake/boost_program_options-1.82.0)
+set(boost_system_DIR ${BOOSTROOT}/lib/cmake/boost_system-1.82.0)
 
-ExternalProject_Get_Property(project_secp256k1_minimal binary_dir)
+FIND_PACKAGE( Boost 1.82 REQUIRED CONFIG COMPONENTS ${BOOST_COMPONENTS} )
+MESSAGE( "FOUND BOOST WITH COMPONENTS: ${BOOST_COMPONENTS}")
 
+SET( binary_dir_secp256k1 "/home/mario/src/SEC256K1/secp256k1-zkp" )
 add_library(secp256k1 STATIC IMPORTED)
-set_property(TARGET secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
-set_property(TARGET secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
-add_dependencies(secp256k1 project_secp256k1_minimal)
+set_property(TARGET secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir_secp256k1}/.libs/libsecp256k1.a)
 
-ADD_LIBRARY( STATIC_BOOST_minimal INTERFACE )
-SET_TARGET_PROPERTIES( STATIC_BOOST_minimal PROPERTIES POSITION_INDEPENDENT_CODE OFF )
-ADD_TARGET_BOOST_LIBRARIES( STATIC_BOOST_minimal )
+SET( binary_dir_openssl "/home/mario/src/OPENSSL/openssl" )
+SET( include_dir_openssl "/home/mario/src/OPENSSL/openssl/include" )
+add_library(openssl_wasm STATIC IMPORTED)
+set_property(TARGET openssl_wasm PROPERTY IMPORTED_LOCATION ${binary_dir_openssl}/libssl.a)
 
-ADD_LIBRARY ( STATIC_OPENSSL_minimal INTERFACE )
-ADD_TARGET_OPENSSL_LIBRARIES (STATIC_OPENSSL_minimal TRUE)
+add_library(crypto_wasm STATIC IMPORTED)
+set_property(TARGET crypto_wasm PROPERTY IMPORTED_LOCATION ${binary_dir_openssl}/libcrypto.a)
 
 add_library ( fc_minimal STATIC ${fc_minimal_sources} )
 
 SET( public_includes
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${Boost_INCLUDE_DIR}
-        ${OPENSSL_INCLUDE_DIR}
+        ${include_dir_openssl}
 )
 
 SET( private_includes
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/simdjson
+        ${binary_dir_secp256k1}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/simdjson
 )
 
 TARGET_INCLUDE_DIRECTORIES( fc_minimal PUBLIC ${public_includes} PRIVATE ${private_includes} )
-target_link_libraries( fc_minimal PUBLIC STATIC_BOOST_minimal STATIC_OPENSSL_minimal ${ECC_LIB} )
+target_link_libraries( fc_minimal PUBLIC ${Boost_LIBRARIES} openssl_wasm crypto_wasm secp256k1 )

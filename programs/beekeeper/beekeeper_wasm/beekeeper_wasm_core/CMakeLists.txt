@@ -1,5 +1,7 @@
-file(GLOB HEADERS "include/beekeeper_wasm_core/*.hpp")
-file(GLOB HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/../../core/include/beekeeper_wasm_core/*.hpp")
+
+file(GLOB HEADERS "include/beekeeper_wasm_core/*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/../../core/include/beekeeper_wasm_core/*.hpp" )
+
+add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/fc_minimal build_2 )
 
 ADD_LIBRARY( beekeeper_wasm_core STATIC
                       beekeeper_wasm_app.cpp
@@ -14,5 +16,10 @@ ADD_LIBRARY( beekeeper_wasm_core STATIC
                       ../../core/beekeeper_app_init.cpp
 )
 
-TARGET_INCLUDE_DIRECTORIES( beekeeper_wasm_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../../core/include" )
+set( INCLUDES
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/../../core/include
+    )
+
+TARGET_INCLUDE_DIRECTORIES( beekeeper_wasm_core PUBLIC ${INCLUDES} )
 TARGET_LINK_LIBRARIES( beekeeper_wasm_core fc_minimal hive_protocol )

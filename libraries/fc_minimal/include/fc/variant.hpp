@@ -155,7 +155,7 @@ namespace fc
    void to_variant( const microseconds& input_microseconds,  variant& output_variant );
    void from_variant( const variant& input_variant,  microseconds& output_microseconds );
 
-   #ifdef __APPLE__
+   #if defined( __APPLE__ ) || defined( __EMSCRIPTEN__ )
    void to_variant( size_t s, variant& v );
    #elif !defined(_MSC_VER)
    void to_variant( long long int s, variant& v );
@@ -576,7 +576,7 @@ namespace fc
       memset( this, 0, sizeof(*this) );
       to_variant( val, *this );
    }
-   #ifdef __APPLE__
+   #if defined( __APPLE__ ) || defined( __EMSCRIPTEN__ )
    inline void to_variant( size_t s, variant& v ) { v = variant(uint64_t(s)); }
    #endif
    template<typename T>
