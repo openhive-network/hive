@@ -769,10 +769,6 @@ rc_plugin::~rc_plugin() {}
 
 void rc_plugin::set_program_options( options_description& cli, options_description& cfg )
 {
-  cfg.add_options()
-    ("rc-stats-report-type", bpo::value<string>()->default_value("REGULAR"), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
-    ("rc-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY. Default ILOG." )
-    ;
 }
 
 void rc_plugin::plugin_initialize( const boost::program_options::variables_map& options )
@@ -828,9 +824,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
     // Add the registry to the database so the database can delegate custom ops to the plugin
     my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
-
-    my->_db.rc.set_auto_report( options.at( "rc-stats-report-type" ).as<std::string>(),
-      options.at( "rc-stats-report-output" ).as<std::string>() );
 
     ilog( "RC's will be computed starting at block ${b}", ("b", my->_enable_at_block) );
   }

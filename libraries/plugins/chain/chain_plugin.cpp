@@ -845,6 +845,8 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("alternate-chain-spec", boost::program_options::value<string>(), "Filepath for the alternate chain specification in JSON format")
 #endif
+      ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
+      ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY. Default ILOG." )
       ;
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
@@ -1052,6 +1054,8 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
   block_flow_control::set_auto_report(options.at("block-stats-report-type").as<std::string>(),
                                       options.at("block-stats-report-output").as<std::string>());
+  resource_credits::set_auto_report(options.at("rc-stats-report-type").as<std::string>(),
+                                    options.at("rc-stats-report-output").as<std::string>());
 
   if(my->benchmark_interval > 0)
   {
