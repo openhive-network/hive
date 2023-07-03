@@ -811,6 +811,7 @@ several_node_restarts_tests:
     BLOCK_LOG_SOURCE_DIR: "$BLOCK_LOG_SOURCE_DIR_5M"
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
   script:
+    - test -n "$HIVED_IMAGE_NAME"
     - ./tests/integration/test_several_node_restarts.sh $CI_PROJECT_DIR/data_generated_during_hive_replay 1000000 1500000
   artifacts:
     paths:
