@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/rc/rc_operations.hpp>
 #include <hive/chain/rc/resource_count.hpp>
 
 #include <hive/chain/util/rd_dynamics.hpp>
@@ -11,6 +12,8 @@ namespace hive { namespace chain {
 
 class account_object;
 class database;
+template< typename CustomOperationType >
+class generic_custom_operation_interpreter;
 class remove_guard;
 class witness_schedule_object;
 struct rc_transaction_info;
@@ -130,6 +133,10 @@ class resource_credits
     resource_credits( database& _db ) : db( _db ) {} //can only be used by database
     database& db;
     friend class database;
+
+    void initialize_evaluators();
+
+    std::shared_ptr< generic_custom_operation_interpreter< rc_custom_operation > > _custom_operation_interpreter;
 
     static report_type auto_report_type; //type of automatic daily rc stats reports
     static report_output auto_report_output; //output of automatic daily rc stat reports

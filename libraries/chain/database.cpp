@@ -3911,6 +3911,8 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
   _my->_evaluator_registry.register_evaluator< recurrent_transfer_evaluator             >();
   _my->_evaluator_registry.register_evaluator< witness_block_approve_evaluator          >();
+
+  rc.initialize_evaluators();
 }
 
 
