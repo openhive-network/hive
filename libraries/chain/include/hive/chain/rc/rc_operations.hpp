@@ -23,7 +23,7 @@ typedef fc::static_variant<
   delegate_rc_operation
 > rc_custom_operation;
 
-HIVE_DEFINE_PLUGIN_EVALUATOR( void, rc_custom_operation, delegate_rc );
+HIVE_DEFINE_PLUGIN_EVALUATOR( void, rc_custom_operation, delegate_rc ); // void is "the plugin" handling the operation
 
 #define HIVE_RC_CUSTOM_OPERATION_ID "rc"
 

@@ -3,6 +3,7 @@
 #include <hive/chain/rc/rc_curve.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/generic_custom_operation_interpreter.hpp>
 #include <hive/chain/util/remove_guard.hpp>
 
 #include <appbase/application.hpp>
@@ -543,6 +544,23 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
       new_stats.archive_and_reset_stats( old_stats, rc_pool, block_num, global_regen );
     } );
   } );
+}
+
+void resource_credits::initialize_evaluators()
+{
+  // we only need to register evaluator once, when database is reopened in the same 'database' object
+  // we already have the evaluator (by the way, that is also true from custom evaluators from plugins)
+  if( _custom_operation_interpreter.get() == nullptr )
+  {
+    _custom_operation_interpreter = std::make_shared<
+      generic_custom_operation_interpreter< rc_custom_operation > >( db, HIVE_RC_CUSTOM_OPERATION_ID );
+
+    // register evaluator for each custom operation (we have just one at the moment)
+    _custom_operation_interpreter->register_evaluator< delegate_rc_evaluator >( nullptr );
+
+    // register interpreter in database so it can delegate handling of custom operations to it
+    db.register_custom_operation_interpreter( _custom_operation_interpreter );
+  }
 }
 
 void resource_credits::set_pool_params( const witness_schedule_object& wso ) const

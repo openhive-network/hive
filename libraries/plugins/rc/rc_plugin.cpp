@@ -76,8 +76,6 @@ class rc_plugin_impl
     std::map< account_name_type, int64_t > _account_to_max_rc;
     uint32_t                      _enable_at_block = 1;
 
-    std::shared_ptr< generic_custom_operation_interpreter< hive::chain::rc_custom_operation > > _custom_operation_interpreter;
-
     boost::signals2::connection   _pre_reindex_conn;
     boost::signals2::connection   _post_reindex_conn;
     boost::signals2::connection   _pre_apply_block_conn;
@@ -815,15 +813,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 #endif
 
     appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
-
-    // Each plugin needs its own evaluator registry.
-    my->_custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::chain::rc_custom_operation > >( my->_db, name() );
-
-    // Add each operation evaluator to the registry
-    my->_custom_operation_interpreter->register_evaluator< delegate_rc_evaluator >( this );
-
-    // Add the registry to the database so the database can delegate custom ops to the plugin
-    my->_db.register_custom_operation_interpreter( my->_custom_operation_interpreter );
 
     ilog( "RC's will be computed starting at block ${b}", ("b", my->_enable_at_block) );
   }
