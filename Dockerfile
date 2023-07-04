@@ -107,6 +107,7 @@ RUN mkdir -p /home/hived/bin && \
 COPY --from=build --chown=hived:users \
   /home/hived_admin/build/programs/hived/hived \
   /home/hived_admin/build/programs/cli_wallet/cli_wallet \
+  /home/hived_admin/build/programs/beekeeper/beekeeper \
   /home/hived_admin/build/programs/util/* \
   /home/hived_admin/build/programs/blockchain_converter/blockchain_converter* \
   /home/hived_admin/build/tests/unit/* /home/hived/bin/
