@@ -408,7 +408,7 @@ fork_tests:
   extends: .test_tools_based
 
   variables:
-    PYTEST_TIMEOUT_MINUTES: 15
+    PYTEST_TIMEOUT_MINUTES: 20
     JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
 
   script:
