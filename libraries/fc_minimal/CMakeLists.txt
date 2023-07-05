@@ -53,10 +53,13 @@ SET( BOOST_COMPONENTS )
 # Here define all boost libraries being used by Hive subprojects
 LIST( APPEND BOOST_COMPONENTS
         atomic
+        chrono
+        context
         date_time
         filesystem
         program_options
         system
+        thread
 )
 
 set(BOOSTROOT "/home/mario/src/BOOST/sysroot/prebuilt_boost/")
@@ -64,11 +67,14 @@ set(Boost_USE_STATIC_RUNTIME ON)
 #set(CMAKE_STATIC_LIBRARY_SUFFIX ".a;.bc")
 set(Boost_DIR ${BOOSTROOT}/lib/cmake/Boost-1.82.0)
 set(boost_atomic_DIR ${BOOSTROOT}/lib/cmake/boost_atomic-1.82.0)
+set(boost_chrono_DIR ${BOOSTROOT}/lib/cmake/boost_chrono-1.82.0)
+set(boost_context_DIR ${BOOSTROOT}/lib/cmake/boost_context-1.82.0)
 set(boost_date_time_DIR ${BOOSTROOT}/lib/cmake/boost_date_time-1.82.0)
 set(boost_filesystem_DIR ${BOOSTROOT}/lib/cmake/boost_filesystem-1.82.0)
 set(boost_headers_DIR ${BOOSTROOT}/lib/cmake/boost_headers-1.82.0)
 set(boost_program_options_DIR ${BOOSTROOT}/lib/cmake/boost_program_options-1.82.0)
 set(boost_system_DIR ${BOOSTROOT}/lib/cmake/boost_system-1.82.0)
+set(boost_thread_DIR ${BOOSTROOT}/lib/cmake/boost_thread-1.82.0)
 
 FIND_PACKAGE( Boost 1.82 REQUIRED CONFIG COMPONENTS ${BOOST_COMPONENTS} )
 MESSAGE( "FOUND BOOST WITH COMPONENTS: ${BOOST_COMPONENTS}")
