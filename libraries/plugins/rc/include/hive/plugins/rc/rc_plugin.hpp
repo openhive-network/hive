@@ -35,8 +35,6 @@ class rc_plugin : public appbase::plugin< rc_plugin >
     virtual void plugin_startup() override;
     virtual void plugin_shutdown() override;
 
-    bool is_active() const; ///< tells if RC already started
-
   private:
     std::unique_ptr< detail::rc_plugin_impl > my;
 };

@@ -125,16 +125,21 @@ class resource_credits
       uint32_t now,
       remove_guard& obj_perf ) const;
 
-  public:
-    // generates RC stats report and rotates data - temporarily public, should be called after rc_pool was updated after current block
+    // generates RC stats report and rotates data
     void handle_auto_report( uint32_t block_num, int64_t global_regen, const rc_pool_object& rc_pool ) const;
 
-  private:
     resource_credits( database& _db ) : db( _db ) {} //can only be used by database
     database& db;
     friend class database;
 
     void initialize_evaluators();
+
+    //temporary
+    void on_pre_apply_block() const;
+    void on_pre_apply_block_impl() const;
+    //temporary
+    void on_post_apply_block() const;
+    void on_post_apply_block_impl() const;
 
     std::shared_ptr< generic_custom_operation_interpreter< rc_custom_operation > > _custom_operation_interpreter;
 

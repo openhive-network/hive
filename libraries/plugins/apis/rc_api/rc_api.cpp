@@ -1,5 +1,6 @@
 #include <hive/plugins/rc_api/rc_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
+#include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <hive/chain/rc/resource_sizes.hpp>
 #include <hive/chain/rc/rc_utility.hpp>
@@ -89,8 +90,7 @@ DEFINE_API_IMPL( rc_api_impl, find_rc_accounts )
   find_rc_accounts_return result;
   result.rc_accounts.reserve( args.accounts.size() );
 
-  const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
-  if( rc_plugin.is_active() ) //for backward compatibility, but it would be better to just give error when not started yet
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) ) //for backward compatibility, but it would be better to just give error when not started yet
   {
     for( const account_name_type& a : args.accounts )
     {
@@ -114,8 +114,7 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
   result.rc_accounts.reserve( args.limit );
   account_name_type start = args.start.as< account_name_type >();
 
-  const auto& rc_plugin = appbase::app().get_plugin< rc::rc_plugin >();
-  if( rc_plugin.is_active() ) //for backward compatibility, but it would be better to just give error when not started yet
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) ) //for backward compatibility, but it would be better to just give error when not started yet
   {
     auto& idx = _db.get_index< hive::chain::account_index, hive::chain::by_name >();
     auto itr = idx.lower_bound( start );

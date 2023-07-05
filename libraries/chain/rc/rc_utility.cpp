@@ -563,6 +563,124 @@ void resource_credits::initialize_evaluators()
   }
 }
 
+// equivalent of previous call through signal
+#define ISOLATE_RC_CALL( _context, _name, _call, _args ) \
+{                                                        \
+  if( !db.has_hardfork( HIVE_HARDFORK_0_20 ) )           \
+    return;                                              \
+                                                         \
+  auto& benchmark = db.get_benchmark_dumper();           \
+  if( benchmark.is_enabled() )                           \
+    benchmark.begin();                                   \
+                                                         \
+  HIVE_TRY_NOTIFY( _call, _args );                       \
+                                                         \
+  if( benchmark.is_enabled() )                           \
+    benchmark.end( _context, _name );                    \
+}
+
+void resource_credits::on_pre_apply_block() const
+{
+  ISOLATE_RC_CALL( "pre->rc", "block", on_pre_apply_block_impl, );
+}
+
+void resource_credits::on_pre_apply_block_impl() const
+{
+  db.modify( db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+  {
+    data.reset_pending_usage();
+  } );
+}
+
+void resource_credits::on_post_apply_block() const
+{
+  ISOLATE_RC_CALL( "post->rc", "block", on_post_apply_block_impl, );
+}
+
+void resource_credits::on_post_apply_block_impl() const
+{ try {
+  const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
+  if( dgpo.total_vesting_shares.amount <= 0 )
+    return;
+
+  auto now = dgpo.time;
+  auto block_num = dgpo.head_block_number;
+
+  if( db.has_hardfork( HIVE_HARDFORK_1_26 ) )
+  {
+    // delegations were introduced in HF26, so there is no point in checking them earlier;
+    // also we are doing it in post apply block and not in pre, because otherwise transactions run
+    // during block production would have different environment than when the block was applied
+    handle_expired_delegations();
+  }
+
+  const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
+  const auto& params_obj = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+
+  rc_block_info block_info;
+  block_info.regen = ( dgpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
+
+  const auto& bucket_idx = db.get_index< rc_usage_bucket_index, by_timestamp >();
+  const auto* active_bucket = &( *bucket_idx.rbegin() );
+  bool reset_bucket = time_point_sec( active_bucket->get_timestamp() + fc::seconds( HIVE_RC_BUCKET_TIME_LENGTH ) ) <= now;
+  if( reset_bucket )
+    active_bucket = &( *bucket_idx.begin() );
+
+  const auto& rc_pool = db.get< rc_pool_object, by_id >( rc_pool_id_type() );
+  db.modify( rc_pool, [&]( rc_pool_object& pool_obj )
+  {
+    bool budget_adjustment = false;
+    for( size_t i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+    {
+      const rd_dynamics_params& params = params_obj.resource_param_array[i].resource_dynamics_params;
+      int64_t pool = pool_obj.get_pool(i);
+
+      block_info.pool[i] = pool;
+      block_info.share[i] = pool_obj.count_share(i);
+      if( pool_obj.set_budget( i, params.budget_per_time_unit ) )
+        budget_adjustment = true;
+      block_info.usage[i] = pending_data.get_pending_usage()[i];
+      block_info.cost[i] = pending_data.get_pending_cost()[i];
+      block_info.decay[i] = rd_compute_pool_decay( params.decay_params, pool - block_info.usage[i], 1 );
+
+      // update global usage statistics
+      if( reset_bucket )
+        pool_obj.add_usage( i, -active_bucket->get_usage(i) );
+      pool_obj.add_usage( i, block_info.usage[i] );
+
+      int64_t new_pool = pool - block_info.decay[i] + params.budget_per_time_unit - block_info.usage[i];
+
+      if( i == resource_new_accounts )
+      {
+        int64_t new_consensus_pool = dgpo.available_account_subsidies;
+        if( new_consensus_pool != new_pool )
+        {
+          block_info.new_accounts_adjustment = new_consensus_pool - new_pool;
+          ilog( "resource_new_accounts adjustment on block ${b}: ${a}",
+            ( "a", block_info.new_accounts_adjustment )( "b", block_num ) );
+          new_pool = new_consensus_pool;
+        }
+      }
+
+      pool_obj.set_pool( i, new_pool );
+    }
+    pool_obj.recalculate_resource_weights( params_obj );
+    if( budget_adjustment )
+      block_info.budget = pool_obj.get_last_known_budget();
+  } );
+
+  handle_auto_report( block_num, block_info.regen, rc_pool );
+
+  db.modify( *active_bucket, [&]( rc_usage_bucket_object& bucket )
+  {
+    if( reset_bucket )
+      bucket.reset( now ); //contents of bucket being reset was already subtracted from globals above
+    for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+      bucket.add_usage( i, block_info.usage[i] );
+  } );
+
+} FC_LOG_AND_RETHROW() }
+
 void resource_credits::set_pool_params( const witness_schedule_object& wso ) const
 {
   //hardfork needs to be tested outside because the routine is actually also used right before HF20 activates

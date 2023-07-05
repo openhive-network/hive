@@ -49,6 +49,8 @@ BOOST_AUTO_TEST_CASE( rc_usage_buckets )
   {
     BOOST_TEST_MESSAGE( "Testing rc usage bucket tracking" );
 
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+
     fc::int_array< std::string, HIVE_RC_NUM_RESOURCE_TYPES > rc_names;
     for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
       rc_names[i] = fc::reflector< rc_resource_types >::to_string(i);
@@ -118,18 +120,17 @@ BOOST_AUTO_TEST_CASE( rc_usage_buckets )
     for( const auto& bucket : bucketIdx )
       check_eq( bucket.get_usage(), {} );
 
-    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+    ACTORS( (alice)(bob)(sam) )
+    fund( "alice", 1000 );
+    fund( "bob", 1000 );
+    fund( "sam", 1000 );
+    generate_block();
 
     BOOST_TEST_MESSAGE( "Some resources consumed" );
 
     BOOST_CHECK_EQUAL( print( true ), HIVE_RC_WINDOW_BUCKET_COUNT - 1 );
     check_eq( get_active_bucket().get_usage(), pools.get_usage() );
 
-    ACTORS( (alice)(bob)(sam) )
-    fund( "alice", 1000 );
-    fund( "bob", 1000 );
-    fund( "sam", 1000 );
-    generate_block(); //more resources consumed
     generate_blocks( get_active_bucket().get_timestamp() + fc::seconds( HIVE_RC_BUCKET_TIME_LENGTH - HIVE_BLOCK_INTERVAL ) );
 
     BOOST_TEST_MESSAGE( "First bucket is about to switch" );
@@ -875,7 +876,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
       //check that t2 did not expire but waited couple blocks for RC and finally got accepted
       BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
       BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
-      BOOST_REQUIRE_EQUAL( i, 1 );
+      BOOST_REQUIRE_EQUAL( i, 2 );
     }
 
     validate_database();

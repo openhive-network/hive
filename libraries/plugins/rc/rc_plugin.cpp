@@ -46,10 +46,6 @@ class rc_plugin_impl
       _self( _plugin )
     {}
 
-    void on_pre_reindex( const reindex_notification& node );
-    void on_post_reindex( const reindex_notification& note );
-    void on_pre_apply_block( const block_notification& note );
-    void on_post_apply_block( const block_notification& note );
     void on_pre_apply_transaction( const transaction_notification& note );
     void on_post_apply_transaction( const transaction_notification& note );
     void on_pre_apply_operation( const operation_notification& note );
@@ -62,23 +58,14 @@ class rc_plugin_impl
     template< typename OpType >
     void post_apply_custom_op_type( const custom_operation_notification& note );
 
-    void on_first_block();
-
     bool before_first_block()
     {
-      return (_db.count< rc_resource_param_object >() == 0);
+      return !_db.has_hardfork( HIVE_HARDFORK_0_20 );
     }
 
     database&                     _db;
     rc_plugin&                    _self;
 
-    std::map< account_name_type, int64_t > _account_to_max_rc;
-    uint32_t                      _enable_at_block = 1;
-
-    boost::signals2::connection   _pre_reindex_conn;
-    boost::signals2::connection   _post_reindex_conn;
-    boost::signals2::connection   _pre_apply_block_conn;
-    boost::signals2::connection   _post_apply_block_conn;
     boost::signals2::connection   _pre_apply_transaction_conn;
     boost::signals2::connection   _post_apply_transaction_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
@@ -139,163 +126,6 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
 
 } FC_CAPTURE_AND_RETHROW( (note.transaction) ) }
 
-void rc_plugin_impl::on_pre_apply_block( const block_notification& note )
-{
-  if( before_first_block() )
-    return;
-
-  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
-  {
-    data.reset_pending_usage();
-  } );
-}
-
-void rc_plugin_impl::on_post_apply_block( const block_notification& note )
-{ try{
-  if( before_first_block() )
-  {
-    if( note.block_num >= _enable_at_block )
-      on_first_block(); //all state will be ready for full processing cycle in next block
-    return;
-  }
-
-  if( _db.has_hardfork( HIVE_HARDFORK_1_26 ) )
-  {
-    // delegations were introduced in HF26, so there is no point in checking them earlier;
-    // also we are doing it in post apply block and not in pre, because otherwise transactions run
-    // during block production would have different environment than when the block was applied
-    _db.rc.handle_expired_delegations();
-  }
-
-  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
-  if( gpo.total_vesting_shares.amount <= 0 )
-  {
-    return;
-  }
-
-  auto now = _db.head_block_time();
-  const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-  const rc_resource_param_object& params_obj = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
-
-  rc_block_info block_info;
-  block_info.regen = ( gpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
-
-  const auto& bucket_idx = _db.get_index< rc_usage_bucket_index >().indices().get< by_timestamp >();
-  const auto* active_bucket = &( *bucket_idx.rbegin() );
-  bool reset_bucket = time_point_sec( active_bucket->get_timestamp() + fc::seconds( HIVE_RC_BUCKET_TIME_LENGTH ) ) <= now;
-  if( reset_bucket )
-    active_bucket = &( *bucket_idx.begin() );
-
-  const auto& rc_pool = _db.get< rc_pool_object, by_id >( rc_pool_id_type() );
-  _db.modify( rc_pool, [&]( rc_pool_object& pool_obj )
-  {
-    bool budget_adjustment = false;
-    for( size_t i=0; i<HIVE_RC_NUM_RESOURCE_TYPES; i++ )
-    {
-      const rd_dynamics_params& params = params_obj.resource_param_array[i].resource_dynamics_params;
-      int64_t pool = pool_obj.get_pool(i);
-
-      block_info.pool[i] = pool;
-      block_info.share[i] = pool_obj.count_share(i);
-      if( pool_obj.set_budget( i, params.budget_per_time_unit ) )
-        budget_adjustment = true;
-      block_info.usage[i] = pending_data.get_pending_usage()[i];
-      block_info.cost[i] = pending_data.get_pending_cost()[i];
-      block_info.decay[i] = rd_compute_pool_decay( params.decay_params, pool - block_info.usage[i], 1 );
-
-      //update global usage statistics
-      if( reset_bucket )
-        pool_obj.add_usage( i, -active_bucket->get_usage(i) );
-      pool_obj.add_usage( i, block_info.usage[i] );
-
-      int64_t new_pool = pool - block_info.decay[i] + params.budget_per_time_unit - block_info.usage[i];
-
-      if( i == resource_new_accounts )
-      {
-        int64_t new_consensus_pool = gpo.available_account_subsidies;
-        if( new_consensus_pool != new_pool )
-        {
-          block_info.new_accounts_adjustment = new_consensus_pool - new_pool;
-          ilog( "resource_new_accounts adjustment on block ${b}: ${a}",
-            ("a", block_info.new_accounts_adjustment)("b", gpo.head_block_number) );
-          new_pool = new_consensus_pool;
-        }
-      }
-
-      pool_obj.set_pool( i, new_pool );
-    }
-    pool_obj.recalculate_resource_weights( params_obj );
-    if( budget_adjustment )
-      block_info.budget = pool_obj.get_last_known_budget();
-  } );
-
-  _db.rc.handle_auto_report( note.block_num, block_info.regen, rc_pool );
-
-  _db.modify( *active_bucket, [&]( rc_usage_bucket_object& bucket )
-  {
-    if( reset_bucket )
-      bucket.reset( now ); //contents of bucket being reset was already subtracted from globals above
-    for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
-      bucket.add_usage( i, block_info.usage[i] );
-  } );
-
-} FC_CAPTURE_AND_RETHROW( (note.full_block->get_block()) ) }
-
-void rc_plugin_impl::on_first_block()
-{
-  // Initial values are located at `libraries/jsonball/data/resource_parameters.json`
-  std::string resource_params_json = hive::jsonball::get_resource_parameters();
-  fc::variant resource_params_var = fc::json::from_string( resource_params_json, fc::json::strict_parser );
-  std::vector< std::pair< fc::variant, std::pair< fc::variant_object, fc::variant_object > > > resource_params_pairs;
-  fc::from_variant( resource_params_var, resource_params_pairs );
-  fc::time_point_sec now = _db.get_dynamic_global_properties().time;
-
-  const rc_resource_param_object& rc_params = _db.create< rc_resource_param_object >(
-    [&]( rc_resource_param_object& params_obj )
-    {
-      for( auto& kv : resource_params_pairs )
-      {
-        auto k = kv.first.as< rc_resource_types >();
-        fc::variant_object& vo = kv.second.first;
-        fc::mutable_variant_object mvo(vo);
-        fc::from_variant( fc::variant( mvo ), params_obj.resource_param_array[ k ] );
-      }
-
-      dlog( "Genesis params_obj is ${o}", ("o", params_obj) );
-    } );
-  // override value for new account tokens using parameters provided by witnesses
-  _db.rc.set_pool_params( _db.get_witness_schedule_object() );
-
-  //create usage statistics buckets (empty, but with proper timestamps, last bucket has current timestamp)
-  time_point_sec timestamp = now - fc::seconds( HIVE_RC_BUCKET_TIME_LENGTH * ( HIVE_RC_WINDOW_BUCKET_COUNT - 1 ) );
-  for( int i = 0; i < HIVE_RC_WINDOW_BUCKET_COUNT; ++i )
-  {
-    _db.create< rc_usage_bucket_object >( timestamp );
-    timestamp += fc::seconds( HIVE_RC_BUCKET_TIME_LENGTH );
-  }
-
-  const auto& pool_obj = _db.create< rc_pool_object >( rc_params, resource_count_type() );
-  ilog( "Genesis pool is ${o}", ( "o", pool_obj.get_pool() ) );
-#ifndef IS_TEST_NET
-  // testnet rarely has enough useful RC data to collect and report
-  _db.create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
-  _db.create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
-#endif
-  _db.create< rc_pending_data >();
-
-  const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
-  for( auto it=idx.begin(); it!=idx.end(); ++it )
-  {
-    _db.modify( *it, [&]( account_object& account )
-    {
-      account.rc_adjustment = HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT;
-      account.rc_manabar.last_update_time = now.sec_since_epoch();
-      auto max_rc = account.get_maximum_rc().value;
-      account.rc_manabar.current_mana = max_rc;
-      account.last_max_rc = max_rc;
-    } );
-  }
-}
 
 struct get_worker_name_visitor
 {
@@ -765,10 +595,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
   {
     chain::database& db = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
 
-    my->_pre_apply_block_conn = db.add_pre_apply_block_handler( [&]( const block_notification& note )
-      { try { my->on_pre_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
-    my->_post_apply_block_conn = db.add_post_apply_block_handler( [&]( const block_notification& note )
-      { try { my->on_post_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_pre_apply_transaction_conn = db.add_pre_apply_transaction_handler( [&]( const transaction_notification& note )
       { try { my->on_pre_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_transaction_conn = db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
@@ -791,16 +617,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
       { try { my->on_pre_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_custom_operation_conn = db.add_post_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
       { try { my->on_post_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
-
-    fc::mutable_variant_object state_opts;
-
-#ifndef IS_TEST_NET
-    my->_enable_at_block = HIVE_HF20_BLOCK_NUM; // testnet starts RC at 1
-#endif
-
-    appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
-
-    ilog( "RC's will be computed starting at block ${b}", ("b", my->_enable_at_block) );
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -809,21 +625,11 @@ void rc_plugin::plugin_startup() {}
 
 void rc_plugin::plugin_shutdown()
 {
-  chain::util::disconnect_signal( my->_pre_reindex_conn );
-  chain::util::disconnect_signal( my->_post_reindex_conn );
-  chain::util::disconnect_signal( my->_pre_apply_block_conn );
-  chain::util::disconnect_signal( my->_post_apply_block_conn );
   chain::util::disconnect_signal( my->_pre_apply_transaction_conn );
   chain::util::disconnect_signal( my->_post_apply_transaction_conn );
   chain::util::disconnect_signal( my->_pre_apply_operation_conn );
   chain::util::disconnect_signal( my->_post_apply_operation_conn );
   chain::util::disconnect_signal( my->_pre_apply_custom_operation_conn );
-
-}
-
-bool rc_plugin::is_active() const
-{
-  return !my->before_first_block();
 }
 
 } } } // hive::plugins::rc
