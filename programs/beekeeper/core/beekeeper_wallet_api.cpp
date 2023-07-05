@@ -125,7 +125,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, sign_transaction )
 DEFINE_API_IMPL( beekeeper_api_impl, get_info )
 {
   return _wallet_mgr->get_info( args.token );
-}
+} 
 
 DEFINE_API_IMPL( beekeeper_api_impl, create_session )
 {

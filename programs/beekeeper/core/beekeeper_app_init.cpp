@@ -165,7 +165,7 @@ std::pair<bool, std::string> beekeeper_app_init::initialize_program_options()
   } FC_LOG_AND_RETHROW()
 }
 
-int beekeeper_app_init::execute( int argc, char** argv )
+int beekeeper_app_init::init( int argc, char** argv )
 {
   try
   {

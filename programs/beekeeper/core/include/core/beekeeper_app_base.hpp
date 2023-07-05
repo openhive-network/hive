@@ -22,7 +22,7 @@ class beekeeper_app_base
 
     virtual ~beekeeper_app_base(){}
 
-    virtual int execute( int argc, char** argv ) = 0;
+    virtual int init( int argc, char** argv ) = 0;
 
 };
 

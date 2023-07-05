@@ -1,16 +1,3 @@
-PROJECT( fc_minimal )
-CMAKE_MINIMUM_REQUIRED( VERSION 2.8.12 )
-
-set( CMAKE_CXX_STANDARD 17 )
-set( CMAKE_CXX_EXTENSIONS OFF )
-set( CMAKE_CXX_STANDARD_REQUIRED ON )
-
-set( CMAKE_C_STANDARD 99 )
-set( CMAKE_C_STANDARD_REQUIRED ON )
-
-cmake_policy(SET CMP0057 NEW)
-
-
 file(GLOB HEADERS "include/beekeeper_wasm_core/*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/../../core/include/beekeeper_wasm_core/*.hpp" )
 
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/schema build_schema )
