@@ -24,8 +24,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
       { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
         HIVE_RC_PLUGIN_NAME,
         HIVE_WITNESS_PLUGIN_NAME } } ) },
-    &ah_plugin,
-    &rc_plugin
+    &ah_plugin
   );
 
   configuration_data.allow_not_enough_rc = true;
@@ -61,7 +60,19 @@ clean_database_fixture::~clean_database_fixture() {}
 void clean_database_fixture::validate_database()
 {
   database_fixture::validate_database();
-  rc_plugin->validate_database();
+
+  //validate RC
+  if( db->has_hardfork( HIVE_HARDFORK_0_20 ) )
+  {
+    const auto& idx = db->get_index< account_index, by_name >();
+    for( const account_object& account : idx )
+    {
+      int64_t max_rc = account.get_maximum_rc().value;
+      FC_ASSERT( max_rc == account.last_max_rc,
+        "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
+        ( "a", account.get_name() )( "old", account.last_max_rc )( "new", max_rc )( "b", db->head_block_num() ) );
+    }
+  }
 }
 
 void clean_database_fixture::inject_hardfork( uint32_t hardfork )

@@ -63,7 +63,6 @@ class rc_plugin_impl
     void post_apply_custom_op_type( const custom_operation_notification& note );
 
     void on_first_block();
-    void validate_database();
 
     bool before_first_block()
     {
@@ -747,19 +746,6 @@ void rc_plugin_impl::on_post_apply_custom_operation( const custom_operation_noti
   post_apply_custom_op_type< rc_custom_operation >( note );
 }
 
-void rc_plugin_impl::validate_database()
-{
-  const auto& idx = _db.get_index< account_index >().indices().get< by_name >();
-
-  for( const account_object& account : idx )
-  {
-    int64_t max_rc = account.get_maximum_rc().value;
-    FC_ASSERT( max_rc == account.last_max_rc,
-      "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
-      ("a", account.get_name())("old", account.last_max_rc)("new", max_rc)("b", _db.head_block_num()) );
-  }
-}
-
 } // detail
 
 rc_plugin::rc_plugin() {}
@@ -838,11 +824,6 @@ void rc_plugin::plugin_shutdown()
 bool rc_plugin::is_active() const
 {
   return !my->before_first_block();
-}
-
-void rc_plugin::validate_database()
-{
-  my->validate_database();
 }
 
 } } } // hive::plugins::rc

@@ -37,8 +37,6 @@ class rc_plugin : public appbase::plugin< rc_plugin >
 
     bool is_active() const; ///< tells if RC already started
 
-    void validate_database();
-
   private:
     std::unique_ptr< detail::rc_plugin_impl > my;
 };
