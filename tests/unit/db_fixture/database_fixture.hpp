@@ -15,8 +15,7 @@
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
-#include <hive/plugins/rc/rc_plugin.hpp>
-
+#include <hive/plugins/debug_node/debug_node_plugin.hpp>
 #include <fc/network/http/connection.hpp>
 #include <fc/network/ip.hpp>
 
@@ -258,7 +257,6 @@ struct database_fixture {
   typedef plugins::account_history_rocksdb::account_history_rocksdb_plugin ah_plugin_type;
   ah_plugin_type* ah_plugin = nullptr;
   plugins::debug_node::debug_node_plugin* db_plugin = nullptr;
-  plugins::rc::rc_plugin* rc_plugin = nullptr;
 
   optional<fc::temp_directory> data_dir;
   bool skip_key_index_test = false;
