@@ -14,7 +14,6 @@
 using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
-using namespace hive::plugins::rc;
 
 int64_t regenerate_rc_mana( debug_node::debug_node_plugin* db_plugin, const account_object& acc )
 {
@@ -42,7 +41,7 @@ void clear_mana( debug_node::debug_node_plugin* db_plugin, const account_object&
   } );
 }
 
-BOOST_FIXTURE_TEST_SUITE( rc_plugin_tests, genesis_database_fixture )
+BOOST_FIXTURE_TEST_SUITE( rc_tests, genesis_database_fixture )
 
 BOOST_AUTO_TEST_CASE( rc_usage_buckets )
 {
@@ -598,7 +597,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
     static_assert( HIVE_MAX_SIG_CHECK_DEPTH >= 2 );
     static_assert( HIVE_MAX_SIG_CHECK_ACCOUNTS >= 3 * HIVE_MAX_AUTHORITY_MEMBERSHIP );
 
-    fc::flat_map< string, vector<char> > props;
+    fc::flat_map< std::string, std::vector<char> > props;
     props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE );
     set_witness_props( props ); //simple tx with maxed authority uses over 300kB
     const auto fee = db->get_witness_schedule_object().median_props.account_creation_fee;
@@ -1318,7 +1317,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     create.new_account_name = "alice";
     create.owner = authority( 1, alice_public_key, 1 );
     {
-      string name( "alice0" );
+      std::string name( "alice0" );
       for( int i = 1; i < HIVE_MAX_AUTHORITY_MEMBERSHIP; ++i )
       {
         name[5] = '0' + i;
@@ -1332,7 +1331,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     create.owner = authority( 1, barry_public_key, 1 );
     const int NUM_KEYS = 3; //<- use this value to tune usage so in the end we have it small but positive
     {
-      string name( "barry0" );
+      std::string name( "barry0" );
       for( int i = 1; i < NUM_KEYS; ++i )
       {
         name[5] = '0' + i;

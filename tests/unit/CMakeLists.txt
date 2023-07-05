@@ -310,16 +310,6 @@ add_boost_test( plugin_test
     json_rpc/semantics_validation
     market_history/mh_test
     transaction_status/transaction_status_test
-    direct_rc_delegation/delegate_rc_operation_validate
-    direct_rc_delegation/delegate_rc_operation_apply_single
-    direct_rc_delegation/delegate_rc_operation_apply_many
-    direct_rc_delegation/update_outdel_overflow
-    direct_rc_delegation/update_outdel_overflow_many
-    direct_rc_delegation/direct_rc_delegation_vesting_withdrawal
-    direct_rc_delegation/direct_rc_delegation_vesting_withdrawal_routes
-    direct_rc_delegation/rc_delegation_regeneration
-    direct_rc_delegation/rc_delegation_removal_no_rc
-    direct_rc_delegation/update_outdel_overflow_delegatee
 )
 
 # needed to correctly print crash stacktrace
