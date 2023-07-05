@@ -33,6 +33,11 @@
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
+#include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/rc/resource_count.hpp>
+
+#include <hive/jsonball/jsonball.hpp>
+
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
 
@@ -4360,6 +4365,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
   try {
   notify_pre_apply_block( note );
+  rc.on_pre_apply_block(); //temporary - TODO: call right before transactions
 
   BOOST_SCOPE_EXIT( this_ )
   {
@@ -4521,6 +4527,8 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   remove_expired_governance_votes();
 
   process_recurrent_transfers();
+
+  rc.on_post_apply_block(); //temporary - TODO: split into different actions, one should be called right after transactions
 
   process_hardforks();
 
@@ -6674,17 +6682,17 @@ void database::apply_hardfork( uint32_t hardfork )
       break;
     case HIVE_HARDFORK_0_20:
       {
-        modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+        const auto& dgpo = get_dynamic_global_properties();
+        modify( dgpo, [&]( dynamic_global_property_object& gpo )
         {
           gpo.delegation_return_period = HIVE_DELEGATION_RETURN_PERIOD_HF20;
           gpo.reverse_auction_seconds = HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20;
           gpo.hbd_stop_percent = HIVE_HBD_STOP_PERCENT_HF20;
           gpo.hbd_start_percent = HIVE_HBD_START_PERCENT_HF20;
           gpo.available_account_subsidies = 0;
-        });
+        } );
 
         const auto& wso = get_witness_schedule_object();
-
         for( const auto& witness : wso.current_shuffled_witnesses )
         {
           // Required check when applying hardfork at genesis
@@ -6693,14 +6701,68 @@ void database::apply_hardfork( uint32_t hardfork )
             modify( get< witness_object, by_name >( witness ), [&]( witness_object& w )
             {
               w.props.account_creation_fee = asset( w.props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL );
-            });
+            } );
           }
         }
 
         modify( wso, [&]( witness_schedule_object& wso )
         {
           wso.median_props.account_creation_fee = asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL );
-        });
+        } );
+
+        // Initialize RC:
+
+        // Initial values are located at `libraries/jsonball/data/resource_parameters.json`
+        std::string resource_params_json = hive::jsonball::get_resource_parameters();
+        fc::variant resource_params_var = fc::json::from_string( resource_params_json, fc::json::strict_parser );
+        std::vector< std::pair< fc::variant, std::pair< fc::variant_object, fc::variant_object > > > resource_params_pairs;
+        fc::from_variant( resource_params_var, resource_params_pairs );
+        fc::time_point_sec now = dgpo.time;
+
+        const auto& rc_params = create< rc_resource_param_object >( [&]( rc_resource_param_object& params_obj )
+        {
+          for( auto& kv : resource_params_pairs )
+          {
+            auto k = kv.first.as< rc_resource_types >();
+            fc::variant_object& vo = kv.second.first;
+            fc::mutable_variant_object mvo( vo );
+            fc::from_variant( fc::variant( mvo ), params_obj.resource_param_array[k] );
+          }
+        } );
+        // override value for new account tokens using parameters provided by witnesses
+        rc.set_pool_params( wso );
+        dlog( "Initial RC params: ${o}", ( "o", rc_params ) );
+
+        // create usage statistics buckets (empty, but with proper timestamps, last bucket has current timestamp)
+        time_point_sec timestamp = now - fc::seconds( HIVE_RC_BUCKET_TIME_LENGTH * ( HIVE_RC_WINDOW_BUCKET_COUNT - 1 ) );
+        for( int i = 0; i < HIVE_RC_WINDOW_BUCKET_COUNT; ++i )
+        {
+          create< rc_usage_bucket_object >( timestamp );
+          timestamp += fc::seconds( HIVE_RC_BUCKET_TIME_LENGTH );
+        }
+
+        const auto& rc_pool = create< rc_pool_object >( rc_params, resource_count_type() );
+        ilog( "Initial RC pools: ${o}", ( "o", rc_pool.get_pool() ) );
+#ifndef IS_TEST_NET
+        // testnet rarely has enough useful RC data to collect and report
+        create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
+        create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
+#endif
+        create< rc_pending_data >();
+
+        const auto& idx = get_index< account_index, by_id >();
+        for( auto it = idx.begin(); it != idx.end(); ++it )
+        {
+          modify( *it, [&]( account_object& account )
+          {
+            account.rc_adjustment = HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT;
+            account.rc_manabar.last_update_time = now.sec_since_epoch();
+            auto max_rc = account.get_maximum_rc().value;
+            account.rc_manabar.current_mana = max_rc;
+            account.last_max_rc = max_rc;
+          } );
+        }
+
       }
       break;
     case HIVE_HARDFORK_0_21:
