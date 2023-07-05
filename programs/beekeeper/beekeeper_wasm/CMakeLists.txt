@@ -14,4 +14,5 @@ ADD_SUBDIRECTORY( beekeeper_wasm_core )
 
 ADD_EXECUTABLE( beekeeper_wasm beekeeper_wasm_api.cpp )
 
-TARGET_LINK_LIBRARIES( beekeeper_wasm PRIVATE beekeeper_wasm_core )
+target_link_libraries( beekeeper_wasm PUBLIC beekeeper_wasm_core embind idbfs.js )
+target_link_options( beekeeper_wasm PRIVATE "--emrun" )

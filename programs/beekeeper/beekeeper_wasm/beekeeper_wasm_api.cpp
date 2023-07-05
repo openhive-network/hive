@@ -51,7 +51,7 @@ class beekeeper_api
 
 };
 
-EMSCRIPTEN_BINDINGS(beekeeper_api) {
+EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
   class_<beekeeper_api>("beekeeper_api")
     .constructor<std::vector<std::string>>()
     .function("init", &beekeeper_api::init)
