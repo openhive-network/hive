@@ -14,5 +14,5 @@ def test_get_recent_trades(node, should_prepare):
         wallet.api.create_order('alice', 0, tt.Asset.Test(100), tt.Asset.Tbd(100), False, 3600)  # Sell 100 HIVE for 100 HBD
         wallet.api.create_order('bob', 0, tt.Asset.Tbd(100), tt.Asset.Test(100), False, 3600)  # Buy 100 HIVE for 100 HBD
 
-    trades = node.api.market_history.get_recent_trades(limit=10)
+    trades = node.api.market_history.get_recent_trades(limit=10)['trades']
     assert len(trades) != 0
