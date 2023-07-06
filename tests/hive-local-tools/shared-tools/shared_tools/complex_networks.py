@@ -127,8 +127,11 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
         time_offset = get_relative_time_offset_from_timestamp(timestamp)
         block_log = tt.BlockLog(blocklog_directory / "block_log")
         tt.logger.info(f"'block_log' directory: {blocklog_directory} timestamp: {timestamp} time_offset: {time_offset}")
+        alternate_chain_spec_path = blocklog_directory / "alternate-chain-spec.json"
+        arguments = ["--alternate-chain-spec", str(alternate_chain_spec_path)] if alternate_chain_spec_path.is_file() else []
     else:
         tt.logger.info(f"'block_log' directory hasn't been defined")
+        arguments = []
 
     tt.logger.info("Running nodes...")
 
@@ -143,17 +146,31 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
     tt.logger.info(f"External time offsets: {'enabled' if allow_external_time_offsets else 'disabled'}")
 
     if blocklog_directory is not None:
-        nodes[0].run(wait_for_live=False, replay_from=block_log, time_offset=modify_time_offset(timestamp, time_offsets[0]) if allow_external_time_offsets else time_offset)
+        nodes[0].run(
+            wait_for_live=False,
+            replay_from=block_log,
+            time_offset=modify_time_offset(timestamp, time_offsets[0])
+            if allow_external_time_offsets
+            else time_offset,
+            arguments=arguments
+        )
     else:
-        nodes[0].run(wait_for_live=False)
+        nodes[0].run(wait_for_live=False, arguments=arguments)
     init_node_p2p_endpoint = nodes[0].p2p_endpoint
     cnt_node = 1
     for node in nodes[1:]:
         node.config.p2p_seed_node.append(init_node_p2p_endpoint)
         if blocklog_directory is not None:
-            node.run(wait_for_live=False, replay_from=block_log, time_offset=modify_time_offset(timestamp, time_offsets[cnt_node]) if allow_external_time_offsets else time_offset)
+            node.run(
+                wait_for_live=False,
+                replay_from=block_log,
+                time_offset=modify_time_offset(timestamp, time_offsets[cnt_node])
+                if allow_external_time_offsets
+                else time_offset,
+                arguments=arguments
+            )
         else:
-            node.run(wait_for_live=False)
+            node.run(wait_for_live=False, arguments=arguments)
         cnt_node += 1
 
     for network in networks:
