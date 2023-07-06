@@ -4,47 +4,66 @@ import pytest
 from dataclasses import dataclass, field
 from typing import Literal
 import test_tools as tt
+from hive_local_tools.functional.python.operation import get_current_mana
 
 
 @dataclass
-class LimitOrderAccount:
-    acc_info: dict = field(init=False, default_factory=dict)
-    name: str
-    node: tt.InitNode
-    wallet: tt.Wallet
+class Account:
+    _acc_info: dict = field(init=False, default_factory=dict)
+    _name: str
+    _node: tt.InitNode
+    _wallet: tt.Wallet
+
+    def get_hbd_balance(self):
+        self._update_account_info()
+        return tt.Asset.from_(self.acc_info['hbd_balance'])
+
+    def get_hive_balance(self):
+        self._update_account_info()
+        return tt.Asset.from_(self.acc_info['balance'])
+
+    def get_rc_current_mana(self):
+        self._update_account_info()
+        return get_current_mana(self._node, self._name)
+    
+    def _update_account_info(self):
+        self.acc_info = self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]
+
+
+@dataclass
+class LimitOrderAccount(Account):
 
     def assert_balance(self, *, amount: int | float, check_hbd: bool, message: Literal["expiration", "creation",
                                                                                        "order_match", "no_match"]):
-        self.__update_account_info()
-        get_balance = self.__get_hbd_balance if check_hbd else self.__get_hive_balance
+        super()._update_account_info()
+        get_balance = self.get_hbd_balance if check_hbd else self.get_hive_balance
         currency = tt.Asset.Tbd if check_hbd else tt.Asset.Test
-
         messages = {
             "expiration": (
-                f"Something went wrong after expiration of orders. {self.name} should have {amount} {currency.token}."
+                f"Something went wrong after expiration of orders. {self._name} should have {amount} {currency.token}."
             ),
-            "creation": f"{currency} balance of {self.name} wasn't reduced after creating order.",
+            "creation": f"{currency} balance of {self._name} wasn't reduced after creating order.",
             "order_match": (
-                f"Something went wrong in completing a trade. {currency.token} balance of {self.name} should be equal"
+                f"Something went wrong in completing a trade. {currency.token} balance of {self._name} should be equal"
                 f" to {amount}."
             ),
             "no_match": (
                 f"Something went wrong after order creation - it shouldn't be matched. {currency.token} balance of"
-                f" {self.name} should be equal to {amount}."
+                f" {self._name} should be equal to {amount}."
             ),
         }
 
         assert get_balance() == currency(amount), messages[message]
 
     def assert_not_completed_order(self, amount: int, hbd: bool):
-        query = self.node.api.database.find_limit_orders(account=self.name)["orders"][0]
+        query = self._node.api.database.find_limit_orders(account=self._name)["orders"][0]
         for_sale = query["for_sale"]
         nai = query["sell_price"]["base"]
         nai["amount"] = for_sale
         currency = tt.Asset.Tbd if hbd else tt.Asset.Test
         assert tt.Asset.from_(nai) == currency(amount), (
             f"Amount of {currency.token} that are still available for sale "
-            f"is not correct. {self.name} should have now {amount} {currency.token}"
+            f"is not correct. {self._name} should have now {amount} {currency.token}"
         )
 
     def create_order(
@@ -57,23 +76,14 @@ class LimitOrderAccount:
             expiration: int = 60,
             buy_hbd: bool = None
     ):
-        return self.wallet.api.create_order(
-            self.name,
+        return self._wallet.api.create_order(
+            self._name,
             order_id,
             tt.Asset.Test(amount_to_sell) if buy_hbd else tt.Asset.Tbd(amount_to_sell),
             tt.Asset.Tbd(min_to_receive) if buy_hbd else tt.Asset.Test(min_to_receive),
             fill_or_kill,
             expiration
         )
-
-    def __get_hbd_balance(self):
-        return tt.Asset.from_(self.acc_info['hbd_balance'])
-
-    def __get_hive_balance(self):
-        return tt.Asset.from_(self.acc_info['balance'])
-
-    def __update_account_info(self):
-        self.acc_info = self.node.api.database.find_accounts(accounts=[self.name])["accounts"][0]
 
 
 @pytest.fixture
