@@ -12,12 +12,12 @@ set( fc_minimal_sources
         src/string.cpp
         src/shared_ptr.cpp
         src/utf8.cpp
-        src/asio.cpp
+        #src/asio.cpp
         src/log/log_message.cpp
         src/log/logger.cpp
         src/log/logger_config.cpp
         src/log/appender.cpp
-        src/log/file_appender.cpp
+        #src/log/file_appender.cpp
         src/log/console_appender.cpp
         src/crypto/elliptic_common.cpp
         src/crypto/elliptic_secp256k1.cpp
@@ -38,10 +38,10 @@ set( fc_minimal_sources
         src/io/sstream.cpp
         src/io/fstream.cpp
         src/io/iostream.cpp
-        src/thread/thread.cpp
-        src/thread/future.cpp
+        #src/thread/thread.cpp
+        #src/thread/future.cpp
         src/thread/spin_yield_lock.cpp
-        src/thread/task.cpp
+        #src/thread/task.cpp
         src/thread/spin_lock.cpp
         vendor/simdjson/simdjson.cpp
         src/compress/zlib.cpp
