@@ -86,34 +86,68 @@ class LimitOrderAccount(Account):
         )
 
 
+@dataclass
+class TransferAccount(Account):
+    # class with account representation created for transfer, transfer_to/from_savings tests
+    def transfer(self, receiver, amount, memo):
+        self._wallet.api.transfer(self._name, receiver, amount, memo)
+
+    def transfer_to_savings(self, receiver, amount, memo):
+        self._wallet.api.transfer_to_savings(self._name, receiver, amount, memo)
+
+    def transfer_from_savings(self, transfer_id, receiver, amount, memo):
+        self._wallet.api.transfer_from_savings(self._name, transfer_id, receiver, amount, memo)
+
+    def cancel_transfer_from_savings(self, transfer_id):
+        self._wallet.api.cancel_transfer_from_savings(self._wallet, transfer_id)
+
+    def get_hbd_savings_balance(self) -> tt.Asset.Tbd:
+        return tt.Asset.from_(self._node.api.database.find_accounts(accounts=[self._name])[
+                                  'accounts'][0]['savings_hbd_balance'])
+
+    def get_hive_savings_balance(self) -> tt.Asset.Test:
+        return tt.Asset.from_(self._node.api.database.find_accounts(accounts=[self._name])[
+                                  'accounts'][0]['savings_balance'])
+
+
 @pytest.fixture
-def alice(prepared_node, wallet):
+def create_account_object():
+    return TransferAccount
+
+
+@pytest.fixture
+def alice(prepared_node, wallet, create_account_object):
     wallet.create_account("alice", hives=450, hbds=450, vests=50)
-    return LimitOrderAccount("alice", prepared_node, wallet)
+    return create_account_object("alice", prepared_node, wallet)
 
 
 @pytest.fixture
-def bob(prepared_node, wallet):
+def bob(prepared_node, wallet, create_account_object):
     wallet.create_account("bob", hives=300, hbds=300, vests=50)
-    return LimitOrderAccount("bob", prepared_node, wallet)
+    return create_account_object("bob", prepared_node, wallet)
 
 
 @pytest.fixture
-def carol(prepared_node, wallet):
+def carol(prepared_node, wallet, create_account_object):
     wallet.create_account("carol", hives=400, hbds=400, vests=50)
-    return LimitOrderAccount("carol", prepared_node, wallet)
+    return create_account_object("carol", prepared_node, wallet)
 
 
 @pytest.fixture
-def daisy(prepared_node, wallet):
+def daisy(prepared_node, wallet, create_account_object):
     wallet.create_account("daisy", hives=480, hbds=480, vests=50)
-    return LimitOrderAccount("daisy", prepared_node, wallet)
+    return create_account_object("daisy", prepared_node, wallet)
 
 
 @pytest.fixture
-def elizabeth(prepared_node, wallet):
+def elizabeth(prepared_node, wallet, create_account_object):
     wallet.create_account("elizabeth", hives=600, hbds=600, vests=50)
-    return LimitOrderAccount("elizabeth", prepared_node, wallet)
+    return create_account_object("elizabeth", prepared_node, wallet)
+
+
+@pytest.fixture
+def hive_fund(prepared_node, wallet, create_account_object):
+    return create_account_object("hive.fund", prepared_node, wallet)
 
 
 @pytest.fixture
