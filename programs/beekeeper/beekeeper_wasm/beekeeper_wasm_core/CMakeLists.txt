@@ -1,12 +1,15 @@
-file(GLOB HEADERS "include/beekeeper_wasm_core/*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/../../core/include/beekeeper_wasm_core/*.hpp" )
+file(GLOB HEADERS
+      "${CMAKE_CURRENT_SOURCE_DIR}/../beekeeper_wasm_app_api/include/beekeeper_wasm_app_api/*.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../core/include/beekeeper_wasm_core/*.hpp"
+    )
 
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/schema_minimal build_schema_minimal )
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/fc_minimal build_fc_minimal )
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/protocol_minimal build_protocol_minimal )
 
 ADD_LIBRARY( beekeeper_wasm_core STATIC
-                      beekeeper_wasm_app.cpp
-                      beekeeper_wasm_api.cpp
+                      ../beekeeper_wasm_app_api/beekeeper_wasm_app.cpp
+                      ../beekeeper_wasm_app_api/beekeeper_wasm_api.cpp
                       ../../core/beekeeper_wallet.cpp
                       ../../core/beekeeper_wallet_manager.cpp
                       ../../core/token_generator.cpp
@@ -19,7 +22,7 @@ ADD_LIBRARY( beekeeper_wasm_core STATIC
 )
 
 set( INCLUDES
-      ${CMAKE_CURRENT_SOURCE_DIR}/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/../beekeeper_wasm_app_api/include
       ${CMAKE_CURRENT_SOURCE_DIR}/../../core/include
     )
 

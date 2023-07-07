@@ -1,6 +1,6 @@
 #pragma once
 
-#include <beekeeper_wasm_core/beekeeper_wasm_app.hpp>
+#include <beekeeper_wasm_app_api/beekeeper_wasm_app.hpp>
 
 #include<vector>
 

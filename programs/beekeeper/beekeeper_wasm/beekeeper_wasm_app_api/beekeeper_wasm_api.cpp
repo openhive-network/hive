@@ -1,4 +1,4 @@
-#include <beekeeper_wasm_core/beekeeper_wasm_api.hpp>
+#include <beekeeper_wasm_app_api/beekeeper_wasm_api.hpp>
 
 namespace beekeeper {
 
