@@ -3,8 +3,10 @@
 #include <fc/log/logger.hpp>
 #include <fc/thread/scoped_lock.hpp>
 #include <fc/io/stdio.hpp>
+#include <fc/thread/thread.hpp>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <string.h>
 

@@ -30,8 +30,13 @@ namespace hive { namespace protocol {
   {
     friend inline void fc::to_variant(const json_string& json_string, fc::variant& var);
     friend inline void fc::from_variant(const fc::variant& var, json_string& json_string);
-    template<typename Stream> friend inline Stream& operator<<(Stream& s, const hive::protocol::json_string& json_string){ return fc::raw::operator<<( s, json_string ); };
-    template<typename Stream> friend inline Stream& operator>>(Stream& s, hive::protocol::json_string& json_string){ return fc::raw::operator>>( s, json_string ); };
+    #ifdef WASM_BUILD
+      template<typename Stream> friend inline Stream& operator<<(Stream& s, const hive::protocol::json_string& json_string){ return fc::raw::operator<<( s, json_string ); };
+      template<typename Stream> friend inline Stream& operator>>(Stream& s, hive::protocol::json_string& json_string){ return fc::raw::operator>>( s, json_string ); };
+    #else
+      template<typename Stream> friend inline Stream& fc::raw::operator<<(Stream& s, const hive::protocol::json_string& json_string);
+      template<typename Stream> friend inline Stream& fc::raw::operator>>(Stream& s, hive::protocol::json_string& json_string);
+    #endif
     std::string s;
   public:
     constexpr static const size_t required_padding = 32; // this must match the SIMDJSON_PADDING constant
