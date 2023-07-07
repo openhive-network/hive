@@ -52,6 +52,8 @@ class beekeeper_api
 };
 
 EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
+  register_vector<std::string>("StringList");
+
   class_<beekeeper_api>("beekeeper_api")
     .constructor<std::vector<std::string>>()
     .function("init", &beekeeper_api::init)

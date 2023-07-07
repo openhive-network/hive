@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<body>
+  <script>
+
+    function my_main_function() {
+      console.log('Beekeeper test.');
+
+      const params = new Module.StringList();
+      params.push_back("--wallet-dir");
+      params.push_back("/storage_root/.beekeeper");
+      params.push_back("--salt");
+      params.push_back("avocado");
+
+      console.log('create constructor...');
+      var instance = new Module.beekeeper_api( params );
+      console.log('constructor created...');
+
+      console.log('call "init" function...');
+      var init_result = instance.init();
+      console.log('init function called with result: ' + init_result);
+
+      console.log('call "create_session" function...');
+      var session_token = instance.create_session( "pear" )
+      console.log('"create_session" called with result: ' + session_token);
+
+      //instance.dump("/storage_root/.beekeeper");
+
+      instance.delete();
+      
+      //var data = FS.readFile("/storage_root/instance_x-2.txt", { encoding: 'utf8' });
+      //console.log("instance_x.txt file contents: " + data);
+    }
+
+    var Module = {
+      onRuntimeInitialized: function () {
+        console.log('Preparing JS execution environment. ');
+
+        FS.mkdir('/storage_root');
+        FS.mount(IDBFS, {}, '/storage_root');
+
+        /// Initialize file system before starting actual part of the APP code
+        FS.syncfs(true, function (err) {
+          if (err) {
+            console.error("Filesystem error occured: " + err);
+            return;
+          }
+
+          my_main_function();
+
+          /// Flush the filesystem after APP execution finish
+          FS.syncfs(function (err) {
+            if (err)
+              console.error("Filesystem error occured: " + err);
+          });
+        });
+
+      },
+
+      onExit: function () {
+        console.log('Cleaning JS execution environment. ');
+        FS.syncfs(function (err) {
+          if (err)
+            console.error("Filesystem error occured: " + err);
+        });
+      }
+    };
+  </script>
+  <script src="../build/beekeeper_wasm.js"></script>
+
+  <div>Look to the console tab (developer tools)...</div>
+</body>
+</html>
