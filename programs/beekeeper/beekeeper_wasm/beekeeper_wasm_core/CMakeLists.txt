@@ -1,8 +1,8 @@
 file(GLOB HEADERS "include/beekeeper_wasm_core/*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/../../core/include/beekeeper_wasm_core/*.hpp" )
 
-add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/schema build_schema )
-add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/fc_minimal build_fc )
-add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/protocol build_protocol )
+add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/schema_minimal build_schema_minimal )
+add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/fc_minimal build_fc_minimal )
+add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/protocol_minimal build_protocol_minimal )
 
 ADD_LIBRARY( beekeeper_wasm_core STATIC
                       beekeeper_wasm_app.cpp
