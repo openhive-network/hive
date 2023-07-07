@@ -8,7 +8,6 @@
 
 #include <fc/log/logger.hpp>
 
-//#include <fc/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <openssl/opensslconf.h>
 #ifndef OPENSSL_THREADS
