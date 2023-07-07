@@ -2,7 +2,7 @@
 #include <fc/exception/exception.hpp>
 #include <fc/variant.hpp>
 #include <fc/time.hpp>
-#ifndef WASM_BUILD
+#ifndef __EMSCRIPTEN__
 #include <fc/thread/thread.hpp>
 #include <fc/thread/task.hpp>
 #endif
@@ -54,7 +54,7 @@ namespace fc
       my->line        = line;
       my->method      = method;
       my->timestamp   = time_point::now();
-      #ifdef WASM_BUILD
+      #ifdef __EMSCRIPTEN__
          const char* current_task_desc = nullptr;
       #else
          const char* current_task_desc = fc::thread::current().current_task_desc();

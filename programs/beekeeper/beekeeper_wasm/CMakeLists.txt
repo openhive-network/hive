@@ -10,8 +10,6 @@ set( CMAKE_C_STANDARD_REQUIRED ON )
 
 cmake_policy(SET CMP0057 NEW)
 
-SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWASM_BUILD" )
-
 ADD_SUBDIRECTORY( beekeeper_wasm_core )
 
 ADD_EXECUTABLE( beekeeper_wasm beekeeper_wasm_api.cpp )

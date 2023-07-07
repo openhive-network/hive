@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <string>
 #include <fc/log/console_appender.hpp>
-#ifndef WASM_BUILD
+#ifndef __EMSCRIPTEN__
 #include <fc/log/file_appender.hpp>
 #endif
 #include <fc/reflect/variant.hpp>
@@ -25,7 +25,7 @@ namespace fc {
    {
       try {
       static bool reg_console_appender = appender::register_appender<console_appender>( "console" );
-      #ifndef WASM_BUILD
+      #ifndef __EMSCRIPTEN__
       static bool reg_file_appender = appender::register_appender<file_appender>( "file" );
       #endif
       get_logger_map().clear();
@@ -52,7 +52,7 @@ namespace fc {
             if( ap ) { lgr.add_appender(ap); }
          }
       }
-      #ifdef WASM_BUILD
+      #ifdef __EMSCRIPTEN__
          return reg_console_appender;
       #else
          return reg_console_appender || reg_file_appender;

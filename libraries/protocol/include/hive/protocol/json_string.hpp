@@ -30,7 +30,7 @@ namespace hive { namespace protocol {
   {
     friend inline void fc::to_variant(const json_string& json_string, fc::variant& var);
     friend inline void fc::from_variant(const fc::variant& var, json_string& json_string);
-    #ifdef WASM_BUILD
+    #ifdef __EMSCRIPTEN__
       template<typename Stream> friend inline Stream& operator<<(Stream& s, const hive::protocol::json_string& json_string){ return fc::raw::operator<<( s, json_string ); };
       template<typename Stream> friend inline Stream& operator>>(Stream& s, hive::protocol::json_string& json_string){ return fc::raw::operator>>( s, json_string ); };
     #else
