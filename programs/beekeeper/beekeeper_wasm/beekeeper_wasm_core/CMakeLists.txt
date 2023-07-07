@@ -6,6 +6,7 @@ add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../../libraries/protocol_min
 
 ADD_LIBRARY( beekeeper_wasm_core STATIC
                       beekeeper_wasm_app.cpp
+                      beekeeper_wasm_api.cpp
                       ../../core/beekeeper_wallet.cpp
                       ../../core/beekeeper_wallet_manager.cpp
                       ../../core/token_generator.cpp

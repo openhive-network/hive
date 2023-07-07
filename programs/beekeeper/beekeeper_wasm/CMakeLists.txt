@@ -12,7 +12,7 @@ cmake_policy(SET CMP0057 NEW)
 
 ADD_SUBDIRECTORY( beekeeper_wasm_core )
 
-ADD_EXECUTABLE( beekeeper_wasm beekeeper_wasm_api.cpp )
+ADD_EXECUTABLE( beekeeper_wasm main.cpp )
 
 target_link_libraries( beekeeper_wasm PUBLIC beekeeper_wasm_core embind idbfs.js )
 target_link_options( beekeeper_wasm PRIVATE "--emrun" )
