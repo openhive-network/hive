@@ -576,13 +576,13 @@ bool get_block(const fc::path& block_log_filename, uint32_t block_number, bool h
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_artifacts(const fc::path& block_log_path, const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, bool header_only)
+bool get_block_artifacts(const fc::path& block_log_path, const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, const bool header_only, const bool full_match_verification)
 {
   try
   {
     hive::chain::block_log block_log;
     block_log.open(block_log_path, true, false);
-    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log, true);
+    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log, true, full_match_verification);
     {
       const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
       if (starting_block_number && *starting_block_number > artifacts_block_head_num)
@@ -686,6 +686,7 @@ int main(int argc, char** argv)
   get_block_artifacts_options.add_options()("starting-block-number", boost::program_options::value<uint32_t>()->value_name("n"), "if present, app will return artifacts from given block number (inclusive)");
   get_block_artifacts_options.add_options()("ending-block-number", boost::program_options::value<uint32_t>()->value_name("m"), "if present, app will return artifacts to given block number (inclusive)");
   get_block_artifacts_options.add_options()("header-only", "only print the artifacts header");
+  get_block_artifacts_options.add_options()("do-full-artifacts-verificatin-match-check", "Performs check if all artifacts from file matches block_log");
   boost::program_options::positional_options_description get_block_artifacts_positional_options;
   get_block_artifacts_positional_options.add("block-log-artifacts", 1);
   get_block_artifacts_positional_options.add("starting-block-number", 1);
@@ -887,6 +888,7 @@ int main(int argc, char** argv)
       boost::program_options::store(parsed_get_block_artifacts_options, options_map);
 
       const bool header_only = options_map.count("header-only") != 0;
+      const bool full_match_verification = options_map.count("do-full-artifacts-verificatin-match-check") != 0;
       std::optional<uint32_t> starting_block_number, ending_block_number;
 
       if (!header_only && options_map.count("starting-block-number"))
@@ -901,7 +903,7 @@ int main(int argc, char** argv)
         }
       }
 
-      return get_block_artifacts(options_map["block-log"].as<std::string>(), starting_block_number, ending_block_number, header_only);
+      return get_block_artifacts(options_map["block-log"].as<std::string>(), starting_block_number, ending_block_number, header_only, full_match_verification);
     }
     else
     {

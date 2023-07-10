@@ -176,7 +176,7 @@ inline size_t calculate_block_serialized_data_size(const artifact_file_chunk& ne
 class block_log_artifacts::impl final
 {
 public:
-  void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only);
+  void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification);
 
   uint32_t read_head_block_num() const
   {
@@ -235,7 +235,7 @@ private:
   void flush_header() const;
 
   void generate_artifacts_file(const block_log& source_block_provider);
-  void verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool use_block_log_head_num) const;
+  void verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool full_match_verification, const bool use_block_log_head_num) const;
   
   void write_data(const std::vector<char>& buffer, off_t offset, const std::string& description) const
   {
@@ -285,7 +285,7 @@ private:
   bool _is_writable = false;
 };
 
-void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only)
+void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification)
 {
   try {
   _artifact_file_name = fc::path(block_log_file_path.generic_string() + ".artifacts");
@@ -311,7 +311,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
     if (_header.generating_interrupted_at_block)
       FC_THROW("Artifacts file generating process is not finished.");
     
-    verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, false);
+    verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, full_match_verification, false);
   }
 
   else
@@ -360,7 +360,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
           if (_header.generating_interrupted_at_block > block_log_head_block_num)
             FC_THROW("Artifacts file has been filled up to ${interrupted_at_block} block, truncating artifacts file will result an empty file. Remove artifacts file and create artifacts from the beggining.", ("interrupted_at_block", _header.generating_interrupted_at_block));
 
-          verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, true);
+          verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, full_match_verification, true);
           truncate_file(block_log_head_block_num);
 
           if (_header.generating_interrupted_at_block)
@@ -368,7 +368,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
         }
         else
         {
-          verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, false);
+          verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, full_match_verification, false);
 
           if (_header.generating_interrupted_at_block)
             generate_artifacts_file(source_block_provider);
@@ -560,18 +560,31 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
     (elapsed_time)(processed_blocks_count)("was_interrupted", (static_cast<bool>(_header.generating_interrupted_at_block))));
 }
 
-void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool use_block_log_head_num) const
+void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool full_match_verification, const bool use_block_log_head_num) const
 {
   constexpr uint32_t BLOCKS_SAMPLE_AMOUNT = 10;
 
-  if (_header.head_block_num < BLOCKS_SAMPLE_AMOUNT + 1)
+  if (!full_match_verification && _header.head_block_num < BLOCKS_SAMPLE_AMOUNT + 1)
     return;
 
-  const uint32_t first_block_to_verify = use_block_log_head_num ? source_block_provider.head()->get_block_num() - 1 : _header.head_block_num - 1;
-  const uint32_t last_block_num_to_verify = first_block_to_verify - BLOCKS_SAMPLE_AMOUNT;
+  uint32_t first_block_to_verify, last_block_num_to_verify;
+
+  if (full_match_verification)
+  {
+    first_block_to_verify = _header.head_block_num - 1;
+    last_block_num_to_verify = 1;
+  }
+  else
+  {
+    first_block_to_verify = use_block_log_head_num ? source_block_provider.head()->get_block_num() - 1 : _header.head_block_num - 1;
+    last_block_num_to_verify = first_block_to_verify - BLOCKS_SAMPLE_AMOUNT;
+  }
+
   FC_ASSERT(last_block_num_to_verify > _header.generating_interrupted_at_block, "Artifacts file must contains blocks artifacts which ones will be used for verification.");
 
-  ilog("Verifying if artefacts for blocks range: ${first_block_to_verify} : ${last_block_num_to_verify} matches block_log.", (first_block_to_verify)(last_block_num_to_verify));
+  ilog("Verifying if artefacts for blocks range: ${first_block_to_verify} : ${last_block_num_to_verify} matches block_log. (Any error during this process means that artifacts doesn't match block_log.",
+      (first_block_to_verify)(last_block_num_to_verify));
+
   uint32_t block_num = first_block_to_verify;
 
   try
@@ -684,10 +697,10 @@ block_log_artifacts::~block_log_artifacts()
     _impl->close();
 }
 
-block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only)
+block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification)
 {
   block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts);
-  block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only);
+  block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only, full_match_verification);
   return block_artifacts;
 }
 

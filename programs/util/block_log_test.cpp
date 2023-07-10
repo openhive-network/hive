@@ -18,7 +18,7 @@ void generate_artifacts(const fc::path& block_log_path)
   block_log bl;
 
   bl.open(block_log_path, true, false);
-  auto bla = block_log_artifacts::open(block_log_path, bl, false);
+  auto bla = block_log_artifacts::open(block_log_path, bl, false, false);
   bla.reset();
   ilog("open and generation finished...");
 }
