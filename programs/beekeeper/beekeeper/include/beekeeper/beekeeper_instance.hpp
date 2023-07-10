@@ -41,7 +41,7 @@ namespace beekeeper
     public:
 
       beekeeper_instance( const boost::filesystem::path& _wallet_directory );
-      ~beekeeper_instance();
+      ~beekeeper_instance() override;
 
       bool start() override;
 

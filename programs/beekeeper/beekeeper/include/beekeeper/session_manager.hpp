@@ -14,7 +14,7 @@ class session_manager: public session_manager_base
 
   public:
 
-    ~session_manager(){}
+    ~session_manager() override {}
 };
 
 } //beekeeper

@@ -26,7 +26,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
    public:
       beekeeper_wallet( const wallet_data& initial_data );
 
-      ~beekeeper_wallet();
+      ~beekeeper_wallet() override;
 
       bool copy_wallet_file( string destination_filename );
 
