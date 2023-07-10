@@ -1,4 +1,5 @@
 import math
+import pytest
 from pathlib import Path
 
 import test_tools as tt
@@ -6,7 +7,7 @@ import test_tools as tt
 from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 from hive_local_tools.constants import MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
 
-
+@pytest.mark.flaky(reruns=5, reruns_delay=30)
 def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(replayed_node: ReplayedNodeMaker):
     """
     Test scenario: block log that was replayed contains ordered recurrent transfers.

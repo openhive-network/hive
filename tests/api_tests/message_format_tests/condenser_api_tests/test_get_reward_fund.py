@@ -6,4 +6,4 @@ from hive_local_tools import run_for
 @run_for('testnet', 'live_mainnet')
 def test_get_reward_fund(node):
     funds = node.api.condenser.get_reward_fund('post')
-    assert len(funds) != 0
+    assert len(dict(funds)) != 0
