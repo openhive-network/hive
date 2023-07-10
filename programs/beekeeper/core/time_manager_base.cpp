@@ -1,26 +1,17 @@
-#include <core/time_manager.hpp>
+#include <core/time_manager_base.hpp>
 
 namespace beekeeper {
 
-time_manager::time_manager()
+time_manager_base::time_manager_base()
 {
-  notification_thread = std::make_unique<std::thread>( [this]()
-    {
-      while( !stop_requested )
-      {
-        run();
-        std::this_thread::sleep_for( std::chrono::milliseconds(200) );
-      }
-    } );
 }
 
-time_manager::~time_manager()
+time_manager_base::~time_manager_base()
 {
   stop_requested = true;
-  notification_thread->join();
 }
 
-void time_manager::run()
+void time_manager_base::run()
 {
   std::lock_guard<std::mutex> guard( methods_mutex );
 
@@ -42,7 +33,7 @@ void time_manager::run()
 
 }
 
-void time_manager::add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method )
+void time_manager_base::add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method )
 {
   std::lock_guard<std::mutex> guard( methods_mutex );
 
@@ -50,7 +41,7 @@ void time_manager::add( const std::string& token, types::lock_method_type&& lock
   _idx.emplace( session_data{ token, lock_method, notification_method } );
 }
 
-void time_manager::change( const std::string& token, const types::timepoint_t& time )
+void time_manager_base::change( const std::string& token, const types::timepoint_t& time )
 {
   std::lock_guard<std::mutex> guard( methods_mutex );
 
@@ -60,7 +51,7 @@ void time_manager::change( const std::string& token, const types::timepoint_t& t
   _idx.modify( _found, [&time]( session_data &sd ){ sd.time = time; });
 }
 
-void time_manager::close( const std::string& token )
+void time_manager_base::close( const std::string& token )
 {
   std::lock_guard<std::mutex> guard( methods_mutex );
 

@@ -13,7 +13,7 @@ ADD_LIBRARY( beekeeper_wasm_core STATIC
                       ../../core/beekeeper_wallet.cpp
                       ../../core/beekeeper_wallet_manager.cpp
                       ../../core/token_generator.cpp
-                      ../../core/time_manager.cpp
+                      ../../core/time_manager_base.cpp
                       ../../core/session_base.cpp
                       ../../core/session_manager_base.cpp
                       ../../core/wallet_manager_impl.cpp

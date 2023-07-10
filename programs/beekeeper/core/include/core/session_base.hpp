@@ -1,6 +1,6 @@
 #pragma once
 
-#include <core/time_manager.hpp>
+#include <core/time_manager_base.hpp>
 #include <core/utilities.hpp>
 #include <core/wallet_manager_impl.hpp>
 
@@ -21,11 +21,11 @@ class session_base
 
     void check_timeout_impl( bool allow_update_timeout_time );
 
-    std::shared_ptr<time_manager> time;
+    std::shared_ptr<time_manager_base> time;
 
   public:
 
-    session_base( const std::string& token, std::shared_ptr<time_manager> time );
+    session_base( const std::string& token, std::shared_ptr<time_manager_base> time );
     virtual ~session_base(){}
 
     void set_timeout( const std::chrono::seconds& t );

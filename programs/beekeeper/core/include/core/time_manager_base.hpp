@@ -2,9 +2,8 @@
 
 #include <core/utilities.hpp>
 
-#include <thread>
-#include <string>
 #include <mutex>
+#include <string>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
@@ -20,7 +19,7 @@ namespace beekeeper {
   using boost::multi_index::tag;
   using boost::multi_index::member;
 
-class time_manager
+class time_manager_base
 {
   private:
 
@@ -47,17 +46,18 @@ class time_manager
 
   private:
 
-    bool stop_requested = false;
-
     std::mutex methods_mutex;
-    std::unique_ptr<std::thread> notification_thread;
 
     session_data_index items;
 
+  protected:
+
+    bool stop_requested = false;
+
   public:
 
-    time_manager();
-    ~time_manager();
+    time_manager_base();
+    virtual ~time_manager_base();
 
     void add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method );
     void change( const std::string& token, const types::timepoint_t& time );

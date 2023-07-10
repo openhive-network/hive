@@ -14,15 +14,15 @@ class session_manager_base
 
     const unsigned int token_length = 32;
 
-    std::shared_ptr<time_manager> time;
-
     items sessions;
 
     std::shared_ptr<session_base> get_session( const std::string& token );
 
   protected:
 
-    virtual std::shared_ptr<session_base> create_session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager> time );
+    std::shared_ptr<time_manager_base> time;
+
+    virtual std::shared_ptr<session_base> create_session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager_base> time );
 
   public:
 

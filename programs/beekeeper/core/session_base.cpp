@@ -2,7 +2,7 @@
 
 namespace beekeeper {
 
-session_base::session_base( const std::string& token, std::shared_ptr<time_manager> time )
+session_base::session_base( const std::string& token, std::shared_ptr<time_manager_base> time )
         : token(token), time( time )
 {
   wallet_mgr = std::make_shared<wallet_manager_impl>();

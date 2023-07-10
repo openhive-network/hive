@@ -14,7 +14,7 @@ class session: public session_base
 
   public:
 
-    session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager> time );
+    session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager_base> time );
 
     void prepare_notifications() override;
 };

@@ -1,4 +1,5 @@
 #include <core/session_manager_base.hpp>
+#include <core/time_manager_base.hpp>
 
 #include <core/token_generator.hpp>
 
@@ -6,7 +7,7 @@ namespace beekeeper {
 
 session_manager_base::session_manager_base()
 {
-  time = std::make_shared<time_manager>();
+  time = std::make_shared<time_manager_base>();
 }
 
 std::shared_ptr<session_base> session_manager_base::get_session( const std::string& token )
@@ -17,7 +18,7 @@ std::shared_ptr<session_base> session_manager_base::get_session( const std::stri
   return _found->second;
 }
 
-std::shared_ptr<session_base> session_manager_base::create_session( const std::string& notifications_endpoint/*not used here*/, const std::string& token, std::shared_ptr<time_manager> time )
+std::shared_ptr<session_base> session_manager_base::create_session( const std::string& notifications_endpoint/*not used here*/, const std::string& token, std::shared_ptr<time_manager_base> time )
 {
   return std::make_shared<session_base>( token, time );
 }
@@ -29,6 +30,7 @@ std::string session_manager_base::create_session( const std::string& salt, const
   std::shared_ptr<session_base> _session = create_session( notifications_endpoint, _token, time );
   sessions.emplace( _token, _session );
 
+  FC_ASSERT( time );
   time->add(  _token,
               [_session]()
               {
@@ -52,6 +54,7 @@ std::string session_manager_base::create_session( const std::string& salt, const
 
 void session_manager_base::close_session( const std::string& token )
 {
+  FC_ASSERT( time );
   time->close( token );
   FC_ASSERT( sessions.erase( token ), "A session attached to ${token} doesn't exist", (token) );
 }
