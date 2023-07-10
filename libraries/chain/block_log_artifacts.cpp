@@ -176,8 +176,7 @@ inline size_t calculate_block_serialized_data_size(const artifact_file_chunk& ne
 class block_log_artifacts::impl final
 {
 public:
-  void open_read_only(const fc::path& block_log_artifacts_file_path);
-  void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const uint32_t head_block_num, const bool read_only);
+  void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only);
 
   uint32_t read_head_block_num() const
   {
@@ -286,28 +285,14 @@ private:
   bool _is_writable = false;
 };
 
-void block_log_artifacts::impl::open_read_only(const fc::path& block_log_artifacts_file_path)
-{
-  try {
-    _artifact_file_name = block_log_artifacts_file_path;
-    _is_writable = false;
-    int flags = O_RDONLY | O_CLOEXEC;
-    _storage_fd = ::open(_artifact_file_name.generic_string().c_str(), flags, 0644);
-
-  if (_storage_fd == -1)
-    FC_THROW("Error opening block artifacts file ${_artifact_file_name} in read only mode: ${error}", (_artifact_file_name)("error", strerror(errno)));
-
-  if (!load_header())
-    FC_THROW("Unable to load artifacts header. File is malformed.");
-
-  } FC_CAPTURE_AND_RETHROW()
-}
-
-void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const uint32_t head_block_num, const bool read_only)
+void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only)
 {
   try {
   _artifact_file_name = fc::path(block_log_file_path.generic_string() + ".artifacts");
   _is_writable = !read_only;
+
+  const auto head_block = source_block_provider.head();
+  const uint32_t block_log_head_block_num = head_block ? head_block->get_block_num() : 0;
 
   if (read_only)
   {
@@ -320,8 +305,8 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
     if (!load_header())
       FC_THROW("Cannot load header of artifacts file: ${_artifact_file_name}", (_artifact_file_name));
 
-    if (head_block_num != _header.head_block_num)
-      FC_THROW("Artifacts file has other head block num: ${artifacts_head_block} than block_log: ${head_block_num}", ("artifacts_head_block", _header.head_block_num)(head_block_num));
+    if (block_log_head_block_num != _header.head_block_num)
+      FC_THROW("Artifacts file has other head block num: ${artifacts_head_block} than block_log: ${block_log_head_block_num}", ("artifacts_head_block", _header.head_block_num)(block_log_head_block_num));
 
     if (_header.generating_interrupted_at_block)
       FC_THROW("Artifacts file generating process is not finished.");
@@ -344,15 +329,14 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
         if (_storage_fd == -1)
           FC_THROW("Error creating block artifacts file ${_artifact_file_name}: ${error}", (_artifact_file_name)("error", strerror(errno)));
 
-        _is_writable = true; //we need to be able to write the header since we're creating a new artifacts file
         _header.dirty_close = 1;
         flush_header();
 
         /// Generate artifacts file only if some blocks are present in pointed block_log.
-        if (head_block_num > 0)
+        if (block_log_head_block_num > 0)
         {
           _header.tail_block_num = 1;
-          _header.head_block_num = head_block_num;
+          _header.head_block_num = block_log_head_block_num;
           flush_header();
           generate_artifacts_file(source_block_provider);
         }
@@ -368,16 +352,16 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
         _header.dirty_close = 1;
         flush_header();
 
-        if (head_block_num < _header.head_block_num)
+        if (block_log_head_block_num < _header.head_block_num)
         {
-          wlog("block_log head block num: ${head_block_num}, block_log.artifact head block num: ${artifacts_head_block_num}. Block log file is shorter, the artifact file will be truncated.",
-              (head_block_num)("artifacts_head_block_num", _header.head_block_num));
+          wlog("block_log head block num: ${block_log_head_block_num}, block_log.artifact head block num: ${artifacts_head_block_num}. Block log file is shorter, the artifact file will be truncated.",
+              (block_log_head_block_num)("artifacts_head_block_num", _header.head_block_num));
           
-          if (_header.generating_interrupted_at_block > head_block_num)
+          if (_header.generating_interrupted_at_block > block_log_head_block_num)
             FC_THROW("Artifacts file has been filled up to ${interrupted_at_block} block, truncating artifacts file will result an empty file. Remove artifacts file and create artifacts from the beggining.", ("interrupted_at_block", _header.generating_interrupted_at_block));
 
           verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, true);
-          truncate_file(head_block_num);
+          truncate_file(block_log_head_block_num);
 
           if (_header.generating_interrupted_at_block)
             generate_artifacts_file(source_block_provider);
@@ -389,13 +373,13 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
           if (_header.generating_interrupted_at_block)
             generate_artifacts_file(source_block_provider);
 
-          if (head_block_num > _header.head_block_num && !_header.generating_interrupted_at_block && !appbase::app().is_interrupt_request())
+          if (block_log_head_block_num > _header.head_block_num && !_header.generating_interrupted_at_block && !appbase::app().is_interrupt_request())
           {
-            wlog("block_log file is longer than current block_log.artifact file. Artifacts head block num: ${header_head_block_num}, block log head block num: ${blocklog_head_block_num}.",
-                ("header_head_block_num", _header.head_block_num)("blocklog_head_block_num", head_block_num));
+            wlog("block_log file is longer than current block_log.artifact file. Artifacts head block num: ${header_head_block_num}, block log head block num: ${block_log_head_block_num}.",
+                ("header_head_block_num", _header.head_block_num)(block_log_head_block_num));
 
             _header.tail_block_num = _header.head_block_num;
-            _header.head_block_num = head_block_num;
+            _header.head_block_num = block_log_head_block_num;
             flush_header();
             generate_artifacts_file(source_block_provider);
           }
@@ -415,7 +399,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
           _header = artifact_file_header();
           _header.dirty_close = 1;
           _header.tail_block_num = 1;
-          _header.head_block_num = head_block_num;
+          _header.head_block_num = block_log_head_block_num;
           flush_header();
           generate_artifacts_file(source_block_provider);
         }
@@ -700,17 +684,10 @@ block_log_artifacts::~block_log_artifacts()
     _impl->close();
 }
 
-block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const uint32_t head_block_num, const bool read_only)
+block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only)
 {
   block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts);
-  block_artifacts->_impl->open(block_log_file_path, source_block_provider, head_block_num, read_only);
-  return block_artifacts;
-}
-
-block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open_read_only(const fc::path& block_log_artifacts_file_path)
-{
-  block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts);
-  block_artifacts->_impl->open_read_only(block_log_artifacts_file_path);
+  block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only);
   return block_artifacts;
 }
 
