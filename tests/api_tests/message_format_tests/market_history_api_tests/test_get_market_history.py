@@ -14,5 +14,5 @@ def test_get_market_history(node, should_prepare):
     history = node.api.market_history.get_market_history(
         bucket_seconds=3600,
         start=tt.Time.from_now(weeks=-100),
-        end=tt.Time.from_now(weeks=1))['buckets']
+        end=tt.Time.from_now(weeks=1))["buckets"]
     assert len(history) != 0

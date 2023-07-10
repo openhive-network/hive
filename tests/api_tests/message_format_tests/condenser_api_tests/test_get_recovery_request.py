@@ -10,4 +10,4 @@ def test_get_recovery_request(node, wallet):
     wallet.api.create_account('initminer', 'alice', '{}')
     request_account_recovery(wallet, 'alice')
     requests = node.api.condenser.get_recovery_request('alice')
-    assert len(requests) != 0
+    assert len(dict(requests)) != 0

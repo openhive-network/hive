@@ -12,7 +12,7 @@ def test_get_transaction_hex_in_testnet(node):
 
 
 @run_for('mainnet_5m', 'live_mainnet')
-def test_get_transaction_hex_in_mainnet(node):
+def test_get_transaction_hex_in_mainnet(node: tt.InitNode):
     block = node.api.wallet_bridge.get_block(4450001)['block']
     transaction = block['transactions'][0]
     output_hex = node.api.database.get_transaction_hex(trx=transaction)['hex']

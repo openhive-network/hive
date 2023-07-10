@@ -16,5 +16,5 @@ def test_get_trade_history(node, should_prepare):
     history = node.api.market_history.get_trade_history(
         start=tt.Time.from_now(weeks=-480),
         end=tt.Time.now(),
-        limit=10)['trades']
+        limit=10)["trades"]
     assert len(history) != 0
