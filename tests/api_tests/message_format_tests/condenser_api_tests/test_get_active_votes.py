@@ -9,5 +9,5 @@ def test_get_active_votes(node, should_prepare):
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account('acidyo', hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
         wallet.api.post_comment('acidyo', 'drew-an-avatar-signature-for-my-posts', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
-        wallet.api.vote('initminer', 'acidyo', 'drew-an-avatar-signature-for-my-posts', 100, broadcast=True)
+        wallet.api.vote('initminer', 'acidyo', 'drew-an-avatar-signature-for-my-posts', 100)
     node.api.condenser.get_active_votes('acidyo', 'drew-an-avatar-signature-for-my-posts')
