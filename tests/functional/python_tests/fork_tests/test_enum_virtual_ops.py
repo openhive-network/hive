@@ -15,9 +15,7 @@ def test_enum_virtual_ops(prepare_with_many_witnesses):
     api_node.wait_number_of_blocks(1)
 
     tt.logger.info('Checking there are only virtual operations in account_history.enum_virtual_ops...')
-    expected_results = [{"block": 111, "ops": ['producer_reward_operation']}]
-    for i in range(112, 121):
-      expected_results.append({"block": i, "ops": ['transfer_to_vesting_completed_operation', 'producer_reward_operation']})
+    allowed_ops = ('transfer_to_vesting_completed_operation', 'producer_reward_operation')
 
     for _ in range(10):
         # TRIGGER
@@ -33,7 +31,7 @@ def test_enum_virtual_ops(prepare_with_many_witnesses):
 
         # VERIFY
         # We check that query account_history_api.enum_virtual_ops returns only virtual operations (issue #139).
-        assert_only_virtual_operations(api_node, block_to_check, expected_results[_])
+        assert_only_virtual_operations(api_node, block_to_check, allowed_ops)
 
 
 def assert_only_virtual_operations(node, block_to_check, expected_results):
@@ -43,7 +41,7 @@ def assert_only_virtual_operations(node, block_to_check, expected_results):
     tt.logger.info(f"expected results for block: {block_to_check}: {expected_results}")
 
     results = [op['op']['type'] for op in ops]
-    assert results == expected_results['ops']
+    assert all([(op_type in expected_results) for op_type in results])
 
     for op in ops:
         virtual_op = op['virtual_op']

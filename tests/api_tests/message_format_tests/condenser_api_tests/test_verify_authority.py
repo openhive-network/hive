@@ -1,5 +1,5 @@
 from hive_local_tools import run_for
-
+import test_tools as tt
 
 @run_for('testnet')
 def test_verify_authority_in_testnet(node, wallet):
@@ -8,7 +8,7 @@ def test_verify_authority_in_testnet(node, wallet):
 
 
 @run_for('mainnet_5m')
-def test_verify_authority_in_mainnet_5m(node):
+def test_verify_authority_in_mainnet_5m(node: tt.RemoteNode):
     block = node.api.condenser.get_block(4800119)
     transaction = block['transactions'][1]
     node.api.condenser.verify_authority(transaction)
