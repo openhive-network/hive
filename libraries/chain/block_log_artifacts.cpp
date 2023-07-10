@@ -13,7 +13,7 @@
 #include <fc/thread/thread.hpp>
 #include <fc/io/json.hpp>
 
-#include <boost/lockfree/queue.hpp>
+#include <boost/lockfree/spsc_queue.hpp>
 
 #include <fcntl.h>
 
@@ -485,7 +485,7 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
     block_attributes_t attributes;
   };
 
-  typedef boost::lockfree::queue<full_block_with_artifacts*> queue_type;
+  typedef boost::lockfree::spsc_queue<std::shared_ptr<full_block_with_artifacts>> queue_type;
   constexpr size_t MAX_BLOCK_TO_PREFETCH = 10000;
   queue_type full_block_queue{MAX_BLOCK_TO_PREFETCH};
   std::atomic<size_t> queue_size = { 0 }; // approx full_block_queue size
@@ -500,7 +500,7 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
 
     while(current_block_number > target_block_num)
     {
-      full_block_with_artifacts* block_with_artifacts { nullptr };
+      std::shared_ptr<full_block_with_artifacts> block_with_artifacts;
       {
         std::unique_lock<std::mutex> lock(queue_mutex);
         while (!appbase::app().is_interrupt_request() && !full_block_queue.pop(block_with_artifacts))
@@ -528,7 +528,6 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
       }
 
       ++processed_blocks_count;
-      delete block_with_artifacts;
       ++idx;
     }
 
@@ -546,7 +545,8 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
     if (appbase::app().is_interrupt_request())
       return false;
 
-    full_block_queue.push(new full_block_with_artifacts {full_block, block_pos, attributes});
+    std::shared_ptr<full_block_with_artifacts> block_with_artifacts(new full_block_with_artifacts{full_block, block_pos, attributes});
+    full_block_queue.push(block_with_artifacts);
     queue_size.fetch_add(1, std::memory_order_relaxed);
     blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation);
     queue_condition.notify_one();
