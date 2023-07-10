@@ -28,6 +28,7 @@ variables:
   # Variables required by the mirrornet pipeline
   MIRRORNET_CHAIN_ID: 42
   MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
+  TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
   RUN_MIRRORNET_PIPELINE: "false"
 
 include:
@@ -150,7 +151,7 @@ mirrornet_node_build:
 mirrornet_replay_test:
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  needs: 
+  needs:
     - job: "mirrornet_node_build"
       artifacts: true
 
@@ -518,7 +519,6 @@ message_format_testnet_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 45
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
-    TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
     NODE_TYPE: "testnet"
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/api_tests/message_format_tests/report.xml
 
@@ -657,7 +657,6 @@ python_pattern_mainnet_tests:
   extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
-    TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/api_tests/message_format_tests/report.xml
 
   script:
@@ -763,7 +762,7 @@ hf28_tests:
     - *run-pytest
   tags:
     - public-runner-docker
-    
+
 functional_api_tests:
   stage: test
   extends: .test_tools_based
