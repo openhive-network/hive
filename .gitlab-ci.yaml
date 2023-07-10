@@ -441,6 +441,7 @@ live_sync_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
+    JUNIT_REPORT: tests/functional/python_tests/live_sync_tests/report.xml
 
   script:
     - cd tests/functional/python_tests/live_sync_tests
