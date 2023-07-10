@@ -165,8 +165,6 @@ namespace hive { namespace chain {
       my->block_log_size = get_file_size(my->block_log_fd);
       const ssize_t block_log_size = my->block_log_size;
 
-      uint32_t head_block_num = 0;
-
       /* On startup of the block log, there are several states the log file and the index file can be
         * in relation to eachother.
         *
@@ -189,15 +187,14 @@ namespace hive { namespace chain {
       {
         idump((block_log_size));
         std::atomic_store(&my->head, read_head());
-        head_block_num = std::atomic_load(&my->head)->get_block_num();
       }
 
       if (auto_open_artifacts)
       {
         if(read_only)
-          my->_artifacts = block_log_artifacts::open(file, *this, head_block_num, true);
+          my->_artifacts = block_log_artifacts::open(file, *this, true);
         else
-          my->_artifacts = block_log_artifacts::open(file, *this, head_block_num, false);
+          my->_artifacts = block_log_artifacts::open(file, *this, false);
       }
   }
 

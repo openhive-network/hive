@@ -576,11 +576,13 @@ bool get_block(const fc::path& block_log_filename, uint32_t block_number, bool h
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_artifacts(const fc::path& block_log_artifacts_file_path, const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, bool header_only)
+bool get_block_artifacts(const fc::path& block_log_path, const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, bool header_only)
 {
   try
   {
-    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open_read_only(block_log_artifacts_file_path);
+    hive::chain::block_log block_log;
+    block_log.open(block_log_path, true, false);
+    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log, true);
     {
       const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
       if (starting_block_number && *starting_block_number > artifacts_block_head_num)
@@ -680,7 +682,7 @@ int main(int argc, char** argv)
 
   // args for get-block-artifacts subcommand
   boost::program_options::options_description get_block_artifacts_options("get-block-artifacts options");
-  get_block_artifacts_options.add_options()("block-log-artifacts", boost::program_options::value<std::string>()->value_name("filename")->required(), "The block log artifacts to read from");
+  get_block_artifacts_options.add_options()("block-log", boost::program_options::value<std::string>()->value_name("filename")->required(), "Path to block_log file. Expecting artifacts file in the same directory.");
   get_block_artifacts_options.add_options()("starting-block-number", boost::program_options::value<uint32_t>()->value_name("n"), "if present, app will return artifacts from given block number (inclusive)");
   get_block_artifacts_options.add_options()("ending-block-number", boost::program_options::value<uint32_t>()->value_name("m"), "if present, app will return artifacts to given block number (inclusive)");
   get_block_artifacts_options.add_options()("header-only", "only print the artifacts header");
@@ -899,7 +901,7 @@ int main(int argc, char** argv)
         }
       }
 
-      return get_block_artifacts(options_map["block-log-artifacts"].as<std::string>(), starting_block_number, ending_block_number, header_only);
+      return get_block_artifacts(options_map["block-log"].as<std::string>(), starting_block_number, ending_block_number, header_only);
     }
     else
     {
