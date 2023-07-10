@@ -37,4 +37,17 @@ namespace beekeeper {
     return app.get_wallet_manager()->create_session( salt, "notification endpoint"/*notifications_endpoint - not used here*/ );
   }
 
+  std::string beekeeper_api::create( const std::string& token, const std::string& wallet_name, const std::string& password )
+  {
+    if( password.empty() )
+      return app.get_wallet_manager()->create( token, wallet_name, fc::optional<std::string>() );
+    else
+      return app.get_wallet_manager()->create( token, wallet_name, password );
+  }
+
+  std::string beekeeper_api::import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key )
+  {
+    return app.get_wallet_manager()->import_key( token, wallet_name, wif_key );
+  }
+
 };

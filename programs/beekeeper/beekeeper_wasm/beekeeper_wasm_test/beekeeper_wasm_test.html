@@ -12,17 +12,32 @@
       params.push_back("--salt");
       params.push_back("avocado");
 
-      console.log('create constructor...');
+      console.log('Create beekeeper...');
       var instance = new Module.beekeeper_api( params );
-      console.log('constructor created...');
+      console.log('Beekeeper created...');
 
-      console.log('call "init" function...');
+      console.log('init instance...');
       var init_result = instance.init();
-      console.log('init function called with result: ' + init_result);
+      console.log('instance initalized: ' + init_result);
 
-      console.log('call "create_session" function...');
+      console.log('create session...');
       var session_token = instance.create_session( "pear" )
-      console.log('"create_session" called with result: ' + session_token);
+      console.log('Session created with token: ' + session_token);
+
+      // var wallet_name = "wallet_a"
+      // console.log('create wallet: ' + wallet_name);
+      // var password = instance.create( session_token, wallet_name, "cherry" )
+      // console.log('wallet "' + wallet_name + '" created with password: ' + password);
+
+      var wallet_name_2 = "wallet_b"
+      console.log('create wallet: ' + wallet_name_2 + ' with empty password');
+      var password_2 = instance.create( session_token, wallet_name_2, "" )
+      console.log('wallet "' + wallet_name_2 + '" created with password: ' + password_2);
+
+      var private_key = "5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78"
+      console.log('import key ' + private_key + ' to wallet: "' + wallet_name + '"' );
+      var public_key = instance.import_key( session_token, wallet_name, private_key )
+      console.log('key imported. Public key: ' + public_key);
 
       //instance.dump("/storage_root/.beekeeper");
 
