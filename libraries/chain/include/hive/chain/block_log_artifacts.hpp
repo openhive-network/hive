@@ -58,11 +58,12 @@ public:
   *   \param block_log_file_path location of source block_log file
   *   \param source_block_provider - provides a block data to generate artifact file.
   *   \param read_only - determines if artifacts file are open in read_only mode.
+  *   \param full_match_verification - if true, all artifacts will be checked if they match block_log. Otherwise only small amount of artifacts will be checked if they match block_log.
   *   Built instance of `block_log_artifacts` will be automaticaly closed before destruction.
   * 
   *   Function throws on any error f.e. related to IO.
   */
-  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only);
+  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification);
 
   /// Allows to read a number of last block the artifacts are stored for.
   uint32_t read_head_block_num() const;
