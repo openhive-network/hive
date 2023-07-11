@@ -252,9 +252,7 @@ namespace chain {
       bool                       is_known_transaction( const transaction_id_type& id )const;
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
-      virtual block_id_type              find_block_id_for_num( uint32_t block_num )const = 0;
     public:
-      block_id_type              get_block_id_for_num( uint32_t block_num )const;
       virtual std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const = 0;
       virtual std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const = 0;
       /// mtlk         std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
@@ -995,12 +993,16 @@ namespace chain {
   private:
 
     bool is_known_block_unlocked(const block_id_type& id)const override;
-    block_id_type              find_block_id_for_num( uint32_t block_num )const override;
+    block_id_type              find_block_id_for_num( uint32_t block_num )const;
     
     void migrate_irreversible_state(uint32_t old_last_irreversible) override;
     bool is_included_block_unlocked(const block_id_type& block_id);
     std::shared_ptr<full_block_type> get_head_block() const override;
     void open_block_log(const open_args& args) override;
+
+  public:
+     block_id_type              get_block_id_for_num( uint32_t block_num )const;
+
 
   };
 
