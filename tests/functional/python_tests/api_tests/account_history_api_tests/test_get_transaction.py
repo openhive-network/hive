@@ -16,7 +16,6 @@ def test_get_transaction_in_reversible_block(node, include_reversible):
         node.wait_for_irreversible_block()
     # delete one additional key to compare transactions
     del transaction['rc_cost']
-    # transaction["expiration"] = tt.Time.parse(transaction["expiration"])
     response = node.api.account_history.get_transaction(id=transaction['transaction_id'],
                                                         include_reversible=include_reversible)
     assert response.json(by_alias=True, sort_keys=True) == dumps(transaction, sort_keys=True)
