@@ -265,8 +265,6 @@ namespace chain {
       block_id_type              get_block_id_for_num( uint32_t block_num )const;
       virtual std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const = 0;
       virtual std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const = 0;
-      virtual std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
-                                                                        fc::microseconds wait_for_microseconds = fc::microseconds() ) = 0;
       /// mtlk         std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
@@ -971,8 +969,7 @@ namespace chain {
   
   public:
     bool is_known_block( const block_id_type& id )const;
-    std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
-                                                                        fc::microseconds wait_for_microseconds = fc::microseconds() ) override;
+    std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
     std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const override;
     std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const override;
     std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
