@@ -224,7 +224,6 @@ namespace chain {
         *
         * @return information if replaying was finished
         */
-      virtual bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const = 0;
 
       /**
         * @brief Rebuild object graph from block history and open detabase
@@ -988,7 +987,7 @@ namespace chain {
     uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block );
   
   public:
-    bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const override;
+    bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
     uint32_t reindex( const open_args& args ) override;
     void close(bool rewind = true) override;
   
