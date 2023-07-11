@@ -991,20 +991,23 @@ namespace chain {
     bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const override;
     uint32_t reindex( const open_args& args ) override;
     void close(bool rewind = true) override;
+  
+  public:
+    bool is_known_block( const block_id_type& id )const override;
+    std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
+                                                                        fc::microseconds wait_for_microseconds = fc::microseconds() ) override;
+    std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const override;
+    std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const override;
+    std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point) override;
+    std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit) override;
+
   private:
 
-    public: bool is_known_block( const block_id_type& id )const override; private:
     bool is_known_block_unlocked(const block_id_type& id)const override;
     block_id_type              find_block_id_for_num( uint32_t block_num )const override;
-    public: std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
-                                                                        fc::microseconds wait_for_microseconds = fc::microseconds() ) override; private:
-    public: std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const override; private:
     
-    public: std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const override; private:
     void migrate_irreversible_state(uint32_t old_last_irreversible) override;
-    public: std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point) override; private:
     bool is_included_block_unlocked(const block_id_type& block_id);
-    public: std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit) override; private:
     std::shared_ptr<full_block_type> get_head_block() const override;
     void open_block_log(const open_args& args) override;
 
