@@ -58,11 +58,6 @@ class rc_plugin_impl
     template< typename OpType >
     void post_apply_custom_op_type( const custom_operation_notification& note );
 
-    bool before_first_block()
-    {
-      return !_db.has_hardfork( HIVE_HARDFORK_0_20 );
-    }
-
     database&                     _db;
     rc_plugin&                    _self;
 
@@ -76,7 +71,7 @@ class rc_plugin_impl
 
 void rc_plugin_impl::on_pre_apply_transaction( const transaction_notification& note )
 {
-  if( before_first_block() )
+  if( !_db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     return;
 
   _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
@@ -87,7 +82,7 @@ void rc_plugin_impl::on_pre_apply_transaction( const transaction_notification& n
 
 void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& note )
 { try {
-  if( before_first_block() )
+  if( !_db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     return;
 
   const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
@@ -481,7 +476,7 @@ struct post_apply_operation_visitor
 
 void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note )
 { try {
-  if( before_first_block() )
+  if( !_db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     return;
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
@@ -543,7 +538,7 @@ void rc_plugin_impl::on_pre_apply_custom_operation( const custom_operation_notif
 
 void rc_plugin_impl::on_post_apply_operation( const operation_notification& note )
 { try {
-  if( before_first_block() )
+  if( !_db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     return;
   // dlog( "Calling post-vtor on ${op}", ("op", note.op) );
   post_apply_operation_visitor vtor( _db );
