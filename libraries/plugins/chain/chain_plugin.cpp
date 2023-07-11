@@ -770,7 +770,7 @@ void chain_plugin_impl::setup_benchmark_dumper()
 chain_plugin::chain_plugin() : my( new detail::chain_plugin_impl() ) {}
 chain_plugin::~chain_plugin(){}
 
-full_database& chain_plugin::db() { return my->db; }
+database& chain_plugin::db() { return my->db; }
 const hive::chain::database& chain_plugin::db() const { return my->db; }
 
 bfs::path chain_plugin::state_storage_dir() const

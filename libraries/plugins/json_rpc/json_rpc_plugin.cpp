@@ -179,7 +179,7 @@ namespace detail
 
       std::unique_ptr< json_rpc_logger >                 _logger;
 
-      chain::full_database& _db;
+      chain::database& _db;
   };
 
   json_rpc_plugin_impl::json_rpc_plugin_impl(): _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}

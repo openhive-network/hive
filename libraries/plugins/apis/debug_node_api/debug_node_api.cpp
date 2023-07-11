@@ -38,7 +38,7 @@ class debug_node_api_impl
       (debug_throw_exception)
     )
 
-    chain::full_database& _db;
+    chain::database& _db;
     debug_node::debug_node_plugin& _debug_node;
 };
 

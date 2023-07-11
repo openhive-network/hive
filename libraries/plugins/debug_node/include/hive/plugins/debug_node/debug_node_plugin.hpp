@@ -58,13 +58,13 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     virtual void plugin_startup() override;
     virtual void plugin_shutdown() override;
 
-    chain::full_database& database();
+    chain::database& database();
 
     template< typename Lambda >
     void debug_update( Lambda&& callback, uint32_t skip = hive::chain::database::skip_nothing )
     {
       // this was a method on database in Graphene
-      chain::full_database& db = database();
+      chain::database& db = database();
       chain::block_id_type head_id = db.head_block_id();
       auto it = _debug_updates.find( head_id );
       if( it == _debug_updates.end() )
