@@ -198,7 +198,6 @@ namespace chain {
 
     private:
 
-      virtual uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& full_block ) = 0;
       void remove_expired_governance_votes();
 
       //Remove proposal votes for accounts that declined voting rights during HF28.
@@ -987,7 +986,7 @@ namespace chain {
   {
     block_log _block_log;
 
-    uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block ) override;
+    uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block );
   
   public:
     bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const override;
