@@ -207,9 +207,7 @@ namespace chain {
       void initialize_state_independent_data(const open_args& args);
       
     public:
-      virtual std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point) = 0;
       std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received);
-      virtual std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit) = 0;
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
       void load_state_initial_data(const open_args& args);
@@ -249,7 +247,6 @@ namespace chain {
         *  @return true if the block is in our fork DB or saved to disk as
         *  part of the official chain, otherwise return false
         */
-      virtual bool                       is_known_block( const block_id_type& id )const = 0;
     private:
       virtual bool                       is_known_block_unlocked(const block_id_type& id)const = 0;
     public:
@@ -991,13 +988,13 @@ namespace chain {
     void close(bool rewind = true) override;
   
   public:
-    bool is_known_block( const block_id_type& id )const override;
+    bool is_known_block( const block_id_type& id )const;
     std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
                                                                         fc::microseconds wait_for_microseconds = fc::microseconds() ) override;
     std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const override;
     std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const override;
-    std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point) override;
-    std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit) override;
+    std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
+    std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
 
   private:
 
