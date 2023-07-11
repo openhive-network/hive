@@ -223,7 +223,7 @@ namespace fc
       mutable_variant_object( string key, T&& val )
       :_key_value( new std::vector<entry>() )
       {
-         set( std::move(key), variant(forward<T>(val)) );
+         set( std::move(key), variant(fc::forward<T>(val)) );
       }
 
       mutable_variant_object( mutable_variant_object&& );

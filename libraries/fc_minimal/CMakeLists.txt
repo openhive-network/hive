@@ -1,5 +1,18 @@
 SET( fc_dir "../fc/")
 
+SET( ECC_IMPL secp256k1 CACHE STRING "secp256k1 or openssl or mixed" )
+
+IF( ECC_IMPL STREQUAL openssl )
+  SET( ECC_REST ${fc_dir}/src/crypto/elliptic_impl_pub.cpp )
+ELSE( ECC_IMPL STREQUAL openssl )
+  SET( ECC_LIB secp256k1 )
+  IF( ECC_IMPL STREQUAL mixed )
+    SET( ECC_REST ${fc_dir}/src/crypto/elliptic_impl_priv.cpp ${fc_dir}/src/crypto/elliptic_impl_pub.cpp )
+  ELSE( ECC_IMPL STREQUAL mixed )
+    SET( ECC_REST ${fc_dir}/src/crypto/elliptic_impl_priv.cpp )
+  ENDIF( ECC_IMPL STREQUAL mixed )
+ENDIF( ECC_IMPL STREQUAL openssl )
+
 file(GLOB fc_minimal_headers
         ${fc_dir}/include/fc/aligned.hpp
         ${fc_dir}/include/fc/array.hpp
@@ -14,7 +27,6 @@ file(GLOB fc_minimal_headers
         ${fc_dir}/include/fc/crypto/bigint.hpp
         ${fc_dir}/include/fc/crypto/city.hpp
         ${fc_dir}/include/fc/crypto/cripemd160.hpp
-        ${fc_dir}/include/fc/crypto/elliptic.hpp
         ${fc_dir}/include/fc/crypto/equihash.hpp
         ${fc_dir}/include/fc/crypto/hex.hpp
         ${fc_dir}/include/fc/crypto/hmac.hpp
@@ -61,8 +73,6 @@ file(GLOB fc_minimal_headers
         ${fc_dir}/include/fc/stacktrace.hpp
         ${fc_dir}/include/fc/static_variant.hpp
         ${fc_dir}/include/fc/string.hpp
-        ${fc_dir}/include/fc/thread/mutex.hpp
-        ${fc_dir}/include/fc/thread/priority.hpp
         ${fc_dir}/include/fc/thread/scoped_lock.hpp
         ${fc_dir}/include/fc/thread/spin_lock.hpp
         ${fc_dir}/include/fc/thread/spin_yield_lock.hpp
@@ -76,11 +86,7 @@ file(GLOB fc_minimal_headers
         ${fc_dir}/include/fc/variant_object.hpp
         ${fc_dir}/include/fc/vector.hpp
         ${fc_dir}/src/crypto/_digest_common.hpp
-        ${fc_dir}/src/crypto/_elliptic_impl_priv.hpp
-        ${fc_dir}/src/crypto/_elliptic_impl_pub.hpp
         ${fc_dir}/src/log/console_defines.h
-        ${fc_dir}/src/thread/context.hpp
-        ${fc_dir}/src/thread/thread_d.hpp
         ${fc_dir}/src/utf8/checked.h
         ${fc_dir}/src/utf8/core.h
         ${fc_dir}/src/utf8/unchecked.h
@@ -103,7 +109,8 @@ set( fc_minimal_sources
         ${fc_dir}/src/log/appender.cpp
         ${fc_dir}/src/log/console_appender.cpp
         ${fc_dir}/src/crypto/elliptic_common.cpp
-        ${fc_dir}/src/crypto/elliptic_secp256k1.cpp
+        ${ECC_REST}
+        ${fc_dir}src/crypto/elliptic_${ECC_IMPL}.cpp
         ${fc_dir}/src/crypto/sha512.cpp
         ${fc_dir}/src/crypto/sha256.cpp
         ${fc_dir}/src/crypto/aes.cpp
@@ -125,7 +132,6 @@ set( fc_minimal_sources
         ${fc_dir}/src/thread/spin_lock.cpp
         ${fc_dir}/vendor/simdjson/simdjson.cpp
         ${fc_dir}/src/compress/zlib.cpp
-        ${fc_dir}/src/crypto/elliptic_impl_priv.cpp
         ${fc_minimal_headers}
      )
 
@@ -139,7 +145,6 @@ LIST( APPEND BOOST_COMPONENTS
         filesystem
         program_options
         system
-        thread
 )
 
 set(BOOSTROOT "/home/mario/src/BOOST/sysroot/prebuilt_boost/")
@@ -154,7 +159,6 @@ set(boost_filesystem_DIR ${BOOSTROOT}/lib/cmake/boost_filesystem-1.82.0)
 set(boost_headers_DIR ${BOOSTROOT}/lib/cmake/boost_headers-1.82.0)
 set(boost_program_options_DIR ${BOOSTROOT}/lib/cmake/boost_program_options-1.82.0)
 set(boost_system_DIR ${BOOSTROOT}/lib/cmake/boost_system-1.82.0)
-set(boost_thread_DIR ${BOOSTROOT}/lib/cmake/boost_thread-1.82.0)
 
 FIND_PACKAGE( Boost 1.82 REQUIRED CONFIG COMPONENTS ${BOOST_COMPONENTS} )
 MESSAGE( "FOUND BOOST WITH COMPONENTS: ${BOOST_COMPONENTS}")
@@ -163,8 +167,8 @@ SET( binary_dir_secp256k1 "/home/mario/src/SEC256K1/secp256k1-zkp" )
 add_library(secp256k1 STATIC IMPORTED)
 set_property(TARGET secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir_secp256k1}/.libs/libsecp256k1.a)
 
-SET( binary_dir_openssl "/home/mario/src/OPENSSL/openssl" )
-SET( include_dir_openssl "/home/mario/src/OPENSSL/openssl/include" )
+SET( binary_dir_openssl "/home/mario/src/OPENSSL3/openssl" )
+SET( include_dir_openssl "/home/mario/src/OPENSSL3/openssl/include" )
 add_library(openssl_wasm STATIC IMPORTED)
 set_property(TARGET openssl_wasm PROPERTY IMPORTED_LOCATION ${binary_dir_openssl}/libssl.a)
 
