@@ -20,7 +20,7 @@ class block_api_impl
       (get_block_range)
     )
 
-    chain::full_database& _db;
+    chain::database& _db;
 };
 
 //////////////////////////////////////////////////////////////////////

@@ -567,7 +567,7 @@ block_id_type full_database::find_block_id_for_num( uint32_t block_num )const
 }
 
 //no chainbase lock required
-block_id_type full_database::get_block_id_for_num( uint32_t block_num )const
+block_id_type database::get_block_id_for_num( uint32_t block_num )const
 {
   block_id_type bid = find_block_id_for_num( block_num );
   if (bid == block_id_type())
@@ -987,7 +987,7 @@ bool database::before_last_checkpoint()const
   *
   * @return true if we switched forks as a result of this push.
   */
-bool full_database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
+bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
 {
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
   const signed_block& new_block = full_block->get_block();
@@ -1188,7 +1188,7 @@ void database::switch_forks(const item_ptr new_head)
   appbase::app().notify("switching forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
 }
 
-bool full_database::_push_block(const block_flow_control& block_ctrl)
+bool database::_push_block(const block_flow_control& block_ctrl)
 { try {
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
 
@@ -1277,7 +1277,7 @@ bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& f
   * queues full as well, it will be kept in the queue to be propagated later when a new block flushes out the pending
   * queues.
   */
-void full_database::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
+void database::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
 {
   const signed_transaction& trx = full_transaction->get_transaction(); // just for the rethrow
   try
@@ -1332,7 +1332,7 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
   * Removes the most recent block from the database and
   * undoes any changes it made.
   */
-void full_database::pop_block()
+void database::pop_block()
 {
   try
   {
@@ -5296,7 +5296,7 @@ const witness_schedule_object& database::get_witness_schedule_object_for_irrever
     return get_witness_schedule_object();
 }
 
-void full_database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
+void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 { try {
   FC_ASSERT(has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION), "Fast confirmation transactions not valid until HF26");
   // fast-confirm transactions are processed outside of the normal transaction processing flow,

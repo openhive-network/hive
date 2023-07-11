@@ -51,7 +51,7 @@ public:
   void on_post_apply_transaction( const transaction_notification& note );
   void on_post_apply_block( const block_notification& note );
 
-  chain::full_database&              _db;
+  chain::database&              _db;
   uint32_t                      nominal_block_depth = 0;       //!< User provided block-depth
   uint32_t                      nominal_track_after_block = 0; //!< User provided track-after-block
   uint32_t                      actual_block_depth = 0;        //!< Calculated block-depth
