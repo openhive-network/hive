@@ -240,7 +240,6 @@ namespace chain {
         *
         * @return the last replayed block number.
         */
-      virtual uint32_t reindex( const open_args& args ) = 0;
 
       /**
         * @brief wipe Delete database from disk, and potentially the raw chain as well.
@@ -970,7 +969,7 @@ namespace chain {
   
   public:
     bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
-    uint32_t reindex( const open_args& args ) override;
+    uint32_t reindex( const open_args& args );
     void close(bool rewind = true) override;
   
   public:
