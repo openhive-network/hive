@@ -4901,6 +4901,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
   }
 
   notify_pre_apply_transaction( note );
+  rc.on_pre_apply_transaction(); //temporary
 
   //Finally process the operations
   _current_op_in_trx = 0;
@@ -4910,6 +4911,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
     ++_current_op_in_trx;
   } FC_CAPTURE_AND_RETHROW( (op) ) }
 
+  rc.on_post_apply_transaction( *full_transaction.get() ); //temporary
   notify_post_apply_transaction( note );
 
 } FC_CAPTURE_AND_RETHROW( (full_transaction->get_transaction()) ) }

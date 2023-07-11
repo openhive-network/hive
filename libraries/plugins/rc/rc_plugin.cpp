@@ -46,8 +46,6 @@ class rc_plugin_impl
       _self( _plugin )
     {}
 
-    void on_pre_apply_transaction( const transaction_notification& note );
-    void on_post_apply_transaction( const transaction_notification& note );
     void on_pre_apply_operation( const operation_notification& note );
     void on_post_apply_operation( const operation_notification& note );
     void on_pre_apply_custom_operation( const custom_operation_notification& note );
@@ -61,66 +59,11 @@ class rc_plugin_impl
     database&                     _db;
     rc_plugin&                    _self;
 
-    boost::signals2::connection   _pre_apply_transaction_conn;
-    boost::signals2::connection   _post_apply_transaction_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
     boost::signals2::connection   _post_apply_operation_conn;
     boost::signals2::connection   _pre_apply_custom_operation_conn;
     boost::signals2::connection   _post_apply_custom_operation_conn;
 };
-
-void rc_plugin_impl::on_pre_apply_transaction( const transaction_notification& note )
-{
-  if( !_db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    return;
-
-  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
-  {
-    data.reset_differential_usage();
-  } );
-}
-
-void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& note )
-{ try {
-  if( !_db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    return;
-
-  const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-
-  rc_transaction_info tx_info;
-  // Initialize with (negative) usage for state that was updated by transaction
-  tx_info.usage = pending_data.get_differential_usage();
-
-  // How many resources does the transaction use?
-  _db.rc.count_resources( note.transaction, note.full_transaction->get_transaction_size(), tx_info.usage, _db.head_block_time() );
-  if( note.transaction.operations.size() == 1 )
-    tx_info.op = note.transaction.operations.front().which();
-
-  // How many RC does this transaction cost?
-  int64_t total_cost = _db.rc.compute_cost( &tx_info );
-  note.full_transaction->set_rc_cost( total_cost );
-
-  _db.modify( pending_data, [&]( rc_pending_data& data )
-  {
-    data.add_pending_usage( tx_info.usage, tx_info.cost );
-  } );
-
-  // Who pays the cost?
-  tx_info.payer = _db.rc.get_resource_user( note.transaction );
-  _db.rc.use_account_rcs( &tx_info, total_cost );
-
-  const rc_stats_object* rc_stats = nullptr;
-  if( ( _db.is_validating_block() || _db.is_replaying_block() ) &&
-    ( rc_stats = _db.find< rc_stats_object >( RC_PENDING_STATS_ID ) ) != nullptr )
-  {
-    _db.modify( *rc_stats, [&]( rc_stats_object& stats_obj )
-    {
-      stats_obj.add_stats( tx_info );
-    } );
-  }
-
-} FC_CAPTURE_AND_RETHROW( (note.transaction) ) }
-
 
 struct get_worker_name_visitor
 {
@@ -590,20 +533,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
   {
     chain::database& db = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
 
-    my->_pre_apply_transaction_conn = db.add_pre_apply_transaction_handler( [&]( const transaction_notification& note )
-      { try { my->on_pre_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
-    my->_post_apply_transaction_conn = db.add_post_apply_transaction_handler( [&]( const transaction_notification& note )
-    {
-      try
-      {
-        my->on_post_apply_transaction( note );
-      }
-      catch( not_enough_rc_exception& ex )
-      {
-        throw;
-      }
-      FC_LOG_AND_RETHROW()
-    }, *this, 0 );
     my->_pre_apply_operation_conn = db.add_pre_apply_operation_handler( [&]( const operation_notification& note )
       { try { my->on_pre_apply_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note )
@@ -620,8 +549,6 @@ void rc_plugin::plugin_startup() {}
 
 void rc_plugin::plugin_shutdown()
 {
-  chain::util::disconnect_signal( my->_pre_apply_transaction_conn );
-  chain::util::disconnect_signal( my->_post_apply_transaction_conn );
   chain::util::disconnect_signal( my->_pre_apply_operation_conn );
   chain::util::disconnect_signal( my->_post_apply_operation_conn );
   chain::util::disconnect_signal( my->_pre_apply_custom_operation_conn );
