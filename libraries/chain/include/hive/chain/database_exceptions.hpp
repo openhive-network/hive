@@ -95,6 +95,7 @@ namespace hive { namespace chain {
 
   FC_DECLARE_DERIVED_EXCEPTION( pop_empty_chain,                   hive::chain::undo_database_exception, 4070001, "there are no blocks to pop" )
 
+  // TODO: change it so it does not derive from plugin_exception; also correct description
   // defined here and not in rc_plugin, because it is interesting to observe transactions failing due to that reason
   FC_DECLARE_DERIVED_EXCEPTION( not_enough_rc_exception,           hive::chain::plugin_exception, 4100100, "payer has not enough RC mana for transaction" )
 

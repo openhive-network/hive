@@ -8,6 +8,12 @@
 
 #include <fc/reflect/reflect.hpp>
 
+namespace hive { namespace protocol {
+
+struct signed_transaction;
+
+} }
+
 namespace hive { namespace chain {
 
 class account_object;
@@ -16,6 +22,7 @@ template< typename CustomOperationType >
 class generic_custom_operation_interpreter;
 class remove_guard;
 class witness_schedule_object;
+struct full_transaction_type;
 struct rc_transaction_info;
 
 struct rc_price_curve_params
@@ -140,6 +147,14 @@ class resource_credits
     //temporary
     void on_post_apply_block() const;
     void on_post_apply_block_impl() const;
+    //temporary
+    void on_pre_apply_transaction() const;
+    void on_pre_apply_transaction_impl() const;
+    //temporary
+    void on_post_apply_transaction( const full_transaction_type& full_tx ) const;
+    void on_post_apply_transaction_impl(
+      const full_transaction_type& full_tx,
+      const protocol::signed_transaction& tx ) const;
 
     std::shared_ptr< generic_custom_operation_interpreter< rc_custom_operation > > _custom_operation_interpreter;
 

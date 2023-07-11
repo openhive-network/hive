@@ -564,7 +564,7 @@ void resource_credits::initialize_evaluators()
 }
 
 // equivalent of previous call through signal
-#define ISOLATE_RC_CALL( _context, _name, _call, _args ) \
+#define ISOLATE_RC_CALL( _context, _name, _call, ... )   \
 {                                                        \
   if( !db.has_hardfork( HIVE_HARDFORK_0_20 ) )           \
     return;                                              \
@@ -573,7 +573,7 @@ void resource_credits::initialize_evaluators()
   if( benchmark.is_enabled() )                           \
     benchmark.begin();                                   \
                                                          \
-  HIVE_TRY_NOTIFY( _call, _args );                       \
+  HIVE_TRY_NOTIFY( _call, __VA_ARGS__ );                 \
                                                          \
   if( benchmark.is_enabled() )                           \
     benchmark.end( _context, _name );                    \
@@ -678,8 +678,64 @@ void resource_credits::on_post_apply_block_impl() const
     for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
       bucket.add_usage( i, block_info.usage[i] );
   } );
-
 } FC_LOG_AND_RETHROW() }
+
+void resource_credits::on_pre_apply_transaction() const
+{
+  ISOLATE_RC_CALL( "pre->rc", "transaction", on_pre_apply_transaction_impl, );
+}
+
+void resource_credits::on_pre_apply_transaction_impl() const
+{
+  db.modify( db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
+  {
+    data.reset_differential_usage();
+  } );
+}
+
+void resource_credits::on_post_apply_transaction( const full_transaction_type& full_tx ) const
+{
+  ISOLATE_RC_CALL( "post->rc", "transaction", on_post_apply_transaction_impl, full_tx, full_tx.get_transaction() );
+}
+
+void resource_credits::on_post_apply_transaction_impl( const full_transaction_type& full_tx,
+  const signed_transaction& tx ) const
+{ try {
+  const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
+
+  rc_transaction_info tx_info;
+  // Initialize with (negative) usage for state that was updated by transaction
+  tx_info.usage = pending_data.get_differential_usage();
+
+  // How many resources does the transaction use?
+  count_resources( tx, full_tx.get_transaction_size(), tx_info.usage, db.head_block_time() );
+  if( tx.operations.size() == 1 )
+    tx_info.op = tx.operations.front().which();
+
+  // How many RC does this transaction cost?
+  int64_t total_cost = compute_cost( &tx_info );
+  full_tx.set_rc_cost( total_cost );
+
+  db.modify( pending_data, [&]( rc_pending_data& data )
+  {
+    data.add_pending_usage( tx_info.usage, tx_info.cost );
+  } );
+
+  // Who pays the cost?
+  tx_info.payer = get_resource_user( tx );
+  use_account_rcs( &tx_info, total_cost );
+
+  const rc_stats_object* rc_stats = nullptr;
+  if( ( db.is_validating_block() || db.is_replaying_block() ) &&
+    ( rc_stats = db.find< rc_stats_object >( RC_PENDING_STATS_ID ) ) != nullptr )
+  {
+    db.modify( *rc_stats, [&]( rc_stats_object& stats_obj )
+    {
+      stats_obj.add_stats( tx_info );
+    } );
+  }
+  // note that we are skipping logging for not_enough_rc_exception
+} catch( not_enough_rc_exception& ex ) { throw; } FC_CAPTURE_AND_RETHROW( (tx) ) }
 
 void resource_credits::set_pool_params( const witness_schedule_object& wso ) const
 {
