@@ -246,7 +246,6 @@ namespace chain {
         * Will close the database before wiping. Database will be closed when this function returns.
         */
       void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
-      virtual void close(bool rewind = true) = 0;
 
       //////////////////// db_block.cpp ////////////////////
 
@@ -965,7 +964,7 @@ namespace chain {
   public:
     bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
     uint32_t reindex( const open_args& args );
-    void close(bool rewind = true) override;
+    void close(bool rewind = true);
   
   public:
     bool is_known_block( const block_id_type& id )const;
