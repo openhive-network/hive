@@ -166,7 +166,7 @@ def test_set_transaction_expiration():
     set_expiration_time = 1000
     wallet.api.set_transaction_expiration(set_expiration_time)
     transaction = wallet.api.create_account('initminer', 'alice', '{}', False)
-    expiration_time_point = datetime.strptime(transaction['expiration'], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
+    expiration_time_point = tt.Time.parse(transaction['expiration'])
     expiration_time = expiration_time_point - last_block_time_point
     assert expiration_time == timedelta(seconds=set_expiration_time)
 
