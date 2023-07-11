@@ -253,9 +253,8 @@ namespace chain {
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
     public:
-      virtual std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const = 0;
-      virtual std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const = 0;
-      /// mtlk         std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
+
+     virtual std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const = 0;      /// mtlk         std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
@@ -707,7 +706,7 @@ namespace chain {
       void notify_changed_objects();
 
     private:
-      optional< chainbase::database::session > _pending_tx_session;
+      protected: optional< chainbase::database::session > _pending_tx_session; private:
     
     protected:  void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing ); private:
       void switch_forks(item_ptr new_head);
@@ -986,7 +985,7 @@ namespace chain {
     bool is_known_block( const block_id_type& id )const;
     std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
     std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const override;
-    std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const override;
+    std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
     std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
     std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
 
