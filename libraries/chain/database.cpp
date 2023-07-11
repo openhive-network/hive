@@ -567,7 +567,7 @@ block_id_type full_database::find_block_id_for_num( uint32_t block_num )const
 }
 
 //no chainbase lock required
-block_id_type database::get_block_id_for_num( uint32_t block_num )const
+block_id_type full_database::get_block_id_for_num( uint32_t block_num )const
 {
   block_id_type bid = find_block_id_for_num( block_num );
   if (bid == block_id_type())
