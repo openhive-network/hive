@@ -4534,7 +4534,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   generate_optional_actions();
 
   process_required_actions( req_actions );
-  process_optional_actions( opt_actions );
+  //mtlk - no longer present:   //process_optional_actions( opt_actions );
 
   process_hardforks();
 
@@ -5048,47 +5048,6 @@ void database::apply_required_action( const required_automated_action& a )
   notify_post_apply_required_action( note );
 }
 
-void database::process_optional_actions( const optional_automated_actions& actions )
-{
-  if( !has_hardfork( HIVE_SMT_HARDFORK ) ) return;
-
-  static const action_validate_visitor validate_visitor;
-
-  for( auto actions_itr = actions.begin(); actions_itr != actions.end(); ++actions_itr )
-  {
-    actions_itr->visit( validate_visitor );
-
-    // There is no execution check because we don't have a good way of indexing into local
-    // optional actions from those contained in a block. It is the responsibility of the
-    // action evaluator to prevent early execution.
-    apply_optional_action( *actions_itr );
-  }
-
-  // This expiration is based on the timestamp of the last irreversible block. For historical
-  // blocks, generation of optional actions should be disabled and the expiration can be skipped.
-  // For reindexing of the first 2 million blocks, this unnecessary read consumes almost 30%
-  // of runtime.
-  FC_TODO( "Optimize expiration for reindex." );
-
-  // Clear out "expired" optional_actions. If the block when an optional action was generated
-  // has become irreversible then a super majority of witnesses have chosen to not include it
-  // and it is safe to delete.
-  const auto& pending_action_idx = get_index< pending_optional_action_index, by_execution >();
-  auto pending_itr = pending_action_idx.begin();
-  std::shared_ptr<full_block_type> lib = fetch_block_by_number(get_last_irreversible_block_num());
-
-  // This is always valid when running on mainnet because there are irreversible blocks
-  // Testnet and unit tests, not so much. Could be ifdeffed with IS_TEST_NET, but seems
-  // like a reasonable check and will be optimized via speculative execution.
-  if (lib)
-  {
-    while (pending_itr != pending_action_idx.end() && pending_itr->execution_time <= lib->get_block_header().timestamp)
-    {
-      remove( *pending_itr );
-      pending_itr = pending_action_idx.begin();
-    }
-  }
-}
 
 void database::apply_optional_action( const optional_automated_action& a )
 {
