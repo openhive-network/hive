@@ -86,8 +86,8 @@ class NetworkWrapper:
         self.name           = name
 
         self.init_node: InitNodeWrapper | None      = None
-        self.api_node: ApiWrapper | None            = None
-        self.full_api_node: FullApiWrapper | None   = None
+        self.api_node:      list[ApiWrapper]        = []
+        self.full_api_node: list[FullApiWrapper]    = []
         self.witness_nodes: list[WitnessWrapper]    = []
 
     def show(self) -> str:
@@ -155,13 +155,18 @@ class NetworksArchitecture:
 
             api_node_active, api_node_prepare = self.get_api_init("ApiNode", network)
             if api_node_active:
-                current_net.api_node = ApiWrapper("ApiNode", api_node_prepare)
+                assert api_node_active > 0, "The number of ApiNodes to be created cannot be less than 1"
+                self.nodes_number += api_node_active
+                for cnt_full_api_node in range(api_node_active):
+                    current_net.api_node.append(ApiWrapper(f"ApiNode-{cnt_full_api_node}", api_node_prepare))
                 self.nodes_number += 1
 
             full_api_node_active, full_api_node_prepare = self.get_api_init("FullApiNode", network)
             if full_api_node_active:
-                current_net.full_api_node = FullApiWrapper("FullApiNode", full_api_node_prepare)
-                self.nodes_number += 1
+                assert full_api_node_active > 0, "The number of FullApiNodes to be created cannot be less than 1"
+                self.nodes_number += full_api_node_active
+                for cnt_full_api_node in range(full_api_node_active):
+                    current_net.full_api_node.append(FullApiWrapper(f"FullApiNode-{cnt_full_api_node}", full_api_node_prepare))
 
             if witness_nodes := network.get("WitnessNodes", False):
                 self.nodes_number += len(witness_nodes)
@@ -213,16 +218,18 @@ class NetworksBuilder:
                     self.prepare_nodes.append(witness_node)
 
             if network.api_node is not None:
-                api_node = tt.ApiNode(network=tt_network)
-                self.nodes.append(api_node)
-                if network.api_node.prepare:
-                    self.prepare_nodes.append(api_node)
+                for api_node in network.api_node:
+                    _api_node = tt.ApiNode(network=tt_network)
+                    self.nodes.append(_api_node)
+                    if api_node.prepare:
+                        self.prepare_nodes.append(api_node)
 
             if network.full_api_node is not None:
-                full_api_node = tt.FullApiNode(network=tt_network)
-                self.nodes.append(full_api_node)
-                if network.full_api_node.prepare:
-                    self.prepare_nodes.append(full_api_node)
+                for full_api_node in network.full_api_node:
+                    _full_api_node = tt.FullApiNode(network=tt_network)
+                    self.nodes.append(_full_api_node)
+                    if full_api_node.prepare:
+                        self.prepare_nodes.append(full_api_node)
 
             self.networks.append(tt_network)
         assert init_node_can_be_empty or self.init_node is not None
