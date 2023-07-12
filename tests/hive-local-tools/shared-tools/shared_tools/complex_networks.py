@@ -1,10 +1,12 @@
 import os
 import sys
+import socket
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Dict, Iterable, List, Callable, Optional, Tuple, Any
-from functools import partial
+from typing import Dict, Iterable, List, Optional, Tuple, Any
 
 import test_tools as tt
+from ._socket_holder import _SocketHolder
 from .complex_networks_helper_functions import connect_sub_networks
 import shared_tools.networks_architecture as networks
 
@@ -145,36 +147,45 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
     allow_external_time_offsets = time_offsets is not None and len(time_offsets) == len(nodes)
     tt.logger.info(f"External time offsets: {'enabled' if allow_external_time_offsets else 'disabled'}")
 
-    if blocklog_directory is not None:
-        nodes[0].run(
-            wait_for_live=False,
-            replay_from=block_log,
-            time_offset=modify_time_offset(timestamp, time_offsets[0])
-            if allow_external_time_offsets
-            else time_offset,
-            arguments=arguments
-        )
-    else:
-        nodes[0].run(wait_for_live=False, arguments=arguments)
-    init_node_p2p_endpoint = nodes[0].p2p_endpoint
+    sockets = [_SocketHolder() for _ in nodes]
     cnt_node = 1
-    for node in nodes[1:]:
-        node.config.p2p_seed_node.append(init_node_p2p_endpoint)
+    for num, node in enumerate(nodes):
+        port = sockets[num].port
+        node.config.p2p_endpoint = sockets[num].address
+
+        for s in sockets:
+            if s.port != port:
+                node.config.p2p_seed_node.append(s.address)
+        sockets[num].close()
+
         if blocklog_directory is not None:
-            node.run(
-                wait_for_live=False,
-                replay_from=block_log,
-                time_offset=modify_time_offset(timestamp, time_offsets[cnt_node])
-                if allow_external_time_offsets
-                else time_offset,
-                arguments=arguments
-            )
+            node.config.shared_file_size = "1G" # todo: if block log contains a lot of data, increase shared memory file
+            node.run(replay_from=block_log, exit_before_synchronization=True, arguments=arguments)
+            sockets[num].restart()
         else:
+            node.config.shared_file_size = "1G" # todo: if block log contains a lot of data, increase shared memory file
             node.run(wait_for_live=False, arguments=arguments)
         cnt_node += 1
 
     for network in networks:
         network.is_running = True
+
+    for address in sockets:
+        address.close()
+
+    with ThreadPoolExecutor() as executor:
+        tasks = []
+        for node_num, node in enumerate(nodes):
+            tasks.append(executor.submit(lambda: node.run(
+                wait_for_live=False,
+                time_offset=modify_time_offset(timestamp, time_offsets[node_num]) if allow_external_time_offsets
+                else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S"),
+                arguments=arguments)))
+
+    for thread_number in tasks:
+        thread_number.result()
+
+    tt.logger.info("Wait_for_live_mode...")
 
     for node in nodes:
         tt.logger.debug(f"Waiting for {node} to be live...")
