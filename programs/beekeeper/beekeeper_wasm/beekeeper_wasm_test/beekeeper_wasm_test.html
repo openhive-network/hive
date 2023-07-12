@@ -8,7 +8,7 @@
 
       const params = new Module.StringList();
       params.push_back("--wallet-dir");
-      params.push_back("/storage_root/.beekeeper");
+      params.push_back("/storage_root/.beekeeper-6");
       params.push_back("--salt");
       params.push_back("avocado");
 
@@ -24,20 +24,53 @@
       var session_token = instance.create_session( "pear" )
       console.log('Session created with token: ' + session_token);
 
-      // var wallet_name = "wallet_a"
-      // console.log('create wallet: ' + wallet_name);
-      // var password = instance.create( session_token, wallet_name, "cherry" )
-      // console.log('wallet "' + wallet_name + '" created with password: ' + password);
+      try
+      {
+        var wallet_name = "wallet_a"
+        console.log('create wallet: ' + wallet_name);
+        var password = instance.create( session_token, wallet_name, "cherry" )
+        console.log('wallet "' + wallet_name + '" created with password: ' + password);
+      }
+      catch(error)
+      {
+        console.error(error)
+      }
 
-      var wallet_name_2 = "wallet_b"
-      console.log('create wallet: ' + wallet_name_2 + ' with empty password');
-      var password_2 = instance.create( session_token, wallet_name_2, "" )
-      console.log('wallet "' + wallet_name_2 + '" created with password: ' + password_2);
+      try
+      {
+        var wallet_name_2 = "wallet_b"
+        console.log('create wallet: ' + wallet_name_2 + ' with empty password');
+        var password_2 = instance.create( session_token, wallet_name_2, "" )
+        console.log('wallet "' + wallet_name_2 + '" created with password: ' + password_2);
+      }
+      catch(error)
+      {
+        console.error(error)
+      }
 
-      var private_key = "5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78"
-      console.log('import key ' + private_key + ' to wallet: "' + wallet_name + '"' );
-      var public_key = instance.import_key( session_token, wallet_name, private_key )
-      console.log('key imported. Public key: ' + public_key);
+      try
+      {
+        var private_key = "5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78"
+        console.log('import key ' + private_key + ' to wallet: "' + wallet_name_2 + '"' );
+        var public_key = instance.import_key( session_token, wallet_name_2, private_key )
+        console.log('key imported. Public key: ' + public_key);
+      }
+      catch(error)
+      {
+        console.error(error)
+      }
+
+      try
+      {
+        var private_key = "5KNbAE7pLwsLbPUkz6kboVpTR24CycqSNHDG95Y8nbQqSqd6tgS"
+        console.log('import key ' + private_key + ' to wallet: "' + wallet_name_2 + '"' );
+        var public_key = instance.import_key( session_token, wallet_name_2, private_key )
+        console.log('key imported. Public key: ' + public_key);
+      }
+      catch(error)
+      {
+        console.error(error)
+      }
 
       //instance.dump("/storage_root/.beekeeper");
 
