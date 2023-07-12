@@ -1327,7 +1327,6 @@ void database::pop_block()
     }
     FC_CAPTURE_AND_RETHROW()
 
-    block_id_type head_id = head_block_id();
 
     /// save the head block so we can recover its transactions
     std::shared_ptr<full_block_type> full_head_block;
@@ -5112,7 +5111,7 @@ boost::signals2::connection database::any_apply_operation_handler_impl( const ap
   const abstract_plugin& plugin, int32_t group )
 {
   std::string context = util::advanced_benchmark_dumper::generate_context_desc< IS_PRE_OPERATION >( plugin.get_name() );
-  auto complex_func = [this, func, &plugin, context]( const operation_notification& o )
+  auto complex_func = [this, func, context]( const operation_notification& o )
   {
     std::string name;
 
