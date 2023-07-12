@@ -207,6 +207,58 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
 
 } FC_LOG_AND_RETHROW() }
 
+template< typename rc_method_type >
+void test_list_find_rc_accounts_result( rc_method_type method_result, unsigned element_count )
+{
+  // Serialize method result
+  auto json_string = fc::json::to_string( method_result );
+  ilog("Result is ${result}", ( "result", json_string ) );
+  // Get serialized result as variant which allows json-like access but without deserialization.
+  fc::variant v = fc::json::from_string( json_string );
+  // The result should be an array ...
+  BOOST_REQUIRE( v.is_array() );
+  const fc::variants& vs = v.get_array();
+  // ... required size ...
+  BOOST_REQUIRE_EQUAL( vs.size(), element_count );
+  for( const auto& rc_account : vs )
+  {
+    // ... of objects ...
+    BOOST_REQUIRE( rc_account.is_object() );
+    const fc::variant_object& vo = rc_account.get_object();
+    // ... containing max_rc_creation_adjustment attribute ...
+    BOOST_REQUIRE( vo.contains( "max_rc_creation_adjustment" ) );
+    // ... which value is string ...
+    const fc::variant& vs = vo[ "max_rc_creation_adjustment"];
+    BOOST_REQUIRE( vs.is_string() );
+    auto string_form = vs.as_string();
+    ilog( "max_rc_creation_adjustment is ${result}", ( "result", string_form ) );
+    BOOST_REQUIRE_EQUAL( string_form, "2020.748973 VESTS" );
+    // The hf26 serialization would look like this:
+    //BOOST_REQUIRE_EQUAL( fc::json::to_string( vs ), R"~({"amount":"2020748973","precision":6,"nai":"@@000000037"})~" );
+  }
+}
+
+BOOST_AUTO_TEST_CASE( list_find_rc_accounts_test )
+{ try {
+
+  BOOST_TEST_MESSAGE( "Testing that results of condenser api list_rc_accounts/find_rc_accounts is legacy serialized" );
+
+  db->set_hardfork( HIVE_NUM_HARDFORKS );
+  generate_block();
+
+  // Call tested method.
+  auto list_accounts = condenser_api->list_rc_accounts( { "alice", 10 } );
+  // Verify the result is legacy serialized.
+  test_list_find_rc_accounts_result( list_accounts, 7 );
+
+  // Call tested method.
+  std::vector< fc::variant > arg = { "hive.fund" };
+  auto find_accounts = condenser_api->find_rc_accounts( fc::variants( { arg } ) );
+  // Verify the result is legacy serialized.
+  test_list_find_rc_accounts_result( find_accounts, 1 );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END() // condenser_api_tests
 
 
