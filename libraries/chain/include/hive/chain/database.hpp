@@ -214,7 +214,6 @@ namespace chain {
       void verify_match_of_state_objects_definitions_from_shm();
 
     public:
-      std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received);
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
       void load_state_initial_data(const open_args& args);
@@ -254,7 +253,6 @@ namespace chain {
         *  part of the official chain, otherwise return false
         */
     private:
-      virtual bool                       is_known_block_unlocked(const block_id_type& id)const = 0;
     public:
       bool                       is_known_transaction( const transaction_id_type& id )const;
       fc::sha256                 get_pow_target()const;
@@ -972,7 +970,7 @@ namespace chain {
 
   private:
 
-    bool is_known_block_unlocked(const block_id_type& id)const override;
+    bool is_known_block_unlocked(const block_id_type& id)const;
     block_id_type              find_block_id_for_num( uint32_t block_num )const;
     
     void migrate_irreversible_state(uint32_t old_last_irreversible) override;
@@ -982,6 +980,7 @@ namespace chain {
 
   public:
      block_id_type              get_block_id_for_num( uint32_t block_num )const;
+     std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received); //by is_known_block_unlocked
 
 
   };
