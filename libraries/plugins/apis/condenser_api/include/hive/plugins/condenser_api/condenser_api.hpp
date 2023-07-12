@@ -863,6 +863,9 @@ struct market_trade
   legacy_asset   open_pays;
 };
 
+typedef vector< hive::protocol::serializer_wrapper< rc::rc_account_api_object > > find_rc_accounts_return;
+typedef find_rc_accounts_return list_rc_accounts_return;
+
 struct no_return {}; //used by routines moved to Hivemind
 
 #define DEFINE_API_ARGS( api_name, arg_type, return_type )  \
@@ -957,8 +960,8 @@ DEFINE_API_ARGS( list_proposals,                         vector< variant >,   ve
 DEFINE_API_ARGS( find_proposals,                         vector< variant >,   vector< api_proposal_object > )
 DEFINE_API_ARGS( list_proposal_votes,                    vector< variant >,   vector< hive::protocol::serializer_wrapper<database_api::api_proposal_vote_object> > )
 DEFINE_API_ARGS( find_recurrent_transfers,               vector< variant >,   vector< hive::protocol::serializer_wrapper<database_api::api_recurrent_transfer_object> > )
-DEFINE_API_ARGS( find_rc_accounts,                       vector< variant >,   vector< rc::rc_account_api_object > )
-DEFINE_API_ARGS( list_rc_accounts,                       vector< variant >,   vector< rc::rc_account_api_object > )
+DEFINE_API_ARGS( find_rc_accounts,                       vector< variant >,   find_rc_accounts_return )
+DEFINE_API_ARGS( list_rc_accounts,                       vector< variant >,   list_rc_accounts_return )
 DEFINE_API_ARGS( list_rc_direct_delegations,             vector< variant >,   vector< rc::rc_direct_delegation_api_object > )
 
 #undef DEFINE_API_ARGS

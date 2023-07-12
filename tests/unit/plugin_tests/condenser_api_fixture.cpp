@@ -4,6 +4,8 @@
 
 #include <hive/plugins/account_history_api/account_history_api_plugin.hpp>
 #include <hive/plugins/account_history_api/account_history_api.hpp>
+#include <hive/plugins/rc/rc_plugin.hpp>
+#include <hive/plugins/rc_api/rc_api_plugin.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 #include <hive/plugins/condenser_api/condenser_api.hpp>
@@ -27,6 +29,8 @@ condenser_api_fixture::condenser_api_fixture()
     { config_line_t( { "plugin",
       { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
         HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME,
+        HIVE_RC_PLUGIN_NAME,
+        HIVE_RC_API_PLUGIN_NAME,
         HIVE_DATABASE_API_PLUGIN_NAME,
         HIVE_CONDENSER_API_PLUGIN_NAME } } ) },
     &ah_plugin,
