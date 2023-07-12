@@ -60,6 +60,17 @@ namespace detail {
     void open( const fc::path& input );
     void close();
 
+    void prepare_blockchain( uint32_t start_block_num, uint32_t stop_block_num );
+
+    void wait_blockchain_ready();
+
+    std::shared_ptr<hc::full_transaction_type> generate_bootstrap_witness_tx_for(
+      const hp::account_name_type& wit,
+      uint32_t requested_max_block_size,
+      uint32_t account_creation_fee,
+      const hp::block_id_type& previous_block_id,
+      fc::time_point_sec head_block_time
+    );
     hp::transfer_to_vesting_operation generate_vesting_for_account( const hp::account_name_type& acc )const;
     hp::transfer_operation generate_hbd_transfer_for_account( const hp::account_name_type& acc )const;
     hp::transfer_operation generate_hive_transfer_for_account( const hp::account_name_type& acc )const;
@@ -82,6 +93,43 @@ namespace detail {
     {
       log_in.open( input, true );
     } FC_CAPTURE_AND_RETHROW( (input) );
+  }
+
+  std::shared_ptr<hc::full_transaction_type> iceberg_generate_plugin_impl::generate_bootstrap_witness_tx_for(
+    const hp::account_name_type& wit,
+    uint32_t requested_max_block_size,
+    uint32_t account_creation_fee,
+    const hp::block_id_type& previous_block_id,
+    fc::time_point_sec head_block_time
+  )
+  {
+    hp::signed_transaction tx;
+
+    hp::witness_update_operation op;
+    op.owner = wit;
+    op.url = "#";
+    op.block_signing_key = converter.get_witness_key().get_public_key();
+
+    hp::legacy_chain_properties props{};
+    props.account_creation_fee = hp::legacy_hive_asset::from_amount( account_creation_fee );
+    props.maximum_block_size = requested_max_block_size;
+
+    op.props = props;
+    op.fee = hp::asset( 1, HIVE_SYMBOL );
+
+    tx.operations.push_back(op);
+    tx.signatures.emplace_back();
+
+    return converter.convert_signed_transaction(
+      tx,
+      previous_block_id,
+      [&](hp::transaction& trx) {
+        trx.expiration = head_block_time + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BC_SAFETY_TIME_GAP;
+      },
+      0,
+      account_creation_fee,
+      true
+    );
   }
 
   hp::transfer_to_vesting_operation iceberg_generate_plugin_impl::generate_vesting_for_account( const hp::account_name_type& acc )const
@@ -143,17 +191,61 @@ namespace detail {
     return op;
   }
 
-  void iceberg_generate_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
+  void iceberg_generate_plugin_impl::wait_blockchain_ready()
   {
-    FC_ASSERT( log_in.is_open(), "Input block log should be opened before the conversion" );
-    FC_ASSERT( log_in.head(), "Your input block log is empty" );
+    std::vector<hp::account_name_type> witnesses;
 
-    FC_ASSERT( start_block_num,
-      HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " plugin currently does not currently support conversion continue" );
+    // Collect witness, wait for the blockchain to be ready
+    while(true)
+    {
+      witnesses = get_current_shuffled_witnesses( output_urls.at(0) );
 
-    if( !stop_block_num || stop_block_num > log_in.head()->get_block_num() )
-      stop_block_num = log_in.head()->get_block_num();
+      ilog("${sw} shuffled witnesses detected", ("sw", witnesses.size()));
+      if(witnesses.size() > 1)
+        break;
 
+      dlog("Waiting one block interval for the witnesses to appear");
+      fc::usleep(fc::seconds(HIVE_BLOCK_INTERVAL));
+    }
+
+    uint32_t requested_maximum_block_size = HIVE_MAX_BLOCK_SIZE;
+
+    auto gpo = get_dynamic_global_properties( output_urls.at(0) );
+
+    hp::block_id_type head_block_id = gpo["head_block_id"].template as< hp::block_id_type >();
+    fc::time_point_sec head_block_time = gpo["time"].template as<fc::time_point_sec>();
+
+    // Update maximum_block_size and any other required blockchain properties
+    for(const auto& wit : witnesses)
+    {
+      dlog("Updating witness properties for the witness: ${wit}", (wit));
+      transmit(*generate_bootstrap_witness_tx_for(
+        wit,
+        requested_maximum_block_size,
+        HIVE_MIN_ACCOUNT_CREATION_FEE,
+        head_block_id,
+        head_block_time
+      ), output_urls.at(0));
+    }
+
+    // Wait for the next witness schedule for the properties to be applied
+    while(true)
+    {
+      gpo = get_dynamic_global_properties( output_urls.at(0) );
+      uint32_t max_block_size = gpo["maximum_block_size"].as< uint32_t >();
+
+      if(max_block_size == requested_maximum_block_size)
+        break;
+
+      dlog("Waiting one block interval for properties to be applied");
+      fc::usleep(fc::seconds(HIVE_BLOCK_INTERVAL));
+    }
+
+    ilog("Blockchain properties set.");
+  }
+
+  void iceberg_generate_plugin_impl::prepare_blockchain( uint32_t start_block_num, uint32_t stop_block_num )
+  {
     auto gpo = get_dynamic_global_properties( output_urls.at(0) );
     // Last irreversible block number and id for tapos generation
     uint32_t lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
@@ -178,23 +270,20 @@ namespace detail {
       }
     };
 
+    hp::asset account_creation_fee = get_account_creation_fee( output_urls.at(0) );
+    ops_strip_content_visitor ops_strip_content{};
+
     uint32_t gpo_interval = 0;
+    const auto init_start_block_num = start_block_num;
+    uint32_t last_witness_schedule_block_check = lib_num;
+    fc::optional<hp::transaction_id_type> last_init_tx_id;
+
+    std::map< uint32_t, hp::share_type > init_assets;
 
     boost::container::flat_set<hp::account_name_type> all_accounts = {
       HIVE_MINER_ACCOUNT, HIVE_NULL_ACCOUNT, HIVE_TEMP_ACCOUNT, HIVE_INIT_MINER_NAME, "steem", OBSOLETE_TREASURY_ACCOUNT, NEW_HIVE_TREASURY_ACCOUNT
     };
     boost::container::flat_set<author_and_permlink_hash_t> all_permlinks;
-
-    const auto init_start_block_num = start_block_num;
-
-    uint32_t last_witness_schedule_block_check = lib_num;
-    hp::asset account_creation_fee = get_account_creation_fee( output_urls.at(0) );
-
-    ops_strip_content_visitor ops_strip_content{};
-
-    std::map< uint32_t, hp::share_type > init_assets;
-
-    fc::optional<hp::transaction_id_type> last_init_tx_id;
 
     // Pre-init: Detect required supply and dependent comments and accounts
     ilog("Checking required initial supply");
@@ -268,7 +357,7 @@ namespace detail {
               comments_tx.operations.emplace_back(on_comment_collected(dependent_permlink_data.first, dependent_permlink_data.second));
         }
 
-        const auto head_block_time = gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval);
+        const auto head_block_time = gpo["time"].as< fc::time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval);
         uint32_t block_offset = uint32_t( std::abs( (head_block_time - block.timestamp).to_seconds() ) );
 
         // Note: We do not use pow transactions in the initial iceberg converter stage, so handling helper_pow_transaction is redundant
@@ -326,7 +415,6 @@ namespace detail {
       }
     }
 
-    update_lib_id();
     int64_t virtual_supply = gpo["virtual_supply"].as< hp::asset >().amount.value;
     int64_t current_hbd_supply = gpo["current_hbd_supply"].as< hp::asset >().amount.value;
     int64_t init_hbd_supply = gpo["init_hbd_supply"].as< hp::asset >().amount.value;
@@ -343,6 +431,60 @@ namespace detail {
     FC_ASSERT( virtual_supply >= init_assets[HIVE_NAI_HIVE], "Insufficient initial supply in the output node blockchain" );
     FC_ASSERT( real_hbd_supply >= init_assets[HIVE_NAI_HBD], "Insufficient HBD initial supply in the output node blockchain" );
 
+    ilog("Blockchain ready for the conversion.");
+  }
+
+  void iceberg_generate_plugin_impl::convert( uint32_t start_block_num, uint32_t stop_block_num )
+  {
+    FC_ASSERT( log_in.is_open(), "Input block log should be opened before the conversion" );
+    FC_ASSERT( log_in.head(), "Your input block log is empty" );
+
+    FC_ASSERT( start_block_num,
+      HIVE_ICEBERG_GENERATE_CONVERSION_PLUGIN_NAME " plugin currently does not currently support conversion continue" );
+
+    if( !stop_block_num || stop_block_num > log_in.head()->get_block_num() )
+      stop_block_num = log_in.head()->get_block_num();
+
+    auto gpo = get_dynamic_global_properties( output_urls.at(0) );
+    // Last irreversible block number and id for tapos generation
+    uint32_t lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
+    hp::block_id_type lib_id = get_previous_from_block( lib_num, output_urls.at(0) );
+
+    const auto update_lib_id = [&]() {
+      try
+      {
+        // Update dynamic global properties object and check if there is a new irreversible block
+        // If so, then update lib id
+        gpo = get_dynamic_global_properties( output_urls.at(0) );
+        uint32_t new_lib_num = gpo["last_irreversible_block_num"].as< uint32_t >();
+        if( lib_num != new_lib_num )
+        {
+          lib_num = new_lib_num;
+          lib_id  = get_previous_from_block( lib_num, output_urls.at(0) );
+        }
+      }
+      catch( const error_response_from_node& error )
+      {
+        handle_error_response_from_node( error );
+      }
+    };
+
+    uint32_t gpo_interval = 0;
+
+    const auto init_start_block_num = start_block_num;
+
+    uint32_t last_witness_schedule_block_check = lib_num;
+    hp::asset account_creation_fee = get_account_creation_fee( output_urls.at(0) );
+
+    ops_strip_content_visitor ops_strip_content{};
+
+    fc::optional<hp::transaction_id_type> last_init_tx_id;
+
+    wait_blockchain_ready();
+
+    prepare_blockchain( start_block_num, stop_block_num );
+
+    update_lib_id();
     ilog("Initial supply requirements met");
 
     if (last_init_tx_id.valid())
@@ -356,8 +498,6 @@ namespace detail {
 
       ilog("Transaction '${last_init_tx_id}' applied in block.", (last_init_tx_id));
     }
-
-    start_block_num = init_start_block_num;
 
     // The actual conversion:
     for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
@@ -384,7 +524,7 @@ namespace detail {
                 op = op.visit( ops_strip_content );
 
         auto block_converted = converter.convert_signed_block( block, lib_id,
-          gpo["time"].as< time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
+          gpo["time"].as< fc::time_point_sec >() + (HIVE_BLOCK_INTERVAL * gpo_interval) /* Deduce the now time */,
           true,
           account_creation_fee.amount.value
         );

@@ -117,7 +117,7 @@ namespace hive { namespace converter { namespace plugins {
     FC_CAPTURE_AND_RETHROW()
   }
 
-  variant_object conversion_plugin_impl::post( fc::http::connection& con, const fc::url& url, const std::string& method, const std::string& data )
+  fc::variant_object conversion_plugin_impl::post( fc::http::connection& con, const fc::url& url, const std::string& method, const std::string& data )
   {
     try
     {
@@ -238,7 +238,7 @@ namespace hive { namespace converter { namespace plugins {
     try
     {
       fc::http::connection local_output_con;
-      auto var_obj = post( local_output_con, using_url, "transaction_status_api.find_transaction", "{\"transaction_id\":" + txid.str() + '}' );
+      auto var_obj = post( local_output_con, using_url, "transaction_status_api.find_transaction", "{\"transaction_id\":\"" + txid.str() + "\"}" );
 
       if(var_obj.contains("status") && var_obj["status"].is_string())
       {
@@ -266,17 +266,46 @@ namespace hive { namespace converter { namespace plugins {
     FC_CAPTURE_AND_RETHROW()
   }
 
+  std::vector< hp::account_name_type > conversion_plugin_impl::get_current_shuffled_witnesses( const fc::url& using_url )
+  {
+    try
+    {
+      auto var_obj = get_witness_schedule( using_url );
+      FC_ASSERT( var_obj.contains("current_shuffled_witnesses"), "No current_shuffled_witnesses in JSON response", ("reply", var_obj) );
+
+      std::vector< hp::account_name_type > witnesses = var_obj["current_shuffled_witnesses"].template as< std::vector< hp::account_name_type > >();
+
+      std::vector< hp::account_name_type > output;
+
+      // copy only existing witnesses ("" means there is no witness)
+      std::copy_if (witnesses.begin(), witnesses.end(), std::back_inserter(output), [](const auto& wit){return wit.size() > 0;} );
+
+      return output;
+    }
+    FC_CAPTURE_AND_RETHROW()
+  }
+
   hp::asset conversion_plugin_impl::get_account_creation_fee( const fc::url& using_url )
+  {
+    try
+    {
+      auto var_obj = get_witness_schedule( using_url );
+      FC_ASSERT( var_obj.contains("median_props"), "No median_props in JSON response", ("reply", var_obj) );
+
+      return var_obj["median_props"]["account_creation_fee"].template as< hp::asset >();
+    } // Note: we do not handle `error_response_from_node` as `get_dynamic_global_properties` result is not required every time the function is called (usually every 1500ms)
+    FC_CAPTURE_AND_RETHROW()
+  }
+
+  fc::variant_object conversion_plugin_impl::get_witness_schedule( const fc::url& using_url )
   {
     try
     {
       fc::http::connection local_output_con;
       auto var_obj = post( local_output_con, using_url, "database_api.get_witness_schedule", "{}" );
-      // Check for example required property
-      FC_ASSERT( var_obj.contains("median_props"), "No median_props in JSON response", ("reply", var_obj) );
 
-      return var_obj["median_props"]["account_creation_fee"].template as< hp::asset >();
-    } // Note: we do not handle `error_response_from_node` as `get_dynamic_global_properties` result is not required every time the function is called (usually every 1500ms)
+      return var_obj;
+    }
     FC_CAPTURE_AND_RETHROW()
   }
 

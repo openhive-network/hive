@@ -59,7 +59,7 @@ namespace hive { namespace converter { namespace plugins {
      *
      * @throws fc::exception on connect error or `error` property present in the response
      */
-    variant_object post( fc::http::connection& con, const fc::url& url, const std::string& method, const std::string& data );
+    fc::variant_object post( fc::http::connection& con, const fc::url& url, const std::string& method, const std::string& data );
 
     void transmit( const hc::full_transaction_type& trx, const fc::url& using_url );
 
@@ -72,6 +72,9 @@ namespace hive { namespace converter { namespace plugins {
      * @brief Get account creation fee from the output node
      */
     hp::asset get_account_creation_fee( const fc::url& using_url );
+
+    std::vector< hp::account_name_type > get_current_shuffled_witnesses( const fc::url& using_url );
+    fc::variant_object get_witness_schedule( const fc::url& using_url );
 
     bool account_exists( const fc::url& using_url, const hp::account_name_type& acc );
     bool accounts_exist( const fc::url& using_url, const std::vector<hp::account_name_type>& accs );
