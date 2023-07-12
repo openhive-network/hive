@@ -1,8 +1,9 @@
 import os
 import sys
+import re
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Dict, Iterable, List, Callable, Optional, Tuple, Any
-from functools import partial
+from typing import Dict, Iterable, List, Optional, Tuple, Any
 
 import test_tools as tt
 from .complex_networks_helper_functions import connect_sub_networks
@@ -145,36 +146,36 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
     allow_external_time_offsets = time_offsets is not None and len(time_offsets) == len(nodes)
     tt.logger.info(f"External time offsets: {'enabled' if allow_external_time_offsets else 'disabled'}")
 
-    if blocklog_directory is not None:
-        nodes[0].run(
-            wait_for_live=False,
-            replay_from=block_log,
-            time_offset=modify_time_offset(timestamp, time_offsets[0])
-            if allow_external_time_offsets
-            else time_offset,
-            arguments=arguments
-        )
-    else:
-        nodes[0].run(wait_for_live=False, arguments=arguments)
-    init_node_p2p_endpoint = nodes[0].p2p_endpoint
+    assigned_addresses = generate_free_addresses(number_of_nodes=len(nodes))
     cnt_node = 1
-    for node in nodes[1:]:
-        node.config.p2p_seed_node.append(init_node_p2p_endpoint)
+    for num, node in enumerate(nodes):
+        node.config.p2p_endpoint = assigned_addresses[num]
+        [node.config.p2p_seed_node.append(address) for address in assigned_addresses if address != assigned_addresses[num]]
+
         if blocklog_directory is not None:
-            node.run(
-                wait_for_live=False,
-                replay_from=block_log,
-                time_offset=modify_time_offset(timestamp, time_offsets[cnt_node])
-                if allow_external_time_offsets
-                else time_offset,
-                arguments=arguments
-            )
+            node.config.shared_file_size = "1G" # todo: if block log contains a lot of data, increase shared memory file
+            node.run(replay_from=block_log, exit_before_synchronization=True, arguments=arguments)
         else:
+            node.config.shared_file_size = "1G" # todo: if block log contains a lot of data, increase shared memory file
             node.run(wait_for_live=False, arguments=arguments)
         cnt_node += 1
 
     for network in networks:
         network.is_running = True
+
+    with ThreadPoolExecutor() as executor:
+        tasks = []
+        for node_num, node in enumerate(nodes):
+            tasks.append(executor.submit(lambda: node.run(
+                wait_for_live=False,
+                time_offset=modify_time_offset(timestamp, time_offsets[node_num]) if allow_external_time_offsets
+                else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S"),
+                arguments=arguments)))
+
+    for thread_number in tasks:
+        thread_number.result()
+
+    tt.logger.info("Wait_for_live_mode...")
 
     for node in nodes:
         tt.logger.debug(f"Waiting for {node} to be live...")
@@ -290,3 +291,23 @@ def prepare_time_offsets(limit: int):
 
 def create_block_log_directory_name(block_log_directory_name: str):
     return Path(__file__).parent.absolute() / "block_logs" / block_log_directory_name
+
+
+def generate_port_ranges(worker: str, num) -> List[int]:
+    match = re.match(r"gw(\d+)", worker)
+    worker_id = int(match.group(1))
+    start = 2000 + worker_id * 1000
+    end = start + num
+    ports = [port for port in range(start, end)]
+    return ports
+
+
+def generate_free_addresses(number_of_nodes: int) -> List[str]:
+    worker_id = os.getenv("PYTEST_XDIST_WORKER")
+    if worker_id:
+        ports_range = generate_port_ranges(worker_id, number_of_nodes)
+        free_ports = ports_range[:number_of_nodes]
+        addresses = ["127.0.0.1:" + str(port) for port in free_ports]
+    else:
+        addresses = ["127.0.0.1:" + str(port) for port in range(2000, 2000+number_of_nodes)]
+    return addresses
