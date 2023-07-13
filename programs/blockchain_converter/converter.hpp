@@ -38,6 +38,9 @@ namespace hive { namespace converter {
 
   class blockchain_converter
   {
+  public:
+    bool increase_transaction_expiration_time = false;
+
   private:
     hp::private_key_type _private_key;
     hp::chain_id_type    chain_id;
@@ -92,7 +95,7 @@ namespace hive { namespace converter {
     bool has_helper_pow_transaction()const;
     std::shared_ptr< hc::full_transaction_type > pop_helper_pow_transaction();
 
-    static uint32_t calculate_transaction_expiration( uint32_t head_block_time, uint32_t block_timestamp, uint32_t trx_expiration, uint32_t block_offset, uint32_t trx_time_offset = 0 );
+    uint32_t calculate_transaction_expiration( uint32_t head_block_time, uint32_t block_timestamp = 0, uint32_t trx_expiration = 0, uint32_t block_offset = 0, uint32_t trx_time_offset = 0 )const;
 
     const hp::block_id_type& get_converter_head_block_id()const;
     const hp::block_id_type& get_mainnet_head_block_id()const;

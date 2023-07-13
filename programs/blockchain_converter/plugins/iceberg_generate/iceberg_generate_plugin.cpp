@@ -85,6 +85,8 @@ namespace detail {
   {
     for( const auto& url : output_urls )
       check_url( this->output_urls.emplace_back(url) );
+
+    converter.increase_transaction_expiration_time = true;
   }
 
   void iceberg_generate_plugin_impl::open( const fc::path& input )
