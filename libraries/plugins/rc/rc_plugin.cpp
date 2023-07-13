@@ -48,21 +48,12 @@ class rc_plugin_impl
 
     void on_pre_apply_operation( const operation_notification& note );
     void on_post_apply_operation( const operation_notification& note );
-    void on_pre_apply_custom_operation( const custom_operation_notification& note );
-    void on_post_apply_custom_operation( const custom_operation_notification& note );
-
-    template< typename OpType >
-    void pre_apply_custom_op_type( const custom_operation_notification& note );
-    template< typename OpType >
-    void post_apply_custom_op_type( const custom_operation_notification& note );
 
     database&                     _db;
     rc_plugin&                    _self;
 
     boost::signals2::connection   _pre_apply_operation_conn;
     boost::signals2::connection   _post_apply_operation_conn;
-    boost::signals2::connection   _pre_apply_custom_operation_conn;
-    boost::signals2::connection   _post_apply_custom_operation_conn;
 };
 
 struct get_worker_name_visitor
@@ -235,13 +226,6 @@ struct pre_apply_operation_visitor
     regenerate< false >( _current_witness );
   }
 
-  void operator()( const delegate_rc_operation& op )const
-  {
-    regenerate( op.from );
-    for( const auto& delegatee : op.delegatees )
-      regenerate( delegatee );
-  }
-
   template< typename Op >
   void operator()( const Op& op )const {}
 };
@@ -402,9 +386,6 @@ struct post_apply_operation_visitor
   //no change in vest balance
   //void operator()( const remove_proposal_operation& op )const
 
-  //nothing to do, all necessary RC updates are handled by the operation itself
-  //void operator()( const delegate_rc_operation& op )const
-
   template< typename Op >
   void operator()( const Op& op )const
   {
@@ -436,37 +417,6 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
   } FC_CAPTURE_AND_RETHROW( (note.op) )
 }
 
-
-template< typename OpType >
-void rc_plugin_impl::pre_apply_custom_op_type( const custom_operation_notification& note )
-{
-  const OpType* op = note.find_get_op< OpType >();
-  if( !op )
-    return;
-
-  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
-  pre_apply_operation_visitor vtor( _db );
-
-  vtor._current_witness = gpo.current_witness;
-
-  op->visit( vtor );
-
-  count_resources_result differential_usage;
-  if( _db.rc.prepare_differential_usage( *op, differential_usage ) )
-  {
-    _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
-    {
-      data.add_differential_usage( differential_usage );
-    } );
-  }
-}
-
-void rc_plugin_impl::on_pre_apply_custom_operation( const custom_operation_notification& note )
-{
-  pre_apply_custom_op_type< rc_custom_operation >( note );
-  // If we wanted to pre-handle other plugin operations, we could put pre_apply_custom_op_type< other_plugin_operation >( note )
-}
-
 void rc_plugin_impl::on_post_apply_operation( const operation_notification& note )
 { try {
   if( !_db.has_hardfork( HIVE_HARDFORK_0_20 ) )
@@ -475,32 +425,6 @@ void rc_plugin_impl::on_post_apply_operation( const operation_notification& note
   post_apply_operation_visitor vtor( _db );
   note.op.visit( vtor );
 } FC_CAPTURE_AND_RETHROW( (note.op) ) }
-
-template< typename OpType >
-void rc_plugin_impl::post_apply_custom_op_type( const custom_operation_notification& note )
-{
-  const OpType* op = note.find_get_op< OpType >();
-  if( !op )
-    return;
-  // dlog( "Calling post-vtor on ${op}", ("op", note.op) );
-  post_apply_operation_visitor vtor( _db );
-  op->visit( vtor );
-
-  count_resources_result extra_usage;
-  resource_credits::count_resources( *op, extra_usage, _db.head_block_time() );
-  _db.modify( _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
-  {
-    //the extra cost is stored on the same counters as differential usage (but as positive values);
-    //we have to handle it here because later we'd have to reinterpret json into concrete custom op
-    //just to collect correct cost
-    data.add_custom_op_usage( extra_usage );
-  } );
-}
-
-void rc_plugin_impl::on_post_apply_custom_operation( const custom_operation_notification& note )
-{
-  post_apply_custom_op_type< rc_custom_operation >( note );
-}
 
 } // detail
 
@@ -525,10 +449,6 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
       { try { my->on_pre_apply_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->_post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note )
       { try { my->on_post_apply_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
-    my->_pre_apply_custom_operation_conn = db.add_pre_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
-      { try { my->on_pre_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
-    my->_post_apply_custom_operation_conn = db.add_post_apply_custom_operation_handler( [&]( const custom_operation_notification& note )
-      { try { my->on_post_apply_custom_operation( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -539,7 +459,6 @@ void rc_plugin::plugin_shutdown()
 {
   chain::util::disconnect_signal( my->_pre_apply_operation_conn );
   chain::util::disconnect_signal( my->_post_apply_operation_conn );
-  chain::util::disconnect_signal( my->_pre_apply_custom_operation_conn );
 }
 
 } } } // hive::plugins::rc
