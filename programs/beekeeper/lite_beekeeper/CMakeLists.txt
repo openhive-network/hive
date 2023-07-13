@@ -28,6 +28,7 @@ ADD_EXECUTABLE( lite_beekeeper
                       ../core/wallet_manager_impl.cpp
                       ../core/beekeeper_app_base.cpp
                       ../core/beekeeper_app_init.cpp
+                      ../core/utilities.cpp
 )
 
 set( INCLUDES

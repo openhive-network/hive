@@ -25,6 +25,7 @@ file(GLOB UNIT_TESTS
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/session_base.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/session_manager_base.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/wallet_manager_impl.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/utilities.cpp
 )
 
 include(BoostTestTargets.cmake)
