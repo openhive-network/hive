@@ -35,6 +35,16 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     return;
   }
 
+  const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
+  count_resources_result differential_usage;
+  if( _db.rc.prepare_differential_usage< rc_custom_operation >( op, differential_usage ) )
+  {
+    _db.modify( pending_data, [&]( rc_pending_data& data )
+    {
+      data.add_differential_usage( differential_usage );
+    } );
+  }
+
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   if( op.max_rc != 0 && _db.is_in_control() )
   {
@@ -46,7 +56,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 
   uint32_t now = gpo.time.sec_since_epoch();
   const account_object& from_account = _db.get_account( op.from );
-  FC_ASSERT( from_account.rc_manabar.last_update_time == now );
+  _db.rc.regenerate_rc_mana( from_account, now );
   FC_ASSERT( !_db.is_in_control() || !_db.rc.has_expired_delegation( from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
     // above is not strictly needed - we can handle new delegations during delayed undelegating just fine, however we want to discourage users
     // from using the scheme to temporarily "pump" amount of RC, also if it is not intentional they might be confused about fresh delegations
@@ -56,6 +66,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   for (const account_name_type& to:op.delegatees)
   {
     const account_object& to_account = _db.get_account( to );
+    _db.rc.regenerate_rc_mana( to_account, now );
 
     const rc_direct_delegation_object* delegation = _db.find<rc_direct_delegation_object, by_from_to>(
       boost::make_tuple( from_account.get_id(), to_account.get_id() ) );
@@ -105,6 +116,16 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     }
     acc.delegated_rc += delta_total;
     acc.last_max_rc = acc.get_maximum_rc();
+  } );
+
+  count_resources_result extra_usage;
+  resource_credits::count_resources< rc_custom_operation >( op, extra_usage, gpo.time );
+  _db.modify( pending_data, [&]( rc_pending_data& data )
+  {
+    //the extra cost is stored on the same counters as differential usage (but as positive values);
+    //we have to handle it here because later we'd have to reinterpret json into concrete custom op
+    //just to collect correct cost
+    data.add_custom_op_usage( extra_usage );
   } );
 }
 
