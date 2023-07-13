@@ -83,7 +83,7 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
       _logging_config = app.load_logging_config();
     } );
 
-    BOOST_ASSERT( _data_dir );
+    BOOST_ASSERT( _data_dir != fc::path() );
 
   } catch ( const fc::exception& e )
   {
