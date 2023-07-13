@@ -366,8 +366,11 @@ namespace hive { namespace converter {
     return result;
   }
 
-  uint32_t blockchain_converter::calculate_transaction_expiration( uint32_t head_block_time, uint32_t block_timestamp, uint32_t trx_expiration, uint32_t block_offset, uint32_t trx_time_offset )
+  uint32_t blockchain_converter::calculate_transaction_expiration( uint32_t head_block_time, uint32_t block_timestamp, uint32_t trx_expiration, uint32_t block_offset, uint32_t trx_time_offset )const
   {
+    if(increase_transaction_expiration_time)
+      return head_block_time + (HIVE_MAX_TIME_UNTIL_EXPIRATION / 2) - HIVE_BC_SAFETY_TIME_GAP + trx_time_offset;
+
     trx_time_offset += block_offset;
 
     return std::min(
