@@ -20,6 +20,7 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper
                       ../core/wallet_manager_impl.cpp
                       ../core/beekeeper_app_base.cpp
                       ../core/beekeeper_app_init.cpp
+                      ../core/utilities.cpp
                       LIBRARIES appbase webserver_plugin hive_utilities
 )
 
