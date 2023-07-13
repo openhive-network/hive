@@ -179,8 +179,6 @@ namespace detail
         (get_signature) )
 
       std::unique_ptr< json_rpc_logger >                 _logger;
-
-      chain::full_database& _db;
       std::function<bool()>                              _check_serialization_status = [](){ return true; };
   };
 

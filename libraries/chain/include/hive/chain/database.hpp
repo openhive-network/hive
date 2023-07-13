@@ -907,7 +907,7 @@ namespace chain {
         */
       protected: fc::signal<void(const reindex_notification&)>         _post_reindex_signal; private:
 
-      fc::signal<void(const generate_optional_actions_notification& )> _generate_optional_actions_signal;
+      
 
       fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
 
