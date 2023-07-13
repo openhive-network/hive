@@ -1285,14 +1285,9 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
     FC_ASSERT( _rc_api, "rc_api_plugin not enabled." );
 
-    auto accounts = _rc_api->find_rc_accounts( { args.at(0).as< vector< account_name_type > >() } ).rc_accounts;
-    find_rc_accounts_return result;
-    for( auto& account : accounts )
-    {
-      result.emplace_back( hive::protocol::serializer_wrapper< rc::rc_account_api_object >{ account, transaction_serialization_type::legacy } );
-    }
-    return result;
-    //return _rc_api->find_rc_accounts( { args.at(0).as< vector< account_name_type > >() } ).rc_accounts;
+    return hive::protocol::serializer_wrapper< std::vector< rc::rc_account_api_object > >{ 
+      _rc_api->find_rc_accounts( { args.at(0).as< vector< account_name_type > >() } ).rc_accounts,
+       transaction_serialization_type::legacy };
   }
 
   DEFINE_API_IMPL( condenser_api_impl, list_rc_accounts )
@@ -1303,14 +1298,9 @@ namespace detail
     a.start = args.at(0).as< account_name_type >();
     a.limit = args.at(1).as< uint32_t >();
 
-    auto accounts = _rc_api->list_rc_accounts( a ).rc_accounts;
-    list_rc_accounts_return result;
-    for( auto& account : accounts )
-    {
-      result.emplace_back( hive::protocol::serializer_wrapper< rc::rc_account_api_object >{ account, transaction_serialization_type::legacy } );
-    }
-    return result;
-    //return _rc_api->list_rc_accounts( a ).rc_accounts;
+    return hive::protocol::serializer_wrapper< std::vector< rc::rc_account_api_object > >{ 
+      _rc_api->list_rc_accounts( a ).rc_accounts,
+      transaction_serialization_type::legacy };
   }
 
   DEFINE_API_IMPL( condenser_api_impl, list_rc_direct_delegations )

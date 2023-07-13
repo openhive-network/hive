@@ -863,7 +863,7 @@ struct market_trade
   legacy_asset   open_pays;
 };
 
-typedef vector< hive::protocol::serializer_wrapper< rc::rc_account_api_object > > find_rc_accounts_return;
+typedef hive::protocol::serializer_wrapper< vector< rc::rc_account_api_object > > find_rc_accounts_return;
 typedef find_rc_accounts_return list_rc_accounts_return;
 
 struct no_return {}; //used by routines moved to Hivemind
