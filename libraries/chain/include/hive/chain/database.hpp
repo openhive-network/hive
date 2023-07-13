@@ -960,6 +960,7 @@ namespace chain {
     uint32_t reindex( const open_args& args );
     void close(bool rewind = true);
   
+  
   public:
     bool is_known_block( const block_id_type& id )const;
     std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
