@@ -2,15 +2,6 @@
 
 namespace beekeeper {
 
-time_manager_base::time_manager_base()
-{
-}
-
-time_manager_base::~time_manager_base()
-{
-  stop_requested = true;
-}
-
 void time_manager_base::run()
 {
   std::lock_guard<std::mutex> guard( methods_mutex );

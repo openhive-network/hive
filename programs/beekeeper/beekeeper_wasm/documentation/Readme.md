@@ -1,5 +1,7 @@
 =====================================How to compile libraries and beekeeper in WASM?=====================================
 
+Install emscripten. (https://emscripten.org/)
+
 **********BOOST**********
 git clone https://github.com/boostorg/boost.git
 cd boost
@@ -42,9 +44,8 @@ emconfigure ./configure --with-asm=no --enable-shared=no --enable-tests=no --ena
 emmake make
 
 **********beekeeper**********
-HIVE_DIR = a directory were hived was saved
+HIVE_DIR = a directory where hived was saved
 Libraries created in previous steps should be put into ${HIVE_DIR}/libraries/fc_minimal/CMakeLists.txt how it's showed (temporary paths are used).
-Install emscripten. (https://emscripten.org/)
 
 cd ${HIVE_DIR}/programs/beekeeper/beekeeper_wasm/
 mkdir build
@@ -58,4 +59,4 @@ Here was used HTTP server `serve`.
 cd ${HIVE_DIR}/programs/beekeeper/beekeeper_wasm
 Launch HTTP server: serve
 Launch webbrowser with address: http://localhost:3000/beekeeper_wasm_test/beekeeper_wasm_test
-For firefox right link and choose in menu `Inspect` and then choose `Console` tab.
+For firefox right click and choose in menu `Inspect` and then choose `Console` tab.
