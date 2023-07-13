@@ -94,15 +94,12 @@ struct pre_apply_operation_visitor
 
   database&                                _db;
   uint32_t                                 _current_time = 0;
-  uint32_t                                 _current_block_number = 0;
   account_name_type                        _current_witness;
-  fc::optional< price >                    _vesting_share_price;
 
   pre_apply_operation_visitor( database& db ) : _db(db)
   {
     const auto& gpo = _db.get_dynamic_global_properties();
     _current_time = gpo.time.sec_since_epoch();
-    _current_block_number = gpo.head_block_number;
   }
 
   template< bool account_may_not_exist = false >
@@ -255,14 +252,12 @@ struct post_apply_operation_visitor
 
   database&                                _db;
   uint32_t                                 _current_time = 0;
-  uint32_t                                 _current_block_number = 0;
   account_name_type                        _current_witness;
 
   post_apply_operation_visitor( database& db ) : _db(db)
   {
     const auto& dgpo = _db.get_dynamic_global_properties();
     _current_time = dgpo.time.sec_since_epoch();
-    _current_block_number = dgpo.head_block_number;
     _current_witness = dgpo.current_witness;
   }
 
@@ -425,10 +420,6 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   pre_apply_operation_visitor vtor( _db );
 
-  // TODO: Add issue number to HF constant
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    vtor._vesting_share_price = gpo.get_vesting_share_price();
-
   vtor._current_witness = gpo.current_witness;
 
   // ilog( "Calling pre-vtor on ${op}", ("op", note.op) );
@@ -455,9 +446,6 @@ void rc_plugin_impl::pre_apply_custom_op_type( const custom_operation_notificati
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   pre_apply_operation_visitor vtor( _db );
-
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    vtor._vesting_share_price = gpo.get_vesting_share_price();
 
   vtor._current_witness = gpo.current_witness;
 
