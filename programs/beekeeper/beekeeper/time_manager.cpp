@@ -19,6 +19,7 @@ time_manager::time_manager()
 
 time_manager::~time_manager()
 {
+  stop_requested = true;
   notification_thread->join();
 }
 
