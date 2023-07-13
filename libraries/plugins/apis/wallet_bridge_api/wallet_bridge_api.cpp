@@ -163,7 +163,7 @@ void wallet_bridge_api::api_startup()
     ilog("Wallet bridge api initialized. Missing plugins: ${missing_plugins}", ( "missing_plugins", not_enabled_plugins ));
 }
 
-wallet_bridge_api_impl::wallet_bridge_api_impl() : 
+wallet_bridge_api_impl::wallet_bridge_api_impl() :
   _chain(appbase::app().get_plugin< hive::plugins::chain::chain_plugin >()),
   _db( _chain.db() )
 {
@@ -730,7 +730,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
   {
     set_remove_callback( true );
     throw fc::unhandled_exception(
-      FC_LOG_MESSAGE( warn, "Unknown error occured when pushing transaction" ),
+      FC_LOG_MESSAGE( warn, "Unknown error occurred when pushing transaction" ),
       std::current_exception() );
   }
 
@@ -758,7 +758,9 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )
   const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  return _network_broadcast_api->broadcast_transaction( { get_trx( arguments ) } );
+  const auto trx = get_trx( arguments );
+  _network_broadcast_api->broadcast_transaction( { trx } );
+  return { trx.id() };
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, find_recurrent_transfers )
@@ -824,7 +826,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
 }
 
 DEFINE_LOCKLESS_APIS(
-  wallet_bridge_api, 
+  wallet_bridge_api,
   (get_version)
   (get_ops_in_block)
   (get_transaction)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fc/reflect/reflect.hpp"
 #include <hive/chain/hive_objects.hpp>
 #include <hive/plugins/account_by_key_api/account_by_key_api.hpp>
 #include <hive/plugins/account_history_api/account_history_api.hpp>
@@ -183,20 +184,22 @@ typedef database_api::list_proposal_votes_return  list_proposal_votes_return;
 typedef variant                               get_reward_fund_args;
 typedef database_api::api_reward_fund_object  get_reward_fund_return;
 
-/* broadcast_transaction_synchronous */
-typedef variant broadcast_transaction_synchronous_args;
-struct broadcast_transaction_synchronous_return
+/* broadcast_transaction */
+typedef variant broadcast_transaction_args;
+struct broadcast_transaction_return
 {
   protocol::transaction_id_type   id;
+};
+
+/* broadcast_transaction_synchronous */
+typedef variant broadcast_transaction_synchronous_args;
+struct broadcast_transaction_synchronous_return: public broadcast_transaction_return
+{
   int32_t                         block_num = 0;
   int32_t                         trx_num = 0;
   fc::optional< int64_t >         rc_cost;
   bool                            expired = false;
 };
-
-/* broadcast_transaction */
-typedef variant broadcast_transaction_args;
-typedef hive::plugins::json_rpc::void_type broadcast_transaction_return;
 
 /* find_recurrent_transfers */
 typedef variant                                               find_recurrent_transfers_args;
@@ -216,7 +219,12 @@ typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_del
 
 } } } // hive::plugins::wallet_bridge_api
 
-FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(rc_cost)(expired))
+FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_return, (id));
+FC_REFLECT_DERIVED(
+  hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return,
+  (hive::plugins::wallet_bridge_api::broadcast_transaction_return),
+  (block_num)(trx_num)(rc_cost)(expired)
+)
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::find_withdraw_vesting_json_route, (from)(to)(percent)(auto_vest))
 
