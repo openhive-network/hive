@@ -19,6 +19,7 @@ ADD_LIBRARY( beekeeper_wasm_core STATIC
                       ../../core/wallet_manager_impl.cpp
                       ../../core/beekeeper_app_base.cpp
                       ../../core/beekeeper_app_init.cpp
+                      ../../core/utilities.cpp
 )
 
 set( INCLUDES

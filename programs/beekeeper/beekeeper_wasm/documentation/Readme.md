@@ -39,15 +39,15 @@ emmake make -j 12 build_generated libssl.a libcrypto.a
 git clone https://github.com/ElementsProject/secp256k1-zkp.git
 cd secp256k1-zkp/
 ./autogen.sh
-#Important. If above script fails, then try to install: `sudo apt-get install autoconf` and/or sudo `apt-get install libtool`
+#Important. If above script fails, then try to install: `sudo apt-get install autoconf` and/or `sudo apt-get install libtool`
 emconfigure ./configure --with-asm=no --enable-shared=no --enable-tests=no --enable-benchmark=no --enable-exhaustive-tests=no --with-pic=no --with-valgrind=no --enable-module-recovery=yes
 emmake make
 
 **********beekeeper**********
 HIVE_DIR = a directory where hived was saved
-Libraries created in previous steps should be put into ${HIVE_DIR}/libraries/fc_minimal/CMakeLists.txt how it's showed (temporary paths are used).
+Libraries created in previous steps should be put into ${HIVE_DIR}/hive/libraries/fc_minimal/CMakeLists.txt how it's showed (temporary paths are used).
 
-cd ${HIVE_DIR}/programs/beekeeper/beekeeper_wasm/
+cd ${HIVE_DIR}/hive/programs/beekeeper/beekeeper_wasm/
 mkdir build
 cd build
 cmake -DCMAKE_TOOLCHAIN_FILE=${PATH TO EMSCRIPTEN}/Emscripten.cmake -DCMAKE_BUILD_TYPE=Release ..
@@ -56,7 +56,7 @@ make -j12
 =====================================How to test beekeeper in webbrowser?=====================================
 Here was used HTTP server `serve`.
 
-cd ${HIVE_DIR}/programs/beekeeper/beekeeper_wasm
+cd ${HIVE_DIR}/hive/programs/beekeeper/beekeeper_wasm
 Launch HTTP server: serve
 Launch webbrowser with address: http://localhost:3000/beekeeper_wasm_test/beekeeper_wasm_test
 For firefox right click and choose in menu `Inspect` and then choose `Console` tab.
