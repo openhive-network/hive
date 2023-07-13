@@ -50,14 +50,10 @@ class time_manager_base
 
     session_data_index items;
 
-  protected:
-
-    bool stop_requested = false;
-
   public:
 
-    time_manager_base();
-    virtual ~time_manager_base();
+    time_manager_base(){}
+    virtual ~time_manager_base(){};
 
     void add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method );
     void change( const std::string& token, const types::timepoint_t& time );
