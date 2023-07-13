@@ -1211,12 +1211,10 @@ namespace detail
       args.at(4).as< hive::plugins::database_api::proposal_status >() : database_api::all;
 
     auto _proposal_votes = _database_api->list_proposal_votes( list_args ).proposal_votes;
-    list_proposal_votes_return _result;
-
-    for( auto& vote : _proposal_votes )
-      _result.emplace_back( hive::protocol::serializer_wrapper<database_api::api_proposal_vote_object>{ vote, transaction_serialization_type::legacy } );
-
-    return _result;
+    return hive::protocol::serializer_wrapper< vector< database_api::api_proposal_vote_object > >{
+      _proposal_votes,
+      transaction_serialization_type::legacy
+    };
   }
 
 
@@ -1225,12 +1223,10 @@ namespace detail
     CHECK_ARG_SIZE( 1 )
 
     auto _recurrent_transfers = _database_api->find_recurrent_transfers( { args.at(0).as< account_name_type >() } ).recurrent_transfers;
-    find_recurrent_transfers_return _result;
-
-    for( auto& recurrent_transfer : _recurrent_transfers )
-      _result.emplace_back( hive::protocol::serializer_wrapper<database_api::api_recurrent_transfer_object>{ recurrent_transfer, transaction_serialization_type::legacy } );
-
-    return _result;
+    return hive::protocol::serializer_wrapper< vector< database_api::api_recurrent_transfer_object > >{
+      _recurrent_transfers,
+      transaction_serialization_type::legacy
+    };
   }
 
   void condenser_api_impl::on_post_apply_block( const block_notification& note )
