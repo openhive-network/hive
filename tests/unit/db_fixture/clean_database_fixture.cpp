@@ -28,8 +28,6 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
     &rc_plugin
   );
 
-  ah_plugin->plugin_startup(); //ABW: we can't just use appbase::app().startup() because it conflicts with code below
-  
   configuration_data.allow_not_enough_rc = true;
 
   init_account_pub_key = init_account_priv_key.get_public_key();
@@ -67,10 +65,6 @@ clean_database_fixture::~clean_database_fixture()
     BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
   }
 
-  if( ah_plugin )
-    ah_plugin->plugin_shutdown();
-  if( data_dir )
-    db->wipe( data_dir->path(), data_dir->path(), true );
   return;
 } FC_CAPTURE_AND_LOG( () )
   exit(1);

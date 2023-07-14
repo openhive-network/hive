@@ -90,6 +90,8 @@ fc::path common_init( const std::function< void( appbase::application& app, int 
   remove( ( temp_data_dir + "/config.ini" ).c_str() );
   // ditto with logs directory
   fc::remove_all( ( temp_data_dir + "/logs" ).c_str() );
+  // and blockchain directory (including shared memory file)
+  fc::remove_all( ( temp_data_dir + "/blockchain" ).c_str() );
 
   app_initializer( appbase::app(), argc, (char**)argv_ext.data() );
   return _data_dir;

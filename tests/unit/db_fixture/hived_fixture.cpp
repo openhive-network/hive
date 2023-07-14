@@ -16,9 +16,9 @@ namespace hive { namespace chain {
 
 hived_fixture::hived_fixture() {}
 
-hived_fixture::~hived_fixture()
+hived_fixture::~hived_fixture() 
 {
-  appbase::reset(); // Also performs plugin shutdown.
+  appbase::app().finish(); // performs plugin shutdown too
 }
 
 void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg_overrides )
@@ -89,7 +89,7 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
         ah_plugin->set_destroy_database_on_shutdown();
       }
 
-      //theApp.startup();
+      app.startup();
     } );
 
     BOOST_ASSERT( _data_dir != fc::path() );
@@ -118,10 +118,6 @@ json_rpc_database_fixture::json_rpc_database_fixture()
     &rpc_plugin,
     &denser_api_plugin
   );
-
-  denser_api_plugin->plugin_startup();
-  rpc_plugin->finalize_startup();
-  ah_plugin->plugin_startup();
 
   init_account_pub_key = init_account_priv_key.get_public_key();
 
@@ -159,11 +155,7 @@ json_rpc_database_fixture::~json_rpc_database_fixture()
   {
     BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
   }
-
-  if( ah_plugin )
-    ah_plugin->plugin_shutdown();
-  if( data_dir )
-    db->wipe( data_dir->path(), data_dir->path(), true );
+  
   return;
 }
 
