@@ -1,6 +1,6 @@
 #pragma once
 
-#include <beekeeper_wasm_app_api/beekeeper_wasm_app.hpp>
+#include <core/beekeeper_wasm_app.hpp>
 
 #include <fc/io/json.hpp>
 
@@ -17,22 +17,11 @@ class beekeeper_api
     beekeeper::beekeeper_wasm_app app;
 
     template<typename T>
-    std::string get_string( const T& src )
+    std::string to_string( const T& src )
     {
       fc::variant _v;
       fc::to_variant( src, _v );
       return fc::json::to_string( _v );
-    }
-
-    template<typename T>
-    std::vector<std::string> convert_to_vector(const T& src )
-    {
-      std::vector<std::string> _result;
-
-      for( auto& item : src )
-        _result.emplace_back( get_string( item ) );
-
-      return _result;
     }
 
   public:
@@ -57,8 +46,8 @@ class beekeeper_api
     std::string import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key );
     void remove_key( const std::string& token, const std::string& wallet_name, const std::string& password, const std::string& public_key );
 
-    std::vector<std::string> list_wallets( const std::string& token );
-    std::vector<std::string> get_public_keys( const std::string& token );
+    std::string list_wallets( const std::string& token );
+    std::string get_public_keys( const std::string& token );
 
     std::string sign_digest( const std::string& token, const std::string& public_key, const std::string& sig_digest );
     std::string sign_transaction( const std::string& token, const std::string& transaction, const std::string& chain_id, const std::string& public_key, const std::string& sig_digest );
