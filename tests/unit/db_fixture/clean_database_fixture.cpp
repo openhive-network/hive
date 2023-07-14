@@ -28,8 +28,6 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
     &rc_plugin
   );
 
-  ah_plugin->set_destroy_database_on_startup();
-  ah_plugin->set_destroy_database_on_shutdown();
   ah_plugin->plugin_startup(); //ABW: we can't just use appbase::app().startup() because it conflicts with code below
   
   configuration_data.allow_not_enough_rc = true;

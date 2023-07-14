@@ -1105,9 +1105,6 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, hived_fixture )
       &ah_plugin
     );
 
-    ah_plugin->set_destroy_database_on_startup();
-    ah_plugin->set_destroy_database_on_shutdown();
-
     init_account_pub_key = init_account_priv_key.get_public_key();
 
     ah_plugin->plugin_startup();
