@@ -1,4 +1,4 @@
-#include <beekeeper_wasm_app_api/beekeeper_wasm_api.hpp>
+#include <core/beekeeper_wasm_api.hpp>
 
 #include <emscripten/bind.h>
 

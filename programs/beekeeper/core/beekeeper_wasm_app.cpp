@@ -1,4 +1,4 @@
-#include <beekeeper_wasm_app_api/beekeeper_wasm_app.hpp>
+#include <core/beekeeper_wasm_app.hpp>
 
 #include <boost/filesystem.hpp>
 
