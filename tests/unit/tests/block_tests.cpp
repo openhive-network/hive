@@ -1088,14 +1088,6 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, hived_fixture )
 {
   try
   {
-    autoscope auto_wipe( [&]()
-    {
-      if( ah_plugin )
-        ah_plugin->plugin_shutdown();
-      if( data_dir )
-        db->wipe( data_dir->path(), data_dir->path(), true );
-    } );
-
     try {
 
     ah_plugin_type* ah_plugin = nullptr;
@@ -1106,8 +1098,6 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, hived_fixture )
     );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
-
-    ah_plugin->plugin_startup();
 
     open_database( get_data_dir() );
 

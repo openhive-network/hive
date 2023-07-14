@@ -42,13 +42,9 @@ condenser_api_fixture::condenser_api_fixture()
   database_api = db_api_plugin->api;
   BOOST_REQUIRE( database_api );
 
-  ah_plugin->plugin_startup();
-
-  ah_api_plugin->plugin_startup();
   account_history_api = ah_api_plugin->api.get();
   BOOST_REQUIRE( account_history_api );
 
-  denser_api_plugin->plugin_startup(); //has to be called because condenser fills its variables then
   condenser_api = denser_api_plugin->api.get();
   BOOST_REQUIRE( condenser_api );
 
@@ -77,10 +73,6 @@ condenser_api_fixture::~condenser_api_fixture()
       BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
     }
 
-    if( ah_plugin )
-      ah_plugin->plugin_shutdown();
-    if( data_dir )
-      db->wipe( data_dir->path(), data_dir->path(), true );
     return;
   } FC_CAPTURE_AND_LOG( () )
 }
