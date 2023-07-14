@@ -30,11 +30,10 @@ from hive_local_tools.functional.python.operation.assertions import (
 account = "alice"
 
 
-def test_power_down(node):
+def test_power_down(node, wallet):
     """
     User creates Power down
     """
-    wallet = tt.Wallet(attach_to=node)
     wallet.create_account(account, vests=13_000)
 
     alice_balance = get_hive_balance(node, account)
@@ -87,11 +86,10 @@ def test_power_down(node):
     __assert_rc_max_mana_unchanged(node, account, alice_rc_max_mana)
 
 
-def test_cancel_power_down(node):
+def test_cancel_power_down(node, wallet):
     """
     User wants to stop Power down a few days after creating Power down.
     """
-    wallet = tt.Wallet(attach_to=node)
     wallet.create_account(account, vests=13_000)
 
     alice_balance = get_hive_balance(node, account)
@@ -158,12 +156,11 @@ def test_cancel_power_down(node):
         (tt.Asset.Test(3_000), tt.Asset.Test(1_000)),
     ]
 )
-def test_updating_the_power_down_increase_decrease(node, first_pd_amount, second_pd_amount):
+def test_updating_the_power_down_increase_decrease(node, wallet, first_pd_amount, second_pd_amount):
     """
     1) User wants to increase the amount of Power down.
     2) User wants to decrease the amount of Power down.
     """
-    wallet = tt.Wallet(attach_to=node)
 
     first_pd_amount_as_vest = tt.Asset.from_(
         {"amount": first_pd_amount.amount / get_vesting_price(node), "precision": 6, "nai": "@@000000037"})

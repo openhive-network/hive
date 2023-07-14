@@ -12,3 +12,8 @@ def node():
     # to change the node's time offset without waiting 21 blocks until they become irreversible.
     node.wait_for_block_with_number(30)
     return node
+
+
+@pytest.fixture
+def wallet(node):
+    return tt.Wallet(attach_to=node)
