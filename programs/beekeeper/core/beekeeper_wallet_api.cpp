@@ -102,7 +102,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, list_wallets )
 DEFINE_API_IMPL( beekeeper_api_impl, get_public_keys )
 {
   auto _keys = _wallet_mgr->get_public_keys( args.token );
-  return { utility::get_public_keys<flat_set<std::string>>( _keys ) };
+  return { utility::get_public_keys( _keys ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, sign_digest )

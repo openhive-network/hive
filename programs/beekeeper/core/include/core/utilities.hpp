@@ -3,6 +3,7 @@
 #include <core/beekeeper_wallet_base.hpp>
 
 #include <fc/reflect/reflect.hpp>
+#include <fc/container/flat.hpp>
 
 #include <functional>
 #include <string>
@@ -14,6 +15,12 @@ struct wallet_details
 {
   std::string name;
   bool unlocked = false;
+};
+
+struct public_key_details
+{
+  std::string public_key;
+  bool operator<( const public_key_details& obj ) const ;
 };
 
 struct info
@@ -37,27 +44,158 @@ namespace utility
     return public_key_type::from_base58( source, false/*is_sha256*/ );
   }
 
-  template<typename result_collection_type, typename source_type>
-  result_collection_type get_public_keys( const source_type& source )
+  template<typename source_type>
+  flat_set<public_key_details> get_public_keys( const source_type& source )
   {
-    result_collection_type _result;
+    flat_set<public_key_details> _result;
 
     std::transform( source.begin(), source.end(), std::inserter( _result, _result.end() ),
-    []( const public_key_type& public_key ){ return public_key_type::to_base58( public_key, false/*is_sha256*/ ); } );
+    []( const public_key_type& public_key ){ return public_key_details{ public_key_type::to_base58( public_key, false/*is_sha256*/ ) }; } );
 
     return _result;
   }
 }
 
+struct session_token_type
+{
+  std::string token;
+};
+
+struct wallet_args: public session_token_type
+{
+  std::string wallet_name;
+};
+struct wallet_password_args: public session_token_type
+{
+  std::string wallet_name;
+  std::string password;
+};
+
+struct create_args: public session_token_type
+{
+  std::string wallet_name;
+  fc::optional<std::string> password{};
+};
+struct create_return
+{
+  std::string password;
+};
+
+struct void_type {};
+
+using open_args   = wallet_args;
+using open_return = void_type;
+
+using close_args   = wallet_args;
+using close_return = void_type;
+
+struct set_timeout_args: public session_token_type
+{
+  int64_t seconds;
+};
+using set_timeout_return = void_type;
+
+using lock_all_args   = session_token_type;
+using lock_all_return = void_type;
+
+using lock_args   = wallet_args;
+using lock_return = void_type;
+
+using unlock_args   = wallet_password_args;
+using unlock_return = void_type;
+
+struct remove_key_args: public session_token_type
+{
+  std::string wallet_name;
+  std::string password;
+  std::string public_key;
+};
+using remove_key_return = void_type;
+
+struct import_key_return
+{
+  std::string public_key;
+};
+
+struct import_key_args: public session_token_type
+{
+  std::string wallet_name;
+  std::string wif_key;
+};
+
+using list_wallets_args = session_token_type;
+struct list_wallets_return
+{
+  std::vector<wallet_details> wallets;
+};
+
+using get_public_keys_args = session_token_type;
+struct get_public_keys_return
+{
+  flat_set<public_key_details> keys;
+};
+
+struct signature_return
+{
+  signature_type signature;
+};
+struct sign_digest_args: public session_token_type
+{
+  std::string public_key;
+  std::string sig_digest;
+};
+using sign_digest_return = signature_return;
+
+struct sign_transaction_args: public sign_digest_args
+{
+  std::string transaction;
+  chain_id_type chain_id;
+};
+using sign_transaction_return = signature_return;
+
+using get_info_args   = session_token_type;
+using get_info_return = info;
+
+struct create_session_args
+{
+  std::string salt;
+  std::string notifications_endpoint;
+};
+using create_session_return = session_token_type;
+using close_session_args = session_token_type;
+using close_session_return = void_type;
+
 }
 namespace fc
 {
-  void from_variant( const fc::variant& var, beekeeper::wallet_details& vo );
   void to_variant( const beekeeper::wallet_details& var, fc::variant& vo );
-
-  void from_variant( const fc::variant& var, beekeeper::info& vo );
-  void to_variant( const beekeeper::info& var, fc::variant& vo );
+  void to_variant( const beekeeper::get_info_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::create_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::import_key_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::create_session_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::get_public_keys_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::list_wallets_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::public_key_details& var, fc::variant& vo );
+  void to_variant( const beekeeper::signature_return& var, fc::variant& vo );
 }
 
 FC_REFLECT( beekeeper::wallet_details, (name)(unlocked) )
+FC_REFLECT( beekeeper::public_key_details, (public_key) )
 FC_REFLECT( beekeeper::info, (now)(timeout_time) )
+
+FC_REFLECT( beekeeper::void_type, )
+FC_REFLECT( beekeeper::session_token_type, (token) )
+FC_REFLECT_DERIVED( beekeeper::wallet_args, (beekeeper::session_token_type), (wallet_name) )
+FC_REFLECT_DERIVED( beekeeper::wallet_password_args, (beekeeper::session_token_type), (wallet_name)(password) )
+FC_REFLECT_DERIVED( beekeeper::create_args, (beekeeper::session_token_type), (wallet_name)(password) )
+FC_REFLECT( beekeeper::create_return, (password) )
+FC_REFLECT_DERIVED( beekeeper::set_timeout_args, (beekeeper::session_token_type), (seconds) )
+FC_REFLECT_DERIVED( beekeeper::import_key_args, (beekeeper::session_token_type), (wallet_name)(wif_key) )
+FC_REFLECT_DERIVED( beekeeper::remove_key_args, (beekeeper::session_token_type), (wallet_name)(password)(public_key) )
+FC_REFLECT( beekeeper::import_key_return, (public_key) )
+FC_REFLECT( beekeeper::list_wallets_return, (wallets) )
+FC_REFLECT( beekeeper::get_public_keys_return, (keys) )
+FC_REFLECT_DERIVED( beekeeper::sign_digest_args, (beekeeper::session_token_type), (public_key)(sig_digest) )
+FC_REFLECT( beekeeper::signature_return, (signature) )
+FC_REFLECT_DERIVED( beekeeper::sign_transaction_args, (beekeeper::sign_digest_args), (transaction)(chain_id) )
+FC_REFLECT( beekeeper::create_session_args, (salt)(notifications_endpoint) )
