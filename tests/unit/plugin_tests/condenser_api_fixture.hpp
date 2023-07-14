@@ -54,7 +54,7 @@ struct condenser_api_fixture : hived_fixture
 
   /** 
    * Tests pow_operation that needs hardfork lower than 13.
-   * Also tests: pow_reward_operation, account_created_operation, comment_operation (see database_fixture::create_with_pow) & producer_reward_operation.
+   * Also tests: pow_reward_operation, account_created_operation & producer_reward_operation.
    * 
    * All tested operations happen in block 3 (when create_with_pow is called) regardless of configurations settings of the fixture.
   */
@@ -64,7 +64,7 @@ struct condenser_api_fixture : hived_fixture
    * Tests operations that need hardfork lower than 17:
    *  pow2_operation (< hf17), ineffective_delete_comment_operation (< hf19) & account_create_with_delegation_operation (< hf20)
    * Also tests: 
-   *  account_created_operation, pow_reward_operation, transfer_operation, comment_operation, comment_options_operation,
+   *  account_created_operation, pow_reward_operation, comment_operation, comment_options_operation,
    *  vote_operation, effective_comment_vote_operation, delete_comment_operation & producer_reward_operation
    */
   void hf13_scenario( check_point_tester_t check_point_1_tester, check_point_tester_t check_point_2_tester );

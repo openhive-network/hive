@@ -56,28 +56,9 @@ class rc_plugin_impl
     boost::signals2::connection   _post_apply_operation_conn;
 };
 
-struct get_worker_name_visitor
-{
-  typedef account_name_type result_type;
-
-  template< typename WorkType >
-  account_name_type operator()( const WorkType& work )
-  {   return work.input.worker_account;    }
-};
-
-account_name_type get_worker_name( const pow2_work& work )
-{
-  // Even though in both cases the result is work.input.worker_account,
-  // we have to use a visitor because pow2_work is a static_variant
-  get_worker_name_visitor vtor;
-  return work.visit( vtor );
-}
-
 //
 // This visitor performs the following functions:
-//
 // - Call regenerate() when an account's vesting shares are about to change
-// - Save regenerated account names in a local array for further (post-operation) processing
 //
 struct pre_apply_operation_visitor
 {
@@ -85,7 +66,6 @@ struct pre_apply_operation_visitor
 
   database&                                _db;
   uint32_t                                 _current_time = 0;
-  account_name_type                        _current_witness;
 
   pre_apply_operation_visitor( database& db ) : _db(db)
   {
@@ -214,17 +194,9 @@ struct pre_apply_operation_visitor
 
   //void operator()( const delayed_voting_operation& op )const //not needed, only voting power changes, not amount of VESTs
 
-  void operator()( const pow_operation& op )const
-  {
-    regenerate< true >( op.worker_account );
-    regenerate< false >( _current_witness );
-  }
+  //void operator()( const pow_operation& op )const //not needed, RC not active when pow was active
 
-  void operator()( const pow2_operation& op )const
-  {
-    regenerate< true >( get_worker_name( op.work ) );
-    regenerate< false >( _current_witness );
-  }
+  //void operator()( const pow2_operation& op )const //not needed, RC not active when pow2 was active
 
   template< typename Op >
   void operator()( const Op& op )const {}
@@ -236,13 +208,11 @@ struct post_apply_operation_visitor
 
   database&                                _db;
   uint32_t                                 _current_time = 0;
-  account_name_type                        _current_witness;
 
   post_apply_operation_visitor( database& db ) : _db(db)
   {
     const auto& dgpo = _db.get_dynamic_global_properties();
     _current_time = dgpo.time.sec_since_epoch();
-    _current_witness = dgpo.current_witness;
   }
 
   void update_after_vest_change( const account_name_type& account_name,
@@ -257,19 +227,9 @@ struct post_apply_operation_visitor
     update_after_vest_change( op.creator );
   }
 
-  void operator()( const pow_operation& op )const
-  {
-    // ilog( "handling post-apply pow_operation" );
-    update_after_vest_change( op.worker_account );
-    update_after_vest_change( _current_witness );
-  }
+  //void operator()( const pow_operation& op )const //not needed, RC not active when pow was active
 
-  void operator()( const pow2_operation& op )const
-  {
-    auto worker_name = get_worker_name( op.work );
-    update_after_vest_change( worker_name );
-    update_after_vest_change( _current_witness );
-  }
+  //void operator()( const pow2_operation& op )const //not needed, RC not active when pow2 was active
 
   void operator()( const transfer_to_vesting_operation& op )
   {
@@ -398,12 +358,8 @@ void rc_plugin_impl::on_pre_apply_operation( const operation_notification& note 
   if( !_db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     return;
 
-  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   pre_apply_operation_visitor vtor( _db );
 
-  vtor._current_witness = gpo.current_witness;
-
-  // ilog( "Calling pre-vtor on ${op}", ("op", note.op) );
   note.op.visit( vtor );
 
   count_resources_result differential_usage;
