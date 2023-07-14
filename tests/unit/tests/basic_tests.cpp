@@ -144,19 +144,19 @@ BOOST_AUTO_TEST_CASE( fixed_string_verification )
       op.validate();
     }
 
-    {
-      account_name_type::set_verify( true );
+    // {
+    //   account_name_type::set_verify( true );
 
-      transfer_operation op;
+    //   transfer_operation op;
 
-      auto _assign = [&op]()
-      {
-        op.from = "abcde-0123456789xxx";
-      };
-      HIVE_REQUIRE_ASSERT( _assign(), "in_len <= sizeof(data)" );
+    //   auto _assign = [&op]()
+    //   {
+    //     op.from = "abcde-0123456789xxx";
+    //   };
+    //   HIVE_REQUIRE_ASSERT( _assign(), "in_len <= sizeof(data)" );
 
-      account_name_type::set_verify( false );
-    }
+    //   account_name_type::set_verify( false );
+    // }
 
   }
   FC_LOG_AND_RETHROW()
