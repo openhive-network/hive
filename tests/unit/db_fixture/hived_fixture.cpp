@@ -81,6 +81,15 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
       // Load configuration file into logging config structure, used to create loggers & appenders.
       // Store the structure for further examination (in tests).
       _logging_config = app.load_logging_config();
+
+      ah_plugin_type* ah_plugin = app.find_plugin< ah_plugin_type >();
+      if( ah_plugin != nullptr )
+      {
+        ah_plugin->set_destroy_database_on_startup();
+        ah_plugin->set_destroy_database_on_shutdown();
+      }
+
+      //theApp.startup();
     } );
 
     BOOST_ASSERT( _data_dir != fc::path() );
@@ -112,9 +121,6 @@ json_rpc_database_fixture::json_rpc_database_fixture()
 
   denser_api_plugin->plugin_startup();
   rpc_plugin->finalize_startup();
-
-  ah_plugin->set_destroy_database_on_startup();
-  ah_plugin->set_destroy_database_on_shutdown();
   ah_plugin->plugin_startup();
 
   init_account_pub_key = init_account_priv_key.get_public_key();

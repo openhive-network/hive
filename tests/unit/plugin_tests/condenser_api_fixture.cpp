@@ -42,8 +42,6 @@ condenser_api_fixture::condenser_api_fixture()
   database_api = db_api_plugin->api;
   BOOST_REQUIRE( database_api );
 
-  ah_plugin->set_destroy_database_on_startup();
-  ah_plugin->set_destroy_database_on_shutdown();
   ah_plugin->plugin_startup();
 
   ah_api_plugin->plugin_startup();
