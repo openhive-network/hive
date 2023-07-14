@@ -4,6 +4,7 @@
 #include <hive/protocol/transaction.hpp>
 
 #include <boost/test/unit_test.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <fc/crypto/elliptic.hpp>
 #include <fc/filesystem.hpp>
@@ -11,6 +12,9 @@
 
 #include <core/beekeeper_wallet.hpp>
 #include <core/beekeeper_wallet_manager.hpp>
+#include <core/beekeeper_wasm_api.hpp>
+#include <core/beekeeper_wasm_app.hpp>
+
 #include <beekeeper/session_manager.hpp>
 #include <beekeeper/beekeeper_instance.hpp>
 
@@ -220,7 +224,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 } FC_LOG_AND_RETHROW() }
 
 /// Test wallet manager
-BOOST_AUTO_TEST_CASE(wallet_manager_create_test) {
+BOOST_AUTO_TEST_CASE(wallet_manager_create_test)
+{
   try {
     if (fc::exists("test.wallet")) fc::remove("test.wallet");
 
@@ -271,7 +276,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test) {
   } FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE(wallet_manager_sessions) {
+BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
+{
   try {
     const std::string _port = "127.0.0.1:666";
     const std::string _dir = ".";
@@ -335,7 +341,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions) {
   } FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE(wallet_manager_info) {
+BOOST_AUTO_TEST_CASE(wallet_manager_info)
+{
   try {
 
     const std::string _port = "127.0.0.1:666";
@@ -390,7 +397,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_info) {
   } FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE(wallet_manager_session_limit) {
+BOOST_AUTO_TEST_CASE(wallet_manager_session_limit)
+{
   try {
 
     const std::string _port = "127.0.0.1:666";
@@ -438,7 +446,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_session_limit) {
   } FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE(wallet_manager_close) {
+BOOST_AUTO_TEST_CASE(wallet_manager_close)
+{
   try {
 
     const std::string _port = "127.0.0.1:666";
@@ -537,7 +546,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close) {
   } FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction) {
+BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
+{
   try {
 
     {
@@ -591,6 +601,219 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction) {
       BOOST_TEST_MESSAGE( _signature_01_str );
       BOOST_REQUIRE( _signature_00 == _signature_01 );
 
+    }
+
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(wasm_beekeeper)
+{
+  try {
+    auto _current_path = fc::current_path();
+    fc::path _dir("./beekeeper-storage/"); 
+
+    auto _wallet_0_path = _current_path / _dir / "wallet_0.wallet";
+    auto _wallet_1_path = _current_path / _dir / "wallet_1.wallet";
+
+    if( fc::exists( _wallet_0_path ) )
+      fc::remove( _wallet_0_path );
+
+    if( fc::exists( _wallet_1_path ) )
+      fc::remove( _wallet_1_path );
+
+    beekeeper::beekeeper_api _obj( { "--wallet-dir", _dir.string(), "--salt", "avocado" } );
+    BOOST_REQUIRE( _obj.init() == 1 );
+
+    auto get_data = []( const std::string& json )
+    {
+      vector< string > _elements;
+      boost::split( _elements, json, boost::is_any_of( "\"" ) );
+      BOOST_REQUIRE( _elements.size() >= 2 );
+      return _elements[ _elements.size() - 2 ];
+    };
+
+    auto _token = _obj.create_session( "banana" );
+    BOOST_TEST_MESSAGE( _token );
+    _token = get_data( _token );
+
+    auto _password_0 = _obj.create( _token, "wallet_0", "" );
+    BOOST_TEST_MESSAGE( _password_0 );
+    _password_0 = get_data( _password_0 );
+
+    auto _password_1 = _obj.create( _token, "wallet_1", "cherry" );
+    BOOST_TEST_MESSAGE( _password_1 );
+    BOOST_REQUIRE( _password_1.find( "cherry" ) != std::string::npos );
+    _password_1 = get_data( _password_1 );
+
+    auto _public_key_0 = _obj.import_key( _token, "wallet_0", "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n" );
+    BOOST_TEST_MESSAGE( _public_key_0 );
+    BOOST_REQUIRE( _public_key_0.find( "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4" ) != std::string::npos );
+
+    auto _public_key_1a = _obj.import_key( _token, "wallet_1", "5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78" );
+    BOOST_TEST_MESSAGE( _public_key_1a );
+    BOOST_REQUIRE( _public_key_1a.find( "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa" ) != std::string::npos );
+
+    auto _public_key_1b = _obj.import_key( _token, "wallet_1", "5KNbAE7pLwsLbPUkz6kboVpTR24CycqSNHDG95Y8nbQqSqd6tgS" );
+    BOOST_TEST_MESSAGE( _public_key_1b );
+    BOOST_REQUIRE( _public_key_1b.find( "7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH" ) != std::string::npos );
+
+    auto _wallets = _obj.list_wallets( _token );
+    BOOST_TEST_MESSAGE( _wallets );
+    {
+      beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
+      BOOST_REQUIRE( _result.wallets.size() == 2 );
+      BOOST_REQUIRE( _result.wallets[0].unlocked );
+      BOOST_REQUIRE( _result.wallets[1].unlocked );
+    }
+
+    auto _public_keys = _obj.get_public_keys( _token );
+    BOOST_TEST_MESSAGE( _public_keys );
+
+    _obj.remove_key( _token, "wallet_1", _password_1, "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa" );
+
+    _public_keys = _obj.get_public_keys( _token );
+    BOOST_TEST_MESSAGE( _public_keys );
+
+    _obj.close_session( _token );
+
+    _token = _obj.create_session( "banana" );
+    BOOST_TEST_MESSAGE( _token );
+    _token = get_data( _token );
+
+    _obj.open( _token, "wallet_1" );
+
+    BOOST_REQUIRE_THROW( _obj.get_public_keys( _token ), fc::exception );
+
+    _obj.close( _token, "wallet_1" );
+
+    _obj.unlock( _token, "wallet_0", _password_0 );
+
+    _wallets = _obj.list_wallets( _token );
+    BOOST_TEST_MESSAGE( _wallets );
+    {
+      beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
+      BOOST_REQUIRE( _result.wallets.size() == 1 );
+      BOOST_REQUIRE( _result.wallets[0].name == "wallet_0" );
+      BOOST_REQUIRE( _result.wallets[1].unlocked );
+    }
+
+    _obj.unlock( _token, "wallet_1", _password_1 );
+
+    _wallets = _obj.list_wallets( _token );
+    BOOST_TEST_MESSAGE( _wallets );
+    {
+      beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
+      BOOST_REQUIRE( _result.wallets.size() == 2 );
+      BOOST_REQUIRE( _result.wallets[0].unlocked );
+      BOOST_REQUIRE( _result.wallets[1].unlocked );
+    }
+
+    auto _info = _obj.get_info( _token );
+    BOOST_TEST_MESSAGE( _info );
+
+    _obj.set_timeout( _token, 1 );
+
+    std::this_thread::sleep_for( std::chrono::seconds(2) );
+
+    _wallets = _obj.list_wallets( _token );
+    BOOST_TEST_MESSAGE( _wallets );
+    {
+      beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
+      BOOST_REQUIRE( _result.wallets.size() == 2 );
+      BOOST_REQUIRE( !_result.wallets[0].unlocked );
+      BOOST_REQUIRE( !_result.wallets[1].unlocked );
+    }
+
+    _info = _obj.get_info( _token );
+    BOOST_TEST_MESSAGE( _info );
+
+    _obj.unlock( _token, "wallet_0", _password_0 );
+    _obj.unlock( _token, "wallet_1", _password_1 );
+
+    _wallets = _obj.list_wallets( _token );
+    BOOST_TEST_MESSAGE( _wallets );
+    {
+      beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
+      BOOST_REQUIRE( _result.wallets.size() == 2 );
+      BOOST_REQUIRE( _result.wallets[0].unlocked );
+      BOOST_REQUIRE( _result.wallets[1].unlocked );
+    }
+
+    _obj.lock( _token, "wallet_0" );
+
+    _wallets = _obj.list_wallets( _token );
+    BOOST_TEST_MESSAGE( _wallets );
+    {
+      beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
+      BOOST_REQUIRE( _result.wallets.size() == 2 );
+      BOOST_REQUIRE( !_result.wallets[0].unlocked );
+      BOOST_REQUIRE( _result.wallets[0].name == "wallet_0" );
+      BOOST_REQUIRE( _result.wallets[1].unlocked );
+    }
+
+    _obj.unlock( _token, "wallet_0", _password_0 );
+
+    _wallets = _obj.list_wallets( _token );
+    BOOST_TEST_MESSAGE( _wallets );
+    {
+      beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
+      BOOST_REQUIRE( _result.wallets.size() == 2 );
+      BOOST_REQUIRE( _result.wallets[0].unlocked );
+      BOOST_REQUIRE( _result.wallets[1].unlocked );
+    }
+
+    _obj.lock_all( _token );
+
+    _wallets = _obj.list_wallets( _token );
+    BOOST_TEST_MESSAGE( _wallets );
+    {
+      beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
+      BOOST_REQUIRE( _result.wallets.size() == 2 );
+      BOOST_REQUIRE( !_result.wallets[0].unlocked );
+      BOOST_REQUIRE( !_result.wallets[1].unlocked );
+    }
+
+    {
+      hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
+
+      auto _private_key_str = "5KNbAE7pLwsLbPUkz6kboVpTR24CycqSNHDG95Y8nbQqSqd6tgS";
+      auto _public_key_str  = "7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH";
+
+      const auto _private_key = private_key_type::wif_to_key( _private_key_str ).value();
+
+      _obj.unlock( _token, "wallet_1", _password_1 );
+
+      hive::protocol::digest_type _sig_digest;
+      std::string _trx_serialized;
+
+      hive::protocol::transfer_operation _op;
+      _op.to     = "xyz17";
+      _op.from   = "zyx17";
+      _op.amount = hive::protocol::asset( 5, HIVE_SYMBOL );
+
+      hive::protocol::transaction _trx;
+      _trx.operations.push_back( _op );
+
+      _sig_digest = _trx.sig_digest( HIVE_CHAIN_ID, hive::protocol::pack_type::hf26 );
+      _trx_serialized = fc::to_hex( fc::raw::pack_to_vector( _trx ) );
+
+      auto _trx_str = fc::json::to_string( _trx );
+
+      auto _signature_00 = _private_key.sign_compact( _sig_digest );
+      auto _signature_01_str = _obj.sign_digest( _token, "7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH", _sig_digest );
+
+      auto _signature_00_str = fc::json::to_string( _signature_00 );
+
+      BOOST_TEST_MESSAGE( _signature_00_str );
+      BOOST_TEST_MESSAGE( _signature_01_str );
+
+      _signature_01_str = get_data( _signature_01_str );
+
+      BOOST_REQUIRE( _signature_00_str.find( _signature_01_str ) != std::string::npos );
+
+      auto _signature_02_str = _obj.sign_transaction( _token, _trx_serialized, HIVE_CHAIN_ID, _public_key_str, _sig_digest );
+      BOOST_TEST_MESSAGE( _signature_02_str );
+      BOOST_REQUIRE( _signature_02_str.find( _signature_01_str ) != std::string::npos );
     }
 
   } FC_LOG_AND_RETHROW()
