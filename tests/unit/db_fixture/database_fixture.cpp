@@ -1219,20 +1219,7 @@ void database_fixture::create_with_pow( std::string _name, const fc::ecc::public
   //default props
 
   //pow_operation does not need signature - signing it anyway leads to superfluous signature error
-  //on the other hand current RC mechanism needs to decide who pays for the transaction and when there is
-  //no signature no one is paying which is also an error; therefore we need some other operation that
-  //actually needs a signature;
-  comment_operation comment;
-  comment.author = "initminer"; // cannot be worker
-  comment.permlink = "test";
-  comment.parent_permlink = "test";
-  comment.body = "Hello world!";
-
-  signed_transaction tx;
-  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  tx.operations.push_back( op );
-  tx.operations.push_back( comment );
-  push_transaction( tx, init_account_priv_key ); //cannot be worker private key
+  push_transaction( op, fc::ecc::private_key() );
 }
 
 void database_fixture::create_with_pow2( std::string _worker_account, const fc::ecc::public_key& _public_key,
@@ -1251,22 +1238,9 @@ void database_fixture::create_with_pow2( std::string _worker_account, const fc::
   op.new_owner_key = _public_key;
   //default props
 
-  //This time signature is not superfluous;
-  //when we set new_owner_key (which we have to for new account) pow2_operation declares needed authority as "other",
-  //which prevents us from mixing it with comment_operation which requires posting key - using transfer instead;
-  //why can't we just have only worker key then? because it is not effective yet (no such authority) and also because
-  //while worker signature is required, it does not count when RC chooses who to charge for transaction
-  transfer_operation transfer;
-  transfer.from = "initminer";
-  transfer.to = _worker_account;
-  transfer.amount = ASSET( "0.001 TESTS ");
-  transfer.memo = "test";
-
-  signed_transaction tx;
-  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  tx.operations.push_back( op );
-  tx.operations.push_back( transfer );
-  push_transaction( tx, {init_account_priv_key, _private_key/*still needed as "other"*/}, 0 );
+  //This time signature is not superfluous (see create_with_pow above);
+  //when we set new_owner_key (which we have to for new account) pow2_operation declares needed authority as "other"
+  push_transaction( op, _private_key );
 }
 
 void database_fixture::create_with_delegation( const std::string& creator, const std::string& new_account_name, 
