@@ -74,7 +74,7 @@ namespace beekeeper {
     app.get_wallet_manager()->close( token, wallet_name );
   }
 
-  void beekeeper_api::set_timeout( const std::string& token, int64_t seconds )
+  void beekeeper_api::set_timeout( const std::string& token, int32_t seconds )
   {
     app.get_wallet_manager()->set_timeout( token, seconds );
   }
