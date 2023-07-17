@@ -3,12 +3,12 @@
 <body>
   <script>
 
-    function my_main_function() {
+    async function my_main_function() {
       console.log('Beekeeper test.');
 
       const params = new Module.StringList();
       params.push_back("--wallet-dir");
-      params.push_back("/storage_root/.beekeeper-13");
+      params.push_back("/storage_root/.beekeeper-46");
       params.push_back("--salt");
       params.push_back("avocado");
 
@@ -23,6 +23,15 @@
       console.log('create session...');
       var session_token = instance.create_session( "pear" )
       console.log('Session created with token: ' + session_token);
+      session_token = JSON.parse( session_token ).token
+      console.log('close session with token: ' + session_token );
+      instance.close_session( session_token )
+      console.log('Session closed with token: ' + session_token);
+
+      console.log('create second session...');
+      session_token = instance.create_session( "pear" )
+      console.log('Session created with token: ' + session_token);
+      session_token = JSON.parse( session_token ).token
 
       try
       {
@@ -30,6 +39,7 @@
         console.log('create wallet: ' + wallet_name);
         var password = instance.create( session_token, wallet_name, "cherry" )
         console.log('wallet "' + wallet_name + '" created with password: ' + password);
+        password = JSON.parse( password ).password
       }
       catch(error)
       {
@@ -42,6 +52,7 @@
         console.log('create wallet: ' + wallet_name_2 + ' with empty password');
         var password_2 = instance.create( session_token, wallet_name_2, "" )
         console.log('wallet "' + wallet_name_2 + '" created with password: ' + password_2);
+        password_2 = JSON.parse( password_2 ).password
       }
       catch(error)
       {
@@ -72,12 +83,70 @@
         console.error(error)
       }
 
-      //instance.dump("/storage_root/.beekeeper");
+      var wallets = instance.list_wallets( session_token )
+      console.log(wallets);
 
-      instance.delete();
-      
-      //var data = FS.readFile("/storage_root/instance_x-2.txt", { encoding: 'utf8' });
-      //console.log("instance_x.txt file contents: " + data);
+      var public_keys = instance.get_public_keys( session_token )
+      console.log(public_keys);
+
+      console.log('Close wallet: ' + wallet_name_2 );
+      instance.close( session_token, wallet_name_2 )
+
+      var wallets = instance.list_wallets( session_token )
+      console.log(wallets);
+
+      console.log('Open wallet: ' + wallet_name_2 );
+      instance.open( session_token, wallet_name_2 )
+
+      var wallets = instance.list_wallets( session_token )
+      console.log(wallets);
+
+      console.log('Unlock wallet: ' + wallet_name_2 );
+      instance.unlock( session_token, wallet_name_2, password_2 )
+
+      var wallets = instance.list_wallets( session_token )
+      console.log(wallets);
+
+      console.log('Lock wallet: ' + wallet_name_2 );
+      instance.lock( session_token, wallet_name_2 )
+
+      var wallets = instance.list_wallets( session_token )
+      console.log(wallets);
+
+      instance.lock_all( session_token )
+
+      var wallets = instance.list_wallets( session_token )
+      console.log(wallets);
+
+      console.log('Unlock wallet: ' + wallet_name_2 );
+      instance.unlock( session_token, wallet_name_2, password_2 )
+
+      console.log('Remove key: ' + '7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH' + ' from wallet: ' + wallet_name_2 + ' with pass: ' + password_2)
+      instance.remove_key(session_token, wallet_name_2, password_2, '7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH')
+
+      var public_keys = instance.get_public_keys( session_token )
+      console.log(public_keys);
+
+      var info = instance.get_info( session_token )
+      console.log(info);
+
+      console.log('Unlock wallet: ' + wallet_name );
+      instance.unlock( session_token, wallet_name, password )
+
+      var wallets = instance.list_wallets( session_token )
+      console.log(wallets);
+
+      console.log('set timeout [1s]');
+      instance.set_timeout( session_token, 1 )
+
+      console.log('wait 1.5s')
+      await setTimeout(() => {
+        console.log('after 1.5s')
+        var wallets = instance.list_wallets( session_token )
+        console.log(wallets);
+
+        instance.delete();
+      }, 1500)
     }
 
     var Module = {
