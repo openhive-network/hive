@@ -5016,11 +5016,7 @@ boost::signals2::connection database::any_apply_operation_handler_impl( const ap
 
     if (_benchmark_dumper.is_enabled())
     {
-      if( _my->_evaluator_registry.is_evaluator( o.op ) )
-        name = _my->_evaluator_registry.get_evaluator( o.op ).get_name( o.op );
-      else
-        name = util::advanced_benchmark_dumper::get_virtual_operation_name();
-
+      name = o.op.get_stored_type_name();
       _benchmark_dumper.begin();
     }
 
