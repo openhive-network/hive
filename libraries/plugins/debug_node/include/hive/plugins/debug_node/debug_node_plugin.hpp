@@ -2,7 +2,6 @@
 #pragma once
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
-#include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/chain/full_block.hpp>
 
 #include <fc/variant_object.hpp>
@@ -47,7 +46,7 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     debug_node_plugin();
     virtual ~debug_node_plugin();
 
-    APPBASE_PLUGIN_REQUIRES( (chain::chain_plugin)(hive::plugins::rc::rc_plugin) )
+    APPBASE_PLUGIN_REQUIRES( (chain::chain_plugin) )
 
     static const std::string& name() { static std::string name = HIVE_DEBUG_NODE_PLUGIN_NAME; return name; }
 

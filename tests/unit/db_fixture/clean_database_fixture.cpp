@@ -22,7 +22,6 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
   postponed_init(
     { config_line_t( { "plugin",
       { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
-        HIVE_RC_PLUGIN_NAME,
         HIVE_WITNESS_PLUGIN_NAME } } ) },
     &ah_plugin
   );

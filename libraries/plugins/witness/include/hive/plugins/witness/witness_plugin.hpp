@@ -2,7 +2,6 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/p2p/p2p_plugin.hpp>
-#include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/plugins/witness/block_producer.hpp>
 
 #include <appbase/application.hpp>
@@ -47,7 +46,6 @@ public:
   APPBASE_PLUGIN_REQUIRES(
     (hive::plugins::chain::chain_plugin)
     (hive::plugins::p2p::p2p_plugin)
-    (hive::plugins::rc::rc_plugin)
   )
 
   witness_plugin();

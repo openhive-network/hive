@@ -33,8 +33,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       { 
         config_line_t( { "plugin",
           { HIVE_TRANSACTION_STATUS_PLUGIN_NAME,
-            HIVE_TRANSACTION_STATUS_API_PLUGIN_NAME,
-            HIVE_RC_PLUGIN_NAME } } ),
+            HIVE_TRANSACTION_STATUS_API_PLUGIN_NAME } } ),
         config_line_t( { "transaction-status-block-depth",
           { TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR } } ),
         config_line_t( { "transaction-status-track-after-block",
