@@ -6,7 +6,7 @@
 
 namespace hive { namespace chain {
 
-void initialize_core_indexes_13( database& db )
+void initialize_core_indexes_13( database_i& db )
 {
   //TODO: uncomment later when moving RC activation to core
   //HIVE_ADD_CORE_INDEX( hive::chain::rc_pending_data_index )

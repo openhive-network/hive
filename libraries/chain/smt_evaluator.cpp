@@ -15,7 +15,7 @@ namespace hive { namespace chain {
 namespace {
 
 /// Return SMT token object controlled by this account identified by its symbol. Throws assert exception when not found!
-inline const smt_token_object& get_controlled_smt( const database& db, const account_name_type& control_account, const asset_symbol_type& smt_symbol )
+inline const smt_token_object& get_controlled_smt( const database_i& db, const account_name_type& control_account, const asset_symbol_type& smt_symbol )
 {
   const smt_token_object* smt = db.find< smt_token_object, by_symbol >( smt_symbol );
   // The SMT is supposed to be found.
@@ -47,7 +47,7 @@ private:
 };
 
 const smt_token_object& common_pre_setup_evaluation(
-  const database& _db, const asset_symbol_type& symbol, const account_name_type& control_account )
+  const database_i& _db, const asset_symbol_type& symbol, const account_name_type& control_account )
 {
   const smt_token_object& smt = get_controlled_smt( _db, control_account, symbol );
 
@@ -119,9 +119,9 @@ void smt_create_evaluator::do_apply( const smt_create_operation& o )
 struct smt_setup_evaluator_visitor
 {
   const smt_ico_object& _ico;
-  database& _db;
+  database_i& _db;
 
-  smt_setup_evaluator_visitor( const smt_ico_object& ico, database& db ): _ico( ico ), _db( db ){}
+  smt_setup_evaluator_visitor( const smt_ico_object& ico, database_i& db ): _ico( ico ), _db( db ){}
 
   typedef void result_type;
 

@@ -7,7 +7,7 @@
 
 namespace hive { namespace chain {
 
-void initialize_core_indexes_10( database& db )
+void initialize_core_indexes_10( database_i& db )
 {
 #ifdef HIVE_ENABLE_SMT
   HIVE_ADD_CORE_INDEX(db, smt_token_index);

@@ -4,7 +4,7 @@
 
 namespace hive { namespace chain {
 
-void dhf_helper::remove_proposals( database& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner )
+void dhf_helper::remove_proposals( database_i& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner )
 {
   if( proposal_ids.empty() )
     return;

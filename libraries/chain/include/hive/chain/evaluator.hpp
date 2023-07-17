@@ -5,7 +5,7 @@
 
 namespace hive { namespace chain {
 
-class database;
+class database_i;
 
 template< typename OperationType=hive::protocol::operation >
 class evaluator
@@ -73,7 +73,7 @@ class X ## _evaluator : public hive::chain::evaluator_impl< X ## _evaluator, OPE
   public:                                                                                \
     typedef X ## _operation operation_type;                                              \
                                                                                          \
-    X ## _evaluator( hive::chain::database& db, PLUGIN* plugin )                         \
+    X ## _evaluator( hive::chain::database_i& db, PLUGIN* plugin )                         \
       : hive::chain::evaluator_impl< X ## _evaluator, OPERATION >( db ),                 \
         _plugin( plugin )                                                                \
     {}                                                                                   \

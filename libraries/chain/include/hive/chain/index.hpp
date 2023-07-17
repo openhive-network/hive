@@ -35,7 +35,7 @@ struct index_info_impl
 };
 
 template< typename MultiIndexType >
-void _add_index_impl( database& db )
+void _add_index_impl( database_i& db )
 {
   db.add_index< MultiIndexType >();
   std::shared_ptr< chainbase::index_extension > ext =
@@ -45,13 +45,13 @@ void _add_index_impl( database& db )
 }
 
 template< typename MultiIndexType >
-void add_core_index( database& db )
+void add_core_index( database_i& db )
 {
   _add_index_impl< MultiIndexType >( db );
 }
 
 template< typename MultiIndexType >
-void add_plugin_index( database& db )
+void add_plugin_index( database_i& db )
 {
   db._plugin_index_signal.connect( [&db](){ _add_index_impl< MultiIndexType >(db); } );
 }

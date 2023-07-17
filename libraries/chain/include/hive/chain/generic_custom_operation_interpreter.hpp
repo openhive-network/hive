@@ -25,7 +25,7 @@ using protocol::authority;
 using protocol::account_name_type;
 using protocol::custom_id_type;
 
-class database;
+class database_i;
 
 std::string legacy_custom_name_from_type( const std::string& type_name );
 
@@ -57,7 +57,7 @@ struct get_custom_operation_name
 };
 
 template< typename CustomOperationType >
-void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, const database& db )
+void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, const database_i& db )
 {
   static std::map<string,int64_t> to_legacy_tag = []()
   {
@@ -178,7 +178,7 @@ class generic_custom_operation_interpreter
   : public custom_operation_interpreter, public evaluator_registry< CustomOperationType >
 {
   public:
-    generic_custom_operation_interpreter( database& db, const custom_id_type& cid )
+    generic_custom_operation_interpreter( database_i& db, const custom_id_type& cid )
       : evaluator_registry< CustomOperationType >(db), custom_id(cid) {}
     virtual ~generic_custom_operation_interpreter() = default;
 

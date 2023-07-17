@@ -250,7 +250,7 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
 }
 
 void verify_authority_accounts_exist(
-  const database& db,
+  const database_i& db,
   const authority& auth,
   const account_name_type& auth_account,
   authority::classification auth_class)
@@ -263,7 +263,7 @@ void verify_authority_accounts_exist(
   }
 }
 
-const account_object& create_account( database& db, const account_name_type& name, const public_key_type& key,
+const account_object& create_account( database_i& db, const account_name_type& name, const public_key_type& key,
   const time_point_sec& time, bool mined, asset fee_for_rc_adjustment, const account_object* recovery_account = nullptr,
   asset initial_delegation = asset( 0, VESTS_SYMBOL ) )
 {
@@ -701,12 +701,12 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 
 struct comment_options_extension_visitor
 {
-  comment_options_extension_visitor( const comment_cashout_object& c, database& db ) : _c( c ), _db( db ) {}
+  comment_options_extension_visitor( const comment_cashout_object& c, database_i& db ) : _c( c ), _db( db ) {}
 
   typedef void result_type;
 
   const comment_cashout_object& _c;
-  database& _db;
+  database_i& _db;
 
 #ifdef HIVE_ENABLE_SMT
   void operator()( const allowed_vote_assets& va) const
@@ -1431,7 +1431,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
   }
 }
 
-void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
+void pre_hf20_vote_evaluator( const vote_operation& o, database_i& _db )
 {
   const auto& comment = _db.get_comment( o.author, o.permlink );
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
@@ -1724,7 +1724,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
 }
 
-void hf20_vote_evaluator( const vote_operation& o, database& _db )
+void hf20_vote_evaluator( const vote_operation& o, database_i& _db )
 {
   const auto& comment = _db.get_comment( o.author, o.permlink );
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( comment );
@@ -2087,7 +2087,7 @@ void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
 
 
 template<typename Operation>
-void pow_apply( database& db, Operation o )
+void pow_apply( database_i& db, Operation o )
 {
   const auto& dgp = db.get_dynamic_global_properties();
 
@@ -2200,7 +2200,7 @@ void pow_evaluator::do_apply( const pow_operation& o ) {
 
 void pow2_evaluator::do_apply( const pow2_operation& o )
 {
-  database& db = this->db();
+  database_i& db = this->db();
   FC_ASSERT( !db.has_hardfork( HIVE_HARDFORK_0_17__770 ), "mining is now disabled" );
 
   const auto& dgp = db.get_dynamic_global_properties();
@@ -3119,9 +3119,9 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
 struct recurrent_transfer_extension_visitor
 {
-  recurrent_transfer_extension_visitor( database& db ) : _db( db ) {}
+  recurrent_transfer_extension_visitor( database_i& db ) : _db( db ) {}
 
-  database& _db;
+  database_i& _db;
   uint8_t pair_id = 0; // default recurrent transfer id is 0
 
   typedef void result_type;
@@ -3201,7 +3201,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
 
 void witness_block_approve_evaluator::do_apply(const witness_block_approve_operation& op)
 {
-  // This transaction si /updait's handled in database::process_fast_confirm_transaction
+  // This transaction si /updait's handled in database_i::process_fast_confirm_transaction
   // and never reaches the 
   FC_ASSERT(false, "This operation may not be included in a block");
 }

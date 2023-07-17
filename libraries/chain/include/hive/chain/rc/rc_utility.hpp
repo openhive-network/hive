@@ -10,7 +10,7 @@
 namespace hive { namespace chain {
 
 class account_object;
-class database;
+class database_i;
 class remove_guard;
 struct rc_transaction_info;
 
@@ -30,7 +30,7 @@ struct rc_resource_params
 class resource_credits
 {
   public:
-    resource_credits( database& _db ) : db( _db ) {}
+    resource_credits( database_i& _db ) : db( _db ) {}
 
     enum class report_type
     {
@@ -56,7 +56,7 @@ class resource_credits
       count_resources_result& result,
       const fc::time_point_sec now );
 
-    /** scans database for state related to given operation (implemented for operation and rc_custom_operation)
+    /** scans database_i for state related to given operation (implemented for operation and rc_custom_operation)
       * see comment in definition for more details
       * Note: only selected operations consuming significant state handle differential usage
       */
@@ -111,7 +111,7 @@ class resource_credits
       uint32_t now,
       remove_guard& obj_perf ) const;
 
-    database& db;
+    database_i& db;
 };
 
 } } // hive::chain

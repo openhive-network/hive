@@ -418,7 +418,7 @@ class snapshot_processor_data : public BaseClass
 class index_dump_writer final : public snapshot_processor_data<chainbase::snapshot_writer>
   {
   public:
-    index_dump_writer(const chain::database& mainDb, const chainbase::abstract_index& index, const bfs::path& outputRootPath,
+    index_dump_writer(const chain::database_i& mainDb, const chainbase::abstract_index& index, const bfs::path& outputRootPath,
       bool allow_concurrency) :
       snapshot_processor_data<chainbase::snapshot_writer>(outputRootPath), _mainDb(mainDb), _index(index), _firstId(0), _lastId(0),
       _nextId(0), _allow_concurrency(allow_concurrency) {}
@@ -432,7 +432,7 @@ class index_dump_writer final : public snapshot_processor_data<chainbase::snapsh
       snapshot_converter_t converter) override;
     virtual void start(const workers& workers) override;
 
-    const chain::database& getMainDb() const
+    const chain::database_i& getMainDb() const
     {
       return _mainDb;
     }
@@ -440,7 +440,7 @@ class index_dump_writer final : public snapshot_processor_data<chainbase::snapsh
     void store_index_manifest(index_manifest_info* manifest) const;
 
   private:
-    const chain::database& _mainDb;
+    const chain::database_i& _mainDb;
     const chainbase::abstract_index& _index;
     std::vector <std::unique_ptr<dumping_worker>> _builtWorkers;
     size_t _firstId;
@@ -895,7 +895,7 @@ size_t index_dump_reader::getCurrentlyProcessedId() const
 
 class state_snapshot_plugin::impl final : protected chain::state_snapshot_provider
   {
-  using database = hive::chain::database;
+  //using database = hive::chain::database;
 
   public:
     impl(state_snapshot_plugin& self, const bpo::variables_map& options) :
@@ -908,7 +908,11 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
       ilog("Registering add_prepare_snapshot_handler...");
 
-      _mainDb.add_prepare_snapshot_handler([&](const database& db, const database::abstract_index_cntr_t& indexContainer) -> void
+      chainbase::database::abstract_index_cntr_t vvv;
+
+  //  ka ‘const std::function<void(const chainbase::database&, const std::vector<chainbase::abstract_index*>&)>&’}
+
+      _mainDb.add_prepare_snapshot_handler([&](const chainbase::database& db, const chainbase::database::abstract_index_cntr_t& indexContainer) -> void
         {
         std::string name = generate_name();
         prepare_snapshot(name);
@@ -937,7 +941,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
     private:
       state_snapshot_plugin&  _self;
-      database&               _mainDb;
+      hive::chain::database_i&               _mainDb;
       bfs::path               _storagePath;
       std::unique_ptr<DB>     _storage;
       std::string             _snapshot_name;

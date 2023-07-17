@@ -7,7 +7,7 @@
 
 namespace hive { namespace chain {
 
-void initialize_core_indexes_01( database& db )
+void initialize_core_indexes_01( database_i& db )
 {
   HIVE_ADD_CORE_INDEX(db, dynamic_global_property_index);
   HIVE_ADD_CORE_INDEX(db, account_index);

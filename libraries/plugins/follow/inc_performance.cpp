@@ -11,7 +11,7 @@ std::unique_ptr< dumper > dumper::self;
 
 class performance_impl
 {
-  database& db;
+  database_i& db;
 
   template< typename Object >
   uint32_t get_actual_id( const Object& it ) const;
@@ -30,7 +30,7 @@ class performance_impl
 
   public:
 
-    performance_impl( database& _db );
+    performance_impl( database_i& _db );
     ~performance_impl();
 
     template< performance_data::t_creation_type CreationType, typename Index >
@@ -38,7 +38,7 @@ class performance_impl
 };
 
 
-performance_impl::performance_impl( database& _db )
+performance_impl::performance_impl( database_i& _db )
           : db( _db )
 {
 }
@@ -195,7 +195,7 @@ uint32_t performance_impl::delete_old_objects( Index& old_idx, const account_nam
   return next_id;
 }
 
-performance::performance( database& _db )
+performance::performance( database_i& _db )
       : my( new performance_impl( _db ) )
 {
 
@@ -214,8 +214,8 @@ uint32_t performance::delete_old_objects( Index& old_idx, const account_name_typ
 }
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnonnull"
-using t_feed = decltype( ((database*)nullptr)->get_index< feed_index >().indices().get< by_feed >() );
-using t_blog = decltype( ((database*)nullptr)->get_index< blog_index >().indices().get< by_blog >() );
+using t_feed = decltype( ((database_i*)nullptr)->get_index< feed_index >().indices().get< by_feed >() );
+using t_blog = decltype( ((database_i*)nullptr)->get_index< blog_index >().indices().get< by_blog >() );
 #pragma GCC diagnostic pop
 
 template uint32_t performance::delete_old_objects< performance_data::t_creation_type::full_feed >( t_feed& old_idx, const account_name_type& start_account, uint32_t max_size, performance_data& pd ) const;

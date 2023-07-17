@@ -934,7 +934,7 @@ namespace chain {
       /**
         * Internal signal to execute deferred registration of plugin indexes.
         */
-      fc::signal<void()>                                    _plugin_index_signal;
+      public: fc::signal<void()>                                    _plugin_index_signal; private:
 
       /// <summary>
       ///  Emitted when rewards for author and curators are paid out.

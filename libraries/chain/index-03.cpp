@@ -8,7 +8,7 @@
 
 namespace hive { namespace chain {
 
-void initialize_core_indexes_03( database& db )
+void initialize_core_indexes_03( database_i& db )
 {
   HIVE_ADD_CORE_INDEX(db, block_summary_index);
   HIVE_ADD_CORE_INDEX(db, witness_schedule_index);

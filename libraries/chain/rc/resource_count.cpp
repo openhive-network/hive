@@ -22,9 +22,9 @@ struct count_differential_operation_visitor
   mutable int64_t state_bytes_count = 0;
 
   const state_object_size_info& _w;
-  const database& _db;
+  const database_i& _db;
 
-  count_differential_operation_visitor( const state_object_size_info& w, const database& db )
+  count_differential_operation_visitor( const state_object_size_info& w, const database_i& db )
     : _w( w ), _db( db )
   {}
 

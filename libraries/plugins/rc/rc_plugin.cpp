@@ -114,7 +114,7 @@ class rc_plugin_impl
       return (_db.count< rc_resource_param_object >() == 0);
     }
 
-    database&                     _db;
+    database_i&                     _db;
     rc_plugin&                    _self;
 
     std::map< account_name_type, int64_t > _account_to_max_rc;
@@ -460,14 +460,14 @@ struct pre_apply_operation_visitor
 {
   typedef void result_type;
 
-  database&                                _db;
+  database_i&                                _db;
   resource_credits                         _rc;
   uint32_t                                 _current_time = 0;
   uint32_t                                 _current_block_number = 0;
   account_name_type                        _current_witness;
   fc::optional< price >                    _vesting_share_price;
 
-  pre_apply_operation_visitor( database& db ) : _db(db), _rc( db )
+  pre_apply_operation_visitor( database_i& db ) : _db(db), _rc( db )
   {
     const auto& gpo = _db.get_dynamic_global_properties();
     _current_time = gpo.time.sec_since_epoch();
@@ -622,12 +622,12 @@ struct post_apply_operation_visitor
 {
   typedef void result_type;
 
-  database&                                _db;
+  database_i&                                _db;
   uint32_t                                 _current_time = 0;
   uint32_t                                 _current_block_number = 0;
   account_name_type                        _current_witness;
 
-  post_apply_operation_visitor( database& db ) : _db(db)
+  post_apply_operation_visitor( database_i& db ) : _db(db)
   {
     const auto& dgpo = _db.get_dynamic_global_properties();
     _current_time = dgpo.time.sec_since_epoch();
@@ -920,7 +920,7 @@ void rc_plugin::plugin_initialize( const boost::program_options::variables_map& 
 
   try
   {
-    chain::database& db = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
+    chain::database_i& db = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
 
     my->_pre_apply_block_conn = db.add_pre_apply_block_handler( [&]( const block_notification& note )
       { try { my->on_pre_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );

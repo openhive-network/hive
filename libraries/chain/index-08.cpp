@@ -6,7 +6,7 @@
 
 namespace hive { namespace chain {
 
-void initialize_core_indexes_08( database& db )
+void initialize_core_indexes_08( database_i& db )
 {
   HIVE_ADD_CORE_INDEX(db, escrow_index);
   HIVE_ADD_CORE_INDEX(db, savings_withdraw_index);

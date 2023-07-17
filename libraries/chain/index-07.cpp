@@ -6,7 +6,7 @@
 
 namespace hive { namespace chain {
 
-void initialize_core_indexes_07( database& db )
+void initialize_core_indexes_07( database_i& db )
 {
   HIVE_ADD_CORE_INDEX(db, owner_authority_history_index);
   HIVE_ADD_CORE_INDEX(db, account_recovery_request_index);

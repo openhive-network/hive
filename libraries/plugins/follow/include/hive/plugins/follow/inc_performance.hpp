@@ -7,7 +7,7 @@
 namespace hive { namespace plugins{ namespace follow {
 
 using namespace hive::chain;
-using hive::chain::database;
+using hive::chain::database_i;
 
 using hive::protocol::account_name_type;
 
@@ -113,7 +113,7 @@ class performance
 
   public:
 
-    performance( database& _db );
+    performance( database_i& _db );
     ~performance();
 
     template< performance_data::t_creation_type CreationType, typename Index >

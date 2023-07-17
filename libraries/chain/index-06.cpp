@@ -7,7 +7,7 @@
 
 namespace hive { namespace chain {
 
-void initialize_core_indexes_06( database& db )
+void initialize_core_indexes_06( database_i& db )
 {
   HIVE_ADD_CORE_INDEX(db, liquidity_reward_balance_index);
   HIVE_ADD_CORE_INDEX(db, hardfork_property_index);
