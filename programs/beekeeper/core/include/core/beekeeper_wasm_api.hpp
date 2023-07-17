@@ -38,7 +38,7 @@ class beekeeper_api
     void open( const std::string& token, const std::string& wallet_name );
     void close( const std::string& token, const std::string& wallet_name );
 
-    void set_timeout( const std::string& token, int64_t seconds );
+    void set_timeout( const std::string& token, int32_t seconds );
 
     void lock_all( const std::string& token );
     void lock( const std::string& token, const std::string& wallet_name );
