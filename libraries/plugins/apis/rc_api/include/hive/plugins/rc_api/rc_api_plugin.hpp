@@ -1,6 +1,5 @@
 #pragma once
 #include <hive/chain/hive_fwd.hpp>
-#include <hive/plugins/rc/rc_plugin.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 
 #include <appbase/application.hpp>
@@ -16,7 +15,6 @@ class rc_api_plugin : public appbase::plugin< rc_api_plugin >
 {
 public:
   APPBASE_PLUGIN_REQUIRES(
-    (hive::plugins::rc::rc_plugin)
     (hive::plugins::json_rpc::json_rpc_plugin)
   )
 
