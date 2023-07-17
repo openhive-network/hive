@@ -155,6 +155,12 @@ class resource_credits
     void on_post_apply_transaction_impl(
       const full_transaction_type& full_tx,
       const protocol::signed_transaction& tx ) const;
+    //temporary
+    void on_pre_apply_operation( const hive::protocol::operation& op ) const;
+    void on_pre_apply_operation_impl( const hive::protocol::operation& op ) const;
+    //temporary
+    void on_post_apply_operation( const hive::protocol::operation& op ) const;
+    void on_post_apply_operation_impl( const hive::protocol::operation& op ) const;
 
     std::shared_ptr< generic_custom_operation_interpreter< rc_custom_operation > > _custom_operation_interpreter;
 
