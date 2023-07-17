@@ -18,7 +18,7 @@ class remove_guard
 
     // removes given object (assuming we haven't reached limit yet), returns if it was successful
     template< typename ObjectType >
-    bool remove( database& db, const ObjectType& obj )
+    bool remove( database_i& db, const ObjectType& obj )
     {
       bool ok = step();
       if( ok )

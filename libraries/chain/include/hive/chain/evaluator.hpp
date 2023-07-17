@@ -25,7 +25,7 @@ class evaluator_impl : public evaluator<OperationType>
     typedef OperationType operation_sv_type;
     // typedef typename EvaluatorType::operation_type op_type;
 
-    evaluator_impl( database& d )
+    evaluator_impl( database_i& d )
       : _db(d) {}
 
     virtual ~evaluator_impl() {}
@@ -46,10 +46,10 @@ class evaluator_impl : public evaluator<OperationType>
       return boost::core::demangle( typeid( op ).name() );
     }
 
-    database& db() { return _db; }
+    database_i& db() { return _db; }
 
   protected:
-    database& _db;
+    database_i& _db;
 };
 
 } }
@@ -60,7 +60,7 @@ class X ## _evaluator : public hive::chain::evaluator_impl< X ## _evaluator >   
   public:                                                                                \
     typedef X ## _operation operation_type;                                              \
                                                                                          \
-    X ## _evaluator( database& db )                                                      \
+    X ## _evaluator( database_i& db )                                                      \
       : hive::chain::evaluator_impl< X ## _evaluator >( db )                             \
     {}                                                                                   \
                                                                                          \

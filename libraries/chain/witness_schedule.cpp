@@ -14,7 +14,7 @@ using hive::chain::util::rd_system_params;
 using hive::chain::util::rd_user_params;
 using hive::chain::util::rd_validate_user_params;
 
-void reset_virtual_schedule_time( database& db )
+void reset_virtual_schedule_time( database_i& db )
 { try {
   const witness_schedule_object& wso = db.has_hardfork(HIVE_HARDFORK_1_27_FIX_TIMESHARE_WITNESS_SCHEDULING) ?
                                        db.get_witness_schedule_object_for_irreversibility() : db.get_witness_schedule_object();
@@ -35,7 +35,7 @@ void reset_virtual_schedule_time( database& db )
   }
 } FC_CAPTURE_AND_RETHROW() }
 
-void update_median_witness_props(database& db, const witness_schedule_object& wso)
+void update_median_witness_props(database_i& db, const witness_schedule_object& wso)
 { try {
   /// fetch all witness objects
   vector<const witness_object*> active; active.reserve( wso.num_scheduled_witnesses );
@@ -137,7 +137,7 @@ void update_median_witness_props(database& db, const witness_schedule_object& ws
   } );
 } FC_CAPTURE_AND_RETHROW() }
 
-void update_witness_schedule4(database& db, const witness_schedule_object& wso)
+void update_witness_schedule4(database_i& db, const witness_schedule_object& wso)
 { try {
   vector< account_name_type > active_witnesses;
   active_witnesses.reserve( HIVE_MAX_WITNESSES );
@@ -388,7 +388,7 @@ void update_witness_schedule4(database& db, const witness_schedule_object& wso)
   *
   *  See @ref witness_object::virtual_last_update
   */
-void update_witness_schedule(database& db)
+void update_witness_schedule(database_i& db)
 { try {
   if( (db.head_block_num() % HIVE_MAX_WITNESSES) == 0 ) //wso.next_shuffle_block_num )
   {

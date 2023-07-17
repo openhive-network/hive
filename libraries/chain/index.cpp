@@ -2,21 +2,21 @@
 
 namespace hive { namespace chain {
 
-void initialize_core_indexes_01( database& db );
-void initialize_core_indexes_02( database& db );
-void initialize_core_indexes_03( database& db );
-void initialize_core_indexes_04( database& db );
-void initialize_core_indexes_05( database& db );
-void initialize_core_indexes_06( database& db );
-void initialize_core_indexes_07( database& db );
-void initialize_core_indexes_08( database& db );
-void initialize_core_indexes_09( database& db );
-void initialize_core_indexes_10( database& db );
-void initialize_core_indexes_11( database& db );
-void initialize_core_indexes_12( database& db );
-void initialize_core_indexes_13( database& db );
+void initialize_core_indexes_01( database_i& db );
+void initialize_core_indexes_02( database_i& db );
+void initialize_core_indexes_03( database_i& db );
+void initialize_core_indexes_04( database_i& db );
+void initialize_core_indexes_05( database_i& db );
+void initialize_core_indexes_06( database_i& db );
+void initialize_core_indexes_07( database_i& db );
+void initialize_core_indexes_08( database_i& db );
+void initialize_core_indexes_09( database_i& db );
+void initialize_core_indexes_10( database_i& db );
+void initialize_core_indexes_11( database_i& db );
+void initialize_core_indexes_12( database_i& db );
+void initialize_core_indexes_13( database_i& db );
 
-void initialize_core_indexes( database& db )
+void initialize_core_indexes( database_i& db )
 {
   initialize_core_indexes_01( db );
   initialize_core_indexes_02( db );

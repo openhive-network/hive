@@ -34,13 +34,13 @@ class delayed_voting
 
   private:
 
-    chain::database& db;
+    chain::database_i& db;
 
     void erase_delayed_value( const account_object& account, const ushare_type val );
 
   public:
 
-    delayed_voting( chain::database& _db ) : db( _db ){}
+    delayed_voting( chain::database_i& _db ) : db( _db ){}
 
     void add_delayed_value( const account_object& account, const time_point_sec& head_time, const ushare_type val );
     void add_votes( opt_votes_update_data_items& items, const bool withdraw_executor, const share_type& val, const account_object& account );

@@ -15,7 +15,7 @@ class dhf_helper
   public:
     // removes votes cast for proposals by given account (as long as we are within limit), returns if the process was successful
     static bool remove_proposal_votes( const account_object& voter, const proposal_vote_index::index<by_voter_proposal>::type& proposal_votes,
-      database& db, remove_guard& obj_perf )
+      database_i& db, remove_guard& obj_perf )
     {
       auto pVoteI = proposal_votes.lower_bound( boost::make_tuple( voter.get_name(), 0 ) );
       while( pVoteI != proposal_votes.end() && pVoteI->voter == voter.get_name() )
@@ -30,7 +30,7 @@ class dhf_helper
 
     // removes votes cast for given proposal (as long as we are within limit), returns if the process was successful
     static bool remove_proposal_votes( const proposal_object& proposal, const proposal_vote_index::index<by_proposal_voter>::type& proposal_votes,
-      database& db, remove_guard& obj_perf )
+      database_i& db, remove_guard& obj_perf )
     {
       auto pVoteI = proposal_votes.lower_bound( boost::make_tuple( proposal.proposal_id, account_name_type() ) );
       while( pVoteI != proposal_votes.end() && pVoteI->proposal_id == proposal.proposal_id )
@@ -45,13 +45,13 @@ class dhf_helper
 
     // removes given proposal with all related votes (as long as we are within limit), returns if the process was successful
     static bool remove_proposal( const proposal_object& proposal, const proposal_vote_index::index<by_proposal_voter>::type& proposal_votes,
-      database& db, remove_guard& obj_perf )
+      database_i& db, remove_guard& obj_perf )
     {
       remove_proposal_votes( proposal, proposal_votes, db, obj_perf );
       return obj_perf.remove( db, proposal );
     }
 
-    static void remove_proposals( database& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner );
+    static void remove_proposals( database_i& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner );
 };
 
 } } // hive::chain

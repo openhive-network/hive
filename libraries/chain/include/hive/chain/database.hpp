@@ -50,6 +50,7 @@ namespace chain {
   struct prepare_snapshot_supplement_notification;
   struct load_snapshot_supplement_notification;
 
+  class database_i;
   class database;
 
   struct hardfork_versions
@@ -105,11 +106,11 @@ namespace chain {
     *   @class database
     *   @brief tracks the blockchain state in an extensible manner
     */
-  class database : public chainbase::database
+  class database_i : public chainbase::database
   {
     public:
-      database();
-      ~database();
+      database_i();
+      ~database_i();
 
       enum transaction_status
       {
@@ -945,6 +946,11 @@ namespace chain {
         *  This signal is emitted when pushing block is completely finished
         */
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
+  };
+
+  class database : public database_i
+  {
+    public:
   };
 
   struct reindex_notification

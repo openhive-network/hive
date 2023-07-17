@@ -44,7 +44,7 @@ struct skip_flags_restorer
   */
 template< typename Lambda >
 void with_skip_flags(
-  database& db,
+  database_i& db,
   uint32_t skip_flags,
   Lambda callback )
 {
@@ -64,7 +64,7 @@ void with_skip_flags(
   */
 struct pending_transactions_restorer
 {
-  pending_transactions_restorer( database& db, const block_flow_control& block_ctrl, std::vector<std::shared_ptr<full_transaction_type>>&& pending_transactions )
+  pending_transactions_restorer( database_i& db, const block_flow_control& block_ctrl, std::vector<std::shared_ptr<full_transaction_type>>&& pending_transactions )
     : _db(db), _block_ctrl( block_ctrl ), _pending_transactions( std::move(pending_transactions) )
   {
     _db.clear_pending();
@@ -171,7 +171,7 @@ struct pending_transactions_restorer
     }
   }
 
-  database& _db;
+  database_i& _db;
   const block_flow_control& _block_ctrl;
   std::vector<std::shared_ptr<full_transaction_type>> _pending_transactions;
 };
@@ -183,7 +183,7 @@ struct pending_transactions_restorer
   * Pending transactions which no longer validate will be culled.
   */
 template<typename Lambda>
-void without_pending_transactions(database& db,
+void without_pending_transactions(database_i& db,
                                   const block_flow_control& block_ctrl,
                                   std::vector<std::shared_ptr<full_transaction_type>>&& pending_transactions,
                                   Lambda callback)
