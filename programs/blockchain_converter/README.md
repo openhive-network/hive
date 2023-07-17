@@ -29,9 +29,6 @@ You can choose a conversion method by using the `plugin` option.
 `block_log_conversion` plugin relies on the `block_log` files.
 As the `input` option value you will have to specify a path to a non-empty input original block_log file and as the `output` option value you should specify a path to an output `block_log` file that will contain converted blockchain.
 
-#### `iceberg_generate`
-`iceberg_generate` works just like [`block_log_conversion`](#block_log_conversion) plugin, but converts only a given range of blocks, generating required information in order for converted operations to work, like creating non-existing accounts, posts (comments), etc.
-
 #### `node_based_conversion`
 `node_based_conversion` plugin relies on the remote nodes.
 As the `input` option value you will have to specify an URL to the original input mainnet node (make sure that given node uses block API and database API) and as the `output` option value you should specify URLs to the nodes with altered chain (make sure that given nodes use condenser API).
@@ -63,6 +60,24 @@ Notes:
 * This conversion tool currently does not support `https` protocol and chunked transfer encoding in API node responses
 * Last irreversible block for the [TaPoS](https://github.com/EOSIO/Documentation/blob/master/TechnicalWhitePaper.md#transaction-as-proof-of-stake-tapos) generation is always taken from the first of the specified output nodes
 
+#### `iceberg_generate`
+`iceberg_generate` works just like [`block_log_conversion`](#block_log_conversion) plugin, but converts only a given range of blocks, generating required information in order for converted operations to work, like creating non-existing accounts, posts (comments), etc.
+
+There are basically 3 stages of the iceberg conversion:
+1. Preparing blockchain for the conversion:
+  - Waiting for more than 1 witness to appear in the blockchain
+  - Updating properties of the witnesses to maximalize generated blocks size and set lowest possible account creation fee
+  - Waiting for the properties to be applied
+2. Collector stage:
+  - Collecting dependent accounts and comments and creating them
+  - Testing if there is enough supply
+3. Conversion stage:
+  - Converts blocks and transmits them to the output node
+
+Notes:
+- Transaction expiration time is always set to half of the maximum expiration time, instead of the formula mentioned in the [`node_based_conversion`](#node_based_conversion)
+- Iceberg conversion requires creating treasury accounts and forcing some internal `hived` logic. That is why **blockchain converter with `iceberg generate` plugin MUST be configured under cmake using option `-DHIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED=ON`**
+
 ### Multithreading support
 Signing transactions takes a relatively large amount of time, so this tool enables multithreading support.
 By default, it uses only 1 signing thread. If you want to increase this value, use the `jobs` option and specify the number of signing threads.
@@ -85,23 +100,23 @@ To log every n blocks use the `log-per-block` option or log only specific blocks
 ## Example run
 #### block_log_conversion plugin
 Convert `block_log` file and dump the output to `new_fancy_block_log` file, alter chain to use the id `1`, sign blocks using witness private key: `5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n`. This key will be also used as a second authority key for every user:
-```
+```bash
 blockchain_converter --plugin block_log_conversion --input block_log --output new_fancy_block_log --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
 ```
 Note: block_log_conversion plugin increases the block size by default to the `HIVE_MAX_BLOCK_SIZE` (2 MiB) using the `witness_update` and `witness_set_properties` operations. After replay you can change this using your witness and run node_based_conversion normally without the increase in blocks size
-
-#### iceberg_generate plugin
-Convert blocks in 100000-200000 range from the `block_log` file and dump the output to `new_fancy_block_log` file, alter chain to use the id `1`, sign blocks using witness private key: `5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n`. This key will be also used as a second authority key for every user:
-```
-blockchain_converter --plugin iceberg_generate --resume-block 100000 --stop-block 200000 --input block_log --output new_fancy_block_log --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
-```
-Note: Block size will be increased just like in the [`block_log_conversion` plugin example run](#block_log_conversion-plugin). Also additional operations will be added (See [iceberg_generate](#iceberg_generate)).
 
 #### node_based_conversion plugin
 Convert blocks from `api.deathwing.me` and send converted transactions to `127.0.0.1` node with same private keys and chain id as in the [block_log_conversion plugin example run](#block_log_conversion%20plugin)
 ```
 blockchain_converter --plugin node_based_conversion --input 'http://api.deathwing.me:80' --output 'http://127.0.0.1:80' --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
 ```
+
+#### iceberg_generate plugin
+Convert blocks in 100000-200000 range from the `block_log` file and dump the output to `http://127.0.0.1:8081` node, alter chain to use the id `1`, sign blocks using witness private key: `5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n`. This key will be also used as a second authority key for every user:
+```bash
+blockchain_converter --plugin iceberg_generate --resume-block 100000 --stop-block 200000 --input block_log --output http://127.0.0.1:8081 --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
+```
+Note: Block size will be increased just like in the [`block_log_conversion` plugin example run](#block_log_conversion-plugin). Also additional operations will be added (See [`iceberg_generate`](#iceberg_generate)).
 
 ## Configuring **live** conversion
 If you have successfully replayed your converted blockchain as described in [Configuring altered P2P network](#Configuring%20altered%20P2P%20network), you can now run a live peer-to-peer network using previously mentioned [node_based_conversion plugin](#node_based_conversion%20plugin)
@@ -111,7 +126,7 @@ Our goal is to run one node with the altered chain in live sync, signing and pro
 Assuming that you are using one of the previously configured nodes, for example `alice-hived`, do the following:
 
 Alter the configuration file by adding the http server and required APIs (`alice-data/config.ini`):
-```
+```ini
 # http server
 webserver-http-endpoint = localhost:8800
 
@@ -119,12 +134,12 @@ webserver-http-endpoint = localhost:8800
 plugin = block_api database_api network_broadcast_api
 ```
 Then run the node:
-```
+```bash
 alice-hived -d alice-data --chain-id 1
 ```
 
 Just after running the first node, configure the second one (Bob) with P2P endpoint and seeds. You should also add the rest of the witnesses:
-```
+```ini
 # Enable the `witness` plugin
 plugin = witness
 
@@ -148,17 +163,17 @@ witness="good-karma"
 private-key=5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
 ```
 Then run this node:
-```
+```bash
 bob-hived -d bob-data --chain-id 1
 ```
 
 After running the second node, stop the first one, open its configuration (Alice configuration) and add a seed node:
-```
+```ini
 # Bob node:
 p2p-seed-node=127.0.0.1:40402
 ```
 Re-run the node (Alice):
-```
+```bash
 alice-hived -d alice-data --chain-id 1
 ```
 
@@ -180,10 +195,10 @@ For that purpose, we will build and configure two nodes (remember to enable the 
 
 First, you will have to replay nodes using the same altered `block_log` file (copy the converted block log to the `data/blockchain` directory).
 Also, we do not want them to synchronize with the network yet, so we will have to use the `exit-before-sync` flag:
-```
+```bash
 alice-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1 --skeleton-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
 ```
-```
+```bash
 bob-hived -d alice-data --replay-blockchain --exit-before-sync --chain-id 1 --skeleton-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
 ```
 (Do not forget about the [skeleton key](#Skeleton%20key)!)
@@ -193,7 +208,7 @@ Remember the last irreversible block number.
 Now retrieve the main 21 witnesses. You can do that by - for example - iterating through the last 21 blocks starting from the last irreversible block (you can find this data on e.g. [hiveblocks.com](hiveblocks.com)).
 
 Then apply the proper config in your configuration file for the first node (add just one witness) (for example, it will be `gtg`):
-```
+```ini
 # Enable the `witness` plugin
 plugin = witness
 
@@ -213,12 +228,12 @@ witness="gtg"
 private-key=5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
 ```
 Then you should run the first node (Alice):
-```
+```bash
 alice-hived -d alice-data --chain-id 1 --skeleton-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
 ```
 
 After that run the blockchain converter:
-```
+```bash
 blockchain_converter --plugin node_based_conversion --input 'http://api.deathwing.me:80' --output 'http://127.0.0.1:80' --chain-id 1 --private-key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --use-same-key
 ```
 As the input node we are using `https://api.deathwing.me:80`. You can use any fully-replayed mainnet node that has an HTTP webserver.
@@ -227,8 +242,50 @@ It is also recommended to set the `-R` option, which explicitly tells the conver
 
 Now your converter will infinitely send the transactions to the output node. After reaching the head mainnet block, it will check for the new block every 1 second.
 
+## Configuring **iceberg** node
+
+Assuming that the hived `data` directory is located under: `$(pwd)/data`:
+
+[`iceberg_generate`](#iceberg_generate) plugin may require adding alternate chain specification. You can use this helper script to create required 16 + `initminer` (17 in total) witnesses, and also alter some of the hive definitions:
+
+```bash
+#!/bin/bash
+
+cat << EOT > data/alternate-chain-spec.json
+{
+  "init_supply": 1000000000000,
+  "hbd_init_supply": 1000000000000,
+  "genesis_time": $(date +%s),
+  "hardfork_schedule": [
+    {"hardfork": 28, "block_num": 1}
+  ],
+  "min_root_comment_interval": 0,
+  "min_reply_interval": 0,
+  "min_comment_edit_interval": 0,
+  "witness_custom_op_block_limit": 10000000,
+  "init_witnesses": [
+    "uknwn.wit01", "uknwn.wit02", "uknwn.wit03", "uknwn.wit04", "uknwn.wit05", "uknwn.wit06"
+    "uknwn.wit07", "uknwn.wit08", "uknwn.wit09", "uknwn.wit10", "uknwn.wit11", "uknwn.wit12",
+    "uknwn.wit13", "uknwn.wit14", "uknwn.wit15", "uknwn.wit16"
+  ]
+}
+EOT
+
+./hived -d data --chain-id 9372 --skeleton-key=5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n --alternate-chain-spec data/alternate-chain-spec.json
+```
+Given configuration sets the initial supply, comment options, genesis time, and ensures that HF28 will be applied in the genesis block. You can specify your own hardfork schedule if you are converting different range of blocks (like HF1 for range `906000` - `907000`).
+
+After creating and configuring the script you can run the P2P network in the very similar way how it is presented in [Configuring altered P2P network](#configuring-altered-p2p-network). Remember to add given plugins to the configuration of either first output node or all them:
+```ini
+plugin = account_by_key account_by_key_api transaction_status_api
+```
+
+After that, your hived network is ready to be used with the [`iceberg_generate`](#iceberg_generate) plugin
+
 ### node_based_conversion debug definitions
 If the node_based_conversion plugin encounters any error after sending the convert transaction to the output node, it will print the short message.
 You can disable this by defining the `HIVE_CONVERTER_TRANSMIT_SUPPRESS_WARNINGS` identifier
 
 You can also enable additional debug info by defining the `HIVE_CONVERTER_TRANSMIT_DETAILED_LOGGING` identifier
+
+`HIVE_CONVERTER_POST_COUNT_ERRORS` - counts errors and their types and displays them at the program shutdown
