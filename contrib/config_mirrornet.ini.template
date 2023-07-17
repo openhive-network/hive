@@ -6,7 +6,6 @@ backtrace = yes
 plugin = webserver p2p json_rpc
 plugin = database_api condenser_api
 plugin = witness
-plugin = rc
 plugin = block_api network_broadcast_api rc_api
 plugin = state_snapshot
 
