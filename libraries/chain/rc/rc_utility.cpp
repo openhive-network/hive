@@ -741,10 +741,6 @@ void resource_credits::set_pool_params( const witness_schedule_object& wso ) con
 {
   //hardfork needs to be tested outside because the routine is actually also used right before HF20 activates
 
-  //temporary check until testnet also activates RC on HF20 instead of arbitrary block:
-  if( db.count< rc_resource_param_object >() == 0 )
-    return;
-
   const auto& rc_params = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
   if( rc_params.resource_param_array[ resource_new_accounts ].resource_dynamics_params != wso.account_subsidy_rd )
   {
