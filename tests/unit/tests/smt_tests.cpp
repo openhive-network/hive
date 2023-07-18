@@ -18,7 +18,7 @@ FC_TODO(Extend testing scenarios to support multiple NAIs per account)
 
 #include <hive/chain/util/smt_token.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 using namespace hive::chain;
 using namespace hive::protocol;

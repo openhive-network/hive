@@ -17,7 +17,7 @@
 #include <hive/chain/util/nai_generator.hpp>
 #include <hive/chain/util/smt_token.hpp>
 
-#include "../db_fixture/database_fixture.hpp"
+#include "../db_fixture/clean_database_fixture.hpp"
 
 #include <fc/uint128.hpp>
 

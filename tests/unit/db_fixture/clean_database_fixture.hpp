@@ -94,7 +94,7 @@ struct t_smt_database_fixture : public T
 };
 
 using smt_database_fixture = t_smt_database_fixture< clean_database_fixture >;
-using smt_database_fixture_for_plugin = t_smt_database_fixture< database_fixture >;
+using smt_database_fixture_for_plugin = t_smt_database_fixture< hived_fixture >;
 
 #endif
 
