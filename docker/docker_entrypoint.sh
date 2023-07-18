@@ -1,8 +1,6 @@
 #! /bin/bash
 
-set -xeuo pipefail
-
-env
+set -euo pipefail
 
 if [ "${HIVED_UID}" -ne 0 ];
 then
@@ -38,13 +36,16 @@ source "$SCRIPTSDIR/common.sh"
 cleanup () {
   echo "Performing cleanup...."
   hived_pid=$(pidof 'hived')
-  echo "Hived pid: $hived_pid"
-  
-  sudo -n kill -INT $hived_pid
+  if [ "${hived_pid}" -ne 0 ];
+  then
+    echo "Hived pid: $hived_pid"
 
-  echo "Waiting for hived finish..."
-  tail --pid=$hived_pid -f /dev/null || true
-  echo "Hived finish done."
+    sudo -n kill -INT $hived_pid
+
+    echo "Waiting for hived finish..."
+    tail --pid=$hived_pid -f /dev/null || true
+    echo "Hived finish done."
+  fi
 
   echo "Cleanup actions done."
 }
@@ -83,5 +84,5 @@ echo "waiting for job finish: $job_pid."
 status=0
 wait $job_pid || status=$?
 
-echo "Exiting docker entrypoint..."
+echo "Exiting docker entrypoint: $status"
 exit $status
