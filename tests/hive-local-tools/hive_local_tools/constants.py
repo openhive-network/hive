@@ -98,3 +98,5 @@ filters_enum_virtual_ops = {
     "proxy_cleared_operation": 0x20000000000,
     "declined_voting_rights_operation": 0x40000000000,
 }
+
+MIN_RECURRENT_TRANSFERS_RECURRENCE = 24
