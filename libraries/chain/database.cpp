@@ -1336,8 +1336,12 @@ void database_i::_push_transaction(const std::shared_ptr<full_transaction_type>&
   * Removes the most recent block from the database and
   * undoes any changes it made.
   */
+
+ static int counter = 0;
+
 void database_i::pop_block()
 {
+  
   try
   {
     try
@@ -1347,12 +1351,65 @@ void database_i::pop_block()
     FC_CAPTURE_AND_RETHROW()
 
     block_id_type head_id = head_block_id();
-
+    
+    counter++;
+    if(counter == 11)
+    {
+      int a= 0;
+      a=a;
+    }
     /// save the head block so we can recover its transactions
     std::shared_ptr<full_block_type> full_head_block;
     try
     {
       full_head_block = fetch_block_by_id(head_id);
+
+      std::shared_ptr<full_block_type> mtlk_improved_full_head_block = _fork_db.head()->full_block;
+      
+      std::shared_ptr<full_block_type> mtlk_improved_full_head_block_newest;
+
+      {
+       shared_ptr<fork_item> fork_item = _fork_db.fetch_block( head_id );
+        if (fork_item)
+        {
+            mtlk_improved_full_head_block_newest =  fork_item->full_block;
+        }
+        else
+        {
+          int a = 0;
+          a = a;
+        }
+      }
+
+      if(mtlk_improved_full_head_block == full_head_block ) //mtlk replaced //full_head_block = fetch_block_by_id(head_id);
+      {
+        int a = 0;
+        a=a;
+      }
+      else if(mtlk_improved_full_head_block && full_head_block)
+      {
+        auto full_head_block_id  = full_head_block->get_block_id();
+        auto mtlk_full_head_block_id =  mtlk_improved_full_head_block->get_block_id();
+
+        if( full_head_block_id == mtlk_full_head_block_id )
+        {
+          int a = 0;
+          a=a;
+        }else
+        {
+          int b = 0;
+          b=b;
+        }
+
+      }
+      else
+      {
+        int c = 0;
+        c=c;
+      }
+
+      full_head_block = mtlk_improved_full_head_block_newest;
+
     }
     FC_CAPTURE_AND_RETHROW()
 
