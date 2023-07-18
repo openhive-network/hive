@@ -51,30 +51,64 @@ add_hived_arg() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --webserver-http-endpoint=*)
+   --webserver-http-endpoint=*)
         HTTP_ENDPOINT="${1#*=}"
         add_docker_arg "--publish=${HTTP_ENDPOINT}:8090"
         ;;
+   --webserver-http-endpoint) 
+        shift
+        HTTP_ENDPOINT="${1}"
+        add_docker_arg "--publish=${HTTP_ENDPOINT}:8090"
+        ;;
+
     --webserver-ws-endpoint=*)
         WS_ENDPOINT="${1#*=}"
         add_docker_arg "--publish=${WS_ENDPOINT}:8091"
         ;;
+    --webserver-ws-endpoint)
+        shift
+        WS_ENDPOINT="${1}"
+        add_docker_arg "--publish=${WS_ENDPOINT}:8091"
+        ;;
+
     --p2p-endpoint=*)
         P2_ENDPOINT="${1#*=}"
         add_docker_arg "--publish=${P2_ENDPOINT}:2001"
         ;;
+    --p2p-endpoint)
+        shift
+        P2_ENDPOINT="${1}"
+        add_docker_arg "--publish=${P2_ENDPOINT}:2001"
+        ;;
+
     --data-dir=*)
         HIVED_DATADIR="${1#*=}"
+        add_docker_arg "-v ${HIVED_DATADIR}:/home/hived/datadir/"
+        ;;
+    --data-dir)
+        shift
+        HIVED_DATADIR="${1}"
         add_docker_arg "-v ${HIVED_DATADIR}:/home/hived/datadir/"
         ;;
 
     --shared-file-dir=*)
         HIVED_SHM_FILE_DIR="${1#*=}"
         ;;
+    --shared-file-dir)
+        shift
+        HIVED_SHM_FILE_DIR="${1}"
+        ;;
+
      --name=*)
         CONTAINER_NAME="${1#*=}"
         echo "Container name is: $CONTAINER_NAME"
         ;;
+     --name)
+        shift
+        CONTAINER_NAME="${1}"
+        echo "Container name is: $CONTAINER_NAME"
+        ;;
+
     --detach)
       add_docker_arg "--detach"
       ;;
@@ -82,7 +116,13 @@ while [ $# -gt 0 ]; do
     --docker-option=*)
         option="${1#*=}"
         add_docker_arg "$option"
+        ;;
+    --docker-option)
+        shift
+        option="${1}"
+        add_docker_arg "$option"
         ;; 
+
     --help)
         print_help
         exit 0
