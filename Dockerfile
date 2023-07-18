@@ -123,6 +123,8 @@ COPY --chown=hived_admin:users ./docker/docker_entrypoint.sh .
 
 VOLUME [ "/home/hived/datadir", "/home/hived/shm_dir" ]
 
+# Always define default value of HIVED_UID variable to make possible direct spawn of docker image (without run_hived_img.sh wrapper)
+ENV HIVED_UID=1000
 ENV DATADIR=/home/hived/datadir
 ENV SHM_DIR=/home/hived/shm_dir
 
