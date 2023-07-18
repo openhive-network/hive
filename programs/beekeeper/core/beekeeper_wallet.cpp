@@ -1,6 +1,7 @@
 #include <core/beekeeper_wallet.hpp>
 
 #include <hive/protocol/misc_utilities.hpp>
+#include <hive/protocol/transaction.hpp>
 
 #include <fstream>
 
@@ -112,19 +113,14 @@ public:
     return it->second.sign_compact( sig_digest );
   }
 
-  std::optional<signature_type> try_sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest )
+  std::optional<signature_type> try_sign_transaction( const string& transaction/*JSON form*/, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest )
   {
-    digest_type::encoder enc;
-
-    fc::variant _trx( transaction );
-    std::vector<char> _v;
-    from_variant( _trx, _v );
-
     hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
-    fc::raw::pack( enc, chain_id );
-    enc.write( _v.data(), _v.size() );
 
-    digest_type _sig_digest = enc.result();
+    hive::protocol::transaction _trx = fc::json::from_string( transaction ).as<hive::protocol::transaction>();
+    std::string _trx_serialized = fc::to_hex( fc::raw::pack_to_vector( _trx ) );
+
+    hive::protocol::digest_type _sig_digest = _trx.sig_digest( chain_id, hive::protocol::pack_type::hf26 );
     FC_ASSERT( _sig_digest == sig_digest, "Calculated digest ${_sig_digest} differs from given digest ${sig_digest}",(_sig_digest)(sig_digest) );
 
     return try_sign_digest( public_key, sig_digest );
