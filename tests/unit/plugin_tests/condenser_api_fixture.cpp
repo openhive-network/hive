@@ -59,21 +59,13 @@ condenser_api_fixture::condenser_api_fixture()
 condenser_api_fixture::~condenser_api_fixture()
 {
   try {
+    // Reset configuration changes.
     configuration_data.reset_cashout_values();
     configuration_data.reset_feed_values();
     configuration_data.reset_savings_values();
     configuration_data.reset_recurrent_transfers_values();
     configuration_data.set_generate_missed_block_operations( false );
     configuration_data.set_witness_shutdown_threshold( HIVE_BLOCKS_PER_DAY ); // reset to default value
-
-    // If we're unwinding due to an exception, don't do any more checks.
-    // This way, boost test's last checkpoint tells us approximately where the error was.
-    if( !std::uncaught_exceptions() )
-    {
-      BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
-    }
-
-    return;
   } FC_CAPTURE_AND_LOG( () )
 }
 

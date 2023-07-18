@@ -56,19 +56,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
   return;
 }
 
-clean_database_fixture::~clean_database_fixture()
-{ try {
-  // If we're unwinding due to an exception, don't do any more checks.
-  // This way, boost test's last checkpoint tells us approximately where the error was.
-  if( !std::uncaught_exceptions() )
-  {
-    BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
-  }
-
-  return;
-} FC_CAPTURE_AND_LOG( () )
-  exit(1);
-}
+clean_database_fixture::~clean_database_fixture() {}
 
 void clean_database_fixture::validate_database()
 {

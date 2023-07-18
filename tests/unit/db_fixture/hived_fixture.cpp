@@ -18,7 +18,21 @@ hived_fixture::hived_fixture() {}
 
 hived_fixture::~hived_fixture() 
 {
-  appbase::app().finish(); // performs plugin shutdown too
+  try {
+    appbase::app().finish(); // performs plugin shutdown too
+
+    if( !std::uncaught_exceptions() )
+    {
+      // If we're exiting nominally, check that skip flags have been restored.
+      BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
+      return;
+    }
+
+    // If we're unwinding due to an exception, don't do any more checks.
+  } FC_CAPTURE_AND_LOG( () )
+
+  // Do not continue testing either.
+  exit(1);
 }
 
 void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg_overrides )
@@ -147,17 +161,7 @@ json_rpc_database_fixture::json_rpc_database_fixture()
   return;
 }
 
-json_rpc_database_fixture::~json_rpc_database_fixture()
-{
-  // If we're unwinding due to an exception, don't do any more checks.
-  // This way, boost test's last checkpoint tells us approximately where the error was.
-  if( !std::uncaught_exceptions() )
-  {
-    BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
-  }
-  
-  return;
-}
+json_rpc_database_fixture::~json_rpc_database_fixture() {}
 
 fc::variant json_rpc_database_fixture::get_answer( std::string& request )
 {
