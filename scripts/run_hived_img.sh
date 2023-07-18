@@ -53,22 +53,22 @@ while [ $# -gt 0 ]; do
   case "$1" in
    --webserver-http-endpoint=*)
         HTTP_ENDPOINT="${1#*=}"
-        add_docker_arg "--publish=${HTTP_ENDPOINT}:8090"
+        add_docker_arg "--publish=${HTTP_ENDPOINT}:8091"
         ;;
    --webserver-http-endpoint) 
         shift
         HTTP_ENDPOINT="${1}"
-        add_docker_arg "--publish=${HTTP_ENDPOINT}:8090"
+        add_docker_arg "--publish=${HTTP_ENDPOINT}:8091"
         ;;
 
     --webserver-ws-endpoint=*)
         WS_ENDPOINT="${1#*=}"
-        add_docker_arg "--publish=${WS_ENDPOINT}:8091"
+        add_docker_arg "--publish=${WS_ENDPOINT}:8090"
         ;;
     --webserver-ws-endpoint)
         shift
         WS_ENDPOINT="${1}"
-        add_docker_arg "--publish=${WS_ENDPOINT}:8091"
+        add_docker_arg "--publish=${WS_ENDPOINT}:8090"
         ;;
 
     --p2p-endpoint=*)
