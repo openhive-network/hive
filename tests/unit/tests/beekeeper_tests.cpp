@@ -555,29 +555,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
 
       if (fc::exists("0.wallet")) fc::remove("0.wallet");
 
-      auto _private_key_str = "5JEADfzTuGSkZidDV5DJYjayK5YXd4CxGtvTi84g7CzfLMGzhk7";
-      auto _public_key_str  = "86iMbKqHgJMwWLfAnm2NbDe44HsjajJnCM38EAor9gFvLgFyaW";
+      auto _private_key_str = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
+      auto _public_key_str  = "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
 
       const auto _private_key = private_key_type::wif_to_key( _private_key_str ).value();
       const auto _public_key = public_key_type::from_base58( _public_key_str, false/*is_sha256*/ );
-
-      hive::protocol::digest_type _sig_digest;
-      std::string _trx_serialized;
-
-      hive::protocol::transfer_operation _op;
-      _op.to     = "alice";
-      _op.from   = "bob";
-      _op.amount = hive::protocol::asset( 6, HIVE_SYMBOL );
-
-      hive::protocol::transaction _trx;
-      _trx.operations.push_back( _op );
-
-      _sig_digest = _trx.sig_digest( HIVE_CHAIN_ID, hive::protocol::pack_type::hf26 );
-      _trx_serialized = fc::to_hex( fc::raw::pack_to_vector( _trx ) );
-
-      auto _trx_str = fc::json::to_string( _trx );
-
-      auto _signature_00 = _private_key.sign_compact( _sig_digest );
 
       const std::string _port = "127.0.0.1:666";
       const std::string _dir = ".";
@@ -592,15 +574,28 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
       auto _imported_public_key = wm.import_key( _token, "0", _private_key_str );
       BOOST_REQUIRE( _imported_public_key == _public_key_str );
 
-      auto _signature_01 = wm.sign_transaction( _token, _trx_serialized, HIVE_CHAIN_ID, _public_key, _sig_digest );
+      auto _calculate_signature = [&]( const std::string& json_trx, const std::string& signature_pattern )
+      {
+        hive::protocol::transaction _trx = fc::json::from_string( json_trx ).as<hive::protocol::transaction>();
+        hive::protocol::digest_type _sig_digest = _trx.sig_digest( HIVE_CHAIN_ID, hive::protocol::pack_type::hf26 );
 
-      auto _signature_00_str = fc::json::to_string( _signature_00 );
-      auto _signature_01_str = fc::json::to_string( _signature_01 );
+        auto _signature_local = _private_key.sign_compact( _sig_digest );
+        auto _signature_beekeeper = wm.sign_transaction( _token, json_trx, HIVE_CHAIN_ID, _public_key, _sig_digest );
 
-      BOOST_TEST_MESSAGE( _signature_00_str );
-      BOOST_TEST_MESSAGE( _signature_01_str );
-      BOOST_REQUIRE( _signature_00 == _signature_01 );
+        auto _local = fc::json::to_string( _signature_local );
+        auto _beekeeper = fc::json::to_string( _signature_beekeeper );
+        BOOST_TEST_MESSAGE( _local );
+        BOOST_TEST_MESSAGE( _beekeeper );
+        BOOST_REQUIRE( _local.substr( 1, _local.size() - 2 )          == signature_pattern );
+        BOOST_REQUIRE( _beekeeper.substr( 1, _beekeeper.size() - 2 )  == signature_pattern );
+      };
 
+      std::string _signature_00_result = "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21";
+      _calculate_signature( "{}", _signature_00_result );
+
+      std::string _signature_01_result = "1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340";
+      _calculate_signature( "{\"ref_block_num\":95,\"ref_block_prefix\":4189425605,\"expiration\":\"2023-07-18T08:38:29\",\"operations\":[{\"type\":\"transfer_operation\",\"value\":{\"from\":\"initminer\",\"to\":\"alice\",\"amount\":{\"amount\":\"666\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"memmm\"}}],\"extensions\":[],\"signatures\":[],\"transaction_id\":\"cc9630cdbc39da1c9b6264df3588c7bedb5762fa\",\"block_num\":0,\"transaction_num\":0}",
+                            _signature_01_result );
     }
 
   } FC_LOG_AND_RETHROW()
@@ -774,46 +769,40 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
     }
 
     {
-      hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
+      _obj.unlock( _token, "wallet_0", _password_0 );
 
-      auto _private_key_str = "5KNbAE7pLwsLbPUkz6kboVpTR24CycqSNHDG95Y8nbQqSqd6tgS";
-      auto _public_key_str  = "7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH";
+      auto _private_key_str = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
+      auto _public_key_str  = "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
 
       const auto _private_key = private_key_type::wif_to_key( _private_key_str ).value();
 
-      _obj.unlock( _token, "wallet_1", _password_1 );
+      auto _calculate_signature = [&]( const std::string& json_trx, const std::string& signature_pattern )
+      {
+        hive::protocol::transaction _trx = fc::json::from_string( json_trx ).as<hive::protocol::transaction>();
+        hive::protocol::digest_type _sig_digest = _trx.sig_digest( HIVE_CHAIN_ID, hive::protocol::pack_type::hf26 );
 
-      hive::protocol::digest_type _sig_digest;
-      std::string _trx_serialized;
+        auto _signature_local = _private_key.sign_compact( _sig_digest );
 
-      hive::protocol::transfer_operation _op;
-      _op.to     = "xyz17";
-      _op.from   = "zyx17";
-      _op.amount = hive::protocol::asset( 5, HIVE_SYMBOL );
+        auto _signature_beekeeper = fc::json::from_string( _obj.sign_digest( _token, _public_key_str, _sig_digest ) ).as<beekeeper::signature_return>();
+        auto _signature_beekeeper_2 = fc::json::from_string( _obj.sign_transaction( _token, json_trx, HIVE_CHAIN_ID, _public_key_str, _sig_digest ) ).as<beekeeper::signature_return>();
 
-      hive::protocol::transaction _trx;
-      _trx.operations.push_back( _op );
+        auto _local = fc::json::to_string( _signature_local );
+        auto _beekeeper = fc::json::to_string( _signature_beekeeper.signature );
+        auto _beekeeper_2 = fc::json::to_string( _signature_beekeeper_2.signature );
+        BOOST_TEST_MESSAGE( _local );
+        BOOST_TEST_MESSAGE( _beekeeper );
+        BOOST_TEST_MESSAGE( _beekeeper_2 );
+        BOOST_REQUIRE( _local.substr( 1, _local.size() - 2 )              == signature_pattern );
+        BOOST_REQUIRE( _beekeeper.substr( 1, _beekeeper.size() - 2 )      == signature_pattern );
+        BOOST_REQUIRE( _beekeeper_2.substr( 1, _beekeeper_2.size() - 2 )  == signature_pattern );
+      };
 
-      _sig_digest = _trx.sig_digest( HIVE_CHAIN_ID, hive::protocol::pack_type::hf26 );
-      _trx_serialized = fc::to_hex( fc::raw::pack_to_vector( _trx ) );
+      std::string _signature_00_result = "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21";
+      _calculate_signature( "{}", _signature_00_result );
 
-      auto _trx_str = fc::json::to_string( _trx );
-
-      auto _signature_00 = _private_key.sign_compact( _sig_digest );
-      auto _signature_01_str = _obj.sign_digest( _token, "7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH", _sig_digest );
-
-      auto _signature_00_str = fc::json::to_string( _signature_00 );
-
-      BOOST_TEST_MESSAGE( _signature_00_str );
-      BOOST_TEST_MESSAGE( _signature_01_str );
-
-      _signature_01_str = get_data( _signature_01_str );
-
-      BOOST_REQUIRE( _signature_00_str.find( _signature_01_str ) != std::string::npos );
-
-      auto _signature_02_str = _obj.sign_transaction( _token, _trx_serialized, HIVE_CHAIN_ID, _public_key_str, _sig_digest );
-      BOOST_TEST_MESSAGE( _signature_02_str );
-      BOOST_REQUIRE( _signature_02_str.find( _signature_01_str ) != std::string::npos );
+      std::string _signature_01_result = "1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340";
+      _calculate_signature( "{\"ref_block_num\":95,\"ref_block_prefix\":4189425605,\"expiration\":\"2023-07-18T08:38:29\",\"operations\":[{\"type\":\"transfer_operation\",\"value\":{\"from\":\"initminer\",\"to\":\"alice\",\"amount\":{\"amount\":\"666\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"memmm\"}}],\"extensions\":[],\"signatures\":[],\"transaction_id\":\"cc9630cdbc39da1c9b6264df3588c7bedb5762fa\",\"block_num\":0,\"transaction_num\":0}",
+                            _signature_01_result );
     }
 
   } FC_LOG_AND_RETHROW()
