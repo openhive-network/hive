@@ -159,19 +159,28 @@ mirrornet_replay_test:
     BLOCK_LOG_SOURCE_DIR: "/blockchain"
     NUMBER_OF_BLOCKS: 5000000
     MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
+    MIRRORNET_BLOCKCHAIN_DATA_DIR: "$MIRRORNET_WORKING_DIR/mirrornet_blockchain_data"
+    MIRRORNET_SOURCE_5M_DATA_DIR: "$MIRRORNET_WORKING_DIR/source_5m"
     MAINNET_TRUNCATED_DIR: "$CI_PROJECT_DIR/mainnet"
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini"
   interruptible: true
   before_script:
     - export NUMBER_OF_PROCESSES=8
     - mkdir -p "$MAINNET_TRUNCATED_DIR"
-    - mkdir -p "$MIRRORNET_WORKING_DIR/blockchain/"
+    - mkdir -p "$MIRRORNET_SOURCE_5M_DATA_DIR"
+    - mkdir -p "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain"
+    - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR"
+    - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain"
     - cp "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini" "$MIRRORNET_WORKING_DIR/config.ini"
+    - cp "$BLOCK_LOG_SOURCE_DIR/block_log_5m/block_log" "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain"
     - cd "$BINARIES_DIR"
   script:
+    - echo "Generating artifacts file for block_log."
+    - time ./hived
+      -d "$MIRRORNET_SOURCE_5M_DATA_DIR"
     - echo "Compressing block log to $NUMBER_OF_BLOCKS blocks with $NUMBER_OF_PROCESSES processes"
     - time ./compress_block_log
-      -i "$BLOCK_LOG_SOURCE_DIR"
+      -i "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain"
       -o "$MAINNET_TRUNCATED_DIR"
       --decompress
       -n $NUMBER_OF_BLOCKS
@@ -180,14 +189,14 @@ mirrornet_replay_test:
     - time ./blockchain_converter
       --plugin block_log_conversion
       -i "$MAINNET_TRUNCATED_DIR/block_log"
-      -o "$MIRRORNET_WORKING_DIR/blockchain/block_log"
+      -o "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain/block_log"
       --chain-id $MIRRORNET_CHAIN_ID
       --private-key "$MIRRORNET_SKELETON_KEY"
       --use-same-key
       --jobs $NUMBER_OF_PROCESSES
     - echo "Starting hived replay"
     - ./hived
-      -d "$MIRRORNET_WORKING_DIR"
+      -d "$MIRRORNET_BLOCKCHAIN_DATA_DIR"
       --chain-id $MIRRORNET_CHAIN_ID
       --skeleton-key "$MIRRORNET_SKELETON_KEY"
       --set-benchmark-interval 100000
