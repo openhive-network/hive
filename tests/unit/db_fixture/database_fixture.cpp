@@ -97,58 +97,6 @@ fc::path common_init( const std::function< void( appbase::application& app, int 
   return _data_dir;
 }
 
-live_database_fixture::live_database_fixture()
-{
-  try
-  {
-    int argc = boost::unit_test::framework::master_test_suite().argc;
-    char** argv = boost::unit_test::framework::master_test_suite().argv;
-
-    ilog( "Loading saved chain" );
-    _chain_dir = fc::current_path() / "test_blockchain";
-    FC_ASSERT( fc::exists( _chain_dir ), "Requires blockchain to test on in ./test_blockchain" );
-
-    appbase::app().register_plugin< ah_plugin_type >();
-    appbase::app().initialize< ah_plugin_type >( argc, argv );
-
-    db = &appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
-    BOOST_REQUIRE( db );
-
-    {
-      hive::chain::open_args args;
-      args.data_dir = _chain_dir;
-      args.shared_mem_dir = args.data_dir;
-      args.database_cfg = hive::utilities::default_database_configuration();
-      db->open( args );
-    }
-
-    validate_database();
-    generate_block();
-
-    ilog( "Done loading saved chain" );
-  }
-  FC_LOG_AND_RETHROW()
-}
-
-live_database_fixture::~live_database_fixture()
-{
-  try
-  {
-    // If we're unwinding due to an exception, don't do any more checks.
-    // This way, boost test's last checkpoint tells us approximately where the error was.
-    if( !std::uncaught_exceptions() )
-    {
-      BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
-    }
-
-    db->pop_block();
-    db->close();
-    return;
-  }
-  FC_CAPTURE_AND_LOG( () )
-  exit(1);
-}
-
 fc::ecc::private_key database_fixture::generate_private_key(string seed)
 {
   static const fc::ecc::private_key committee = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );

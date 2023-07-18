@@ -497,14 +497,6 @@ public:
   void validate_database();
 };
 
-struct live_database_fixture : public database_fixture
-{
-  live_database_fixture();
-  virtual ~live_database_fixture();
-
-  fc::path _chain_dir;
-};
-
 struct dhf_database
 {
   struct create_proposal_data
