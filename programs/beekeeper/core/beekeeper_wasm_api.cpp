@@ -11,10 +11,10 @@ namespace beekeeper {
     params.insert( params.begin(), "path to exe" );
   }
 
-  int beekeeper_api::init()
+  init_data beekeeper_api::init_impl()
   {
     char** _params = nullptr;
-    int _result = 1;
+    init_data _result;
 
     try
     {
@@ -34,6 +34,15 @@ namespace beekeeper {
     }
 
     return _result;
+  }
+
+  std::string beekeeper_api::init()
+  {
+    auto _method = [&, this]()
+    {
+      return to_string( init_impl() );
+    };
+    return exception_handler<std::string>( _method );
   }
 
   std::string beekeeper_api::create_session( const std::string& salt )

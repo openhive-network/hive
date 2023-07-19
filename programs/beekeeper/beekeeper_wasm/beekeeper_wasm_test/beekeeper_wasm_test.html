@@ -6,15 +6,22 @@
     async function my_main_function() {
       console.log('*****************BEEKEEPER TEST*****************');
 
-      FS.unlink("/storage_root/.beekeeper/wallet_a.wallet",function(err){
-        if(err) return console.log(err);
-        console.log('file deleted successfully');
-      });
+      try
+      {
+        FS.unlink("/storage_root/.beekeeper/wallet_a.wallet",function(err){
+          if(err) return console.log(err);
+          console.log('file deleted successfully');
+        });
 
-      FS.unlink("/storage_root/.beekeeper/wallet_b.wallet",function(err){
-        if(err) return console.log(err);
-        console.log('file deleted successfully');
-      });
+        FS.unlink("/storage_root/.beekeeper/wallet_b.wallet",function(err){
+          if(err) return console.log(err);
+          console.log('file deleted successfully');
+        });
+      }
+      catch(error)
+      {
+        console.error(error)
+      }
 
       const params = new Module.StringList();
       params.push_back("--wallet-dir");
@@ -29,6 +36,17 @@
       console.log('init instance');
       var init_result = instance.init();
       console.log('instance initalized with result: ' + init_result);
+      var implicit_session_token = JSON.parse( init_result ).token
+
+      var implicit_wallet_name = "wallet_created_by_implicit_token"
+      console.log('create wallet: ' + implicit_wallet_name + ' with token: ' + implicit_session_token);
+      var implicit_password = instance.create( implicit_session_token, implicit_wallet_name, "" )
+      console.log('wallet "' + implicit_wallet_name + '" created with password: ' + implicit_password);
+
+      var implicit_private_key = "5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT"
+      console.log('import key ' + implicit_private_key + ' to wallet: "' + implicit_wallet_name + '"' );
+      var implicit_public_key = instance.import_key( implicit_session_token, implicit_wallet_name, implicit_private_key )
+      console.log('public key imported: ' + implicit_public_key);
 
       console.log('create session[1]');
       var session_token = instance.create_session( "pear" )
