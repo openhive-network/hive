@@ -115,7 +115,7 @@ bool beekeeper_app_init::save_keys( const std::string& token, const std::string&
   return _result;
 }
 
-std::pair<bool, std::string> beekeeper_app_init::initialize_program_options()
+init_data beekeeper_app_init::initialize_program_options()
 {
   ilog("initializing options");
   try {
@@ -165,7 +165,7 @@ std::pair<bool, std::string> beekeeper_app_init::initialize_program_options()
   } FC_LOG_AND_RETHROW()
 }
 
-int beekeeper_app_init::init( int argc, char** argv )
+init_data beekeeper_app_init::init( int argc, char** argv )
 {
   try
   {
@@ -188,6 +188,6 @@ int beekeeper_app_init::init( int argc, char** argv )
     std::cerr << "unknown exception\n";
   }
 
-  return -1;
+  return init_data();
 }
 }

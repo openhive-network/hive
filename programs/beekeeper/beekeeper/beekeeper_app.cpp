@@ -22,7 +22,7 @@ void beekeeper_app::set_program_options()
   beekeeper_app_init::set_program_options();
 }
 
-std::pair<bool, bool> beekeeper_app::initialize( int argc, char** argv )
+init_data beekeeper_app::initialize( int argc, char** argv )
 {
   app.add_program_options( bpo::options_description(), options );
   app.set_app_name( "beekeeper" );
@@ -35,21 +35,21 @@ std::pair<bool, bool> beekeeper_app::initialize( int argc, char** argv )
   init_status = static_cast<appbase::initialization_result::result>( initializationResult.get_result_code() );
 
   if( !initializationResult.should_start_loop() )
-    return { init_status == appbase::initialization_result::result::ok, true };
+    return { false, "" };
   else
   {
     auto _initialization = initialize_program_options();
-    if( !_initialization.first )
-      return { init_status, true };
+    if( !_initialization.status )
+      return _initialization;
 
     api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr );
 
-    appbase::app().notify_status( "starting with token: " + _initialization.second );
-    return { true, false };
+    appbase::app().notify_status( "starting with token: " + _initialization.token );
+    return _initialization;
   }
 }
 
-bool beekeeper_app::start()
+void beekeeper_app::start()
 {
   auto& _webserver_plugin = app.get_plugin<hive::plugins::webserver::webserver_plugin>();
 
@@ -63,8 +63,6 @@ bool beekeeper_app::start()
   app.startup();
   app.exec();
   std::cout << "exited cleanly\n";
-
-  return init_status == appbase::initialization_result::result::ok;
 }
 
 const boost::program_options::variables_map& beekeeper_app::get_args() const

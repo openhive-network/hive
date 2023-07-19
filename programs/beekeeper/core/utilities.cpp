@@ -63,4 +63,11 @@ namespace fc
     variant v = mutable_variant_object( "signature", var.signature );
     vo = v;
   }
+
+  void to_variant( const beekeeper::init_data& var, fc::variant& vo )
+  {
+    variant v = mutable_variant_object( "status", var.status )( "token", var.token );
+    vo = v;
+  }
+
 } // fc

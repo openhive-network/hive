@@ -52,11 +52,13 @@ class beekeeper_api
       return result_type();
     }
 
+    init_data init_impl();
+
   public:
 
     beekeeper_api( const std::vector<std::string>& _params );
 
-    int init();
+    std::string init();
 
     std::string create_session( const std::string& salt );
     void close_session( const std::string& token );
