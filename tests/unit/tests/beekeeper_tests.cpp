@@ -617,7 +617,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
       fc::remove( _wallet_1_path );
 
     beekeeper::beekeeper_api _obj( { "--wallet-dir", _dir.string(), "--salt", "avocado" } );
-    BOOST_REQUIRE( _obj.init() == 1 );
+    BOOST_REQUIRE( fc::json::from_string( _obj.init() ).as<beekeeper::init_data>().status );
 
     auto get_data = []( const std::string& json )
     {
@@ -677,7 +677,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 
     _obj.open( _token, "wallet_1" );
 
-    BOOST_REQUIRE_THROW( _obj.get_public_keys( _token ), fc::exception );
+    BOOST_REQUIRE( _obj.get_public_keys( _token ) == std::string() );
 
     _obj.close( _token, "wallet_1" );
 
@@ -689,7 +689,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
       beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
       BOOST_REQUIRE( _result.wallets.size() == 1 );
       BOOST_REQUIRE( _result.wallets[0].name == "wallet_0" );
-      BOOST_REQUIRE( _result.wallets[1].unlocked );
+      BOOST_REQUIRE( _result.wallets[0].unlocked );
     }
 
     _obj.unlock( _token, "wallet_1", _password_1 );
