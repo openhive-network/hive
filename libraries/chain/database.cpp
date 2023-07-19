@@ -1342,12 +1342,15 @@ void database::pop_block()
     }
     FC_CAPTURE_AND_RETHROW()
 
+    block_id_type head_id = head_block_id();
 
     /// save the head block so we can recover its transactions
     std::shared_ptr<full_block_type> full_head_block;
     try
     {
-      full_head_block = _fork_db.head()->full_block; //mtlk replaced //full_head_block = fetch_block_by_id(head_id);
+      shared_ptr<fork_item> fork_item = _fork_db.fetch_block( head_id );
+      if(fork_item)
+          full_head_block =  fork_item->full_block;
     }
     FC_CAPTURE_AND_RETHROW()
 
