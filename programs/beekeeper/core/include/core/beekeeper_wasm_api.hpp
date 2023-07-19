@@ -6,6 +6,8 @@
 
 #include<vector>
 
+#include <boost/exception/diagnostic_information.hpp>
+
 namespace beekeeper {
 
 class beekeeper_api
@@ -22,6 +24,32 @@ class beekeeper_api
       fc::variant _v;
       fc::to_variant( src, _v );
       return fc::json::to_string( _v );
+    }
+
+    template<typename result_type>
+    result_type exception_handler( std::function<result_type()>&& method )
+    {
+      try
+      {
+        return method();
+      }
+      catch ( const boost::exception& e )
+      {
+        ilog( boost::diagnostic_information(e) );
+      }
+      catch ( const fc::exception& e )
+      {
+        ilog( e.to_detail_string() );
+      }
+      catch ( const std::exception& e )
+      {
+        ilog( e.what() );
+      }
+      catch ( ... )
+      {
+        ilog( "unknown exception" );
+      }
+      return result_type();
     }
 
   public:
