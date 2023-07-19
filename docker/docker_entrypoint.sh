@@ -35,8 +35,8 @@ source "$SCRIPTSDIR/common.sh"
 
 cleanup () {
   echo "Performing cleanup...."
-  hived_pid=$(pidof 'hived')
-  if [ "${hived_pid}" -ne 0 ];
+  hived_pid=$(pidof 'hived' || true)
+  if [[ -n "${hived_pid}" ]];
   then
     echo "Hived pid: $hived_pid"
 
@@ -83,6 +83,11 @@ jobs -l
 echo "waiting for job finish: $job_pid."
 status=0
 wait $job_pid || status=$?
+
+if [ $status -eq 130 ];
+then
+  status=0 #ignore exitcode caught by handling SIGINT
+fi
 
 echo "Exiting docker entrypoint: $status"
 exit $status
