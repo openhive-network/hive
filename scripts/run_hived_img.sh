@@ -35,6 +35,10 @@ IMAGE_NAME=
 HIVED_DATADIR=
 HIVED_SHM_FILE_DIR=
 
+HTTP_ENDPOINT="0.0.0.0:8091"
+WS_ENDPOINT="0.0.0.0:8090"
+P2_ENDPOINT="0.0.0.0:2001"
+
 add_docker_arg() {
   local arg="$1"
 #  echo "Processing docker argument: ${arg}"
@@ -53,32 +57,26 @@ while [ $# -gt 0 ]; do
   case "$1" in
    --webserver-http-endpoint=*)
         HTTP_ENDPOINT="${1#*=}"
-        add_docker_arg "--publish=${HTTP_ENDPOINT}:8091"
         ;;
    --webserver-http-endpoint) 
         shift
         HTTP_ENDPOINT="${1}"
-        add_docker_arg "--publish=${HTTP_ENDPOINT}:8091"
         ;;
 
     --webserver-ws-endpoint=*)
         WS_ENDPOINT="${1#*=}"
-        add_docker_arg "--publish=${WS_ENDPOINT}:8090"
         ;;
     --webserver-ws-endpoint)
         shift
         WS_ENDPOINT="${1}"
-        add_docker_arg "--publish=${WS_ENDPOINT}:8090"
         ;;
 
     --p2p-endpoint=*)
         P2_ENDPOINT="${1#*=}"
-        add_docker_arg "--publish=${P2_ENDPOINT}:2001"
         ;;
     --p2p-endpoint)
         shift
         P2_ENDPOINT="${1}"
-        add_docker_arg "--publish=${P2_ENDPOINT}:2001"
         ;;
 
     --data-dir=*)
@@ -169,6 +167,11 @@ if [ ! -z "$HIVED_SHM_FILE_DIR" ]; then
   add_docker_arg "-e SHM_DIR=/home/hived/shm_dir"
   add_docker_arg "-v ${HIVED_SHM_FILE_DIR}:/home/hived/shm_dir"
 fi
+
+# Similary to hived, dockerized version also should immediately start to listen on specified ports 
+add_docker_arg "--publish=${HTTP_ENDPOINT}:8091"
+add_docker_arg "--publish=${WS_ENDPOINT}:8090"
+add_docker_arg "--publish=${P2_ENDPOINT}:2001"
 
 #echo "Using docker image: $IMAGE_NAME"
 #echo "Additional hived args: ${CMD_ARGS[@]}"
