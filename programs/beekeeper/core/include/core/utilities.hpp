@@ -11,6 +11,12 @@
 
 namespace beekeeper {
 
+struct init_data
+{
+  bool status = false;
+  std::string token;
+};
+
 struct wallet_details
 {
   std::string name;
@@ -177,7 +183,10 @@ namespace fc
   void to_variant( const beekeeper::list_wallets_return& var, fc::variant& vo );
   void to_variant( const beekeeper::public_key_details& var, fc::variant& vo );
   void to_variant( const beekeeper::signature_return& var, fc::variant& vo );
+  void to_variant( const beekeeper::init_data& var, fc::variant& vo );
 }
+
+FC_REFLECT( beekeeper::init_data, (status)(token) )
 
 FC_REFLECT( beekeeper::wallet_details, (name)(unlocked) )
 FC_REFLECT( beekeeper::public_key_details, (public_key) )

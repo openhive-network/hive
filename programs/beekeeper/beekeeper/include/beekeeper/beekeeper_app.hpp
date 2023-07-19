@@ -32,8 +32,8 @@ class beekeeper_app: public beekeeper_app_init
   protected:
 
     void set_program_options() override;
-    std::pair<bool, bool> initialize( int argc, char** argv ) override;
-    bool start() override;
+    init_data initialize( int argc, char** argv ) override;
+    void start() override;
 
   public:
 

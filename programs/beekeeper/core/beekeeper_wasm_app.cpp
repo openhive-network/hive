@@ -21,20 +21,15 @@ void beekeeper_wasm_app::set_program_options()
   beekeeper_app_init::set_program_options();
 }
 
-std::pair<bool, bool> beekeeper_wasm_app::initialize( int argc, char** argv )
+init_data beekeeper_wasm_app::initialize( int argc, char** argv )
 {
   bpo::store( bpo::parse_command_line( argc, argv, options ), args );
-  auto _initialization = initialize_program_options();
-  if( !_initialization.first )
-    return { false, true };
-
-  return { true, false };
+  return initialize_program_options();
 }
 
-bool beekeeper_wasm_app::start()
+void beekeeper_wasm_app::start()
 {
   std::cout << "Start in progress. Nothing to do\n";
-  return true;
 }
 
 const boost::program_options::variables_map& beekeeper_wasm_app::get_args() const

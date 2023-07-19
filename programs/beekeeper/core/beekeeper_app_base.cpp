@@ -4,15 +4,17 @@
 
 namespace beekeeper {
 
-int beekeeper_app_base::run( int argc, char** argv )
+init_data beekeeper_app_base::run( int argc, char** argv )
 {
   set_program_options();
 
-  auto _init_app_result = initialize( argc, argv );
-  if( _init_app_result.second )
-    return _init_app_result.first;
+  auto _init_data = initialize( argc, argv );
+  if( !_init_data.status )
+    return _init_data;
 
-  return start();
+  start();
+
+  return _init_data;
 }
 
 }
