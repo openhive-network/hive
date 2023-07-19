@@ -38,95 +38,159 @@ namespace beekeeper {
 
   std::string beekeeper_api::create_session( const std::string& salt )
   {
-    create_session_return _result{ app.get_wallet_manager()->create_session( salt, "notification endpoint"/*notifications_endpoint - not used here*/ ) };
-    return to_string( _result );
+    auto _method = [&, this]()
+    {
+      create_session_return _result{ app.get_wallet_manager()->create_session( salt, "notification endpoint"/*notifications_endpoint - not used here*/ ) };
+      return to_string( _result );
+    };
+    return exception_handler<std::string>( _method );
   }
 
   void beekeeper_api::close_session( const std::string& token )
   {
-    app.get_wallet_manager()->close_session( token );
+    auto _method = [&, this]()
+    {
+      app.get_wallet_manager()->close_session( token );
+    };
+    return exception_handler<void>( _method );
   }
 
   std::string beekeeper_api::create( const std::string& token, const std::string& wallet_name, const std::string& password )
   {
-    create_return _result;
+    auto _method = [&, this]()
+    {
+      create_return _result;
 
-    if( password.empty() )
-      _result = { app.get_wallet_manager()->create( token, wallet_name ) };
-    else
-      _result = { app.get_wallet_manager()->create( token, wallet_name, password ) };
+      if( password.empty() )
+        _result = { app.get_wallet_manager()->create( token, wallet_name ) };
+      else
+        _result = { app.get_wallet_manager()->create( token, wallet_name, password ) };
 
-    return to_string( _result );
+      return to_string( _result );
+    };
+    return exception_handler<std::string>( _method );
   }
 
   void beekeeper_api::unlock( const std::string& token, const std::string& wallet_name, const std::string& password )
   {
-    app.get_wallet_manager()->unlock( token, wallet_name, password );
+    auto _method = [&, this]()
+    {
+      app.get_wallet_manager()->unlock( token, wallet_name, password );
+    };
+    return exception_handler<void>( _method );
   }
 
   void beekeeper_api::open( const std::string& token, const std::string& wallet_name )
   {
-    app.get_wallet_manager()->open( token, wallet_name );
+    auto _method = [&, this]()
+    {
+      app.get_wallet_manager()->open( token, wallet_name );
+    };
+    return exception_handler<void>( _method );
   }
 
   void beekeeper_api::close( const std::string& token, const std::string& wallet_name )
   {
-    app.get_wallet_manager()->close( token, wallet_name );
+    auto _method = [&, this]()
+    {
+      app.get_wallet_manager()->close( token, wallet_name );
+    };
+    return exception_handler<void>( _method );
   }
 
   void beekeeper_api::set_timeout( const std::string& token, int32_t seconds )
   {
-    app.get_wallet_manager()->set_timeout( token, seconds );
+    auto _method = [&, this]()
+    {
+      app.get_wallet_manager()->set_timeout( token, seconds );
+    };
+    return exception_handler<void>( _method );
   }
 
   void beekeeper_api::lock_all( const std::string& token )
   {
-    app.get_wallet_manager()->lock_all( token );
+    auto _method = [&, this]()
+    {
+      app.get_wallet_manager()->lock_all( token );
+    };
+    return exception_handler<void>( _method );
   }
 
   void beekeeper_api::lock( const std::string& token, const std::string& wallet_name )
   {
-    app.get_wallet_manager()->lock( token, wallet_name );
+    auto _method = [&, this]()
+    {
+      app.get_wallet_manager()->lock( token, wallet_name );
+    };
+    return exception_handler<void>( _method );
   }
 
   std::string beekeeper_api::import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key )
   {
-    import_key_return _result = { app.get_wallet_manager()->import_key( token, wallet_name, wif_key ) };
-    return to_string( _result );
+    auto _method = [&, this]()
+    {
+      import_key_return _result = { app.get_wallet_manager()->import_key( token, wallet_name, wif_key ) };
+      return to_string( _result );
+    };
+    return exception_handler<std::string>( _method );
   }
 
   void beekeeper_api::remove_key( const std::string& token, const std::string& wallet_name, const std::string& password, const std::string& public_key )
   {
-    app.get_wallet_manager()->remove_key( token, wallet_name, password, public_key );
+    auto _method = [&, this]()
+    {
+      app.get_wallet_manager()->remove_key( token, wallet_name, password, public_key );
+    };
+    return exception_handler<void>( _method );
   }
 
   std::string beekeeper_api::list_wallets( const std::string& token )
   {
-    list_wallets_return _result = { app.get_wallet_manager()->list_wallets( token ) };
-    return to_string( _result );
+    auto _method = [&, this]()
+    {
+      list_wallets_return _result = { app.get_wallet_manager()->list_wallets( token ) };
+      return to_string( _result );
+    };
+    return exception_handler<std::string>( _method );
   }
 
   std::string beekeeper_api::get_public_keys( const std::string& token )
   {
-    get_public_keys_return _result = { utility::get_public_keys( app.get_wallet_manager()->get_public_keys( token ) ) };
-    return to_string( _result );
+    auto _method = [&, this]()
+    {
+      get_public_keys_return _result = { utility::get_public_keys( app.get_wallet_manager()->get_public_keys( token ) ) };
+      return to_string( _result );
+    };
+    return exception_handler<std::string>( _method );
   }
 
   std::string beekeeper_api::sign_digest( const std::string& token, const std::string& public_key, const std::string& sig_digest )
   {
-    signature_return _result = { app.get_wallet_manager()->sign_digest( token, utility::get_public_key( public_key ), digest_type( sig_digest ) ) };
-    return to_string( _result );
+    auto _method = [&, this]()
+    {
+      signature_return _result = { app.get_wallet_manager()->sign_digest( token, utility::get_public_key( public_key ), digest_type( sig_digest ) ) };
+      return to_string( _result );
+    };
+    return exception_handler<std::string>( _method );
   }
 
   std::string beekeeper_api::sign_transaction( const std::string& token, const std::string& transaction, const std::string& chain_id, const std::string& public_key, const std::string& sig_digest )
   {
-    signature_return _result = { app.get_wallet_manager()->sign_transaction( token, transaction, chain_id_type( chain_id ), utility::get_public_key( public_key ), digest_type( sig_digest ) ) };
-    return to_string( _result );
+    auto _method = [&, this]()
+    {
+      signature_return _result = { app.get_wallet_manager()->sign_transaction( token, transaction, chain_id_type( chain_id ), utility::get_public_key( public_key ), digest_type( sig_digest ) ) };
+      return to_string( _result );
+    };
+    return exception_handler<std::string>( _method );
   }
 
   std::string beekeeper_api::get_info( const std::string& token )
   {
-    return to_string( app.get_wallet_manager()->get_info( token ) );
+    auto _method = [&, this]()
+    {
+      return to_string( app.get_wallet_manager()->get_info( token ) );
+    };
+    return exception_handler<std::string>( _method );
   }
 
 };
