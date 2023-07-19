@@ -12,8 +12,27 @@
           if(err) return console.log(err);
           console.log('file deleted successfully');
         });
+      }
+      catch(error)
+      {
+        console.error(error)
+      }
 
+      try
+      {
         FS.unlink("/storage_root/.beekeeper/wallet_b.wallet",function(err){
+          if(err) return console.log(err);
+          console.log('file deleted successfully');
+        });
+      }
+      catch(error)
+      {
+        console.error(error)
+      }
+
+      try
+      {
+        FS.unlink("/storage_root/.beekeeper/wallet_created_by_implicit_token.wallet",function(err){
           if(err) return console.log(err);
           console.log('file deleted successfully');
         });
