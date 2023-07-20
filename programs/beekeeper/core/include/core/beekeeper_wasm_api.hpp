@@ -1,58 +1,30 @@
 #pragma once
 
-#include <core/beekeeper_wasm_app.hpp>
-
-#include <fc/io/json.hpp>
-
-#include<vector>
-
-#include <boost/exception/diagnostic_information.hpp>
+#include <memory>
+#include <string>
+#include <vector>
+#include <functional>
 
 namespace beekeeper {
 
-class beekeeper_api
+class beekeeper_api final
 {
   private:
+    class impl;
 
-    std::vector<std::string> params;
+    class impl_deleter
+    {
+    public:
+      void operator()(beekeeper_api::impl* ptr) const;
+    };
 
-    beekeeper::beekeeper_wasm_app app;
+    std::unique_ptr<impl, impl_deleter> _impl;
 
     template<typename T>
-    std::string to_string( const T& src )
-    {
-      fc::variant _v;
-      fc::to_variant( src, _v );
-      return fc::json::to_string( _v );
-    }
+    std::string to_string( const T& src );
 
     template<typename result_type>
-    result_type exception_handler( std::function<result_type()>&& method )
-    {
-      try
-      {
-        return method();
-      }
-      catch ( const boost::exception& e )
-      {
-        ilog( boost::diagnostic_information(e) );
-      }
-      catch ( const fc::exception& e )
-      {
-        ilog( e.to_detail_string() );
-      }
-      catch ( const std::exception& e )
-      {
-        ilog( e.what() );
-      }
-      catch ( ... )
-      {
-        ilog( "unknown exception" );
-      }
-      return result_type();
-    }
-
-    init_data init_impl();
+    result_type exception_handler( std::function<result_type()>&& method );
 
   public:
 
