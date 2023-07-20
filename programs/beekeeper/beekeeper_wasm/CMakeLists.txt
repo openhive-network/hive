@@ -19,7 +19,7 @@ ADD_EXECUTABLE( beekeeper_wasm main.cpp )
 target_compile_options( beekeeper_wasm PUBLIC -fexceptions )
 target_link_libraries( beekeeper_wasm PUBLIC embind beekeeper_wasm_core idbfs.js )
 # -sFORCE_FILESYSTEM=1 -sMODULARIZE=1 -sFILESYSTEM=1 
-target_link_options( beekeeper_wasm PUBLIC -fexceptions --emrun )
+target_link_options( beekeeper_wasm PUBLIC -fexceptions -sMODULARIZE=1 -sEXPORT_ES6=1 )
 
 
 # Helper target, just to perform TypeScript wrapper generation
