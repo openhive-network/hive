@@ -1,20 +1,5 @@
-MACRO( ADD_TARGET_BOOST_LIBRARIES target_name )
-    SET( BOOST_COMPONENTS )
-    # Here define all boost libraries being used by Hive subprojects
-    LIST( APPEND BOOST_COMPONENTS
-            atomic
-            chrono
-            context
-            coroutine
-            date_time
-            filesystem
-            iostreams
-            locale
-            system
-            thread
-            program_options
-            unit_test_framework
-    )
+MACRO( ADD_TARGET_BOOST_LIBRARIES target_name components )
+    SET( BOOST_COMPONENTS ${components} )
 
     LIST ( TRANSFORM BOOST_COMPONENTS PREPEND "Boost::" OUTPUT_VARIABLE _boost_implicit_targets )
 
