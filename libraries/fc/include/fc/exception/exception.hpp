@@ -340,6 +340,26 @@ namespace fc
     FC_MULTILINE_MACRO_END \
   )
 
+#define FC_FINALIZABLE_ASSERT( TEST, ... ) \
+  FC_EXPAND_MACRO( \
+    FC_MULTILINE_MACRO_BEGIN \
+      if( UNLIKELY(!(TEST)) ) \
+      { \
+        FC_THROW_EXCEPTION( fc::assert_exception, #TEST ": "  __VA_ARGS__ ); \
+      } \
+    FC_MULTILINE_MACRO_END \
+  )
+
+#define FC_FINALIZE_ASSERT( ASSERT ) \
+  { \
+    if( fc::enable_record_assert_trip ) \
+    { \
+      const fc::log_messages& lms = ASSERT.get_log(); \
+      fc::log_context lc = lms[0].get_context(); \
+      fc::record_assert_trip( lc.get_file().c_str(), lc.get_line_number(), lms[0].get_message().c_str() ); \
+    } \
+  }
+
 #define FC_CAPTURE_AND_THROW( EXCEPTION_TYPE, ... ) \
   FC_MULTILINE_MACRO_BEGIN \
     throw EXCEPTION_TYPE( FC_LOG_MESSAGE( error, "", FC_FORMAT_ARG_PARAMS(__VA_ARGS__) ) ); \
