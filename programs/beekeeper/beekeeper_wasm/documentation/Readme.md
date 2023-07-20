@@ -45,7 +45,7 @@ emmake make
 
 **********beekeeper**********
 HIVE_DIR = a directory where hived was saved
-Libraries created in previous steps should be put into ${HIVE_DIR}/hive/libraries/fc_minimal/CMakeLists.txt how it's showed (temporary paths are used).
+Libraries created in previous steps should be put into ${HIVE_DIR}/hive/libraries/fc/CMakeLists.txt how it's showed (temporary paths are used).
 
 cd ${HIVE_DIR}/hive/programs/beekeeper/beekeeper_wasm/
 mkdir build

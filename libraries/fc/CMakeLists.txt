@@ -47,6 +47,14 @@ ENDIF( ECC_IMPL STREQUAL openssl )
 SET( SECP256K1_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp" )
 SET( SEC256K1_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp-build )
 
+if(HIVE_BUILD_ON_MINIMAL_FC)
+  FIND_library(SECP256K1_LIBRARY secp256k1 REQUIRED )
+  set(ECC_LIB ${SECP256K1_LIBRARY})
+  set(ECC_INCLUDE ${binary_dir_secp256k1}/include)
+else()
+
+set(ECC_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp)
+
 # Configure secp256k1-zkp
 if ( MSVC )
     # autoconf won't work here, hard code the defines
@@ -109,6 +117,8 @@ else ( MSVC )
 endif ( MSVC )
 # End configure secp256k1-zkp
 
+endif()
+
 IF( WIN32 )
   MESSAGE(STATUS "Configuring fc to build on Win32")
 
@@ -143,37 +153,154 @@ ENDIF()
 
 option( UNITY_BUILD OFF )
 
-set( fc_sources
-     src/uint128.cpp
-     src/real128.cpp
+file(GLOB fc_minimal_headers
+     include/fc/aligned.hpp
+     include/fc/array.hpp
+     include/fc/bitutil.hpp
+     include/fc/compress/zlib.hpp
+     include/fc/container/deque_fwd.hpp
+     include/fc/container/flat.hpp
+     include/fc/container/flat_fwd.hpp
+     include/fc/crypto/aes.hpp
+     include/fc/crypto/base58.hpp
+     include/fc/crypto/base64.hpp
+     include/fc/crypto/bigint.hpp
+     include/fc/crypto/city.hpp
+     include/fc/crypto/cripemd160.hpp
+     include/fc/crypto/equihash.hpp
+     include/fc/crypto/hex.hpp
+     include/fc/crypto/hmac.hpp
+     include/fc/crypto/openssl.hpp
+     include/fc/crypto/ripemd160.hpp
+     include/fc/crypto/sha1.hpp
+     include/fc/crypto/sha224.hpp
+     include/fc/crypto/sha256.hpp
+     include/fc/crypto/sha512.hpp
+     include/fc/exception/exception.hpp
+     include/fc/filesystem.hpp
+     include/fc/fwd.hpp
+     include/fc/fwd_impl.hpp
+     include/fc/int_array.hpp
+     include/fc/interprocess/container.hpp
+     include/fc/io/buffered_iostream.hpp
+     include/fc/io/datastream.hpp
+     include/fc/io/enum_type.hpp
+     include/fc/io/fstream.hpp
+     include/fc/io/iostream.hpp
+     include/fc/io/json.hpp
+     include/fc/io/json_relaxed.hpp
+     include/fc/io/raw.hpp
+     include/fc/io/raw_fwd.hpp
+     include/fc/io/raw_variant.hpp
+     include/fc/io/sstream.hpp
+     include/fc/io/stdio.hpp
+     include/fc/io/varint.hpp
+     include/fc/log/appender.hpp
+     include/fc/log/console_appender.hpp
+     include/fc/log/log_message.hpp
+     include/fc/log/logger.hpp
+     include/fc/log/logger_config.hpp
+     include/fc/macros.hpp
+     include/fc/optional.hpp
+     include/fc/platform_independence.hpp
+     include/fc/reflect/reflect.hpp
+     include/fc/reflect/typename.hpp
+     include/fc/reflect/variant.hpp
+     include/fc/safe.hpp
+     include/fc/shared_ptr.hpp
+     include/fc/smart_ref_fwd.hpp
+     include/fc/smart_ref_impl.hpp
+     include/fc/stacktrace.hpp
+     include/fc/static_variant.hpp
+     include/fc/string.hpp
+     include/fc/thread/scoped_lock.hpp
+     include/fc/thread/spin_lock.hpp
+     include/fc/thread/spin_yield_lock.hpp
+     include/fc/thread/unique_lock.hpp
+     include/fc/time.hpp
+     include/fc/uint128.hpp
+     include/fc/unique_ptr.hpp
+     include/fc/utf8.hpp
+     include/fc/utility.hpp
+     include/fc/variant.hpp
+     include/fc/variant_object.hpp
+     include/fc/vector.hpp
+     src/crypto/_digest_common.hpp
+     src/log/console_defines.h
+     src/utf8/checked.h
+     src/utf8/core.h
+     src/utf8/unchecked.h
+     vendor/simdjson/simdjson.h
+)
+
+set( fc_minimal_sources
      src/variant.cpp
      src/exception.cpp
      src/variant_object.cpp
+     src/filesystem.cpp
+     src/stacktrace.cpp
+     src/time.cpp
+     src/string.cpp
+     src/shared_ptr.cpp
+     src/utf8.cpp
+     src/log/log_message.cpp
+     src/log/logger.cpp
+     src/log/logger_config.cpp
+     src/log/appender.cpp
+     src/log/console_appender.cpp
+     src/crypto/elliptic_common.cpp
+     ${ECC_REST}
+     src/crypto/elliptic_${ECC_IMPL}.cpp
+     src/crypto/sha512.cpp
+     src/crypto/sha256.cpp
+     src/crypto/aes.cpp
+     src/crypto/hex.cpp
+     src/crypto/base64.cpp
+     src/crypto/openssl.cpp
+     src/crypto/ripemd160.cpp
+     src/crypto/cripemd160.cpp
+     src/crypto/_digest_common.cpp
+     src/crypto/base58.cpp
+     src/crypto/city.cpp
+     src/crypto/crc.cpp
+     src/io/json.cpp
+     src/io/datastream.cpp
+     src/io/sstream.cpp
+     src/io/fstream.cpp
+     src/io/iostream.cpp
+     src/io/stdio_out.cpp
+     src/thread/spin_yield_lock.cpp
+     src/thread/spin_lock.cpp
+     vendor/simdjson/simdjson.cpp
+     src/compress/zlib.cpp
+     src/reflect/typename.cpp
+     ${fc_minimal_headers}
+)
+
+set( sources ${fc_minimal_sources} )
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/git_revision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp" @ONLY)
+list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
+
+if(NOT HIVE_BUILD_ON_MINIMAL_FC)
+  file( GLOB_RECURSE fc_headers ${CMAKE_CURRENT_SOURCE_DIR} *.hpp *.h )
+  list(REMOVE_ITEM fc_headers ${fc_minimal_headers})
+  list(APPEND sources ${fc_headers})
+
+  list(APPEND sources
+     src/uint128.cpp
+     src/real128.cpp
      src/thread/thread.cpp
      src/thread/thread_specific.cpp
      src/thread/future.cpp
      src/thread/task.cpp
-     src/thread/spin_lock.cpp
-     src/thread/spin_yield_lock.cpp
      src/thread/mutex.cpp
      src/thread/non_preemptable_scope_check.cpp
      src/asio.cpp
-     src/stacktrace.cpp
-     src/string.cpp
-     src/shared_ptr.cpp
-     src/time.cpp
-     src/utf8.cpp
      src/io/stdio_in.cpp
-     src/io/stdio_out.cpp
-     src/io/iostream.cpp
-     src/io/datastream.cpp
      src/io/buffered_iostream.cpp
-     src/io/fstream.cpp
-     src/io/sstream.cpp
-     src/io/json.cpp
      src/io/varint.cpp
      src/io/console.cpp
-     src/filesystem.cpp
      src/interprocess/signals.cpp
      src/interprocess/file_mapping.cpp
      src/interprocess/mmap_struct.cpp
@@ -184,37 +311,17 @@ set( fc_sources
      src/rpc/state.cpp
      src/rpc/bstate.cpp
      src/rpc/websocket_api.cpp
-     src/log/log_message.cpp
-     src/log/logger.cpp
-     src/log/appender.cpp
-     src/log/console_appender.cpp
      src/log/file_appender.cpp
      src/log/gelf_appender.cpp
-     src/log/logger_config.cpp
-     src/crypto/_digest_common.cpp
-     src/crypto/openssl.cpp
-     src/crypto/aes.cpp
      src/crypto/openssl_thread_config.cpp
-     src/crypto/crc.cpp
-     src/crypto/city.cpp
      src/crypto/base32.cpp
      src/crypto/base36.cpp
-     src/crypto/base58.cpp
-     src/crypto/base64.cpp
      src/crypto/bigint.cpp
-     src/crypto/hex.cpp
      src/crypto/sha1.cpp
-     src/crypto/ripemd160.cpp
-     src/crypto/cripemd160.cpp
-     src/crypto/sha256.cpp
      src/crypto/sha224.cpp
-     src/crypto/sha512.cpp
      src/crypto/blowfish.cpp
-     src/crypto/elliptic_common.cpp
      src/crypto/equihash.cpp
      src/crypto/restartable_sha256.cpp
-     ${ECC_REST}
-     src/crypto/elliptic_${ECC_IMPL}.cpp
      src/crypto/rand.cpp
      src/network/tcp_socket.cpp
      src/network/udp_socket.cpp
@@ -228,25 +335,13 @@ set( fc_sources
      src/network/url.cpp
      src/network/gntp.cpp
      src/compress/smaz.cpp
-     src/compress/zlib.cpp
-     src/reflect/typename.cpp
      vendor/cyoencode-1.0.2/src/CyoDecode.c
      vendor/cyoencode-1.0.2/src/CyoEncode.c
-     vendor/simdjson/simdjson.cpp
-     )
+    )
 
-file( GLOB_RECURSE fc_headers ${CMAKE_CURRENT_SOURCE_DIR} *.hpp *.h )
-
-set( sources
-  ${fc_sources}
-)
-
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/git_revision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp" @ONLY)
-list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
-list(APPEND sources ${fc_headers})
-
-add_subdirectory( vendor/websocketpp )
-add_subdirectory( vendor/equihash )
+     add_subdirectory( vendor/websocketpp )
+     add_subdirectory( vendor/equihash )
+endif()
 
 setup_library( fc_core SOURCES ${sources} LIBRARY_TYPE OBJECT DONT_INSTALL_LIBRARY )
 
@@ -323,22 +418,34 @@ SET( public_includes
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${Boost_INCLUDE_DIR}
         ${OPENSSL_INCLUDE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
-        "${readline_includes}"
 )
 
 SET( private_includes
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/cyoencode-1.0.2/src
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/simdjson
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/equihash
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/bitcoin/src
+    ${ECC_INCLUDE}
 )
+
+set( fc_dependencies ${LINK_USR_LOCAL_LIB} ${PLATFORM_SPECIFIC_LIBS} ${CMAKE_DL_LIBS} ${ECC_LIB} )
+
+if(NOT HIVE_BUILD_ON_MINIMAL_FC)
+  LIST( APPEND fc_dependencies equihash ${RPCRT4} ${rt_library} ${Readline_LIBRARIES} )
+  LIST( APPEND public_includes ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp "${readline_includes}" )
+  LIST( APPEND private_includes
+              ${CMAKE_CURRENT_SOURCE_DIR}/vendor/cyoencode-1.0.2/src
+              ${CMAKE_CURRENT_SOURCE_DIR}/vendor/equihash
+              ${CMAKE_CURRENT_SOURCE_DIR}/vendor/bitcoin/src
+  )
+
+  include_directories( vendor/websocketpp )
+  include_directories( vendor/equihash )
+
+  add_subdirectory(tests)
+endif()
 
 target_include_directories(fc_core PUBLIC ${public_includes} PRIVATE ${private_includes})
 
-target_link_libraries( fc_core PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${Readline_LIBRARIES} ${ECC_LIB} )
+target_link_libraries( fc_core PUBLIC ${fc_dependencies} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -352,11 +459,6 @@ ELSE(MSVC)
 # add_definitions(-DBOOST_TEST_DYN_LINK)
 ENDIF(MSVC)
 ENDIF()
-
-include_directories( vendor/websocketpp )
-include_directories( vendor/equihash )
-
-add_subdirectory(tests)
 
 if(WIN32)
    # add addtional import library on windows platform
@@ -447,29 +549,33 @@ TARGET_LINK_OPTIONS( CommonBuildOptions INTERFACE $<$<CONFIG:Asan>:${HIVE_ASAN_L
 
 TARGET_LINK_LIBRARIES( fc_core PUBLIC CommonBuildOptions )
 
-ADD_LIBRARY( SHARED_BOOST INTERFACE )
-SET_TARGET_PROPERTIES( SHARED_BOOST PROPERTIES POSITION_INDEPENDENT_CODE ON )
-ADD_TARGET_BOOST_LIBRARIES( SHARED_BOOST "${BOOST_COMPONENTS}" )
-
 ADD_LIBRARY( STATIC_BOOST INTERFACE )
 SET_TARGET_PROPERTIES( STATIC_BOOST PROPERTIES POSITION_INDEPENDENT_CODE OFF )
 ADD_TARGET_BOOST_LIBRARIES( STATIC_BOOST "${BOOST_COMPONENTS}" )
 
-ADD_LIBRARY ( SHARED_OPENSSL INTERFACE )
-ADD_TARGET_OPENSSL_LIBRARIES (SHARED_OPENSSL FALSE)
+if(NOT HIVE_BUILD_ON_MINIMAL_FC)
+  ADD_LIBRARY( SHARED_BOOST INTERFACE )
+  SET_TARGET_PROPERTIES( SHARED_BOOST PROPERTIES POSITION_INDEPENDENT_CODE ON )
+  ADD_TARGET_BOOST_LIBRARIES( SHARED_BOOST "${BOOST_COMPONENTS}" )
+
+  ADD_LIBRARY ( SHARED_OPENSSL INTERFACE )
+  ADD_TARGET_OPENSSL_LIBRARIES (SHARED_OPENSSL FALSE)
+endif()
 
 ADD_LIBRARY ( STATIC_OPENSSL INTERFACE )
 ADD_TARGET_OPENSSL_LIBRARIES (STATIC_OPENSSL TRUE)
 
 add_library ( fc STATIC )
 target_link_libraries ( fc PUBLIC fc_core STATIC_BOOST STATIC_OPENSSL )
-ADD_TARGET_PACKAGE_LIBRARIES( fc ZLIB TRUE )
-ADD_TARGET_PACKAGE_LIBRARIES( fc BZip2 TRUE )
+if(NOT HIVE_BUILD_ON_MINIMAL_FC)
+  ADD_TARGET_PACKAGE_LIBRARIES( fc ZLIB TRUE )
+  ADD_TARGET_PACKAGE_LIBRARIES( fc BZip2 TRUE )
 
-add_library ( fc_shared_boost STATIC )
-target_link_libraries ( fc_shared_boost PUBLIC fc_core SHARED_BOOST SHARED_OPENSSL )
-ADD_TARGET_PACKAGE_LIBRARIES( fc_shared_boost ZLIB FALSE )
-ADD_TARGET_PACKAGE_LIBRARIES( fc_shared_boost BZip2 FALSE )
+  add_library ( fc_shared_boost STATIC )
+  target_link_libraries ( fc_shared_boost PUBLIC fc_core SHARED_BOOST SHARED_OPENSSL )
+  ADD_TARGET_PACKAGE_LIBRARIES( fc_shared_boost ZLIB FALSE )
+  ADD_TARGET_PACKAGE_LIBRARIES( fc_shared_boost BZip2 FALSE )
+endif()
 
 SET(OPENSSL_CONF_TARGET )
 IF(DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
@@ -494,8 +600,10 @@ ADD_CUSTOM_COMMAND(TARGET fc POST_BUILD ${POST_BUILD_STEP_COMMANDS}
   COMMENT "Copying OpenSSL/ssl/openssl.cnf into target directory."
 )
 
-ADD_CUSTOM_COMMAND(TARGET fc_shared_boost POST_BUILD ${POST_BUILD_STEP_COMMANDS}
-  COMMENT "Copying OpenSSL/ssl/openssl.cnf into target directory."
-)
+if(NOT HIVE_BUILD_ON_MINIMAL_FC)
+  ADD_CUSTOM_COMMAND(TARGET fc_shared_boost POST_BUILD ${POST_BUILD_STEP_COMMANDS}
+    COMMENT "Copying OpenSSL/ssl/openssl.cnf into target directory."
+  )
+endif()
 
 MESSAGE(STATUS "Finished fc module configuration...")
