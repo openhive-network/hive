@@ -41,6 +41,9 @@ namespace fc {
 
    void configure_logging( const fc::path& log_config );
    bool configure_logging( const logging_config& l );
+
+   /// This function is not intended to be used directly by the user. Its primary purpose is to register appenders.
+   bool configure_logging();
 }
 
 #include <fc/reflect/reflect.hpp>
