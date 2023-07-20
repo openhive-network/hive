@@ -844,7 +844,7 @@ operation_tests:
   tags:
     - public-runner-docker
 
-comment_cashout_tests:
+comment_cashout_tests0:
   stage: test
   extends: .test_tools_based
   variables:
@@ -857,3 +857,289 @@ comment_cashout_tests:
   allow_failure: true
   tags:
     - public-runner-docker
+
+comment_cashout_tests1:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_NUMBER_OF_PROCESSES: 1
+    PYTEST_TIMEOUT_MINUTES: 30
+    JUNIT_REPORT: tests/functional/python_tests/comment_cashout_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/comment_cashout_tests
+    - *run-pytest
+  allow_failure: true
+  tags:
+    - public-runner-docker
+
+comment_cashout_tests2:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_NUMBER_OF_PROCESSES: 1
+    PYTEST_TIMEOUT_MINUTES: 30
+    JUNIT_REPORT: tests/functional/python_tests/comment_cashout_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/comment_cashout_tests
+    - *run-pytest
+  allow_failure: true
+  tags:
+    - public-runner-docker
+comment_cashout_tests3:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_NUMBER_OF_PROCESSES: 1
+    PYTEST_TIMEOUT_MINUTES: 30
+    JUNIT_REPORT: tests/functional/python_tests/comment_cashout_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/comment_cashout_tests
+    - *run-pytest
+  allow_failure: true
+  tags:
+    - public-runner-docker
+
+comment_cashout_tests4:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_NUMBER_OF_PROCESSES: 1
+    PYTEST_TIMEOUT_MINUTES: 30
+    JUNIT_REPORT: tests/functional/python_tests/comment_cashout_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/comment_cashout_tests
+    - *run-pytest
+  allow_failure: true
+  tags:
+    - public-runner-docker
+
+comment_cashout_tests5:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_NUMBER_OF_PROCESSES: 1
+    PYTEST_TIMEOUT_MINUTES: 30
+    JUNIT_REPORT: tests/functional/python_tests/comment_cashout_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/comment_cashout_tests
+    - *run-pytest
+  allow_failure: true
+  tags:
+    - public-runner-docker
+
+comment_cashout_tests6:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_NUMBER_OF_PROCESSES: 1
+    PYTEST_TIMEOUT_MINUTES: 30
+    JUNIT_REPORT: tests/functional/python_tests/comment_cashout_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/comment_cashout_tests
+    - *run-pytest
+  allow_failure: true
+  tags:
+    - public-runner-docker
+
+
+comment_cashout_tests7:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_NUMBER_OF_PROCESSES: 1
+    PYTEST_TIMEOUT_MINUTES: 30
+    JUNIT_REPORT: tests/functional/python_tests/comment_cashout_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/comment_cashout_tests
+    - *run-pytest
+  allow_failure: true
+  tags:
+    - public-runner-docker
+
+comment_cashout_tests8:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_NUMBER_OF_PROCESSES: 1
+    PYTEST_TIMEOUT_MINUTES: 30
+    JUNIT_REPORT: tests/functional/python_tests/comment_cashout_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/comment_cashout_tests
+    - *run-pytest
+  allow_failure: true
+  tags:
+    - public-runner-docker
+
+comment_cashout_tests9:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_NUMBER_OF_PROCESSES: 1
+    PYTEST_TIMEOUT_MINUTES: 30
+    JUNIT_REPORT: tests/functional/python_tests/comment_cashout_tests/report.xml
+  script:
+    - cd tests/functional/python_tests/comment_cashout_tests
+    - *run-pytest
+  allow_failure: true
+  tags:
+    - public-runner-docker
+
+fork_tests0:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/fork_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+  artifacts:
+    expire_in: 2 days
+
+fork_tests1:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/fork_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+  artifacts:
+    expire_in: 2 days
+
+fork_tests2:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/fork_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+  artifacts:
+    expire_in: 2 days
+
+fork_tests3:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/fork_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+  artifacts:
+    expire_in: 2 days
+
+fork_tests4:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/fork_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+  artifacts:
+    expire_in: 2 days
+
+fork_tests5:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/fork_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+  artifacts:
+    expire_in: 2 days
+
+fork_tests6:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/fork_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+  artifacts:
+    expire_in: 2 days
+
+fork_tests7:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/fork_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+  artifacts:
+    expire_in: 2 days
+
+fork_tests8:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/fork_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+  artifacts:
+    expire_in: 2 days
+
+fork_tests9:
+  stage: test
+  extends: .test_tools_based
+
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 20
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
+
+  script:
+    - cd tests/functional/python_tests/fork_tests
+    - *run-pytest
+  tags:
+    - public-runner-docker
+  artifacts:
+    expire_in: 2 days
