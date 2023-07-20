@@ -164,6 +164,7 @@ set( fc_sources
      src/time.cpp
      src/utf8.cpp
      src/io/stdio_impl.cpp
+     src/io/stdio_in.cpp
      src/io/iostream.cpp
      src/io/datastream.cpp
      src/io/buffered_iostream.cpp
