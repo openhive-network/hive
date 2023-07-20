@@ -56,7 +56,7 @@ But if you would still like to build from source, we also have [build instructio
 
 ## Dockerized deployment
 
-Building a docker image is described here: [Building under Docker](https://gitlab.syncad.com/hive/hive/-/blob/master/doc/building.md#building-under-docker)
+Building a docker image is described here: [Building under Docker](doc/building.md#building-under-docker)
 
 If you'd like to use our already pre-built official binary images, it's as simple as downloading it from the Dockerhub registry with only one command:
 
@@ -68,7 +68,7 @@ To run a Hive consensus node there are needed resources:
 - data directory to hold a blockchain file(s) (ca 400GB is required)
 - storage to hold a shared memory file (ca. 24GB of memory is required at the moment to store state data):
 
-There is provided a script wrapping `docker run` statement and emulating direct hived usage: [run_hived_img.sh](https://gitlab.syncad.com/hive/hive/-/blob/master/scripts/run_hived_img.sh)
+There is provided a script wrapping `docker run` statement and emulating direct hived usage: [run_hived_img.sh](scripts/run_hived_img.sh)
 
 General usage: `run_hived_img.sh <docker_img> [OPTION[=VALUE]]... [<hived_option>]...`
 
