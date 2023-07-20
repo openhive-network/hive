@@ -15,6 +15,19 @@
     FC_MULTILINE_MACRO_END                                      \
   )
 
+#define HIVE_FINALIZABLE_ASSERT( expr, exc_type, FORMAT, ... )  \
+  FC_EXPAND_MACRO(                                              \
+    FC_MULTILINE_MACRO_BEGIN                                    \
+      if( UNLIKELY(!(expr)) )                                   \
+      {                                                         \
+        FC_THROW_EXCEPTION( exc_type, FORMAT, __VA_ARGS__ );    \
+      }                                                         \
+    FC_MULTILINE_MACRO_END                                      \
+  )
+
+#define HIVE_FINALIZE_ASSERT( ASSERT ) \
+  FC_FINALIZE_ASSERT( ASSERT )
+
 namespace hive { namespace protocol {
 
   FC_DECLARE_EXCEPTION( transaction_exception, 3000000, "transaction exception" )

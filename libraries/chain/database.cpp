@@ -4424,15 +4424,18 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
     try
     {
-      FC_ASSERT(block.transaction_merkle_root == merkle_root, "Merkle check failed",
+      FC_FINALIZABLE_ASSERT( block.transaction_merkle_root == merkle_root, "Merkle check failed",
                 (block.transaction_merkle_root)(merkle_root)(block)("id", full_block->get_block_id()));
     }
     catch( fc::assert_exception& e )
-    { //don't throw error if this is a block with a known bad merkle root
+    { //don't record & throw error if this is a block with a known bad merkle root
       const auto& merkle_map = get_shared_db_merkle();
       auto itr = merkle_map.find( block_num );
       if( itr == merkle_map.end() || itr->second != merkle_root )
+      {
+        FC_FINALIZE_ASSERT( e );
         throw e;
+      }
     }
 
     if( _benchmark_dumper.is_enabled() )
@@ -4838,7 +4841,10 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
     catch (protocol::tx_missing_active_auth& e)
     {
       if (get_shared_db_merkle().find(head_block_num() + 1) == get_shared_db_merkle().end())
+      {
+        FC_FINALIZE_ASSERT( e );
         throw e;
+      }
     }
   }
 }
