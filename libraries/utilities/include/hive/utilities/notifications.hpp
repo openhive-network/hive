@@ -165,6 +165,19 @@ class notification_handler_wrapper
 
 bool error_handler( const std::function<void()>& foo );
 
+template <typename... KeyValuesTypes>
+inline void dynamic_notify(
+    notification_handler_wrapper& handler,
+    const fc::string &name,
+    KeyValuesTypes &&...key_value_pairs) noexcept
+{
+  error_handler([&]{
+    handler.broadcast(
+      notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+    );
+  });
+}
+
 } } // utilities::notifications
 
 } // hive
