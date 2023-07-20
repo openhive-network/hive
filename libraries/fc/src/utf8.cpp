@@ -3,7 +3,6 @@
 #include "utf8/checked.h"
 #include "utf8/core.h"
 #include "utf8/unchecked.h"
-#include <websocketpp/utf8_validator.hpp>
 
 #include <assert.h>
 #include <fc/log/logger.hpp>

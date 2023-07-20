@@ -80,10 +80,24 @@ namespace fc
    void to_variant( const int32_t& var,  variant& vo );
    void from_variant( const variant& var,  int32_t& vo );
 
-   void to_variant( const uint64_t& var,  variant& vo );
-   void from_variant( const variant& var,  uint64_t& vo );
+   void to_variant( unsigned long long var,  variant& vo );
+   void from_variant( const variant& var, unsigned long long& vo );
    void to_variant( const int64_t& var,  variant& vo );
    void from_variant( const variant& var,  int64_t& vo );
+
+   inline void to_variant(const unsigned long var, variant& vo)
+   {
+    to_variant(static_cast<unsigned long long>(var), vo);
+   }
+
+   inline void from_variant(const variant& var, unsigned long& vo)
+   {
+     unsigned long long temp = 0;
+     from_variant(var, temp);
+     vo = temp;
+   }
+
+   void from_variant(const variant& var, int64_t& vo);
 
    void to_variant( const double& var, variant& vo );
 
@@ -155,12 +169,6 @@ namespace fc
    void to_variant( const microseconds& input_microseconds,  variant& output_variant );
    void from_variant( const variant& input_variant,  microseconds& output_microseconds );
 
-   #ifdef __APPLE__
-   void to_variant( size_t s, variant& v );
-   #elif !defined(_MSC_VER)
-   void to_variant( long long int s, variant& v );
-   void to_variant( unsigned long long int s, variant& v );
-   #endif
    void to_variant( const std::string& s, variant& v );
 
    template<typename T>
@@ -219,7 +227,8 @@ namespace fc
         variant( int16_t val );
         variant( uint32_t val );
         variant( int32_t val );
-        variant( uint64_t val );
+        variant( unsigned long long val );
+        variant( unsigned long val);
         variant( int64_t val );
         variant( double val );
         variant( bool val );
@@ -569,16 +578,13 @@ namespace fc
       p.second = vars[1].as<B>();
    }
 
-
    template<typename T>
    variant::variant( const T& val )
    {
       memset( this, 0, sizeof(*this) );
       to_variant( val, *this );
    }
-   #ifdef __APPLE__
-   inline void to_variant( size_t s, variant& v ) { v = variant(uint64_t(s)); }
-   #endif
+
    template<typename T>
    void to_variant( const std::shared_ptr<T>& var,  variant& vo )
    {
