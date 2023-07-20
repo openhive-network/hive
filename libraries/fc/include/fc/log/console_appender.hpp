@@ -66,6 +66,9 @@ namespace fc
        private:
             class impl;
             std::unique_ptr<impl> my;
+
+            void log_impl(const std::string& line, color::type color);
+            void print_new_line()const;
    };
 } // namespace fc
 

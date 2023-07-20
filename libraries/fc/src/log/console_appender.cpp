@@ -7,7 +7,6 @@
 #ifndef WIN32
 #include <unistd.h>
 #endif
-#include <boost/thread/mutex.hpp>
 #define COLOR_CONSOLE 1
 #include "console_defines.h"
 #include <fc/io/stdio.hpp>
@@ -83,15 +82,9 @@ namespace fc {
       }
    }
 
-   boost::mutex& log_mutex() {
-    static boost::mutex m; return m;
-   }
-
    void console_appender::log( const log_message& m ) {
       //fc::string message = fc::format_string( m.get_format(), m.get_data() );
       //fc::variant lmsg(m);
-
-      FILE* out = stream::std_error ? stderr : stdout;
 
       //fc::string fmt_str = fc::format_string( cfg.format, mutable_variant_object(m.get_context())( "message", message)  );
       std::stringstream file_line;
@@ -119,9 +112,12 @@ namespace fc {
       fc::string message = fc::format_string( m.get_format(), m.get_data() );
       line << message;//.c_str();
 
-      fc::unique_lock<boost::mutex> lock(log_mutex());
+      log_impl(line.str(), my->lc[m.get_context().get_log_level()]);
+   }
 
-      print( line.str(), my->lc[m.get_context().get_log_level()] );
+   void console_appender::print_new_line()const
+   {
+      FILE* out = stream::std_error ? stderr : stdout;
 
       fprintf( out, "\n" );
 
