@@ -192,6 +192,7 @@ set( fc_sources
      src/crypto/_digest_common.cpp
      src/crypto/openssl.cpp
      src/crypto/aes.cpp
+     src/crypto/openssl_thread_config.cpp
      src/crypto/crc.cpp
      src/crypto/city.cpp
      src/crypto/base32.cpp
