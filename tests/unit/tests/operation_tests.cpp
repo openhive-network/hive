@@ -210,6 +210,8 @@ BOOST_AUTO_TEST_CASE( account_update_validate )
 {
   try
   {
+    account_name_type::set_verify( false );
+
     BOOST_TEST_MESSAGE( "Testing: account_update_validate" );
 
     ACTORS( (alice) )
