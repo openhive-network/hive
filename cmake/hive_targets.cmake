@@ -32,7 +32,7 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name )
     IF (_target_type  STREQUAL "EXECUTABLE")
       # Executable can always link against static Boost libraries, to reduce binary dependencies
       SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" FORCE )
-      SET( CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+      SET( CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX} )
 
     ELSEIF (_target_type  STREQUAL "SHARED_LIBRARY")
       # Shared library shall always link against shared Boost libraries
@@ -51,7 +51,7 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name )
       ELSE()
         MESSAGE( STATUS "Target: ${target_name} can use boost static linkage" )
         SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" FORCE )
-        SET( CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+        SET( CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX} )
       ENDIF()
 
     ENDIF ()
