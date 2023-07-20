@@ -136,6 +136,22 @@ else( WIN32 ) # Apple AND Linux
 
 endif( WIN32 )
 
+SET( BOOST_COMPONENTS )
+LIST( APPEND  BOOST_COMPONENTS
+      atomic
+      chrono
+      context
+      coroutine
+      date_time
+      filesystem
+      iostreams
+      locale
+      regex
+      system
+      thread
+      program_options
+      unit_test_framework )
+
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
 add_subdirectory( external_plugins )
 add_subdirectory( libraries )
