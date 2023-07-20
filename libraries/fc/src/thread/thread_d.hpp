@@ -105,7 +105,6 @@ namespace fc {
 #if 0
            void debug( const fc::string& s ) {
           return;
-              //boost::unique_lock<boost::mutex> lock(log_mutex());
 
               fc::cerr<<"--------------------- "<<s.c_str()<<" - "<<current;
               if( current && current->cur_task ) fc::cerr<<'('<<current->cur_task->get_desc()<<')';

@@ -62,6 +62,9 @@ namespace fc
     */
    class log_context 
    {
+   private:
+      const char* get_current_task_desc()const;
+
       public:
         log_context();
         log_context( log_level ll,
