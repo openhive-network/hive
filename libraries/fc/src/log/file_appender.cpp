@@ -5,6 +5,7 @@
 #include <fc/thread/scoped_lock.hpp>
 #include <fc/thread/thread.hpp>
 #include <fc/variant.hpp>
+#include <fc/log/appender.hpp>
 #include <boost/thread/mutex.hpp>
 #include <iomanip>
 #include <queue>
@@ -214,5 +215,10 @@ namespace fc {
           my->out.flush();
       }
    }
+
+   static bool reg_file_appender = []( __attribute__((unused)) bool* )->bool
+   {
+      return appender::register_appender<file_appender>( "file" );
+   }( &reg_file_appender );
 
 } // fc
