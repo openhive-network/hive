@@ -136,7 +136,7 @@ namespace fc  {
     return ss.str();
   }
 
-  fc::string to_string( uint64_t d)
+  fc::string to_string(unsigned long long d)
   {
     return boost::lexical_cast<std::string>(d);
   }

@@ -4,23 +4,6 @@
 #include <fc/reflect/variant.hpp>
 
 namespace hive { namespace protocol {
-  class json_string;
-} }
-namespace fc
-{
-  inline void to_variant(const hive::protocol::json_string& json_string, variant& var);
-  inline void from_variant(const variant& var, hive::protocol::json_string& json_string);
-  namespace raw
-  {
-    template<typename Stream>
-    inline Stream& operator<<(Stream& s, const hive::protocol::json_string& json_string);
-    template<typename Stream>
-    inline Stream& operator>>(Stream& s, hive::protocol::json_string& json_string);
-  }
-
-}
-
-namespace hive { namespace protocol {
 
   // the fc::json::fast_is_valid() method uses the simdjson parser, which requires all inputs to have some extra
   // padding at the end of the string.  The json_string class should act like a string and serialize like a string,
@@ -28,11 +11,6 @@ namespace hive { namespace protocol {
   // when validating
   class json_string
   {
-    friend inline void fc::to_variant(const json_string& json_string, fc::variant& var);
-    friend inline void fc::from_variant(const fc::variant& var, json_string& json_string);
-    template<typename Stream> friend inline Stream& fc::raw::operator<<(Stream& s, const hive::protocol::json_string& json_string);
-    template<typename Stream> friend inline Stream& fc::raw::operator>>(Stream& s, hive::protocol::json_string& json_string);
-
     std::string s;
   public:
     constexpr static const size_t required_padding = 32; // this must match the SIMDJSON_PADDING constant
@@ -71,6 +49,17 @@ namespace hive { namespace protocol {
       assert(s.capacity() - s.size() >= required_padding);
       return *this;
     }
+    template<typename Stream>
+    void dump_to_stream(Stream& stream)const
+    {
+      fc::raw::pack(stream, s);
+    }
+    template<typename Stream>
+    void load_from_stream(Stream& stream)
+    {
+      fc::raw::unpack(stream, s);
+      s.reserve(s.size() + hive::protocol::json_string::required_padding);
+    }
     operator const std::string&() const { return s; }
     // operator std::string&() { return s; } 
     bool operator==(const json_string& rhs) const { return s == rhs.s; }
@@ -95,35 +84,26 @@ namespace fc
 {
   inline void to_variant(const hive::protocol::json_string& json_string, variant& var)
   { try {
-    to_variant(json_string.s, var);
+    to_variant(json_string.operator const std::string&(), var);
   } FC_CAPTURE_AND_RETHROW() }
 
   inline void from_variant(const variant& var, hive::protocol::json_string& json_string)
   { try {
-    const std::string& source = var.get_string();
-    json_string.s.reserve(source.size() + hive::protocol::json_string::required_padding);
-    json_string.s = source;
-    assert(json_string.s.capacity() - json_string.s.size() >= hive::protocol::json_string::required_padding);
+    json_string = var.get_string();
   } FC_CAPTURE_AND_RETHROW() }
 
-  namespace raw
-  {
-    template<typename Stream>
-    inline Stream& operator<<(Stream& s, const hive::protocol::json_string& json_str)
-    { try {
-      pack(s, json_str.s);
-      return s;
-    } FC_CAPTURE_AND_RETHROW() }
-    template<typename Stream>
-    inline Stream& operator>>(Stream& s, hive::protocol::json_string& json_str)
-    { try {
-      unsigned_int string_length;
-      unpack(s, string_length);
-      json_str.s.reserve(string_length.value + hive::protocol::json_string::required_padding);
-      json_str.s.resize(string_length.value);
-      if (string_length.value)
-        s.read(&json_str.s[0], string_length.value);
-      return s;
-    } FC_CAPTURE_AND_RETHROW() }
-  }
+  template<typename Stream>
+  inline Stream& operator<<(Stream& s, const hive::protocol::json_string& json_str)
+  { try {
+    json_str.dump_to_stream(s);
+
+    return s;
+  } FC_CAPTURE_AND_RETHROW() }
+  template<typename Stream>
+  inline Stream& operator>>(Stream& s, hive::protocol::json_string& json_str)
+  { try {
+    json_str.load_from_stream(s);
+
+    return s;
+  } FC_CAPTURE_AND_RETHROW() }
 } // end namespace fc
