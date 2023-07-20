@@ -13,15 +13,13 @@ namespace fc
   uint64_t to_uint64( const fc::string& );
   double   to_double( const fc::string& );
   fc::string to_string( double );
-  fc::string to_string( uint64_t );
-  fc::string to_string( int64_t );
+  fc::string to_string( unsigned long long );
+  fc::string to_string(int64_t);
   fc::string to_string( uint16_t );
   std::string to_pretty_string( int64_t );
-  inline fc::string to_string( int32_t v ) { return to_string( int64_t(v) ); }
-  inline fc::string to_string( uint32_t v ){ return to_string( uint64_t(v) ); }
-#ifdef __APPLE__
-  inline fc::string to_string( size_t s) { return to_string(uint64_t(s)); }
-#endif
+  inline fc::string to_string( int32_t v ) { return to_string( static_cast<int64_t>(v) ); }
+  inline fc::string to_string( uint32_t v ){ return to_string( static_cast<unsigned long long>(v) ); }
+  inline fc::string to_string(unsigned long v) { return to_string(static_cast<unsigned long long>(v)); }
 
   typedef fc::optional<fc::string> ostring;
   class variant_object;

@@ -68,10 +68,18 @@ variant::variant( int32_t val )
    set_variant_type( this, int64_type );
 }
 
-variant::variant( uint64_t val )
+variant::variant(unsigned long long val)
 {
-   *reinterpret_cast<uint64_t*>(this)  = val;
-   set_variant_type( this, uint64_type );
+  *reinterpret_cast<unsigned long long*>(this) = val;
+  set_variant_type(this, uint64_type);
+}
+
+variant::variant(unsigned long val)
+{
+  unsigned long long temp = val;
+  *reinterpret_cast<unsigned long long*>(this) = temp;
+  set_variant_type(this, uint64_type);
+
 }
 
 variant::variant( int64_t val )
@@ -615,14 +623,14 @@ void from_variant( const variant& var,  int32_t& vo )
    vo = static_cast<int32_t>(var.as_int64());
 }
 
-void to_variant( const uint64_t& var, variant& vo ) { vo = var; }
+void to_variant(unsigned long long var, variant& vo ) { vo = var; }
 void from_variant( const variant& var,  int64_t& vo )
 {
    vo = var.as_int64();
 }
 
 void to_variant( const int64_t& var, variant& vo ) { vo = var; }
-void from_variant( const variant& var,  uint64_t& vo )
+void from_variant( const variant& var, unsigned long long& vo )
 {
    vo = var.as_uint64();
 }
@@ -736,7 +744,6 @@ string      format_string( const string& format, const variant_object& args )
    #ifdef __APPLE__
    #elif !defined(_MSC_VER)
    void to_variant( long long int s, variant& v ) { v = variant( int64_t(s) ); }
-   void to_variant( unsigned long long int s, variant& v ) { v = variant( uint64_t(s)); }
    #endif
 
    bool operator == ( const variant& a, const variant& b )

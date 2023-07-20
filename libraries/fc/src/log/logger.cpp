@@ -1,6 +1,5 @@
 #include <fc/log/logger.hpp>
 #include <fc/log/log_message.hpp>
-#include <fc/thread/thread.hpp>
 #include <fc/thread/spin_lock.hpp>
 #include <fc/thread/scoped_lock.hpp>
 #include <fc/log/appender.hpp>
