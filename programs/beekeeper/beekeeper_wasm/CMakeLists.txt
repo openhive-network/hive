@@ -8,6 +8,9 @@ set( CMAKE_CXX_STANDARD_REQUIRED ON )
 set( CMAKE_C_STANDARD 99 )
 set( CMAKE_C_STANDARD_REQUIRED ON )
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
+
 cmake_policy(SET CMP0057 NEW)
 
 ADD_SUBDIRECTORY( beekeeper_wasm_core )
@@ -15,4 +18,4 @@ ADD_SUBDIRECTORY( beekeeper_wasm_core )
 ADD_EXECUTABLE( beekeeper_wasm main.cpp )
 
 target_link_libraries( beekeeper_wasm PUBLIC beekeeper_wasm_core embind idbfs.js )
-target_link_options( beekeeper_wasm PRIVATE "--emrun" )
+target_link_options( beekeeper_wasm PRIVATE "--emrun -fexceptions" )

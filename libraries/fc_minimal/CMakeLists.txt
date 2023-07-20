@@ -110,7 +110,7 @@ set( fc_minimal_sources
         ${fc_dir}/src/log/console_appender.cpp
         ${fc_dir}/src/crypto/elliptic_common.cpp
         ${ECC_REST}
-        ${fc_dir}src/crypto/elliptic_${ECC_IMPL}.cpp
+        ${fc_dir}/src/crypto/elliptic_${ECC_IMPL}.cpp
         ${fc_dir}/src/crypto/sha512.cpp
         ${fc_dir}/src/crypto/sha256.cpp
         ${fc_dir}/src/crypto/aes.cpp
@@ -128,10 +128,12 @@ set( fc_minimal_sources
         ${fc_dir}/src/io/sstream.cpp
         ${fc_dir}/src/io/fstream.cpp
         ${fc_dir}/src/io/iostream.cpp
+        ${fc_dir}/src/io/stdio_out.cpp
         ${fc_dir}/src/thread/spin_yield_lock.cpp
         ${fc_dir}/src/thread/spin_lock.cpp
         ${fc_dir}/vendor/simdjson/simdjson.cpp
         ${fc_dir}/src/compress/zlib.cpp
+        ${fc_dir}/src/reflect/typename.cpp
         ${fc_minimal_headers}
      )
 
