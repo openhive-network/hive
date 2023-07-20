@@ -1,0 +1,7 @@
+{
+  "name": "Hive beekeeper WASM testdriver",
+  "version": "0.0.0",
+  "description": "A simple script to perform a unit testing",
+  "main": "run_node.mjs",
+  "type": "module"
+}
