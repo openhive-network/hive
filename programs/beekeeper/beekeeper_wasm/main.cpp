@@ -1,5 +1,7 @@
 #include <core/beekeeper_wasm_api.hpp>
 
+#include <iostream>
+
 #include <emscripten/bind.h>
 
 using namespace beekeeper;
@@ -38,3 +40,11 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("get_info", &beekeeper_api::get_info)
     ;
 }
+
+int main() {
+  // Main should not be run during TypeScript generation.
+  //abort();
+  std::cout << "This function does nothing... You have to instantiate beekeeper_api on JS side to play with..." << std::endl;
+  return 0;
+}
+
