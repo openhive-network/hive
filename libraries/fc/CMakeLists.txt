@@ -153,85 +153,7 @@ ENDIF()
 
 option( UNITY_BUILD OFF )
 
-file(GLOB fc_minimal_headers
-     include/fc/aligned.hpp
-     include/fc/array.hpp
-     include/fc/bitutil.hpp
-     include/fc/compress/zlib.hpp
-     include/fc/container/deque_fwd.hpp
-     include/fc/container/flat.hpp
-     include/fc/container/flat_fwd.hpp
-     include/fc/crypto/aes.hpp
-     include/fc/crypto/base58.hpp
-     include/fc/crypto/base64.hpp
-     include/fc/crypto/bigint.hpp
-     include/fc/crypto/city.hpp
-     include/fc/crypto/cripemd160.hpp
-     include/fc/crypto/equihash.hpp
-     include/fc/crypto/hex.hpp
-     include/fc/crypto/hmac.hpp
-     include/fc/crypto/openssl.hpp
-     include/fc/crypto/ripemd160.hpp
-     include/fc/crypto/sha1.hpp
-     include/fc/crypto/sha224.hpp
-     include/fc/crypto/sha256.hpp
-     include/fc/crypto/sha512.hpp
-     include/fc/exception/exception.hpp
-     include/fc/filesystem.hpp
-     include/fc/fwd.hpp
-     include/fc/fwd_impl.hpp
-     include/fc/int_array.hpp
-     include/fc/interprocess/container.hpp
-     include/fc/io/buffered_iostream.hpp
-     include/fc/io/datastream.hpp
-     include/fc/io/enum_type.hpp
-     include/fc/io/fstream.hpp
-     include/fc/io/iostream.hpp
-     include/fc/io/json.hpp
-     include/fc/io/json_relaxed.hpp
-     include/fc/io/raw.hpp
-     include/fc/io/raw_fwd.hpp
-     include/fc/io/raw_variant.hpp
-     include/fc/io/sstream.hpp
-     include/fc/io/stdio.hpp
-     include/fc/io/varint.hpp
-     include/fc/log/appender.hpp
-     include/fc/log/console_appender.hpp
-     include/fc/log/log_message.hpp
-     include/fc/log/logger.hpp
-     include/fc/log/logger_config.hpp
-     include/fc/macros.hpp
-     include/fc/optional.hpp
-     include/fc/platform_independence.hpp
-     include/fc/reflect/reflect.hpp
-     include/fc/reflect/typename.hpp
-     include/fc/reflect/variant.hpp
-     include/fc/safe.hpp
-     include/fc/shared_ptr.hpp
-     include/fc/smart_ref_fwd.hpp
-     include/fc/smart_ref_impl.hpp
-     include/fc/stacktrace.hpp
-     include/fc/static_variant.hpp
-     include/fc/string.hpp
-     include/fc/thread/scoped_lock.hpp
-     include/fc/thread/spin_lock.hpp
-     include/fc/thread/spin_yield_lock.hpp
-     include/fc/thread/unique_lock.hpp
-     include/fc/time.hpp
-     include/fc/uint128.hpp
-     include/fc/unique_ptr.hpp
-     include/fc/utf8.hpp
-     include/fc/utility.hpp
-     include/fc/variant.hpp
-     include/fc/variant_object.hpp
-     include/fc/vector.hpp
-     src/crypto/_digest_common.hpp
-     src/log/console_defines.h
-     src/utf8/checked.h
-     src/utf8/core.h
-     src/utf8/unchecked.h
-     vendor/simdjson/simdjson.h
-)
+file( GLOB_RECURSE fc_headers ${CMAKE_CURRENT_SOURCE_DIR} *.hpp *.h )
 
 set( fc_minimal_sources
      src/variant.cpp
@@ -274,7 +196,7 @@ set( fc_minimal_sources
      vendor/simdjson/simdjson.cpp
      src/compress/zlib.cpp
      src/reflect/typename.cpp
-     ${fc_minimal_headers}
+     ${fc_headers}
 )
 
 set( sources ${fc_minimal_sources} )
@@ -283,10 +205,6 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/git_revision.cpp.in" "${CMAKE_CU
 list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
 
 if(NOT HIVE_BUILD_ON_MINIMAL_FC)
-  file( GLOB_RECURSE fc_headers ${CMAKE_CURRENT_SOURCE_DIR} *.hpp *.h )
-  list(REMOVE_ITEM fc_headers ${fc_minimal_headers})
-  list(APPEND sources ${fc_headers})
-
   list(APPEND sources
      src/uint128.cpp
      src/real128.cpp
