@@ -13,14 +13,18 @@ ENABLE_TESTING()
 
 file(GLOB UNIT_TESTS
    "tests/*.cpp"
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper_wallet.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper_wallet_manager.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeper_instance.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/token_generator.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/time_manager.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/session.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/session_manager.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/beekeeper_instance.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/time_manager.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/session.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/session_manager.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/wallet_manager_impl.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/time_manager_base.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_wallet.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_wallet_manager.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/token_generator.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/session_base.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/session_manager_base.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/wallet_manager_impl.cpp
 )
 
 include(BoostTestTargets.cmake)
@@ -276,7 +280,7 @@ set_target_properties(chain_test PROPERTIES ENABLE_EXPORTS true)
 
 target_link_libraries( chain_test db_fixture chainbase hive_chain hive_protocol account_history_rocksdb_plugin market_history_plugin rc_plugin witness_plugin debug_node_plugin fc ${PLATFORM_SPECIFIC_LIBS} )
 
-target_include_directories( chain_test PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/include" )
+target_include_directories( chain_test PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/include" "${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/include" )
 
 file(GLOB PLUGIN_TESTS "plugin_tests/*.cpp")
 
