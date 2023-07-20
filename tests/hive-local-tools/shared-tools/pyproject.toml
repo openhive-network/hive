@@ -15,3 +15,4 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
+filelock = "3.12.2"
