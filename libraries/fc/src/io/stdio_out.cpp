@@ -1,4 +1,3 @@
-#include <fc/io/iostream.hpp>
 #include <fc/io/stdio.hpp>
 #include <iostream>
 
@@ -18,5 +17,4 @@ namespace fc {
   std::shared_ptr<cerr_t> cerr_ptr = std::make_shared<cerr_t>();
   cout_t& cout = *cout_ptr;
   cerr_t& cerr = *cerr_ptr;
-
 } // namespace fc
