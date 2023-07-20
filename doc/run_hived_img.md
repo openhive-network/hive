@@ -2,20 +2,24 @@ General usage: `run_hived_img.sh <docker_img> [OPTION[=VALUE]]... [<hived_option
 
 `run_hived_img.sh` can take following parameters:
 
-<img_name> - name of image to create a container for,
+```
+<img_name>              - name of image to create a container for
 --name=<container_name> - allows to specify explicit container name
 --docker-option=OPTION  - allows to pass give OPTION directly to docker run spawn
+```
 
 Options specific to node endpoints (they are also creating appropriete docker port mappings at container spawn)
 
+```
 --webserver-http-endpoint=<endpoint>
 --webserver-ws-endpoint=<endpoint>
 --p2p-endpoint=<endpoint>
+```
 
 Options to specify node work directories (script will pass appropriete volume mappings to underlying docker run basing on following options):
 
---data-dir=DIRECTORY_PATH - allows to specify blockchain data directory. See deployment scenarios described below, for details how to prepare this directory
---shared-file-dir=DIRECTORY_PATH - allows to specify a directory where dockerized hived will store its state file (shared_memory.bin). For best performance results, it should be located at ram-disk, inside subdirectory created under /dev/shm resource.
+`--data-dir=DIRECTORY_PATH` - allows to specify blockchain data directory. See deployment scenarios described below, for details how to prepare this directory<br>
+`--shared-file-dir=DIRECTORY_PATH` - allows to specify a directory where dockerized hived will store its state file (shared_memory.bin). For best performance results, it should be located at ram-disk, inside subdirectory created under /dev/shm resource.
 
 Started container (and hived process) will create a log file: hived.log located in specified data directory (so in examples below: /home/hived/datadir/hived.log).
 By default, container is always started in atached mode. You can detach it by using Ctrl-p Ctrl-q shortcuts as described in docker attach documentation
@@ -23,7 +27,7 @@ If you would like to start container in detached mode, you can pass --detach opt
 
 Logs can be also examined using docker logs feature:
 
-docker logs -f hived-instance  # follow along
+`docker logs -f hived-instance`
 
 To stop container, you should use a docker stop hived-instance command. Successfully stopped container should leave in the hived.log `exited cleanly` message:
 
@@ -80,6 +84,8 @@ exited cleanly
 
     Then you can operate with cli_wallet using network API calls, like this:
     
+    ```
     curl --request POST --url http://<your-container-ip>:8093/ --header 'Content-Type: application/json' --data '{"jsonrpc": "2.0", "id": 0, "method": "info", "params": []}'
     curl --request POST --url http://<your-container-ip>:8093/ --header 'Content-Type: application/json' --data '{"jsonrpc": "2.0", "id": 0, "method": "unlock", "params": ["my-secres-pass"]}'
     curl --request POST --url http://<your-container-ip>:8093/ --header 'Content-Type: application/json' --data '{"jsonrpc": "2.0", "id": 0, "method": "create_account", "params":  ["initminer", "alice", "{}", True]}'
+    ```
