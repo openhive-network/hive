@@ -8,8 +8,7 @@ set( CMAKE_CXX_STANDARD_REQUIRED ON )
 set( CMAKE_C_STANDARD 99 )
 set( CMAKE_C_STANDARD_REQUIRED ON )
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
+#SET( CMAKE_VERBOSE_MAKEFILE ON )
 
 cmake_policy(SET CMP0057 NEW)
 
@@ -17,5 +16,16 @@ ADD_SUBDIRECTORY( beekeeper_wasm_core )
 
 ADD_EXECUTABLE( beekeeper_wasm main.cpp )
 
-target_link_libraries( beekeeper_wasm PUBLIC beekeeper_wasm_core embind idbfs.js )
-target_link_options( beekeeper_wasm PRIVATE "--emrun -fexceptions" )
+target_compile_options( beekeeper_wasm PUBLIC -fexceptions )
+target_link_libraries( beekeeper_wasm PUBLIC embind beekeeper_wasm_core idbfs.js )
+# -sFORCE_FILESYSTEM=1 -sMODULARIZE=1 -sFILESYSTEM=1 
+target_link_options( beekeeper_wasm PUBLIC -fexceptions --emrun )
+
+
+# Helper target, just to perform TypeScript wrapper generation
+ADD_EXECUTABLE( beekeeper_ts_gen main.cpp )
+
+target_compile_options( beekeeper_ts_gen PUBLIC -fexceptions )
+target_link_libraries( beekeeper_ts_gen PUBLIC embind beekeeper_wasm_core idbfs.js )
+
+target_link_options( beekeeper_ts_gen PUBLIC -fexceptions --embind-emit-tsd ${CMAKE_CURRENT_BINARY_DIR}/beekeeper.d.ts )
