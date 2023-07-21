@@ -5548,7 +5548,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
   return old_last_irreversible;
 } FC_CAPTURE_AND_RETHROW() }
 
-void full_database::migrate_irreversible_state(uint32_t old_last_irreversible)
+void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 {
   // This method should happen atomically. We cannot prevent unclean shutdown in the middle
   // of the call, but all side effects happen at the end to minize the chance that state
@@ -5565,7 +5565,7 @@ void full_database::migrate_irreversible_state(uint32_t old_last_irreversible)
     if( !( get_node_properties().skip_flags & skip_block_log ) )
     {
       // output to block log based on new last irreverisible block num
-      std::shared_ptr<full_block_type> tmp_head = _block_log.head();
+      std::shared_ptr<full_block_type> tmp_head = get_block_log_head();
       uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
       vector<item_ptr> blocks_to_write;
 
@@ -5582,9 +5582,11 @@ void full_database::migrate_irreversible_state(uint32_t old_last_irreversible)
         }
 
         for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-          _block_log.append( block_itr->get()->full_block );
+          append_to_block_log( block_itr->get()->full_block );
+          
 
-        _block_log.flush();
+        flush_block_log();
+        
       }
     }
 
@@ -7448,6 +7450,11 @@ std::shared_ptr<full_block_type> full_database::get_head_block() const
   return _block_log.read_block_by_num(head_block_num());
 }
 
+std::shared_ptr<full_block_type> full_database::get_block_log_head() const
+{
+  return _block_log.head();
+}
+
 void full_database::open_block_log(const open_args& args)
 {
   with_write_lock([&]()
@@ -7456,6 +7463,16 @@ void full_database::open_block_log(const open_args& args)
     _block_log.set_compression(args.enable_block_log_compression);
     _block_log.set_compression_level(args.block_log_compression_level);
   });
+}
+
+void full_database::append_to_block_log(const std::shared_ptr<full_block_type>& full_block)
+{
+  _block_log.append( full_block );
+}
+
+void full_database::flush_block_log()
+{
+  _block_log.flush();
 }
 
 } } //hive::chain

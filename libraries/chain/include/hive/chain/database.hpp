@@ -615,7 +615,10 @@ namespace chain {
       void resetState(const open_args& args);
 
       virtual std::shared_ptr<full_block_type> get_head_block() const = 0;
+      virtual std::shared_ptr<full_block_type> get_block_log_head() const = 0;
       virtual void open_block_log(const open_args& args) = 0;
+      virtual void append_to_block_log(const std::shared_ptr<full_block_type>& full_block) = 0;
+      virtual void flush_block_log() = 0;
 
       void init_schema();
       void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
@@ -726,7 +729,7 @@ namespace chain {
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
-      virtual void migrate_irreversible_state(uint32_t old_last_irreversible) = 0;
+      void migrate_irreversible_state(uint32_t old_last_irreversible);
       void clear_expired_transactions();
       void clear_expired_orders();
       void clear_expired_delegations();
@@ -976,10 +979,13 @@ namespace chain {
     bool is_known_block_unlocked(const block_id_type& id)const;
     block_id_type              find_block_id_for_num( uint32_t block_num )const;
     
-    void migrate_irreversible_state(uint32_t old_last_irreversible) override;
+    //void migrate_irreversible_state(uint32_t old_last_irreversible) override;
     bool is_included_block_unlocked(const block_id_type& block_id);
     std::shared_ptr<full_block_type> get_head_block() const override;
+    std::shared_ptr<full_block_type> get_block_log_head() const override;
     void open_block_log(const open_args& args) override;
+    void append_to_block_log(const std::shared_ptr<full_block_type>& full_block) override;
+    void flush_block_log() override;
 
   public:
      block_id_type              get_block_id_for_num( uint32_t block_num )const;
