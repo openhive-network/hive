@@ -9,7 +9,7 @@ import {setTimeout} from 'timers/promises';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-import Module from "../../../../build_wasm/beekeeper_wasm.js";
+import Module from "../../../../build_wasm/beekeeper_wasm.mjs";
 
 const STORAGE_ROOT = path.join(__dirname, "storage_root");
 
