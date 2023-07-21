@@ -789,7 +789,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
 
     ACTORS( (alice)(bob) )
     generate_block();
-    vest( "initminer", "bob", ASSET( "70000.000 TESTS" ) ); //<- change that amount to tune RC cost
+    vest( "initminer", "bob", ASSET( "35000.000 TESTS" ) ); //<- change that amount to tune RC cost
     fund( "alice", ASSET( "1000.000 TESTS" ) );
 
     const auto& alice_rc = db->get_account( "alice" );

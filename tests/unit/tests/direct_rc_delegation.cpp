@@ -578,7 +578,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_before.get_delegated_rc() == uint64_t(vesting_amount) );
     BOOST_REQUIRE( alice_rc_before.get_received_rc() == 0 );
     BOOST_REQUIRE( alice_rc_before.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_before.rc_manabar.current_mana == creation_rc - ( 28756 + 28757 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
+    BOOST_REQUIRE( alice_rc_before.rc_manabar.current_mana == creation_rc - ( 57288 + 57290 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
 
     BOOST_REQUIRE( bob_rc_account_before.rc_manabar.current_mana == creation_rc + 10 );
     BOOST_REQUIRE( bob_rc_account_before.last_max_rc == creation_rc + 10 );
@@ -587,7 +587,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( dave_rc_account_before.last_max_rc == creation_rc + vesting_amount - 10 );
     BOOST_REQUIRE( dave_rc_account_before.get_received_rc() == uint64_t(vesting_amount - 10) );
 
-    generate_blocks(10); //couple blocks to let rc mana regenerate
+    generate_blocks(20); //couple blocks to let rc mana regenerate
 
     // we delegate and it affects one delegation
     // Delegate 5 vests out, alice has 5 remaining rc, it's lower than the rc_adjustment which is 10
@@ -605,7 +605,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_after.get_delegated_rc() == uint64_t(vesting_amount) - 5 );
     BOOST_REQUIRE( alice_rc_after.get_received_rc() == 0 );
     BOOST_REQUIRE( alice_rc_after.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_after.rc_manabar.current_mana == creation_rc - 28943 );
+    BOOST_REQUIRE( alice_rc_after.rc_manabar.current_mana == creation_rc - 58047 );
 
     BOOST_REQUIRE( bob_rc_account_after.rc_manabar.current_mana == creation_rc + 5 );
     BOOST_REQUIRE( bob_rc_account_after.last_max_rc == creation_rc + 5 );
@@ -631,7 +631,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_after_two.get_delegated_rc() == uint64_t(vesting_amount) - 11 );
     BOOST_REQUIRE( alice_rc_after_two.get_received_rc() == 0 );
     BOOST_REQUIRE( alice_rc_after_two.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_after_two.rc_manabar.current_mana == creation_rc - ( 28943 + 28944 ) );
+    BOOST_REQUIRE( alice_rc_after_two.rc_manabar.current_mana == creation_rc - ( 58047 + 58048 ) );
 
     BOOST_REQUIRE( bob_rc_account_after_two.rc_manabar.current_mana == creation_rc );
     BOOST_REQUIRE( bob_rc_account_after_two.last_max_rc == creation_rc );
@@ -1341,7 +1341,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     generate_block();
 
     //wait a bit so the RC used for comment is restored
-    generate_blocks( db->head_block_time() + fc::seconds( 60 ) );
+    generate_blocks( db->head_block_time() + fc::seconds( 150 ) );
 
     BOOST_TEST_MESSAGE( "All delegators make RC delegations to their delegatees with the same power" );
     auto rc_delegate = [&]( const account_name_type& from, const account_name_type& to, int64_t amount, const fc::ecc::private_key& key )
@@ -1387,7 +1387,9 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     int64_t undelegated = db->get_account( "delegator1" ).get_next_vesting_withdrawal().value;
     rc_delegate( "delegator3", "pattern3", full_vest - undelegated, delegator3_private_key );
     generate_block();
-    //pattern2 RC regeneration is triggered by author_reward_operation, but it doesn't modify RC because rewards go to separate balance until claimed
+    //pattern2 RC regeneration used to be triggered by author_reward_operation, but since it doesn't modify RC, that was removed
+    //we need to trigger regeneration manually
+    db->rc.regenerate_rc_mana( pattern2_rc, db->head_block_time().sec_since_epoch() );
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern2_rc.rc_manabar.current_mana - undelegated );
     //pattern3 undelegated exactly the same amount of RC as was dropped from delegatee by delegator1 powering down
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern3_rc.rc_manabar.current_mana );
@@ -1402,7 +1404,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing:  update_outdel_overflow with a vesting delegation" );
+    BOOST_TEST_MESSAGE( "Testing: update_outdel_overflow with a vesting delegation" );
     generate_block();
     db_plugin->debug_update( [=]( database& db )
     {
@@ -1462,7 +1464,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     BOOST_REQUIRE( bob_rc_account_before.get_delegated_rc() == uint64_t(vesting_amount) );
     BOOST_REQUIRE( bob_rc_account_before.last_max_rc == creation_rc );
     BOOST_REQUIRE( bob_rc_account_before.get_received_rc() == 0 );
-    BOOST_REQUIRE( bob_rc_account_before.rc_manabar.current_mana == creation_rc - ( 28755 + 28756 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
+    BOOST_REQUIRE( bob_rc_account_before.rc_manabar.current_mana == creation_rc - ( 57287 + 57289 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
 
     BOOST_REQUIRE( eve_rc_account_before.rc_manabar.current_mana == creation_rc + vesting_amount - 10 );
     BOOST_REQUIRE( eve_rc_account_before.last_max_rc == creation_rc + vesting_amount - 10 );
