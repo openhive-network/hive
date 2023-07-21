@@ -278,6 +278,10 @@ Given configuration sets the initial supply, comment options, genesis time, and 
 After creating and configuring the script you can run the P2P network in the very similar way how it is presented in [Configuring altered P2P network](#configuring-altered-p2p-network). Remember to add given plugins to the configuration of either first output node or all them:
 ```ini
 plugin = account_by_key account_by_key_api transaction_status_api
+# Default value for transaction status block depth is 64000 and
+# since we are using transaction_status_api only to test if the initial conversion stage is complete,
+# setting this option to 0 is recommended if you do not want to allow increase of the `transaction_status_object` index (shared memory file size also increases)
+transaction-status-block-depth = 0
 ```
 
 After that, your hived network is ready to be used with the [`iceberg_generate`](#iceberg_generate) plugin
