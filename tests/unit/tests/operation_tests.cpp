@@ -211,8 +211,7 @@ BOOST_AUTO_TEST_CASE( account_update_validate )
 {
   try
   {
-    auto _old_verify_status = account_name_type::is_verifying_enabled();
-    BOOST_SCOPE_EXIT(&_old_verify_status) { account_name_type::set_verify( _old_verify_status ); } BOOST_SCOPE_EXIT_END
+    hive::protocol::details::truncation_controller::scoped_verification_state_backup backup;
 
     account_name_type::set_verify( false );
 

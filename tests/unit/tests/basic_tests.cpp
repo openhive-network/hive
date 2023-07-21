@@ -105,11 +105,8 @@ BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 
 BOOST_AUTO_TEST_CASE( fixed_string_verification )
 {
-  using hive::protocol::details::truncation_controller;
 
-  auto _old_verify_status = truncation_controller::is_verifying_enabled();
-  BOOST_SCOPE_EXIT(&_old_verify_status) { truncation_controller::set_verify( _old_verify_status ); } BOOST_SCOPE_EXIT_END
-
+  hive::protocol::details::truncation_controller::scoped_verification_state_backup backup;
 
   try
   {
