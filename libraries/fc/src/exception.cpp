@@ -259,17 +259,18 @@ namespace fc
          ("source_lineno", lineno)
          ("expr", expr)
          ;
-      std::cout
-         << "FC_ASSERT triggered:  "
-         << fc::json::to_string( assert_trip_info ) << "\n";
+         
+      std::stringstream out;
+      out << "FC_ASSERT triggered:  "
+          << fc::json::to_string( assert_trip_info ) << std::endl;
 
       if( enable_assert_stacktrace )
       {
-         std::stringstream out;
          out << "FC_ASSERT / CHAINBASE_THROW_EXCEPTION!" << std::endl;
          print_stacktrace( out, 128, nullptr, false );
-         wlog( out.str() );
       }
+
+      wlog( out.str() );
    }
 
    bool enable_record_assert_trip = false;
