@@ -48,16 +48,16 @@ namespace hive { namespace converter { namespace plugins {
   {
     if( total_request_count )
     {
-      wlog("${errors} (${percent}% of total ${total}) node errors detected",
-        ("errors", error_response_count)("percent", int(float(error_response_count) / total_request_count * 100))("total", total_request_count));
-    
 #ifdef HIVE_CONVERTER_POST_COUNT_ERRORS
       wlog("Errors [count]: message");
       for( const auto& [key, val] : error_types )
         wlog(" > [${val}]: \t\"${key}\"", (val)(key));
 #endif
+
+      wlog("${errors} (${percent}% of total ${total}) node errors detected",
+        ("errors", error_response_count)("percent", int(float(error_response_count) / total_request_count * 100))("total", total_request_count));
     }
-    
+
     ilog("Processed total of ${total_tx_count} transactions", ("total_tx_count", converter.get_total_tx_count()));
   }
 
