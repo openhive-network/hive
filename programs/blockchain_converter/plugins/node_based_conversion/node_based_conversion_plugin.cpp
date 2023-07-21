@@ -173,7 +173,9 @@ namespace detail {
           if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
             break;
           else
-            transmit( *transactions.at(i), output_urls.at( i % output_urls.size() ) );
+            try {
+              transmit( *transactions.at(i), output_urls.at( i % output_urls.size() ) );
+            } ICEBERG_GENERATE_CAPTURE_AND_LOG()
 
         gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
 
@@ -182,21 +184,7 @@ namespace detail {
           update_lib_id();
           converter.on_tapos_change();
         }
-      }
-      catch( fc::exception& er )
-      {
-# ifdef HIVE_CONVERTER_POST_DETAILED_LOGGING
-        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_detail_string()) );
-# else
-        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_string()) );
-# endif
-        retry_flag = true;
-      }
-      catch(...)
-      {
-        wlog( "Caught an unknown error during the conversion. Retrying in 1 second" );
-        retry_flag = true;
-      }
+      } ICEBERG_GENERATE_CAPTURE_AND_LOG(retry_flag = true)
     }
 
     dlog("In order to resume your live conversion pass the \'-R ${block_num}\' option to the converter next time", ("block_num", start_block_num - 1));

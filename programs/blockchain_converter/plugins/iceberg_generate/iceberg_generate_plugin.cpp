@@ -374,7 +374,9 @@ namespace detail {
             true
           );
 
-          transmit( *tx_converted, output_urls.at( 0 ) );
+          try {
+            transmit( *tx_converted, output_urls.at( 0 ) );
+          } ICEBERG_GENERATE_CAPTURE_AND_LOG()
           last_init_tx_id = tx_converted->get_transaction_id();
         }
 
@@ -389,7 +391,9 @@ namespace detail {
             true
           );
 
-          transmit( *tx_converted, output_urls.at( 0 ) );
+          try {
+            transmit( *tx_converted, output_urls.at( 0 ) );
+          } ICEBERG_GENERATE_CAPTURE_AND_LOG()
           last_init_tx_id = tx_converted->get_transaction_id();
         }
 
@@ -402,19 +406,7 @@ namespace detail {
           update_lib_id();
           converter.on_tapos_change();
         }
-      }
-      catch( fc::exception& er )
-      {
-# ifdef HIVE_CONVERTER_POST_DETAILED_LOGGING
-        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_detail_string()) );
-# else
-        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_string()) );
-# endif
-      }
-      catch(...)
-      {
-        wlog( "Caught an unknown error during the conversion" );
-      }
+      } ICEBERG_GENERATE_CAPTURE_AND_LOG()
     }
 
     int64_t virtual_supply = gpo["virtual_supply"].as< hp::asset >().amount.value;
@@ -539,7 +531,9 @@ namespace detail {
           if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
             break;
           else
-            transmit( *transactions.at(i), output_urls.at( i % output_urls.size() ) );
+            try {
+              transmit( *transactions.at(i), output_urls.at( i % output_urls.size() ) );
+            } ICEBERG_GENERATE_CAPTURE_AND_LOG()
 
         gpo_interval = start_block_num % HIVE_BC_TIME_BUFFER;
 
@@ -548,19 +542,7 @@ namespace detail {
           update_lib_id();
           converter.on_tapos_change();
         }
-      }
-      catch( fc::exception& er )
-      {
-# ifdef HIVE_CONVERTER_POST_DETAILED_LOGGING
-        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_detail_string()) );
-# else
-        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.to_string()) );
-# endif
-      }
-      catch(...)
-      {
-        wlog( "Caught an unknown error during the conversion" );
-      }
+      } ICEBERG_GENERATE_CAPTURE_AND_LOG()
     }
 
     display_error_response_data();

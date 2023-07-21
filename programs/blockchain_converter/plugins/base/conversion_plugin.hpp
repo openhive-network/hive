@@ -16,6 +16,16 @@
 // #define HIVE_CONVERTER_POST_SUPPRESS_WARNINGS // Uncomment or define if you want to suppress converter warnings
 // #define HIVE_CONVERTER_POST_COUNT_ERRORS // Uncomment or define if you want to count error and their types and display them at the end
 
+#ifdef HIVE_CONVERTER_POST_DETAILED_LOGGING
+#  define HIVE_CONVERTER_POST_DETAILED_LOGGING_METHOD to_detail_string
+#else
+#  define HIVE_CONVERTER_POST_DETAILED_LOGGING_METHOD to_string
+#endif
+
+#define ICEBERG_GENERATE_CAPTURE_AND_LOG(...) catch( fc::exception& er ) { \
+        wlog( "Caught an error during the conversion: \'${strerr}\'", ("strerr",er.HIVE_CONVERTER_POST_DETAILED_LOGGING_METHOD()) ); __VA_ARGS__; \
+  } catch(...) { wlog( "Caught an unknown error during the conversion" ); __VA_ARGS__; }
+
 namespace hive { namespace converter { namespace plugins {
 
   FC_DECLARE_EXCEPTION( error_response_from_node, 100000, "Got error response from the node while processing input block" );
