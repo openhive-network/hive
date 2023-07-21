@@ -761,10 +761,7 @@ struct pre_apply_operation_visitor
     _db.rc.regenerate_rc_mana( account, _current_time );
   }
 
-  void operator()( const account_create_with_delegation_operation& op )const
-  {
-    regenerate( op.creator );
-  }
+  //void operator()( const account_create_with_delegation_operation& op )const //not needed, RC not active when this op was active
 
   void operator()( const transfer_to_vesting_operation& op )const
   {
@@ -777,10 +774,7 @@ struct pre_apply_operation_visitor
     regenerate( op.account );
   }
 
-  void operator()( const set_withdraw_vesting_route_operation& op )const
-  {
-    regenerate( op.from_account );
-  }
+  //void operator()( const set_withdraw_vesting_route_operation& op )const //not needed - there is no change in VESTS
 
   void operator()( const delegate_vesting_shares_operation& op )const
   {
@@ -788,24 +782,16 @@ struct pre_apply_operation_visitor
     regenerate( op.delegatee );
   }
 
-  void operator()( const author_reward_operation& op )const
-  {
-    regenerate( op.author );
-  }
+  //void operator()( const author_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
 
-  void operator()( const curation_reward_operation& op )const
-  {
-    regenerate( op.curator );
-  }
+  //void operator()( const curation_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
 
-  // Is this one actually necessary?
-  void operator()( const comment_reward_operation& op )const
-  {
-    regenerate( op.author );
-  }
+  //void operator()( const comment_reward_operation& op )const //it was never needed
 
   void operator()( const fill_vesting_withdraw_operation& op )const
   {
+    //TODO: when that code is moved to direct handling of the operation remember to fix workaround for
+    //implied route in case all the power down is distributed to other defined routes (also in AH and possibly HAF)
     regenerate( op.from_account );
     regenerate( op.to_account );
   }
@@ -822,20 +808,11 @@ struct pre_apply_operation_visitor
   }
 #endif
 
-  void operator()( const hardfork_operation& op )const
-  {
-    if( op.hardfork_id == HIVE_HARDFORK_0_1 )
-    {
-      const auto& idx = _db.get_index< account_index >().indices().get< by_id >();
-      for( auto it = idx.begin(); it != idx.end(); ++it )
-      {
-        regenerate( it->get_name() );
-      }
-    }
-  }
+  //void operator()( const hardfork_operation& op )const //the code that was here never worked (called before RC was active)
 
   void operator()( const hardfork_hive_operation& op )const
   {
+    //see comment in pre_apply_operation
     regenerate( op.account );
     for( auto& account : op.other_affected_accounts )
       regenerate( account );
@@ -846,10 +823,7 @@ struct pre_apply_operation_visitor
     regenerate( op.account );
   }
 
-  void operator()( const comment_benefactor_reward_operation& op )const
-  {
-    regenerate( op.benefactor );
-  }
+  //void operator()( const comment_benefactor_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
 
   void operator()( const producer_reward_operation& op )const
   {
@@ -858,6 +832,7 @@ struct pre_apply_operation_visitor
 
   void operator()( const clear_null_account_balance_operation& op )const
   {
+    //we could just always set RC value on 'null' to 0
     regenerate( HIVE_NULL_ACCOUNT );
   }
 
@@ -918,14 +893,12 @@ struct post_apply_operation_visitor
     _db.rc.update_account_after_vest_change( account, _current_time, _fill_new_mana,
       _check_for_rc_delegation_overflow );
   }
-  void operator()( const account_create_with_delegation_operation& op )const
-  {
-    update_after_vest_change( op.creator );
-  }
 
-  //void operator()( const pow_operation& op )const //not needed, RC not active when pow was active
+  //void operator()( const account_create_with_delegation_operation& op )const //not needed, RC not active when this op was active
 
-  //void operator()( const pow2_operation& op )const //not needed, RC not active when pow2 was active
+  //void operator()( const pow_operation& op )const //not needed, RC not active when this op was active
+
+  //void operator()( const pow2_operation& op )const //not needed, RC not active when this op was active
 
   void operator()( const transfer_to_vesting_operation& op )
   {
@@ -944,20 +917,13 @@ struct post_apply_operation_visitor
     update_after_vest_change( op.delegatee, true, true );
   }
 
-  void operator()( const author_reward_operation& op )const
-  {
-    update_after_vest_change( op.author );
-    //not needed, since HF17 rewards need to be claimed before they affect vest balance
-  }
+  //void operator()( const author_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
 
-  void operator()( const curation_reward_operation& op )const
-  {
-    update_after_vest_change( op.curator );
-    //not needed, since HF17 rewards need to be claimed before they affect vest balance
-  }
+  //void operator()( const curation_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
 
   void operator()( const fill_vesting_withdraw_operation& op )const
   {
+    //see comment in pre_apply_operation
     update_after_vest_change( op.from_account, true, true );
     update_after_vest_change( op.to_account );
   }
@@ -974,33 +940,12 @@ struct post_apply_operation_visitor
   }
 #endif
 
-  void operator()( const hardfork_operation& op )const
-  {
-    if( op.hardfork_id == HIVE_HARDFORK_0_1 )
-    {
-      const auto& idx = _db.get_index< account_index, by_id >();
-      for( auto it = idx.begin(); it != idx.end(); ++it )
-        update_after_vest_change( it->get_name() );
-    }
-
-    if( op.hardfork_id == HIVE_HARDFORK_0_20 )
-    {
-      const auto& params = _db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
-
-      _db.modify( _db.get< rc_pool_object, by_id >( rc_pool_id_type() ), [&]( rc_pool_object& p )
-      {
-        for( size_t i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
-        {
-          p.set_pool( i, int64_t( params.resource_param_array[i].resource_dynamics_params.max_pool_size ) );
-        }
-
-        p.set_pool( resource_new_accounts, 0 );
-      } );
-    }
-  }
+  //void operator()( const hardfork_operation& op )const //the code that was here never worked (called before RC was active)
 
   void operator()( const hardfork_hive_operation& op )const
   {
+    //TODO: when moving this code to actual operation make sure the problem in AH is fixed
+    //(final values of funds taken never showing up in history - always with zeros)
     update_after_vest_change( op.account, true, true );
     for( auto& account : op.other_affected_accounts )
       update_after_vest_change( account, true, true );
@@ -1011,11 +956,7 @@ struct post_apply_operation_visitor
     update_after_vest_change( op.account );
   }
 
-  void operator()( const comment_benefactor_reward_operation& op )const
-  {
-    update_after_vest_change( op.benefactor );
-    //not needed, since HF17 rewards need to be claimed before they affect vest balance
-  }
+  //void operator()( const comment_benefactor_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
 
   void operator()( const producer_reward_operation& op )const
   {
@@ -1043,10 +984,7 @@ struct post_apply_operation_visitor
   //void operator()( const remove_proposal_operation& op )const
 
   template< typename Op >
-  void operator()( const Op& op )const
-  {
-    // ilog( "handling post-apply operation default" );
-  }
+  void operator()( const Op& op )const {}
 };
 
 void resource_credits::on_post_apply_operation_impl( const hive::protocol::operation& op ) const
