@@ -81,7 +81,7 @@ namespace detail {
 
   iceberg_generate_plugin_impl::iceberg_generate_plugin_impl( const std::vector< std::string >& output_urls, const hp::private_key_type& _private_key,
       const hp::chain_id_type& chain_id, bool enable_op_content_strip, size_t signers_size )
-    :  conversion_plugin_impl( _private_key, chain_id, signers_size, true )
+    :  conversion_plugin_impl( _private_key, chain_id, signers_size, true ), enable_op_content_strip( enable_op_content_strip )
   {
     for( const auto& url : output_urls )
       check_url( this->output_urls.emplace_back(url) );
