@@ -52,6 +52,7 @@ namespace detail {
     block_log log_in;
     std::vector< fc::url > output_urls;
     bool enable_op_content_strip;
+    fc::optional<hp::transaction_id_type> last_init_tx_id;
 
     iceberg_generate_plugin_impl( const std::vector< std::string >& output_urls, const hp::private_key_type& _private_key,
         const hp::chain_id_type& chain_id, bool enable_op_content_strip = false, size_t signers_size = 1 );
@@ -278,7 +279,6 @@ namespace detail {
     uint32_t gpo_interval = 0;
     const auto init_start_block_num = start_block_num;
     uint32_t last_witness_schedule_block_check = lib_num;
-    fc::optional<hp::transaction_id_type> last_init_tx_id;
 
     std::map< uint32_t, hp::share_type > init_assets;
 
@@ -479,8 +479,6 @@ namespace detail {
     hp::asset account_creation_fee = get_account_creation_fee( output_urls.at(0) );
 
     ops_strip_content_visitor ops_strip_content{};
-
-    fc::optional<hp::transaction_id_type> last_init_tx_id;
 
     wait_blockchain_ready();
 
