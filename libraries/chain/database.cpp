@@ -1477,6 +1477,7 @@ void database::notify_comment_reward(const comment_reward_notification& note)
 void database::notify_end_of_syncing()
 {
   HIVE_TRY_NOTIFY(_end_of_syncing_signal)
+  _is_at_live_sync = true;
 }
 
 void database::notify_pre_apply_custom_operation( const custom_operation_notification& note )
@@ -5584,7 +5585,7 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
         }
 
         for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-          _block_log.append( block_itr->get()->full_block );
+          _block_log.append( block_itr->get()->full_block, _is_at_live_sync );
 
         _block_log.flush();
       }

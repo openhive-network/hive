@@ -166,7 +166,7 @@ namespace detail {
         ilog("[ ${progress}% ]: ${processed}/${stop_point} blocks rewritten",
           ("progress", int( float(start_block_num) / stop_block_num * 100 ))("processed", start_block_num)("stop_point", stop_block_num));
 
-      log_out.append( fb );
+      log_out.append( fb, false );
 
       if ( ( log_per_block > 0 && start_block_num % log_per_block == 0 ) || log_specific == start_block_num )
         dlog("After conversion: ${block}", ("block", block));

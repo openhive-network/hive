@@ -84,7 +84,7 @@ public:
   artifact_container_t read_block_artifacts(uint32_t start_block_num, uint32_t block_count, size_t* block_size_sum = nullptr) const;
 
   void store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
-                             const block_id_t& block_id);
+                             const block_id_t& block_id, const bool is_at_live_sync);
 
   void truncate(uint32_t new_head_block_num);
 
