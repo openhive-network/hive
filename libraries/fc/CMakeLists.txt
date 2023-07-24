@@ -47,7 +47,11 @@ ENDIF( ECC_IMPL STREQUAL openssl )
 SET( SECP256K1_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp" )
 SET( SEC256K1_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp-build )
 
+set( FC_MINIMAL_FILE_SUFFIX "" )
+
 if(HIVE_BUILD_ON_MINIMAL_FC)
+  set( FC_MINIMAL_FILE_SUFFIX "${FC_MINIMAL_FILE_SUFFIX}_minimal" )
+
   FIND_library(SECP256K1_LIBRARY secp256k1 REQUIRED )
   set(ECC_LIB ${SECP256K1_LIBRARY})
   set(ECC_INCLUDE ${binary_dir_secp256k1}/include)
@@ -160,7 +164,7 @@ set( fc_minimal_sources
      src/exception.cpp
      src/variant_object.cpp
      src/filesystem.cpp
-     src/stacktrace.cpp
+     src/stacktrace${FC_MINIMAL_FILE_SUFFIX}.cpp
      src/time.cpp
      src/string.cpp
      src/shared_ptr.cpp

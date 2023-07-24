@@ -8,7 +8,7 @@
 #include <fc/macros.hpp>
 #include <fc/stacktrace.hpp>
 
-#if defined(__GNUC__) && !defined( __APPLE__ ) && !defined( __EMSCRIPTEN__ )
+#if defined(__GNUC__) && !defined( __APPLE__ )
 
 #include <cxxabi.h>
 #include <execinfo.h>
