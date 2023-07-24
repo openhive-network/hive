@@ -136,6 +136,14 @@ else( WIN32 ) # Apple AND Linux
 
 endif( WIN32 )
 
+# liburing-dev does not provide default finduring cmake file, but rocksdb does
+# The io_uring engine is able to perform batch submissions and reaps through a single syscall,
+# and thus will improve the overall performance of the system on high-version Linux kernels above 5.x
+include(libraries/vendor/rocksdb/cmake/modules/Finduring.cmake)
+if (NOT uring_FOUND)
+  message(FATAL_ERROR "Usage of the io_uring engine is preferred in this project")
+endif()
+
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
 add_subdirectory( external_plugins )
 add_subdirectory( libraries )
