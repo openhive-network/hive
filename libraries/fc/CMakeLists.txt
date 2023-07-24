@@ -47,6 +47,8 @@ ENDIF( ECC_IMPL STREQUAL openssl )
 SET( SECP256K1_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp" )
 SET( SEC256K1_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp-build )
 
+# Files that include FC_MINIMAL_FILE_SUFFIX are library-type (minimal/full) dependent, but share similar logic,
+# Which is hard to tear apart without the usage of compiler-specific definitions or any other ifdefs.
 set( FC_MINIMAL_FILE_SUFFIX "" )
 
 if(HIVE_BUILD_ON_MINIMAL_FC)
@@ -171,6 +173,7 @@ set( fc_minimal_sources
      src/utf8.cpp
      src/log/log_message.cpp
      src/log/logger.cpp
+     src/log/configure_logging${FC_MINIMAL_FILE_SUFFIX}.cpp
      src/log/logger_config.cpp
      src/log/appender.cpp
      src/log/console_appender.cpp

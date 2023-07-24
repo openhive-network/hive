@@ -4,10 +4,6 @@
 #include <fc/filesystem.hpp>
 #include <unordered_map>
 #include <string>
-#include <fc/log/console_appender.hpp>
-#ifndef __EMSCRIPTEN__
-#include <fc/log/file_appender.hpp>
-#endif
 #include <fc/reflect/variant.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/io/stdio.hpp>
@@ -24,10 +20,7 @@ namespace fc {
    bool configure_logging( const logging_config& cfg )
    {
       try {
-      static bool reg_console_appender = appender::register_appender<console_appender>( "console" );
-      #ifndef __EMSCRIPTEN__
-      static bool reg_file_appender = appender::register_appender<file_appender>( "file" );
-      #endif
+      bool configure_result = configure_logging();
       get_logger_map().clear();
       get_appender_map().clear();
 
@@ -52,11 +45,7 @@ namespace fc {
             if( ap ) { lgr.add_appender(ap); }
          }
       }
-      #ifdef __EMSCRIPTEN__
-         return reg_console_appender;
-      #else
-         return reg_console_appender || reg_file_appender;
-      #endif
+      return configure_result;
       } catch ( exception& e )
       {
          fc::cerr<<e.to_detail_string()<<"\n";
