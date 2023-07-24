@@ -230,9 +230,10 @@ public:
     return _header;
   }
 
+  void flush_header() const;
+
 private:
   bool load_header();
-  void flush_header() const;
 
   void generate_artifacts_file(const block_log& source_block_provider);
   void verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool full_match_verification, const bool use_block_log_head_num) const;
@@ -765,10 +766,25 @@ block_log_artifacts::read_block_artifacts(uint32_t start_block_num, uint32_t blo
 }
 
 void block_log_artifacts::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos, const block_attributes_t& block_attributes,
-                                                const block_id_t& block_id)
+                                                const block_id_t& block_id, const bool is_at_live_sync)
 {
   _impl->store_block_artifacts(block_num, block_log_file_pos, block_attributes, block_id);
   _impl->update_head_block(block_num);
+
+  if (is_at_live_sync)
+    _impl->flush_header();
+  else
+  {
+    constexpr uint16_t BLOCKS_COUNT_INTERVAL_FOR_FLUSH = 10000;
+    static uint16_t stored_blocks_counter = 0;
+    ++stored_blocks_counter;
+
+    if (stored_blocks_counter > BLOCKS_COUNT_INTERVAL_FOR_FLUSH)
+    {
+      _impl->flush_header();
+      stored_blocks_counter = 0;
+    }
+  }
 }
 
 void block_log_artifacts::truncate(uint32_t new_head_block_num)

@@ -209,7 +209,7 @@ namespace hive { namespace chain {
     return my->block_log_fd != -1;
   }
   
-  uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes)
+  uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes, const bool is_at_live_sync)
   {
     std::unique_ptr<char[]> compressed_block_data(new char[raw_block_size]);
     memcpy(compressed_block_data.get(), raw_block_data, raw_block_size);
@@ -220,10 +220,10 @@ namespace hive { namespace chain {
     else
       full_block = full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), raw_block_size, attributes);
 
-    return append_raw(block_num, raw_block_data, raw_block_size, attributes, full_block->get_block_id());
+    return append_raw(block_num, raw_block_data, raw_block_size, attributes, full_block->get_block_id(), is_at_live_sync);
   }
 
-  uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes, const block_id_type& block_id)
+  uint64_t block_log::append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& attributes, const block_id_type& block_id, const bool is_at_live_sync)
   {
     uint64_t block_start_pos = my->block_log_size;
     uint64_t block_start_pos_with_flags = detail::combine_block_start_pos_with_flags(block_start_pos, attributes);
@@ -240,7 +240,7 @@ namespace hive { namespace chain {
       detail::block_log_impl::write_with_retry(my->block_log_fd, block_with_start_pos.get(), block_size_including_start_pos);
       my->block_log_size += block_size_including_start_pos;
 
-      my->_artifacts->store_block_artifacts(block_num, block_start_pos, attributes, block_id);
+      my->_artifacts->store_block_artifacts(block_num, block_start_pos, attributes, block_id, is_at_live_sync);
 
       return block_start_pos;
     }
@@ -267,7 +267,7 @@ namespace hive { namespace chain {
   //   are reading the block log.
   // There is no real use-case for multiple writers so it's not worth
   // adding a lock to allow it.
-  uint64_t block_log::append(const std::shared_ptr<full_block_type>& full_block)
+  uint64_t block_log::append(const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync)
   {
     try
     {
@@ -278,14 +278,14 @@ namespace hive { namespace chain {
         const compressed_block_data& compressed_block = full_block->get_compressed_block();
         block_start_pos = append_raw(full_block->get_block_num(),
                                      compressed_block.compressed_bytes.get(), compressed_block.compressed_size, compressed_block.compression_attributes,
-                                     full_block->get_block_id());
+                                     full_block->get_block_id(), is_at_live_sync);
       }
       else // compression not enabled
       {
         const uncompressed_block_data& uncompressed_block = full_block->get_uncompressed_block();
         block_start_pos = append_raw(full_block->get_block_num(),
                                      uncompressed_block.raw_bytes.get(), uncompressed_block.raw_size, {block_flags::uncompressed},
-                                     full_block->get_block_id());
+                                     full_block->get_block_id(), is_at_live_sync);
       }
 
       // update our cached head block

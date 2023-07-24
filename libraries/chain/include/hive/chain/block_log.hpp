@@ -68,9 +68,9 @@ namespace hive { namespace chain {
       void close();
       bool is_open()const;
 
-      uint64_t append(const std::shared_ptr<full_block_type>& full_block);
-      uint64_t append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& flags);
-      uint64_t append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& flags, const block_id_type& block_id);
+      uint64_t append(const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync);
+      uint64_t append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& flags, const bool is_at_live_sync);
+      uint64_t append_raw(uint32_t block_num, const char* raw_block_data, size_t raw_block_size, const block_attributes_t& flags, const block_id_type& block_id, const bool is_at_live_sync);
 
       void flush();
       std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> read_raw_block_data_by_num(uint32_t block_num) const;
