@@ -71,7 +71,7 @@
 
 namespace hive { namespace chain {
 
-  FC_DECLARE_EXCEPTION( chain_exception, 4000000, "blockchain exception" )
+  FC_DECLARE_DERIVED_EXCEPTION( chain_exception,                   fc::assert_exception, 4000000, "blockchain exception" )
   FC_DECLARE_DERIVED_EXCEPTION( database_query_exception,          hive::chain::chain_exception, 4010000, "database query exception" )
   FC_DECLARE_DERIVED_EXCEPTION( block_validate_exception,          hive::chain::chain_exception, 4020000, "block validation exception" )
   FC_DECLARE_DERIVED_EXCEPTION( transaction_check_exception,       hive::chain::chain_exception, 4030000, "transaction validation exception" )

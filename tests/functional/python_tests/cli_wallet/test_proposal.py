@@ -51,7 +51,8 @@ def test_create_proposal_fail_negative_payment(wallet: tt.Wallet, funded_account
     wallet.api.create_proposal( **prepared_proposal.create_proposal_arguments )
 
   response = exception.value.response
-  assert "daily_pay.amount >= 0: Daily pay can't be negative value" in response['error']['message']
+  assert "daily_pay.amount >= 0" in response['error']['message']
+  assert "Daily pay can't be negative value" in response['error']['message']
 
   assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 

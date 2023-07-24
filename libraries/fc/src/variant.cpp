@@ -673,9 +673,22 @@ void from_variant( const variant& var,  std::vector<char>& vo )
 //   vo = std::vector<char>( b64.c_str(), b64.c_str() + b64.size() );
 }
 
-string      format_string( const string& format, const variant_object& args )
+string format_string( const string& format, const variant_object& args,
+   bool add_unformatted_args /*= false*/ )
 {
+   std::set< std::string > formatted_args;
    stringstream ss;
+   auto print_value = [ &ss ]( const variant& value )
+   {
+     if( value.is_object() || value.is_array() )
+     {
+       ss << json::to_string( value );
+     }
+     else
+     {
+       ss << value.as_string();
+     }
+   };
    size_t prev = 0;
    auto next = format.find( '$' );
    while( prev != size_t(string::npos) && prev < size_t(format.size()) )
@@ -684,7 +697,7 @@ string      format_string( const string& format, const variant_object& args )
 
      // if we got to the end, return it.
      if( next == size_t(string::npos) )
-        return ss.str();
+        break;
 
      // if we are not at the end, then update the start
      prev = next + 1;
@@ -702,14 +715,8 @@ string      format_string( const string& format, const variant_object& args )
            auto val = args.find( key );
            if( val != args.end() )
            {
-              if( val->value().is_object() || val->value().is_array() )
-              {
-                ss << json::to_string( val->value() );
-              }
-              else
-              {
-                ss << val->value().as_string();
-              }
+              formatted_args.insert( key );
+              print_value( val->value() );
            }
            else
            {
@@ -731,6 +738,31 @@ string      format_string( const string& format, const variant_object& args )
         next = format.find( '$', prev );
      }
    }
+
+   if( add_unformatted_args && (args.size() > formatted_args.size()) )
+   {
+      bool is_first = true;
+      for( const auto& arg : args )
+      {
+         if( formatted_args.find( arg.key() ) == formatted_args.end() )
+         {
+            if( is_first )
+            {
+               ss << " (unformatted args: ";
+               is_first = false;
+            }
+            else
+               ss << ",";
+
+            ss << "(\"" << arg.key() << "\",";
+            print_value( arg.value() );
+            ss << ")";
+         }
+      }
+      if( not is_first )
+         ss << ")";
+   }
+
    return ss.str();
 }
    #ifdef __APPLE__

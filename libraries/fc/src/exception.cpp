@@ -161,6 +161,9 @@ namespace fc
    {
       fc::stringstream ss;
       ss << variant(my->_code).as_string() <<" " << my->_name << ": " <<my->_what<<"\n";
+      const char* ae = expr();
+      if( ae != nullptr )
+         ss << ae << "\n";
       for( auto itr = my->_elog.begin(); itr != my->_elog.end();  )
       {
          ss << itr->get_message() <<"\n"; //fc::format_string( itr->get_format(), itr->get_data() ) <<"\n";
@@ -179,6 +182,9 @@ namespace fc
    {
       fc::stringstream ss;
       ss << what() << ":";
+      const char* ae = expr();
+      if( ae != nullptr )
+         ss << ae << ": ";
       for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr )
       {
          if( itr->get_format().size() )
@@ -248,7 +254,8 @@ namespace fc
    void record_assert_trip(
       const char* filename,
       uint32_t lineno,
-      const char* expr
+      const char* expr,
+      const char* message
       )
    {
       last_assert_expression = expr;
@@ -258,6 +265,7 @@ namespace fc
          ("source_file", filename)
          ("source_lineno", lineno)
          ("expr", expr)
+         ("message", message)
          ;
          
       std::stringstream out;

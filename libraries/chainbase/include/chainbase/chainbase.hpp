@@ -46,12 +46,12 @@
 #endif
 
 //redirect exceptions from chainbase to the same place as the one from FC_ASSERT
-#define CHAINBASE_THROW_EXCEPTION( exception )                 \
-  do {                                                         \
-    auto ex = exception;                                       \
-    if( fc::enable_record_assert_trip )                        \
-      fc::record_assert_trip( __FILE__, __LINE__, ex.what() ); \
-    BOOST_THROW_EXCEPTION( ex );                               \
+#define CHAINBASE_THROW_EXCEPTION( exception )                     \
+  do {                                                             \
+    auto ex = exception;                                           \
+    if( fc::enable_record_assert_trip )                            \
+      fc::record_assert_trip( __FILE__, __LINE__, ex.what(), "" ); \
+    BOOST_THROW_EXCEPTION( ex );                                   \
   } while( false )
 
 namespace helpers
