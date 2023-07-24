@@ -15,6 +15,9 @@ variables:
   # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu22.04-5
   TEST_IMAGE_TAG: "@sha256:eaa6f32730f0f4c45a95a65b6d790bea2b71a59276eb28795c04be7703f003e6"
 
+  # uses registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:1d271c28906d267c1172641bb2aa42727f16b513
+  EMSCRIPTEN_IMAGE_TAG: "@sha256:14287297ffbb7a55d134f1ab326f67aa8b387151f5118b21bf68e74ff1d437ed"
+
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
   PYTHON_DATEUTIL_VERSION: "2.8.2"
@@ -105,6 +108,35 @@ testnet_node_build:
     - hived-for-tests
   rules:
     - if: $RUN_MIRRORNET_PIPELINE == "false"
+
+beekeeper_wasm_build:
+  stage: build
+  image: registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:3.1.43$EMSCRIPTEN_IMAGE_TAG
+  interruptible: true
+  variables:
+    BINARIES_DIR: "build_wasm"
+  script:
+    - echo "Building Beekeeper tool WASM version"
+    - git config --global --add safe.directory '*'
+    - mkdir -vp "$CI_PROJECT_DIR/$BINARIES_DIR"
+    - cd "$CI_PROJECT_DIR/$BINARIES_DIR"
+    - cmake -DBoost_NO_WARN_NEW_VERSIONS=1 -DBoost_USE_STATIC_RUNTIME=ON -DCMAKE_TOOLCHAIN_FILE=/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" -S "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/" -B "$CI_PROJECT_DIR/$BINARIES_DIR"
+    - make -j 8
+    - cd "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/beekeeper_wasm_test"
+    - node run_node.mjs
+  artifacts:
+    paths:
+      - "$CI_PROJECT_DIR/$BINARIES_DIR/beekeeper.d.ts"
+      - "$CI_PROJECT_DIR/$BINARIES_DIR/beekeeper_wasm.mjs"
+      - "$CI_PROJECT_DIR/$BINARIES_DIR/beekeeper_wasm.wasm"
+
+    when: always
+    expire_in: 1 week
+
+  tags:
+    - public-runner-docker
+    - hived-for-tests
+
 
 mirrornet_node_build:
   stage: build
