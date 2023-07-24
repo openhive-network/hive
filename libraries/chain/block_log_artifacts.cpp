@@ -613,11 +613,18 @@ void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifact
   }
   catch (const fc::exception& e)
   {
-    FC_THROW("Block_log doesn't match current artifacts file. Cannot get block: ${block_num} using already stored artifacts. Error: ${what}", (block_num)("what", e.what()));
+    FC_THROW("Block_log doesn't match current artifacts file. Cannot get block: ${block_num} using already stored artifacts. FC error: ${what}", (block_num)("what", e.what()));
   }
   catch (...)
   {
-    FC_THROW("Block_log doesn't match current artifacts file. Cannot get block: ${block_num} using already stored artifacts.", (block_num));
+    try
+    {
+      std::rethrow_exception( std::current_exception() );
+    }
+    catch( const std::exception& e )
+    {
+      FC_THROW("Block_log doesn't match current artifacts file. Cannot get block: ${block_num} using already stored artifacts. Error: ${what}", (block_num)("what", e.what()));
+    }
   }
 
   ilog("Artifacts file matches block_log file.");
