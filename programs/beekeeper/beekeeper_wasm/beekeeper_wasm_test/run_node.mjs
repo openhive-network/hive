@@ -63,7 +63,7 @@ const import_private_key = (beekeeper_instance, session_token, wallet_name, priv
   return public_key;
 };
 
-const test_sign_transaction = (beekeeper_instance, session_token, transaction_body, public_key, sig_digest, expected_signature) => {
+const test_sign_transaction = (beekeeper_instance, session_token, transaction_body, binary_transaction_body, public_key, sig_digest, expected_signature) => {
   const chain_id = '18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e';
 
   console.log(`Attempting to sign transaction: ${transaction_body}`);
@@ -75,7 +75,13 @@ const test_sign_transaction = (beekeeper_instance, session_token, transaction_bo
   assert.equal(signature, expected_signature);
 
   console.log('************************sign transaction************************');
-  s = beekeeper_instance.sign_transaction(session_token, transaction_body, chain_id, public_key, sig_digest);
+  s = beekeeper_instance.sign_transaction(session_token, transaction_body, chain_id, public_key);
+  ({ signature } = JSON.parse(s));
+  console.log(`got signature: ${signature}`);
+  assert.equal(signature, expected_signature);
+
+  console.log('************************sign binary transaction************************');
+  s = beekeeper_instance.sign_binary_transaction(session_token, binary_transaction_body, chain_id, public_key);
   ({ signature } = JSON.parse(s));
   console.log(`got signature: ${signature}`);
   assert.equal(signature, expected_signature);
@@ -87,14 +93,16 @@ const perform_transaction_signing_tests = (beekeeper_instance, session_token, pu
   console.log('========================SIGNING EXAMPLE 1========================');
 
   let transaction_body = '{}';
+  let binary_transaction_body = '000000000000000000000000';
   let sig_digest = '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542'; // Eliminate precomputed digest - missing API
-  test_sign_transaction(beekeeper_instance, session_token, transaction_body, public_key, sig_digest, '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21');
+  test_sign_transaction(beekeeper_instance, session_token, transaction_body, binary_transaction_body, public_key, sig_digest, '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21');
 
   console.log('========================SIGNING EXAMPLE 2========================');
   // Second example
   transaction_body = '{"ref_block_num":95,"ref_block_prefix":4189425605,"expiration":"2023-07-18T08:38:29","operations":[{"type":"transfer_operation","value":{"from":"initminer","to":"alice","amount":{"amount":"666","precision":3,"nai":"@@000000021"},"memo":"memmm"}}],"extensions":[],"signatures":[],"transaction_id":"cc9630cdbc39da1c9b6264df3588c7bedb5762fa","block_num":0,"transaction_num":0}';
+  binary_transaction_body = '5f00c58fb5f9854fb664010209696e69746d696e657205616c6963659a020000000000002320bcbe056d656d6d6d00';
   sig_digest = '614e645c13b351b56d9742b358e3c3da58fa1a6a0036a01d3163c21aa2c8a99c';
-  test_sign_transaction(beekeeper_instance, session_token, transaction_body, public_key, sig_digest, '1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340');
+  test_sign_transaction(beekeeper_instance, session_token, transaction_body, binary_transaction_body, public_key, sig_digest, '1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340');
 };
 
 const perform_wallet_autolock_test = async(beekeeper_instance, session_token) => {

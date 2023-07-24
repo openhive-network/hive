@@ -203,9 +203,14 @@ signature_type wallet_manager_impl::sign_digest( const public_key_type& public_k
   return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_digest( public_key, sig_digest ); }, public_key );
 }
 
-signature_type wallet_manager_impl::sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest )
+signature_type wallet_manager_impl::sign_binary_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key )
 {
-  return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_transaction( transaction, chain_id, public_key, sig_digest ); }, public_key );
+  return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_binary_transaction( transaction, chain_id, public_key ); }, public_key );
+}
+
+signature_type wallet_manager_impl::sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key )
+{
+  return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_transaction( transaction, chain_id, public_key ); }, public_key );
 }
 
 } //beekeeper

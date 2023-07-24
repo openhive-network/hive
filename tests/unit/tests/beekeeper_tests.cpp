@@ -574,27 +574,33 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
       auto _imported_public_key = wm.import_key( _token, "0", _private_key_str );
       BOOST_REQUIRE( _imported_public_key == _public_key_str );
 
-      auto _calculate_signature = [&]( const std::string& json_trx, const std::string& signature_pattern )
+      auto _calculate_signature = [&]( const std::string& json_trx, const std::string& binary_trx, const std::string& signature_pattern )
       {
         hive::protocol::transaction _trx = fc::json::from_string( json_trx ).as<hive::protocol::transaction>();
         hive::protocol::digest_type _sig_digest = _trx.sig_digest( HIVE_CHAIN_ID, hive::protocol::pack_type::hf26 );
 
         auto _signature_local = _private_key.sign_compact( _sig_digest );
-        auto _signature_beekeeper = wm.sign_transaction( _token, json_trx, HIVE_CHAIN_ID, _public_key, _sig_digest );
+        auto _signature_beekeeper = wm.sign_transaction( _token, json_trx, HIVE_CHAIN_ID, _public_key );
+        auto _signature_beekeeper_2 = wm.sign_binary_transaction( _token, binary_trx, HIVE_CHAIN_ID, _public_key );
 
         auto _local = fc::json::to_string( _signature_local );
         auto _beekeeper = fc::json::to_string( _signature_beekeeper );
+        auto _beekeeper_2 = fc::json::to_string( _signature_beekeeper_2 );
         BOOST_TEST_MESSAGE( _local );
         BOOST_TEST_MESSAGE( _beekeeper );
         BOOST_REQUIRE( _local.substr( 1, _local.size() - 2 )          == signature_pattern );
         BOOST_REQUIRE( _beekeeper.substr( 1, _beekeeper.size() - 2 )  == signature_pattern );
+        BOOST_REQUIRE( _beekeeper_2.substr( 1, _beekeeper_2.size() - 2 )  == signature_pattern );
       };
 
+      std::string _binary_trx_00 = "000000000000000000000000";
       std::string _signature_00_result = "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21";
-      _calculate_signature( "{}", _signature_00_result );
+      _calculate_signature( "{}", _binary_trx_00, _signature_00_result );
 
+      std::string _binary_trx_01 = "5f00c58fb5f9854fb664010209696e69746d696e657205616c6963659a020000000000002320bcbe056d656d6d6d00";
       std::string _signature_01_result = "1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340";
       _calculate_signature( "{\"ref_block_num\":95,\"ref_block_prefix\":4189425605,\"expiration\":\"2023-07-18T08:38:29\",\"operations\":[{\"type\":\"transfer_operation\",\"value\":{\"from\":\"initminer\",\"to\":\"alice\",\"amount\":{\"amount\":\"666\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"memmm\"}}],\"extensions\":[],\"signatures\":[],\"transaction_id\":\"cc9630cdbc39da1c9b6264df3588c7bedb5762fa\",\"block_num\":0,\"transaction_num\":0}",
+                            _binary_trx_01,
                             _signature_01_result );
     }
 
@@ -784,7 +790,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
         auto _signature_local = _private_key.sign_compact( _sig_digest );
 
         auto _signature_beekeeper = fc::json::from_string( _obj.sign_digest( _token, _public_key_str, _sig_digest ) ).as<beekeeper::signature_return>();
-        auto _signature_beekeeper_2 = fc::json::from_string( _obj.sign_transaction( _token, json_trx, HIVE_CHAIN_ID, _public_key_str, _sig_digest ) ).as<beekeeper::signature_return>();
+        auto _signature_beekeeper_2 = fc::json::from_string( _obj.sign_transaction( _token, json_trx, HIVE_CHAIN_ID, _public_key_str ) ).as<beekeeper::signature_return>();
 
         auto _local = fc::json::to_string( _signature_local );
         auto _beekeeper = fc::json::to_string( _signature_beekeeper.signature );

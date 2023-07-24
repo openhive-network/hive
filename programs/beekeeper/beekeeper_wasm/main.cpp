@@ -35,6 +35,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("get_public_keys", &beekeeper_api::get_public_keys)
 
     .function("sign_digest", &beekeeper_api::sign_digest)
+    .function("sign_binary_transaction", &beekeeper_api::sign_binary_transaction)
     .function("sign_transaction", &beekeeper_api::sign_transaction)
 
     .function("get_info", &beekeeper_api::get_info)
