@@ -245,7 +245,7 @@ namespace chain {
         * Will close the database before wiping. Database will be closed when this function returns.
         */
       void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
-      virtual void close(bool rewind = true) = 0;
+      virtual void close(bool rewind = true);
 
 
       //////////////////// db_block.cpp ////////////////////

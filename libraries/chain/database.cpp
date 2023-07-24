@@ -470,7 +470,7 @@ void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, b
   }
 }
 
-void full_database::close(bool rewind)
+void database::close(bool rewind)
 {
   try
   {
@@ -492,7 +492,6 @@ void full_database::close(bool rewind)
 
     chainbase::database::close();
 
-    _block_log.close();
 
     _fork_db.reset();
 
@@ -500,6 +499,17 @@ void full_database::close(bool rewind)
   }
   FC_CAPTURE_AND_RETHROW()
 }
+
+void full_database::close(bool rewind)
+{
+  try
+  {
+    database::close(rewind);
+    _block_log.close();
+  }
+  FC_CAPTURE_AND_RETHROW()
+}
+
 
 //no chainbase lock required
 bool full_database::is_known_block(const block_id_type& id)const
