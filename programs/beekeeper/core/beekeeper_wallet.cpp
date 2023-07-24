@@ -113,17 +113,29 @@ public:
     return it->second.sign_compact( sig_digest );
   }
 
-  std::optional<signature_type> try_sign_transaction( const string& transaction/*JSON form*/, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest )
+  std::optional<signature_type> try_sign_binary_transaction( const string& transaction/*BINARY form*/, const chain_id_type& chain_id, const public_key_type& public_key )
+  {
+    hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
+
+    std::vector<char> _v;
+    fc::from_variant( transaction, _v );
+
+    hive::protocol::transaction _trx;
+    fc::raw::unpack_from_vector( _v, _trx );
+
+    hive::protocol::digest_type _sig_digest = _trx.sig_digest( chain_id, hive::protocol::pack_type::hf26 );
+
+    return try_sign_digest( public_key, _sig_digest );
+  }
+
+  std::optional<signature_type> try_sign_transaction( const string& transaction/*JSON form*/, const chain_id_type& chain_id, const public_key_type& public_key )
   {
     hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
 
     hive::protocol::transaction _trx = fc::json::from_string( transaction ).as<hive::protocol::transaction>();
-    std::string _trx_serialized = fc::to_hex( fc::raw::pack_to_vector( _trx ) );
-
     hive::protocol::digest_type _sig_digest = _trx.sig_digest( chain_id, hive::protocol::pack_type::hf26 );
-    FC_ASSERT( _sig_digest == sig_digest, "Calculated digest ${_sig_digest} differs from given digest ${sig_digest}",(_sig_digest)(sig_digest) );
 
-    return try_sign_digest( public_key, sig_digest );
+    return try_sign_digest( public_key, _sig_digest );
   }
 
   private_key_type get_private_key(const public_key_type& id)const
@@ -381,9 +393,14 @@ std::optional<signature_type> beekeeper_wallet::try_sign_digest( const public_ke
   return my->try_sign_digest( public_key, sig_digest );
 }
 
-std::optional<signature_type> beekeeper_wallet::try_sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key, const digest_type& sig_digest )
+std::optional<signature_type> beekeeper_wallet::try_sign_binary_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key )
 {
-  return my->try_sign_transaction( transaction, chain_id, public_key, sig_digest );
+  return my->try_sign_binary_transaction( transaction, chain_id, public_key );
+}
+
+std::optional<signature_type> beekeeper_wallet::try_sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key )
+{
+  return my->try_sign_transaction( transaction, chain_id, public_key );
 }
 
 pair<public_key_type,private_key_type> beekeeper_wallet::get_private_key_from_password( string account, string role, string password )const
