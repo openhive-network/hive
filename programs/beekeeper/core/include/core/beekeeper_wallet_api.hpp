@@ -37,6 +37,7 @@ class beekeeper_wallet_api
       (list_wallets)
       (get_public_keys)
       (sign_digest)
+      (sign_binary_transaction)
       (sign_transaction)
       (get_info)
       (create_session)

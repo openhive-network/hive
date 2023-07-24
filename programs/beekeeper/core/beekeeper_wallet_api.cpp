@@ -33,6 +33,7 @@ class beekeeper_api_impl
       (list_wallets)
       (get_public_keys)
       (sign_digest)
+      (sign_binary_transaction)
       (sign_transaction)
       (get_info)
       (create_session)
@@ -111,10 +112,16 @@ DEFINE_API_IMPL( beekeeper_api_impl, sign_digest )
   return { _wallet_mgr->sign_digest( args.token, utility::get_public_key( args.public_key ), digest_type( args.sig_digest ) ) };
 }
 
+DEFINE_API_IMPL( beekeeper_api_impl, sign_binary_transaction )
+{
+  using namespace beekeeper;
+  return { _wallet_mgr->sign_binary_transaction( args.token, args.transaction, args.chain_id, utility::get_public_key( args.public_key ) ) };
+}
+
 DEFINE_API_IMPL( beekeeper_api_impl, sign_transaction )
 {
   using namespace beekeeper;
-  return { _wallet_mgr->sign_transaction( args.token, args.transaction, args.chain_id, utility::get_public_key( args.public_key ), digest_type( args.sig_digest ) ) };
+  return { _wallet_mgr->sign_transaction( args.token, args.transaction, args.chain_id, utility::get_public_key( args.public_key ) ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, get_info )
@@ -155,6 +162,7 @@ DEFINE_LOCKLESS_APIS( beekeeper_wallet_api,
   (list_wallets)
   (get_public_keys)
   (sign_digest)
+  (sign_binary_transaction)
   (sign_transaction)
   (get_info)
   (create_session)
