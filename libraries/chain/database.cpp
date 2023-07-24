@@ -504,8 +504,8 @@ void full_database::close(bool rewind)
 {
   try
   {
+   _block_log.close();
     database::close(rewind);
-    _block_log.close();
   }
   FC_CAPTURE_AND_RETHROW()
 }
