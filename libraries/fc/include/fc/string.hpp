@@ -25,7 +25,8 @@ namespace fc
 
   typedef fc::optional<fc::string> ostring;
   class variant_object;
-  fc::string format_string( const fc::string&, const variant_object& );
+  fc::string format_string( const fc::string&, const variant_object&, 
+                            bool = false );
   fc::string trim( const fc::string& );
   fc::string to_lower( const fc::string& );
   string trim_and_normalize_spaces( const string& s );
@@ -147,7 +148,8 @@ namespace fc {
 
   typedef fc::optional<fc::string> ostring;
   class variant_object;
-  fc::string format_string( const fc::string&, const variant_object& );
+  fc::string format_string( const fc::string&, const variant_object&,
+                            bool = false );
 
 } // namespace fc
 

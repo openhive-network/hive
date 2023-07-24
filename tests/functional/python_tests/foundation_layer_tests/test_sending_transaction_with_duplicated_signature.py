@@ -11,4 +11,5 @@ def test_sending_transaction_with_duplicated_signature(node, wallet):
         node.api.wallet_bridge.broadcast_transaction(transaction)
 
     response = error.value.response
-    assert 'duplicate signature included:Duplicate Signature detected' == response['error']['message']
+    assert 'duplicate signature included:' in response['error']['message']
+    assert 'Duplicate Signature detected' in response['error']['message']

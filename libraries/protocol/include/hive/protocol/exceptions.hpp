@@ -8,9 +8,10 @@
     FC_MULTILINE_MACRO_BEGIN                                            \
       if( UNLIKELY(!(expr)) )                                           \
       {                                                                 \
+        FC_ASSERT_EXCEPTION_DECL( #expr, exc_type, FORMAT, __VA_ARGS__ )\
         if( fc::enable_record_assert_trip )                             \
-           fc::record_assert_trip( __FILE__, __LINE__, #expr );         \
-        FC_THROW_EXCEPTION( exc_type, #expr ": " FORMAT, __VA_ARGS__ ); \
+          FC_RECORD_ASSERT( __e__ );                                    \
+        throw __e__;                                                    \
       }                                                                 \
     FC_MULTILINE_MACRO_END                                              \
   )
@@ -20,7 +21,8 @@
     FC_MULTILINE_MACRO_BEGIN                                            \
       if( UNLIKELY(!(expr)) )                                           \
       {                                                                 \
-        FC_THROW_EXCEPTION( exc_type, #expr ": " FORMAT, __VA_ARGS__ ); \
+        FC_ASSERT_EXCEPTION_DECL( #expr, exc_type, FORMAT, __VA_ARGS__ )\
+        throw __e__;                                                    \
       }                                                                 \
     FC_MULTILINE_MACRO_END                                              \
   )
@@ -30,7 +32,7 @@
 
 namespace hive { namespace protocol {
 
-  FC_DECLARE_EXCEPTION( transaction_exception, 3000000, "transaction exception" )
+  FC_DECLARE_DERIVED_EXCEPTION( transaction_exception,             fc::assert_exception, 3000000, "transaction exception" )
   FC_DECLARE_DERIVED_EXCEPTION( transaction_auth_exception,        hive::protocol::transaction_exception, 3070000, "transaction authorization exception" )
 
   FC_DECLARE_DERIVED_EXCEPTION( tx_missing_active_auth,            hive::protocol::transaction_auth_exception, 3010000, "missing required active authority" )

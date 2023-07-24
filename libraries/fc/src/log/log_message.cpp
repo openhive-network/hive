@@ -206,7 +206,7 @@ namespace fc
 
    string        log_message::get_message()const
    {
-      return format_string( my->format, my->args );
+      return format_string( my->format, my->args, true /*add_unformatted_args*/ );
    }
 
 
