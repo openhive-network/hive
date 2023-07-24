@@ -174,8 +174,8 @@ void database::open( const open_args& args)
 
 void full_database::open( const open_args& args)
 {
-  open_block_log(args);
   database::open(args);
+  open_block_log(args);
 }
 
 
