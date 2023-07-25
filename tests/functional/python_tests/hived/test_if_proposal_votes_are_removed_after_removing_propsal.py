@@ -52,5 +52,16 @@ def get_all_proposal_votes(node: tt.InitNode, api: str) -> int:
 
         start_account = pack_of_proposals[-1]['voter']
 
-    assert not any(proposal_votes.count(vote) > 1 for vote in proposal_votes)
-    return len(proposal_votes)
+    sorted_proposal_votes = sort_votes_by_username(proposal_votes)
+    return len(sorted_proposal_votes)
+
+
+def sort_votes_by_username(list_of_votes):
+    ordered_proposal_votes = {}
+    for proposal_vote in list_of_votes:
+        if proposal_vote["voter"] not in ordered_proposal_votes.keys():
+            ordered_proposal_votes[proposal_vote["voter"]] = proposal_vote
+        else:
+            raise Exception("Duplicate proposal vote")
+
+    return ordered_proposal_votes
