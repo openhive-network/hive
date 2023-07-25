@@ -1453,7 +1453,6 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     }
   }
 
-  _mainDb.resetState(openArgs);
   _mainDb.set_decoded_state_objects_data(loaded_decoded_type_data);
 
   const auto& indices = _mainDb.get_abstract_index_cntr();
