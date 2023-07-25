@@ -246,6 +246,8 @@ namespace chain {
         */
       void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
       virtual void close(bool rewind = true) = 0;
+      void close_begin(bool rewind);
+      void close_finish(bool rewind);
 
 
       //////////////////// db_block.cpp ////////////////////

@@ -471,7 +471,7 @@ void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, b
   }
 }
 
-void full_database::close(bool rewind)
+void database::close_begin(bool rewind)
 {
   try
   {
@@ -492,15 +492,35 @@ void full_database::close(bool rewind)
     ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
 
     chainbase::database::close();
+  }
+  FC_CAPTURE_AND_RETHROW()
+}
 
-    _block_log.close();
 
+void database::close_finish(bool rewind)
+{
+  try
+  {
     _fork_db.reset();
 
     ilog( "Database is closed" );
   }
   FC_CAPTURE_AND_RETHROW()
 }
+
+
+
+void full_database::close(bool rewind)
+{
+  try
+  {
+   close_begin(rewind);
+   _block_log.close();
+   close_finish(rewind);
+  }
+  FC_CAPTURE_AND_RETHROW()
+}
+
 
 //no chainbase lock required
 bool full_database::is_known_block(const block_id_type& id)const
