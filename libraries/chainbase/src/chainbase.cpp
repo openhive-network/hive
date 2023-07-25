@@ -240,12 +240,14 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     assert( !_is_open );
     _segment.reset();
     _meta.reset();
-    bfs::remove_all( dir / "shared_memory.bin" );
-    bfs::remove_all( dir / "shared_memory.meta" );
+    const bfs::path shared_memory_bin_path(dir / "shared_memory.bin");
+    const bfs::path shared_memory_meta_path(dir / "shared_memory.meta");
+    bfs::remove_all( shared_memory_bin_path );
+    bfs::remove_all( shared_memory_meta_path );
+    std::string log("Requested to clear shared memory data. Removed files:\n- " + shared_memory_bin_path.string() + "\n- " + shared_memory_meta_path.string() + "\n");
+    std::cout << log;
     _data_dir = bfs::path();
-
     wipe_indexes();
-
   }
 
   void database::resize( size_t new_shared_file_size )
