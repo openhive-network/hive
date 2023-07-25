@@ -20,12 +20,12 @@ def test_enum_virtual_ops(prepare_with_many_witnesses):
         # TRIGGER
         # We broadcast transactions (with non virtual operations).
 
-        # starting_block_number = wallet.api.info()['head_block_number']
-        # tt.logger.info(f"staring block number = {starting_block_number}")
+        starting_block_number = wallet.api.info()['head_block_number']
+        tt.logger.info(f"staring block number = {starting_block_number}")
 
         wallet.api.transfer_to_vesting('initminer', account_name, tt.Asset.Test(1))
         head_block = wallet.api.info()['head_block_number']
-        # tt.logger.info(f"head block number = {head_block}")
+        tt.logger.info(f"head block number = {head_block}")
         block_to_check = head_block - 1
 
         # VERIFY
