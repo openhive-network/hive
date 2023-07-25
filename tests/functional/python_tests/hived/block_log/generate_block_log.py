@@ -1,12 +1,11 @@
-from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-import math
 from pathlib import Path
 from typing import Final, List
 
 import test_tools as tt
 
 from hive_local_tools.constants import TRANSACTION_TEMPLATE
+from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 
 AMOUNT_OF_ALL_ACCOUNTS: Final[int] = 20_000
 ACCOUNTS_PER_CHUNK: Final[int] = 750
@@ -22,13 +21,14 @@ def prepare_node_with_proposal_votes():
 
     __create_proposal(wallet)
 
-    with ThreadPoolExecutor(
-        max_workers=min(math.ceil(AMOUNT_OF_ALL_ACCOUNTS / ACCOUNTS_PER_CHUNK), MAX_WORKERS)
-    ) as executor:
-        for lower in range(0, AMOUNT_OF_ALL_ACCOUNTS, ACCOUNTS_PER_CHUNK):
-            upper = min(AMOUNT_OF_ALL_ACCOUNTS, lower + ACCOUNTS_PER_CHUNK)
-            executor.submit(__generate_and_broadcast, wallet, account_names[lower:upper])
-            tt.logger.info(f"Pack generated: {lower}:{upper}")
+    execute_function_in_threads(
+        __generate_and_broadcast,
+        args=(wallet,),
+        args_sequences=(account_names,),
+        amount=AMOUNT_OF_ALL_ACCOUNTS,
+        chunk_size=ACCOUNTS_PER_CHUNK,
+        max_workers=MAX_WORKERS,
+    )
 
     tt.logger.info("Waiting for the blocks with the transactions to become irreversible")
     node.wait_for_irreversible_block()
