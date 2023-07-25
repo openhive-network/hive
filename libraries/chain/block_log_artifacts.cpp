@@ -435,9 +435,8 @@ bool block_log_artifacts::impl::load_header()
 void block_log_artifacts::impl::flush_header() const
 { try {
   FC_ASSERT(_is_writable);
-  dlog("Header pack size: ${header_pack_size}", (header_pack_size));
-  dlog("Attempting to write header containing: git rev: ${gr}, format version: ${major}.${minor}, head_block_num: ${hb}, tail_block_num: ${tb}, generating_interrupted_at_block: ${giat}, dirty_close: ${d}",
-       ("gr", _header.git_version)("major", _header.format_major_version)("minor", _header.format_minor_version)("hb", _header.head_block_num)("tb", _header.tail_block_num)("giat", _header.generating_interrupted_at_block)("d", _header.dirty_close));
+  dlog("Attempting to write header (pack_size: ${header_pack_size}) containing: git rev: ${gr}, format version: ${major}.${minor}, head_block_num: ${hb}, tail_block_num: ${tb}, generating_interrupted_at_block: ${giat}, dirty_close: ${d}",
+      (header_pack_size)("gr", _header.git_version)("major", _header.format_major_version)("minor", _header.format_minor_version)("hb", _header.head_block_num)("tb", _header.tail_block_num)("giat", _header.generating_interrupted_at_block)("d", _header.dirty_close));
   write_data(_header, 0, "Flushing a file header");
 
   //artifact_file_header _h2(1);
