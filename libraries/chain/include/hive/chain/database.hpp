@@ -185,7 +185,9 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      void open(const open_args& args);
+      virtual void open(const open_args& args) = 0;
+      void open_begin( const open_args& args);
+      void open_finish( const open_args& args);
 
       void public_apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing )
       {
@@ -966,6 +968,7 @@ namespace chain {
     bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
     uint32_t reindex( const open_args& args );
     void close(bool rewind = true) override;
+    void open( const open_args& args) override;
   
   
   public:
