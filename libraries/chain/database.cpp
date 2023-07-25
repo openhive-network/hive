@@ -5593,7 +5593,9 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
   return old_last_irreversible;
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::migrate_irreversible_state(uint32_t old_last_irreversible)
+
+
+void database::migrate_irreversible_state_begin(uint32_t old_last_irreversible)
 {
   // This method should happen atomically. We cannot prevent unclean shutdown in the middle
   // of the call, but all side effects happen at the end to minize the chance that state
@@ -5606,7 +5608,59 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
     if (fork_head)
       FC_ASSERT(fork_head->get_block_num() == dpo.head_block_number, "Fork Head Block Number: ${fork_head}, Chain Head Block Number: ${chain_head}",
                 ("fork_head", fork_head->get_block_num())("chain_head", dpo.head_block_number));
+  }
+  FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
+                                          elog( "An error occured during migrating an irreversible state. The node will be closed." );
+                                          appbase::app().generate_interrupt_request();
+                                       }, (old_last_irreversible) )
+}
 
+void database::migrate_irreversible_state_finish(uint32_t old_last_irreversible)
+{
+  try
+  {
+    const dynamic_global_property_object& dpo = get_dynamic_global_properties();
+
+
+    // This deletes blocks from the fork db
+    //edump((dpo.head_block_number)(get_last_irreversible_block_num()));
+    _fork_db.set_max_size( dpo.head_block_number - get_last_irreversible_block_num() + 1 );
+
+    // This deletes undo state
+    commit( get_last_irreversible_block_num() );
+
+    if (old_last_irreversible < get_last_irreversible_block_num())
+    {
+      //ilog("Updating last irreversible block to: ${b}. Old last irreversible was: ${ob}.",
+      //  ("b", get_last_irreversible_block_num())("ob", old_last_irreversible));
+
+      for (uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i)
+        notify_irreversible_block(i);
+    }
+
+  }
+  FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
+                                          elog( "An error occured during migrating an irreversible state. The node will be closed." );
+                                          appbase::app().generate_interrupt_request();
+                                       }, (old_last_irreversible) )
+}
+
+void full_database::migrate_irreversible_state(uint32_t old_last_irreversible)
+{
+  try
+  {
+    migrate_irreversible_state_begin(old_last_irreversible);
+    migrate_irreversible_state_to_blocklog(old_last_irreversible);
+    migrate_irreversible_state_finish(old_last_irreversible);
+  }
+  FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
+                                          elog( "An error occured during migrating an irreversible state. The node will be closed." );
+                                          appbase::app().generate_interrupt_request();
+                                       }, (old_last_irreversible) )
+}
+
+void full_database::migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible)
+{
     if( !( get_node_properties().skip_flags & skip_block_log ) )
     {
       // output to block log based on new last irreverisible block num
@@ -5634,30 +5688,7 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
         
       }
     }
-
-    // This deletes blocks from the fork db
-    //edump((dpo.head_block_number)(get_last_irreversible_block_num()));
-    _fork_db.set_max_size( dpo.head_block_number - get_last_irreversible_block_num() + 1 );
-
-    // This deletes undo state
-    commit( get_last_irreversible_block_num() );
-
-    if (old_last_irreversible < get_last_irreversible_block_num())
-    {
-      //ilog("Updating last irreversible block to: ${b}. Old last irreversible was: ${ob}.",
-      //  ("b", get_last_irreversible_block_num())("ob", old_last_irreversible));
-
-      for (uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i)
-        notify_irreversible_block(i);
-    }
-
-  }
-  FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
-                                          elog( "An error occured during migrating an irreversible state. The node will be closed." );
-                                          appbase::app().generate_interrupt_request();
-                                       }, (old_last_irreversible) )
 }
-
 
 bool database::apply_order( const limit_order_object& new_order_object )
 {
