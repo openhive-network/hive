@@ -166,6 +166,9 @@ void database::open( const open_args& args)
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
 
     initialize_state_independent_data(args);
+
+    open_block_log(args);
+
     load_state_initial_data(args);
 
   }
@@ -199,8 +202,6 @@ void database::initialize_state_independent_data(const open_args& args)
   {
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
-
-  open_block_log(args);
 
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
