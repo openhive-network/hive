@@ -152,7 +152,7 @@ database::~database()
   clear_pending();
 }
 
-void database::open( const open_args& args)
+void database::open_begin( const open_args& args)
 {
   try
   {
@@ -167,9 +167,33 @@ void database::open( const open_args& args)
 
     initialize_state_independent_data(args);
 
-    open_block_log(args);
+  }
+  FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+}
+
+
+void database::open_finish( const open_args& args)
+{
+  try
+  {
 
     load_state_initial_data(args);
+
+  }
+  FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+}
+
+
+
+void full_database::open( const open_args& args)
+{
+  try
+  {
+    open_begin(args);
+
+    open_block_log(args);
+
+    open_finish(args);
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
