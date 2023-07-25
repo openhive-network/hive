@@ -729,7 +729,9 @@ namespace chain {
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
-      void migrate_irreversible_state(uint32_t old_last_irreversible);
+      virtual void migrate_irreversible_state(uint32_t old_last_irreversible) = 0;
+      protected: void migrate_irreversible_state_begin(uint32_t old_last_irreversible);
+      void migrate_irreversible_state_finish(uint32_t old_last_irreversible); private:
       void clear_expired_transactions();
       void clear_expired_orders();
       void clear_expired_delegations();
@@ -979,7 +981,8 @@ namespace chain {
     bool is_known_block_unlocked(const block_id_type& id)const;
     block_id_type              find_block_id_for_num( uint32_t block_num )const;
     
-    //void migrate_irreversible_state(uint32_t old_last_irreversible) override;
+    void migrate_irreversible_state(uint32_t old_last_irreversible) override;
+    void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
     bool is_included_block_unlocked(const block_id_type& block_id);
     std::shared_ptr<full_block_type> get_head_block() const override;
     std::shared_ptr<full_block_type> get_block_log_head() const override;
