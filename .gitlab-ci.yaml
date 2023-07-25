@@ -568,14 +568,14 @@ patterns_tests:
     - *hived-service
 
   before_script:
-    - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
+    - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
     - !reference [.test_tools_based, before_script]
     - pip3 install tox==${TOX_VERSION}
 
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests
-    - timeout 33m ./run_tests.sh hived-instance:8090 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
+    - timeout 33m ./run_tests.sh hived-instance:8091 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
   after_script:
     - rm docker_entrypoint.log -f
@@ -633,12 +633,12 @@ python_pattern_mainnet_tests:
     - *hived-service
 
   before_script:
-    - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
+    - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
     - !reference [.test_tools_based, before_script]
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/api_tests/python_patterns_tests
-    - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8090 --ws-endpoint hived-instance:8091 --wallet-path $CI_PROJECT_DIR/$BINARY_CACHE_PATH/cli_wallet)
+    - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8091 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/$BINARY_CACHE_PATH/cli_wallet)
     - *run-pytest
 
   after_script:
@@ -685,11 +685,11 @@ message_format_mainnet_5m_tests:
   services:
     - *hived-service
   variables:
-    NODE_ADDRESS: "hived-instance:8090"
+    NODE_ADDRESS: "hived-instance:8091"
     NODE_TYPE: "mainnet_5m"
     HIVED_UID: $HIVED_UID
   before_script:
-    - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
+    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
     - !reference [.message_format_tests, before_script]
   after_script:
     - rm docker_entrypoint.log -f
@@ -741,12 +741,12 @@ witness_tests:
   services:
     - *hived-service
   variables:
-    NODE_ADDRESS: "hived-instance:8090"
+    NODE_ADDRESS: "hived-instance:8091"
     PYTEST_TIMEOUT_MINUTES: 5
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/witness_tests/report.xml
     HIVED_UID: $HIVED_UID
   script:
-    - curl -I hived-instance:8090 || (echo "error connecting to service hived-instance" && false)
+    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
     - cd tests/functional/python_tests/witness_tests
     - export PYTEST_ARGS=(--http-endpoint=${NODE_ADDRESS})
     - *run-pytest
