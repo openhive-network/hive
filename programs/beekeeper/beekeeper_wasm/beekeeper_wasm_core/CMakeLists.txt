@@ -38,4 +38,5 @@ set( INCLUDES
     )
 
 TARGET_INCLUDE_DIRECTORIES( beekeeper_wasm_core PUBLIC ${INCLUDES} )
+TARGET_COMPILE_OPTIONS( beekeeper_wasm_core PUBLIC -fexceptions )
 TARGET_LINK_LIBRARIES( beekeeper_wasm_core hive_protocol )
