@@ -22,6 +22,7 @@ variables:
 
   DATA_CACHE_HIVE_TEMPLATE: /cache/replay_data_hive
   DATA_CACHE_HIVE: "/cache/replay_data_hive_${CI_PIPELINE_ID}"
+  BLOCK_LOG_SOURCE_DIR: "/blockchain"
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
 
@@ -156,7 +157,6 @@ mirrornet_replay_test:
 
   variables:
     BINARIES_DIR: "hived-mirrornet-binaries"
-    BLOCK_LOG_SOURCE_DIR: "/blockchain"
     NUMBER_OF_BLOCKS: 5000000
     MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
     MAINNET_TRUNCATED_DIR: "$CI_PROJECT_DIR/mainnet"
@@ -843,3 +843,21 @@ operation_tests:
     - *run-pytest
   tags:
     - public-runner-docker
+
+test_compress_block_log:
+  stage: test
+  needs:
+    - job: prepare_hived_image
+      artifacts: true
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  interruptible: true
+  variables:
+    GIT_STRATEGY: none
+    BINARY_CACHE_PATH: "hived-binaries"
+  script:
+    - ${BINARY_CACHE_PATH}/compress_block_log --help
+    - timeout 1m ${BINARY_CACHE_PATH}/compress_block_log --input-block-log "$BLOCK_LOG_SOURCE_DIR" --output-block-log . --decompress --block-count 1
+  tags:
+    - public-runner-docker
+  rules:
+    - if: $RUN_MIRRORNET_PIPELINE == "false"
