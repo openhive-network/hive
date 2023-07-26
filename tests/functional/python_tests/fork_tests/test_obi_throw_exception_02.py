@@ -1,5 +1,7 @@
 import time
 
+import pytest
+
 import test_tools as tt
 
 from shared_tools.complex_networks_helper_functions import (
@@ -11,6 +13,8 @@ from shared_tools.complex_networks_helper_functions import (
     NodeLog
 )
 
+
+@pytest.mark.fork_tests_group_3
 def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
     # start - A network (consists of a 'A' network(10 witnesses) + a 'B' network(11 witnesses)) produces blocks
 

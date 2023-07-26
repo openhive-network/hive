@@ -1,7 +1,10 @@
+import pytest
+
 import shared_tools.complex_networks_helper_functions as sh
 import test_tools as tt
 
 
+@pytest.mark.fork_tests_group_3
 def test_no_duplicates_in_account_history_plugin_after_fork(prepare_with_many_witnesses):
     networks_builder = prepare_with_many_witnesses
     alpha_net = networks_builder.networks[0]

@@ -1,9 +1,12 @@
-
 from functools import partial
+
+import pytest
 
 import shared_tools.complex_networks_helper_functions as sh
 import test_tools as tt
 
+
+@pytest.mark.fork_tests_group_1
 def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
     # start - A network (consists of a 'minority' network(6 witnesses) + a 'majority' network(17 witnesses)) produces blocks
 

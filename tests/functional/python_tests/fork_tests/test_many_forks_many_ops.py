@@ -4,6 +4,8 @@ from typing import Iterable
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor
 
+import pytest
+
 import test_tools as tt
 
 import shared_tools.complex_networks_helper_functions as sh
@@ -58,6 +60,8 @@ def trx_creator(wallet: tt.Wallet, identifier: int):
         memo_cnt += 1
     return f'[break {identifier}] Creating transactions finished...'
 
+
+@pytest.mark.fork_tests_group_2
 def test_many_forks_many_ops(prepare_17_3):
     global break_cnt
     global break_limit
