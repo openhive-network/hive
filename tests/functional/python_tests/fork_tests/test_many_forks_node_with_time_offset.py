@@ -33,6 +33,8 @@ def trx_creator(wallet: tt.Wallet, identifier: int):
         memo_cnt += 1
     return f'[break {identifier}] Creating transactions finished...'
 
+
+@pytest.mark.fork_tests_group_2
 def test_many_forks_node_with_time_offset(prepare_4_4_4_4_4):
     global break_cnt
     global break_limit

@@ -1,8 +1,12 @@
 from time import sleep
 
+import pytest
+
 import shared_tools.complex_networks_helper_functions as sh
 import test_tools as tt
 
+
+@pytest.mark.fork_tests_group_1
 def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     # start - A network (consists of a 'minority' network(3 witnesses) + a 'majority' network(18 witnesses)) produces blocks
 
