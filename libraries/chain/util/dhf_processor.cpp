@@ -168,7 +168,7 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& m
   {
     const auto& receiver_account = db.get_account( _item.receiver );
 
-    operation vop = proposal_pay_operation( _item.proposal_id, _item.receiver, db.get_treasury_name(), payment, db.get_current_trx(), db.get_current_op_in_trx() );
+    operation vop = proposal_pay_operation( _item.proposal_id, _item.receiver, db.get_treasury_name(), payment );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
     db.push_virtual_operation(vop);
     /// Virtual ops have no evaluators, so operation must be immediately "evaluated"
