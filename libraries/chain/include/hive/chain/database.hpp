@@ -619,8 +619,6 @@ namespace chain {
       void resetState(const open_args& args);
 
       virtual std::shared_ptr<full_block_type> get_head_block() const = 0;
-      virtual std::shared_ptr<full_block_type> get_block_log_head() const = 0;
-      virtual void open_block_log(const open_args& args) = 0;
       virtual void append_to_block_log(const std::shared_ptr<full_block_type>& full_block) = 0;
       virtual void flush_block_log() = 0;
 
@@ -990,8 +988,7 @@ namespace chain {
     void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
     bool is_included_block_unlocked(const block_id_type& block_id);
     std::shared_ptr<full_block_type> get_head_block() const override;
-    std::shared_ptr<full_block_type> get_block_log_head() const override;
-    void open_block_log(const open_args& args) override;
+    void open_block_log(const open_args& args);
     void append_to_block_log(const std::shared_ptr<full_block_type>& full_block) override;
     void flush_block_log() override;
 

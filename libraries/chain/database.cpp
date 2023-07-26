@@ -5664,7 +5664,7 @@ void full_database::migrate_irreversible_state_to_blocklog(uint32_t old_last_irr
     if( !( get_node_properties().skip_flags & skip_block_log ) )
     {
       // output to block log based on new last irreverisible block num
-      std::shared_ptr<full_block_type> tmp_head = get_block_log_head();
+      std::shared_ptr<full_block_type> tmp_head = _block_log.head();
       uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
       vector<item_ptr> blocks_to_write;
 
@@ -7524,11 +7524,6 @@ std::vector<block_id_type> full_database::get_block_ids(const std::vector<block_
 std::shared_ptr<full_block_type> full_database::get_head_block() const
 {
   return _block_log.read_block_by_num(head_block_num());
-}
-
-std::shared_ptr<full_block_type> full_database::get_block_log_head() const
-{
-  return _block_log.head();
 }
 
 void full_database::open_block_log(const open_args& args)
