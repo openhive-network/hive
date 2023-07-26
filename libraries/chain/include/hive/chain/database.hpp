@@ -619,8 +619,6 @@ namespace chain {
       void resetState(const open_args& args);
 
       virtual std::shared_ptr<full_block_type> get_head_block() const = 0;
-      virtual void append_to_block_log(const std::shared_ptr<full_block_type>& full_block) = 0;
-      virtual void flush_block_log() = 0;
 
       void init_schema();
       void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
@@ -989,8 +987,8 @@ namespace chain {
     bool is_included_block_unlocked(const block_id_type& block_id);
     std::shared_ptr<full_block_type> get_head_block() const override;
     void open_block_log(const open_args& args);
-    void append_to_block_log(const std::shared_ptr<full_block_type>& full_block) override;
-    void flush_block_log() override;
+    void append_to_block_log(const std::shared_ptr<full_block_type>& full_block);
+    void flush_block_log();
 
   public:
      block_id_type              get_block_id_for_num( uint32_t block_num )const;
