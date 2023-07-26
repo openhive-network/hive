@@ -1307,6 +1307,21 @@ bool database::_push_block(const block_flow_control& block_ctrl)
   return false;
 } FC_CAPTURE_AND_RETHROW() }
 
+void database::_push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
+{
+  try
+  {
+
+    set_tx_status(hive::chain::database::TX_STATUS_BLOCK);
+    _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
+
+    apply_block(full_block, skip );
+    clear_tx_status();
+    set_revision(head_block_num());
+
+  }FC_CAPTURE_AND_RETHROW() 
+}
+
 bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 {
   const signed_transaction& trx = full_transaction->get_transaction();
