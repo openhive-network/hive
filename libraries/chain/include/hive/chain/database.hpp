@@ -189,16 +189,6 @@ namespace chain {
       void open_begin( const open_args& args);
       void open_finish( const open_args& args);
 
-      void public_apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing )
-      {
-        apply_block(full_block, skip );
-      }
-
-      void public_reset_fork_db()
-      {
-        _fork_db.reset();
-      }
-
     private:
 
       void remove_expired_governance_votes();
@@ -208,8 +198,6 @@ namespace chain {
 
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
       void initialize_state_independent_data(const open_args& args);
-      
-      //bool is_included_block_unlocked(const block_id_type& block_id);
 
       void begin_type_register_process(util::abstract_type_registrar& r);
 
@@ -853,8 +841,6 @@ namespace chain {
       std::string                   _json_schema;
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
-
-      bool _postgres_not_block_log = false;
 
       fc::signal<void(const operation_notification&)>       _pre_apply_operation_signal;
       /**
