@@ -412,14 +412,13 @@ cli_wallet_extended_tests:
   tags:
     - public-runner-docker
 
-fork_tests:
+.fork_test_base:
   stage: test
   extends: .test_tools_based
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
-    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report.xml
-
+    PYTEST_NUMBER_OF_PROCESSES: 3
   script:
     - cd tests/functional/python_tests/fork_tests
     - *run-pytest
@@ -427,6 +426,24 @@ fork_tests:
     - public-runner-docker
   artifacts:
     expire_in: 2 days
+
+fork_tests_1_of_3:
+  extends: .fork_test_base
+  variables:
+    PYTEST_ARGS: "-m fork_tests_group_1"
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report_group_1.xml
+
+fork_tests_2_of_3:
+  extends: .fork_test_base
+  variables:
+    PYTEST_ARGS: "-m fork_tests_group_2"
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report_group_2.xml
+
+fork_tests_3_of_3:
+  extends: .fork_test_base
+  variables:
+    PYTEST_ARGS: "-m fork_tests_group_3"
+    JUNIT_REPORT: tests/functional/python_tests/fork_tests/report_group_3.xml
 
 
 hf26_tests:
