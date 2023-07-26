@@ -1,61 +1,46 @@
-#include <hive/plugins/chain_api/chain_api_plugin.hpp>
-#include <hive/plugins/chain_api/chain_api.hpp>
+#include <hive/plugins/clive_api/clive_api_plugin.hpp>
+#include <hive/plugins/clive_api/clive_api.hpp>
 
-namespace hive { namespace plugins { namespace chain {
+#include <hive/plugins/chain/chain_plugin.hpp>
+#include <hive/chain/database.hpp>
 
-namespace detail {
+namespace hive { namespace plugins { namespace clive_api {
 
-class chain_api_impl
+class clive_api::impl final
 {
   public:
-    chain_api_impl() : _chain( appbase::app().get_plugin<chain_plugin>() ) {}
+    impl() : _chain( appbase::app().get_plugin<hive::plugins::chain::chain_plugin>() ), _db(_chain.db()) {}
 
     DECLARE_API_IMPL(
-      (push_transaction) )
+      (collect_dashboard_data)
+    )
 
   private:
-    chain_plugin& _chain;
+    hive::plugins::chain::chain_plugin& _chain;
+  public:
+    /// public because of DEFINE_READ_APIS needs
+    hive::plugins::chain::database& _db;
 };
 
-DEFINE_API_IMPL( chain_api_impl, push_transaction )
+DEFINE_API_IMPL(clive_api::impl, collect_dashboard_data)
 {
-  push_transaction_return result;
+  collect_dashboard_data_return retval;
 
-  result.success = false;
-
-  try
-  {
-    full_transaction_ptr dummy;
-    _chain.determine_encoding_and_accept_transaction( dummy, args );
-    result.success = true;
-  }
-  catch (const fc::exception& e)
-  {
-    result.error = e.to_detail_string();
-  }
-  catch (const std::exception& e)
-  {
-    result.error = e.what();
-  }
-  catch (...)
-  {
-    result.error = "unknown error";
-  }
-
-  return result;
+  return retval;
 }
 
-} // detail
-
-chain_api::chain_api(): my( new detail::chain_api_impl() )
+void clive_api::deleter::operator()(impl* p) const
 {
-  JSON_RPC_REGISTER_API( HIVE_CHAIN_API_PLUGIN_NAME );
+  delete p;
 }
 
-chain_api::~chain_api() {}
+clive_api::clive_api() : my( new impl() )
+{
+  JSON_RPC_REGISTER_API( HIVE_CLIVE_API_PLUGIN_NAME );
+}
 
-DEFINE_LOCKLESS_APIS( chain_api,
-  (push_transaction)
+DEFINE_READ_APIS( clive_api,
+  (collect_dashboard_data)
 )
 
 } } } //hive::plugins::chain

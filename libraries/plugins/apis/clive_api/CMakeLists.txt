@@ -1,5 +1,5 @@
 file( GLOB HEADERS "include/hive/plugins/clive_api/*.hpp" )
-set( SOURCES clive_api_plugin.cpp )
+set( SOURCES clive_api_plugin.cpp clive_api.cpp )
 
 add_library( clive_api_plugin ${SOURCES} ${HEADERS} )
 

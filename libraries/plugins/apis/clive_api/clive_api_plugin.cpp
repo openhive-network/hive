@@ -6,6 +6,7 @@ void clive_api_plugin::set_program_options( appbase::options_description& cli, a
 
 void clive_api_plugin::plugin_initialize( const appbase::variables_map& options )
 {
+  _api = std::make_unique<clive_api>();
 }
 
 void clive_api_plugin::plugin_startup() {}

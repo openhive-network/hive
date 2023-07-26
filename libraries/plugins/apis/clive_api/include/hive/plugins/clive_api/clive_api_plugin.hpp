@@ -1,4 +1,6 @@
 #pragma once
+#include <hive/plugins/clive_api/clive_api.hpp>
+
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
@@ -10,8 +12,9 @@
 
 #include <appbase/application.hpp>
 
-#define HIVE_CLIVE_API_PLUGIN_NAME "clive_api"
+#include <memory>
 
+#define HIVE_CLIVE_API_PLUGIN_NAME "clive_api"
 
 namespace hive { namespace plugins { namespace clive_api {
 
@@ -39,6 +42,9 @@ public:
   void plugin_initialize( const appbase::variables_map& options ) override;
   void plugin_startup() override;
   void plugin_shutdown() override;
+
+private:
+  std::unique_ptr<clive_api> _api;
 };
 
 } } } // hive::plugins::chain
