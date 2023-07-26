@@ -82,7 +82,7 @@ struct account_dashboard_data
 struct collect_dashboard_data_return
 {
   uint32_t                        head_block_number = 0;
-  time_point_sec                  time;
+  time_point_sec                  head_block_time;
   hive::protocol::asset           total_vesting_fund_hive;
   hive::protocol::asset           total_vesting_shares;
 
@@ -125,4 +125,4 @@ FC_REFLECT(hive::plugins::clive_api::account_dashboard_data, (voting_manabar)(do
 )
 
 FC_REFLECT(hive::plugins::clive_api::collect_dashboard_data_args, (accounts) )
-FC_REFLECT(hive::plugins::clive_api::collect_dashboard_data_return, (head_block_number)(time)(total_vesting_fund_hive)(total_vesting_shares)(collected_account_infos))
+FC_REFLECT(hive::plugins::clive_api::collect_dashboard_data_return, (head_block_number)(head_block_time)(total_vesting_fund_hive)(total_vesting_shares)(collected_account_infos))
