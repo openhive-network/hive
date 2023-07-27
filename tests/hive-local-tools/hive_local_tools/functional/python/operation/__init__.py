@@ -70,6 +70,7 @@ def get_virtual_operation(node: tt.InitNode, vop: str) -> list:
         block_range_begin=10,
         block_range_end=1000,
         filter=filters_enum_virtual_ops[vop],
+        include_reversible=True,
     )["ops"]
 
 
