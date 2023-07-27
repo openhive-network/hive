@@ -96,4 +96,5 @@ filters_enum_virtual_ops = {
     "escrow_approved_operation": 0x8000000000,
     "escrow_rejected_operation": 0x10000000000,
     "proxy_cleared_operation": 0x20000000000,
+    "declined_voting_rights_operation": 0x40000000000,
 }
