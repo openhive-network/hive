@@ -152,7 +152,7 @@ database::~database()
   clear_pending();
 }
 
-void database::open_begin( const open_args& args)
+void database::open_state_independent( const open_args& args)
 {
   try
   {
@@ -172,7 +172,7 @@ void database::open_begin( const open_args& args)
 }
 
 
-void database::open_finish( const open_args& args)
+void database::open_state_dependent( const open_args& args)
 {
   try
   {
@@ -189,11 +189,11 @@ void full_database::open( const open_args& args)
 {
   try
   {
-    open_begin(args);
+    open_state_independent(args);
 
     open_block_log(args);
 
-    open_finish(args);
+    open_state_dependent(args);
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
@@ -495,7 +495,7 @@ void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, b
   }
 }
 
-void database::close_begin(bool rewind)
+void database::close_chainbase(bool rewind)
 {
   try
   {
@@ -521,7 +521,7 @@ void database::close_begin(bool rewind)
 }
 
 
-void database::close_finish(bool rewind)
+void database::close_forkbase(bool rewind)
 {
   try
   {
@@ -538,9 +538,9 @@ void full_database::close(bool rewind)
 {
   try
   {
-   close_begin(rewind);
+   close_chainbase(rewind);
    _block_log.close();
-   close_finish(rewind);
+   close_forkbase(rewind);
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -5610,7 +5610,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
 
 
 
-void database::migrate_irreversible_state_begin(uint32_t old_last_irreversible)
+void database::migrate_irreversible_state_check(uint32_t old_last_irreversible)
 {
   // This method should happen atomically. We cannot prevent unclean shutdown in the middle
   // of the call, but all side effects happen at the end to minize the chance that state
@@ -5630,7 +5630,7 @@ void database::migrate_irreversible_state_begin(uint32_t old_last_irreversible)
                                        }, (old_last_irreversible) )
 }
 
-void database::migrate_irreversible_state_finish(uint32_t old_last_irreversible)
+void database::migrate_irreversible_state_perform(uint32_t old_last_irreversible)
 {
   try
   {
@@ -5664,9 +5664,9 @@ void full_database::migrate_irreversible_state(uint32_t old_last_irreversible)
 {
   try
   {
-    migrate_irreversible_state_begin(old_last_irreversible);
+    migrate_irreversible_state_check(old_last_irreversible);
     migrate_irreversible_state_to_blocklog(old_last_irreversible);
-    migrate_irreversible_state_finish(old_last_irreversible);
+    migrate_irreversible_state_perform(old_last_irreversible);
   }
   FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
                                           elog( "An error occured during migrating an irreversible state. The node will be closed." );

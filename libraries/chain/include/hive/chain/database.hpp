@@ -186,8 +186,8 @@ namespace chain {
         * @param data_dir Path to open or create database in
         */
       virtual void open(const open_args& args) = 0;
-      void open_begin( const open_args& args);
-      void open_finish( const open_args& args);
+      void open_state_independent( const open_args& args);
+      void open_state_dependent( const open_args& args);
 
     private:
 
@@ -236,8 +236,8 @@ namespace chain {
         */
       void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
       virtual void close(bool rewind = true) = 0;
-      void close_begin(bool rewind);
-      void close_finish(bool rewind);
+      void close_chainbase(bool rewind);
+      void close_forkbase(bool rewind);
 
 
       //////////////////// db_block.cpp ////////////////////
@@ -721,8 +721,10 @@ namespace chain {
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
       virtual void migrate_irreversible_state(uint32_t old_last_irreversible) = 0;
-      protected: void migrate_irreversible_state_begin(uint32_t old_last_irreversible);
-      void migrate_irreversible_state_finish(uint32_t old_last_irreversible); private:
+    protected:
+      void migrate_irreversible_state_check(uint32_t old_last_irreversible);
+      void migrate_irreversible_state_perform(uint32_t old_last_irreversible); 
+    private:
       void clear_expired_transactions();
       void clear_expired_orders();
       void clear_expired_delegations();
