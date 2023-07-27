@@ -18,7 +18,6 @@ file(GLOB UNIT_TESTS
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/beekeeper_instance.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/time_manager.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/session.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/time_manager_base.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_wallet.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_wallet_manager.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/token_generator.cpp

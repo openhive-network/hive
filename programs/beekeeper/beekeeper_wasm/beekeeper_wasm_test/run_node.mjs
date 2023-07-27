@@ -11,6 +11,14 @@ const __dirname = path.dirname(__filename);
 
 const STORAGE_ROOT = path.join(__dirname, 'storage_root');
 
+const extract_json = (json) => {
+  const parsed = JSON.parse(json);
+
+  assert.ok( parsed.hasOwnProperty('result'), "Response resulted with error" );
+
+  return parsed.result;
+};
+
 const perform_StringList_test = provider => {
   const params = new provider.StringList();
   params.push_back('--wallet-dir');
@@ -34,9 +42,9 @@ const create_beekeeper_instance = (provider, params) => {
   console.log('init instance');
   const init_result = instance.init();
   console.log(`instance initalized with result: ${init_result}`);
-  const { status } = JSON.parse(init_result);
+  const { status } = JSON.parse(extract_json(init_result));
   assert.equal(status, true);
-  const { token } = JSON.parse(init_result);
+  const { token } = JSON.parse(extract_json(init_result));
 
   return [ instance, token ];
 };
@@ -46,7 +54,7 @@ const create_beekeeper_wallet = (beekeeper_instance, session_token, wallet_name,
 
   const returned_password = beekeeper_instance.create(session_token, wallet_name, explicit_password);
   console.log(`wallet "${wallet_name}" created with password: ${returned_password}`);
-  const { password } = JSON.parse(returned_password);
+  const { password } = JSON.parse(extract_json(returned_password));
 
   return password;
 };
@@ -56,7 +64,7 @@ const import_private_key = (beekeeper_instance, session_token, wallet_name, priv
   const returned_public_key = beekeeper_instance.import_key(session_token, wallet_name, private_key);
   console.log(`public key imported: ${returned_public_key}`);
 
-  const { public_key } = JSON.parse(returned_public_key);
+  const { public_key } = JSON.parse(extract_json(returned_public_key));
 
   assert.equal(public_key, expected_public_key);
 
@@ -69,20 +77,20 @@ const test_sign_transaction = (beekeeper_instance, session_token, transaction_bo
   console.log(`Attempting to sign transaction: ${transaction_body}`);
   console.log('************************sign digest************************');
   let s = beekeeper_instance.sign_digest(session_token, public_key, sig_digest);
-  let { signature } = JSON.parse(s);
+  let { signature } = JSON.parse(extract_json(s));
   console.log(`got signature: ${signature}`);
 
   assert.equal(signature, expected_signature);
 
   console.log('************************sign transaction************************');
   s = beekeeper_instance.sign_transaction(session_token, transaction_body, chain_id, public_key);
-  ({ signature } = JSON.parse(s));
+  ({ signature } = JSON.parse(extract_json(s)));
   console.log(`got signature: ${signature}`);
   assert.equal(signature, expected_signature);
 
   console.log('************************sign binary transaction************************');
   s = beekeeper_instance.sign_binary_transaction(session_token, binary_transaction_body, chain_id, public_key);
-  ({ signature } = JSON.parse(s));
+  ({ signature } = JSON.parse(extract_json(s)));
   console.log(`got signature: ${signature}`);
   assert.equal(signature, expected_signature);
 
@@ -118,8 +126,8 @@ const perform_wallet_autolock_test = async(beekeeper_instance, session_token) =>
   const interval = Date.now() - start;
 
   console.log(`Timer resumed after ${interval} ms`);
-  const wallets = beekeeper_instance.list_wallets(session_token);
-  console.log(wallets);
+  const wallets = extract_json(beekeeper_instance.list_wallets(session_token));
+
   assert.equal(wallets, '{"wallets":[{"name":"wallet_a","unlocked":false},{"name":"wallet_b","unlocked":false}]}');
 };
 
@@ -142,7 +150,7 @@ const my_entrypoint = async() => {
   console.log('create session[1]');
   let session_token = beekeeper_instance.create_session('pear');
   console.log(`session[1] created with token: ${session_token}`);
-  ({ token: session_token } = JSON.parse(session_token));
+  ({ token: session_token } = JSON.parse(extract_json(session_token)));
 
   console.log(`close session[1] with token: ${session_token}`);
   beekeeper_instance.close_session(session_token);
@@ -151,7 +159,7 @@ const my_entrypoint = async() => {
   console.log('create session[2]');
   session_token = beekeeper_instance.create_session('pear');
   console.log(`session[2] created with token: ${session_token}`);
-  ({ token: session_token } = JSON.parse(session_token));;
+  ({ token: session_token } = JSON.parse(extract_json(session_token)));
 
   const wallet_name = 'wallet_a';
   const password_a = create_beekeeper_wallet(beekeeper_instance, session_token, wallet_name, 'cherry');
@@ -164,19 +172,19 @@ const my_entrypoint = async() => {
   const wallet_2_public_key2 = import_private_key(beekeeper_instance, session_token, wallet_name_2, '5KNbAE7pLwsLbPUkz6kboVpTR24CycqSNHDG95Y8nbQqSqd6tgS', '7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH');
   const wallet_2_public_key3 = import_private_key(beekeeper_instance, session_token, wallet_name_2, '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n', '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4');
 
-  let wallets = beekeeper_instance.list_wallets(session_token);
+  let wallets = extract_json(beekeeper_instance.list_wallets(session_token));
   console.log(`Defined wallets: ${wallets}`);
 
   assert.equal(wallets, '{"wallets":[{"name":"wallet_a","unlocked":true},{"name":"wallet_b","unlocked":true}]}');
 
-  let public_keys = beekeeper_instance.get_public_keys(session_token);
+  let public_keys = extract_json(beekeeper_instance.get_public_keys(session_token));
   console.log(`Defined public keys: ${public_keys}`);
 
   assert.equal(public_keys, '{"keys":[{"public_key":"6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"},{"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"},{"public_key":"7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH"}]}');
 
   console.log(`Attempting to close wallet: ${wallet_name_2}`);
   beekeeper_instance.close(session_token, wallet_name_2);
-  wallets = beekeeper_instance.list_wallets(session_token);
+  wallets = extract_json(beekeeper_instance.list_wallets(session_token));
   console.log(`Opened wallets: ${wallets}`);
 
   assert.equal(wallets, '{"wallets":[{"name":"wallet_a","unlocked":true}]}');
@@ -184,7 +192,7 @@ const my_entrypoint = async() => {
   console.log(`Attempting to open wallet: ${wallet_name_2}`);
   beekeeper_instance.open(session_token, wallet_name_2);
 
-  wallets = beekeeper_instance.list_wallets(session_token);
+  wallets = extract_json(beekeeper_instance.list_wallets(session_token));
   console.log(`Opened wallets: ${wallets}`);
 
   assert.equal(wallets, '{"wallets":[{"name":"wallet_a","unlocked":true},{"name":"wallet_b","unlocked":false}]}');
@@ -192,7 +200,7 @@ const my_entrypoint = async() => {
   console.log(`Attempting to unlock wallet: ${wallet_name_2}`);
   beekeeper_instance.unlock(session_token, wallet_name_2, password_2);
 
-  wallets = beekeeper_instance.list_wallets(session_token);
+  wallets = extract_json(beekeeper_instance.list_wallets(session_token));
   console.log(`Opened wallets: ${wallets}`);
 
   assert.equal(wallets, '{"wallets":[{"name":"wallet_a","unlocked":true},{"name":"wallet_b","unlocked":true}]}');
@@ -200,14 +208,14 @@ const my_entrypoint = async() => {
   console.log(`Attempting to lock wallet: ${wallet_name_2}`);
   beekeeper_instance.lock(session_token, wallet_name_2);
 
-  wallets = beekeeper_instance.list_wallets(session_token);
+  wallets = extract_json(beekeeper_instance.list_wallets(session_token));
   console.log(`Opened wallets: ${wallets}`);
 
   assert.equal(wallets, '{"wallets":[{"name":"wallet_a","unlocked":true},{"name":"wallet_b","unlocked":false}]}');
 
   beekeeper_instance.lock_all(session_token);
 
-  wallets = beekeeper_instance.list_wallets(session_token);
+  wallets = extract_json(beekeeper_instance.list_wallets(session_token));
   console.log(`Opened wallets: ${wallets}`);
 
   assert.equal(wallets, '{"wallets":[{"name":"wallet_a","unlocked":false},{"name":"wallet_b","unlocked":false}]}');
@@ -218,21 +226,21 @@ const my_entrypoint = async() => {
   console.log(`Attempting to remove key: ${wallet_2_public_key2} from wallet: ${wallet_name_2} with pass: ${password_2}`);
   beekeeper_instance.remove_key(session_token, wallet_name_2, password_2, wallet_2_public_key2);
 
-  public_keys = beekeeper_instance.get_public_keys(session_token);
+  public_keys = extract_json(beekeeper_instance.get_public_keys(session_token));
   console.log(public_keys);
 
   assert.equal(public_keys, '{"keys":[{"public_key":"6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"},{"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"}]}');
 
-  const info = beekeeper_instance.get_info(session_token);
+  const info = extract_json(beekeeper_instance.get_info(session_token));
   console.log(info);
 
   console.log(`Attempting to unlock wallet: ${wallet_name}`);
   beekeeper_instance.unlock(session_token, wallet_name, password_a);
 
-  wallets = beekeeper_instance.list_wallets(session_token);
+  wallets = extract_json(beekeeper_instance.list_wallets(session_token));
   console.log(wallets);
 
-  public_keys = beekeeper_instance.get_public_keys(session_token);
+  public_keys = extract_json(beekeeper_instance.get_public_keys(session_token));
   console.log(public_keys);
 
   perform_transaction_signing_tests(beekeeper_instance, session_token, wallet_2_public_key3);
