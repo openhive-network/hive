@@ -3,9 +3,9 @@
 #include <appbase/application.hpp>
 
 #include <beekeeper/beekeeper_instance.hpp>
+#include <beekeeper/beekeeper_wallet_api.hpp>
 
 #include <core/beekeeper_app_init.hpp>
-#include <core/beekeeper_wallet_api.hpp>
 
 namespace beekeeper {
 
