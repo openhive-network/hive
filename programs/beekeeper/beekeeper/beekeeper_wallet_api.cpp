@@ -1,4 +1,5 @@
 #include <beekeeper/beekeeper_wallet_api.hpp>
+#include <beekeeper/extended_api.hpp>
 #include <core/beekeeper_wallet_base.hpp>
 
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
@@ -16,6 +17,10 @@ using beekeeper::beekeeper_wallet_manager;
 
 class beekeeper_api_impl
 {
+  private:
+  
+    extended_api ex_api;
+
   public:
     beekeeper_api_impl( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr ): _wallet_mgr( wallet_mgr ) {}
 
@@ -80,7 +85,11 @@ DEFINE_API_IMPL( beekeeper_api_impl, lock )
 
 DEFINE_API_IMPL( beekeeper_api_impl, unlock )
 {
-  _wallet_mgr->unlock( args.token, args.wallet_name, args.password );
+  if( ex_api.enabled() )
+    _wallet_mgr->unlock( args.token, args.wallet_name, args.password );
+  else
+    FC_ASSERT(false, "unlock is not accessible");
+
   return unlock_return();
 }
 

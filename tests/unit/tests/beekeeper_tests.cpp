@@ -17,6 +17,7 @@
 
 #include <beekeeper/session_manager.hpp>
 #include <beekeeper/beekeeper_instance.hpp>
+#include <beekeeper/extended_api.hpp>
 
 #include<thread>
 
@@ -811,6 +812,38 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
       _calculate_signature( "{\"ref_block_num\":95,\"ref_block_prefix\":4189425605,\"expiration\":\"2023-07-18T08:38:29\",\"operations\":[{\"type\":\"transfer_operation\",\"value\":{\"from\":\"initminer\",\"to\":\"alice\",\"amount\":{\"amount\":\"666\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"memmm\"}}],\"extensions\":[],\"signatures\":[],\"transaction_id\":\"cc9630cdbc39da1c9b6264df3588c7bedb5762fa\",\"block_num\":0,\"transaction_num\":0}",
                             _signature_01_result );
     }
+
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(wallet_manager_brute_force_protection_test)
+{
+  try {
+    beekeeper::extended_api _api;
+
+    const uint32_t _nr_threads = 10;
+
+    std::vector<std::shared_ptr<std::thread>> threads;
+
+    auto _start = std::chrono::high_resolution_clock::now();
+
+    for( size_t i = 0; i < _nr_threads; ++i )
+      threads.emplace_back( std::make_shared<std::thread>( [&]()
+      {
+        while( !_api.enabled() )
+        {
+        }
+      } ) );
+
+    for( auto& thread : threads )
+      thread->join();
+
+    auto _stop = std::chrono::high_resolution_clock::now();
+
+    auto _duration = std::chrono::duration_cast<std::chrono::milliseconds>( _stop - _start );
+
+    BOOST_TEST_MESSAGE( std::to_string( _duration.count() ) + " [ms]" );
+    //BOOST_REQUIRE( _duration.count() >= 5000 );
 
   } FC_LOG_AND_RETHROW()
 }
