@@ -252,6 +252,7 @@ namespace chain {
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
     public:
+      void _push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip);
 
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
@@ -349,7 +350,6 @@ namespace chain {
       void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = skip_nothing );
       void _maybe_warn_multiple_production( uint32_t height )const;
       bool _push_block( const block_flow_control& block_ctrl );
-      void _push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip);
       void _push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction );
 
       void pop_block();
@@ -947,39 +947,34 @@ namespace chain {
   {
     block_log _block_log;
 
-    uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block );
-  
   public:
+      void open( const open_args& args) override;
+  private:
+    bool is_included_block_unlocked(const block_id_type& block_id);
+    uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block );
+  public:
+    std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
+    std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received); //by is_known_block_unlocked
+    std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
     bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
     uint32_t reindex( const open_args& args );
     void close(bool rewind = true) override;
-    void open( const open_args& args) override;
-  
-  
-  public:
     bool is_known_block( const block_id_type& id )const;
-    std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
-    std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
-    std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
-    std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
-    std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
-
-  private:
-
+  private:  
     bool is_known_block_unlocked(const block_id_type& id)const;
+  public:  
     block_id_type              find_block_id_for_num( uint32_t block_num )const;
-    
-    void migrate_irreversible_state(uint32_t old_last_irreversible) override;
-    void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
-    bool is_included_block_unlocked(const block_id_type& block_id);
+    block_id_type              get_block_id_for_num( uint32_t block_num )const;
+    std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
+    std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+    std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
     std::shared_ptr<full_block_type> get_head_block() const override;
-    void open_block_log(const open_args& args);
-    void append_to_block_log(const std::shared_ptr<full_block_type>& full_block);
-    void flush_block_log();
+  private:
+    void migrate_irreversible_state(uint32_t old_last_irreversible) override;
 
-  public:
-     block_id_type              get_block_id_for_num( uint32_t block_num )const;
-     std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received); //by is_known_block_unlocked
+    void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
+    void open_block_log(const open_args& args);
+
 
 
   };

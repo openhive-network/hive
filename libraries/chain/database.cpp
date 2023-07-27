@@ -5696,11 +5696,9 @@ void full_database::migrate_irreversible_state_to_blocklog(uint32_t old_last_irr
         }
 
         for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-          append_to_block_log( block_itr->get()->full_block );
-          
+            _block_log.append( block_itr->get()->full_block  );
 
-        flush_block_log();
-        
+          _block_log.flush();
       }
     }
 }
@@ -7551,15 +7549,6 @@ void full_database::open_block_log(const open_args& args)
   });
 }
 
-void full_database::append_to_block_log(const std::shared_ptr<full_block_type>& full_block)
-{
-  _block_log.append( full_block );
-}
-
-void full_database::flush_block_log()
-{
-  _block_log.flush();
-}
 
 } } //hive::chain
 
