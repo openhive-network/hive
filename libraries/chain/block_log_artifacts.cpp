@@ -676,6 +676,13 @@ void block_log_artifacts::impl::store_block_artifacts(uint32_t block_num, uint64
                                                       const block_attributes_t& block_attrs, const block_id_t& block_id)
 {
   FC_ASSERT(_is_writable, "Block log artifacts was opened in read only mode.");
+
+  if (_header.generating_interrupted_at_block && (block_num > _header.head_block_num))
+    FC_THROW("Cannot store new artifacts if generating process isn't finished.");
+  // Update tail_block_num to 1 when artifacts was not generated and from beggining we store artifacts.
+  if (!_header.tail_block_num)
+    _header.tail_block_num = 1;
+
   artifact_file_chunk data_chunk;
   data_chunk.pack_data(block_log_file_pos, block_attrs);
   data_chunk.pack_block_id(block_num, block_id);
