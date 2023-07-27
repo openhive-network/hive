@@ -682,9 +682,11 @@ namespace chain {
       void notify_changed_objects();
 
     private:
-      protected: optional< chainbase::database::session > _pending_tx_session; private:
+      optional< chainbase::database::session > _pending_tx_session;
     
-    protected:  void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing ); private:
+    protected:
+      void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing ); 
+    private:
       void switch_forks(item_ptr new_head);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block);
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
@@ -805,7 +807,9 @@ namespace chain {
 
       std::unique_ptr< database_impl > _my;
 
-      protected: fork_database                 _fork_db; private:
+    protected:
+      fork_database                 _fork_db;
+    private:
       hardfork_versions             _hardfork_versions;
 
 
@@ -891,17 +895,17 @@ namespace chain {
         */
       fc::signal<void(const transaction_notification&)>     _post_apply_transaction_signal;
 
+    protected:
       /**
         * Emitted when reindexing starts
         */
-      protected: fc::signal<void(const reindex_notification&)>         _pre_reindex_signal; private:
+      fc::signal<void(const reindex_notification&)>         _pre_reindex_signal;
 
       /**
         * Emitted when reindexing finishes
         */
-      protected: fc::signal<void(const reindex_notification&)>         _post_reindex_signal; private:
-
-      
+      fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
+    private:
 
       fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
 
