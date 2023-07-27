@@ -268,14 +268,14 @@ void drain_completed_queue(const fc::path& block_log)
   FC_LOG_AND_RETHROW()
 }
 
-void fill_pending_queue(const fc::path& block_log) 
+void fill_pending_queue(const fc::path& block_log, const bool read_only)
 {
   try
   {
     ilog("Starting fill_pending_queue");
     hive::chain::block_log log;
-    log.open(block_log, true);
-    ilog("Opened source block log");
+    log.open(block_log, read_only);
+    ilog("Opened source block log. Readonly: ${read_only}", (read_only));
 
     if (!log.head())
     {
@@ -369,7 +369,8 @@ int main(int argc, char** argv)
     options.add_options()("zstd-level", boost::program_options::value<int>()->default_value(15), zstd_levels_description.c_str());
     options.add_options()("benchmark-decompression", "decompress each block and report the decompression times at the end");
     options.add_options()("jobs,j", boost::program_options::value<int>()->default_value(1), "The number of threads to use for compression");
-    options.add_options()("input-block-log,i", boost::program_options::value<std::string>()->required(), "The directory containing the input block log");
+    options.add_options()("input-block-log,i", boost::program_options::value<std::string>(), "The directory containing the input block log. Has rights to read and write.");
+    options.add_options()("input-read-only-block-log", boost::program_options::value<std::string>(), "The directory containing the input block log. Read only mode.");
     options.add_options()("output-block-log,o", boost::program_options::value<std::string>()->required(), "The directory to contain the compressed block log");
     options.add_options()("dump-raw-blocks", boost::program_options::value<std::string>(), "A directory in which to dump raw, uncompressed blocks (one block per file)");
     options.add_options()("starting-block-number,s", boost::program_options::value<uint32_t>()->default_value(1), "Start at the given block number (for benchmarking only, values > 1 will generate an unusable block log)");
@@ -378,12 +379,8 @@ int main(int argc, char** argv)
 
     options.add_options()("help,h", "Print usage instructions");
 
-    boost::program_options::positional_options_description positional_options;
-    positional_options.add("input-block-log", 1);
-    positional_options.add("output-block-log", 1);
-
     boost::program_options::variables_map options_map;
-    boost::program_options::store(boost::program_options::command_line_parser(argc, argv).options(options).positional(positional_options).run(), options_map);
+    boost::program_options::store(boost::program_options::command_line_parser(argc, argv).options(options).run(), options_map);
 
     enable_zstd = !options_map["decompress"].as<bool>();
 
@@ -404,15 +401,34 @@ int main(int argc, char** argv)
       return 0;
     }
 
-    if (!options_map.count("input-block-log") || !options_map.count("output-block-log"))
+    if (!options_map.count("output-block-log"))
     {
-      std::cerr << "Error: missing parameter for input-block-log or output-block-log\n";
+      std::cerr << "Error: missing parameter output-block-log\n";
+      return 1;
+    }
+
+    if (!options_map.count("input-block-log") && !options_map.count("input-read-only-block-log"))
+    {
+      std::cerr << "Error: missing parameter for input block_log (input-block-log or input-read-only-block-log)\n";
+      return 1;
+    }
+
+    if (options_map.count("input-block-log") && options_map.count("input-read-only-block-log"))
+    {
+      std::cerr << "Error: input-read-only-block-log and input-block-log exclude themselves. You cannot use both.\n";
       return 1;
     }
 
     fc::path input_block_log_path;
+    bool input_readonly = false;
     if (options_map.count("input-block-log"))
       input_block_log_path = options_map["input-block-log"].as<std::string>();
+    else
+    {
+      input_readonly = true;
+      input_block_log_path = options_map["input-read-only-block-log"].as<std::string>();
+    }
+
     fc::path output_block_log_path;
     if (options_map.count("output-block-log"))
       output_block_log_path = options_map["output-block-log"].as<std::string>();
@@ -430,7 +446,7 @@ int main(int argc, char** argv)
     // we would have to attempt to compress the blocks each time we sent them to a peer.
     use_compressed_even_when_larger = options_map["use-compressed-even-when-larger"].as<bool>();
 
-    std::shared_ptr<std::thread> fill_queue_thread = std::make_shared<std::thread>([&](){ fill_pending_queue(input_block_log_path / "block_log"); });
+    std::shared_ptr<std::thread> fill_queue_thread = std::make_shared<std::thread>([&](){ fill_pending_queue(input_block_log_path / "block_log", input_readonly); });
     std::shared_ptr<std::thread> drain_queue_thread = std::make_shared<std::thread>([&](){ drain_completed_queue(output_block_log_path / "block_log"); });
     std::vector<std::shared_ptr<std::thread>> compress_blocks_threads;
     for (unsigned i = 0; i < jobs; ++i)
