@@ -788,8 +788,8 @@ void block_log_artifacts::store_block_artifacts(uint32_t block_num, uint64_t blo
     _impl->flush_header();
   else
   {
-    constexpr uint16_t BLOCKS_COUNT_INTERVAL_FOR_FLUSH = 10000;
-    static uint16_t stored_blocks_counter = 0;
+    constexpr uint32_t BLOCKS_COUNT_INTERVAL_FOR_FLUSH = 100000;
+    static uint32_t stored_blocks_counter = 0;
     ++stored_blocks_counter;
 
     if (stored_blocks_counter > BLOCKS_COUNT_INTERVAL_FOR_FLUSH)
