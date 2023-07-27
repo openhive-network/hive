@@ -118,9 +118,9 @@ const perform_wallet_autolock_test = async(beekeeper_instance, session_token) =>
   const interval = Date.now() - start;
 
   console.log(`Timer resumed after ${interval} ms`);
-  const wallets = beekeeper_instance.list_wallets(session_token);
-  console.log(wallets);
-  assert.equal(wallets, '{"wallets":[{"name":"wallet_a","unlocked":false},{"name":"wallet_b","unlocked":false}]}');
+  const wallets = list_wallets(beekeeper_instance, session_token);
+  //for WASM beekeeper automatic locking is disabled
+  assert.equal(wallets, '{"wallets":[{"name":"w1","unlocked":true},{"name":"w2","unlocked":true}]}');
 };
 
 const my_entrypoint = async() => {
