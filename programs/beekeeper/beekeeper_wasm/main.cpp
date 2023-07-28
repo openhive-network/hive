@@ -126,7 +126,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("lock", &beekeeper_api::lock)
 
     /*
-      ****import of a private key into a wallet****
+      ****importing of a private key into a wallet****
       params:
         token:        a token representing a session
         wallet_name:  a name of wallet
@@ -138,7 +138,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("import_key", &beekeeper_api::import_key)
 
     /*
-      ****remove of a private key from a wallet****
+      ****removing of a private key from a wallet****
       params:
         token:        a token representing a session
         wallet_name:  a name of wallet
@@ -150,7 +150,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("remove_key", &beekeeper_api::remove_key)
 
     /*
-      ****list of all opened wallets****
+      ****listing of all opened wallets****
       params:
         token: a token representing a session
       result:
@@ -162,7 +162,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("list_wallets", &beekeeper_api::list_wallets)
 
     /*
-      ****list of all public keys****
+      ****listing of all public keys****
       params:
         token:  a token representing a session
       result:
@@ -173,7 +173,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("get_public_keys", &beekeeper_api::get_public_keys)
 
     /*
-      ****signing of a transaction by signing sig_digest****
+      ****signing a transaction by signing sig_digest****
       params:
         token:      a token representing a session
         public_key: a public key corresponding to a private key that is stored in a wallet. It will be used for creation of a signature
@@ -185,7 +185,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("sign_digest", &beekeeper_api::sign_digest)
 
     /*
-      ****signing of a transaction presented in a binary form (hex)****
+      ****signing a transaction presented in a binary form (hex)****
       params:
         token:        a token representing a session
         transaction:  a transaction in binary form (hex)
@@ -198,7 +198,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("sign_binary_transaction", &beekeeper_api::sign_binary_transaction)
 
     /*
-      ****signing of a transaction presented in a JSON form****
+      ****signing a transaction presented in a JSON form****
       params:
         token:        a token representing a session
         transaction:  a transaction in JSON form

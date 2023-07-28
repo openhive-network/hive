@@ -278,9 +278,9 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      return to_string( _impl->app.get_wallet_manager()->get_info( token ) );
+      info _result = _impl->app.get_wallet_manager()->get_info( token );
+      return to_string( _result );
     };
     return exception_handler<std::string>( _method );
   }
-
 };

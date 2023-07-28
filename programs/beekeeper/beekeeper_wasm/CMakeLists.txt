@@ -47,6 +47,7 @@ set( SOURCES
       ../core/beekeeper_app_base.cpp
       ../core/beekeeper_app_init.cpp
       ../core/utilities.cpp
+      ../core/time_manager_base.cpp
 )
 
 ADD_EXECUTABLE( beekeeper_wasm ${SOURCES} )
