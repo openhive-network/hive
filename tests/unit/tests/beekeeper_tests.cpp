@@ -12,8 +12,8 @@
 
 #include <core/beekeeper_wallet.hpp>
 #include <core/beekeeper_wallet_manager.hpp>
-#include <core/beekeeper_wasm_api.hpp>
-#include <core/beekeeper_wasm_app.hpp>
+#include <beekeeper_wasm/beekeeper_wasm_api.hpp>
+#include <beekeeper_wasm/beekeeper_wasm_app.hpp>
 
 #include <beekeeper/session_manager.hpp>
 #include <beekeeper/beekeeper_instance.hpp>
