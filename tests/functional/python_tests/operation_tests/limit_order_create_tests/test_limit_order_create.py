@@ -65,14 +65,14 @@ def test_match_fifth_order(prepared_node, alice, bob, carol, daisy, elizabeth, u
 @pytest.mark.testnet
 def test_not_matching_orders(prepared_node, alice, bob, use_hbd_in_matching_order):
     # test case 7, 8 from https://gitlab.syncad.com/hive/hive/-/issues/485
-    alice.create_order(150, 200, buy_hbd=not use_hbd_in_matching_order, expiration=10)
-    bob.create_order(200, 300, buy_hbd=use_hbd_in_matching_order, expiration=10)
+    alice.create_order(150, 200, buy_hbd=not use_hbd_in_matching_order)
+    bob.create_order(200, 300, buy_hbd=use_hbd_in_matching_order)
 
     # check if rc was reduced after fixing issue: https://gitlab.syncad.com/hive/hive/-/issues/507
     check_hbd = (1, 0, 1, 0) if use_hbd_in_matching_order else (0, 1, 0, 1)
     for account, amount, condition in zip((alice, alice, bob, bob), (300, 450, 300, 100), check_hbd):
         account.assert_balance(amount=amount, check_hbd=condition, message="no_match")
-    prepared_node.wait_number_of_blocks(4)  # wait for expiration of orders
+    prepared_node.wait_number_of_blocks(21)  # wait for expiration of orders
     for account, amount, condition in zip((alice, alice, bob, bob), (450, 450, 300, 300), check_hbd):
         account.assert_balance(amount=amount, check_hbd=condition, message="expiration")
 
