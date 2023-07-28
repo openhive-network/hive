@@ -14,7 +14,7 @@ set( CMAKE_EXECUTABLE_SUFFIX "" )
 cmake_policy(SET CMP0057 NEW)
 
 file(GLOB HEADERS
-      "${CMAKE_CURRENT_SOURCE_DIR}/../core/include/core/*.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../core/include/core/*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/beekeeper_wasm/*.hpp"
     )
 
 include( ${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/hive_targets.cmake )
@@ -36,8 +36,8 @@ add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/protocol build_
 
 set( SOURCES
       main.cpp
-      ../core/beekeeper_wasm_app.cpp
-      ../core/beekeeper_wasm_api.cpp
+      beekeeper_wasm_app.cpp
+      beekeeper_wasm_api.cpp
       ../core/beekeeper_wallet.cpp
       ../core/beekeeper_wallet_manager.cpp
       ../core/token_generator.cpp
@@ -51,7 +51,7 @@ set( SOURCES
 
 ADD_EXECUTABLE( beekeeper_wasm ${SOURCES} )
 
-set( INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/../core/include )
+set( INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/../core/include ${CMAKE_CURRENT_SOURCE_DIR}/include )
 
 target_include_directories( beekeeper_wasm PUBLIC ${INCLUDES} )
 target_compile_options( beekeeper_wasm PUBLIC -fexceptions )
