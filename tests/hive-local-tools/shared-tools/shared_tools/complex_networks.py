@@ -153,8 +153,6 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
         if blocklog_directory is not None:
             node.config.shared_file_size = "1G"
             node.run(replay_from=block_log, exit_before_synchronization=True, arguments=arguments)
-        else:
-            node.run(wait_for_live=False, arguments=arguments)
         cnt_node += 1
 
     for network in networks:
@@ -163,12 +161,17 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
     with ThreadPoolExecutor() as executor:
         tasks = []
         for node_num, node in enumerate(nodes):
-            tasks.append(executor.submit(lambda: node.run(
-                wait_for_live=False,
-                time_offset=modify_time_offset(timestamp, time_offsets[node_num]) if allow_external_time_offsets
-                else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S"),
-                arguments=arguments)))
-
+            if blocklog_directory:
+              tasks.append(executor.submit(lambda: node.run(
+                  wait_for_live=False,
+                  time_offset=modify_time_offset(timestamp, time_offsets[node_num]) if allow_external_time_offsets
+                  else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S"),
+                  arguments=arguments)))
+            else:
+              tasks.append(executor.submit(lambda: node.run(
+                  wait_for_live=False,
+                  arguments=arguments
+              )))
     for thread_number in tasks:
         thread_number.result()
 
