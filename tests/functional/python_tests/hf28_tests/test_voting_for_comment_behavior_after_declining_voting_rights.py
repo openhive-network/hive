@@ -4,6 +4,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import post_comment
+from hive_local_tools.functional.python.operation import get_virtual_operation
 
 
 @run_for("testnet")
@@ -24,8 +25,8 @@ def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(node)
 
 
 @run_for("testnet")
-def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_active(node):
-    wallet = tt.Wallet(attach_to=node)
+def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_active(prepare_environment):
+    node, wallet = prepare_environment
 
     wallet.create_account("alice", vests=100)
     post_comment(wallet, number_of_comments=2)
@@ -38,10 +39,17 @@ def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_ac
     # The account voted for the comment before declining vote rights the rights. This is correct behavior.
     assert len(node.api.condenser.get_active_votes("creator-0", "comment-of-creator-0")) == 1
 
+    node.wait_for_irreversible_block()
+    node.restart(time_offset="+62m")
+
+    assert len(get_virtual_operation(node, "curation_reward_operation")) == 1
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
+
 
 @run_for("testnet")
-def test_vote_for_comment_when_decline_voting_rights_is_being_executed(node):
-    wallet = tt.Wallet(attach_to=node)
+def test_vote_for_comment_when_decline_voting_rights_is_being_executed(prepare_environment):
+    node, wallet = prepare_environment
 
     wallet.create_account("alice", vests=100)
 
@@ -54,6 +62,13 @@ def test_vote_for_comment_when_decline_voting_rights_is_being_executed(node):
     node.wait_for_block_with_number(head_block_number + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert len(node.api.condenser.get_active_votes("creator-0", "comment-of-creator-0")) == 1
+
+    node.wait_for_irreversible_block()
+    node.restart(time_offset="+62m")
+
+    assert len(get_virtual_operation(node, "curation_reward_operation")) == 1
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
 
 
 @run_for("testnet")
@@ -75,7 +90,6 @@ def test_edit_comment_vote_without_voting_rights_before_comment_reward_pay_out(n
 def test_payout_rewards_for_comment_vote_without_voting_rights(node):
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=100_000_000)
-    wallet.api.set_voting_proxy("alice", "initminer")
 
     accounts = wallet.create_accounts(number_of_accounts=3, name_base="creator")
     with wallet.in_single_transaction():
@@ -113,13 +127,12 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node):
 
     vops = node.api.account_history.enum_virtual_ops(block_range_begin=0, block_range_end=2000, limit=2000,
                                                      include_reversible=True,
-                                                     # filter only comment_payout_update and proxy_cleared operations
-                                                     filter=int("0x000800", base=16) + int("0x20000000000", base=16))
+                                                     # filter only comment_payout_update and declined_voting_rights op
+                                                     filter=int("0x000800", base=16) + int("0x40000000000", base=16))
 
-    # The virtual operation confirms that decline_voting_rights_operation does not exist.
-    # The check was done by filtering proxy_cleared_operation.
-    assert vops["ops"][2]["op"]["type"] == "proxy_cleared_operation"
+    # The virtual operation confirms that decline_voting_rights_operation was done.
+    assert vops["ops"][2]["op"]["type"] == "declined_voting_rights_operation"
+    assert len(get_virtual_operation(node, "declined_voting_rights_operation")) == 1
 
-    assert node.api.condenser.get_accounts(["creator-0"])[0]["reward_hbd_balance"] > tt.Asset.Tbd(0)
-    assert node.api.condenser.get_accounts(["creator-1"])[0]["reward_hbd_balance"] > tt.Asset.Tbd(0)
-    assert node.api.condenser.get_accounts(["creator-2"])[0]["reward_hbd_balance"] > tt.Asset.Tbd(0)
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
