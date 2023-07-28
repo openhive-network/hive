@@ -222,14 +222,14 @@ class NetworksBuilder:
                     _api_node = tt.ApiNode(network=tt_network)
                     self.nodes.append(_api_node)
                     if api_node.prepare:
-                        self.prepare_nodes.append(api_node)
+                        self.prepare_nodes.append(_api_node)
 
             if network.full_api_node is not None:
                 for full_api_node in network.full_api_node:
                     _full_api_node = tt.FullApiNode(network=tt_network)
                     self.nodes.append(_full_api_node)
                     if full_api_node.prepare:
-                        self.prepare_nodes.append(full_api_node)
+                        self.prepare_nodes.append(_full_api_node)
 
             self.networks.append(tt_network)
         assert init_node_can_be_empty or self.init_node is not None
