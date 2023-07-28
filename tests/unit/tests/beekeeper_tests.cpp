@@ -740,9 +740,9 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
     {
       beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
       BOOST_REQUIRE( _result.wallets.size() == 2 );
-      //for WASM beekeeper automatic locking is disabled
-      BOOST_REQUIRE( _result.wallets[0].unlocked );
-      BOOST_REQUIRE( _result.wallets[1].unlocked );
+      //although WASM beekeeper automatic locking is disabled, calling API endpoint triggers locks for every wallet
+      BOOST_REQUIRE( !_result.wallets[0].unlocked );
+      BOOST_REQUIRE( !_result.wallets[1].unlocked );
     }
 
     _info = _obj.get_info( _token );
