@@ -580,9 +580,9 @@ void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifact
     last_block_num_to_verify = first_block_to_verify - BLOCKS_SAMPLE_AMOUNT;
   }
 
-  FC_ASSERT(last_block_num_to_verify > _header.generating_interrupted_at_block, "Artifacts file must contains blocks artifacts which ones will be used for verification.");
+  FC_ASSERT(last_block_num_to_verify > _header.generating_interrupted_at_block, "block_log.artifacts and block_log files do not match, since artifacts are generated for shorter block range than present in block_log file.");
 
-  ilog("Verifying if artefacts for blocks range: ${first_block_to_verify} : ${last_block_num_to_verify} matches block_log. (Any error during this process means that artifacts doesn't match block_log.",
+  ilog("Starting deep verification of already collected artifacts for the block range: ${first_block_to_verify} : ${last_block_num_to_verify}. Any error during this process means that the artifacts don't match the block_log.",
       (first_block_to_verify)(last_block_num_to_verify));
 
   uint32_t block_num = first_block_to_verify;
