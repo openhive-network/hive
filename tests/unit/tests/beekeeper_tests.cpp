@@ -625,12 +625,18 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 
     auto extract_json = []( const std::string& str )
     {
+      BOOST_TEST_MESSAGE( "JSON: " + str );
       if( str.empty() )
         return str;
       auto _v_init = fc::json::from_string( str );
-      BOOST_REQUIRE( _v_init.is_object() && _v_init.get_object().contains("result") );
+      BOOST_REQUIRE( _v_init.is_object() && ( _v_init.get_object().contains("result") || _v_init.get_object().contains("error") ) );
+
       std::string _result;
-      fc::from_variant( _v_init.get_object()["result"], _result );
+      if( _v_init.get_object().contains("result") )
+        fc::from_variant( _v_init.get_object()["result"], _result );
+      else
+        fc::from_variant( _v_init.get_object()["error"], _result );
+
       return _result;
     };
 
@@ -696,7 +702,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 
     _obj.open( _token, "wallet_1" );
 
-    BOOST_REQUIRE( extract_json( _obj.get_public_keys( _token ) ) == std::string() );
+    BOOST_REQUIRE( extract_json( _obj.get_public_keys( _token ) ).find( "You don't have any unlocked wallet" ) != std::string::npos );
 
     _obj.close( _token, "wallet_1" );
 
