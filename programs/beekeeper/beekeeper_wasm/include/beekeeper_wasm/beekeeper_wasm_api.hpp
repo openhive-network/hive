@@ -25,7 +25,7 @@ class beekeeper_api final
     std::string extend_json( const std::string& src );
 
     template<typename result_type>
-    result_type exception_handler( std::function<result_type()>&& method );
+    std::string exception_handler( std::function<std::string()>&& method );
 
   public:
 
@@ -34,20 +34,20 @@ class beekeeper_api final
     std::string init();
 
     std::string create_session( const std::string& salt );
-    void close_session( const std::string& token );
+    std::string close_session( const std::string& token );
 
     std::string create( const std::string& token, const std::string& wallet_name, const std::string& password );
-    void unlock( const std::string& token, const std::string& wallet_name, const std::string& password );
-    void open( const std::string& token, const std::string& wallet_name );
-    void close( const std::string& token, const std::string& wallet_name );
+    std::string unlock( const std::string& token, const std::string& wallet_name, const std::string& password );
+    std::string open( const std::string& token, const std::string& wallet_name );
+    std::string close( const std::string& token, const std::string& wallet_name );
 
-    void set_timeout( const std::string& token, int32_t seconds );
+    std::string set_timeout( const std::string& token, int32_t seconds );
 
-    void lock_all( const std::string& token );
-    void lock( const std::string& token, const std::string& wallet_name );
+    std::string lock_all( const std::string& token );
+    std::string lock( const std::string& token, const std::string& wallet_name );
 
     std::string import_key( const std::string& token, const std::string& wallet_name, const std::string& wif_key );
-    void remove_key( const std::string& token, const std::string& wallet_name, const std::string& password, const std::string& public_key );
+    std::string remove_key( const std::string& token, const std::string& wallet_name, const std::string& password, const std::string& public_key );
 
     std::string list_wallets( const std::string& token );
     std::string get_public_keys( const std::string& token );
