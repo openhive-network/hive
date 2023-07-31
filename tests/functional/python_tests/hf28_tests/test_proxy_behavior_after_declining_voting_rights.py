@@ -4,6 +4,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT, PROXY_ACCOUNT
+from hive_local_tools.functional.python.operation import get_virtual_operation
 
 
 @run_for("testnet")
@@ -16,8 +17,10 @@ def test_proxy_before_waiving_voting_rights(prepare_environment):
     assert node.api.wallet_bridge.get_account(VOTER_ACCOUNT)["proxy"] == PROXY_ACCOUNT
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    node.restart(time_offset="+25h")
+    assert len(get_virtual_operation(node, "proxy_cleared_operation")) == 1
     assert node.api.wallet_bridge.get_account(VOTER_ACCOUNT)["proxy"] == ""
+
+    node.restart(time_offset="+25h")
     assert not any(node.api.wallet_bridge.get_account(PROXY_ACCOUNT)["proxied_vsf_votes"])
 
 
@@ -44,6 +47,7 @@ def test_set_proxy_when_decline_voting_rights_is_in_progress(prepare_environment
     wallet.api.set_voting_proxy(VOTER_ACCOUNT, PROXY_ACCOUNT)
     node.wait_for_block_with_number(head_block_number + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
+    assert len(get_virtual_operation(node, "proxy_cleared_operation")) == 1
     node.restart(time_offset="+25h")
     assert node.api.wallet_bridge.get_account(VOTER_ACCOUNT)["proxy"] == ""
     assert not any(node.api.wallet_bridge.get_account(PROXY_ACCOUNT)["proxied_vsf_votes"])
@@ -63,4 +67,6 @@ def test_proxied_vsf_votes_when_principal_account_declined_its_voting_rights(pre
     wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
+    assert node.api.wallet_bridge.get_account(VOTER_ACCOUNT)["proxy"] == ""
+    assert len(get_virtual_operation(node, "proxy_cleared_operation")) == 1
     assert not any(node.api.wallet_bridge.get_account(PROXY_ACCOUNT)["proxied_vsf_votes"])

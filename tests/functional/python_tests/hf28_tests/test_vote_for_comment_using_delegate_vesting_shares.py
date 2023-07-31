@@ -45,7 +45,8 @@ def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_right
     node.wait_for_irreversible_block()
 
     node.restart(time_offset="+62m")
-    assert node.api.wallet_bridge.get_accounts(["creator-0"])[0]["reward_hbd_balance"] > tt.Asset.Tbd(0)
+    assert node.api.wallet_bridge.get_accounts(["bob"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
+    assert node.api.wallet_bridge.get_accounts(["bob"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
 
 
 @run_for("testnet")
@@ -66,7 +67,8 @@ def test_vote_for_comment_with_vests_from_delegation_when_decline_voting_rights_
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     node.restart(time_offset="+62m")
-    assert node.api.wallet_bridge.get_accounts(["creator-0"])[0]["reward_hbd_balance"] > tt.Asset.Tbd(0)
+    assert node.api.wallet_bridge.get_accounts(["bob"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
+    assert node.api.wallet_bridge.get_accounts(["bob"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
 
 
 @run_for("testnet")
@@ -88,11 +90,5 @@ def test_vote_for_comment_with_vests_from_delegation_after_creating_a_decline_vo
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     node.restart(time_offset="+62m")
-    assert (
-            int(
-                node.api.wallet_bridge.get_accounts(["creator-0"])[0][
-                    "reward_hbd_balance"
-                ]["amount"]
-            )
-            > tt.Asset.Tbd(0).amount
-    )
+    assert node.api.wallet_bridge.get_accounts(["bob"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
+    assert node.api.wallet_bridge.get_accounts(["bob"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
