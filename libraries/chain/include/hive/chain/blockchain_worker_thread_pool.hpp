@@ -28,6 +28,7 @@ public:
   struct impl;
 private:
   blockchain_worker_thread_pool(); 
+  void lazy_init();
   std::unique_ptr<impl> my;
 public: 
   // when we process a block/transaction, we need to know where it came from in

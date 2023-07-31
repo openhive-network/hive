@@ -109,17 +109,27 @@ void blockchain_worker_thread_pool::impl::thread_function()
 blockchain_worker_thread_pool::blockchain_worker_thread_pool() :
   my(std::make_unique<impl>())
 {
-  for (unsigned i = 1; i <= thread_pool_size; ++i)
-  {
-    my->threads.emplace_back([i, this]() {
-      std::ostringstream thread_name_stream;
-      thread_name_stream << "worker_" << i << "_of_" << thread_pool_size;
-      std::string thread_name = thread_name_stream.str();
-      fc::set_thread_name(thread_name.c_str()); // tells the OS the thread's name
-      fc::thread::current().set_name(thread_name); // tells fc the thread's name for logging
-      my->thread_function();
-    });
-  }
+  lazy_init();
+}
+
+void blockchain_worker_thread_pool::lazy_init()
+{
+  if( not my->threads.empty() )
+    return;
+
+  ilog("Emplacing worker threads");
+    for (unsigned i = 1; i <= thread_pool_size; ++i)
+    {
+      my->threads.emplace_back([i, this]() {
+        std::ostringstream thread_name_stream;
+        thread_name_stream << "worker_" << i << "_of_" << thread_pool_size;
+        std::string thread_name = thread_name_stream.str();
+        fc::set_thread_name(thread_name.c_str()); // tells the OS the thread's name
+        fc::thread::current().set_name(thread_name); // tells fc the thread's name for logging
+        my->thread_function();
+      });
+    }
+  ilog("Emplacing worker threads done");
 }
 
 void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_block_type>& full_block_weak_ptr, data_source_type data_source)
@@ -462,6 +472,7 @@ void blockchain_worker_thread_pool::shutdown()
   my->running.store(false, std::memory_order_relaxed);
   my->work_queue_condition_variable.notify_all();
   std::for_each(my->threads.begin(), my->threads.end(), [](std::thread& thread) { thread.join(); });
+  my->threads.clear();
   ilog("worker threads successfully shut down");
 }
 
@@ -474,6 +485,7 @@ void blockchain_worker_thread_pool::shutdown()
 /* static */ blockchain_worker_thread_pool& blockchain_worker_thread_pool::get_instance()
 {
   static blockchain_worker_thread_pool thread_pool;
+  thread_pool.lazy_init();
   return thread_pool;
 }
 
