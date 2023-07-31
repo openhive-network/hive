@@ -22,6 +22,7 @@ class beekeeper_api final
 
     template<typename T>
     std::string to_string( const T& src );
+    std::string extend_json( const std::string& src );
 
     template<typename result_type>
     result_type exception_handler( std::function<result_type()>&& method );

@@ -56,8 +56,9 @@ set( INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/../core/include ${CMAKE_CURRENT_SOURCE
 target_include_directories( beekeeper_wasm PUBLIC ${INCLUDES} )
 target_compile_options( beekeeper_wasm PUBLIC -fexceptions )
 target_link_libraries( beekeeper_wasm PUBLIC embind hive_protocol idbfs.js )
-# -sFORCE_FILESYSTEM=1 -sMODULARIZE=1 -sFILESYSTEM=1 
-target_link_options( beekeeper_wasm PUBLIC -fexceptions -sMODULARIZE=1 -sEXPORT_ES6=1 )
+# add -sASSERTIONS to `target_link_options` if you want more information
+# INITIAL_MEMORY by default = 16777216
+target_link_options( beekeeper_wasm PUBLIC -fexceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sINITIAL_MEMORY=33554432 )
 set_target_properties( beekeeper_wasm PROPERTIES OUTPUT_NAME beekeeper_wasm.mjs )
 
 # Helper target, just to perform TypeScript wrapper generation
