@@ -62,8 +62,9 @@ namespace beekeeper {
   std::string beekeeper_api::to_string(const T& src)
   {
     fc::variant _v;
-    fc::to_variant(src, _v);
-    return fc::json::to_string(_v);
+    fc::to_variant( src, _v );
+
+    return fc::json::to_string( fc::mutable_variant_object( "result", fc::json::to_string( _v ) ) );
   }
 
   template<typename result_type>
