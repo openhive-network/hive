@@ -68,7 +68,7 @@ namespace beekeeper {
   }
 
   template<typename result_type>
-  result_type beekeeper_api::exception_handler(std::function<result_type()>&& method)
+  std::string beekeeper_api::exception_handler(std::function<std::string()>&& method)
   {
     try
     {
@@ -90,9 +90,8 @@ namespace beekeeper {
     {
       ilog("unknown exception");
     }
-    return result_type();
+    return std::string();
   }
-
 
   std::string beekeeper_api::init()
   {
@@ -113,11 +112,12 @@ namespace beekeeper {
     return exception_handler<std::string>( _method );
   }
 
-  void beekeeper_api::close_session( const std::string& token )
+  std::string beekeeper_api::close_session( const std::string& token )
   {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->close_session( token );
+      return "{}";
     };
     return exception_handler<void>( _method );
   }
@@ -138,56 +138,62 @@ namespace beekeeper {
     return exception_handler<std::string>( _method );
   }
 
-  void beekeeper_api::unlock( const std::string& token, const std::string& wallet_name, const std::string& password )
+  std::string beekeeper_api::unlock( const std::string& token, const std::string& wallet_name, const std::string& password )
   {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->unlock( token, wallet_name, password );
+      return "{}";
     };
     return exception_handler<void>( _method );
   }
 
-  void beekeeper_api::open( const std::string& token, const std::string& wallet_name )
+  std::string beekeeper_api::open( const std::string& token, const std::string& wallet_name )
   {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->open( token, wallet_name );
+      return "{}";
     };
     return exception_handler<void>( _method );
   }
 
-  void beekeeper_api::close( const std::string& token, const std::string& wallet_name )
+  std::string beekeeper_api::close( const std::string& token, const std::string& wallet_name )
   {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->close( token, wallet_name );
+      return "{}";
     };
     return exception_handler<void>( _method );
   }
 
-  void beekeeper_api::set_timeout( const std::string& token, int32_t seconds )
+  std::string beekeeper_api::set_timeout( const std::string& token, int32_t seconds )
   {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->set_timeout( token, seconds );
+      return "{}";
     };
     return exception_handler<void>( _method );
   }
 
-  void beekeeper_api::lock_all( const std::string& token )
+  std::string beekeeper_api::lock_all( const std::string& token )
   {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->lock_all( token );
+      return "{}";
     };
     return exception_handler<void>( _method );
   }
 
-  void beekeeper_api::lock( const std::string& token, const std::string& wallet_name )
+  std::string beekeeper_api::lock( const std::string& token, const std::string& wallet_name )
   {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->lock( token, wallet_name );
+      return "{}";
     };
     return exception_handler<void>( _method );
   }
@@ -202,11 +208,12 @@ namespace beekeeper {
     return exception_handler<std::string>( _method );
   }
 
-  void beekeeper_api::remove_key( const std::string& token, const std::string& wallet_name, const std::string& password, const std::string& public_key )
+  std::string beekeeper_api::remove_key( const std::string& token, const std::string& wallet_name, const std::string& password, const std::string& public_key )
   {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->remove_key( token, wallet_name, password, public_key );
+      return "{}";
     };
     return exception_handler<void>( _method );
   }
