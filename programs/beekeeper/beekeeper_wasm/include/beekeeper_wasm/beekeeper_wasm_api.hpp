@@ -18,10 +18,12 @@ class beekeeper_api final
       void operator()(beekeeper_api::impl* ptr) const;
     };
 
+    const std::string empty_response;
+
     std::unique_ptr<impl, impl_deleter> _impl;
 
     template<typename T>
-    std::string to_string( const T& src );
+    std::string to_string( const T& src, bool valid = true );
     std::string extend_json( const std::string& src );
 
     template<typename result_type>

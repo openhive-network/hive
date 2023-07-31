@@ -26,7 +26,7 @@ namespace beekeeper {
     delete ptr;
   }
 
-  beekeeper_api::beekeeper_api( const std::vector<std::string>& _params )
+  beekeeper_api::beekeeper_api( const std::vector<std::string>& _params ): empty_response( "{}" )
   {
     _impl = std::unique_ptr<impl, impl_deleter>(new impl);
     _impl->params = _params;
@@ -59,38 +59,44 @@ namespace beekeeper {
   }
 
   template<typename T>
-  std::string beekeeper_api::to_string(const T& src)
+  std::string beekeeper_api::to_string( const T& src, bool valid )
   {
     fc::variant _v;
     fc::to_variant( src, _v );
 
-    return fc::json::to_string( fc::mutable_variant_object( "result", fc::json::to_string( _v ) ) );
+    std::string _key_name = valid ? "result" : "error";
+
+    return fc::json::to_string( fc::mutable_variant_object( _key_name, fc::json::to_string( _v ) ) );
   }
 
   template<typename result_type>
   std::string beekeeper_api::exception_handler(std::function<std::string()>&& method)
   {
+    std::string _error_message = empty_response;
+
     try
     {
       return method();
     }
     catch (const boost::exception& e)
     {
-      ilog(boost::diagnostic_information(e));
+      _error_message = boost::diagnostic_information(e);
     }
     catch (const fc::exception& e)
     {
-      ilog(e.to_detail_string());
+      _error_message = e.to_detail_string();
     }
     catch (const std::exception& e)
     {
-      ilog(e.what());
+      _error_message = e.what();
     }
     catch (...)
     {
-      ilog("unknown exception");
+      _error_message = "unknown exception";
     }
-    return std::string();
+    elog( _error_message );
+
+    return to_string( _error_message, false/*valid*/ );
   }
 
   std::string beekeeper_api::init()
@@ -117,7 +123,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->close_session( token );
-      return "{}";
+      return empty_response;
     };
     return exception_handler<void>( _method );
   }
@@ -143,7 +149,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->unlock( token, wallet_name, password );
-      return "{}";
+      return empty_response;
     };
     return exception_handler<void>( _method );
   }
@@ -153,7 +159,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->open( token, wallet_name );
-      return "{}";
+      return empty_response;
     };
     return exception_handler<void>( _method );
   }
@@ -163,7 +169,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->close( token, wallet_name );
-      return "{}";
+      return empty_response;
     };
     return exception_handler<void>( _method );
   }
@@ -173,7 +179,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->set_timeout( token, seconds );
-      return "{}";
+      return empty_response;
     };
     return exception_handler<void>( _method );
   }
@@ -183,7 +189,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->lock_all( token );
-      return "{}";
+      return empty_response;
     };
     return exception_handler<void>( _method );
   }
@@ -193,7 +199,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->lock( token, wallet_name );
-      return "{}";
+      return empty_response;
     };
     return exception_handler<void>( _method );
   }
@@ -213,7 +219,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->remove_key( token, wallet_name, password, public_key );
-      return "{}";
+      return empty_response;
     };
     return exception_handler<void>( _method );
   }
