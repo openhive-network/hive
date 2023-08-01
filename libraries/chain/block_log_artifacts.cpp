@@ -399,10 +399,15 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
         {
           _header = artifact_file_header();
           _header.dirty_close = 1;
-          _header.tail_block_num = 1;
-          _header.head_block_num = block_log_head_block_num;
           flush_header();
-          generate_artifacts_file(source_block_provider);
+
+          if (block_log_head_block_num)
+          {
+            _header.tail_block_num = 1;
+            _header.head_block_num = block_log_head_block_num;
+            flush_header();
+            generate_artifacts_file(source_block_provider);
+          }
         }
       }
     }
