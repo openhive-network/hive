@@ -82,7 +82,18 @@ namespace fc
          const char*          name()const throw();
          int64_t              code()const throw();
          virtual const char*  what()const throw();
-         virtual const char*  expr()const throw() { return nullptr; }
+
+         /**
+          * @return a reference to extensions that have been
+          * added to this exception.
+          */
+         const mutable_variant_object& get_extensions() const;
+         /**
+          * @return the value associated with the key if set,
+          * empty variant otherwise.
+          */
+         variant get_extension( const string& key ) const;
+         void set_extension( const string& key, const variant& var );
 
          /**
           *   @return a reference to log messages that have
@@ -291,51 +302,8 @@ namespace fc
   FC_DECLARE_EXCEPTION( canceled_exception, canceled_exception_code, "Canceled" );
   /**
    *  @brief used inplace of assert() to report violations of pre conditions.
-   *  Not declared by FC_DECLARE_EXCEPTION due to additional data field.
-   *  ( TYPE, BASE, CODE, WHAT ) -> ( assert_exception, fc::exception, assert_exception_code, "Assert Exception" )
    */
-  class assert_exception : public fc::exception
-  {
-    public:
-    enum code_enum {
-      code_value = assert_exception_code,
-    };
-    explicit assert_exception( int64_t code, const std::string& name_value, const std::string& what_value )
-      : fc::exception( code, name_value, what_value ) {}
-    explicit assert_exception( fc::log_message&& m, int64_t code, const std::string& name_value, const std::string& what_value )
-      : fc::exception( std::move(m), code, name_value, what_value ) {}
-    explicit assert_exception( fc::log_messages&& m, int64_t code, const std::string& name_value, const std::string& what_value )
-      : fc::exception( std::move(m), code, name_value, what_value ) {}
-    explicit assert_exception( const fc::log_messages& m, int64_t code, const std::string& name_value, const std::string& what_value )
-      : fc::exception( m, code, name_value, what_value ) {}
-    assert_exception( const std::string& what_value, const fc::log_messages& m )
-      : fc::exception( m, assert_exception_code, BOOST_PP_STRINGIZE(assert_exception), what_value ) {}
-    assert_exception( fc::log_message&& m )
-      : fc::exception( fc::move(m), assert_exception_code, BOOST_PP_STRINGIZE(assert_exception), "Assert Exception" ) {}
-    assert_exception( fc::log_messages msgs )
-      : fc::exception( fc::move( msgs ), assert_exception_code, BOOST_PP_STRINGIZE(assert_exception), "Assert Exception" ) {}
-    assert_exception( const assert_exception& c )
-      : fc::exception(c), assert_expression(c.assert_expression) {}
-    assert_exception( const fc::exception& c )
-      : fc::exception(c), assert_expression("Placeholder") {}
-    assert_exception()
-      : fc::exception(assert_exception_code, BOOST_PP_STRINGIZE(assert_exception), "Assert Exception") {}
-   
-    virtual std::shared_ptr<fc::exception> dynamic_copy_exception() const
-      { return std::make_shared<assert_exception>( *this ); }
-    virtual NO_RETURN void dynamic_rethrow_exception() const
-      { if( code() == assert_exception_code ) throw *this;
-        else fc::exception::dynamic_rethrow_exception();
-      }
-    assert_exception& operator =( const assert_exception& c )
-      { exception::operator = (c); assert_expression = c.assert_expression; return *this; }
-    assert_exception& operator =( const assert_exception&& c )
-      { exception::operator = (c); assert_expression = std::move( c.assert_expression ); return *this; }
-    virtual const char* expr() const throw() override { return assert_expression.c_str(); }
-    public:
-    std::string assert_expression = "Uninitialized";
-  };
-
+  FC_DECLARE_EXCEPTION( assert_exception, assert_exception_code, "Assert Exception" );
   FC_DECLARE_EXCEPTION( eof_exception, eof_exception_code, "End Of File" );
   FC_DECLARE_EXCEPTION( null_optional, null_optional_code, "null optional" );
   FC_DECLARE_EXCEPTION( udt_exception, udt_error_code, "UDT error" );
@@ -371,22 +339,25 @@ namespace fc
  */
 #define FC_EXPAND_MACRO( x ) x
 
+#define FC_ASSERT_EXPRESSION_KEY "assertion_expression"
+
 /**
  *@brief: Extracts base context of exception to use it as assert trip record.
  */
 #define FC_RECORD_ASSERT( EXCEPTION_OBJ ) \
   { \
-    const fc::log_messages& lms = EXCEPTION_OBJ.get_log();    \
-    fc::log_context lc = lms[0].get_context();                \
-    fc::record_assert_trip( lc.get_file().c_str(),            \
-                            lc.get_line_number(),             \
-                            EXCEPTION_OBJ.assert_expression.c_str(), \
-                            lms[0].get_message().c_str() );   \
+    const fc::log_messages& lms = EXCEPTION_OBJ.get_log();            \
+    fc::log_context lc = lms[0].get_context();                        \
+    auto ae = EXCEPTION_OBJ.get_extension( FC_ASSERT_EXPRESSION_KEY );\
+    fc::record_assert_trip( lc.get_file().c_str(),                    \
+                            lc.get_line_number(),                     \
+                            ae.as_string().c_str(),                   \
+                            lms[0].get_message().c_str() );           \
   }
 
 #define FC_ASSERT_EXCEPTION_DECL( expr, exc_type, FORMAT, ... )    \
         FC_EXCEPTION_DECL( exc_type, __e__, FORMAT, __VA_ARGS__ ); \
-        __e__.assert_expression = expr;
+        __e__.set_extension( FC_ASSERT_EXPRESSION_KEY, expr );
 /**
  *  @brief Checks a condition and throws an assert_exception if the test is FALSE
  */

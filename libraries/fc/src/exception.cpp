@@ -34,10 +34,11 @@ namespace fc
       class exception_impl
       {
          public:
-            std::string     _name;
-            std::string     _what;
-            int64_t         _code;
-            log_messages    _elog;
+            std::string             _name;
+            std::string             _what;
+            int64_t                 _code;
+            log_messages            _elog;
+            mutable_variant_object  _extension;
       };
    }
    exception::exception( log_messages&& msgs, int64_t code,
@@ -50,6 +51,23 @@ namespace fc
       my->_name = name_value;
       my->_elog = fc::move(msgs);
    }
+
+  void exception::set_extension( const string& key, const variant& var )
+  {
+    my->_extension.set( key, var );
+  }
+
+  const mutable_variant_object& exception::get_extensions() const
+  {
+    return my->_extension;
+  }
+
+  variant exception::get_extension( const string& key ) const
+  {
+    auto it = my->_extension.find( key );
+    return ( it == my->_extension.end() ) ? 
+      variant() : it->value();
+  }
 
    exception::exception(
       const log_messages& msgs,
@@ -130,7 +148,8 @@ namespace fc
       v = mutable_variant_object( "code", e.code() )
                                 ( "name", e.name() )
                                 ( "message", e.what() )
-                                ( "stack", e.get_log() );
+                                ( "stack", e.get_log() )
+                                ( "extension", variant( e.get_extensions() ) );
 
    }
    void          from_variant( const variant& v, exception& ll )
@@ -144,6 +163,8 @@ namespace fc
          ll.my->_name = obj["name"].as_string();
       if( obj.contains( "message" ) )
          ll.my->_what = obj["message"].as_string();
+      if( obj.contains( "extension" ) )
+         ll.my->_extension = obj["extension"].get_object();
    }
 
    const log_messages&   exception::get_log()const { return my->_elog; }
@@ -161,9 +182,11 @@ namespace fc
    {
       fc::stringstream ss;
       ss << variant(my->_code).as_string() <<" " << my->_name << ": " <<my->_what<<"\n";
-      const char* ae = expr();
-      if( ae != nullptr )
-         ss << ae << "\n";
+
+      auto it = my->_extension.find( FC_ASSERT_EXPRESSION_KEY );
+      if( it != my->_extension.end() )
+        ss << it->value().as_string() << "\n";
+
       for( auto itr = my->_elog.begin(); itr != my->_elog.end();  )
       {
          ss << itr->get_message() <<"\n"; //fc::format_string( itr->get_format(), itr->get_data() ) <<"\n";
@@ -182,9 +205,9 @@ namespace fc
    {
       fc::stringstream ss;
       ss << what() << ":";
-      const char* ae = expr();
-      if( ae != nullptr )
-         ss << ae << ": ";
+      auto it = my->_extension.find( FC_ASSERT_EXPRESSION_KEY );
+      if( it != my->_extension.end() )
+         ss << it->value().as_string() << ": ";
       for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr )
       {
          if( itr->get_format().size() )
