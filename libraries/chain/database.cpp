@@ -5140,13 +5140,13 @@ boost::signals2::connection database::add_switch_fork_handler( const switch_fork
   return connect_impl<false>(_switch_fork_signal, func, plugin, group, "switch_fork");
 }
 
-boost::signals2::connection database::add_pre_reindex_handler(const reindex_handler_t& func,
+boost::signals2::connection full_database::add_pre_reindex_handler(const reindex_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
   return connect_impl<true>(_pre_reindex_signal, func, plugin, group, "reindex");
 }
 
-boost::signals2::connection database::add_post_reindex_handler(const reindex_handler_t& func,
+boost::signals2::connection full_database::add_post_reindex_handler(const reindex_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
   return connect_impl<false>(_post_reindex_signal, func, plugin, group, "reindex");

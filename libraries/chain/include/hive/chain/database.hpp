@@ -397,12 +397,13 @@ namespace chain {
       void notify_comment_reward(const comment_reward_notification& note);
       void notify_end_of_syncing();
 
-    private:
+    protected:
       template < bool IS_PRE_OPERATION, typename TSignal,
                  typename TNotification = std::function<typename TSignal::signature_type> >
       boost::signals2::connection connect_impl( TSignal& signal, const TNotification& func,
         const abstract_plugin& plugin, int32_t group, const std::string& item_name = "" );
 
+    private:
       template< bool IS_PRE_OPERATION >
       boost::signals2::connection any_apply_operation_handler_impl( const apply_operation_handler_t& func,
         const abstract_plugin& plugin, int32_t group );
@@ -418,8 +419,6 @@ namespace chain {
       boost::signals2::connection add_fail_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_irreversible_block_handler        ( const irreversible_block_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_switch_fork_handler               ( const switch_fork_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_finish_push_block_handler          ( const push_block_handler_t&                func, const abstract_plugin& plugin, int32_t group = -1 );
@@ -897,16 +896,6 @@ namespace chain {
         */
       fc::signal<void(const transaction_notification&)>     _post_apply_transaction_signal;
 
-    protected:
-      /**
-        * Emitted when reindexing starts
-        */
-      fc::signal<void(const reindex_notification&)>         _pre_reindex_signal;
-
-      /**
-        * Emitted when reindexing finishes
-        */
-      fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
     private:
 
       fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
@@ -952,6 +941,23 @@ namespace chain {
   class full_database : public database
   {
     block_log _block_log;
+
+
+
+    public:
+      /**
+        * Emitted when reindexing starts
+        */
+      fc::signal<void(const reindex_notification&)>         _pre_reindex_signal;
+
+      /**
+        * Emitted when reindexing finishes
+        */
+      fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
+
+public:
+      boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
+      boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
   public:
       void open( const open_args& args) override;
