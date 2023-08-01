@@ -379,7 +379,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
             wlog("block_log file is longer than current block_log.artifact file. Artifacts head block num: ${header_head_block_num}, block log head block num: ${block_log_head_block_num}.",
                 ("header_head_block_num", _header.head_block_num)(block_log_head_block_num));
 
-            _header.tail_block_num = _header.head_block_num;
+            _header.tail_block_num = _header.head_block_num ? _header.head_block_num : 1;
             _header.head_block_num = block_log_head_block_num;
             flush_header();
             generate_artifacts_file(source_block_provider);
