@@ -65,7 +65,7 @@ docker pull hiveio/hive
 ```
 
 To run a Hive consensus node there are needed resources:
-- data directory to hold a blockchain file(s) (ca 400GB is required)
+- data directory to hold a blockchain file(s) (ca 600GB is required)
 - storage to hold a shared memory file (ca. 24GB of memory is required at the moment to store state data):
 
 There is provided a script wrapping `docker run` statement and emulating direct hived usage: [run_hived_img.sh](https://gitlab.syncad.com/hive/hive/-/blob/master/scripts/run_hived_img.sh)
