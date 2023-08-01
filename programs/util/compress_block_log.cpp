@@ -69,6 +69,8 @@ std::map<hive::chain::block_log::block_flags, uint32_t> total_count_by_method;
 const uint32_t blocks_to_prefetch = 100;
 const uint32_t max_completed_queue_size = 100;
 
+std::atomic<bool> error_detected {false};
+
 void compress_blocks()
 {
   // each compression thread gets its own context
@@ -82,11 +84,16 @@ void compress_blocks()
     compressed_block* compressed = nullptr;
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
-      while ((pending_queue.empty() && !all_blocks_enqueued) || (completed_queue.size() >= max_completed_queue_size))
+      while (((pending_queue.empty() && !all_blocks_enqueued) || (completed_queue.size() >= max_completed_queue_size)) && !error_detected.load())
         queue_condition_variable.wait(lock);
       if (pending_queue.empty() && all_blocks_enqueued)
       {
         dlog("No more blocks to compress, exiting worker thread");
+        return;
+      }
+      else if (error_detected.load())
+      {
+        elog("Exiting worker thread because of an error.");
         return;
       }
       
@@ -196,6 +203,7 @@ void compress_blocks()
 
 void drain_completed_queue(const fc::path& block_log)
 {
+  uint32_t current_block_number = 0;
   try
   {
     hive::chain::block_log log;
@@ -204,14 +212,18 @@ void drain_completed_queue(const fc::path& block_log)
     if (log.head())
     {
       elog("Error: output block log is not empty");
-      exit(1);
+      error_detected.store(true);
+      queue_condition_variable.notify_all();
+      log.close();
+      return;
     }
+
     while (true)
     {
       compressed_block* compressed = nullptr;
       {
         std::unique_lock<std::mutex> lock(queue_mutex);
-        while (pending_queue.empty() && completed_queue.empty() && !all_blocks_enqueued)
+        while (pending_queue.empty() && completed_queue.empty() && !all_blocks_enqueued && !error_detected.load())
           queue_condition_variable.wait(lock);
         if (!completed_queue.empty())
         {
@@ -225,6 +237,11 @@ void drain_completed_queue(const fc::path& block_log)
           ilog("Done draining writing compressed blocks to disk, exiting writer thread");
           break;
         }
+        else if (error_detected.load())
+        {
+          elog("Some error occured, exiting writer thread.");
+          break;
+        }
         else
         {
           // else the completed queue is empty, but there is still data 
@@ -234,6 +251,7 @@ void drain_completed_queue(const fc::path& block_log)
         }
       }
 
+      current_block_number = compressed->block_number;
       // we've dequeued the next block in the blockchain
       // wait for the compression job to finish
       dlog("writer thread waiting on block ${block_number}", ("block_number", compressed->block_number));
@@ -265,12 +283,40 @@ void drain_completed_queue(const fc::path& block_log)
 
     log.close();
   }
-  FC_LOG_AND_RETHROW()
+  catch(const fc::exception &e)
+  {
+    elog("[Error] failed to write to output block log. Current block number: ${current_block_number}, error details: ${what}.", (current_block_number)("what", e.to_detail_string()));
+    error_detected.store(true);
+    queue_condition_variable.notify_all();
+  }
+  catch(...)
+  {
+    error_detected.store(true);
+    queue_condition_variable.notify_all();
+
+    const auto current_exception = std::current_exception();
+    if (current_exception)
+    {
+      try
+      {
+        std::rethrow_exception(current_exception);
+      }
+      catch( const std::exception& e )
+      {
+        elog("[Error] failed to write to output block log. Current block number: ${current_block_number}, error details: ${what}.", (current_block_number)("what", e.what()));
+      }
+    }
+    else
+    {
+      elog("[Error] failed to write to output block log. Current block number: ${current_block_number}, Unknown error.", (current_block_number));
+    }
+  }
 }
 
 void fill_pending_queue(const fc::path& block_log, const bool read_only)
 {
   uint32_t current_block_number = 0;
+
   try
   {
     ilog("Starting fill_pending_queue");
@@ -281,14 +327,20 @@ void fill_pending_queue(const fc::path& block_log, const bool read_only)
     if (!log.head())
     {
       elog("Error: input block log is empty");
-      exit(1);
+      error_detected.store(true);
+      queue_condition_variable.notify_all();
+      log.close();
+      return;
     }
     uint32_t head_block_num = log.head()->get_block_num();
     idump((head_block_num));
     if (blocks_to_compress && *blocks_to_compress > head_block_num)
     {
       elog("Error: input block log does not contain ${blocks_to_compress} blocks (it's head block number is ${head_block_num})", (blocks_to_compress)(head_block_num));
-      exit(1);
+      error_detected.store(true);
+      queue_condition_variable.notify_all();
+      log.close();
+      return;
     }
     
     uint32_t stop_at_block = blocks_to_compress ? starting_block_number + *blocks_to_compress - 1 : head_block_num;
@@ -296,12 +348,12 @@ void fill_pending_queue(const fc::path& block_log, const bool read_only)
 
     current_block_number = starting_block_number;
 
-    while (current_block_number <= stop_at_block)
+    while (current_block_number <= stop_at_block && !error_detected.load())
     {
       // wait until there is room in the pending queue
       {
         std::unique_lock<std::mutex> lock(queue_mutex);
-        while (pending_queue.size() >= blocks_to_prefetch)
+        while (pending_queue.size() >= blocks_to_prefetch && !error_detected.load())
           queue_condition_variable.wait(lock);
       }
 
@@ -343,16 +395,48 @@ void fill_pending_queue(const fc::path& block_log, const bool read_only)
 
       ++current_block_number;
     }
-    dlog("All uncompressed blocks enqueued, exiting the fill_ending_queue() thread");
+
+    if (!error_detected.load())
+      dlog("All uncompressed blocks enqueued, exiting the fill_ending_queue() thread");
+    else
+      elog("fill_ending_queue thread stopped because an error was detected.");
 
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
       all_blocks_enqueued = true;
     }
+
     queue_condition_variable.notify_all();
     log.close();
   }
-  FC_CAPTURE_LOG_AND_RETHROW((current_block_number))
+  catch(const fc::exception &e)
+  {
+    elog("[Error] failed to read source block log. Current block number: ${current_block_number}, error details: ${what}.", (current_block_number)("what", e.to_detail_string()));
+    error_detected.store(true);
+    queue_condition_variable.notify_all();
+  }
+  catch(...)
+  {
+    error_detected.store(true);
+    queue_condition_variable.notify_all();
+
+    const auto current_exception = std::current_exception();
+    if (current_exception)
+    {
+      try
+      {
+        std::rethrow_exception(current_exception);
+      }
+      catch( const std::exception& e )
+      {
+        elog("[Error] failed to read source block log. Current block number: ${current_block_number}, error details: ${what}.", (current_block_number)("what", e.what()));
+      }
+    }
+    else
+    {
+      elog("[Error] failed to read source block log. Current block number: ${current_block_number}, Unknown error.", (current_block_number));
+    }
+  }
 }
 
 int main(int argc, char** argv)
@@ -456,6 +540,13 @@ int main(int argc, char** argv)
     for (std::shared_ptr<std::thread>& compress_blocks_thread : compress_blocks_threads)
       compress_blocks_thread->join();
     drain_queue_thread->join();
+
+    if (error_detected.load())
+    {
+      elog("Work was interrupted by an error.");
+      return 0;
+    }
+
     ilog("Total number of blocks by compression method:");
     uint32_t total_blocks_processed = 0;
     for (const auto& value : total_count_by_method)
