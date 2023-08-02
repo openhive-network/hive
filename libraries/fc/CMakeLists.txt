@@ -162,6 +162,7 @@ option( UNITY_BUILD OFF )
 file( GLOB_RECURSE fc_headers ${CMAKE_CURRENT_SOURCE_DIR} *.hpp *.h )
 
 set( fc_minimal_sources
+     src/uint128.cpp
      src/variant.cpp
      src/exception.cpp
      src/variant_object.cpp
@@ -182,9 +183,11 @@ set( fc_minimal_sources
      src/crypto/elliptic_${ECC_IMPL}.cpp
      src/crypto/sha512.cpp
      src/crypto/sha256.cpp
+     src/crypto/equihash.cpp
      src/crypto/aes.cpp
      src/crypto/hex.cpp
      src/crypto/base64.cpp
+     src/crypto/bigint.cpp
      src/crypto/openssl.cpp
      src/crypto/ripemd160.cpp
      src/crypto/cripemd160.cpp
@@ -213,7 +216,6 @@ list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
 
 if(NOT HIVE_BUILD_ON_MINIMAL_FC)
   list(APPEND sources
-     src/uint128.cpp
      src/real128.cpp
      src/thread/thread.cpp
      src/thread/thread_specific.cpp
@@ -241,11 +243,9 @@ if(NOT HIVE_BUILD_ON_MINIMAL_FC)
      src/crypto/openssl_thread_config.cpp
      src/crypto/base32.cpp
      src/crypto/base36.cpp
-     src/crypto/bigint.cpp
      src/crypto/sha1.cpp
      src/crypto/sha224.cpp
      src/crypto/blowfish.cpp
-     src/crypto/equihash.cpp
      src/crypto/restartable_sha256.cpp
      src/crypto/rand.cpp
      src/network/tcp_socket.cpp
@@ -265,8 +265,9 @@ if(NOT HIVE_BUILD_ON_MINIMAL_FC)
     )
 
      add_subdirectory( vendor/websocketpp )
-     add_subdirectory( vendor/equihash )
 endif()
+
+add_subdirectory( vendor/equihash )
 
 setup_library( fc_core SOURCES ${sources} LIBRARY_TYPE OBJECT DONT_INSTALL_LIBRARY )
 
@@ -347,26 +348,27 @@ SET( public_includes
 
 SET( private_includes
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/equihash
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/simdjson
     ${ECC_INCLUDE}
 )
 
-set( fc_dependencies ${LINK_USR_LOCAL_LIB} ${PLATFORM_SPECIFIC_LIBS} ${CMAKE_DL_LIBS} ${ECC_LIB} )
+set( fc_dependencies equihash ${LINK_USR_LOCAL_LIB} ${PLATFORM_SPECIFIC_LIBS} ${CMAKE_DL_LIBS} ${ECC_LIB} )
 
 if(NOT HIVE_BUILD_ON_MINIMAL_FC)
-  LIST( APPEND fc_dependencies equihash ${RPCRT4} ${rt_library} ${Readline_LIBRARIES} )
+  LIST( APPEND fc_dependencies ${RPCRT4} ${rt_library} ${Readline_LIBRARIES} )
   LIST( APPEND public_includes ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp "${readline_includes}" )
   LIST( APPEND private_includes
               ${CMAKE_CURRENT_SOURCE_DIR}/vendor/cyoencode-1.0.2/src
-              ${CMAKE_CURRENT_SOURCE_DIR}/vendor/equihash
               ${CMAKE_CURRENT_SOURCE_DIR}/vendor/bitcoin/src
   )
 
   include_directories( vendor/websocketpp )
-  include_directories( vendor/equihash )
 
   add_subdirectory(tests)
 endif()
+
+include_directories( vendor/equihash )
 
 target_include_directories(fc_core PUBLIC ${public_includes} PRIVATE ${private_includes})
 

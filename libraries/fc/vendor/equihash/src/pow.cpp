@@ -20,25 +20,6 @@ Modifications by Steemit, Inc. 2016
 #define EQUIHASH_LOG(s)
 #endif
 
-static uint64_t rdtsc(void) {
-#ifdef _MSC_VER
-    return __rdtsc();
-#else
-#if defined(__amd64__) || defined(__x86_64__)
-    uint64_t rax, rdx;
-    __asm__ __volatile__("rdtsc" : "=a"(rax), "=d"(rdx) : : );
-    return (rdx << 32) | rax;
-#elif defined(__i386__) || defined(__i386) || defined(__X86__)
-    uint64_t rax;
-    __asm__ __volatile__("rdtsc" : "=A"(rax) : : );
-    return rax;
-#else
-#error "Not implemented!"
-#endif
-#endif
-}
-
-
 using namespace _POW;
 using namespace std;
 
@@ -136,7 +117,6 @@ Proof Equihash::FindProof(){
     this->nonce = 1;
     while (nonce < MAX_NONCE) {
         nonce++;
-        uint64_t start_cycles = rdtsc();
         InitializeMemory(); //allocate
         FillMemory(4UL << (n / (k + 1)-1));   //fill with hashes
         /*fp = fopen("proof.log", "a+");
@@ -151,12 +131,6 @@ Proof Equihash::FindProof(){
             PrintTuples(fp);
             fclose(fp);*/
         }
-        uint64_t stop_cycles = rdtsc();
-
-        double  mcycles_d = (double)(stop_cycles - start_cycles) / (1UL << 20);
-        uint32_t kbytes = (tupleList.size()*LIST_LENGTH*k*sizeof(uint32_t)) / (1UL << 10);
-
-        FC_UNUSED(mcycles_d, kbytes);
 
         //Duplicate check
         for (unsigned i = 0; i < solutions.size(); ++i) {
