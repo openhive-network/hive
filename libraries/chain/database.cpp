@@ -344,7 +344,8 @@ uint32_t full_database::reindex_internal( const open_args& args, const std::shar
            ("free_memory_megabytes", get_free_memory() >> 20));
     }
 
-    apply_block(full_block, skip_flags);
+    migrate_irreversible_state(apply_block(full_block, skip_flags));
+
     last_applied_block = full_block;
 
     return !appbase::app().is_interrupt_request();
@@ -1168,7 +1169,7 @@ void database::switch_forks(const item_ptr new_head)
       set_tx_status(database::TX_STATUS_P2P_BLOCK);
       _fork_db.set_head(*ritr);
       auto session = start_undo_session();
-      apply_block((*ritr)->full_block, skip);
+      migrate_irreversible_state(apply_block((*ritr)->full_block, skip));
       session.push();
     }
     catch (const fc::exception& e)
@@ -1220,7 +1221,7 @@ void database::switch_forks(const item_ptr new_head)
             set_tx_status(database::TX_STATUS_P2P_BLOCK);
             _fork_db.set_head(*ritr);
             auto session = start_undo_session();
-            apply_block((*ritr)->full_block, skip);
+            migrate_irreversible_state(apply_block((*ritr)->full_block, skip));
             session.push();
           }
           ilog("done restoring blocks from original fork");
@@ -1292,7 +1293,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
         _fork_db.set_head(_fork_db.fetch_block((*iter)->get_block_id(), true));
 
       auto session = start_undo_session();
-      apply_block(*iter, skip);
+      migrate_irreversible_state(apply_block(*iter, skip));
       session.push();
     }
     catch (const fc::exception& e)
@@ -1315,7 +1316,7 @@ void database::_push_block_simplified(const std::shared_ptr<full_block_type>& fu
     set_tx_status(hive::chain::database::TX_STATUS_BLOCK);
     _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
 
-    apply_block(full_block, skip );
+    migrate_irreversible_state(apply_block(full_block, skip ));
     clear_tx_status();
     set_revision(head_block_num());
 
@@ -1345,7 +1346,9 @@ void database::push_transaction( const std::shared_ptr<full_transaction_type>& f
     if (is_fast_confirm_transaction(full_transaction))
     {
       // fast-confirm transactions are just processed in memory, they're not added to the blockchain
-      process_fast_confirm_transaction(full_transaction);
+      uint32_t old_last_irreversible_block = process_fast_confirm_transaction(full_transaction);
+      if(old_last_irreversible_block)
+        migrate_irreversible_state(old_last_irreversible_block);
       return;
     }
 
@@ -4317,13 +4320,15 @@ void database::set_flush_interval( uint32_t flush_blocks )
 
 //////////////////// private methods ////////////////////
 
-void database::apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
-{ try {
+uint32_t database::apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
+{
+  uint32_t old_last_irreversible_block = 0;
+  try {
   //fc::time_point begin_time = fc::time_point::now();
 
   detail::with_skip_flags( *this, skip, [&]()
   {
-    _apply_block(full_block);
+    old_last_irreversible_block = _apply_block(full_block);
   } );
 
   /*try
@@ -4365,7 +4370,9 @@ void database::apply_block(const std::shared_ptr<full_block_type>& full_block, u
     }
   }
 
-} FC_CAPTURE_AND_RETHROW((full_block->get_block())) }
+} FC_CAPTURE_AND_RETHROW((full_block->get_block())) 
+  return old_last_irreversible_block;
+}
 
 void database::check_free_memory( bool force_print, uint32_t current_block_num )
 {
@@ -4406,7 +4413,7 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
   }
 }
 
-void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
+uint32_t database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 {
   const signed_block& block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
@@ -4584,7 +4591,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   // and commits irreversible state to the database. This should always be the
   // last call of applying a block because it is the only thing that is not
   // reversible.
-  migrate_irreversible_state(old_last_irreversible);
+  return old_last_irreversible;
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) ) }
 
 struct process_header_visitor
@@ -5358,7 +5365,7 @@ const witness_schedule_object& database::get_witness_schedule_object_for_irrever
     return get_witness_schedule_object();
 }
 
-void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
+uint32_t database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 { try {
   FC_ASSERT(has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION), "Fast confirmation transactions not valid until HF26");
   // fast-confirm transactions are processed outside of the normal transaction processing flow,
@@ -5383,7 +5390,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   if (!witness_is_scheduled)
   {
     ilog("Received a fast-confirm from witness ${witness} who is not on the schedule, ignoring", ("witness", block_approve_op.witness));
-    return;
+    return 0;
   }
 
   const uint32_t new_approved_block_number = block_header::num_from_id( block_approve_op.block_id );
@@ -5397,7 +5404,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
            "but we already have a fast-confirm for a block #${previous_approved_block_number} which is at least as new, ignoring",
            ("witness", block_approve_op.witness)
            (previous_approved_block_number)(new_approved_block_number));
-      return;
+      return 0;
     }
   }
   _my->_last_fast_approved_block_by_witness[block_approve_op.witness] = block_approve_op.block_id;
@@ -5406,7 +5413,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   // ddump((_my->_last_fast_approved_block_by_witness));
 
   uint32_t old_last_irreversible_block = update_last_irreversible_block(false);
-  migrate_irreversible_state(old_last_irreversible_block);
+  return old_last_irreversible_block;
 } FC_CAPTURE_AND_RETHROW() }
 
 uint32_t database::update_last_irreversible_block(const bool currently_applying_a_block)
