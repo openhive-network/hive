@@ -217,7 +217,7 @@ void webserver_plugin_impl<websocket_server_type>::prepare_threads()
   thread_pool_work.reset( new asio::io_service::work( this->thread_pool_ios ) );
 
   for( uint32_t i = 0; i < thread_pool_size; ++i )
-    thread_pool.create_thread( [&]() { fc::set_thread_name("api"); thread_pool_ios.run(); } );
+    thread_pool.create_thread( [&, i]() { fc::set_thread_name("api"); ilog( "MICKIEWICZ: tread id ${d} before run", ("d", i) );thread_pool_ios.run(); } );
 }
 
 template<typename websocket_server_type>
@@ -232,6 +232,7 @@ void webserver_plugin_impl<websocket_server_type>::notify( const std::string& ty
   );
 
   listen( collector );
+  ilog("MICKIEWICZ notify type: ${t} addr: ${a} port: ${p}",("t",type)("a",endpoint->address().to_string())("p",endpoint->port()));
   appbase::app().notify( "webserver listening", std::move( collector ) );
 };
 
@@ -305,7 +306,8 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
 
         notify( "HTTP", http_endpoint );
-
+        ilog( "MICKIEWICZ: after notify http run" );
+        boost::system::error_code ec;
         http_ios.run();
         ilog( "http io service exit" );
       }
@@ -373,43 +375,65 @@ void webserver_plugin_impl<websocket_server_type>::update_ws_endpoint()
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::stop_webserver()
 {
+  ilog( "MICKIEWICZ: stop_webserver()" );
   if( ws_server.is_listening() )
-  ws_server.stop_listening();
+    ws_server.stop_listening();
 
-  if( http_server.is_listening() )
+  if( http_server.is_listening() ) {
+    ilog( "MICKIEWICZ: http_server.is_listening() = true" );
     http_server.stop_listening();
+  } else {
+    ilog( "MICKIEWICZ: http_server.is_listening() = false" );
+  }
 
   if( unix_server.is_listening() )
     unix_server.stop_listening();
 
+  ilog( "MICKIEWICZ: stop_webserver() 1" );
+
   thread_pool_ios.stop();
+
+  ilog( "MICKIEWICZ: stop_webserver() 2" );
   thread_pool.join_all();
+
+  ilog( "MICKIEWICZ: stop_webserver() 3" );
 
   if( ws_thread )
   {
+    ilog( "MICKIEWICZ: stop_webserver() 4" );
     ws_ios.stop();
     ws_thread->join();
     ws_thread.reset();
+    ilog( "MICKIEWICZ: stop_webserver() 4.1" );
   }
 
   if( http_thread )
   {
+    ilog( "MICKIEWICZ: http_thread exists" );
     http_ios.stop();
-    http_thread->join();
+    ilog( "MICKIEWICZ: before http_thread join" );
+    http_thread->join(); // @Mickiewicz: nie wychodzi z joina, crash tu nastepuje
+    ilog( "MICKIEWICZ: after http_thread join" );
     http_thread.reset();
+    ilog( "MICKIEWICZ: after http_thread reset join" );
   }
 
   if( unix_thread )
   {
+    ilog( "MICKIEWICZ: stop_webserver() 5" );
     unix_ios.stop();
     unix_thread->join();
+    ilog( "MICKIEWICZ: stop_webserver() 5.1" );
     unix_thread.reset();
+    ilog( "MICKIEWICZ: stop_webserver() 5.2" );
   }
+  ilog( "MICKIEWICZ: stop_webserver() 6" );
 }
 
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::handle_ws_message( websocket_server_type* server, connection_hdl hdl, const typename websocket_server_type::message_ptr& msg )
 {
+  ilog( "MICKIEWICZ: WS message" );
   auto con = server->get_con_from_hdl( std::move( hdl ) );
 
   fc::time_point arrival_time = fc::time_point::now();
@@ -462,6 +486,7 @@ void webserver_plugin_impl<websocket_server_type>::handle_ws_message( websocket_
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::handle_http_message( websocket_server_type* server, connection_hdl hdl )
 {
+  ilog( "MICKIEWICZ: HTTP message" );
   auto con = server->get_con_from_hdl( std::move( hdl ) );
   con->defer_http_response();
 
@@ -515,6 +540,7 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_message( websocke
 
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::handle_http_request(websocket_local_server_type* server, connection_hdl hdl ) {
+  ilog( "MICKIEWICZ: HTTP request" );
   auto con = server->get_con_from_hdl( std::move( hdl ) );
   con->defer_http_response();
 
@@ -562,6 +588,7 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_request(websocket
 template<typename websocket_server_type>
 boost::signals2::connection webserver_plugin_impl<websocket_server_type>::add_connection( std::function<void(const collector_t&)> func )
 {
+  ilog( "MICKIEWICZ: add connection" );
   return listen.connect( func );
 }
 
