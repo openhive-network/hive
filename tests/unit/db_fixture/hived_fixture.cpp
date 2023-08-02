@@ -49,7 +49,24 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
       // Register every plugin existing in repository as hived does.
       hive::plugins::register_plugins();
 
+      // We don't want p2p plugin connections at all.
+      config_arg_override_t default_overrides = {
+        config_line_t( { "p2p-endpoint", { "127.0.0.1:2345" } } ),
+        config_line_t( { "p2p-seed-node",{ " " } } )
+      };
+
       if( not config_arg_overrides.empty() )
+        std::copy_if( config_arg_overrides.begin(),
+                      config_arg_overrides.end(),
+                      std::back_inserter( default_overrides ),
+                      [&]( const auto& override ) {
+                        auto error_str = "Unit test nodes must not listen to other ones!";
+                        BOOST_REQUIRE_MESSAGE( override.first != "p2p-endpoint", error_str );
+                        BOOST_REQUIRE_MESSAGE( override.first != "p2p-seed-node", error_str );
+                        BOOST_REQUIRE_MESSAGE( override.first != "p2p-parameters", error_str );
+                        return true;
+                      }
+                    );
       {
         // In order to create boost::variables_map with overrides we need to:
         // 1. Create the options descriptions (definitions), so that they will be recognized later.
@@ -58,7 +75,7 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
         app.set_plugin_options( &dummy, &descriptions );
         using multi_line_t = config_arg_override_t::value_type::second_type;
         // For non-plugin overrides add default string descriptions.
-        for( const auto& override : config_arg_overrides )
+        for( const auto& override : default_overrides )
         {
           // override.first contains name of the option, e.g. "log-appender"
           if( descriptions.find_nothrow( override.first.c_str(), false /*approx*/ ) == nullptr )
@@ -69,7 +86,7 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
         }
         // 2. Add the options actual "parsed" values.
         bpo::parsed_options the_options( &descriptions );
-        for( const auto& override : config_arg_overrides )
+        for( const auto& override : default_overrides )
         {
           bpo::option opt( override.first, override.second );
           the_options.options.push_back( opt );
