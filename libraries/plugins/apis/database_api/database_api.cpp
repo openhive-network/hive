@@ -2201,17 +2201,21 @@ hive::plugins::database_api::database_api_impl get_database_api_impl(csp_session
   return hive::plugins::database_api::database_api_impl(*csp_session->db);
 }
 
+auto& get_database(csp_session_type* csp_session)
+{
+    return *csp_session->db;
+}
 
 collected_account_balances_t extract_account_balances(
-    const hive::plugins::database_api::api_account_object& account)
+    const hive::chain::account_object* account)
 {
   collected_account_balances_t account_balances;
-  account_balances.account_name = account.name;
-  account_balances.balance = account.balance.amount.value;
-  account_balances.hbd_balance = account.hbd_balance.amount.value;
-  account_balances.vesting_shares = account.vesting_shares.amount.value;
-  account_balances.savings_hbd_balance = account.savings_hbd_balance.amount.value;
-  account_balances.reward_hbd_balance = account.reward_hbd_balance.amount.value;
+  account_balances.account_name = account->get_name();
+  account_balances.balance = account->balance.amount.value;
+  account_balances.hbd_balance = account->hbd_balance.amount.value;
+  account_balances.vesting_shares = account->vesting_shares.amount.value;
+  account_balances.savings_hbd_balance = account->savings_hbd_balance.amount.value;
+  account_balances.reward_hbd_balance = account->reward_hbd_balance.amount.value;
 
   return account_balances;
 }
@@ -2219,18 +2223,17 @@ collected_account_balances_t extract_account_balances(
 collected_account_balances_collection_t collect_current_account_balances(csp_session_type* csp_session,
                                                                          const std::vector<std::string>& account_names)
 {
-  using namespace hive::plugins::database_api;
-  find_accounts_args find_args;
-  for(const auto& account_name : account_names) 
-    find_args.accounts.emplace_back(account_name);
-
-  database_api_impl db_api_impl = get_database_api_impl(csp_session);
-  auto found_accounts = db_api_impl.find_accounts(find_args);
+  auto& db = get_database(csp_session);
 
   collected_account_balances_collection_t collected_balances;
-  for(const auto& account : found_accounts.accounts)
+
+  for( auto& a : account_names )
   {
-    collected_balances.emplace_back(extract_account_balances(account));
+    auto acct = db.find< hive::chain::account_object, hive::chain::by_name >( a );
+    if( acct != nullptr )
+    {
+      collected_balances.emplace_back(extract_account_balances(acct));
+    }
   }
 
   return collected_balances;
@@ -2238,44 +2241,27 @@ collected_account_balances_collection_t collect_current_account_balances(csp_ses
 
 collected_account_balances_collection_t collect_current_all_accounts_balances(csp_session_type* csp_session)
 {
-  using namespace hive::plugins::database_api;
-  database_api_impl db_api_impl = get_database_api_impl(csp_session);
 
-  list_accounts_args list_args;
-  list_args.start = "";
-  list_args.limit = 1000;
-  list_args.order = hive::plugins::database_api::by_name;
+  auto& db = get_database(csp_session);
 
   collected_account_balances_collection_t collected_balances;
 
-  while(true)
+  auto& idx = db.get_index< hive::chain::account_index, hive::chain::by_name >();
+  auto itr = idx.lower_bound( "" );
+  //auto filter = &filter_default< hive::chain::account_object >;
+  auto end = idx.end();
+
+  while( itr != end )
   {
-    auto listed_accounts = db_api_impl.list_accounts(list_args);
-    if(listed_accounts.accounts.empty())
-    {
-      break;
-    }
+    // if( filter( *itr ) )
+    //   result.rc_accounts.emplace_back( *itr, _db );
 
-    size_t processed_accounts = 0;
-    for(const auto& account : listed_accounts.accounts)
-    {
-      if(processed_accounts == 0 && (list_args.start != ""))
-      {
-        processed_accounts++;
-        continue;
-      }
 
-      collected_balances.emplace_back(extract_account_balances(account));
-      processed_accounts++;
-    }
+    collected_balances.emplace_back(extract_account_balances(&(*itr)));
 
-    list_args.start = listed_accounts.accounts.back().name;
-
-    if(processed_accounts < list_args.limit)
-    {
-      break;
-    }
+    ++itr;
   }
+
 
   return collected_balances;
 }
