@@ -46,7 +46,7 @@ We ship a Dockerfile.
 
 Above example call will create the image: `registry.gitlab.syncad.com/hive/hive/instance:my-local-tag`
 
-To run given image you can use a helper script: `../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:my-local-tag --name=hived-instance --data-dir=../datadir --shared-file-dir../datadir/ #[<other regular hived options>]`
+To run given image you can use a helper script: `../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:my-local-tag --name=hived-instance --data-dir=/home/hive/datadir --shared-file-dir=/home/hive/datadir`
 
 ## Building on Ubuntu 22.04 LTS
 
