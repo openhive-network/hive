@@ -28,13 +28,13 @@ Builds Hive project for use in a private testnet. Also required for building uni
 
 Builds Hive project in MirrorNet configuration (similar to testnet, but allows to import mainnet data to create better testing environemnt).
 
-## Building under Docker
+## Building using Docker
 
 We ship a Dockerfile.
 
     mkdir workdir
     cd workdir # use out-of-source directory to keep source directory clean
-    ../hive/scripts/ci-helpers/build_instance.sh my-tag ../hive/ registry.gitlab.syncad.com/hive/hive/
+    ../hive/scripts/ci-helpers/build_instance.sh my-tag ../hive registry.gitlab.syncad.com/hive/hive
 
 `build_instance.sh` has optional parameters:
 - `--network-type` which allows to select network type supported by built binaries. It can take values:
@@ -48,13 +48,11 @@ Above example call will create the image: `registry.gitlab.syncad.com/hive/hive/
 
 To run given image you can use a helper script: `../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:instance-my-tag --name=hived-instance --data-dir=/home/hive/datadir --shared-file-dir=/home/hive/datadir`
 
-## Building on Ubuntu 22.04 LTS
+## Building native binaries on Ubuntu 22.04 LTS
 
-For Ubuntu 22.04 LTS users, after installing the right packages with `apt` Hive should build out of the box without further effort:
+Please run this script, or based on its content, manually install the required packages.
 
-    # workdir directory is assumed as cwd, like also already cloned repository using command line described earlier
-
-    sudo ../hive/scripts/setup_ubuntu.sh --dev # this script contains a list of all required packages for runtime and development (build) process
+    sudo ../hive/scripts/setup_ubuntu.sh --dev
 
     mkdir build
     
