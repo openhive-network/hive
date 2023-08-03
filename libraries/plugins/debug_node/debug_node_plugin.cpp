@@ -29,7 +29,7 @@ class debug_node_plugin_impl
     virtual ~debug_node_plugin_impl();
 
     plugins::chain::chain_plugin&             _chain_plugin;
-    chain::full_database&                          _db;
+    chain::full_database&                     _db;
 
     boost::signals2::connection               _post_apply_block_conn;
 };
