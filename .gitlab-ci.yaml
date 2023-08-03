@@ -213,7 +213,7 @@ mirrornet_replay_test:
   rules:
     - if: $RUN_MIRRORNET_PIPELINE == "false"
 
-chain_test:
+.unit_tests_base:
   stage: test
   needs:
     - job: testnet_node_build
@@ -222,6 +222,14 @@ chain_test:
   interruptible: true
   variables:
     GIT_STRATEGY: none
+    FF_NETWORK_PER_BUILD: "true"
+  tags:
+    - public-runner-docker
+  rules:
+    - if: $RUN_MIRRORNET_PIPELINE == "false"
+
+chain_test:
+  extends: .unit_tests_base
   script:
     - timeout 23m ./testnet_node_build/install-root/bin/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
   artifacts:
@@ -231,20 +239,9 @@ chain_test:
       - chain_test.log
     when: always
     expire_in: 1 week
-  tags:
-    - public-runner-docker
-  rules:
-    - if: $RUN_MIRRORNET_PIPELINE == "false"
 
 plugin_test:
-  stage: test
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  interruptible: true
-  variables:
-    GIT_STRATEGY: none
+  extends: .unit_tests_base
   script:
     # note: consider using --result_code=no to force exit code 0 even when tests fail because they currently fail and I want a nice green checkmark
     - timeout 6m ./testnet_node_build/install-root/bin/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
@@ -255,10 +252,6 @@ plugin_test:
       - plugin_test.log
     when: always
     expire_in: 1 week
-  tags:
-    - public-runner-docker
-  rules:
-    - if: $RUN_MIRRORNET_PIPELINE == "false"
 
 .hived-service: &hived-service
   - name: $HIVED_IMAGE_NAME
