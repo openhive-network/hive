@@ -79,6 +79,7 @@ add_boost_test( chain_test
    SOURCES ${UNIT_TESTS}
    TESTS
    basic_tests/parse_size_test
+   basic_tests/pow2_equihash
    basic_tests/valid_name_test
    basic_tests/merkle_root
    basic_tests/chain_object_checksum
