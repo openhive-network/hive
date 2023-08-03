@@ -46,30 +46,31 @@ We ship a Dockerfile.
 
 Above example call will create the image: `registry.gitlab.syncad.com/hive/hive/instance:instance-my-tag`
 
-To run given image you can use a helper script: `../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:instance-my-tag --name=hived-instance --data-dir=/home/hive/datadir --shared-file-dir=/home/hive/datadir`
+To run given image you can use a helper script:
+
+    ../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:instance-my-tag --name=hived-instance --data-dir=/home/hive/datadir --shared-file-dir=/home/hive/datadir
 
 ## Building native binaries on Ubuntu 22.04 LTS
 
-Please run this script, or based on its content, manually install the required packages.
+### Prerequisites
+
+Please run this script, or based on its content, manually install the required packages:
 
     sudo ../hive/scripts/setup_ubuntu.sh --dev
 
+### Configure
+
     mkdir build
-    
-    ../hive/scripts/build.sh --source-dir=../hive/ --binary-dir=./build/ --cmake-arg="-DBUILD_HIVE_TESTNET=OFF"
-
-The --cmake_arg parameter can be skipped, then default mainnet release binaries will be built.
-
-If you would like to run cmake directly, you can do it as follows:
-
     cd build
     cmake -DCMAKE_BUILD_TYPE=Release -GNinja ../../hive/
 
-To start build process:
+### Build
+
+To start build process, simply run:
 
     ninja
 
-If you want to build only specific targets use:
+Or if you want to build only specific targets use:
 
     ninja hived cli_wallet
 
