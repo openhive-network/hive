@@ -62,7 +62,7 @@ Please run this script, or based on its content, manually install the required p
 
     mkdir build
     cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -GNinja ../../hive/
+    cmake -DCMAKE_BUILD_TYPE=Release -GNinja ../hive
 
 ### Build
 
