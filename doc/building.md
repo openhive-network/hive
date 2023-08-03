@@ -4,7 +4,7 @@ Building Hive requires at least 16GB of RAM.
 
 Hive project is described using CMake. By default it uses a Ninja tool as a build executor.
 
-Only Linux based systems are supported as build and runtime platform. Nowadays Ubuntu 22.04 LTS is chosen as base OS supported by build and runtime processes (Ubuntu 18.04 LTS is not supported anymore, Ubuntu 20.04 LTS does not have `liburing-dev`, which should be installed for performance boost in RocksDB). Build process requires tools available in default Ubuntu package repository.
+Only Linux based systems are supported as build and runtime platform. Nowadays Ubuntu 22.04 LTS is chosen as base OS supported by build and runtime processes. Build process requires tools available in default Ubuntu package repository.
 
 ## Getting sources
 
@@ -30,17 +30,17 @@ Builds Hive project in MirrorNet configuration (similar to testnet, but allows t
 
 ## Building under Docker
 
-We ship a Dockerfile.  This builds both common node type binaries.
+We ship a Dockerfile.
 
     mkdir workdir
-    cd workdir # use different directory to leave source directory clean
+    cd workdir # use out-of-source directory to keep source directory clean
     ../hive/scripts/ci-helpers/build_instance.sh my-local-tag ../hive/ registry.gitlab.syncad.com/hive/hive/
 
 `build_instance.sh` has optional parameters:
 - `--network-type` which allows to select network type supported by built binaries. It can take values:
-    - testnet
-    - mirrornet
     - mainnet (default)
+    - mirrornet
+    - testnet
 
 - `--export-binaries=PATH` - allows to extract built binaries from created image
 
@@ -65,7 +65,7 @@ The --cmake_arg parameter can be skipped, then default mainnet release binaries 
 If you would like to run cmake directly, you can do it as follows:
 
     cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_HIVE_TESTNET=OFF -GNinja ../../hive/
+    cmake -DCMAKE_BUILD_TYPE=Release -GNinja ../../hive/
 
 To start build process:
 
