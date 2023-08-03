@@ -34,7 +34,7 @@ We ship a Dockerfile.
 
     mkdir workdir
     cd workdir # use out-of-source directory to keep source directory clean
-    ../hive/scripts/ci-helpers/build_instance.sh my-local-tag ../hive/ registry.gitlab.syncad.com/hive/hive/
+    ../hive/scripts/ci-helpers/build_instance.sh my-tag ../hive/ registry.gitlab.syncad.com/hive/hive/
 
 `build_instance.sh` has optional parameters:
 - `--network-type` which allows to select network type supported by built binaries. It can take values:
@@ -44,9 +44,9 @@ We ship a Dockerfile.
 
 - `--export-binaries=PATH` - allows to extract built binaries from created image
 
-Above example call will create the image: `registry.gitlab.syncad.com/hive/hive/instance:my-local-tag`
+Above example call will create the image: `registry.gitlab.syncad.com/hive/hive/instance:instance-my-tag`
 
-To run given image you can use a helper script: `../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:my-local-tag --name=hived-instance --data-dir=/home/hive/datadir --shared-file-dir=/home/hive/datadir`
+To run given image you can use a helper script: `../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:instance-my-tag --name=hived-instance --data-dir=/home/hive/datadir --shared-file-dir=/home/hive/datadir`
 
 ## Building on Ubuntu 22.04 LTS
 
