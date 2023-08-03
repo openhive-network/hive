@@ -74,10 +74,6 @@ Or if you want to build only specific targets use:
 
     ninja hived cli_wallet
 
-Ninja tool can be installed from standard Ubuntu package repositories by using:
-
-    sudo apt-get install -y ninja-build
-
 **If at any time you find this documentation not up to date or unprecise, please take a look at CI/CD scripts.**
 
 ## Building on Other Platforms
