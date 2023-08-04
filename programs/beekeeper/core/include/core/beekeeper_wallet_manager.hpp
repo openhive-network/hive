@@ -40,7 +40,7 @@ public:
   /// If set then after t seconds of inactivity then lock_all().
   /// Activity is defined as any beekeeper_wallet_manager method call below.
   /// @param secs The timeout in seconds.
-  void set_timeout( const std::string& token, uint64_t secs );
+  void set_timeout( const std::string& token, seconds_type seconds );
 
   /// Sign digest with the private keys specified via their public keys.
   /// @param digest the digest to sign.
@@ -149,7 +149,7 @@ public:
 
 private:
 
-  uint64_t unlock_timeout = 900;
+  seconds_type unlock_timeout = 900;
 
   uint32_t  session_cnt   = 0;
   uint32_t  session_limit = 0;

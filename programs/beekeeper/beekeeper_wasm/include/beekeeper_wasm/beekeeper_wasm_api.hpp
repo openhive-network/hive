@@ -1,5 +1,7 @@
 #pragma once
 
+#include <core/utilities.hpp>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -43,7 +45,7 @@ class beekeeper_api final
     std::string open( const std::string& token, const std::string& wallet_name );
     std::string close( const std::string& token, const std::string& wallet_name );
 
-    std::string set_timeout( const std::string& token, int32_t seconds );
+    std::string set_timeout( const std::string& token, seconds_type seconds );
 
     std::string lock_all( const std::string& token );
     std::string lock( const std::string& token, const std::string& wallet_name );
