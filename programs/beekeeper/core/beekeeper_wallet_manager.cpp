@@ -5,7 +5,9 @@ namespace beekeeper {
 beekeeper_wallet_manager::beekeeper_wallet_manager( std::shared_ptr<session_manager_base> sessions, std::shared_ptr<beekeeper_instance_base> instance, const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit,
                                                     close_all_sessions_action_method&& method
                                                   )
-                          : unlock_timeout( cmd_unlock_timeout ), session_limit( cmd_session_limit ), close_all_sessions_action( method ),
+                          : unlock_timeout( cmd_unlock_timeout ), session_limit( cmd_session_limit ),
+                            public_key_size( private_key_type::generate().get_public_key().to_base58().size() ),
+                            close_all_sessions_action( method ),
                             sessions( sessions ), instance( instance )
 {
 }
@@ -88,22 +90,22 @@ void beekeeper_wallet_manager::remove_key( const std::string& token, const std::
   sessions->get_wallet_manager( token )->remove_key( name, password, public_key );
 }
 
-signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const public_key_type& public_key, const digest_type& sig_digest )
+signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const std::string& public_key, const digest_type& sig_digest )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->sign_digest( public_key, sig_digest );
+  return sessions->get_wallet_manager( token )->sign_digest( create_public_key( public_key ), sig_digest );
 }
 
-signature_type beekeeper_wallet_manager::sign_binary_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key )
+signature_type beekeeper_wallet_manager::sign_binary_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const std::string& public_key )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->sign_binary_transaction( transaction, chain_id, public_key );
+  return sessions->get_wallet_manager( token )->sign_binary_transaction( transaction, chain_id, create_public_key( public_key ) );
 }
 
-signature_type beekeeper_wallet_manager::sign_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key )
+signature_type beekeeper_wallet_manager::sign_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const std::string& public_key )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->sign_transaction( transaction, chain_id, public_key );
+  return sessions->get_wallet_manager( token )->sign_transaction( transaction, chain_id, create_public_key( public_key ) );
 }
 
 info beekeeper_wallet_manager::get_info( const std::string& token )
@@ -132,6 +134,14 @@ void beekeeper_wallet_manager::close_session( const string& token )
   }
 
   --session_cnt;
+}
+
+public_key_type beekeeper_wallet_manager::create_public_key( const std::string& public_key )
+{
+  FC_ASSERT( public_key_size == public_key.size(), "Incorrect size of public key. Expected ${public_key_size}, but got ${public_key_size_2}",
+                                                    (public_key_size)("public_key_size_2", public_key.size()) );
+
+  return utility::get_public_key( public_key );
 }
 
 } //beekeeper

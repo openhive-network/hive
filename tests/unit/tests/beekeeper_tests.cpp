@@ -581,8 +581,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
         hive::protocol::digest_type _sig_digest = _trx.sig_digest( HIVE_CHAIN_ID, hive::protocol::pack_type::hf26 );
 
         auto _signature_local = _private_key.sign_compact( _sig_digest );
-        auto _signature_beekeeper = wm.sign_transaction( _token, json_trx, HIVE_CHAIN_ID, _public_key );
-        auto _signature_beekeeper_2 = wm.sign_binary_transaction( _token, binary_trx, HIVE_CHAIN_ID, _public_key );
+        auto _signature_beekeeper = wm.sign_transaction( _token, json_trx, HIVE_CHAIN_ID, _public_key_str );
+        auto _signature_beekeeper_2 = wm.sign_binary_transaction( _token, binary_trx, HIVE_CHAIN_ID, _public_key_str );
 
         auto _local = fc::json::to_string( _signature_local );
         auto _beekeeper = fc::json::to_string( _signature_beekeeper );
