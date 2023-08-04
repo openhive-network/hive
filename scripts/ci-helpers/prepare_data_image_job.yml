@@ -27,6 +27,7 @@ include:
   image: alpine:3.16
   interruptible: true
   variables:
+    GIT_STRATEGY: none
     CLEANUP_PATH_PATTERN: ""
   needs: []
   script:
