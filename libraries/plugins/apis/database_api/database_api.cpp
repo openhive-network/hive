@@ -13,8 +13,6 @@
 
 #include <hive/utilities/git_revision.hpp>
 
-#include <hive/protocol/forward_impacted.hpp>
-
 namespace hive { namespace plugins { namespace database_api {
 
 api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_object& cc, const database&)
@@ -44,7 +42,6 @@ class database_api_impl
 {
   public:
     database_api_impl();
-    database_api_impl(chain::database& a_db);
     ~database_api_impl();
 
     DECLARE_API_IMPL
@@ -253,12 +250,6 @@ database_api::~database_api() {}
 
 database_api_impl::database_api_impl()
   : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
-
-
-database_api_impl::database_api_impl(chain::database& a_db)
-  : _db( a_db) {}
-
-
 
 database_api_impl::~database_api_impl() {}
 
@@ -2181,8 +2172,3 @@ DEFINE_READ_APIS( database_api,
 )
 
 } } } // hive::plugins::database_api
-
-
-
-
-
