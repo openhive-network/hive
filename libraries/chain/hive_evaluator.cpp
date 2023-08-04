@@ -2019,7 +2019,8 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 
   try
   {
-    hive::protocol::details::truncation_controller::scoped_verification_state_backup backup;
+    auto _old_verify_status = truncation_controller::is_verifying_enabled();
+    BOOST_SCOPE_EXIT(&_old_verify_status) { truncation_controller::set_verify( _old_verify_status ); } BOOST_SCOPE_EXIT_END
 
     if( !_db.is_in_control() )
       truncation_controller::set_verify( false );
