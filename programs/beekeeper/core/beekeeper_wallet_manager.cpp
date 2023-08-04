@@ -15,9 +15,9 @@ bool beekeeper_wallet_manager::start()
   return instance->start();
 }
 
-void beekeeper_wallet_manager::set_timeout( const std::string& token, uint64_t secs )
+void beekeeper_wallet_manager::set_timeout( const std::string& token, seconds_type seconds )
 {
-  sessions->set_timeout( token, std::chrono::seconds( secs ) );
+  sessions->set_timeout( token, std::chrono::seconds( seconds ) );
 }
 
 std::string beekeeper_wallet_manager::create( const std::string& token, const std::string& name, fc::optional<std::string> password )

@@ -11,6 +11,8 @@
 
 namespace beekeeper {
 
+using seconds_type = uint32_t;
+
 struct init_data
 {
   bool status = false;
@@ -97,7 +99,7 @@ using close_return = void_type;
 
 struct set_timeout_args: public session_token_type
 {
-  int64_t seconds;
+  seconds_type seconds;
 };
 using set_timeout_return = void_type;
 

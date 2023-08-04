@@ -174,7 +174,7 @@ namespace beekeeper {
     return exception_handler<void>( _method );
   }
 
-  std::string beekeeper_api::set_timeout( const std::string& token, int32_t seconds )
+  std::string beekeeper_api::set_timeout( const std::string& token, seconds_type seconds )
   {
     auto _method = [&, this]()
     {
