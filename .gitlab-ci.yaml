@@ -839,6 +839,20 @@ several_node_restarts_tests:
   tags:
     - public-runner-docker
 
+artifacts_generation_tests:
+  stage: test
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  needs:
+    - job: prepare_hived_image
+      artifacts: true
+  variables:
+    BINARY_CACHE_PATH: "hived-binaries"
+  script:
+    - cd tests/integration/artifacts_generation
+    - ./test_artifacts_generation.sh "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived"
+  tags:
+    - public-runner-docker
+
 recovery_tests:
   stage: test
   extends: .test_tools_based
