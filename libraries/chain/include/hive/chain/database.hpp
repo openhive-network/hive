@@ -684,10 +684,10 @@ namespace chain {
       optional< chainbase::database::session > _pending_tx_session;
     
     protected:
-      uint32_t apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing ); 
+      void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing ); 
     private:
       void switch_forks(item_ptr new_head);
-      uint32_t _apply_block(const std::shared_ptr<full_block_type>& full_block);
+      void _apply_block(const std::shared_ptr<full_block_type>& full_block);
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
       void apply_operation( const operation& op );
@@ -717,7 +717,7 @@ namespace chain {
 
       void update_global_dynamic_data( const signed_block& b );
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
-      uint32_t process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
+      void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
       virtual void migrate_irreversible_state(uint32_t old_last_irreversible) = 0;
     protected:
@@ -986,10 +986,6 @@ public:
 
     void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
     void open_block_log(const open_args& args);
-
-//public:    
-//void migrate_irreversible_state(uint32_t old_last_irreversible);
-
 
 
 
