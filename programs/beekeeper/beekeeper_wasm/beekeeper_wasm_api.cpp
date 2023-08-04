@@ -248,7 +248,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      signature_return _result = { _impl->app.get_wallet_manager()->sign_digest( token, utility::get_public_key( public_key ), digest_type( sig_digest ) ) };
+      signature_return _result = { _impl->app.get_wallet_manager()->sign_digest( token, public_key, digest_type( sig_digest ) ) };
       return to_string( _result );
     };
     return exception_handler<std::string>( _method );
@@ -258,7 +258,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      signature_return _result = { _impl->app.get_wallet_manager()->sign_binary_transaction( token, transaction, chain_id_type( chain_id ), utility::get_public_key( public_key ) ) };
+      signature_return _result = { _impl->app.get_wallet_manager()->sign_binary_transaction( token, transaction, chain_id_type( chain_id ), public_key ) };
       return to_string( _result );
     };
     return exception_handler<std::string>( _method );
@@ -268,7 +268,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      signature_return _result = { _impl->app.get_wallet_manager()->sign_transaction( token, transaction, chain_id_type( chain_id ), utility::get_public_key( public_key ) ) };
+      signature_return _result = { _impl->app.get_wallet_manager()->sign_transaction( token, transaction, chain_id_type( chain_id ), public_key ) };
       return to_string( _result );
     };
     return exception_handler<std::string>( _method );

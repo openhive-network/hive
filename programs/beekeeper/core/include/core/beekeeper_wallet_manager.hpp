@@ -47,7 +47,7 @@ public:
   /// @param key the public key of the corresponding private key to sign the digest with
   /// @return signature over the digest
   /// @throws fc::exception if corresponding private keys not found in unlocked wallets
-  signature_type sign_digest( const std::string& token, const public_key_type& public_key, const digest_type& sig_digest );
+  signature_type sign_digest( const std::string& token, const std::string& public_key, const digest_type& sig_digest );
 
   /// Sign a binary transaction with the private keys specified via their public keys.
   /// @param token represents a session
@@ -56,7 +56,7 @@ public:
   /// @param public_key the public key of the corresponding private key to sign the digest with
   /// @return signature over the transaction
   /// @throws fc::exception if corresponding private keys not found in unlocked wallets
-  signature_type sign_binary_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key );
+  signature_type sign_binary_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const std::string& public_key );
 
   /// Sign a JSON transaction with the private keys specified via their public keys.
   /// @param token represents a session
@@ -65,7 +65,7 @@ public:
   /// @param public_key the public key of the corresponding private key to sign the digest with
   /// @return signature over the transaction
   /// @throws fc::exception if corresponding private keys not found in unlocked wallets
-  signature_type sign_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key );
+  signature_type sign_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const std::string& public_key );
 
   /// Create a new wallet.
   /// A new wallet is created in file dir/{name}.wallet see set_dir.
@@ -154,10 +154,14 @@ private:
   uint32_t  session_cnt   = 0;
   uint32_t  session_limit = 0;
 
+  uint32_t public_key_size = 0;
+
   close_all_sessions_action_method  close_all_sessions_action;
 
   std::shared_ptr<session_manager_base> sessions;
   std::shared_ptr<beekeeper_instance_base> instance;
+
+  public_key_type create_public_key( const std::string& public_key );
 };
 
 } //beekeeper
