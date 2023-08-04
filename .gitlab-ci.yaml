@@ -853,6 +853,40 @@ artifacts_generation_tests:
     - job: prepare_hived_image
       artifacts: true
   script:
+    - ls -lath || true
+    - ls -lath /builds/hive/hive/hived-binaries || true
+    - stat /builds/hive/hive/hived-binaries/hived || true
+    - cp /builds/hive/hive/hived-binaries/hived hi
+    - pwd
+    - ls -lath
+    - ls -lath | xxd
+    - realpath /builds/hive/hive/hi || echo fail
+    - ./hi --version
+    - /builds/hive/hive/hived-binaries/hived --version
+    - $CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived --version
+    - cd tests/integration/artifacts_generation
+    - ./test_artifacts_generation.sh
+  tags:
+    - public-runner-docker
+
+artifacts_generation_tests2:
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  stage: test
+  needs:
+    - job: prepare_hived_image
+      artifacts: true
+  script:
+    - ls -lath || true
+    - ls -lath /builds/hive/hive/hived-binaries || true
+    - stat /builds/hive/hive/hived-binaries/hived || true
+    - cp /builds/hive/hive/hived-binaries/hived hi
+    - pwd
+    - ls -lath
+    - ls -lath | xxd
+    - realpath /builds/hive/hive/hi || echo fail
+    - ./hi --version
+    - /builds/hive/hive/hived-binaries/hived --version
+    - $CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived --version
     - cd tests/integration/artifacts_generation
     - ./test_artifacts_generation.sh
   tags:

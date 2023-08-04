@@ -2,6 +2,11 @@
 
 set -xeuo pipefail
 
+ls -lath /builds/hive/hive/hived-binaries || failed
+ls -lath /builds/hive/hive/hived-binaries/hived || failed
+/builds/hive/hive/hived-binaries/hived --version
+$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived --version
+
 SOURCE_100K_BLOCK_LOG_PATTERN="blockchain/block_log.100k"
 SOURCE_ARTIFACTS_V_1_0_PATTERN="blockchain/block_log.artifacts.v_1_0"
 SOURCE_ARTIFACTS_V_1_1_INTERRUPTED_PATTERN="blockchain/block_log.artifacts.v_1_1.interrupted_at_19313"
@@ -12,7 +17,7 @@ test_generate_artifacts_from_scratch() {
   local TEST_BLOCKCHAIN_DIR="$TEST_DATA_DIR/blockchain"
   mkdir -p "$TEST_BLOCKCHAIN_DIR"
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
-  "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived" -d="$TEST_DATA_DIR" --replay --exit-before-sync
+  $CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived -d="$TEST_DATA_DIR" --replay --exit-before-sync
 }
 
 test_generate_artifacts_override_old_file() {
@@ -22,7 +27,7 @@ test_generate_artifacts_override_old_file() {
   mkdir -p "$TEST_BLOCKCHAIN_DIR"
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
   cp "$SOURCE_ARTIFACTS_V_1_0_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log.artifacts"
-  "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived" -d="$TEST_DATA_DIR" --replay --exit-before-sync
+  $CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived -d="$TEST_DATA_DIR" --replay --exit-before-sync
 }
 
 test_resume_artifacts_generating_process() {
@@ -32,7 +37,7 @@ test_resume_artifacts_generating_process() {
   mkdir -p "$TEST_BLOCKCHAIN_DIR"
   cp "$SOURCE_100K_BLOCK_LOG_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log"
   cp "$SOURCE_ARTIFACTS_V_1_1_INTERRUPTED_PATTERN" "$TEST_BLOCKCHAIN_DIR/block_log.artifacts"
-  "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived" -d="$TEST_DATA_DIR" --replay --exit-before-sync
+  $CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived -d="$TEST_DATA_DIR" --replay --exit-before-sync
 }
 
 test_generate_artifacts_from_scratch
