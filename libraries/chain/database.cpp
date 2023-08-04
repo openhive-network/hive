@@ -164,7 +164,6 @@ void database::open_state_independent( const open_args& args)
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
-
     initialize_state_independent_data(args);
 
   }
@@ -270,13 +269,13 @@ void database::load_state_initial_data(const open_args& args)
 
   if (head_block_num())
   {
-      std::shared_ptr<full_block_type> head_block = get_head_block();
-      // This assertion should be caught and a reindex should occur
-      FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
-      "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
-      ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
+    std::shared_ptr<full_block_type> head_block = get_head_block();
+    // This assertion should be caught and a reindex should occur
+    FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
+    "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
+    ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
 
-      _fork_db.start_block(head_block);
+    _fork_db.start_block(head_block);
   }
 
   with_read_lock([&]() {
@@ -1307,6 +1306,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
   return false;
 } FC_CAPTURE_AND_RETHROW() }
 
+//mtlk TODO - use undo session
 void database::_push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
 {
   try
@@ -7548,7 +7548,6 @@ void full_database::open_block_log(const open_args& args)
     _block_log.set_compression_level(args.block_log_compression_level);
   });
 }
-
 
 } } //hive::chain
 
