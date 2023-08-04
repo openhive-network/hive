@@ -123,8 +123,8 @@ int main( int argc, char** argv )
 
     if( theApp.get_args().at( "backtrace" ).as< string >() == "yes" )
     {
-      fc::print_stacktrace_on_segfault();
-      ilog( "Backtrace on segfault is enabled." );
+      //fc::print_stacktrace_on_segfault();
+      //ilog( "Backtrace on segfault is enabled." );
     }
 
     theApp.startup();

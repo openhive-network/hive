@@ -12,7 +12,6 @@ cmake_minimum_required( VERSION 3.22.1 )
 
 set( BLOCKCHAIN_NAME "Hive" )
 
-add_definitions( -DBOOST_ASIO_ENABLE_HANDLER_TRACKING )
 
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_EXTENSIONS OFF )
