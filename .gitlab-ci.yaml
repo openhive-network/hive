@@ -846,6 +846,18 @@ several_node_restarts_tests:
   tags:
     - public-runner-docker
 
+artifacts_generation_tests:
+  extends: .prepare_hived_image
+  stage: test
+  needs:
+    - job: prepare_hived_image
+      artifacts: true
+  script:
+    - cd tests/integration/artifacts_generation
+    - ./test_artifacts_generation.sh
+  tags:
+    - public-runner-docker
+
 recovery_tests:
   stage: test
   extends: .test_tools_based
