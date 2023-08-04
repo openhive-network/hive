@@ -24,6 +24,8 @@ def skeleton_key(request):
 
 @pytest.fixture
 def node_client(node, worker_id) -> NodeClientMaker:
+    node.turn_off_block_stats_monitor()
+
     def _node_client(accounts: List[dict] = None) -> Hive:
         accounts = accounts or []
 
