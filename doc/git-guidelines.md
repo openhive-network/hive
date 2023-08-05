@@ -1,6 +1,6 @@
 ## Branches
 - `master`: Points to the latest version of code that is production-ready, and has been tested in production. This is the branch we recommend for exchanges. Any tag pointing released versions (i.e. `v1.27.0` is set to commits pointed by this branch)
-- `develop`: The active development branch. We will strive to keep `develop` in a working state. All MRs must pass automated tests before being merged. While this is not a guarantee that `develop` is bug-free, it will guarantee that the branch is buildable in our standard build configuration and passes the current suite of tests. That being said, running a node from `develop` has risks.  We recommend that any block producing node build from `master` or even using explicit tag i.e. `v1.27.0`. If you want to create and test new features, `develop` is the correct branch you should create your feature branch from.
+- `develop`: The active development branch. We will strive to keep `develop` in a working state. All MRs must pass automated tests before being merged. While this is not a guarantee that `develop` is bug-free, it will guarantee that the branch is buildable in our standard build configuration and passes the current suite of tests. That being said, running a node from `develop` has risks.  We recommend that any block producing node build from `master` or even using latest released explicit tag i.e. `v1.27.5`. If you want to create and test new features, `develop` is the correct branch you should create your feature branch from.
 
 ### Releases
 
@@ -69,4 +69,3 @@ Above will clarify dillema to perform hived node replay, during internal testing
 - One of the reviewers may be the author of the change.
 - This policy is designed to encourage you to take off your "writer hat" and put on your "critic/reviewer hat."  If this were a patch from an unfamiliar community contributor, would you accept it?  Can you understand what the patch does and check its correctness based only on its commit message and diff? Does it break any existing tests, or need new tests to be written? Is it stylistically sloppy -- trailing whitespace, multiple unrelated changes in a single patch, mixing bug fixes and features, or overly verbose debug logging?
 - Having multiple people look at a patch reduces the probability it will contain uncaught bugs.
-
