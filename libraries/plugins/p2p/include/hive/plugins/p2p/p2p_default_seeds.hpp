@@ -8,7 +8,7 @@ namespace hive{ namespace plugins { namespace p2p {
 const std::vector< std::string > default_seeds;
 #else
 const std::vector< std::string > default_seeds = {
-  "api.hive.blog:2001",                  // blocktrades
+  "seed.hive.blog:2001",                 // blocktrades
   "seed.openhive.network:2001",          // gtg
   "seed.ecency.com:2001",                // good-karma
   "rpc.ausbit.dev:2001",                 // ausbitbank
