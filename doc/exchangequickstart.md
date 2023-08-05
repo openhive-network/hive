@@ -5,7 +5,7 @@ System Requirements: A dedicated server or virtual machine with a minimum of 24G
 
 With the right equipment and technical configuration a reindex should take **no longer than 36 hours**.  If recommendations are not followed precisely, the reindex can drag on for days or even weeks with significant slowdowns towards the end.
 
-Physically attached NVMe will ensure an optimal reindex time. NVMe over a NAS or some kind of network storage backed by NVMe will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the i3.xlarge, it comes with a physically attached NVMe drive (it must be formatted and mounted on instance launch).
+Physically attached NVMe will ensure an optimal reindex time. NVMe over a NAS or some kind of network storage backed by NVMe will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the `i3.xlarge`, it comes with a physically attached NVMe drive (it must be formatted and mounted on instance launch).
 
 You can save a lot of time by replaying from a `block_log`. Using the docker method below, we have made it easy to download a `block_log` at launch and replay from it by passing in the `USE_PUBLIC_BLOCKLOG=1` environment variable. To do this, make sure your `blockchain` directory is empty and does not contain a `block_log`. If you are not using docker, you can download a `block_log` from [here](https://gtg.openhive.network/get/blockchain), put it in your Hive data directory, and use the `--replay-blockchain` command line option. Be sure to remove the option if you have to stop/restart hived after already being synced.
 
@@ -57,13 +57,13 @@ Both scenarios using --replay-blockchain, allows to continue previously stopped 
 
 Script accepts all options provided by hived. If you want to specify different p2p or http port, please use `--p2p-endpoint=` or `--webserver-http-endpoint=` or `--webserver-ws-endpoint=` options, since script will transpose them into docker port mappings accordingly.
 
-To start a cli_wallet in the dockerized environment, simplest solution is to use [run_cli_wallet_img.sh](://gitlab.syncad.com/hive/hive/-/blob/master/scripts/run_cli_wallet_img.sh). It assumes that wallet.json file should be located in the data-dir mapped to previously started hived container. So using paths specified in the exampole, you should **copy** it into `"$(pwd)/datadir/` directory and next start script.
+To start a cli_wallet in the dockerized environment, simplest solution is to use [run_cli_wallet_img.sh](/scripts/run_cli_wallet_img.sh). It assumes that wallet.json file should be located in the data-dir mapped to previously started hived container. So using paths specified in the exampole, you should **copy** it into `"$(pwd)/datadir/` directory and next start script.
 
 cli_wallet can be started in the interactive mode (default) or network daemon (handling JSON calls). To start a network daemon let's use `--rpc-http-endpoint=0.0.0.0:8093` and `--rpc-http-allowip=172.17.0.1` (default docker network IP range - please verify it before use).
 
 ### Performing each setup steps separately.
 
-This kind of setup mostly is covered by general build procedures - described in [building.md](https://gitlab.syncad.com/hive/hive/-/blob/master/doc/building.md#building-under-docker).
+This kind of setup mostly is covered by general build procedures - described in [building.md](/doc/building.md#building-under-docker).
 
 If you'd like to use our already pre-built official binary images, it's as simple as downloading it from the Dockerhub registry with only one command:
 
@@ -71,13 +71,13 @@ If you'd like to use our already pre-built official binary images, it's as simpl
 docker pull hiveio/hive
 ```
 
-Running a docker image, in the API node case (specific to exhange deployment) like also using dockerized version of cli_wallet is described [here](https://gitlab.syncad.com/hive/hive/-/blob/master/README.md#scenarios-of-using-dockerized-hived-assumed-mainnet-configuration)
+Running a docker image, in the API node case (specific to exhange deployment) like also using dockerized version of cli_wallet is described [here](/README.md#scenarios-of-using-dockerized-hived-assumed-mainnet-configuration)
 
 ### Running a binary build without a Docker container
 
 If you build with Docker but do not want to run hived from within a docker container, you can stop here with this step and instead extract the binary from the container with the commands below. If you are going to run hived with docker (recommended method), skip this step altogether. We're simply providing an option for everyone's use-case. Our binaries are built mostly static, only dynamically linking to linux kernel libraries. We have tested and confirmed binaries built in Docker work on Ubuntu and Fedora and will likely work on many other Linux distrubutions. Building the image yourself or pulling one of our pre-built images both work.
 
-To extract the binary you can use [export-binaries.sh](https://gitlab.syncad.com/hive/hive/-/blob/master/scripts/export-binaries.sh) or start a container and then copy the file from it:
+To extract the binary you can use [export-binaries.sh](/scripts/export-binaries.sh) or start a container and then copy the file from it:
 
 ```
 docker run -d --name hived-exchange hiveio/hive
