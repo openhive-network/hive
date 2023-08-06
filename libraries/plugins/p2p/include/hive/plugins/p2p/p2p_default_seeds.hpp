@@ -20,7 +20,7 @@ const std::vector< std::string > default_seeds = {
   "hive-api.3speak.tv:2001",             // threespeak
   "node.mahdiyari.info:2001",            // mahdiyari
   "hive-seed.lukestokes.info:2001",      // lukestokes.mhth
-  "api.deathwing.me:2001",               // deathwing
+  "seed.deathwing.me:2001",              // deathwing
   "seed.liondani.com:2016",              // liondani
   "hiveseed-se.privex.io:2001",          // privex
   "seed.mintrawa.com:2001",              // mintrawa
