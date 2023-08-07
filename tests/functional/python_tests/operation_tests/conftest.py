@@ -4,7 +4,6 @@ import pytest
 from dataclasses import dataclass, field
 from typing import Literal
 import test_tools as tt
-from hive_local_tools.functional import VestPrice
 
 
 @dataclass
@@ -127,12 +126,7 @@ def prepared_node(speed_up_node: tt.InitNode, wallet: tt.Wallet) -> tt.InitNode:
                               {'account_creation_fee': tt.Asset.Test(3)}
                               )
 
-    new_price = VestPrice(quote=tt.Asset.Vest(1800), base=tt.Asset.Test(1))
-    tt.logger.info(f"new vests price {new_price}.")
-    tt.logger.info(f"new vests price {new_price.as_nai()}.")
-    speed_up_node.api.debug_node.debug_set_vest_price(vest_price=new_price.as_nai())
-    wallet.api.transfer_to_vesting("initminer", "initminer", tt.Asset.Test(10_000_000))
-
+    speed_up_node.set_vest_price(quote=tt.Asset.Vest(1800), invest=tt.Asset.Test(10_000_000))
     speed_up_node.wait_number_of_blocks(43)
 
     dgpo = speed_up_node.api.wallet_bridge.get_dynamic_global_properties()
@@ -143,4 +137,3 @@ def prepared_node(speed_up_node: tt.InitNode, wallet: tt.Wallet) -> tt.InitNode:
     tt.logger.info(f"VESTING_PRICE: {int(total_vesting_shares) // int(total_vesting_fund_hive)}")
 
     return speed_up_node
-

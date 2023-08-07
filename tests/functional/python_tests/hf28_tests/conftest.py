@@ -2,7 +2,6 @@ from pathlib import Path
 import pytest
 
 import test_tools as tt
-from hive_local_tools.functional.python.hf28 import stabilize_the_price
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT, PROXY_ACCOUNT
 
 
@@ -14,11 +13,11 @@ def prepare_environment(node):
     node.run(time_offset="+0 x5")
     wallet = tt.Wallet(attach_to=node)
 
+    # price stabilization prevents zero payout for comment votes.
+    node.set_vest_price(tt.Asset.Vest(1800))
+
     wallet.create_account(VOTER_ACCOUNT, vests=tt.Asset.Test(10))
     wallet.create_account(PROXY_ACCOUNT)
-
-    # price stabilization prevents zero payout for comment votes.
-    stabilize_the_price(node)
 
     return node, wallet
 
