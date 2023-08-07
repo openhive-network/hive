@@ -6,7 +6,7 @@ from hive_local_tools import run_for
 
 
 @run_for('testnet')
-def test_vesting(node):
+def test_change_vesting_price(node):
     vest_per_hive_ratio: Final[int] = 100
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account(name="alice", hives=tt.Asset.Test(1))
