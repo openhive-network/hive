@@ -185,7 +185,7 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      virtual void open(const open_args& args) = 0;
+      virtual void open(const open_args& args);
       void open_state_independent( const open_args& args);
       void open_state_dependent( const open_args& args);
 
@@ -216,7 +216,7 @@ namespace chain {
         * Will close the database before wiping. Database will be closed when this function returns.
         */
       void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
-      virtual void close(bool rewind = true) = 0;
+      virtual void close(bool rewind = true);
       void close_chainbase(bool rewind);
       void close_forkbase(bool rewind);
 
@@ -583,7 +583,7 @@ namespace chain {
 
       void resetState(const open_args& args);
 
-      virtual std::shared_ptr<full_block_type> get_head_block() const = 0;
+      virtual std::shared_ptr<full_block_type> get_head_block() const;
 
       void init_schema();
       void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
@@ -696,7 +696,7 @@ namespace chain {
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
-      virtual void migrate_irreversible_state(uint32_t old_last_irreversible) = 0;
+      virtual void migrate_irreversible_state(uint32_t old_last_irreversible);
     protected:
       void migrate_irreversible_state_check(uint32_t old_last_irreversible);
       void migrate_irreversible_state_perform(uint32_t old_last_irreversible); 

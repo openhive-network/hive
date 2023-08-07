@@ -182,7 +182,17 @@ void database::open_state_dependent( const open_args& args)
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
+void database::open( const open_args& args)
+{
+  try
+  {
+    open_state_independent(args);
 
+    open_state_dependent(args);
+
+  }
+  FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+}
 
 void full_database::open( const open_args& args)
 {
@@ -197,6 +207,7 @@ void full_database::open( const open_args& args)
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
+
 
 void database::initialize_state_independent_data(const open_args& args)
 {
@@ -531,7 +542,10 @@ void database::close_forkbase(bool rewind)
   FC_CAPTURE_AND_RETHROW()
 }
 
-
+void database::close(bool rewind)
+{
+  // Intentionally empty
+}
 
 void full_database::close(bool rewind)
 {
@@ -5660,6 +5674,12 @@ void database::migrate_irreversible_state_perform(uint32_t old_last_irreversible
                                        }, (old_last_irreversible) )
 }
 
+void database::migrate_irreversible_state(uint32_t old_last_irreversible)
+{
+  migrate_irreversible_state_check(old_last_irreversible);
+  migrate_irreversible_state_perform(old_last_irreversible);
+}
+
 void full_database::migrate_irreversible_state(uint32_t old_last_irreversible)
 {
   try
@@ -5673,6 +5693,7 @@ void full_database::migrate_irreversible_state(uint32_t old_last_irreversible)
                                           appbase::app().generate_interrupt_request();
                                        }, (old_last_irreversible) )
 }
+
 
 void full_database::migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible)
 {
@@ -7538,6 +7559,12 @@ std::shared_ptr<full_block_type> full_database::get_head_block() const
 {
   return _block_log.read_block_by_num(head_block_num());
 }
+
+std::shared_ptr<full_block_type> database::get_head_block() const
+{
+  return {};
+}
+
 
 void full_database::open_block_log(const open_args& args)
 {
