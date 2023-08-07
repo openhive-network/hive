@@ -1,0 +1,22 @@
+{
+  "name": "@hive/beekeeper",
+  "version": "0.0.1",
+  "description": "call hived functions from JavaScript",
+  "main": "build_wasm/beekeeper_wasm.mjs",
+  "type": "module",
+  "scripts": {
+    "test": "node programs/beekeeper/beekeeper_wasm/beekeeper_wasm_test/run_node.mjs"
+  },
+  "license": "SEE LICENSE IN LICENSE.md",
+  "files": [
+    "build_wasm/beekeeper_wasm.mjs",
+    "build_wasm/beekeeper_wasm.wasm",
+    "build_wasm/beekeeper.d.ts",
+    "programs/beekeeper/beekeeper_wasm/beekeeper.d.ts"
+  ],
+  "types": "programs/beekeeper/beekeeper_wasm/beekeeper.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.syncad.com/hive/hive.git"
+  }
+}
