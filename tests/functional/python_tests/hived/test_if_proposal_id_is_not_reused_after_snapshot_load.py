@@ -23,9 +23,9 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load():
     released at the moment of deleting the proposal) so hived mistakenly assumed that the next free one was 0.
     """
 
-    first_node = tt.InitNode()
-    first_node.run()
-    wallet = tt.Wallet(attach_to=first_node)
+    init_node = tt.InitNode()
+    init_node.run()
+    wallet = tt.Wallet(attach_to=init_node)
 
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100), hbds=tt.Asset.Tbd(100))
     wallet.api.post_comment("alice", "permlink", "", "parent-permlink", "title", "body", "{}")
@@ -33,17 +33,22 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load():
     create_proposal(wallet)
     wallet.api.remove_proposal("alice", [0])
 
-    first_node.wait_for_irreversible_block()
+    init_node.wait_for_irreversible_block()
 
-    snapshot = first_node.dump_snapshot()
+    snapshot = init_node.dump_snapshot()
 
-    second_node = tt.InitNode()
-    connect_nodes(first_node, second_node)
-    second_node.run(load_snapshot_from=snapshot, wait_for_live=False)
+    api_node = tt.ApiNode()
+
+    # To activate ApiNode in the 'live' mode, plugins must match those of InitNode.
+    api_node.config.plugin.remove("transaction_status_api")
+    api_node.config.plugin.remove("reputation_api")
+
+    connect_nodes(init_node, api_node)
+    api_node.run(load_snapshot_from=snapshot, wait_for_live=True)
 
     create_proposal(wallet)  # to allocate next proposal ids on each node
 
-    assert get_last_proposal_id(first_node) == get_last_proposal_id(second_node) == 1
+    assert get_last_proposal_id(init_node) == get_last_proposal_id(api_node) == 1
 
 
 def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
