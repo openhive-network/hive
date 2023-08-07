@@ -9,7 +9,6 @@ from typing import Final, List
 import test_tools as tt
 
 from hive_local_tools.constants import TRANSACTION_TEMPLATE, MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
-from hive_local_tools.functional import VestPrice
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 
 AMOUNT_OF_ALL_ACCOUNTS: Final[int] = 30_000
@@ -44,10 +43,7 @@ def prepare_block_log():
                               {'account_creation_fee': tt.Asset.Test(0), 'maximum_block_size': 2097152,
                                'hbd_interest_rate': 1000})
 
-    new_price = VestPrice(quote=tt.Asset.Vest(1800), base=tt.Asset.Test(1))
-    tt.logger.info(f"new vests price {new_price}.")
-    tt.logger.info(f"new vests price {new_price.as_nai()}.")
-    node.api.debug_node.debug_set_vest_price(vest_price=new_price.as_nai())
+    node.set_vest_price(tt.Asset.Vest(1800))
 
     account_names = [account.name for account in wallet.create_accounts(AMOUNT_OF_ALL_ACCOUNTS)]
 
