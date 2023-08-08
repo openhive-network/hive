@@ -13,9 +13,7 @@ set( CMAKE_EXECUTABLE_SUFFIX "" )
 
 cmake_policy(SET CMP0057 NEW)
 
-file(GLOB HEADERS
-      "${CMAKE_CURRENT_SOURCE_DIR}/../core/include/core/*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/beekeeper_wasm/*.hpp"
-    )
+file(GLOB HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/beekeeper_wasm/*.hpp")
 
 include( ${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/hive_targets.cmake )
 
@@ -30,6 +28,7 @@ LIST(APPEND BOOST_COMPONENTS
 
 set(HIVE_BUILD_ON_MINIMAL_FC ON)
 
+add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../core beekeeper_core )
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/fc build_fc_minimal )
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/schema build_schema_minimal )
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/protocol build_protocol_minimal )
@@ -38,25 +37,15 @@ set( SOURCES
       main.cpp
       beekeeper_wasm_app.cpp
       beekeeper_wasm_api.cpp
-      ../core/beekeeper_wallet.cpp
-      ../core/beekeeper_wallet_manager.cpp
-      ../core/token_generator.cpp
-      ../core/session_base.cpp
-      ../core/session_manager_base.cpp
-      ../core/wallet_manager_impl.cpp
-      ../core/beekeeper_app_base.cpp
-      ../core/beekeeper_app_init.cpp
-      ../core/utilities.cpp
-      ../core/time_manager_base.cpp
 )
 
 ADD_EXECUTABLE( beekeeper_wasm ${SOURCES} )
 
-set( INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/../core/include ${CMAKE_CURRENT_SOURCE_DIR}/include )
+set( INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include )
 
 target_include_directories( beekeeper_wasm PUBLIC ${INCLUDES} )
 target_compile_options( beekeeper_wasm PUBLIC -fexceptions )
-target_link_libraries( beekeeper_wasm PUBLIC embind hive_protocol idbfs.js )
+target_link_libraries( beekeeper_wasm PUBLIC embind hive_protocol beekeeper_core idbfs.js )
 # add -sASSERTIONS to `target_link_options` if you want more information
 # INITIAL_MEMORY by default = 16777216
 target_link_options( beekeeper_wasm PUBLIC -fexceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 )
@@ -67,7 +56,7 @@ ADD_EXECUTABLE( beekeeper_ts_gen ${SOURCES} )
 
 target_include_directories( beekeeper_ts_gen PUBLIC ${INCLUDES} )
 target_compile_options( beekeeper_ts_gen PUBLIC -fexceptions )
-target_link_libraries( beekeeper_ts_gen PUBLIC embind hive_protocol idbfs.js )
+target_link_libraries( beekeeper_ts_gen PUBLIC embind hive_protocol beekeeper_core idbfs.js )
 
 target_link_options( beekeeper_ts_gen PUBLIC -fexceptions --embind-emit-tsd ${CMAKE_CURRENT_BINARY_DIR}/beekeeper.d.ts )
 set_target_properties( beekeeper_ts_gen PROPERTIES OUTPUT_NAME beekeeper_ts_gen.cjs )
