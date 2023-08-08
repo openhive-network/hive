@@ -1,5 +1,7 @@
 #include <beekeeper/session.hpp>
 
+#include <appbase/application.hpp>
+
 namespace beekeeper {
 
 session::session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager_base> time )
@@ -10,7 +12,7 @@ session::session( const std::string& notifications_endpoint, const std::string& 
 
 void session::prepare_notifications()
 {
-  hive::utilities::notifications::dynamic_notify( notification_handler, "Attempt of closing all wallets");
+  appbase::application::dynamic_notify( notification_handler, "Attempt of closing all wallets");
 }
 
 } //beekeeper
