@@ -123,7 +123,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->close_session( token );
-      return empty_response;
+      return to_string( empty_response );
     };
     return exception_handler<void>( _method );
   }
@@ -149,7 +149,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->unlock( token, wallet_name, password );
-      return empty_response;
+      return to_string( empty_response );
     };
     return exception_handler<void>( _method );
   }
@@ -159,7 +159,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->open( token, wallet_name );
-      return empty_response;
+      return to_string( empty_response );
     };
     return exception_handler<void>( _method );
   }
@@ -169,7 +169,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->close( token, wallet_name );
-      return empty_response;
+      return to_string( empty_response );
     };
     return exception_handler<void>( _method );
   }
@@ -179,7 +179,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->set_timeout( token, seconds );
-      return empty_response;
+      return to_string( empty_response );
     };
     return exception_handler<void>( _method );
   }
@@ -189,7 +189,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->lock_all( token );
-      return empty_response;
+      return to_string( empty_response );
     };
     return exception_handler<void>( _method );
   }
@@ -199,7 +199,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->lock( token, wallet_name );
-      return empty_response;
+      return to_string( empty_response );
     };
     return exception_handler<void>( _method );
   }
@@ -219,7 +219,7 @@ namespace beekeeper {
     auto _method = [&, this]()
     {
       _impl->app.get_wallet_manager()->remove_key( token, wallet_name, password, public_key );
-      return empty_response;
+      return to_string( empty_response );
     };
     return exception_handler<void>( _method );
   }
