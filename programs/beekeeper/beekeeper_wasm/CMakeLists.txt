@@ -58,7 +58,7 @@ target_compile_options( beekeeper_wasm PUBLIC -fexceptions )
 target_link_libraries( beekeeper_wasm PUBLIC embind hive_protocol idbfs.js )
 # add -sASSERTIONS to `target_link_options` if you want more information
 # INITIAL_MEMORY by default = 16777216
-target_link_options( beekeeper_wasm PUBLIC -fexceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sINITIAL_MEMORY=33554432 )
+target_link_options( beekeeper_wasm PUBLIC -fexceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 )
 set_target_properties( beekeeper_wasm PROPERTIES OUTPUT_NAME beekeeper_wasm.mjs )
 
 # Helper target, just to perform TypeScript wrapper generation
