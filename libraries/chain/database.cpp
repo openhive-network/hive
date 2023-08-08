@@ -5724,7 +5724,7 @@ void full_database::migrate_irreversible_state_to_blocklog(uint32_t old_last_irr
         }
 
         for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-            _block_log.append( block_itr->get()->full_block  );
+            _block_log.append( block_itr->get()->full_block, _is_at_live_sync );
 
           _block_log.flush();
       }
