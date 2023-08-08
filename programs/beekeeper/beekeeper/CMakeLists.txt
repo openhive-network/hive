@@ -1,5 +1,4 @@
 file(GLOB HEADERS "../extension/include/extension/*.hpp")
-file(GLOB HEADERS "../core/include/core/*.hpp")
 file(GLOB HEADERS "include/beekeeper/*.hpp")
 
 ADD_HIVE_EXECUTABLE ( NAME beekeeper
@@ -12,20 +11,10 @@ ADD_HIVE_EXECUTABLE ( NAME beekeeper
                       time_manager.cpp
                       beekeeper_wallet_api.cpp
                       extended_api.cpp
-                      ../core/beekeeper_wallet_manager.cpp
-                      ../core/beekeeper_wallet.cpp
-                      ../core/token_generator.cpp
-                      ../core/session_base.cpp
-                      ../core/session_manager_base.cpp
-                      ../core/wallet_manager_impl.cpp
-                      ../core/beekeeper_app_base.cpp
-                      ../core/beekeeper_app_init.cpp
-                      ../core/utilities.cpp
-                      ../core/time_manager_base.cpp
-                      LIBRARIES appbase webserver_plugin hive_utilities
+                      LIBRARIES appbase webserver_plugin hive_utilities beekeeper_core
 )
 
-target_include_directories( beekeeper PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/../core/include" )
+target_include_directories( beekeeper PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 if( UNIX AND NOT APPLE )
   set(rt_library rt )
