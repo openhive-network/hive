@@ -66,23 +66,6 @@ class truncation_controller
   public:
     static void set_verify( bool val ){ verify = val; }
     static bool is_verifying_enabled() { return verify; };
-
-    class scoped_verification_state_backup
-    {
-        bool old_verify_status;
-        
-    public:
-        scoped_verification_state_backup()
-            : old_verify_status(is_verifying_enabled())
-        {
-        }
-
-        ~scoped_verification_state_backup()
-        {
-            set_verify(old_verify_status);
-        }
-    };
-
 };
 
 } } }
