@@ -373,15 +373,6 @@ void webserver_plugin_impl<websocket_server_type>::update_ws_endpoint()
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::stop_webserver()
 {
-  if( ws_server.is_listening() )
-  ws_server.stop_listening();
-
-  if( http_server.is_listening() )
-    http_server.stop_listening();
-
-  if( unix_server.is_listening() )
-    unix_server.stop_listening();
-
   thread_pool_ios.stop();
   thread_pool.join_all();
 
