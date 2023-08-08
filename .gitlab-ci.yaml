@@ -35,6 +35,10 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
 
+  - project: 'hive/common-ci-configuration'
+    ref: 59fda797ed51ad1950507d8534cc67c16fd528d4
+    file: '/templates/test_jobs.gitlab-ci.yml'
+
 prepare_hived_image:
   extends: .prepare_hived_image
   stage: build
