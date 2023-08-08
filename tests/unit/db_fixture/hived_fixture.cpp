@@ -43,6 +43,10 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
 
     _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
     {
+      
+      // Global value should always default to true.
+      account_name_type::set_verify( true );
+
       // Setup logging options.
       app.add_logging_program_options();
 
