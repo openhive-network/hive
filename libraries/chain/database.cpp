@@ -73,6 +73,14 @@ long next_hf_time()
   return hfTime;
 }
 
+class  NotifyNotes : public INotes
+{
+  virtual void note(const std::string &s) override
+  {
+    appbase::app().notify_status(s);
+  }
+};
+
 namespace hive { namespace chain {
 
 struct object_schema_repr
@@ -163,7 +171,8 @@ void database::open_state_independent( const open_args& args)
                                                 appbase::app().get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay );
+    NotifyNotes notifyNotes; 
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, args.force_replay, &notifyNotes );
     initialize_state_independent_data(args);
 
   }
@@ -4015,13 +4024,17 @@ void database::initialize_irreversible_storage()
   irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
 }
 
+
+
+
 void database::verify_match_of_state_objects_definitions_from_shm()
 {
   FC_ASSERT(_my->_decoded_types_data_storage);
   const std::string decoded_state_objects_data = get_decoded_state_objects_data_from_shm();
 
+  NotifyNotes notifyNotes; 
   if (decoded_state_objects_data.empty())
-    set_decoded_state_objects_data(_my->_decoded_types_data_storage->generate_decoded_types_data_json_string());
+    set_decoded_state_objects_data(_my->_decoded_types_data_storage->generate_decoded_types_data_json_string(), &notifyNotes);
   else
   {
     auto result = _my->_decoded_types_data_storage->check_if_decoded_types_data_json_matches_with_current_decoded_data(decoded_state_objects_data);

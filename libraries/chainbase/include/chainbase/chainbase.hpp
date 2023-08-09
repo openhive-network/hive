@@ -33,6 +33,13 @@
 #include <typeindex>
 #include <typeinfo>
 
+
+struct INotes
+{
+  public:
+  virtual void note(const std::string &s) = 0;
+};
+
 #ifndef CHAINBASE_NUM_RW_LOCKS
   #define CHAINBASE_NUM_RW_LOCKS 10
 #endif
@@ -947,7 +954,7 @@ namespace chainbase {
       void wipe_indexes();
 
     public:
-      void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr, const bool wipe_shared_file = false );
+      void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr, const bool wipe_shared_file = false , INotes* notes = nullptr);
       void close();
       void flush();
       void wipe( const bfs::path& dir );
@@ -1292,7 +1299,7 @@ namespace chainbase {
         { return _index_list; }
 
       std::string get_decoded_state_objects_data_from_shm() const;
-      void set_decoded_state_objects_data(const std::string& json);
+      void set_decoded_state_objects_data(const std::string& json, INotes* notes);
 
     protected:
       bool get_is_open() const

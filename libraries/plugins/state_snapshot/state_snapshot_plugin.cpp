@@ -895,7 +895,7 @@ size_t index_dump_reader::getCurrentlyProcessedId() const
 
 class state_snapshot_plugin::impl final : protected chain::state_snapshot_provider
   {
-  using database = hive::chain::database;
+  using full_database = hive::chain::full_database;
 
   public:
     impl(state_snapshot_plugin& self, const bpo::variables_map& options) :
@@ -908,7 +908,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
       ilog("Registering add_prepare_snapshot_handler...");
 
-      _mainDb.add_prepare_snapshot_handler([&](const database& db, const database::abstract_index_cntr_t& indexContainer) -> void
+      _mainDb.add_prepare_snapshot_handler([&](const hive::chain::database& db, const hive::chain::database::abstract_index_cntr_t& indexContainer) -> void
         {
         std::string name = generate_name();
         prepare_snapshot(name);
@@ -937,7 +937,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
     private:
       state_snapshot_plugin&  _self;
-      database&               _mainDb;
+      full_database&          _mainDb;
       bfs::path               _storagePath;
       std::unique_ptr<DB>     _storage;
       std::string             _snapshot_name;
@@ -1405,18 +1405,59 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   elog("Snapshot generation FAILED.");
   }
 
+
+
+class  NotifyNotes : public INotes
+{
+  virtual void note(const std::string &s) override
+  {
+    appbase::app().notify_status(s);
+  }
+};
+
+
+bool volatile static stop_in_load_snapshot_impl = false;
+
 void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs)
   {
+
+
+
+
   bfs::path actualStoragePath = _storagePath / snapshotName;
   actualStoragePath = actualStoragePath.normalize();
+  appbase::app().notify_status(
+    FC_LOG_MESSAGE(warn, "in load_snapshot_impl with actualStoragePath=${actualStoragePath} pid= &{pid}", ("actualStoragePath", actualStoragePath.string()) ("pid", getpid()))
+    .get_message()
+  );
+
+
+  while(stop_in_load_snapshot_impl)
+  {
+    int a = 0;
+    a=a;
+  }
 
   if(bfs::exists(actualStoragePath) == false)
     {
+
+    appbase::app().notify_status(
+      FC_LOG_MESSAGE(warn, "Snapshot `${n}' does not exist in the snapshot directory: `${d}' or is inaccessible.", ("n", snapshotName)("d", _storagePath.string()))
+      .get_message()
+    );
+
+
     elog("Snapshot `${n}' does not exist in the snapshot directory: `${d}' or is inaccessible.", ("n", snapshotName)("d", _storagePath.string()));
+
     return;
     }
 
   ilog("Trying to access snapshot in the location: `${p}'", ("p", actualStoragePath.string()));
+
+  appbase::app().notify_status(
+    FC_LOG_MESSAGE(warn, "Trying to access snapshot in the location: `${p}'", ("p", actualStoragePath.string()))
+    .get_message()
+  );
 
   benchmark_dumper dumper;
   dumper.initialize([](benchmark_dumper::database_object_sizeof_cntr_t&) {}, "state_snapshot_load.json");
@@ -1424,9 +1465,19 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   auto snapshotManifest = load_snapshot_manifest(actualStoragePath);
   const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
 
+  appbase::app().notify_status(
+    FC_LOG_MESSAGE(warn, "Here 01")
+    .get_message()
+  );
+
   {
     chain::util::decoded_types_data_storage dtds(_mainDb.get_current_decoded_types_data_json());
     auto result = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(loaded_decoded_type_data);
+
+    appbase::app().notify_status(
+      FC_LOG_MESSAGE(warn, "Here 02")
+      .get_message()
+    );
 
     if (!result.first)
     {
@@ -1446,6 +1497,11 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
       current_decoded_types_details.flush();
       current_decoded_types_details.close();
 
+      appbase::app().notify_status(
+        FC_LOG_MESSAGE(warn, "Here 03")
+        .get_message()
+      );
+
       FC_THROW_EXCEPTION(chain::snapshot_state_definitions_mismatch_exception,
         "Details:\n ${details}"
         "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
@@ -1453,11 +1509,24 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     }
   }
 
-  _mainDb.set_decoded_state_objects_data(loaded_decoded_type_data);
+
+  appbase::app().notify_status(FC_LOG_MESSAGE(warn, "Here 04").get_message());
+
+  NotifyNotes notifyNotes;
+  _mainDb.set_decoded_state_objects_data(loaded_decoded_type_data, &notifyNotes);
+
+  appbase::app().notify_status(FC_LOG_MESSAGE(warn, "Here 05").get_message());
 
   const auto& indices = _mainDb.get_abstract_index_cntr();
 
+  appbase::app().notify_status(FC_LOG_MESSAGE(warn, "Here 06").get_message());
+
   ilog("Attempting to load contents of ${n} indices...", ("n", indices.size()));
+
+  appbase::app().notify_status(
+    FC_LOG_MESSAGE(warn, "Attempting to load contents of ${n} indices...", ("n", indices.size()))
+    .get_message()
+  );
 
   boost::asio::io_service ioService;
   boost::thread_group threadpool;
@@ -1481,6 +1550,12 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
 
   ilog("Waiting for loading jobs completion");
 
+  appbase::app().notify_status(
+    FC_LOG_MESSAGE(warn, "Waiting for loading jobs completion")
+    .get_message()
+  );
+
+
   /// Run the horses...
   work.reset();
 
@@ -1503,6 +1578,11 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   auto blockNo = _mainDb.head_block_num();
 
   ilog("Setting chainbase revision to ${b} block... Loaded irreversible block is: ${lib}.", ("b", blockNo)("lib", last_irr_block));
+
+  appbase::app().notify_status(
+    FC_LOG_MESSAGE(warn, "Setting chainbase revision to ${b} block... Loaded irreversible block is: ${lib}.", ("b", blockNo)("lib", last_irr_block))
+    .get_message()
+  );
 
   _mainDb.set_revision(blockNo);
   _mainDb.load_state_initial_data(openArgs);

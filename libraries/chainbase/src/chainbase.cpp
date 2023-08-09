@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fc/log/logger.hpp>
 
+
 namespace chainbase {
 
 size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache_max_size() const
@@ -142,23 +143,48 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       bool                    created_storage = true;
   };
 
-  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file )
+  void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension, const bool wipe_shared_file , INotes* notes)
   {
     assert( dir.is_absolute() );
+
+
+    if(notes)notes->note("PPP 10");
+
     bfs::create_directories( dir );
-    if( _data_dir != dir ) close();
-    if( wipe_shared_file ) wipe( dir );
+    
+    if(notes)notes->note("PPP 20");
+    
+    if( _data_dir != dir )
+    {
+      if(notes)notes->note("PPP 30");
+     close();
+    }
+    
+    if(notes)notes->note("PPP 35");
+    
+    if( wipe_shared_file ) 
+    {
+      if(notes)notes->note("PPP 40");
+
+      wipe( dir );
+    }
 
     _data_dir = dir;
     _database_cfg = database_cfg;
 #ifndef ENABLE_STD_ALLOCATOR
     auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
-    
+
+    if(notes)notes->note("PPP 50");
+
     if( bfs::exists( abs_path ) )
     {
+      if(notes)notes->note("PPP 60");
+
       _file_size = bfs::file_size( abs_path );
       if( shared_file_size > _file_size )
       {
+        if(notes)notes->note("PPP 70");
+
         if( !bip::managed_mapped_file::grow( abs_path.generic_string().c_str(), shared_file_size - _file_size ) )
           BOOST_THROW_EXCEPTION( std::runtime_error( "could not grow database file to requested size." ) );
 
@@ -169,10 +195,51 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                       abs_path.generic_string().c_str()
                                       ) );
 
+      if(notes)notes->note("PPP 80");
+
       auto env = _segment->find< environment_check >( "environment" );
+      if(!env.first)
+      {
+        if(notes)notes->note("No env.first");
+      }
+      else
+      {
+        if(env.first->created_storage)
+        {
+          if(notes)notes->note("created_storage==true");
+        }
+        else
+        {
+          if(notes)notes->note("created_storage==false");
+        }
+      }
+
+      if(notes)notes->note("PPP 90");
 
       environment_check eCheck( allocator< environment_check >( _segment->get_segment_manager() ) );
+
+
+      auto env = _segment->find< environment_check >( "environment" );
+      if(!env.first)
+      {
+        if(notes)notes->note("No env.first");
+      }
+      else
+      {
+        if(env.first->created_storage)
+        {
+          if(notes)notes->note("created_storage==true");
+        }
+        else
+        {
+          if(notes)notes->note("created_storage==false");
+        }
+      }
+
       if( !env.first || !( *env.first == eCheck) ) {
+
+        if(notes)notes->note("PPP 100");
+
         if(!env.first)
           BOOST_THROW_EXCEPTION( std::runtime_error( "Unable to find environment data saved in persistent storage. Probably database created by a different compiler, build, or operating system" ) );
 
@@ -181,11 +248,42 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         BOOST_THROW_EXCEPTION(std::runtime_error("Different persistent & runtime environments. Persistent: `" + dp + "'. Runtime: `"+ dr + "'.Probably database created by a different compiler, build, or operating system"));
       }
 
+      if(notes)notes->note("PPP 110");
+
       if (env.first->created_storage)
+      {
+        if(notes)notes->note("PPP 120");
+
         env.first->created_storage = false;
+      }
+
+
+      auto env = _segment->find< environment_check >( "environment" );
+      if(!env.first)
+      {
+        if(notes)notes->note("No env.first");
+      }
+      else
+      {
+        if(env.first->created_storage)
+        {
+          if(notes)notes->note("created_storage==true");
+        }
+        else
+        {
+          if(notes)notes->note("created_storage==false");
+        }
+      }
+
+
+      if(notes)notes->note("PPP 130");
 
       std::cout << "Compiler and build environment read from persistent storage: `" << env.first->dump() << '\'' << std::endl;
     } else {
+
+
+       if(notes)notes->note("PPP 140");
+
       _file_size = shared_file_size;
       _segment.reset( new bip::managed_mapped_file( bip::create_only,
                                       abs_path.generic_string().c_str(), shared_file_size
@@ -193,9 +291,32 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
     }
 
+    if(notes)notes->note("PPP 150");
+
     auto env = _segment->find< environment_check >( "environment" );
+
+    if(!env.first)
+    {
+      if(notes)notes->note("No env.first");
+    }
+    else
+    {
+      if(env.first->created_storage)
+      {
+        if(notes)notes->note("created_storage==true");
+      }
+      else
+      {
+        if(notes)notes->note("created_storage==false");
+      }
+    }
+
     if( environment_extension )
+    {
+      if(notes)notes->note("PPP 160");
+
       env.first->test_set_plugins( *environment_extension );
+    }
 
     _flock = bip::file_lock( abs_path.generic_string().c_str() );
     if( !_flock.try_lock() )
@@ -326,17 +447,56 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     return session( std::move( _sub_sessions ), _undo_session_count );
   }
 
-  void database::set_decoded_state_objects_data(const std::string& json)
+  void database::set_decoded_state_objects_data(const std::string& json, INotes* notes)
   {
+    notes->note("NNN 10 In set_decoded_state_objects_data");
+
+
+    FC_ASSERT(_is_open);
+    notes->note("NNN 20");
     assert(_is_open);
+    notes->note("NNN 30");
     environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+
+    if(!env)
+    {
+      if(notes)notes->note("No env.first");
+    }
+    else
+    {
+      if(env->created_storage)
+      {
+        if(notes)notes->note("created_storage==true");
+      }
+      else
+      {
+        if(notes)notes->note("created_storage==false");
+      }
+    }
+
+
+
+    notes->note("NNN 40");
+
     assert(env);
+    notes->note("NNN 50");
+    FC_ASSERT(env);
+    notes->note("NNN 60");
 
     if (!env->created_storage)
+    {
+      notes->note("NNN 70");
       BOOST_THROW_EXCEPTION( std::runtime_error( "Cannot set decoded state objects data if storage is not newly created." ) );
+      notes->note("NNN 80");
+    }
 
+    notes->note("NNN 90");
     env->decoded_state_objects_data_json = json.c_str();
+
+    notes->note("NNN 100");
+
   }
+
 
   std::string database::get_decoded_state_objects_data_from_shm() const
   {
