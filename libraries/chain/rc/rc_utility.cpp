@@ -155,6 +155,8 @@ int64_t resource_credits::compute_cost( rc_transaction_info* usage_info ) const
   // When rc_regen is 0, everything is free
   if( rc_regen > 0 )
   {
+    ilog( "RC_REGEN: ${regen}", ("regen", rc_regen) );
+    ilog( "DGPO: ${dgpo_obj}", ("dgpo_obj", dgpo) );
     for( size_t i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
     {
       const rc_resource_params& params = params_obj.resource_param_array[i];
@@ -162,9 +164,11 @@ int64_t resource_credits::compute_cost( rc_transaction_info* usage_info ) const
 
       usage_info->usage[i] *= int64_t( params.resource_dynamics_params.resource_unit );
       int64_t pool_regen_share = fc::uint128_to_int64( ( uint128_t( rc_regen ) * pool_obj.get_weight(i) ) / pool_obj.get_weight_divisor() );
+      ilog( "WAGA: ${w}, DIV: ${p}, I: ${i}", ("w", pool_obj.get_weight(i) )("p", pool_obj.get_weight_divisor()) (i) );
       if( pool_regen_share > 0 )
       {
         usage_info->cost[i] = compute_cost( params.price_curve_params, pool, usage_info->usage[i], pool_regen_share );
+        ilog("TUTAJ PRZESZLO");
         total_cost += usage_info->cost[i];
       }
     }

@@ -205,6 +205,8 @@ void rc_plugin_impl::on_post_apply_transaction( const transaction_notification& 
   tx_info.payer = rc.get_resource_user( note.transaction );
   rc.use_account_rcs( &tx_info, total_cost );
 
+  ilog( "RC_COST: ${cost}", ("cost", tx_info) );
+
   if( _enable_rc_stats && ( _db.is_validating_block() || _db.is_replaying_block() ) )
   {
     _db.modify( _db.get< rc_stats_object, by_id >( RC_PENDING_STATS_ID ), [&]( rc_stats_object& stats_obj )
