@@ -17,7 +17,7 @@ def test_default_recovery_agent(node):
 @run_for("testnet")
 def test_change_recovery_agent(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
     wallet.create_account("bob")
 
     block_num = wallet.api.change_recovery_account("alice", "bob")["block_num"]
@@ -29,7 +29,7 @@ def test_change_recovery_agent(node):
 @run_for("testnet")
 def test_resign_from_the_current_recovery_agent(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     with pytest.raises(tt.exceptions.CommunicationError):
         wallet.api.change_recovery_account("alice", "")
@@ -53,7 +53,7 @@ def test_withdrawal_of_the_request_for_a_change_of_recovery_agent(node):
 @run_for("testnet")
 def test_set_own_account_as_recovery_agent(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     wallet.api.change_recovery_account("alice", "alice")
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
@@ -64,7 +64,7 @@ def test_set_own_account_as_recovery_agent(node):
 @run_for("testnet")
 def test_set_null_account_as_recovery_agent(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     wallet.api.change_recovery_account("alice", "null")
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
@@ -75,7 +75,7 @@ def test_set_null_account_as_recovery_agent(node):
 @run_for("testnet")
 def test_set_temp_account_as_recovery_agent(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     wallet.api.change_recovery_account("alice", "temp")
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
@@ -86,7 +86,7 @@ def test_set_temp_account_as_recovery_agent(node):
 @run_for("testnet")
 def test_change_recovery_agent_to_non_existing_account(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     with pytest.raises(tt.exceptions.CommunicationError):
         wallet.api.change_recovery_account("alice", "non-existing-acc")
@@ -96,7 +96,7 @@ def test_change_recovery_agent_to_non_existing_account(node):
 @run_for("testnet")
 def test_change_recovery_agent_to_the_same_recovery_agent(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     assert get_recovery_agent(node, account_name="alice") == "initminer"
 

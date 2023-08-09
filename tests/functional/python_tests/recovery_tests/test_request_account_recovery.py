@@ -9,7 +9,7 @@ from hive_local_tools.functional.python.recovery import get_authority, get_owner
 @run_for("testnet")
 def test_request_account_recovery(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     new_key = tt.Account("alice", secret="new_key").public_key
     new_authority = get_authority(new_key)
@@ -21,7 +21,7 @@ def test_request_account_recovery(node):
 @run_for("testnet")
 def test_account_recovery_request_expiration(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     recovery_account_key = tt.Account("initminer").public_key
     authority = get_authority(recovery_account_key)
@@ -35,7 +35,7 @@ def test_account_recovery_request_expiration(node):
 @run_for("testnet")
 def test_remove_account_recovery_request(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     recovery_account_key = tt.Account("initminer").public_key
 
@@ -76,7 +76,7 @@ def test_account_recovery_process(node):
 @run_for("testnet")
 def test_recovery_account_process_without_changing_owner_key(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     primary_key = get_owner_key(node, "alice")
     primary_authority = get_authority(primary_key)
@@ -97,7 +97,7 @@ def test_recovery_account_process_without_changing_owner_key(node):
 @run_for("testnet")
 def test_confirm_account_recovery_without_account_recovery_request(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
 
     primary_key = get_owner_key(node, "alice")
     primary_authority = get_authority(primary_key)
@@ -144,7 +144,7 @@ def test_account_recovery_process_with_mismatched_key(node):
 @run_for("testnet")
 def test_account_recovery_process_with_most_trust_witness_as_recovery_agent(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice", creator="temp")
+    wallet.create_account("alice", creator="temp", vests=tt.Asset.Test(10))
     assert get_recovery_agent(node, account_name="alice") == ""
 
     primary_key = get_owner_key(node, "alice")
@@ -168,7 +168,7 @@ def test_account_recovery_process_with_most_trust_witness_as_recovery_agent(node
 @run_for("testnet")
 def test_create_account_recovery_request_from_random_account_as_recovery_agent(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.create_account("alice")
+    wallet.create_account("alice", vests=tt.Asset.Test(10))
     wallet.create_account("random-account")
 
     recovery_account_key = tt.Account("random-account").public_key
