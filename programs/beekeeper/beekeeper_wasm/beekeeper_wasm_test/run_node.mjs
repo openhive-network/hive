@@ -1,3 +1,5 @@
+"use strict";
+
 import { strict as assert } from 'node:assert';
 import path from 'path';
 
@@ -6,11 +8,14 @@ import { fileURLToPath } from 'url';
 
 import Module from '../../../../build_wasm/beekeeper_wasm.mjs';
 
+import BeekeeperInstanceHelper, { ExtractError } from './run_node_helper.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const wallet_names = ["w0","w1","w2","w3","w4","w5","w6","w7","w8", "w9"];
-const passwords = new Map();
+const walletNames = ["w0","w1","w2","w3","w4","w5","w6","w7","w8","w9"];
+
+// const limitDisplay = (str, max) => str.length > max ? (str.slice(0, max - 3) + '...') : str;
 
 const keys =
 [
@@ -26,17 +31,17 @@ const keys =
   ['5KKvoNaCPtN9vUEU1Zq9epSAVsEPEtocbJsp7pjZndt9Rn4dNRg', '8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5']
 ];
 
-const sign_data =
+const signData =
 [
   {
-    'public_key': '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+    'public_key': keys[3][1],
     'sig_digest': '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
     'binary_transaction_body': '000000000000000000000000',
     'transaction_body': '{}',
     'expected_signature': '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
   },
   {
-    'public_key': '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+    'public_key': keys[3][1],
     'sig_digest': '614e645c13b351b56d9742b358e3c3da58fa1a6a0036a01d3163c21aa2c8a99c',
     'binary_transaction_body': '5f00c58fb5f9854fb664010209696e69746d696e657205616c6963659a020000000000002320bcbe056d656d6d6d00',
     'transaction_body': '{"ref_block_num":95,"ref_block_prefix":4189425605,"expiration":"2023-07-18T08:38:29","operations":[{"type":"transfer_operation","value":{"from":"initminer","to":"alice","amount":{"amount":"666","precision":3,"nai":"@@000000021"},"memo":"memmm"}}],"extensions":[],"signatures":[],"transaction_id":"cc9630cdbc39da1c9b6264df3588c7bedb5762fa","block_num":0,"transaction_num":0}',
@@ -44,356 +49,76 @@ const sign_data =
   },
 ];
 
-const chain_id = '18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e';
+/**
+ * @param {BeekeeperInstanceHelper} beekeeperInstance
+ * @param {string} sessionToken
+ * @param {number} signDataIndex
+ */
+const signTransactionUsing3Methods = (beekeeperInstance, sessionToken, signDataIndex) => {
+  const data = signData[signDataIndex];
+  const expected = data.expected_signature;
 
-const STORAGE_ROOT = path.join(__dirname, 'storage_root');
+  const signDigest = beekeeperInstance.signDigest(sessionToken, data.sig_digest, data.public_key);
+  assert.equal(expected, signDigest);
 
-const perform_StringList_test = provider => {
-  const params = new provider.StringList();
-  params.push_back('--wallet-dir');
-  params.push_back(`${STORAGE_ROOT}/.beekeeper`);
-  params.push_back('--salt');
-  params.push_back('avocado');
+  const signBinaryTx = beekeeperInstance.signBinaryTransaction(sessionToken, data.binary_transaction_body, chainId, data.public_key);
+  assert.equal(expected, signBinaryTx);
 
-  const s = params.size();
-  console.log(`Built params container has a size: ${s}`);
-
-  assert.equal(s, 4);
-
-  return params;
+  const signTx = beekeeperInstance.signTransaction(sessionToken, data.transaction_body, chainId, data.public_key);
+  assert.equal(expected, signTx);
 };
 
-const extract_json = (json) => {
-  const _json = JSON.parse(json);
-  let _val = "";
-  let _response_status;
+let testThrowId = 0;
+const testThrow = (api, what, ...explicitArgsOrArgsNum) => {
+  if(typeof api === 'function') {
+    assert.throws(() => {
+      api();
+    }, ExtractError);
 
-  if( _json.hasOwnProperty('result'))
-  {
-    _val = _json.result;
-    _response_status = true;
-  }
-  else
-  {
-    _val = _json.error;
-    _response_status = false;
+    console.info(`Call to \`[Function (anonymous)]\` successfully failed`);
+
+    return;
   }
 
-  return [ JSON.parse(_val), _response_status ];
+  let args = [];
+
+  if(typeof explicitArgsOrArgsNum[0] === 'number')
+    for(let i = 0; i < explicitArgsOrArgsNum[0]; ++i)
+      args.push(`random_arg_${i}`);
+  else
+    args = explicitArgsOrArgsNum;
+
+  const token = `this-token-does-not-exist-${++testThrowId}`;
+
+  assert.throws(() => {
+    api[what](token, ...args);
+  }, ExtractError);
+
+  console.info(`Call to \`api.${what}('${token}', ...);\` successfully failed`);
 };
 
-const create_beekeeper_instance = (provider, params) => {
-  console.log('create beekeeper');
-  const _instance = new provider.beekeeper_api(params);
-  console.log('beekeeper created');
-
-  console.log('init instance');
-  const _init_result = _instance.init();
-  console.log(`instance initalized with result: ${_init_result}`);
-  const [ _token, _response_status ] = extract_json(_init_result);
-  assert.equal(_response_status, true);
-
-  return [ _instance, _token.token, _response_status ];
+const requireKeysIn = (keysResult, ...indexes) => {
+  assert.equal(keysResult.keys.length, indexes.length, "Invalid number of keys in result");
+  indexes.map(index => keys[index][1]).forEach(key => {
+    assert.ok(keysResult.keys.find(value => value.public_key === key), "Key does not exist in wallet");
+  });
 };
 
-const create = (beekeeper_instance, session_token, wallet_number, explicit_password) => {
-  console.log(`Attempting to create a wallet: ${wallet_names[wallet_number]} using session token: ${session_token} with password ${explicit_password}`);
+const requireWalletsIn = (walletsResult, ...indexes) => {
+  assert.equal(walletsResult.wallets.length, indexes.length / 2, "Invalid number of wallets in result");
+  for(let i = 0; i < indexes.length; i += 2) {
+    const key = walletNames[indexes[i]];
+    const unlocked = !!indexes[i + 1];
 
-  const _returned_value = beekeeper_instance.create(session_token, wallet_names[wallet_number], explicit_password);
+    const wallet = walletsResult.wallets.find(value => value.name === key);
 
-  const [ _value, _response_status ] = extract_json(_returned_value);
-  if( _response_status )
-  {
-    console.log(`creation wallet "${wallet_names[wallet_number]}" passed. Password: ${_returned_value}`);
-    passwords.set(wallet_number, _value.password);
+    assert.ok(wallet, "Wallet does not exist");
+    assert.equal(wallet.unlocked, unlocked, "Wallet should match open state");
   }
-  else
-    console.log(`creation wallet "${wallet_names[wallet_number]}" failed`);
-
-  return [_value, _response_status];
 };
 
-const create_session = (beekeeper_instance, salt) => {
-  console.log(`Attempting to create a session using salt: ${salt}`);
-
-  let _returned_value = beekeeper_instance.create_session(salt);
-
-  const [ _value, _response_status ] = extract_json(_returned_value);
-  if( _response_status )
-  {
-    console.log(`creation session passed. token: ${_returned_value}`);
-  }
-  else
-    console.log(`creation session failed.`);
-
-  return [_value.token, _response_status];
-};
-
-const create_session_ex = (beekeeper_instance, salt) => {
-  let [session_token, _response_status] = create_session(beekeeper_instance, salt)
-  return session_token;
-};
-
-const close_session = (beekeeper_instance, token) => {
-  console.log(`close session with token: ${token}`);
-  let _returned_value = beekeeper_instance.close_session(token);
-  const [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`closing session with token: ${token} passed`);
-  else
-    console.log(`closing session with token: ${token} failed`);
-
-  return [_value, _response_status];
-};
-
-const import_key = (beekeeper_instance, session_token, wallet_name_number, key_number) => {
-  console.log(`Importing key ${keys[key_number][0]} to wallet: "${wallet_names[wallet_name_number]}"`);
-  const _returned_value = beekeeper_instance.import_key(session_token, wallet_names[wallet_name_number], keys[key_number][0]);
-
-  const [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-  {
-    console.log(`importing key: ${keys[key_number][0]} passed`);
-    assert.equal(_value.public_key, keys[key_number][1]);
-  }
-  else
-    console.log(`importing key: ${keys[key_number][0]} failed`);
-
-  return [_value.public_key, _response_status];
-};
-
-const remove_key = (beekeeper_instance, session_token, wallet_name_number, key_number) => {
-  console.log(`removing key ${keys[key_number][1]} from wallet: "${wallet_names[wallet_name_number]}"`);
-  let _returned_value = beekeeper_instance.remove_key(session_token, wallet_names[wallet_name_number], passwords.get(wallet_name_number), keys[key_number][1]);
-
-  const [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`removing key ${keys[key_number][1]} from wallet: "${wallet_names[wallet_name_number]}" passed`);
-  else
-    console.log(`removing key ${keys[key_number][1]} from wallet: "${wallet_names[wallet_name_number]}" failed`);
-
-  return [_value.public_key, _response_status];
-};
-
-const sign_digest = (beekeeper_instance, session_token, sig_digest, public_key, expected_signature) => {
-  let _sig_digest = ""
-  if( sig_digest.length > 100 )
-  {
-    _sig_digest = sig_digest.substring(0, 100);
-    _sig_digest += "...";
-  }
-  else
-    _sig_digest = sig_digest;
-
-  console.log(`signing digest ${_sig_digest}`);
-  let _returned_value = beekeeper_instance.sign_digest(session_token, public_key, sig_digest);
-
-  let [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-  {
-    console.log(`signing digest ${_sig_digest} passed`);
-    _response_status = ( _value.signature == expected_signature );
-  }
-  else
-    console.log(`signing digest ${_sig_digest} failed`);
-
-  return [_value.signature, _response_status];
-};
-
-const sign_binary_transaction = (beekeeper_instance, session_token, binary_transaction_body, chain_id, public_key, expected_signature) => {
-  let _binary_transaction_body = ""
-  if( binary_transaction_body.length > 100 )
-  {
-    _binary_transaction_body = binary_transaction_body.substring(0, 100);
-    _binary_transaction_body += "...";
-  }
-  else
-    _binary_transaction_body = binary_transaction_body;
-
-  console.log(`signing binary transaction ${_binary_transaction_body}`);
-  let _returned_value = beekeeper_instance.sign_binary_transaction(session_token, binary_transaction_body, chain_id, public_key);
-
-  let [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-  {
-    console.log(`signing binary transaction ${_binary_transaction_body} passed`);
-    _response_status = _value.signature == expected_signature;
-  }
-  else
-    console.log(`signing binary transaction ${_binary_transaction_body} failed`);
-
-  return [_value.signature, _response_status];
-};
-
-const sign_transaction = (beekeeper_instance, session_token, transaction_body, chain_id, public_key, expected_signature) => {
-  console.log(`signing transaction ${transaction_body}`);
-  let _returned_value = beekeeper_instance.sign_transaction(session_token, transaction_body, chain_id, public_key);
-
-  let [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-  {
-    console.log(`signing transaction ${transaction_body} passed`);
-    _response_status = _value.signature == expected_signature;
-  }
-  else
-    console.log(`signing transaction ${transaction_body} failed`);
-
-  return [_value.signature, _response_status];
-};
-
-const sign_transaction_using_3_methods = (beekeeper_instance, session_token, idx) => {
-  console.log('sign transaction using 3 methods...');
-
-  let _data = sign_data[idx];
-
-  let _value = 0;
-  let _response_status = 0;
-
-  [_value, _response_status] = sign_digest(beekeeper_instance, session_token, _data['sig_digest'], _data['public_key'], _data['expected_signature']);
-  if( _response_status )
-  {
-    [_value, _response_status] = sign_binary_transaction(beekeeper_instance, session_token, _data['binary_transaction_body'], chain_id, _data['public_key'], _data['expected_signature']);
-    if( _response_status )
-    {
-      [_value, _response_status] = sign_transaction(beekeeper_instance, session_token, _data['transaction_body'], chain_id, _data['public_key'], _data['expected_signature']);
-    }
-  }
-  return [_value, _response_status];
-};
-
-const list_wallets = (beekeeper_instance, session_token) => {
-  console.log(`attempting to retrieve wallets`);
-  let _returned_value = beekeeper_instance.list_wallets(session_token);
-  const [_wallets, _response_status] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`retrieving wallets ${JSON.stringify(_wallets)} passed`);
-  else
-    console.log(`retrieving wallets failed`);
-
-  return [JSON.stringify(_wallets), _response_status];
-};
-
-const get_public_keys = (beekeeper_instance, session_token) => {
-  console.log(`attempting to retrieve public keys`);
-  let _returned_value = beekeeper_instance.get_public_keys(session_token);
-  const [_keys, _response_status] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`retrieving public keys ${JSON.stringify(_keys)} passed`);
-  else
-    console.log(`retrieving public keys failed`);
-
-  return [JSON.stringify(_keys), _response_status];
-};
-
-const get_info = (beekeeper_instance, session_token) => {
-  console.log(`attempting to retrieve info`);
-  let _returned_value = beekeeper_instance.get_info(session_token);
-  const [_info, _response_status] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`retrieving info ${JSON.stringify(_info)} passed`);
-  else
-    console.log(`retrieving info failed`);
-
-  return [Date.parse(_info['now']), Date.parse(_info['timeout_time']), _response_status];
-};
-
-const open = (beekeeper_instance, session_token, wallet_name_number) => {
-  console.log(`attempting to open wallet: ${wallet_names[wallet_name_number]}`);
-  let _returned_value = beekeeper_instance.open(session_token, wallet_names[wallet_name_number]);
-  const [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`wallet: ${wallet_names[wallet_name_number]} was opened`);
-  else
-    console.log(`opening wallet: ${wallet_names[wallet_name_number]} failed`);
-
-  return [_value, _response_status];
-};
-
-const close = (beekeeper_instance, session_token, wallet_name_number) => {
-  console.log(`attempting to close wallet: ${wallet_names[wallet_name_number]}`);
-  let _returned_value = beekeeper_instance.close(session_token, wallet_names[wallet_name_number]);
-  const [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`closing wallet: ${wallet_names[wallet_name_number]} passed`);
-  else
-    console.log(`closing wallet: ${wallet_names[wallet_name_number]} failed`);
-
-  return [_value, _response_status];
-};
-
-const unlock = (beekeeper_instance, session_token, wallet_name_number) => {
-  console.log(`attempting to unlock wallet: ${wallet_names[wallet_name_number]} using a session_token/password: ${session_token}/${passwords.get(wallet_name_number)}`);
-  let _returned_value = beekeeper_instance.unlock(session_token, wallet_names[wallet_name_number], passwords.get(wallet_name_number));
-  const [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`unlocking wallet: ${wallet_names[wallet_name_number]} passed`);
-  else
-    console.log(`unlocking wallet: ${wallet_names[wallet_name_number]} failed`);
-
-  return [_value, _response_status];
-};
-
-const lock = (beekeeper_instance, session_token, wallet_name_number) => {
-  console.log(`attempting to lock wallet: ${wallet_names[wallet_name_number]}`);
-  let _returned_value = beekeeper_instance.lock(session_token, wallet_names[wallet_name_number]);
-
-  const [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`unlocking wallet: ${wallet_names[wallet_name_number]} passed`);
-  else
-    console.log(`unlocking wallet: ${wallet_names[wallet_name_number]} failed`);
-
-  return [_value, _response_status];
-};
-
-const delete_instance = (beekeeper_instance) => {
-  console.log('attempting to delete beekeeper instance...');
-  beekeeper_instance.delete();
-  console.log('beekeeper instance was deleted...');
-};
-
-const set_timeout = (beekeeper_instance, session_token, seconds) => {
-  console.log(`attempting to set timeout ${seconds}[s] using a session_token: ${session_token}`);
-  let _returned_value = beekeeper_instance.set_timeout(session_token, seconds);
-  const [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`setting timeout with a token ${session_token} passed`);
-  else
-    console.log(`setting timeout with a token ${session_token} failed`);
-
-  return [_value, _response_status];
-};
-
-const lock_all = (beekeeper_instance, session_token) => {
-  console.log(`attempting to lock all wallets using a session_token: ${session_token}`);
-  let _returned_value = beekeeper_instance.lock_all(session_token);
-  const [ _value, _response_status ] = extract_json(_returned_value);
-
-  if( _response_status )
-    console.log(`locking all wallets ${session_token} passed`);
-  else
-    console.log(`locking all wallets ${session_token} failed`);
-
-  return [_value, _response_status];
-};
-
-const perform_wallet_autolock_test = async(beekeeper_instance, session_token) => {
-  console.log('Attempting to set autolock timeout [1s]');
-  beekeeper_instance.set_timeout(session_token, 1);
+const performWalletAutolockTest = async(beekeeperInstance, sessionToken) => {
+  beekeeperInstance.setTimeout(sessionToken, 1);
 
   const start = Date.now();
 
@@ -404,798 +129,609 @@ const perform_wallet_autolock_test = async(beekeeper_instance, session_token) =>
   const interval = Date.now() - start;
 
   console.log(`Timer resumed after ${interval} ms`);
-  let [wallets, _response_status_wallets] = list_wallets(beekeeper_instance, session_token);
-  //although WASM beekeeper automatic locking is disabled, calling API endpoint triggers locks for every wallet
-  assert.equal(_response_status_wallets, true);
-  assert.equal(wallets, '{"wallets":[{"name":"w1","unlocked":false},{"name":"w2","unlocked":false}]}');
+  const wallets = beekeeperInstance.listWallets(sessionToken);
+  requireWalletsIn(wallets, 1, false, 2, false);
 };
+
+const chainId = '18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e';
+
+const STORAGE_ROOT = path.join(__dirname, 'storage_root');
 
 const my_entrypoint = async() => {
   const provider = await Module();
 
   console.log(`Storage root for testing is: ${STORAGE_ROOT}`);
 
-  const params = perform_StringList_test(provider);
+  const args = `--wallet-dir ${STORAGE_ROOT}/.beekeeper --salt avocado`.split(' ');
+
+  const beekeper = BeekeeperInstanceHelper.for(provider);
 
   {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log("Basic tests which execute all endpoints")
-    console.log("**************************************************************************************")
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
 
-    const [ beekeeper_instance, implicit_session_token ] = create_beekeeper_instance(provider, params);
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Basic tests which execute all endpoints");
+    console.log("**************************************************************************************");
 
-    create(beekeeper_instance, implicit_session_token, 0, '');
+    api.create(api.implicitSessionToken, walletNames[0], '');
 
-    import_key(beekeeper_instance, implicit_session_token, 0, 0);
-
-    let [_session_token, __response_status] = create_session(beekeeper_instance, 'pear');
-    close_session(beekeeper_instance, _session_token)
-
-    let [session_token, _response_status] = create_session(beekeeper_instance, 'pear');
-
-    create(beekeeper_instance, session_token, 1, 'cherry');
-
-    create(beekeeper_instance, session_token, 2, '');
-
-    import_key(beekeeper_instance, session_token, 2, 1);
-    import_key(beekeeper_instance, session_token, 2, 2);
-    import_key(beekeeper_instance, session_token, 2, 3);
-
-    let [wallets, _response_status_wallets] = list_wallets(beekeeper_instance, session_token);
-    assert.equal(wallets, '{"wallets":[{"name":"w1","unlocked":true},{"name":"w2","unlocked":true}]}');
-
-    let [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_token);
-    assert.equal(public_keys, '{"keys":[{"public_key":"6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"},{"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"},{"public_key":"7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH"}]}');
-
-    close(beekeeper_instance, session_token, 2);
-    
-    [wallets, _response_status_wallets] = list_wallets(beekeeper_instance, session_token);
-    assert.equal(wallets, '{"wallets":[{"name":"w1","unlocked":true}]}');
-
-    open(beekeeper_instance, session_token, 2);
-
-    [wallets, _response_status_wallets] = list_wallets(beekeeper_instance, session_token);
-    assert.equal(wallets, '{"wallets":[{"name":"w1","unlocked":true},{"name":"w2","unlocked":false}]}');
-
-    unlock(beekeeper_instance, session_token, 2);
-
-    [wallets, _response_status_wallets] = list_wallets(beekeeper_instance, session_token);
-    assert.equal(wallets, '{"wallets":[{"name":"w1","unlocked":true},{"name":"w2","unlocked":true}]}');
-
-    lock(beekeeper_instance, session_token, 2);
-
-    [wallets, _response_status_wallets] = list_wallets(beekeeper_instance, session_token);
-    assert.equal(wallets, '{"wallets":[{"name":"w1","unlocked":true},{"name":"w2","unlocked":false}]}');
-
-    lock_all(beekeeper_instance, session_token);
-
-    [wallets, _response_status_wallets] = list_wallets(beekeeper_instance, session_token);
-
-    assert.equal(wallets, '{"wallets":[{"name":"w1","unlocked":false},{"name":"w2","unlocked":false}]}');
-
-    unlock(beekeeper_instance, session_token, 2);
-
-    remove_key(beekeeper_instance, session_token, 2, 2);
-
-    [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_token);
-    assert.equal(public_keys, '{"keys":[{"public_key":"6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"},{"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"}]}');
-
-    get_info(beekeeper_instance, session_token);
-
-    unlock(beekeeper_instance, session_token, 1);
-
-    list_wallets(beekeeper_instance, session_token);
-
-    get_public_keys(beekeeper_instance, session_token);
+    api.importKey(api.implicitSessionToken, walletNames[0], keys[0][0]);
 
     {
-      let [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_token, 0);
-      assert.equal(_response_status_sign_trx, true);
-    }
-    {
-      let [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_token, 1);
-      assert.equal(_response_status_sign_trx, true);
+      const sessionToken = api.createSession('pear');
+      api.closeSession(sessionToken);
     }
 
-    await perform_wallet_autolock_test(beekeeper_instance, session_token);
-
-    delete_instance(beekeeper_instance)
-  }
-
-  {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log("Trying to open beekeeper instance again so as to find out if data created in previous test is permamently saved")
-    console.log("**************************************************************************************")
-    const [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
-
-    beekeeper_instance.list_wallets(session_token);
-
-    create(beekeeper_instance, session_token, 3, '');
-
-    list_wallets(beekeeper_instance, session_token);
-
-    unlock(beekeeper_instance, session_token, 2);
-
-    list_wallets(beekeeper_instance, session_token);
-
-    import_key(beekeeper_instance, session_token, 3, 9);
-
-    let [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_token);
-    assert.equal(public_keys, '{"keys":[{"public_key":"6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"},{"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"},{"public_key":"8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5"}]}');
-  }
-  {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log("Create 3 wallets and add to every wallet 3 the same keys. Every key should be displayed only once")
-    console.log("**************************************************************************************")
-    const [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
-
-    create(beekeeper_instance, session_token, 4, '');
-    create(beekeeper_instance, session_token, 5, '');
-    create(beekeeper_instance, session_token, 6, '');
-
-    for(let wallet_number = 4; wallet_number <= 6; wallet_number++)
     {
-      for(let key_number = 7; key_number <= 9; key_number++)
+      const sessionToken = api.createSession('pear');
+
+      api.create(sessionToken, walletNames[1], 'cherry');
+
+      api.create(sessionToken, walletNames[2], '');
+
+      api.importKey(sessionToken, walletNames[1], keys[1][0]);
+      api.importKey(sessionToken, walletNames[1], keys[2][0]);
+      api.importKey(sessionToken, walletNames[1], keys[3][0]);
+
       {
-        import_key(beekeeper_instance, session_token, wallet_number, key_number);
+        const wallets = api.listWallets(sessionToken);
+        requireWalletsIn(wallets, 1, true, 2, true);
+
+        const publicKeys = api.getPublicKeys(sessionToken);
+        requireKeysIn(publicKeys, 1, 2, 3);
       }
-    }
-    let [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_token);
-    assert.equal(public_keys, '{"keys":[{"public_key":"6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45"},{"public_key":"8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4"},{"public_key":"8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5"}]}');
-  }
-  {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log("Remove all keys from 3 wallets created in previous step. As a result all keys are removed in mentioned wallets.")
-    console.log("**************************************************************************************")
-    const [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
 
-    unlock(beekeeper_instance, session_token, 4);
-    unlock(beekeeper_instance, session_token, 5);
-    unlock(beekeeper_instance, session_token, 6);
-
-    for(let wallet_number = 4; wallet_number <= 6; wallet_number++)
-    {
-      for(let key_number = 7; key_number <= 9; key_number++)
       {
-        remove_key(beekeeper_instance, session_token, wallet_number, key_number);
+        api.close(sessionToken, walletNames[2]);
+
+        const wallets = api.listWallets(sessionToken);
+        requireWalletsIn(wallets, 1, true);
       }
-    }
-    let [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_token);
-    assert.equal(public_keys, '{"keys":[]}');
-  }
-  {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log("Close implicitly created session. Create 3 new sessions. Every session has a 1 wallet. Every wallet has unique 1 key. As a result there are 3 keys.")
-    console.log("**************************************************************************************")
-    const [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
-    close_session(beekeeper_instance, session_token);
 
-    let session_tokens = [
-      create_session_ex(beekeeper_instance, 'avocado'),
-      create_session_ex(beekeeper_instance, 'avocado'),
-      create_session_ex(beekeeper_instance, 'avocado')
-    ]
-
-    let wallet_number = 7;
-    let key_number = 4;
-    for(let session_number = 0; session_number < session_tokens.length; session_number++)
-    {
-      create(beekeeper_instance, session_tokens[session_number], wallet_number, '');
-      import_key(beekeeper_instance, session_tokens[session_number], wallet_number, key_number);
-      wallet_number++;
-      key_number++;
-    }
-
-    for(let session_number = 0; session_number < session_tokens.length; session_number++)
-    {
-      let [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_tokens[session_number]);
-      switch(session_number)
       {
-        case 0:
-          assert.equal(public_keys, '{"keys":[{"public_key":"6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"}]}');
-          break;
-        case 1:
-          assert.equal(public_keys, '{"keys":[{"public_key":"6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW"}]}');
-          break;
-        case 2:
-          assert.equal(public_keys, '{"keys":[{"public_key":"8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME"}]}');
-          break;
-        default:
-          assert.equal(false);
+        api.open(sessionToken, walletNames[2]);
+
+        const wallets = api.listWallets(sessionToken);
+        requireWalletsIn(wallets, 1, true, 2, false);
       }
-    }
-  }
-  {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log("Unlock 10 wallets. From every wallet remove every key.")
-    console.log("Removing is done by passing always all public keys from `keys` set. Sometimes `remove` operation passes, sometimes (mostly) fails.")
-    console.log("**************************************************************************************")
-    const [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
 
-    for(let wallet_number = 0; wallet_number < wallet_names.length; wallet_number++)
-    {
-      unlock(beekeeper_instance, session_token, wallet_number);
-    }
-    let [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_token);
-    assert.equal(public_keys, '{"keys":[{"public_key":"5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"},{"public_key":"6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"},{"public_key":"6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"},{"public_key":"6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW"},{"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"},{"public_key":"8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME"},{"public_key":"8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5"}]}');
-
-    for(let wallet_number = 0; wallet_number < wallet_names.length; wallet_number++)
-    {
-      unlock(beekeeper_instance, session_token, wallet_number);
-      for(let key_number = 0; key_number < keys.length; key_number++)
       {
-        remove_key(beekeeper_instance, session_token, wallet_number, key_number);
+        api.unlock(sessionToken, walletNames[2]);
+
+        const wallets = api.listWallets(sessionToken);
+        requireWalletsIn(wallets, 1, true, 2, true);
       }
-    }
 
-    [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_token);
-    assert.equal(public_keys, '{"keys":[]}');
-  }
-  {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log("Close implicitly created session. Create 4 new sessions. All sessions open the same wallet.")
-    console.log("Sessions{0,2} import a key, sessions{1,3} try to remove a key (here is an exception ('Key not in wallet')).")
-    console.log("As a result only sessions{0,2} have a key.")
-    console.log("**************************************************************************************")
-    const [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
-
-    close_session(beekeeper_instance, session_token);
-
-    let session_tokens = [
-      create_session_ex(beekeeper_instance, 'avocado'),
-      create_session_ex(beekeeper_instance, 'avocado'),
-      create_session_ex(beekeeper_instance, 'avocado'),
-      create_session_ex(beekeeper_instance, 'avocado')
-    ]
-
-    let public_keys = 0;
-    let _response_status_public_keys = 0;
-
-    for(let session_number = 0; session_number < session_tokens.length; session_number++)
-    {
-      unlock(beekeeper_instance, session_tokens[session_number], 0);
-      [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_tokens[session_number]);
-      assert.equal(public_keys, '{"keys":[]}');
-    }
-
-    for(let session_number = 0; session_number < session_tokens.length; session_number++)
-    {
-      if( (session_number % 2) == 0 )
       {
-        import_key(beekeeper_instance, session_tokens[session_number], 0, 0);
-        [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_tokens[session_number]);
-        assert.equal(public_keys, '{"keys":[{"public_key":"5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"}]}');
+        api.lock(sessionToken, walletNames[2]);
+
+        const wallets = api.listWallets(sessionToken);
+        requireWalletsIn(wallets, 1, true, 2, false);
       }
-      else
+
       {
-        remove_key(beekeeper_instance, session_tokens[session_number], 0, 0);
-        [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_tokens[session_number]);
-        assert.equal(public_keys, '{"keys":[]}');
+        api.lockAll(sessionToken);
+
+        const wallets = api.listWallets(sessionToken);
+        requireWalletsIn(wallets, 1, false, 2, false);
       }
-    }
 
-    for(let session_number = 0; session_number < session_tokens.length; session_number++)
-    {
-      if( (session_number % 2) == 0 )
       {
-        public_keys = get_public_keys(beekeeper_instance, session_tokens[session_number]);
+        api.unlock(sessionToken, walletNames[1]);
+
+        const wallets = api.listWallets(sessionToken);
+        requireWalletsIn(wallets, 1, true, 2, false);
+
+        api.removeKey(sessionToken, walletNames[1], keys[2][1], '');
+
+        const publicKeys = api.getPublicKeys(sessionToken);
+        requireKeysIn(publicKeys, 1, 3);
       }
-      else
-      {
-        public_keys = get_public_keys(beekeeper_instance, session_tokens[session_number]);
-      }
+
+      const walletInfo = api.getInfo(sessionToken);
+      const now = new Date(walletInfo.now);
+      const timeoutTime = new Date(walletInfo.timeout_time);
+      assert.ok(!Number.isNaN(now.getTime()));
+      assert.ok(!Number.isNaN(timeoutTime.getTime()));
+
+      signTransactionUsing3Methods(api, sessionToken, 0);
+      signTransactionUsing3Methods(api, sessionToken, 1);
+
+      await performWalletAutolockTest(api, sessionToken);
+
+      api.deleteInstance();
     }
   }
+
   {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log("Close implicitly created session. Create 4 new sessions. All opened sessions should have the same key created in previous step.")
-    console.log("**************************************************************************************")
-    const [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Trying to open beekeeper instance again so as to find out if data created in previous test is permamently saved");
+    console.log("**************************************************************************************");
 
-    close_session(beekeeper_instance, session_token);
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
 
-    let session_tokens = [
-      create_session_ex(beekeeper_instance, 'avocado'),
-      create_session_ex(beekeeper_instance, 'avocado'),
-      create_session_ex(beekeeper_instance, 'avocado'),
-      create_session_ex(beekeeper_instance, 'avocado')
-    ]
+    api.create(api.implicitSessionToken, walletNames[3], '');
+    api.unlock(api.implicitSessionToken, walletNames[1]);
+    api.importKey(api.implicitSessionToken, walletNames[3], keys[9][0]);
 
-    let public_keys = 0;
-    let _response_status_public_keys = 0;
+    const publicKeys = api.getPublicKeys(api.implicitSessionToken);
+    requireKeysIn(publicKeys, 1, 3, 9);
+  }
 
-    for(let session_number = 0; session_number < session_tokens.length; session_number++)
-    {
-      unlock(beekeeper_instance, session_tokens[session_number], 0);
-      [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_tokens[0]);
-      assert.equal(public_keys, '{"keys":[{"public_key":"5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"}]}');
+  {
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Create 3 wallets and add to every wallet 3 the same keys. Every key should be displayed only once");
+    console.log("**************************************************************************************");
+
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
+
+    api.create(api.implicitSessionToken, walletNames[4], '');
+    api.create(api.implicitSessionToken, walletNames[5], '');
+    api.create(api.implicitSessionToken, walletNames[6], '');
+
+    // Import keys 7-9 to wallets 4-6
+    for(let walletNo = 4; walletNo <= 6; ++walletNo)
+      for(let keyNo = 7; keyNo <= 9; ++keyNo)
+        api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][0]);
+
+    const publicKeys = api.getPublicKeys(api.implicitSessionToken);
+    requireKeysIn(publicKeys, 7, 8, 9);
+  }
+
+  {
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Remove all keys from 3 wallets created in previous step. As a result all keys are removed in mentioned wallets.");
+    console.log("**************************************************************************************");
+
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
+
+    api.unlock(api.implicitSessionToken, walletNames[4]);
+    api.unlock(api.implicitSessionToken, walletNames[5]);
+    api.unlock(api.implicitSessionToken, walletNames[6]);
+
+    // Remove keys 7-9 to wallets 4-6
+    for(let walletNo = 4; walletNo <= 6; ++walletNo)
+      for(let keyNo = 7; keyNo <= 9; ++keyNo)
+        api.removeKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][1]);
+
+    const publicKeys = api.getPublicKeys(api.implicitSessionToken);
+    requireKeysIn(publicKeys);
+  }
+
+  {
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Close implicitly created session. Create 3 new sessions. Every session has a 1 wallet. Every wallet has unique 1 key. As a result there are 3 keys.");
+    console.log("**************************************************************************************");
+
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
+
+    api.closeSession(api.implicitSessionToken);
+
+    const sessions = [
+      { keyNo: 4, session: api.createSession('avocado') },
+      { keyNo: 5, session: api.createSession('avocado') },
+      { keyNo: 6, session: api.createSession('avocado') }
+    ];
+
+    let walletNo = 7;
+    for(const { session, keyNo } of sessions) {
+      api.create(session, walletNames[walletNo], '');
+      api.importKey(session, walletNames[walletNo], keys[keyNo][0]);
+      ++walletNo;
+    }
+
+    for(const { session, keyNo } of sessions) {
+      const publicKeys = api.getPublicKeys(session);
+      requireKeysIn(publicKeys, keyNo);
     }
   }
+
   {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log("False tests for every API endpoint.")
-    console.log("**************************************************************************************")
-    const [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Unlock 10 wallets. From every wallet remove every key.");
+    console.log("Removing is done by passing always all public keys from `keys` set. Sometimes `remove` operation passes, sometimes (mostly) fails.");
+    console.log("**************************************************************************************");
+
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
+
+    for(const name of walletNames)
+      api.unlock(api.implicitSessionToken, name);
+
+    let publicKeys = api.getPublicKeys(api.implicitSessionToken);
+    requireKeysIn(publicKeys, 0, 1, 3, 4, 5, 6, 9);
+
+    /*
+      api.removeKey(api.implicitSessionToken, walletNames[0], keys[0][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[1], keys[1][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[1], keys[3][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[7], keys[4][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[8], keys[5][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[9], keys[6][1]);
+      api.removeKey(api.implicitSessionToken, walletNames[3], keys[9][1]);
+    */
+
+    let keysRemoved = 0;
+    for(const name of walletNames)
+      for(const [ , key ] of keys)
+        try {
+          api.removeKey(api.implicitSessionToken, name, key);
+          ++keysRemoved;
+        } catch {
+          console.info('Key could not be removed, because it does not belong to this wallet. You can ignore this error.');
+        }
+
+    assert.equal(keysRemoved, 7);
 
     {
-      console.log("==================================:00");
-      let [_response_message, _response_status] = close_session(beekeeper_instance, 'this-token-doesnt-exist-00');
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:01");
-      let [_response_message, _response_status] = close(beekeeper_instance, 'this-token-doesnt-exist-01', 5);
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:02");
-      let [_response_message, _response_status] = open(beekeeper_instance, 'this-token-doesnt-exist-02', 6);
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:03");
-      let [_response_message, _response_status] = create(beekeeper_instance, 'this-token-doesnt-exist-03', 0, '');
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:04");
-      let [_response_message, _response_status] = unlock(beekeeper_instance, 'this-token-doesnt-exist-04', 0);
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:05");
-      let [_response_message, _response_status] = set_timeout(beekeeper_instance, 'this-token-doesnt-exist-05', 1);
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:06");
-      let [_response_message, _response_status] = lock_all(beekeeper_instance, 'this-token-doesnt-exist-06');
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:07");
-      let [_response_message, _response_status] = lock(beekeeper_instance, 'this-token-doesnt-exist-07', 0);
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:08");
-      let [_response_message, _response_status] = import_key(beekeeper_instance, 'this-token-doesnt-exist-08', 0, 0);
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:09");
-      let [_response_message, _response_status] = remove_key(beekeeper_instance, 'this-token-doesnt-exist-09', 0, 0, "public-key-doesnt-exist");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:10");
-      let [_response_message, _response_status] = list_wallets(beekeeper_instance, 'this-token-doesnt-exist-10');
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:11");
-      let [_response_message, _response_status] = get_public_keys(beekeeper_instance, 'this-token-doesnt-exist-11');
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:12");
-      let [_response_message, _response_status] = sign_digest(beekeeper_instance,
-        'this-token-doesnt-exist-12',
-        "390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542",
-        "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:13");
-      let [_response_message, _response_status] = sign_digest(beekeeper_instance,
-        session_token,
-        "390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542",
-        "this is not public key",
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:14");
-      let [_response_message, _response_status] = sign_digest(beekeeper_instance,
-        session_token,
-        "this is not digest of transaction",
-        "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:15");
-      let [_response_message, _response_status] = sign_binary_transaction(beekeeper_instance,
-        'this-token-doesnt-exist-13',
-        "000000000000000000000000",
-        chain_id,
-        "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:16");
-      let _key_number = 0;
-      let _wallet_number = 0;
-      let [_response_message_unlock_wallet, _response_status_unlock_wallet] = unlock(beekeeper_instance, session_token, _wallet_number);
-      let [_response_message_import_key, _response_status_import_key] = import_key(beekeeper_instance, session_token, _wallet_number, _key_number);
-      let [_response_message, _response_status] = sign_binary_transaction(beekeeper_instance,
-        session_token,
-        "really! it means nothing!!!!! this is not a transaction body",
-        chain_id,
-        keys[_key_number][1],
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:17");
-      let [_response_message, _response_status] = sign_binary_transaction(beekeeper_instance,
-        session_token,
-        "000000000000000000000000",
-        chain_id,
-        'this is not public key',
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:18");
-      let _key_number = 0;
-      let [_response_message, _response_status] = sign_binary_transaction(beekeeper_instance,
-        session_token,
-        "000000000000000000000000",
-        "zzz...",
-        keys[_key_number][1],
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:19");
-      let [_response_message, _response_status] = sign_transaction(beekeeper_instance,
-        'this-token-doesnt-exist-14',
-        "{}",
-        chain_id,
-        "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:20");
-      let _key_number = 0;
-      let [_response_message, _response_status] = sign_transaction(beekeeper_instance,
-        session_token,
-        "a body of transaction without any sense",
-        chain_id,
-        keys[_key_number][1],
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:21");
-      let _key_number = 0;
-      let [_response_message, _response_status] = sign_transaction(beekeeper_instance,
-        session_token,
-        "{}",
-        "+++++",
-        keys[_key_number][1],
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
-    }
-    {
-      console.log("==================================:22");
-      let [_response_message, _response_status] = sign_transaction(beekeeper_instance,
-        session_token,
-        "{}",
-        chain_id,
-        "&&&&",
-        "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21");
-      assert.equal( _response_status, false );
+      const publicKeys = api.getPublicKeys(api.implicitSessionToken);
+      requireKeysIn(publicKeys);
     }
   }
-  {
-    let nr_sessions = 63;//63 because at the beginning we have implicitly created session
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log(`Try to create ${nr_sessions + 2} new sessions, but due to the limit creating the last one fails.`)
-    console.log("**************************************************************************************")
-    let [ beekeeper_instance, implicitly_created_session_token ] = create_beekeeper_instance(provider, params);
 
-    for(let session_number = 0; session_number < nr_sessions; session_number++)
+  {
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Close implicitly created session. Create 4 new sessions. All sessions open the same wallet.");
+    console.log("Sessions{0,2} import a key, sessions{1,3} try to remove a key (here is an exception ('Key not in wallet')).");
+    console.log("As a result only sessions{0,2} have a key.");
+    console.log("**************************************************************************************");
+
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
+
+    api.closeSession(api.implicitSessionToken);
+
+    const sessions = [
+      api.createSession('avocado'),
+      api.createSession('avocado'),
+      api.createSession('avocado'),
+      api.createSession('avocado')
+    ];
+
+    sessions.forEach((session, index) => {
+      api.unlock(session, walletNames[0]);
+
+      const keysToCheck = [];
+
+      if(index % 2 === 0) {
+        api.importKey(session, walletNames[0], keys[0][0]);
+        keysToCheck.push(0);
+      } else
+        api.removeKey(session, walletNames[0], keys[0][1]);
+
+      requireKeysIn(api.getPublicKeys(session), ...keysToCheck);
+    });
+  }
+
+  {
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("False tests for every API endpoint.");
+    console.log("**************************************************************************************");
+
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
+
+    testThrow(api, 'closeSession');
+    testThrow(api, 'close', 1);
+    testThrow(api, 'open', 1);
+    testThrow(api, 'unlock', 2);
+    testThrow(api, 'create', 2);
+    testThrow(api, 'setTimeout', 1);
+    testThrow(api, 'lockAll');
+    testThrow(api, 'lock', 1);
+    testThrow(api, 'importKey', 2);
+    testThrow(api, 'removeKey', 3);
+    testThrow(api, 'listWallets');
+    testThrow(api, 'getPublicKeys');
+    testThrow(
+      api,
+      'signDigest',
+      '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
+      '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+      '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+    );
+    testThrow(
+      api,
+      'signDigest',
+      '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
+      'this is not public key',
+      '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+    );
+    testThrow(
+      api,
+      'signDigest',
+      'this is not digest of transaction',
+      '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+      '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+    );
+    testThrow(
+      api,
+      'signBinaryTransaction',
+      '000000000000000000000000',
+      chainId,
+      '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+      '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+    );
+    testThrow(
+      api,
+      'signBinaryTransaction',
+      '000000000000000000000000',
+      chainId,
+      '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+      '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+    );
+
     {
-      let [_session_token, _response_status]  = create_session(beekeeper_instance, "xyz");
-      assert.equal( _response_status, true );
+      api.unlock(api.implicitSessionToken, walletNames[0]);
+      api.importKey(api.implicitSessionToken, walletNames[0], keys[0][0]);
+      testThrow(
+        api,
+        'signBinaryTransaction',
+        'really! it means nothing!!!!! this is not a transaction body',
+        chainId,
+        keys[0][1],
+        '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+      );
+      api.removeKey(api.implicitSessionToken, walletNames[0], keys[0][1]);
     }
-    let [_session_token, _response_status]  = create_session(beekeeper_instance, "xyz2");
-    assert.equal( _response_status, false );
+
+    testThrow(
+      api,
+      'signTransaction',
+      '{}',
+      chainId,
+      '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+      '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+    );
+    testThrow(
+      api,
+      'signTransaction',
+      'a body of transaction without any sense',
+      chainId,
+      '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+      '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+    );
+    testThrow(
+      api,
+      'signTransaction',
+      'a body of transaction without any sense',
+      '+++++',
+      '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+      '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+    );
+    testThrow(
+      api,
+      'signTransaction',
+      'a body of transaction without any sense',
+      chainId,
+      '&&&&',
+      '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+    );
+  }
+
+  {
+    const noSessions = 63; //63 because at the beginning we have implicitly created session
+    console.log();
+    console.log("**************************************************************************************");
+    console.log(`Try to create ${noSessions + 2} new sessions, but due to the limit creating the last one fails.`);
+    console.log("**************************************************************************************");
+
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
+
+    for(let i = 0; i < noSessions; ++i)
+      api.createSession('xyz');
+
+    assert.throws(() => {
+      api.createSession('xyz');
+    }, ExtractError);
   }
   {
-    let nr_sessions = 64;
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log(`Close implicitly created session. Create ${nr_sessions} new sessions, unlock 10 wallets and add 10 keys to every wallet.`)
-    console.log("Destroy beekeeper without sessions' closing.")
-    console.log("**************************************************************************************")
-    let [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
+    const noSessions = 63;
+    console.log();
+    console.log("**************************************************************************************");
+    console.log(`Close implicitly created session. Create ${noSessions} new sessions, unlock 10 wallets, add 10 keys to every wallet and then remove them.`);
+    console.log("Destroy beekeeper without sessions' closing.");
+    console.log("**************************************************************************************");
 
-    close_session(beekeeper_instance, session_token);
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
 
-    let nr_wallets = 10;
-    let nr_keys = 10;
+    api.closeSession(api.implicitSessionToken);
 
-    for(let session_number = 0; session_number < nr_sessions; session_number++)
-    {
-      session_token = create_session_ex(beekeeper_instance, session_number.toString());
-      for( let wallet_number = 0; wallet_number < nr_wallets; wallet_number++ )
-      {
-        let [_response_message_unlock, _response_status_unlock] = unlock(beekeeper_instance, session_token, wallet_number);
-        assert.equal(_response_status_unlock, true);
-        for( let key_number = 0; key_number < nr_keys; key_number++ )
-        {
-          import_key(beekeeper_instance, session_token, wallet_number, key_number);
+    const noWallets = Math.min(10, walletNames.length);
+    const noKeys = Math.max(10, keys.length);
+
+    let sessionToken;
+
+    for(let i = 0; i < noSessions; ++i) {
+      sessionToken = api.createSession(i.toString());
+      for(let j = 0; j < noWallets; ++j) {
+        api.unlock(sessionToken, walletNames[j]);
+        for(let k = 0; k < noKeys; ++k) {
+          api.importKey(sessionToken, walletNames[j], keys[k][0]);
+          api.removeKey(sessionToken, walletNames[j], keys[k][1]);
         }
       }
     }
-    delete_instance(beekeeper_instance);
+
+    requireKeysIn(api.getPublicKeys(sessionToken));
+
+    api.deleteInstance();
   }
   {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log(`Remove every key from every wallet using implicitly created session. Each removal passes.`)
-    console.log(`Finally there isn't any key in unlocked wallets.`)
-    console.log("**************************************************************************************")
-    let [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
+    const noSessions = 64;
+    console.log();
+    console.log("**************************************************************************************");
+    console.log(`Create ${noSessions - 1} new sessions, close them + implicitly created session. Create again ${noSessions} and close them.`);
+    console.log("**************************************************************************************");
 
-    let nr_wallets = 10;
-    let nr_keys = 10;
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
 
-    for( let wallet_number = 0; wallet_number < nr_wallets; wallet_number++ )
-    {
-      let [_response_message_unlock, _response_status_unlock] = unlock(beekeeper_instance, session_token, wallet_number);
-      assert.equal(_response_status_unlock, true);
-      for( let key_number = 0; key_number < nr_keys; key_number++ )
-      {
-        let [_response_message_import_key, _response_status_import_key] = remove_key(beekeeper_instance, session_token, wallet_number, key_number);
-        assert.equal(_response_status_import_key, true);
-      }
-    }
-    let [public_keys, _response_status_public_keys] = get_public_keys(beekeeper_instance, session_token);
-    assert.equal(public_keys, '{"keys":[]}');
-    assert.equal(_response_status_public_keys, true);
+    const sessionTokens = [ api.implicitSessionToken ];
+
+    for(let i = 0; i < noSessions - 1; ++i)
+      sessionTokens.push(api.createSession(i.toString()));
+
+    for(let i = 0; i < noSessions; ++i)
+      api.closeSession(sessionTokens.pop());
+
+    for(let i = 0; i < noSessions; ++i)
+      sessionTokens.push(api.createSession(i.toString()));
+
+    for(let i = 0; i < noSessions; ++i)
+      api.closeSession(sessionTokens.pop());
   }
   {
-    let nr_sessions = 64;
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log(`Create ${nr_sessions - 1} new sessions, close them + implicitly created session. Create again ${nr_sessions} and close them.`)
-    console.log("**************************************************************************************")
-    let [ beekeeper_instance, implicitly_created_session_token ] = create_beekeeper_instance(provider, params);
-
-    let session_tokens = []
-
-    for(let session_number = 0; session_number < nr_sessions - 1; session_number++)
-    {
-      let [_response_message_create_session, _response_status_create_session] = create_session(beekeeper_instance, session_number.toString())
-      assert.equal(_response_status_create_session, true);
-      session_tokens.push( _response_message_create_session );
-    }
-
-    for(let session_number = 0; session_number < nr_sessions - 1; session_number++)
-    {
-      let [_response_message_close_session, _response_status_close_session] = close_session(beekeeper_instance, session_tokens[session_number]);
-      assert.equal(_response_status_close_session, true);
-    }
-
-    {
-      let [_response_message_close_session, _response_status_close_session] = close_session(beekeeper_instance, implicitly_created_session_token);
-      assert.equal(_response_status_close_session, true);
-    }
-
-    session_tokens = [];
-
-    for(let session_number = 0; session_number < nr_sessions; session_number++)
-    {
-      let [_response_message_create_session, _response_status_create_session] = create_session(beekeeper_instance, session_number.toString())
-      assert.equal(_response_status_create_session, true);
-      session_tokens.push( _response_message_create_session );
-    }
-
-    for(let session_number = 0; session_number < nr_sessions; session_number++)
-    {
-      let [_response_message_close_session, _response_status_close_session] = close_session(beekeeper_instance, session_tokens[session_number]);
-      assert.equal(_response_status_close_session, true);
-    }
-  }
-  {
-    console.log("")
+    console.log();
     console.log("**************************************************************************************")
     console.log(`Try to sign transactions, but they fail. Unlock wallet. Import key. Sign transactions.`);
     console.log(`Delete instance. Create instance again.`);
     console.log(`Unlock wallet. Sign transactions. Remove key. Try to sign transactions again, but they fail.`);
-    console.log("**************************************************************************************")
-    let [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
+    console.log("**************************************************************************************");
 
-    let _response_message_sign_trx = 0;
-    let _response_status_sign_trx = 0;
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
 
-    [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_token, 0);
-    assert.equal(_response_status_sign_trx, false);
+    testThrow(() => { signTransactionUsing3Methods(api, api.implicitSessionToken, 0); });
+    testThrow(() => { signTransactionUsing3Methods(api, api.implicitSessionToken, 1); });
 
-    [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_token, 1);
-    assert.equal(_response_status_sign_trx, false);
+    const walletNo = 7;
+    const keyNo = 3;
 
-    let wallet_number = 7;
-    let key_number = 3;
+    api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+    api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][0]);
 
-    unlock(beekeeper_instance, session_token, wallet_number);
-    import_key(beekeeper_instance, session_token, wallet_number, key_number);
+    // This should not throw now:
+    signTransactionUsing3Methods(api, api.implicitSessionToken, 0);
+    signTransactionUsing3Methods(api, api.implicitSessionToken, 1);
 
-    [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_token, 0);
-    assert.equal(_response_status_sign_trx, true);
+    api.deleteInstance();
 
-    [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_token, 1);
-    assert.equal(_response_status_sign_trx, true);
+    {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
 
-    delete_instance(beekeeper_instance);
+      api.unlock(api.implicitSessionToken, walletNames[walletNo]);
 
-    [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
+      signTransactionUsing3Methods(api, api.implicitSessionToken, 0);
+      signTransactionUsing3Methods(api, api.implicitSessionToken, 1);
 
-    unlock(beekeeper_instance, session_token, wallet_number);
+      api.removeKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][1]);
 
-    [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_token, 0);
-    assert.equal(_response_status_sign_trx, true);
-
-    [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_token, 1);
-    assert.equal(_response_status_sign_trx, true);
-
-    remove_key(beekeeper_instance, session_token, wallet_number, key_number);
-
-    [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_token, 0);
-    assert.equal(_response_status_sign_trx, false);
-
-    [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_token, 1);
-    assert.equal(_response_status_sign_trx, false);
+      // Now this should throw
+      testThrow(() => { signTransactionUsing3Methods(api, api.implicitSessionToken, 0); });
+      testThrow(() => { signTransactionUsing3Methods(api, api.implicitSessionToken, 1); });
+    }
   }
   {
-    console.log("")
-    console.log("**************************************************************************************")
+    console.log();
+    console.log("**************************************************************************************");
     console.log(`Unlock 10 wallets. Every wallet has own session. Import the same key into every wallet. Sign transactions using the key from every wallet.`);
     console.log(`Lock even wallets. Sign transactions using the key from: every odd wallet (passes), every even wallet (fails).`);
     console.log(`Lock odd wallets. Sign transactions using the key from every wallet (always fails).`);
-    console.log("**************************************************************************************")
-    let [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
+    console.log("**************************************************************************************");
 
-    let nr_wallets = 10;
-    let key_number = 3;
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
 
-    let session_tokens = []
+    const noWallets = 10;
+    const keyNo = 3;
 
-    for(let session_number = 0; session_number < nr_wallets; session_number++)
-      session_tokens.push( create_session_ex(beekeeper_instance, session_number.toString()) );
+    const sessionTokens = []
 
-    for(let wallet_number = 0; wallet_number < nr_wallets; wallet_number++)
-    {
-      let [_response_message_unlock, _response_status_unlock] = unlock(beekeeper_instance, session_tokens[wallet_number], wallet_number);
-      assert.equal(_response_status_unlock, true);
+    for(let i = 0; i < noWallets; ++i) {
+      sessionTokens.push(api.createSession(i.toString()));
 
-      let [_response_message_import_key, _response_status_import_key] = import_key(beekeeper_instance, session_tokens[wallet_number], wallet_number, key_number);
-      assert.equal(_response_status_import_key, true);
+      api.unlock(sessionTokens[i], walletNames[i]);
+      api.importKey(sessionTokens[i], walletNames[i], keys[keyNo][0]);
 
-      let [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_tokens[wallet_number], 1);
-      assert.equal(_response_status_sign_trx, true);
+      signTransactionUsing3Methods(api, sessionTokens[i], 1);
     }
 
-    for(let wallet_number = 0; wallet_number < nr_wallets; wallet_number+=2)
-    {
-      let [_response_message_lock, _response_status_lock] = lock(beekeeper_instance, session_tokens[wallet_number], wallet_number);
-      assert.equal(_response_status_lock, true);
-    }
+    for(let i = 0; i < noWallets; i += 2)
+      api.lock(sessionTokens[i], walletNames[i]);
 
-    for(let wallet_number = 0; wallet_number < nr_wallets; wallet_number++)
-    {
-      let [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_tokens[wallet_number], 1);
-      assert.equal(_response_status_sign_trx, ( wallet_number % 2 ) == 1 );
-    }
+    for(let i = 0; i < noWallets; ++i)
+      if(i % 2 == 0)
+        testThrow(() => { signTransactionUsing3Methods(api, sessionTokens[i], 1) });
+      else {
+        signTransactionUsing3Methods(api, sessionTokens[i], 1);
+        api.lock(sessionTokens[i], walletNames[i]); // For the next stage
+      }
 
-    for(let wallet_number = 0; wallet_number < nr_wallets; wallet_number+=2)
-    {
-      let [_response_message_lock, _response_status_lock] = lock(beekeeper_instance, session_tokens[wallet_number+1], wallet_number+1);
-      assert.equal(_response_status_lock, true);
-    }
-
-    for(let wallet_number = 0; wallet_number < nr_wallets; wallet_number++)
-    {
-      let [_response_message_sign_trx, _response_status_sign_trx] = sign_transaction_using_3_methods(beekeeper_instance, session_tokens[wallet_number], 1);
-      assert.equal(_response_status_sign_trx, false);
-    }
+    for(let i = 0; i < noWallets; ++i)
+      testThrow(() => { signTransactionUsing3Methods(api, sessionTokens[i], 1); });
   }
   {
-    console.log("")
-    console.log("**************************************************************************************")
+    console.log();
+    console.log("**************************************************************************************");
     console.log(`Check endpoints related to timeout: "set_timeout", "get_info",`);
-    console.log("**************************************************************************************")
-    let [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
+    console.log("**************************************************************************************");
+
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
+
+    api.setTimeout(api.implicitSessionToken, 3600);
+    const walletInfo = api.getInfo(api.implicitSessionToken);
+    const now = new Date(walletInfo.now);
+    const timeoutTime = new Date(walletInfo.timeout_time);
+
+    assert.equal(timeoutTime.getTime() - now.getTime(), 3600 * 1000);
+
     {
-      let [_now, _timeout_time, _response_status_get_info] = get_info(beekeeper_instance, session_token);
-      assert.equal(_response_status_get_info, true);
-    }
-    {
-      let [_response_message_set_timeout, _response_status_set_timeout] = set_timeout(beekeeper_instance, session_token, 3600);
-      assert.equal(_response_status_set_timeout, true);
-    }
-    {
-      let [_now, _timeout_time, _response_status_get_info] = get_info(beekeeper_instance, session_token);
-      assert.equal(_response_status_get_info, true);
-      assert.equal(_timeout_time - _now, 3600 * 1000);
-    }
-    {
-      //Zero is allowed.
-      let [_response_message_set_timeout, _response_status_set_timeout] = set_timeout(beekeeper_instance, session_token, 0);
-      assert.equal(_response_status_set_timeout, true);
-    }
-    {
-      //Text implictly converted to zero.
-      let [_response_message_set_timeout, _response_status_set_timeout] = set_timeout(beekeeper_instance, session_token, `this is not a number of seconds`);
-      assert.equal(_response_status_set_timeout, true);
-    }
-    {
-      let [_now, _timeout_time, _response_status_get_info] = get_info(beekeeper_instance, session_token);
-      assert.equal(_response_status_get_info, true);
-      assert.equal(_timeout_time - _now, 0);
+      api.setTimeout(api.implicitSessionToken, 0);
+      api.setTimeout(api.implicitSessionToken, 'This is not a number of seconds'); // XXX: This should throw
+
+      const walletInfo = api.getInfo(api.implicitSessionToken);
+      const now = new Date(walletInfo.now);
+      const timeoutTime = new Date(walletInfo.timeout_time);
+
+      assert.equal(timeoutTime.getTime() - now.getTime(), 0);
     }
   }
   {
-    console.log("")
-    console.log("**************************************************************************************")
-    console.log("Different false tests for 'sign*' endpoints.")
-    console.log("**************************************************************************************")
-    const [ beekeeper_instance, session_token ] = create_beekeeper_instance(provider, params);
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Different false tests for 'sign*' endpoints.");
+    console.log("**************************************************************************************");
 
-    let wallet_number = 9;
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
 
-    let [_response_message_unlock, _response_status_unlock] = unlock(beekeeper_instance, session_token, wallet_number);
-    assert.equal(_response_status_unlock, true);
+    const walletNo = 9;
+    api.unlock(api.implicitSessionToken, walletNames[walletNo]);
 
     {
-     let _length = 10000000;//10 mln
-     let _long_string = 'a'.repeat(_length)
-     let [_response_message, _response_status] = sign_digest(beekeeper_instance,
-        session_token,
-        _long_string,
-        sign_data[1].public_key,
-        sign_data[1].expected_signature);
-      assert.equal( _response_status, false );
+      const length = 1e7; // 10M
+      const longStr = 'a'.repeat(length);
+      // This should not throw as it is used only for signing (does not deserialize data)
+      api.signDigest(api.implicitSessionToken, longStr, signData[1].public_key, signData[1].expected_signature);
     }
     {
-      let _length = 50;
-      let _long_string = '9'.repeat(_length)
-
-      {
-        let [_response_message_sign_digest, _response_status_sign_digest] = sign_binary_transaction(beekeeper_instance,
-          session_token,
-          _long_string,
-          chain_id,
-          sign_data[1].public_key,
-          sign_data[1].expected_signature);
-        assert.equal( _response_status_sign_digest, false );
-      }
-      {
-        let [_response_message_sign_digest, _response_status_sign_digest] = sign_transaction(beekeeper_instance,
-          session_token,
-          _long_string,
-          chain_id,
-          sign_data[1].public_key,
-          sign_data[1].expected_signature);
-        assert.equal( _response_status_sign_digest, false );
-      }
+      const length = 50;
+      const longStr = '9'.repeat(length);
+      // These should fail as they do not contain valid data
+      testThrow(() => {
+        api.signBinaryTransaction(api.implicitSessionToken, longStr, signData[1].public_key, signData[1].expected_signature);
+      });
+      testThrow(() => {
+        api.signTransaction(api.implicitSessionToken, longStr, signData[1].public_key, signData[1].expected_signature);
+      });
     }
   }
 
