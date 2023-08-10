@@ -12,8 +12,8 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   CI_DEBUG_SERVICES: "true"
   # pin to specific docker images for build repeatability
-  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu22.04-5
-  TEST_IMAGE_TAG: "@sha256:eaa6f32730f0f4c45a95a65b6d790bea2b71a59276eb28795c04be7703f003e6"
+  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu22.04-6
+  TEST_IMAGE_TAG: "@sha256:8132802ca3b7ddba1bf78e4cc5ce1fbda6874cb029e35ae855c4cb3443e477b7"
 
   # uses registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:1d271c28906d267c1172641bb2aa42727f16b513
   EMSCRIPTEN_IMAGE_TAG: "@sha256:14287297ffbb7a55d134f1ab326f67aa8b387151f5118b21bf68e74ff1d437ed"

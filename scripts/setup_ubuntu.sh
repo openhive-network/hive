@@ -1,6 +1,6 @@
 #! /bin/bash
 
-set -euo pipefail 
+set -euo pipefail
 
 # Script purpose is an installation of all packages required to build and run Hived instance.
 # After changing it, please also update and push to the registry a docker image defined in https://gitlab.syncad.com/hive/hive/-/blob/develop/Dockerfile
@@ -87,6 +87,7 @@ install_user_packages() {
   popd
 
   curl -sSL https://install.python-poetry.org | python3 -  # install poetry in an isolated environment
+  poetry self update 1.5.1
 }
 
 create_hived_admin_account() {
