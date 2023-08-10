@@ -2,14 +2,14 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=:ubuntu22.04-5
+ARG CI_IMAGE_TAG=:ubuntu22.04-6
 ARG BUILD_IMAGE_TAG
 
 FROM phusion/baseimage:jammy-1.0.1 AS runtime
 
 ENV LANG=en_US.UTF-8
 
-SHELL ["/bin/bash", "-c"] 
+SHELL ["/bin/bash", "-c"]
 
 USER root
 WORKDIR /usr/local/src
@@ -26,7 +26,7 @@ FROM ${CI_REGISTRY_IMAGE}runtime$CI_IMAGE_TAG AS ci-base-image
 ENV LANG=en_US.UTF-8
 ENV PATH="/home/hived_admin/.local/bin:$PATH"
 
-SHELL ["/bin/bash", "-c"] 
+SHELL ["/bin/bash", "-c"]
 
 USER root
 WORKDIR /usr/local/src
@@ -60,7 +60,7 @@ ENV HIVE_LINT=${HIVE_LINT}
 
 USER hived_admin
 WORKDIR /home/hived_admin
-SHELL ["/bin/bash", "-c"] 
+SHELL ["/bin/bash", "-c"]
 
 # Get everything from cwd as sources to be built.
 COPY --chown=hived_admin:users . /home/hived_admin/hive
