@@ -82,27 +82,17 @@ cleanup_hived_cache_manual:
     - if: $RUN_MIRRORNET_PIPELINE == "false"
 
 testnet_node_build:
+  extends: .prepare_hived_image
   stage: build
-  extends: .docker_image_builder_job
 
   variables:
-    IMAGE_TAG: "$CI_COMMIT_SHA"
-    SOURCES_DIR: "."
-    REGISTRY_URL: "$CI_REGISTRY_IMAGE"
-    BINARIES_DIR: "testnet_node_build/install-root/bin"
-  script:
-    - echo "Building hived in testnet mode"
-    - mkdir -p testnet_node_build/install-root/bin
-    - ./scripts/ci-helpers/build_instance.sh
-      "$IMAGE_TAG"
-      "$SOURCES_DIR"
-      "$REGISTRY_URL"
-      --network-type="testnet"
-      --export-binaries="$BINARIES_DIR"
-    - chmod -Rc a+rwx "$BINARIES_DIR"
+    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
+    REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
+    BINARY_CACHE_PATH: "hived-testnet-binaries"
+    HIVE_NETWORK_TYPE: testnet
   artifacts:
     paths:
-      - "$BINARIES_DIR"
+      - "$BINARY_CACHE_PATH"
   tags:
     - public-runner-docker
     - hived-for-tests
@@ -140,43 +130,35 @@ beekeeper_wasm_build:
 
 mirrornet_node_build:
   stage: build
-  extends: .docker_image_builder_job
+  extends: .prepare_hived_image
 
   variables:
-    IMAGE_TAG: "$CI_COMMIT_SHA"
-    SOURCES_DIR: "."
-    REGISTRY_URL: "$CI_REGISTRY_IMAGE"
-    BINARIES_DIR: "hived-mirrornet-binaries"
-  script:
+    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
+    REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
+    BINARY_CACHE_PATH: "hived-mirrornet-binaries"
+    HIVE_NETWORK_TYPE: mirrornet
+  after_script:
     - |
-      echo "Building hived in mirrornet mode"
-      docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-      ./scripts/ci-helpers/build_instance.sh \
-        "$IMAGE_TAG" \
-        "$SOURCES_DIR" \
-        "$REGISTRY_URL" \
-        --network-type="mirrornet" \
-        --export-binaries="$BINARIES_DIR"
+      source docker_image_name.env
+      echo "Pushing hived image for commits on develop, master and tagged"
       docker images
       IMAGE_NAME_PREFIX="$CI_REGISTRY_IMAGE/mirrornet-instance:mirrornet-instance"
-      docker push $IMAGE_NAME_PREFIX-$CI_COMMIT_SHA
       if [[ "$CI_COMMIT_BRANCH" == "develop" ]];
       then
-        docker tag $IMAGE_NAME_PREFIX-$CI_COMMIT_SHA $IMAGE_NAME_PREFIX-latest
+        docker tag $HIVED_IMAGE_NAME_INSTANCE $IMAGE_NAME_PREFIX-latest
         docker push $IMAGE_NAME_PREFIX-latest
       elif [[ "$CI_COMMIT_BRANCH" == "master" ]];
       then
-        docker tag $IMAGE_NAME_PREFIX-$CI_COMMIT_SHA $IMAGE_NAME_PREFIX-stable
+        docker tag $HIVED_IMAGE_NAME_INSTANCE $IMAGE_NAME_PREFIX-stable
         docker push $IMAGE_NAME_PREFIX-stable
       elif [[ -n "$CI_COMMIT_TAG" ]];
       then
-        docker tag $IMAGE_NAME_PREFIX-$CI_COMMIT_SHA $IMAGE_NAME_PREFIX-$CI_COMMIT_TAG
+        docker tag $HIVED_IMAGE_NAME_INSTANCE $IMAGE_NAME_PREFIX-$CI_COMMIT_TAG
         docker push $IMAGE_NAME_PREFIX-$CI_COMMIT_TAG
       fi
-      chmod -Rc a+rwx "$BINARIES_DIR"
   artifacts:
     paths:
-      - "$BINARIES_DIR"
+      - "$BINARY_CACHE_PATH"
   tags:
     - public-runner-docker
     - hived-for-tests
@@ -265,7 +247,7 @@ mirrornet_replay_test:
 chain_test:
   extends: .unit_tests_base
   script:
-    - timeout 23m ./testnet_node_build/install-root/bin/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
+    - timeout 23m ./hived-testnet-binaries/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
   artifacts:
     reports:
       junit: chain_test_results.xml
@@ -278,7 +260,7 @@ plugin_test:
   extends: .unit_tests_base
   script:
     # note: consider using --result_code=no to force exit code 0 even when tests fail because they currently fail and I want a nice green checkmark
-    - timeout 6m ./testnet_node_build/install-root/bin/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
+    - timeout 6m ./hived-testnet-binaries/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
   artifacts:
     reports:
       junit: plugin_test_results.xml
@@ -343,9 +325,9 @@ plugin_test:
 .test_tools_based:
   extends: .pytest_based
   variables:
-    HIVED_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/hived"
-    CLI_WALLET_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/cli_wallet"
-    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/get_dev_key"
+    HIVED_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/hived"
+    CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/cli_wallet"
+    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/get_dev_key"
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   needs:
     - job: testnet_node_build
@@ -479,7 +461,7 @@ hf26_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
-    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
+    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/hf26_tests/report.xml
 
   script:
@@ -551,7 +533,7 @@ message_format_testnet_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 45
-    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
+    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     NODE_TYPE: "testnet"
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/api_tests/message_format_tests/report.xml
 
@@ -568,7 +550,7 @@ datagen_api_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 25
-    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/testnet_node_build/install-root/bin/sign_transaction"
+    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/datagen_tests/report.xml
 
   script:
@@ -870,6 +852,8 @@ several_node_restarts_tests:
       - $CI_PROJECT_DIR/data_generated_during_hive_replay/datadir/docker_entrypoint.log
   tags:
     - public-runner-docker
+  rules:
+    - if: $RUN_MIRRORNET_PIPELINE == "false"
 
 artifacts_generation_tests:
   stage: test

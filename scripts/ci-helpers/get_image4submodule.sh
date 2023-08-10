@@ -121,6 +121,8 @@ fi
 
 echo "$DOTENV_VAR_NAME=$img" > docker_image_name.env
 {
+  echo "${DOTENV_VAR_NAME}_BASE_INSTANCE=$img"
+  echo "${DOTENV_VAR_NAME}_INSTANCE=$img_instance"
   echo "${DOTENV_VAR_NAME}_REGISTRY_PATH=$img_path"
   echo "${DOTENV_VAR_NAME}_REGISTRY_TAG=$img_tag" 
   echo "${DOTENV_VAR_NAME}_COMMIT=$commit"
