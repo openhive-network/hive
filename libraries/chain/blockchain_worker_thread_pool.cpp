@@ -114,9 +114,22 @@ blockchain_worker_thread_pool::blockchain_worker_thread_pool() :
 
 void blockchain_worker_thread_pool::lazy_init()
 {
-  if( not my->threads.empty() )
-    return;
+  if( (thread_pool_size == 0) || not my->threads.empty() )
+  {
+    if( thread_pool_size == 0 )
+    {
+      // Print the warning only once so that it doesn't spam the logs.
+      static bool first_time = true;
+      if( first_time )
+      {
+        wlog( "blockchain_worker_thread_pool used with zero thread_pool_size (uninitialized)!" );
+        first_time = false;
+      }
+    }
 
+    return;
+  }
+  
   ilog("Emplacing worker threads");
     for (unsigned i = 1; i <= thread_pool_size; ++i)
     {
