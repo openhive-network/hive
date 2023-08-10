@@ -1,13 +1,13 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "ac35c204e1b836c9be2ad4cd59aaa89f4ee48c3f"
+  CI_COMMON_JOB_VERSION: "4b62d20dfebebacf51ca8795f3d7c4df2d9b8565"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: ac35c204e1b836c9be2ad4cd59aaa89f4ee48c3f # develop
+    ref: 4b62d20dfebebacf51ca8795f3d7c4df2d9b8565 # develop
     file: '/templates/docker_image_jobs.gitlab-ci.yml'
 
 .docker_image_builder_job:
@@ -24,6 +24,7 @@ include:
   interruptible: true
 
 .cleanup_cache_manual:
+  extends: .job-defaults
   image: alpine:3.16
   interruptible: true
   variables:
