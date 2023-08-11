@@ -1,52 +1,56 @@
-# Building Hive
+# Building hived (Hive blockchain P2P node)
 
-Building Hive requires at least 16GB of RAM. 
+Building a hived node requires at least 16GB of RAM. 
 
-Hive project is described using CMake. By default it uses a Ninja tool as a build executor.
+A hived node is built using CMake. 
 
-Only Linux based systems are supported as build and runtime platform. Nowadays Ubuntu 22.04 LTS is chosen as base OS supported by build and runtime processes. Build process requires tools available in default Ubuntu package repository.
+By default, Ninja is used as the build executor. Ninja supports parallel compilation and by default will allow up to N simultaneous compiles where N is the number of CPU cores on your build system. 
 
-## Getting sources
+If your build system has a lot of cores and not a lot of memory, you may need to explicitly limit the number of parallel build steps allowed (e.g `ninja -j4` to limit to 4 simultaneous compiles).
 
-To get Hive sources, please clone a git repository using following command line:
+Only Linux-based systems are supported as a build and runtime platform. Currently Ubuntu 22.04 LTS is the minimum base OS supported by the build and runtime processes. The build process requires tools available in the default Ubuntu package repository.
+
+## Getting hive source code
+
+To get the source code, clone a git repository using the following command line:
 
     git clone --recurse --branch master https://github.com/openhive-network/hive
 
-## Compile-Time Options (cmake)
+## Compile-Time Options (cmake options)
 
 ### CMAKE_BUILD_TYPE=[Release/RelWithDebInfo/Debug]
 
-Specifies whether to build with or without optimization and without or with
+Specifies whether to build with or without optimizations and without or with
 the symbol table for debugging. Unless you are specifically debugging or
-running tests, it is recommended to build as Release or at least RelWithDebInfo (which includes debugging symbols, but should not have significant impact on performance).
+running tests, it is recommended to build as Release or at least RelWithDebInfo (which includes debugging symbols, but does not have a significant impact on performance).
 
 ### BUILD_HIVE_TESTNET=[OFF/ON]
 
-Builds Hive project for use in a private testnet. Also required for building unit tests.
+Builds hived for use in a private testnet. Also required for building unit tests.
 
 ### HIVE_CONVERTER_BUILD=[ON/OFF]
 
-Builds Hive project in MirrorNet configuration (similar to testnet, but allows to import mainnet data to create better testing environemnt).
+Builds Hive project in MirrorNet configuration (similar to testnet, but enables importing mainnet data to create a better testing environment).
 
-## Building using Docker
+## Building hived as a docker image
 
 We ship a Dockerfile.
 
     mkdir workdir
-    cd workdir # use out-of-source directory to keep source directory clean
+    cd workdir # use an out-of-source build directory to keep the source directory clean
     ../hive/scripts/ci-helpers/build_instance.sh my-tag ../hive registry.gitlab.syncad.com/hive/hive
 
 `build_instance.sh` has optional parameters:
-- `--network-type` which allows to select network type supported by built binaries. It can take values:
+- `--network-type` specifies the type of P2P network supported by the hived node being built. Allowed values are:
     - mainnet (default)
     - mirrornet
     - testnet
 
-- `--export-binaries=PATH` - allows to extract built binaries from created image
+- `--export-binaries=PATH` - extracts the built binaries from the created docker image
 
-Above example call will create the image: `registry.gitlab.syncad.com/hive/hive/instance:instance-my-tag`
+The example command above will build an image named `registry.gitlab.syncad.com/hive/hive/instance:instance-my-tag`
 
-To run given image you can use a helper script:
+To run the given image, you can use a helper script:
 
     ../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive/instance:instance-my-tag --name=hived-instance --data-dir=/home/hive/datadir --shared-file-dir=/home/hive/datadir
 
@@ -54,31 +58,31 @@ To run given image you can use a helper script:
 
 ### Prerequisites
 
-Please run this script, or based on its content, manually install the required packages:
+Run the script below, or based on its contents, manually install the required packages:
 
     sudo ../hive/scripts/setup_ubuntu.sh --dev
 
-### Configure
+### Configure cmake
 
     mkdir build
     cd build
     cmake -DCMAKE_BUILD_TYPE=Release -GNinja ../hive
 
-### Build
+### Build with Ninja
 
-To start build process, simply run:
+To start the build process, simply run:
 
     ninja
 
-Or if you want to build only specific targets use:
+Or if you want to build only specific binary targets use:
 
     ninja hived cli_wallet
 
-**If at any time you find this documentation not up to date or unprecise, please take a look at CI/CD scripts.**
+**If at any time you find this documentation not up-to-date or imprecise, please take a look at the CI/CD scripts in the scripts/ci-helpers directory.**
 
 ## Building on Other Platforms
-- macOS instructions were old and obsolete, feel free to contribute.
-- Windows build instructions do not yet exist.
+- macOS instructions are old and obsolete, feel free to contribute.
+- Windows build instructions do not exist yet.
 - The developers normally compile with gcc and clang. These compilers should
   be well-supported.
 - Community members occasionally attempt to compile the code with mingw,
