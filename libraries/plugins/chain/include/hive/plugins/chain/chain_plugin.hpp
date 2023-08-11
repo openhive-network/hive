@@ -14,7 +14,15 @@ namespace hive { namespace plugins { namespace chain {
 
 class state_snapshot_provider;
 
-namespace detail { class chain_plugin_impl; }
+namespace detail
+{ 
+  class chain_plugin_impl;   
+  class chain_plugin_impl_deleter
+  {
+    public:
+    void operator()( chain_plugin_impl* ) const;
+  };
+}
 
 using std::unique_ptr;
 using namespace appbase;
@@ -126,7 +134,7 @@ public:
   bool is_p2p_enabled() const;
 
 private:
-  std::unique_ptr< detail::chain_plugin_impl > my;
+  std::unique_ptr< detail::chain_plugin_impl, detail::chain_plugin_impl_deleter > my;
 };
 
 } } } // hive::plugins::chain

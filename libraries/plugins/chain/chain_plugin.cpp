@@ -804,6 +804,11 @@ void chain_plugin_impl::setup_benchmark_dumper()
   }
 }
 
+void chain_plugin_impl_deleter::operator()( chain_plugin_impl* impl ) const
+{
+  delete impl;
+}
+  
 } // detail
 
 
