@@ -8,8 +8,8 @@ set -euo pipefail
 
 LOG_FILE=build_and_setup_exchange_instance.log
 
-# Because this script should work as standalone script being just downloaded from gitlab repo, and next use internal
-# scripts from a cloned repo, logging code is duplicated.
+# This script should work as a standalone script directly downloaded from the gitlab repo, and next use internal
+# scripts from a cloned repo, so the logging code is duplicated.
 
 exec > >(tee "${LOG_FILE}") 2>&1
 
@@ -23,29 +23,28 @@ log_exec_params() {
 log_exec_params "$@"
 
 print_help () {
-    echo "Usage: $0 <image_tag> [OPTION[=VALUE]]... [<hived_option>]..."
+    echo "Usage: $0 <hived_image_tag> [OPTION[=VALUE]]... [<hived_option>]..."
     echo
-    echo "Setup script for a Hived instance dedicated to use of exchange purposes."
-    echo "Allows to (optionally build if not present) image containing preconfigured hived instance and next start a container holding it".
-    echo "If you need to rebuild image, just remove the image using docker tools"
+    echo "Builds a hived docker image (if not already built) preconfigured for use by a cryptocurrency exchange and starts a container for it."
+    echo "If you need to rebuild the image, first manually remove the old image using docker tools."
     echo
     echo "OPTIONS:"
-    echo "  --webserver-http-endpoint=<endpoint>  Allows to map hived internal http endpoint to specified external one. As endpoint can be passed simple port number or ip-address:port."
-    echo "  --webserver-ws-endpoint=<endpoint>    Allows to map hived internal WS endpoint to specified external one. As endpoint can be passed simple port number or ip-address:port."
-    echo "  --p2p-endpoint=<endpoint>             Allows to map hived internal P2P endpoint to specified external one. As endpoint can be passed simple port number or ip-address:port."
-    echo "  --data-dir=DIRECTORY_PATH             Obligatory. Allows to specify given directory as hived data directory. If this directory does not contain a config.ini file, default one will be created."
-    echo "  --shared-file-dir=DIRECTORY_PATH      Allows to specify dedicated location for shared_memory_file.bin"
+    echo "  --webserver-http-endpoint=<endpoint>  Map the hived internal http endpoint to the specified external one. Endpoints are specified either by port number or by ip-address:port."
+    echo "  --webserver-ws-endpoint=<endpoint>    Map the hived internal WS endpoint to the specified external one. Endpoints are specified either by port number or by ip-address:port."
+    echo "  --p2p-endpoint=<endpoint>             Map the hived internal P2P endpoint to the specified external one. Endpoints are specified either by port number or by ip-address:port."
+    echo "  --data-dir=DIRECTORY_PATH             Obligatory. Specify path to the hived data directory. If this directory does not contain a config.ini file, a default one will be created."
+    echo "  --shared-file-dir=DIRECTORY_PATH      Specify path for storing the shared_memory_file.bin file"
     echo
-    echo "  --branch=branch                       Optionally specify a branch of Hived to checkout and build. Defaults to master branch."
-    echo "  --use-source-dir=PATH                 Allows to specify explicit Hived source directory instead of performing git clone/checkout."
+    echo "  --branch=branch                       Specify a branch of hive repo to checkout and build (defaults to master)."
+    echo "  --use-source-dir=PATH                 Specify an existing hived source directory instead of performing a git clone/checkout."
     echo
-    echo "  --download-block-log                  Optional, allows to download block_log file(s) if they are missing using default url: \`https://gtg.openhive.network/get/blockchain/\`"
-    echo "  --block-log=base-url=url              Optional, allows to specify custom source url and download Hive blockchain block_log file(s). File(s) will be downloaded into \`blockchain\` subdirectory located inside specified node data directory (by --data-dir option). If omitted, hived will synchronize using own P2P protocol."
-    echo "  --name=CONTAINER_NAME                 Allows to specify a dedicated name to the spawned container instance"
-    echo "  --docker-option=OPTION                Allows to specify additional docker option, to be passed to underlying docker run spawn."
+    echo "  --download-block-log                  Download block_log file(s) if they are missing using default url: \`https://gtg.openhive.network/get/blockchain/\`"
+    echo "  --block-log=base-url=url              Specify a custom url to download a Hive blockchain block_log file. It will be downloaded into the \`blockchain\` subdirectory located inside the data directory (by --data-dir option). If this option is omitted, hived will sync blocks directly from other nodes in the P2P network."
+    echo "  --name=CONTAINER_NAME                 Specify a dedicated name for the hived container being spawned."
+    echo "  --docker-option=OPTION                Specify a docker option to pass to the underlying docker run command."
     echo
-    echo "  --option-file=PATH                    Allows to specify options through file"
-    echo "  --help                                Display this help screen and exit"
+    echo "  --option-file=PATH                    Specify these options with a text file."
+    echo "  --help                                Display this help screen and exit."
     echo
 }
 
