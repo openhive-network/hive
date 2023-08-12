@@ -9,13 +9,13 @@ source "$SCRIPTPATH/common.sh"
 log_exec_params "$@"
 
 print_help () {
-    echo "Usage: $0 <docker_container_name> [OPTION[=VALUE]]... [<cli_wallet_option>]..."
+    echo "Usage: $0 <hived_docker_container_name> [OPTION[=VALUE]]... [<cli_wallet_option>]..."
     echo
-    echo "Allows to start a cli_wallet placed inside started Hive docker container."
+    echo "Starts a cli_wallet inside an already running hived docker container."
     echo "OPTIONS:"
-    echo "  --rpc-http-endpoint=<endpoint>  Allows to set cli_wallet http endpoint to specified one. This should match to the port specified as cli_wallet port mapping at hived container start (defaults to 8093)"
-    echo "  --rpc-http-allowip=ip_addr      Allows to specify the ip allowed to establish connections to the cli_wallet API HTTP server"
-    echo "  --help                          Display this help screen and exit"
+    echo "  --rpc-http-endpoint=<endpoint>  Specify the cli_wallet http endpoint. This should match the port specified for the cli_wallet when the hived container was started (defaults to 8093)."
+    echo "  --rpc-http-allowip=ip_addr      Specify an IP address allowed to establish connections to the cli_wallet's API HTTP server."
+    echo "  --help                          Displays this help screen and exits."
     echo
 }
 
