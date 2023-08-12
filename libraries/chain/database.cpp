@@ -1324,17 +1324,99 @@ bool database::_push_block(const block_flow_control& block_ctrl)
 //mtlk TODO - use undo session
 void database::_push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
 {
-  try
+  // try
+  // {
+
+  //   set_tx_status(hive::chain::database::TX_STATUS_BLOCK);
+  //   _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
+
+  //   apply_block(full_block, skip );
+  //   clear_tx_status();
+  //   set_revision(head_block_num());
+
+  // }FC_CAPTURE_AND_RETHROW() 
+
+
+
+
+
+
+
+
+try
+{
+  const uint32_t skip = get_node_properties().skip_flags;
+  std::vector<std::shared_ptr<full_block_type>> blocks;
+
+  if (!(skip & skip_fork_db)) //if fork checking enabled
   {
+    const item_ptr new_head = _fork_db.push_block(full_block);
+    
+    //mtlk block_ctrl.on_fork_db_insert();
+    
+    _maybe_warn_multiple_production( new_head->get_block_num() );
 
-    set_tx_status(hive::chain::database::TX_STATUS_BLOCK);
-    _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
+    // if the new head block is at a lower height than our head block,
+    // it is on a shorter fork, so don't validate it
+    if (new_head->get_block_num() <= head_block_num())
+    {
+      //mtlk block_ctrl.on_fork_ignore();
+      return;// false;
+    }
 
-    apply_block(full_block, skip );
-    clear_tx_status();
-    set_revision(head_block_num());
+    //if new_head indirectly builds off the current head_block
+    // then there's no fork switch, we're just linking in previously unlinked blocks to the main branch
+    for (item_ptr block = new_head;
+         block->get_block_num() > head_block_num();
+         block = block->prev.lock())
+    {
+      blocks.push_back(block->full_block);
+      if (block->get_block_num() == 1) //prevent crash backing up to null in for-loop
+        break;
+    }
+    //we've found a longer fork, so do a fork switch to pop back to the common block of the two forks
+    if (blocks.back()->get_block_header().previous != head_block_id())
+    {
+      //mtlk block_ctrl.on_fork_apply();
+      ilog("calling switch_forks() from _push_block()");
+      switch_forks(new_head);
+      return;// true;
+    }
+  }
+  else //fork checking not enabled, just try to push the new block
+    blocks.push_back(full_block);
 
-  }FC_CAPTURE_AND_RETHROW() 
+  //we are building off our head block, try to add the block(s)
+  //mtlk block_ctrl.on_fork_normal();
+  for (auto iter = blocks.crbegin(); iter != blocks.crend(); ++iter)
+  {
+    try
+    {
+      BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END;
+      set_tx_status(database::TX_STATUS_P2P_BLOCK);
+
+      // if we've linked in a chain of multiple blocks, we need to keep the fork_db's head block in sync
+      // with what we're applying.  If we're only appending a single block, the forkdb's head block
+      // should already be correct
+      if (blocks.size() > 1)
+        _fork_db.set_head(_fork_db.fetch_block((*iter)->get_block_id(), true));
+
+      auto session = start_undo_session();
+      apply_block(*iter, skip);
+      session.push();
+    }
+    catch (const fc::exception& e)
+    {
+      elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
+      // remove failed block, and all blocks on the fork after it, from the fork database
+      for (; iter != blocks.crend(); ++iter)
+        _fork_db.remove((*iter)->get_block_id());
+      throw;
+    }
+  }
+  return;// false;
+}FC_CAPTURE_AND_RETHROW() 
+
 }
 
 bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)

@@ -459,7 +459,8 @@ const block_id_type& full_block_type::get_block_id() const
 
 uint32_t full_block_type::get_block_num() const
 {
-  return block_header::num_from_id(get_block_id());
+  auto retval = block_header::num_from_id(get_block_id());
+  return retval;
 }
 
 bool full_block_type::has_decoded_block_id() const

@@ -35,7 +35,10 @@ namespace hive { namespace chain {
       const signed_block_header& get_block_header() { return full_block->get_block_header(); }
       const block_id_type& previous_id() { return get_block_header().previous; }
       const block_id_type& get_block_id() { return full_block->get_block_id(); }
-      uint32_t get_block_num() { return full_block->get_block_num(); }
+      uint32_t get_block_num() { 
+        auto retval = full_block->get_block_num();
+        return retval;
+      }
   };
   typedef shared_ptr<fork_item> item_ptr;
 
