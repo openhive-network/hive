@@ -39,7 +39,7 @@ print_help () {
     echo "  --branch=branch                       Optionally specify a branch of Hived to checkout and build. Defaults to master branch."
     echo "  --use-source-dir=PATH                 Allows to specify explicit Hived source directory instead of performing git clone/checkout."
     echo
-    echo "  --download-block-log                  Optional, allows to download block_log file(s) if they are missing using default url: \`https://gtg.openhive.network/get/blockchain/compressed/\`"
+    echo "  --download-block-log                  Optional, allows to download block_log file(s) if they are missing using default url: \`https://gtg.openhive.network/get/blockchain/\`"
     echo "  --block-log=base-url=url              Optional, allows to specify custom source url and download Hive blockchain block_log file(s). File(s) will be downloaded into \`blockchain\` subdirectory located inside specified node data directory (by --data-dir option). If omitted, hived will synchronize using own P2P protocol."
     echo "  --name=CONTAINER_NAME                 Allows to specify a dedicated name to the spawned container instance"
     echo "  --docker-option=OPTION                Allows to specify additional docker option, to be passed to underlying docker run spawn."
@@ -58,7 +58,7 @@ HIVED_DATADIR=""
 HIVED_BRANCH=master
 HIVED_REPO_URL="https://gitlab.syncad.com/hive/hive.git"
 
-BLOCK_LOG_BASE_URL="https://gtg.openhive.network/get/blockchain/compressed/"
+BLOCK_LOG_BASE_URL="https://gtg.openhive.network/get/blockchain/"
 DOWNLOAD_BLOCK_LOG=0
 
 RUN_HIVED_IMG_ARGS=()
