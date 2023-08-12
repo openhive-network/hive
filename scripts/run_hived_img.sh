@@ -8,21 +8,21 @@ source "$SCRIPTPATH/common.sh"
 
 log_exec_params "$@"
 
-# Script reponsible for starting a docker container built for image specified at command line.
+# This script starts a docker container for a hived image specified on the command line
 
 print_help () {
-    echo "Usage: $0 <docker_img> [OPTION[=VALUE]]... [<hived_option>]..."
+    echo "Usage: $0 <hived_docker_img> [OPTION[=VALUE]]... [<hived_option>]..."
     echo
-    echo "Allows to start docker container for a pointed hived docker image."
+    echo "Starts a docker container for a hived docker image."
     echo "OPTIONS:"
-    echo "  --webserver-http-endpoint=<endpoint>  Allows to map hived internal http endpoint to specified external one. As endpoint can be passed simple port number or ip-address:port."
-    echo "  --webserver-ws-endpoint=<endpoint>    Allows to map hived internal WS endpoint to specified external one. As endpoint can be passed simple port number or ip-address:port."
-    echo "  --p2p-endpoint=<endpoint>             Allows to map hived internal P2P endpoint to specified external one. As endpoint can be passed simple port number or ip-address:port."
-    echo "  --data-dir=DIRECTORY_PATH             Allows to specify given directory as hived data directory. This directory should contain a config.ini file to be used by hived"
-    echo "  --shared-file-dir=DIRECTORY_PATH      Allows to specify dedicated location for shared_memory_file.bin"
-    echo "  --name=CONTAINER_NAME                 Allows to specify a dedicated name to the spawned container instance"
-    echo "  --detach                              Allows to start container instance in detached mode. Otherwise, you can detach using Ctrl+p+q key binding"
-    echo "  --docker-option=OPTION                Allows to specify additional docker option, to be passed to underlying docker run spawn."
+    echo "  --webserver-http-endpoint=<endpoint>  Maps hived internal http endpoint to the specified external one. Endpoint can be a port number or ip-address:port."
+    echo "  --webserver-ws-endpoint=<endpoint>    Maps hived internal WS endpoint to the specified external one. Endpoint can be a port number or ip-address:port."
+    echo "  --p2p-endpoint=<endpoint>             Map hived internal P2P endpoint to the specified external one. Endpoint can be a port number or ip-address:port."
+    echo "  --data-dir=DIRECTORY_PATH             Specify path to a hived data directory on the host."
+    echo "  --shared-file-dir=DIRECTORY_PATH      Specify directory path to a shared_memory_file.bin on the host."
+    echo "  --name=CONTAINER_NAME                 Specify a dedicated name for the spawned container instance."
+    echo "  --detach                              Starts the container instance in detached mode. Note: you can detach later using Ctrl+p+q key binding."
+    echo "  --docker-option=OPTION                Specify a docker option to be passed to the underlying docker run command."
     echo "  --help                                Display this help screen and exit"
     echo
 }
@@ -144,8 +144,8 @@ done
 CMD_ARGS=("$@")
 
 if [ -z "$IMAGE_NAME" ]; then
-  echo "Error: Missing docker image name."
-  echo "Usage: $0 <docker_img> [OPTION[=VALUE]]... [<hived_option>]..."
+  echo "Error: Missing required docker image name."
+  echo "Usage: $0 <hived_docker_img> [OPTION[=VALUE]]... [<hived_option>]..."
   echo
   exit 1
 fi
@@ -155,7 +155,7 @@ CMD_ARGS+=("${HIVED_ARGS[@]}")
 if [ ! -z "$HIVED_DATADIR" ]; then
 
   if [ -z "$HIVED_SHM_FILE_DIR" ]; then
-    # if datadir has been specified, but shm mapping not, let's use a implicit blockchain subdirectory, to always save shm file outside container.
+    # if the datadir has been specified, but the shm directory mapping has not, store the shm file in the blockchain subdirectory of the datadir in order to save the shm file outside the container.
     HIVED_SHM_FILE_DIR="${HIVED_DATADIR}/blockchain"
   fi
 fi
@@ -168,7 +168,7 @@ if [ ! -z "$HIVED_SHM_FILE_DIR" ]; then
   add_docker_arg "-v ${HIVED_SHM_FILE_DIR}:/home/hived/shm_dir"
 fi
 
-# Similary to hived, dockerized version also should immediately start to listen on specified ports 
+# Similar to hived, the dockerized version should also immediately start listening on the specified ports 
 add_docker_arg "--publish=${HTTP_ENDPOINT}:8091"
 add_docker_arg "--publish=${WS_ENDPOINT}:8090"
 add_docker_arg "--publish=${P2_ENDPOINT}:2001"
