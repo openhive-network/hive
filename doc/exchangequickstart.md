@@ -7,7 +7,8 @@ With the right equipment and technical configuration a replay should take **no l
 
 Physically attached NVMe will ensure an optimal replay time. NVMe over a NAS or some kind of network storage backed by NVMe will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the `i3.xlarge`, it comes with a physically attached NVMe drive (it must be formatted and mounted on instance launch).
 
-You can save a lot of time by replaying from a `block_log`. Using the docker method below, we have made it easy to download a `block_log` at launch and replay from it by passing in the `USE_PUBLIC_BLOCKLOG=1` environment variable. To do this, make sure your `blockchain` directory is empty and does not contain a `block_log`. If you are not using docker, you can download a `block_log` from [here](https://gtg.openhive.network/get/blockchain), put it in your Hive data directory, and use the `--replay-blockchain` command line option. Be sure to remove the option if you have to stop/restart hived after already being synced.
+You can save a lot of time by replaying from an existing `block_log`. If you don't have it, you can download a `block_log` from [here](https://gtg.openhive.network/get/blockchain)
+Put it in `blockchain` directory within data dir, and use `--replay-blockchain` command line option.
 
 We recommend using docker to both build and run Hive for exchanges. Docker is the world's leading containerization platform and using it guarantees that your build and run environment is identical to what our developers use. You can still build from source and you can keep both blockchain data and wallet data outside of the docker container. The instructions below will show you how to do this in just a few easy steps.
 
@@ -24,7 +25,9 @@ sh get-docker.sh
 The hive repository contains a script which allows setup of an exchange node in one step. There are several variants, all of which use a dockerized setup. The `build_and_setup_exchange_instance.sh` script can be run in one of three ways:
 
 A) Default behavior is to clone and build source from master branch. You can specify the `--branch=<branch-name>` option to specify a branch other than master.
+
 B) Optionally use already checked out sources to build a docker image using `--use-source-dir=<hive_hf26_source>`.
+
 C) Or reuse an already built docker image to start the container holding the hived node. This happens when the specified image tag already exists on your machine (in this case the image build process is skipped).
 
 The script can also automatically download block_log file(s) before starting the hived replay process using the `--download-block-log` option.
