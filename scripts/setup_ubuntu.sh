@@ -2,23 +2,23 @@
 
 set -euo pipefail
 
-# Script purpose is an installation of all packages required to build and run Hived instance.
-# After changing it, please also update and push to the registry a docker image defined in https://gitlab.syncad.com/hive/hive/-/blob/develop/Dockerfile
+# This script installs all packages required to build and run a hived instance.
+# After changing it, be sure to update and push to the registry a docker image defined in https://gitlab.syncad.com/hive/hive/-/blob/develop/Dockerfile
 
-#Updated docker image must be also explicitly referenced in the https://gitlab.syncad.com/hive/hive/-/blob/develop/.gitlab-ci.yml#L11
+# The updated docker image must be also explicitly referenced in the https://gitlab.syncad.com/hive/hive/-/blob/develop/.gitlab-ci.yml#L11
 
 
 print_help () {
     echo "Usage: $0 [OPTION[=VALUE]]..."
     echo
-    echo "Allows to setup this machine for Hived installation"
+    echo "Setup this machine for hived installation"
     echo "OPTIONS:"
-    echo "  --hived-admin-account=NAME  Allows to specify the account name with sudo privileges."
-    echo "  --hived-account=NAME        Allows to specify the account name to be used for hived process."
-    echo "  --runtime                   Allows to install all packages required to run already built hived binary."
-    echo "  --dev                       Allows to install all packages required to build and test hived project (additionally to package set specific to runtime)."
-    echo "  --user                      Allows to install all packages being stored in the user's home directory)."
-    echo "  --help                      Display this help screen and exit"
+    echo "  --hived-admin-account=NAME  Specify the account name with sudo privileges."
+    echo "  --hived-account=NAME        Specify the account name to be used for hived process."
+    echo "  --runtime                   Installs all packages required to run a pre-built hived binary."
+    echo "  --dev                       Installs all packages required to build and test hived project (in addition to the required runtime packages)."
+    echo "  --user                      Installs all packages to the user's home directory)."
+    echo "  --help                      Display this help screen and exit."
     echo
 }
 

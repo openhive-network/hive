@@ -1,6 +1,6 @@
 # Witness Parameters
 
-The role of a witness in the Hive Blockchain is to verify incoming transactions, produce blocks when scheduled, and partake in the Hive governance model by voting on several parameters.
+The role of a witness in the Hive blockchain network is to verify incoming transactions, produce blocks when scheduled, and partake in the Hive governance model by voting on several parameters.
 
 These parameters control various aspects of the operation of the blockchain that are not easily defined in code at compile time. One example is the HIVE price feed that defines the conversion rate between HIVE and HBD.
 

@@ -3,7 +3,7 @@
 set -xeuo pipefail
 
 if [ $# -eq 0 ]; then
-  echo "Performing a docker run"
+  echo "Performing a docker run..."
 docker run \
   -it --rm \
   -v $(pwd)/../:/src \
@@ -11,7 +11,7 @@ docker run \
   registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:3.1.43 \
   /bin/bash /src/scripts/build_wasm_beekeeper.sh 1
 else
-  echo "Performing a build"
+  echo "Performing a build..."
   cd /src
   mkdir -vp build_wasm
   rm -rf ./build_wasm/*

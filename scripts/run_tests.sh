@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# this script will run tavern test versus hivemind instance at address and port
-# specified in command line args.
+# This script will run tavern test versus a hivemind instance at the address and port
+# specified in the command line args.
 
 # basic call is: ./scripts/run_tests.sh address port
 # example: ./scripts/run_tests.sh localhost 8091
