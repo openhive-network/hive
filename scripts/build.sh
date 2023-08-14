@@ -10,19 +10,19 @@ source "$SCRIPTPATH/common.sh"
 
 log_exec_params "$@"
 
-#Script purpose is to build all (or selected) targets in the Hived project.
+#This cript builds all (or selected) targets in the hive repo
 
 print_help () {
     echo "Usage: $0 [OPTION[=VALUE]]... [target]..."
     echo
     echo "Allows to build Hive sources "
     echo "  --source-dir=DIRECTORY_PATH"
-    echo "                       Allows to specify a directory containing a Hived source tree."
+    echo "                       Specify a directory containing a Hived source tree."
     echo "  --binary-dir=DIRECTORY_PATH"
-    echo "                       Allows to specify a directory to store a build output (Hived binaries)."
-    echo "                       Usually it is a \`build\` subdirectory in the Hived source tree."
-    echo "  --cmake-arg=ARG      Allows to specify additional arguments to the CMake tool spawn"
-    echo "  --help               Display this help screen and exit"
+    echo "                       Specify a directory to store a build output (hived binaries)."
+    echo "                       Usually it is a \`build\` subdirectory in the hive source tree."
+    echo "  --cmake-arg=ARG      Specify additional arguments to the CMake tool spawn."
+    echo "  --help               Display this help screen and exit."
     echo
 }
 
@@ -55,7 +55,7 @@ while [ $# -gt 0 ]; do
         exit 0
         ;;
     -*)
-        echo "ERROR: '$1' is not a valid option"
+        echo "ERROR: '$1' is not a valid option."
         echo
         print_help
         exit 1
