@@ -1324,17 +1324,19 @@ bool database::_push_block(const block_flow_control& block_ctrl)
 //mtlk TODO - use undo session
 void database::_push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
 {
-  // try
-  // {
+  if(1)
+  try
+  {
 
-  //   set_tx_status(hive::chain::database::TX_STATUS_BLOCK);
-  //   _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
+    set_tx_status(hive::chain::database::TX_STATUS_BLOCK);
+    _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
 
-  //   apply_block(full_block, skip );
-  //   clear_tx_status();
-  //   set_revision(head_block_num());
+    apply_block(full_block, skip );
+    clear_tx_status();
+    set_revision(head_block_num());
 
-  // }FC_CAPTURE_AND_RETHROW() 
+  }FC_CAPTURE_AND_RETHROW() 
+  else
 
 
 
@@ -1345,7 +1347,7 @@ void database::_push_block_simplified(const std::shared_ptr<full_block_type>& fu
 
 try
 {
-  const uint32_t skip = get_node_properties().skip_flags;
+  //const uint32_t skip = get_node_properties().skip_flags;
   std::vector<std::shared_ptr<full_block_type>> blocks;
 
   if (!(skip & skip_fork_db)) //if fork checking enabled
