@@ -134,7 +134,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
   #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 28, 0) )
 #else
   /// Hive mainnet
-  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 27, 4) )
+  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 27, 5) )
 #endif
 
 #ifndef HIVE_INIT_PUBLIC_KEY_STR
