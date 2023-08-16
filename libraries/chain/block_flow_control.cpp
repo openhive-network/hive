@@ -230,9 +230,9 @@ void p2p_block_flow_control::on_fork_ignore() const
   stats.on_end_work();
 }
 
-void p2p_block_flow_control::on_end_of_apply_block() const
+void p2p_block_flow_control::on_end_of_transactions() const
 {
-  block_flow_control::on_end_of_apply_block();
+  block_flow_control::on_end_of_transactions();
   trigger_promise();
   stats.on_end_work();
 }
