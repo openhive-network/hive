@@ -1248,7 +1248,11 @@ bool database::_push_block(const block_flow_control& block_ctrl)
     }
   }
   else //fork checking not enabled, just try to push the new block
+  {
     blocks.push_back(full_block);
+    // even though we've skipped fork db, we still need to notify flow control in proper order
+    block_ctrl.on_fork_db_insert();
+  }
 
   //we are building off our head block, try to add the block(s)
   block_ctrl.on_fork_normal();
