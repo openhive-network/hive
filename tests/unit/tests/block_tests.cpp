@@ -75,6 +75,28 @@ namespace hive
   }
 }
 
+namespace std {
+//see https://stackoverflow.com/questions/17572583/boost-check-fails-to-compile-operator-for-custom-types/17573165#17573165
+
+std::ostream& operator<<( std::ostream& o, const block_flow_control::phase& p )
+{
+  switch( p )
+  {
+  case block_flow_control::phase::REQUEST: return o << "REQUEST";
+  case block_flow_control::phase::START: return o << "START";
+  case block_flow_control::phase::FORK_DB: return o << "FORK_DB";
+  case block_flow_control::phase::FORK_APPLY: return o << "FORK_APPLY";
+  case block_flow_control::phase::FORK_IGNORE: return o << "FORK_IGNORE";
+  case block_flow_control::phase::FORK_NORMAL: return o << "FORK_NORMAL";
+  case block_flow_control::phase::TXS_EXECUTED: return o << "TXS_EXECUTED";
+  case block_flow_control::phase::APPLIED: return o << "APPLIED";
+  case block_flow_control::phase::END: return o << "END";
+  }
+  return o << "<broken 'phase' enum value>";
+}
+
+}
+
 BOOST_AUTO_TEST_SUITE(block_tests)
 
 void open_test_database( database& db, const fc::path& dir )
@@ -1307,6 +1329,491 @@ BOOST_AUTO_TEST_CASE( safe_closing_database )
     database db;
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     db.wipe( data_dir.path(), data_dir.path(), true );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+template <class BASE>
+class test_block_flow_control : public BASE
+{
+public:
+  enum expectation
+  {
+    START, WRITE_QUEUE_POP, FORK_DB_INSERT,
+    FORK_APPLY, FORK_IGNORE, FORK_NORMAL,
+    END_OF_TXS, END_OF_BLOCK, END_PROCESSING, END,
+    FAILURE
+  };
+
+  using BASE::BASE;
+  using typename BASE::phase;
+  virtual ~test_block_flow_control() = default;
+
+  void expect( expectation x ) { current_expectations.emplace_back( x ); }
+  void reset_expectations() { current_expectations.clear(); }
+  void verify( phase p ) const
+  {
+    failure |= ( p != this->current_phase );
+    BOOST_CHECK_EQUAL( p, this->current_phase );
+  }
+  void verify( expectation e ) const
+  {
+    failure |= current_expectations.empty();
+    BOOST_REQUIRE( !current_expectations.empty() );
+    expectation expected = current_expectations.front();
+    current_expectations.pop_front();
+    failure |= ( e != expected );
+    BOOST_CHECK_EQUAL( e, expected );
+  }
+  void check_empty() const
+  {
+    BOOST_CHECK( !failure && current_expectations.empty() );
+  }
+
+  virtual void on_write_queue_pop( uint32_t _inc_txs, uint32_t _ok_txs, uint32_t _fail_auth, uint32_t _fail_no_rc ) const override
+  {
+    verify( phase::REQUEST );
+    BOOST_CHECK( !this->except );
+    BASE::on_write_queue_pop( _inc_txs, _ok_txs, _fail_auth, _fail_no_rc );
+    verify( expectation::WRITE_QUEUE_POP );
+  }
+
+  virtual void on_fork_db_insert() const override
+  {
+    verify( phase::START );
+    BOOST_CHECK( !this->except );
+    BASE::on_fork_db_insert();
+    verify( expectation::FORK_DB_INSERT );
+  }
+  virtual void on_fork_apply() const override
+  {
+    verify( phase::FORK_DB );
+    BOOST_CHECK( !this->except );
+    BASE::on_fork_apply();
+    verify( expectation::FORK_APPLY );
+  }
+  virtual void on_fork_ignore() const override
+  {
+    verify( phase::FORK_DB );
+    BOOST_CHECK( !this->except );
+    BASE::on_fork_ignore();
+    verify( expectation::FORK_IGNORE );
+  }
+  virtual void on_fork_normal() const override
+  {
+    verify( phase::FORK_DB );
+    BOOST_CHECK( !this->except );
+    BASE::on_fork_normal();
+    verify( expectation::FORK_NORMAL );
+  }
+  virtual void on_end_of_transactions() const override
+  {
+    if( this->current_phase == phase::FORK_APPLY )
+      verify( phase::FORK_APPLY );
+    else
+      verify( phase::FORK_NORMAL );
+    BOOST_CHECK( !this->except );
+    BASE::on_end_of_transactions();
+    verify( expectation::END_OF_TXS );
+  }
+  virtual void on_end_of_apply_block() const override
+  {
+    if( this->current_phase == phase::FORK_IGNORE )
+      verify( phase::FORK_IGNORE );
+    else
+      verify( phase::TXS_EXECUTED );
+    BOOST_CHECK( !this->except );
+    BASE::on_end_of_apply_block();
+    verify( expectation::END_OF_BLOCK );
+  }
+
+  virtual void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib ) const override
+  {
+    // pending transactions are actually reapplied even after failed block and that is before exception
+    // is passed to the block flow control; it means we can't be sure on what is current phase
+    BASE::on_end_of_processing( _exp_txs, _fail_txs, _ok_txs, _post_txs, _lib );
+    verify( expectation::END_PROCESSING );
+  }
+
+  virtual void on_failure( const fc::exception& e ) const override
+  {
+    BOOST_CHECK( !this->except ); //another exception notification should not happen during exception handling
+    BASE::on_failure( e );
+    verify( expectation::FAILURE );
+  }
+  virtual void on_worker_done() const override
+  {
+    if( !this->except ) //called even in case of block failure
+      verify( phase::END );
+    BASE::on_worker_done();
+    verify( expectation::END );
+  }
+
+private:
+  mutable std::list< expectation > current_expectations;
+  mutable bool failure = false;
+};
+
+BOOST_FIXTURE_TEST_CASE( block_flow_control_generation, clean_database_fixture )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing block flow during generation" );
+
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    database db;
+    witness::block_producer bp( db );
+    db._log_hardforks = false;
+    open_test_database( db, data_dir.path() );
+
+    auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
+
+    test_block_flow_control<generate_block_flow_control> bfc( db.get_slot_time(1),
+      db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing );
+
+    bfc.expect( bfc.WRITE_QUEUE_POP );
+    bfc.expect( bfc.FORK_DB_INSERT );
+    bfc.expect( bfc.FORK_NORMAL );
+    bfc.expect( bfc.END_OF_TXS );
+    bfc.expect( bfc.END_OF_BLOCK );
+    bfc.expect( bfc.END_PROCESSING );
+    bfc.expect( bfc.END );
+
+    // since we are not running through full regular path (through witness and chain plugin)
+    // we have to manually call those phases (we can't just skip expectations because phase tracking
+    // will not work correctly)
+    bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
+    bp.generate_block( &bfc );
+    bfc.on_worker_done(); //normally called by chain plugin
+    bfc.check_empty();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+class test_promise : public fc::promise<void>
+{
+public:
+  test_promise( const database& _db, const block_flow_control& _bfc )
+    : fc::promise<void>("test"), db(_db), bfc( _bfc )
+  {
+    on_complete( [this]( const fc::exception_ptr& e ){
+      if( !bfc.ignored() && !bfc.get_exception() )
+        BOOST_CHECK_EQUAL( db.get_processed_block_id(), bfc.get_full_block()->get_block_id() );
+      fulfilled = true;
+    } );
+  }
+
+  virtual ~test_promise() { BOOST_CHECK( fulfilled ); }
+
+private:
+  const database& db;
+  const block_flow_control& bfc;
+  bool fulfilled = false;
+};
+
+BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing block flow during p2p block push" );
+
+    fc::temp_directory data_dir_bp1( hive::utilities::temp_directory_path() );
+    database db_bp1;
+    witness::block_producer bp1( db_bp1 );
+    db_bp1._log_hardforks = false;
+    open_test_database( db_bp1, data_dir_bp1.path() );
+
+    fc::temp_directory data_dir_bp2( hive::utilities::temp_directory_path() );
+    database db_bp2;
+    witness::block_producer bp2( db_bp2 );
+    db_bp2._log_hardforks = false;
+    open_test_database( db_bp2, data_dir_bp2.path() );
+
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    database db;
+    db._log_hardforks = false;
+    open_test_database( db, data_dir.path() );
+
+    auto report_block = []( const database& db, const std::shared_ptr<full_block_type>& block, const char* suffix )
+    {
+      ilog( "block #${b} (${id}) with ts ${t} ${suffix}", ( "b", block->get_block_num() )
+        ( "id", block->get_block_id() )( "t", block->get_block_header().timestamp )( suffix ) );
+      ilog( "head is #${b} (${id})", ( "b", db.head_block_num() )( "id", db.head_block_id() ) );
+    };
+
+    auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
+    auto block = GENERATE_BLOCK( bp1, db_bp1.get_slot_time( 1 ), db_bp1.get_scheduled_witness( 1 ),
+      init_account_priv_key, database::skip_nothing );
+    report_block( db_bp1, block, "generated by BP1" );
+
+    PUSH_BLOCK( db_bp2, block );
+    report_block( db_bp2, block, "pushed to BP2" );
+
+    {
+      test_block_flow_control<p2p_block_flow_control> bfc( block, database::skip_nothing );
+      bfc.expect( bfc.WRITE_QUEUE_POP );
+      bfc.expect( bfc.FORK_DB_INSERT );
+      bfc.expect( bfc.FORK_NORMAL );
+      bfc.expect( bfc.END_OF_TXS );
+      bfc.expect( bfc.END_OF_BLOCK );
+      bfc.expect( bfc.END_PROCESSING );
+      bfc.expect( bfc.END );
+      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      bfc.attach_promise( promise );
+
+      // since we are not running through full regular path (through p2p and chain plugin)
+      // we have to manually call those phases (we can't just skip expectations because phase tracking
+      // will not work correctly)
+      bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
+      db.push_block( bfc );
+      bfc.on_worker_done(); //normally called by chain plugin
+      bfc.check_empty();
+      report_block( db, block, "pushed to DB" );
+    }
+
+    // produce couple more blocks and push to all databases
+    for( int i = 1; i < 3; ++i )
+    {
+      block = GENERATE_BLOCK( bp1, db_bp1.get_slot_time( 1 ), db_bp1.get_scheduled_witness( 1 ),
+        init_account_priv_key, database::skip_nothing );
+      report_block( db_bp1, block, "generated by BP1" );
+      PUSH_BLOCK( db_bp2, block );
+      report_block( db_bp2, block, "pushed to BP2" );
+      PUSH_BLOCK( db, block );
+      report_block( db, block, "pushed to DB" );
+    }
+
+    {
+      custom_json_operation op;
+      op.required_posting_auths.emplace( HIVE_INIT_MINER_NAME );
+      op.id = "test";
+      op.json = "{}";
+      signed_transaction tx;
+      tx.set_expiration( db_bp1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      auto pack = serialization_mode_controller::get_current_pack();
+      full_transaction_ptr ftx = full_transaction_type::create_from_signed_transaction( tx, pack, false );
+      ftx->sign_transaction( std::vector<fc::ecc::private_key>{ init_account_priv_key }, db_bp1.get_chain_id(),
+        fc::ecc::fc_canonical, pack );
+      // push transaction only to one database, so other one can produce different block
+      db_bp1.push_transaction( ftx, database::skip_nothing );
+    }
+
+    auto block1 = GENERATE_BLOCK( bp1, db_bp1.get_slot_time( 1 ), db_bp1.get_scheduled_witness( 1 ),
+      init_account_priv_key, database::skip_nothing );
+    report_block( db_bp1, block1, "generated by BP1" );
+    PUSH_BLOCK( db, block1 );
+    report_block( db, block1, "pushed to DB" );
+
+    BOOST_TEST_MESSAGE( "Testing block flow during duplicate block push" );
+    // normally it should never happen because p2p only asks for the block from one peer, however
+    // there is still dual block_message mechanism from pre-HF26 times which might cause the same
+    // block to arrive twice (HF26+ compatible nodes should never use ond block_message id, but there
+    // is possibility of syncing with pre-HF26 node too)
+
+    {
+      test_block_flow_control<p2p_block_flow_control> bfc( block1, database::skip_nothing );
+      bfc.expect( bfc.WRITE_QUEUE_POP );
+      bfc.expect( bfc.FORK_DB_INSERT );
+      bfc.expect( bfc.FORK_IGNORE );
+      bfc.expect( bfc.END_OF_BLOCK );
+      bfc.expect( bfc.END_PROCESSING );
+      bfc.expect( bfc.END );
+      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      bfc.attach_promise( promise );
+
+      bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
+      db.push_block( bfc );
+      bfc.on_worker_done(); //normally called by chain plugin
+      bfc.check_empty();
+      report_block( db, block1, "pushed to DB" );
+    }
+
+    auto block2 = GENERATE_BLOCK( bp2, db_bp2.get_slot_time( 1 ), db_bp2.get_scheduled_witness( 1 ),
+      init_account_priv_key, database::skip_nothing );
+    report_block( db_bp2, block2, "generated by BP2" );
+
+    BOOST_TEST_MESSAGE( "Testing block flow during double produced block push" );
+
+    {
+      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing );
+      bfc.expect( bfc.WRITE_QUEUE_POP );
+      bfc.expect( bfc.FORK_DB_INSERT );
+      bfc.expect( bfc.FORK_IGNORE );
+      bfc.expect( bfc.END_OF_BLOCK );
+      bfc.expect( bfc.END_PROCESSING );
+      bfc.expect( bfc.END );
+      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      bfc.attach_promise( promise );
+
+      bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
+      db.push_block( bfc );
+      bfc.on_worker_done(); //normally called by chain plugin
+      bfc.check_empty();
+      report_block( db, block2, "pushed to DB" );
+    }
+
+    PUSH_BLOCK( db_bp2, block1 );
+    report_block( db_bp2, block1, "pushed to BP2" );
+    // db_bp1: block1 as main fork, block2 not present
+    // db_bp2: block2 as main fork, block1 as ignored alternative
+    // db: block1 as main fork, block2 as ignored alternative
+
+    block = block2; // save that block aside - it will be needed later
+    block2 = GENERATE_BLOCK( bp2, db_bp2.get_slot_time( 1 ), db_bp2.get_scheduled_witness( 1 ),
+      init_account_priv_key, database::skip_nothing );
+    report_block( db_bp2, block2, "generated by BP2" );
+
+    BOOST_TEST_MESSAGE( "Testing block flow during regular fork" );
+
+    {
+      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing );
+      bfc.expect( bfc.WRITE_QUEUE_POP );
+      bfc.expect( bfc.FORK_DB_INSERT );
+      bfc.expect( bfc.FORK_APPLY );
+      bfc.expect( bfc.END_OF_TXS );
+      bfc.expect( bfc.END_OF_BLOCK );
+      bfc.expect( bfc.END_PROCESSING );
+      bfc.expect( bfc.END );
+      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      bfc.attach_promise( promise );
+
+      bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
+      db.push_block( bfc );
+      bfc.on_worker_done(); //normally called by chain plugin
+      bfc.check_empty();
+      report_block( db, block2, "pushed to DB" );
+    }
+
+    BOOST_TEST_MESSAGE( "Testing block flow during unlinkable block push" );
+
+    {
+      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing );
+      bfc.expect( bfc.WRITE_QUEUE_POP );
+      bfc.expect( bfc.END_PROCESSING );
+      bfc.expect( bfc.FAILURE );
+      bfc.expect( bfc.END );
+      fc::promise<void>::ptr promise( new test_promise( db_bp1, bfc ) );
+      bfc.attach_promise( promise );
+
+      bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
+      try
+      {
+        db_bp1.push_block( bfc );
+      }
+      catch( const unlinkable_block_exception& ex )
+      {
+        bfc.on_failure( ex ); //normally called by chain plugin
+      }
+      bfc.on_worker_done(); //normally called by chain plugin
+      bfc.check_empty();
+      report_block( db_bp1, block2, "pushed to BP1" );
+      // now db_bp1 is still on its own fork but has block2 as unlinked item
+    }
+
+    BOOST_TEST_MESSAGE( "Testing block flow during regular fork with out of order block" );
+
+    {
+      // we are now applying previously saved block so the block2 that is unlinked in db_bp1 becomes linked
+      // and causes new fork to be longer than current one for that node
+      test_block_flow_control<p2p_block_flow_control> bfc( block, database::skip_nothing );
+      bfc.expect( bfc.WRITE_QUEUE_POP );
+      bfc.expect( bfc.FORK_DB_INSERT );
+      bfc.expect( bfc.FORK_APPLY );
+      bfc.expect( bfc.END_OF_TXS );
+      bfc.expect( bfc.END_OF_BLOCK );
+      bfc.expect( bfc.END_PROCESSING );
+      bfc.expect( bfc.END );
+      fc::promise<void>::ptr promise( new test_promise( db_bp1, bfc ) );
+      bfc.attach_promise( promise );
+
+      bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
+      db_bp1.push_block( bfc );
+      bfc.on_worker_done(); //normally called by chain plugin
+      bfc.check_empty();
+      report_block( db_bp1, block, "pushed to BP1" );
+    }
+
+    // all three nodes are now on the same fork
+
+    block1 = GENERATE_BLOCK( bp1, db_bp1.get_slot_time( 1 ), db_bp1.get_scheduled_witness( 1 ),
+      init_account_priv_key, database::skip_nothing );
+    report_block( db_bp1, block1, "generated by BP1" );
+    PUSH_BLOCK( db_bp2, block1 );
+    report_block( db_bp2, block1, "pushed to BP2" );
+    block2 = GENERATE_BLOCK( bp2, db_bp2.get_slot_time( 1 ), db_bp2.get_scheduled_witness( 1 ),
+      init_account_priv_key, database::skip_nothing );
+    report_block( db_bp2, block2, "generated by BP2" );
+    PUSH_BLOCK( db_bp1, block2 );
+    report_block( db_bp1, block2, "pushed to BP1" );
+    block = block1; // save that block aside - it will be needed later
+    block1 = GENERATE_BLOCK( bp1, db_bp1.get_slot_time( 1 ), db_bp1.get_scheduled_witness( 1 ),
+      init_account_priv_key, database::skip_nothing );
+    report_block( db_bp1, block1, "generated by BP1" );
+    PUSH_BLOCK( db_bp2, block1 );
+    report_block( db_bp2, block1, "pushed to BP2" );
+
+    // db is missing block -> block2 -> block1; let's put them in but in reverse order
+
+    try
+    {
+      PUSH_BLOCK( db, block1 );
+    }
+    catch( const unlinkable_block_exception& ex )
+    {
+      report_block( db, block1, "pushed to DB" );
+    }
+
+    BOOST_TEST_MESSAGE( "Testing block flow during unlinkable block push that can form link with other unlinkable" );
+
+    {
+      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing );
+      bfc.expect( bfc.WRITE_QUEUE_POP );
+      bfc.expect( bfc.END_PROCESSING );
+      bfc.expect( bfc.FAILURE );
+      bfc.expect( bfc.END );
+      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      bfc.attach_promise( promise );
+
+      bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
+      try
+      {
+        db.push_block( bfc );
+      }
+      catch( const unlinkable_block_exception& ex )
+      {
+        bfc.on_failure( ex ); //normally called by chain plugin
+      }
+      bfc.on_worker_done(); //normally called by chain plugin
+      bfc.check_empty();
+      report_block( db, block2, "pushed to DB" );
+      // now db still have not moved, but has two blocks already that could form a link
+    }
+
+    BOOST_TEST_MESSAGE( "Testing block flow during normal block push with out of order block" );
+
+    {
+      test_block_flow_control<p2p_block_flow_control> bfc( block, database::skip_nothing );
+      bfc.expect( bfc.WRITE_QUEUE_POP );
+      bfc.expect( bfc.FORK_DB_INSERT );
+      bfc.expect( bfc.FORK_NORMAL );
+      bfc.expect( bfc.END_OF_TXS );
+      bfc.expect( bfc.END_OF_BLOCK );
+      bfc.expect( bfc.END_PROCESSING );
+      bfc.expect( bfc.END );
+      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      bfc.attach_promise( promise );
+
+      bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
+      db.push_block( bfc );
+      bfc.on_worker_done(); //normally called by chain plugin
+      bfc.check_empty();
+      report_block( db, block, "pushed to DB" );
+    }
+
+    // check if all nodes are on the same fork
+    BOOST_CHECK_EQUAL( db.head_block_id(), db_bp1.head_block_id() );
+    BOOST_CHECK_EQUAL( db.head_block_id(), db_bp2.head_block_id() );
   }
   FC_LOG_AND_RETHROW()
 }
