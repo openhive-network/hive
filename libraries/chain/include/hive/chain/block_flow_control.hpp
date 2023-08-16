@@ -122,6 +122,7 @@ public:
     FORK_APPLY, //block happened to require switching of forks - before switch (work time will be longer)
     FORK_IGNORE, //block happened to be on shorter fork - block ignored (work time will be shorter)
     FORK_NORMAL, //block happened to be on active fork - before apply (normal work time)
+    TXS_EXECUTED, //all transactions of the block were applied, before automatic block processing
     APPLIED, //block was applied, but before pending reapplication
     END //finished processing
   };
@@ -139,6 +140,8 @@ public:
   virtual void on_fork_ignore() const;
   // when block was continuation of active fork (only overridden in tests)
   virtual void on_fork_normal() const;
+  // when transactions of the block were executed, but before any further block processing - TODO: work in progress
+  virtual void on_end_of_transactions() const;
   // right before reapplication of pending transactions - end of work for block under verification
   virtual void on_end_of_apply_block() const;
 

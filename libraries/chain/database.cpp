@@ -1082,7 +1082,7 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
   }
 }
 
-void database::switch_forks(const item_ptr new_head)
+void database::switch_forks( const item_ptr new_head, const block_flow_control* pushed_block_ctrl )
 {
   uint32_t skip = get_node_skip_flags();
 
@@ -1138,7 +1138,11 @@ void database::switch_forks(const item_ptr new_head)
       set_tx_status(database::TX_STATUS_P2P_BLOCK);
       _fork_db.set_head(*ritr);
       auto session = start_undo_session();
-      apply_block((*ritr)->full_block, skip);
+      // when we are handling block that triggered fork switch, we want to release related promise so P2P
+      // can broadcast the block; it should happen even if some other block later causes reversal of the
+      // fork switch (the block was good after all)
+      bool is_pushed_block = ( pushed_block_ctrl != nullptr ) && ( ( *ritr )->full_block->get_block_id() == pushed_block_ctrl->get_full_block()->get_block_id() );
+      apply_block( ( *ritr )->full_block, skip, is_pushed_block ? pushed_block_ctrl : nullptr );
       session.push();
     }
     catch (const fc::exception& e)
@@ -1239,7 +1243,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
     {
       block_ctrl.on_fork_apply();
       ilog("calling switch_forks() from _push_block()");
-      switch_forks(new_head);
+      switch_forks(new_head,&block_ctrl);
       return true;
     }
   }
@@ -1262,7 +1266,8 @@ bool database::_push_block(const block_flow_control& block_ctrl)
         _fork_db.set_head(_fork_db.fetch_block((*iter)->get_block_id(), true));
 
       auto session = start_undo_session();
-      apply_block(*iter, skip);
+      bool is_pushed_block = (*iter)->get_block_id() == block_ctrl.get_full_block()->get_block_id();
+      apply_block(*iter, skip, is_pushed_block ? &block_ctrl : nullptr);
       session.push();
     }
     catch (const fc::exception& e)
@@ -4272,13 +4277,13 @@ void database::set_flush_interval( uint32_t flush_blocks )
 
 //////////////////// private methods ////////////////////
 
-void database::apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
+void database::apply_block( const std::shared_ptr<full_block_type>& full_block, uint32_t skip, const block_flow_control* block_ctrl )
 { try {
   //fc::time_point begin_time = fc::time_point::now();
 
   detail::with_skip_flags( *this, skip, [&]()
   {
-    _apply_block(full_block);
+    _apply_block( full_block, block_ctrl );
   } );
 
   /*try
@@ -4361,7 +4366,7 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
   }
 }
 
-void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
+void database::_apply_block( const std::shared_ptr<full_block_type>& full_block, const block_flow_control* block_ctrl )
 {
   const signed_block& block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
@@ -4496,6 +4501,13 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
 
   _current_trx_in_block = -1;
   _current_op_in_trx = 0;
+
+  if( block_ctrl != nullptr )
+  {
+    FC_ASSERT( _currently_processing_block_id.value() == block_ctrl->get_full_block()->get_block_id(),
+      "Wrong block control passed to the call" ); // block being processed and block in block_ctrl must be the same
+    block_ctrl->on_end_of_transactions();
+  }
 
   update_global_dynamic_data(block);
   update_signing_witness(signing_witness, block);

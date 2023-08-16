@@ -60,6 +60,11 @@ void block_flow_control::on_fork_normal() const
   current_phase = phase::FORK_NORMAL;
 }
 
+void block_flow_control::on_end_of_transactions() const
+{
+  current_phase = phase::TXS_EXECUTED;
+}
+
 void block_flow_control::on_end_of_apply_block() const
 {
   current_phase = phase::APPLIED;
