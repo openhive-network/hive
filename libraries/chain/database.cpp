@@ -545,7 +545,13 @@ void database::close_forkbase(bool rewind)
 
 void database::close(bool rewind)
 {
-  // Intentionally empty
+  try
+  {
+   close_chainbase(rewind);
+
+   close_forkbase(rewind);
+  }
+  FC_CAPTURE_AND_RETHROW()
 }
 
 void full_database::close(bool rewind)
