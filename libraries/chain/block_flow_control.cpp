@@ -178,6 +178,15 @@ fc::variant_object block_flow_control::get_report( report_type rt ) const
   return report.get();
 }
 
+inline void generate_block_flow_control::trigger_promise() const
+{
+  if( prom )
+  {
+    prom->set_value();
+    prom.reset();
+  }
+}
+
 void generate_block_flow_control::on_fork_db_insert() const
 {
   // witness_plugin has its own version that supplements the work with broadcast of the block
@@ -198,6 +207,15 @@ void generate_block_flow_control::on_failure( const fc::exception& e ) const
 {
   block_flow_control::on_failure( e );
   trigger_promise();
+}
+
+inline void p2p_block_flow_control::trigger_promise() const
+{
+  if( prom )
+  {
+    prom->set_value();
+    prom.reset();
+  }
 }
 
 void p2p_block_flow_control::on_end_of_apply_block() const

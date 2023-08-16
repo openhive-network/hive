@@ -211,17 +211,13 @@ public:
 protected:
   virtual const char* buffer_type() const override final { return "gen"; }
 
-  void trigger_promise() const
-  {
-    if( prom )
-      prom->set_value();
-  }
+  inline void trigger_promise() const;
 
   fc::time_point_sec block_ts;
   protocol::account_name_type witness_owner;
   fc::ecc::private_key block_signing_private_key;
   uint32_t skip;
-  std::shared_ptr<boost::promise<void>> prom;
+  mutable std::shared_ptr<boost::promise<void>> prom;
 };
 
 /**
@@ -246,14 +242,10 @@ public:
 private:
   virtual const char* buffer_type() const override { return "p2p"; }
 
-  void trigger_promise() const
-  {
-    if( prom )
-      prom->set_value();
-  }
+  inline void trigger_promise() const;
 
   uint32_t skip;
-  fc::promise<void>::ptr prom;
+  mutable fc::promise<void>::ptr prom;
 };
 
 /**
