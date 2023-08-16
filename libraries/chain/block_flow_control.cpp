@@ -218,6 +218,13 @@ inline void p2p_block_flow_control::trigger_promise() const
   }
 }
 
+void p2p_block_flow_control::on_fork_ignore() const
+{
+  block_flow_control::on_fork_ignore();
+  trigger_promise();
+  stats.on_end_work();
+}
+
 void p2p_block_flow_control::on_end_of_apply_block() const
 {
   block_flow_control::on_end_of_apply_block();

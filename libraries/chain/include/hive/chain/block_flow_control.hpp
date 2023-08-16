@@ -135,7 +135,7 @@ public:
   virtual void on_fork_db_insert() const;
   // right before switching fork (only overridden in tests)
   virtual void on_fork_apply() const;
-  // when block is from inactive fork (only overridden in tests)
+  // when block is from inactive fork - end of work for block under verification
   virtual void on_fork_ignore() const;
   // when block was continuation of active fork (only overridden in tests)
   virtual void on_fork_normal() const;
@@ -234,6 +234,7 @@ public:
 
   uint32_t get_skip_flags() const { return skip; }
 
+  virtual void on_fork_ignore() const override;
   virtual void on_end_of_apply_block() const override;
   virtual void on_failure( const fc::exception& e ) const override;
 
