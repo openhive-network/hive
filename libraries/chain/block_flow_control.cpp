@@ -32,14 +32,44 @@ void block_flow_control::set_auto_report( const std::string& _option_type, const
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown block stats report output" );
 }
 
+void block_flow_control::on_write_queue_pop( uint32_t _inc_txs, uint32_t _ok_txs, uint32_t _fail_auth, uint32_t _fail_no_rc ) const
+{
+  stats.on_start_work( _inc_txs, _ok_txs, _fail_auth, _fail_no_rc );
+  current_phase = phase::START;
+}
+
 void block_flow_control::on_fork_db_insert() const
 {
   current_phase = phase::FORK_DB;
 }
 
+void block_flow_control::on_fork_apply() const
+{
+  current_phase = phase::FORK_APPLY;
+  was_fork = true;
+}
+
+void block_flow_control::on_fork_ignore() const
+{
+  current_phase = phase::FORK_IGNORE;
+  was_ignored = true;
+}
+
+void block_flow_control::on_fork_normal() const
+{
+  current_phase = phase::FORK_NORMAL;
+}
+
 void block_flow_control::on_end_of_apply_block() const
 {
   current_phase = phase::APPLIED;
+}
+
+void block_flow_control::on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib ) const
+{
+  stats.on_cleanup( _exp_txs, _fail_txs, _ok_txs, _post_txs, _lib );
+  if( !except && current_phase == phase::APPLIED )
+    current_phase = phase::END;
 }
 
 void block_flow_control::on_failure( const fc::exception& e ) const
@@ -150,6 +180,7 @@ fc::variant_object block_flow_control::get_report( report_type rt ) const
 
 void generate_block_flow_control::on_fork_db_insert() const
 {
+  // witness_plugin has its own version that supplements the work with broadcast of the block
   block_flow_control::on_fork_db_insert();
   stats.on_end_work();
 }
