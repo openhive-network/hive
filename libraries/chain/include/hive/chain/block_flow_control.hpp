@@ -140,9 +140,9 @@ public:
   virtual void on_fork_ignore() const;
   // when block was continuation of active fork (only overridden in tests)
   virtual void on_fork_normal() const;
-  // when transactions of the block were executed, but before any further block processing - TODO: work in progress
+  // when transactions of the block were executed, but before any further block processing - end of work for block under verification
   virtual void on_end_of_transactions() const;
-  // right before reapplication of pending transactions - end of work for block under verification
+  // right before reapplication of pending transactions
   virtual void on_end_of_apply_block() const;
 
   // after reapplication of pending transactions (only overridden in tests)
@@ -238,7 +238,7 @@ public:
   uint32_t get_skip_flags() const { return skip; }
 
   virtual void on_fork_ignore() const override;
-  virtual void on_end_of_apply_block() const override;
+  virtual void on_end_of_transactions() const override;
   virtual void on_failure( const fc::exception& e ) const override;
 
   virtual fc::time_point_sec get_block_timestamp() const override final;
