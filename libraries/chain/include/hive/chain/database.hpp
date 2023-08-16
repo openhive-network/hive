@@ -146,6 +146,8 @@ namespace chain {
       bool is_in_control() const { return is_validating_one_tx() || is_producing_block(); }
 
       transaction_status get_tx_status() const { return _current_tx_status; }
+      // returns id of block while it is being processed (or default 0)
+      block_id_type get_processed_block_id() const { return _currently_processing_block_id.value_or( block_id_type() ); }
 
       void set_tx_status(transaction_status s)
       {
