@@ -128,42 +128,22 @@ public:
 
   virtual ~block_flow_control() = default;
 
-  // when block related request is picked by worker thread
-  void on_write_queue_pop( uint32_t _inc_txs, uint32_t _ok_txs, uint32_t _fail_auth, uint32_t _fail_no_rc ) const
-  {
-    stats.on_start_work( _inc_txs, _ok_txs, _fail_auth, _fail_no_rc );
-    current_phase = phase::START;
-  }
+  // when block related request is picked by worker thread (only overridden in tests)
+  virtual void on_write_queue_pop( uint32_t _inc_txs, uint32_t _ok_txs, uint32_t _fail_auth, uint32_t _fail_no_rc ) const;
 
   // right after fork_db gets a block - end of work for new block
   virtual void on_fork_db_insert() const;
-  // right before switching fork
-  void on_fork_apply() const
-  {
-    current_phase = phase::FORK_APPLY;
-    was_fork = true;
-  }
-  // when block is from inactive fork
-  void on_fork_ignore() const
-  {
-    current_phase = phase::FORK_IGNORE;
-    was_ignored = true;
-  }
-  // when block was continuation of active fork
-  void on_fork_normal() const
-  {
-    current_phase = phase::FORK_NORMAL;
-  }
+  // right before switching fork (only overridden in tests)
+  virtual void on_fork_apply() const;
+  // when block is from inactive fork (only overridden in tests)
+  virtual void on_fork_ignore() const;
+  // when block was continuation of active fork (only overridden in tests)
+  virtual void on_fork_normal() const;
   // right before reapplication of pending transactions - end of work for block under verification
   virtual void on_end_of_apply_block() const;
 
-  // after reapplication of pending transactions
-  void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib ) const
-  {
-    stats.on_cleanup( _exp_txs, _fail_txs, _ok_txs, _post_txs, _lib );
-    if( !except && current_phase == phase::APPLIED )
-      current_phase = phase::END;
-  }
+  // after reapplication of pending transactions (only overridden in tests)
+  virtual void on_end_of_processing( uint32_t _exp_txs, uint32_t _fail_txs, uint32_t _ok_txs, uint32_t _post_txs, uint32_t _lib ) const;
 
   // in case of exception
   virtual void on_failure( const fc::exception& e ) const;
@@ -222,9 +202,9 @@ public:
   const fc::ecc::private_key& get_block_signing_private_key() const { return block_signing_private_key; }
   uint32_t get_skip_flags() const { return skip; }
 
-  virtual void on_fork_db_insert() const override; //to be supplemented with broadcast in witness_plugin
-  virtual void on_end_of_apply_block() const override final;
-  virtual void on_failure( const fc::exception& e ) const override final;
+  virtual void on_fork_db_insert() const override; //supplemented with broadcast in witness_plugin
+  virtual void on_end_of_apply_block() const override;
+  virtual void on_failure( const fc::exception& e ) const override;
 
   virtual fc::time_point_sec get_block_timestamp() const override final { return block_ts; }
 
@@ -258,8 +238,8 @@ public:
 
   uint32_t get_skip_flags() const { return skip; }
 
-  virtual void on_end_of_apply_block() const override final;
-  virtual void on_failure( const fc::exception& e ) const override final;
+  virtual void on_end_of_apply_block() const override;
+  virtual void on_failure( const fc::exception& e ) const override;
 
   virtual fc::time_point_sec get_block_timestamp() const override final;
 
@@ -285,7 +265,7 @@ public:
   using p2p_block_flow_control::p2p_block_flow_control;
   virtual ~sync_block_flow_control() = default;
 
-  virtual void on_worker_done() const override final;
+  virtual void on_worker_done() const override;
 
 private:
   virtual const char* buffer_type() const override final { return "sync"; }
@@ -301,7 +281,7 @@ public:
     : block_flow_control( _block ) { FC_ASSERT( _block ); }
   virtual ~existing_block_flow_control() = default;
 
-  virtual void on_end_of_apply_block() const override final;
+  virtual void on_end_of_apply_block() const override;
 
   virtual fc::time_point_sec get_block_timestamp() const override final;
 
