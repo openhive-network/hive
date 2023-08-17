@@ -30,7 +30,7 @@ void block_producer::_generate_block( chain::generate_block_flow_control* genera
                                       fc::time_point_sec when, const chain::account_name_type& witness_owner,
                                       const fc::ecc::private_key& block_signing_private_key)
 {
-  uint32_t skip = _db.get_node_properties().skip_flags;
+  uint32_t skip = _db.get_node_skip_flags();
   uint32_t slot_num = _db.get_slot_at_time( when );
   FC_ASSERT( slot_num > 0 );
   string scheduled_witness = _db.get_scheduled_witness( slot_num );
@@ -175,7 +175,7 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
     try
     {
       auto temp_session = _db.start_undo_session();
-      _db.apply_transaction(full_transaction, _db.get_node_properties().skip_flags);
+      _db.apply_transaction(full_transaction, _db.get_node_skip_flags());
       temp_session.squash();
 
       total_block_size = new_total_size;

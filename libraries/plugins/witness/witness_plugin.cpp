@@ -372,7 +372,7 @@ namespace detail {
                 full_transaction->sign_transaction( keys, _db.get_chain_id(), fc::ecc::fc_canonical, hive::protocol::pack_type::hf26 );
 
                 //ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
-                uint32_t skip = _db.get_node_properties().skip_flags;
+                uint32_t skip = _db.get_node_skip_flags();
 
                 _db.push_transaction(full_transaction, skip);
                 appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);

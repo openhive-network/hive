@@ -814,9 +814,14 @@ const dynamic_global_property_object&database::get_dynamic_global_properties() c
   return get< dynamic_global_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
-const node_property_object& database::get_node_properties() const
+uint32_t database::get_node_skip_flags() const
 {
-  return _node_property_object;
+  return _node_property_object.skip_flags;
+}
+
+void database::set_node_skip_flags( uint32_t skip_flags )
+{
+  _node_property_object.skip_flags = skip_flags;
 }
 
 const feed_history_object& database::get_feed_history()const
@@ -1079,7 +1084,7 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
 
 void database::switch_forks(const item_ptr new_head)
 {
-  uint32_t skip = get_node_properties().skip_flags;
+  uint32_t skip = get_node_skip_flags();
 
   BOOST_SCOPE_EXIT(void) { ilog("Done fork switch"); } BOOST_SCOPE_EXIT_END
   ilog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
@@ -1202,7 +1207,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
 { try {
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
 
-  const uint32_t skip = get_node_properties().skip_flags;
+  const uint32_t skip = get_node_skip_flags();
   std::vector<std::shared_ptr<full_block_type>> blocks;
 
   if (!(skip & skip_fork_db)) //if fork checking enabled
@@ -3833,11 +3838,6 @@ block_id_type database::head_block_id_from_fork_db(fc::microseconds wait_for_mic
   return _fork_db.head_block_id(wait_for_microseconds);
 }
 
-node_property_object& database::node_properties()
-{
-  return _node_property_object;
-}
-
 uint32_t database::get_last_irreversible_block_num() const
 {
   //ilog("getting last_irreversible_block_num irreversible is ${l}", ("l", irreversible_object->last_irreversible_block_num));
@@ -4080,10 +4080,10 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
   {
     struct auth_inhibitor
     {
-      auth_inhibitor(database& db) : db(db), old_flags(db.node_properties().skip_flags)
-      { db.node_properties().skip_flags |= skip_authority_check; }
+      auth_inhibitor(database& db) : db(db), old_flags(db.get_node_skip_flags())
+      { db.set_node_skip_flags( old_flags | skip_authority_check ); }
       ~auth_inhibitor()
-      { db.node_properties().skip_flags = old_flags; }
+      { db.set_node_skip_flags( old_flags ); }
     private:
       database& db;
       uint32_t old_flags;
@@ -4377,7 +4377,7 @@ void database::_apply_block(const std::shared_ptr<full_block_type>& full_block)
   } BOOST_SCOPE_EXIT_END
   _currently_processing_block_id = full_block->get_block_id();
 
-  uint32_t skip = get_node_properties().skip_flags;
+  uint32_t skip = get_node_skip_flags();
   _current_block_num    = block_num;
   _current_trx_in_block = 0;
 
@@ -4876,7 +4876,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
   _current_trx_id = full_transaction->get_transaction_id();
   const transaction_id_type& trx_id = full_transaction->get_transaction_id();
 
-  uint32_t skip = get_node_properties().skip_flags;
+  uint32_t skip = get_node_skip_flags();
 
   if( !( skip & skip_transaction_dupe_check ) )
   {
@@ -5245,7 +5245,7 @@ void database::update_global_dynamic_data( const signed_block& b )
     dgp.current_aslot += missed_blocks+1;
   } );
 
-  if( !(get_node_properties().skip_flags & skip_undo_history_check) )
+  if( !(get_node_skip_flags() & skip_undo_history_check) )
   {
     HIVE_ASSERT( _dgp.head_block_number - get_last_irreversible_block_num() < HIVE_MAX_UNDO_HISTORY, undo_database_exception,
                  "The database does not have enough undo history to support a blockchain with so many missed blocks. "
@@ -5412,7 +5412,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
 
   const size_t offset = (HIVE_100_PERCENT - HIVE_IRREVERSIBLE_THRESHOLD) * scheduled_witness_objects.size() / HIVE_100_PERCENT;
 
-  if (get_node_properties().skip_flags & skip_block_log)
+  if (get_node_skip_flags() & skip_block_log)
   {
     // if we're doing a replay where we're not pushing blocks to the fork_db, use the old algorithm to compute last_irreversible
     // because the new algorithm requires the fork_db to have the blocks
@@ -5586,7 +5586,7 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
       FC_ASSERT(fork_head->get_block_num() == dpo.head_block_number, "Fork Head Block Number: ${fork_head}, Chain Head Block Number: ${chain_head}",
                 ("fork_head", fork_head->get_block_num())("chain_head", dpo.head_block_number));
 
-    if( !( get_node_properties().skip_flags & skip_block_log ) )
+    if( !( get_node_skip_flags() & skip_block_log ) )
     {
       // output to block log based on new last irreverisible block num
       std::shared_ptr<full_block_type> tmp_head = _block_log.head();
