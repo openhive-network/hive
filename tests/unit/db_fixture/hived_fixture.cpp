@@ -19,19 +19,22 @@ hived_fixture::hived_fixture() {}
 hived_fixture::~hived_fixture() 
 {
   try {
-    appbase::app().finish(); // performs plugin shutdown too
-
     if( !std::uncaught_exceptions() )
     {
       // If we're exiting nominally, check that skip flags have been restored.
-      BOOST_CHECK( db->get_node_properties().skip_flags == database::skip_nothing );
-      return;
+      // Note that you can't do it after appbase finish -
+      // the memory will be released by then.
+      BOOST_CHECK( db->get_node_skip_flags() == database::skip_nothing );
     }
 
-    // If we're unwinding due to an exception, don't do any more checks.
+    // Try to finish appbase nominally.
+    appbase::app().finish(); // performs plugin shutdown too
+    
+    // Possible exception during test is NOT a reason to stop. Let BOOST handle the rest.
+    return;
   } FC_CAPTURE_AND_LOG( () )
 
-  // Do not continue testing either.
+  // Exception during appbase finish IS the reason to stop the tests.
   exit(1);
 }
 
