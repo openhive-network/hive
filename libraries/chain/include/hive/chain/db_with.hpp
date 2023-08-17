@@ -24,16 +24,16 @@ namespace hive { namespace chain { namespace detail {
   */
 struct skip_flags_restorer
 {
-  skip_flags_restorer( node_property_object& npo, uint32_t old_skip_flags )
-    : _npo( npo ), _old_skip_flags( old_skip_flags )
+  skip_flags_restorer( database& db )
+    : _db( db ), _old_skip_flags( _db.get_node_skip_flags() )
   {}
 
   ~skip_flags_restorer()
   {
-    _npo.skip_flags = _old_skip_flags;
+    _db.set_node_skip_flags( _old_skip_flags );
   }
 
-  node_property_object& _npo;
+  database& _db;
   uint32_t _old_skip_flags;      // initialized in ctor
 };
 
@@ -48,9 +48,8 @@ void with_skip_flags(
   uint32_t skip_flags,
   Lambda callback )
 {
-  node_property_object& npo = db.node_properties();
-  skip_flags_restorer restorer( npo, npo.skip_flags );
-  npo.skip_flags = skip_flags;
+  skip_flags_restorer restorer( db );
+  db.set_node_skip_flags( skip_flags );
   callback();
   return;
 }
@@ -137,7 +136,7 @@ struct pending_transactions_restorer
       }
     };
 
-    uint32_t skip = _db.node_properties().skip_flags
+    uint32_t skip = _db.get_node_skip_flags()
       | database::skip_validate | database::skip_transaction_signatures;
       //1. operations once validated cannot become invalid;
       //2. signatures might become invalid if transaction that changes keys happens to arrive in some

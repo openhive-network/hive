@@ -320,7 +320,8 @@ namespace chain {
       const savings_withdraw_object* find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const;
 
       const dynamic_global_property_object&  get_dynamic_global_properties()const;
-      const node_property_object&            get_node_properties()const;
+      uint32_t                               get_node_skip_flags()const;
+      void                                   set_node_skip_flags( uint32_t skip_flags );
       const feed_history_object&             get_feed_history()const;
       const witness_schedule_object&         get_witness_schedule_object()const;
       const witness_schedule_object&         get_future_witness_schedule_object() const;
@@ -593,8 +594,6 @@ namespace chain {
       time_point_sec   head_block_time_from_fork_db(fc::microseconds wait_for_microseconds = fc::microseconds())const;
       uint32_t         head_block_num_from_fork_db(fc::microseconds wait_for_microseconds = fc::microseconds())const;
       block_id_type    head_block_id_from_fork_db(fc::microseconds wait_for_microseconds = fc::microseconds())const;
-
-      node_property_object& node_properties();
 
       uint32_t get_last_irreversible_block_num()const;
       void set_last_irreversible_block_num(uint32_t block_num);
