@@ -212,7 +212,7 @@ void application::startup() {
 
 application& application::instance( bool reset ) {
   static application* _app = new application();
-  if( reset )
+  if( reset || _app->is_finished )
   {
     delete _app;
     _app = new application();
@@ -467,6 +467,8 @@ void application::finish()
 
     std::cout << "Executing `shutdown` for all plugins..." << "\n";
     shutdown( _actual_plugin_name );
+
+    is_finished = true;
 
     fc::promise<void>::ptr quitDone( new fc::promise<void>("Logging thread quit") );
     my->_logging_thread.quit( quitDone.get() );

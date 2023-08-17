@@ -237,6 +237,8 @@ namespace appbase {
 
       mutable hive::utilities::notifications::notification_handler_wrapper notification_handler;
 
+      bool is_finished = false;
+
     public:
 
       void notify_status(const fc::string& current_status) const noexcept;
