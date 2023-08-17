@@ -35,6 +35,8 @@ variables:
   TEST_TOOLS_VALIDATE_RESPONSE_SCHEMAS: "TRUE"
   RUN_MIRRORNET_PIPELINE: "false"
 
+  NPM_TOKEN: $CI_JOB_TOKEN
+
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
@@ -906,3 +908,17 @@ comment_cashout_tests:
   allow_failure: true
   tags:
     - public-runner-docker
+
+publish_beekeeper_wasm_production:
+  stage: publish
+  image: node:16-alpine
+  script:
+    - npm publish
+  needs:
+    - job: beekeeper_wasm_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+  only:
+    - master
+    - develop
