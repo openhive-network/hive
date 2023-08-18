@@ -207,6 +207,7 @@ namespace chain {
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
       void load_state_initial_data(const open_args& args);
+      void rewind_undo_state(const open_args& args);
 
 
       /**

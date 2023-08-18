@@ -203,6 +203,7 @@ void full_database::open( const open_args& args)
 
     open_block_log(args);
 
+    rewind_undo_state(args);
     open_state_dependent(args);
 
   }
@@ -246,6 +247,41 @@ void database::initialize_state_independent_data(const open_args& args)
 }
 
 void database::load_state_initial_data(const open_args& args)
+{
+  if (head_block_num())
+  {
+    std::shared_ptr<full_block_type> head_block = get_head_block();
+    // This assertion should be caught and a reindex should occur
+    FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
+    "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
+    ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
+
+    _fork_db.start_block(head_block);
+  }
+
+  with_read_lock([&]() {
+    const auto& hardforks = get_hardfork_property_object();
+    FC_ASSERT(hardforks.last_hardfork <= HIVE_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork", hardforks.last_hardfork)("HIVE_NUM_HARDFORKS", HIVE_NUM_HARDFORKS));
+    FC_ASSERT(_hardfork_versions.versions[hardforks.last_hardfork] <= HIVE_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork");
+    FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION >= HIVE_BLOCKCHAIN_VERSION);
+    FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions.versions[HIVE_NUM_HARDFORKS], "Blockchain version mismatch", (HIVE_BLOCKCHAIN_HARDFORK_VERSION)(_hardfork_versions.versions[HIVE_NUM_HARDFORKS]));
+  });
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+  /// Leave the chain-id passed to cmdline option.
+#else
+  with_read_lock([&]() {
+    const auto& hardforks = get_hardfork_property_object();
+    if(hardforks.last_hardfork >= HIVE_HARDFORK_1_24)
+    {
+      ilog("Loaded blockchain which had already processed hardfork 24, setting Hive chain id");
+      set_chain_id(HIVE_CHAIN_ID);
+    }
+  });
+#endif /// IS_TEST_NET
+}
+
+void database::rewind_undo_state(const open_args& args)
 {
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
