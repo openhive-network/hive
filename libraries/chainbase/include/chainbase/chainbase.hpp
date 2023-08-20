@@ -33,6 +33,9 @@
 #include <typeindex>
 #include <typeinfo>
 
+#define my_wlog(...)
+
+
 #ifndef CHAINBASE_NUM_RW_LOCKS
   #define CHAINBASE_NUM_RW_LOCKS 10
 #endif
@@ -322,10 +325,16 @@ namespace chainbase {
       typedef undo_state< value_type >                              undo_state_type;
 
       generic_index( allocator<value_type> a, bfs::path p )
-      :_stack(a),_indices( a, p ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) {}
+      :_stack(a),_indices( a, p ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) 
+      {
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+      }
 
       generic_index( allocator<value_type> a )
-      :_stack(a),_indices( a ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) {}
+      :_stack(a),_indices( a ),_size_of_value_type( sizeof(typename MultiIndexType::value_type) ),_size_of_this(sizeof(*this)) 
+      {
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+      }
 
       /**
         * Construct a new element in the multi_index_container.
@@ -471,21 +480,35 @@ namespace chainbase {
       class session {
         public:
           session( session&& mv )
-          :_index(mv._index),_apply(mv._apply){ mv._apply = false; }
+          :_index(mv._index),_apply(mv._apply){ 
+            my_wlog("session construct");
+            mv._apply = false; }
 
           ~session() {
+            my_wlog("session destruct");
             if( _apply ) {
+              my_wlog("session destruct1");
               _index.undo();
             }
           }
 
           /** leaves the UNDO state on the stack when session goes out of scope */
-          void push()   { _apply = false; }
+          void push()   { 
+            my_wlog("session push _apply=${ap}", ("ap", _apply));
+            _apply = false; }
           /** combines this session with the prior session */
-          void squash() { if( _apply ) _index.squash(); _apply = false; }
-          void undo()   { if( _apply ) _index.undo();  _apply = false; }
+          void squash() {
+             my_wlog("session squash  _apply=${ap}", ("ap", _apply));
+             if( _apply ) _index.squash(); 
+             _apply = false; }
+          
+          void undo()   {
+            my_wlog("session undo  _apply=${ap}", ("ap", _apply));
+            if( _apply ) _index.undo();  
+            _apply = false; }
 
           session& operator = ( session&& mv ) {
+            my_wlog("session operator = _apply=${ap}", ("ap", _apply));
             if( this == &mv ) return *this;
             if( _apply ) _index.undo();
             _apply = mv._apply;
@@ -514,7 +537,9 @@ namespace chainbase {
       {
         ++_revision;
 
+         my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
         _stack.emplace_back( _indices.get_allocator() );
+         my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
         _stack.back().old_next_id = _next_id;
         _stack.back().revision = _revision;
         return session( *this, _revision );
@@ -538,7 +563,9 @@ namespace chainbase {
         *  made between the last revision and the current revision.
         */
       void undo() {
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
         if( !enabled() ) return;
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
 
         auto& head = _stack.back();
 
@@ -556,6 +583,7 @@ namespace chainbase {
             ok = _indices.emplace( std::move( item.second ) ).second;
           }
 
+          my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
           if( !ok )
           {
             CHAINBASE_THROW_EXCEPTION(std::logic_error(
@@ -578,7 +606,8 @@ namespace chainbase {
         }
         _next_id = head.old_next_id;
 
-        for( auto& item : head.removed_values ) {
+      my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+      for( auto& item : head.removed_values ) {
           bool ok = _indices.emplace( std::move( item.second ) ).second;
           if( !ok )
           {
@@ -587,7 +616,10 @@ namespace chainbase {
           }
         }
 
+         my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
         _stack.pop_back();
+         my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+
         --_revision;
       }
 
@@ -601,7 +633,9 @@ namespace chainbase {
       {
         if( !enabled() ) return;
         if( _stack.size() == 1 ) {
+          my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
           _stack.pop_front();
+          my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
           return;
         }
 
@@ -695,7 +729,10 @@ namespace chainbase {
           prev_state.removed_values.emplace( std::move(obj) ); //[obj.second->get_id()] = std::move(obj.second);
         }
 
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
         _stack.pop_back();
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+
         --_revision;
       }
 
@@ -706,18 +743,29 @@ namespace chainbase {
       {
         while( _stack.size() && _stack[0].revision <= revision )
         {
+          my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
           _stack.pop_front();
+          my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
         }
       }
 
       /**
         * Unwinds all undo states
         */
-      void undo_all()
+    void undo_all()
+    {
+      while(true)
       {
-        while( enabled() )
+          auto e = enabled();
+          
+          my_wlog("e=${e}", ("e", e));
+
+          if(!e) 
+              break;
+
           undo();
       }
+    }
 
       void set_revision( int64_t revision )
       {
@@ -726,31 +774,48 @@ namespace chainbase {
       }
 
     private:
-      bool enabled()const { return _stack.size(); }
+      bool enabled()const {
+        //my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+
+         return _stack.size(); 
+         }
 
       void on_modify( const value_type& v ) {
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+
         if( !enabled() ) return;
+
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
 
         auto& head = _stack.back();
 
         if( head.new_ids.find( v.get_id() ) != head.new_ids.end() )
           return;
 
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+
         auto itr = head.old_values.find( v.get_id() );
         if( itr != head.old_values.end() )
           return;
 
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+
         head.old_values.emplace( v.get_id(), v.copy_chain_object() );
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
       }
 
       void on_remove( const value_type& v ) {
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
         if( !enabled() ) return;
 
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
         auto& head = _stack.back();
         if( head.new_ids.count( v.get_id() ) ) {
           head.new_ids.erase( v.get_id() );
           return;
         }
+
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
 
         auto itr = head.old_values.find( v.get_id() );
         if( itr != head.old_values.end() ) {
@@ -759,10 +824,15 @@ namespace chainbase {
           return;
         }
 
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+
         if( head.removed_values.count( v.get_id() ) )
           return;
 
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
+
         head.removed_values.emplace( v.get_id(), v.copy_chain_object() );
+        my_wlog("_stack.size()=${ss}", ("ss", _stack.size() ));
       }
 
       void on_create( const value_type& v ) {

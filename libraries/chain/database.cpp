@@ -52,6 +52,9 @@
 
 #include <stdlib.h>
 
+static volatile auto stop_in_attempting_to_rewind_all_undo_state = false;
+
+
 long next_hf_time()
 {
   // current "next hardfork" is HF28
@@ -189,6 +192,7 @@ void database::open( const open_args& args)
   {
     open_state_independent(args);
 
+    //rewind_undo_state(args); mtlk  perhaps it should be here ?
     open_state_dependent(args);
 
   }
@@ -217,6 +221,9 @@ void database::initialize_state_independent_data(const open_args& args)
   _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();
 
   initialize_indexes();
+    
+  display_all_account_balances();
+
 
   if (!args.load_snapshot)
     verify_match_of_state_objects_definitions_from_shm();
@@ -245,6 +252,7 @@ void database::initialize_state_independent_data(const open_args& args)
   /// Initialize all static (state independent) specific to hardforks
   init_hardforks();
 }
+
 
 void database::load_state_initial_data(const open_args& args)
 {
@@ -289,12 +297,27 @@ void database::rewind_undo_state(const open_args& args)
   FC_ASSERT(hb >= last_irreversible_block);
 
   ilog("Loaded a blockchain database holding a state specific to head block: ${hb} and last irreversible block: ${last_irreversible_block}", (hb)(last_irreversible_block));
+  _shared_memory_bin_head_block_before_undo = hb;
+
 
   // Rewind all undo state. This should return us to the state at the last irreversible block.
   with_write_lock([&]() {
     ilog("Attempting to rewind all undo state...");
 
+    wlog("pid =${pid}", ("pid", getpid()));
+
+
+    while(stop_in_attempting_to_rewind_all_undo_state)
+    {
+      int a = 0;
+      a=a;
+    }
+
+    display_all_account_balances();
+
     undo_all();
+
+    display_all_account_balances();
 
     ilog("Rewind undo state done.");
 
@@ -314,38 +337,6 @@ void database::rewind_undo_state(const open_args& args)
     if (args.do_validate_invariants)
       validate_invariants();
   });
-
-  if (head_block_num())
-  {
-    std::shared_ptr<full_block_type> head_block = get_head_block();
-    // This assertion should be caught and a reindex should occur
-    FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
-    "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
-    ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
-
-    _fork_db.start_block(head_block);
-  }
-
-  with_read_lock([&]() {
-    const auto& hardforks = get_hardfork_property_object();
-    FC_ASSERT(hardforks.last_hardfork <= HIVE_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork", hardforks.last_hardfork)("HIVE_NUM_HARDFORKS", HIVE_NUM_HARDFORKS));
-    FC_ASSERT(_hardfork_versions.versions[hardforks.last_hardfork] <= HIVE_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork");
-    FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION >= HIVE_BLOCKCHAIN_VERSION);
-    FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions.versions[HIVE_NUM_HARDFORKS], "Blockchain version mismatch", (HIVE_BLOCKCHAIN_HARDFORK_VERSION)(_hardfork_versions.versions[HIVE_NUM_HARDFORKS]));
-  });
-
-#ifdef USE_ALTERNATE_CHAIN_ID
-  /// Leave the chain-id passed to cmdline option.
-#else
-  with_read_lock([&]() {
-    const auto& hardforks = get_hardfork_property_object();
-    if(hardforks.last_hardfork >= HIVE_HARDFORK_1_24)
-    {
-      ilog("Loaded blockchain which had already processed hardfork 24, setting Hive chain id");
-      set_chain_id(HIVE_CHAIN_ID);
-    }
-  });
-#endif /// IS_TEST_NET
 }
 
 uint32_t full_database::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
@@ -1366,7 +1357,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
 //mtlk TODO - use undo session
 void database::_push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
 {
-  if(1)
+  if(0)
   try
   {
 
@@ -1389,14 +1380,14 @@ void database::_push_block_simplified(const std::shared_ptr<full_block_type>& fu
 
 try
 {
-  //const uint32_t skip = get_node_properties().skip_flags;
+//const uint32_t skip = get_node_properties().skip_flags;
   std::vector<std::shared_ptr<full_block_type>> blocks;
 
   if (!(skip & skip_fork_db)) //if fork checking enabled
   {
     const item_ptr new_head = _fork_db.push_block(full_block);
     
-    //mtlk block_ctrl.on_fork_db_insert();
+//mtlk block_ctrl.on_fork_db_insert();
     
     _maybe_warn_multiple_production( new_head->get_block_num() );
 
@@ -1404,7 +1395,7 @@ try
     // it is on a shorter fork, so don't validate it
     if (new_head->get_block_num() <= head_block_num())
     {
-      //mtlk block_ctrl.on_fork_ignore();
+//mtlk block_ctrl.on_fork_ignore();
       return;// false;
     }
 
@@ -1421,7 +1412,7 @@ try
     //we've found a longer fork, so do a fork switch to pop back to the common block of the two forks
     if (blocks.back()->get_block_header().previous != head_block_id())
     {
-      //mtlk block_ctrl.on_fork_apply();
+//mtlk block_ctrl.on_fork_apply();
       ilog("calling switch_forks() from _push_block()");
       switch_forks(new_head);
       return;// true;
@@ -1431,7 +1422,7 @@ try
     blocks.push_back(full_block);
 
   //we are building off our head block, try to add the block(s)
-  //mtlk block_ctrl.on_fork_normal();
+//mtlk block_ctrl.on_fork_normal();
   for (auto iter = blocks.crbegin(); iter != blocks.crend(); ++iter)
   {
     try
@@ -4466,6 +4457,7 @@ void database::apply_block(const std::shared_ptr<full_block_type>& full_block, u
   detail::with_skip_flags( *this, skip, [&]()
   {
     _apply_block(full_block);
+    display_all_account_balances();
   } );
 
   /*try
@@ -7709,6 +7701,46 @@ void full_database::open_block_log(const open_args& args)
     _block_log.set_compression_level(args.block_log_compression_level);
   });
 }
+
+
+struct account_info
+{
+  std::string account_name;
+  long long balance; 
+};
+
+account_info extract_account_balances(
+    const hive::chain::account_object* account)
+{
+  account_info account_balances;
+  account_balances.account_name = account->get_name();
+  account_balances.balance = account->balance.amount.value;
+  return account_balances;
+}
+
+
+
+std::string database::display_all_account_balances()
+{
+  auto& idx = get_index< hive::chain::account_index, hive::chain::by_name >();
+  auto itr = idx.begin();
+  auto end = idx.end();
+
+  wlog("mtlk account info: BEGIN");
+
+  while( itr != end )
+  {
+    account_info info = extract_account_balances(&(*itr));
+    wlog("    mtlk account info: ${name} ${balance}", ("name",info.account_name) ("balance",info.balance));
+
+    ++itr;
+  }
+
+  wlog("mtlk account info: END");
+
+  return {};
+}
+
 
 } } //hive::chain
 

@@ -264,9 +264,10 @@ private:
         serializedCache.emplace_back(id, std::vector<char>());
         serialization::pack_to_buffer(serializedCache.back().second, object);
 
-        //std::string dump = worker->prettifyObject(fc::variant(object), serializedCache.back().second);
-        //if(dump.empty() == false)
-        //  ilog("Dumping object: id: ${id}, `${o}'", ("id", id)("o", dump));
+        //mtlk 
+        std::string dump = worker->prettifyObject(fc::variant(object), serializedCache.back().second);
+        if(dump.empty() == false)
+         ilog("Dumping object: id: ${id}, `${o}'", ("id", id)("o", dump));
 
         if(serializedCache.size() >= max_cache_size)
         {

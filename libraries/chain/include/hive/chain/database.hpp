@@ -822,6 +822,7 @@ namespace chain {
     protected:
       bool                          _is_at_live_sync = false;
     private:
+      uint32_t _shared_memory_bin_head_block_before_undo = 0;
 
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
       std::string                   _json_schema;
@@ -916,6 +917,10 @@ namespace chain {
         *  This signal is emitted when pushing block is completely finished
         */
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
+
+    public:
+      std::string display_all_account_balances();
+
   };
 
 

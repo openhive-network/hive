@@ -286,6 +286,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::undo()
   {
+    my_wlog("chainbase undo");
     for( auto& item : _index_list )
     {
       item->undo();
@@ -294,6 +295,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::squash()
   {
+    my_wlog("chainbase squash");
     for( auto& item : _index_list )
     {
       item->squash();
@@ -302,6 +304,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::commit( int64_t revision )
   {
+    my_wlog("chainbase commit");
     for( auto& item : _index_list )
     {
       item->commit( revision );
@@ -310,14 +313,17 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::undo_all()
   {
+    my_wlog("chainbase undo_all");
     for( auto& item : _index_list )
     {
       item->undo_all();
     }
   }
 
+  
   database::session database::start_undo_session()
   {
+    my_wlog("chainbase start_undo_session");
     vector< std::unique_ptr<abstract_session> > _sub_sessions;
     _sub_sessions.reserve( _index_list.size() );
     for( auto& item : _index_list ) {
