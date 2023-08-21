@@ -163,23 +163,15 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
         for node_num, node in enumerate(nodes):
             if blocklog_directory:
               tasks.append(executor.submit(lambda: node.run(
-                  wait_for_live=False,
                   time_offset=modify_time_offset(timestamp, time_offsets[node_num]) if allow_external_time_offsets
                   else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S"),
                   arguments=arguments)))
             else:
               tasks.append(executor.submit(lambda: node.run(
-                  wait_for_live=False,
                   arguments=arguments
               )))
         for thread_number in tasks:
             thread_number.result()
-
-    tt.logger.info("Wait_for_live_mode...")
-
-    for node in nodes:
-        tt.logger.debug(f"Waiting for {node} to be live...")
-        node.wait_for_live_mode(tt.InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT)
 
 
 def display_info(wallet) -> None:
