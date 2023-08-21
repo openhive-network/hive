@@ -385,18 +385,43 @@ uint32_t debug_node_plugin::debug_generate_blocks_until(
   return new_blocks;
 }
 
-
 void debug_node_plugin::on_pre_apply_transaction( const chain::transaction_notification& note )
 {
-  if( allow_throw_exception )
-    HIVE_ASSERT( false, hive::chain::plugin_exception, "Artificial exception was thrown" );
-
-  chain::database& db = database();
-  auto it = _debug_updates.find(note.transaction_id);
-  if (it != _debug_updates.end())
+  try
   {
-    for (const auto& update : it->second)
-      update(db);
+    if( allow_throw_exception )
+      HIVE_ASSERT( false, hive::chain::plugin_exception, "Artificial exception was thrown" );
+
+    chain::database& db = database();
+    auto it = _debug_updates.find(note.transaction_id);
+
+    if (it != _debug_updates.end())
+    {
+      for (const auto& update : it->second)
+        update(db);
+    }
+  }
+  catch (const fc::exception& e)
+  {
+    FC_THROW_EXCEPTION(chain::plugin_exception, "An fc error occured during applying debug updates: ${what}",("what", e.to_detail_string()));
+  }
+  catch (...)
+  {
+    const auto current_exception = std::current_exception();
+
+    if (current_exception)
+    {
+      try
+      {
+        std::rethrow_exception(current_exception);
+      }
+      catch( const std::exception& e )
+      {
+         FC_THROW_EXCEPTION(chain::plugin_exception, "An std error occured during applying debug updates: ${what}",("what", e.what()));
+      }
+    }
+    else
+      FC_THROW_EXCEPTION(chain::plugin_exception, "An unknown error occured during applying debug updates.");
   }
 }
 
