@@ -162,14 +162,13 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
         tasks = []
         for node_num, node in enumerate(nodes):
             if blocklog_directory:
-              tasks.append(executor.submit(lambda: node.run(
-                  time_offset=modify_time_offset(timestamp, time_offsets[node_num]) if allow_external_time_offsets
-                  else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S"),
-                  arguments=arguments)))
+                tasks.append(executor.submit(lambda: node.run(
+                    time_offset=modify_time_offset(timestamp, time_offsets[node_num]) if allow_external_time_offsets
+                    else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S"),
+                    arguments=arguments)))
             else:
-              tasks.append(executor.submit(lambda: node.run(
-                  arguments=arguments
-              )))
+                tasks.append(executor.submit(lambda: node.run(arguments=arguments)))
+
         for thread_number in tasks:
             thread_number.result()
 
