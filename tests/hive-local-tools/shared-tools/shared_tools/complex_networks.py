@@ -172,8 +172,8 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
                   wait_for_live=False,
                   arguments=arguments
               )))
-    for thread_number in tasks:
-        thread_number.result()
+        for thread_number in tasks:
+            thread_number.result()
 
     tt.logger.info("Wait_for_live_mode...")
 
