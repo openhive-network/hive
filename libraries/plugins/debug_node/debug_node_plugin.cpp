@@ -31,7 +31,7 @@ class debug_node_plugin_impl
     plugins::chain::chain_plugin&             _chain_plugin;
     chain::database&                          _db;
 
-    boost::signals2::connection               _post_apply_block_conn;
+    boost::signals2::connection               _pre_apply_transaction_conn;
 };
 
 debug_node_plugin_impl::debug_node_plugin_impl() :
@@ -76,8 +76,8 @@ void debug_node_plugin::plugin_initialize( const variables_map& options )
   }
 
   // connect needed signals
-  my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
-    [this](const chain::block_notification& note){ on_post_apply_block(note); }, *this, 0 );
+  my->_pre_apply_transaction_conn = my->_db.add_pre_apply_transaction_handler(
+    [this](const chain::transaction_notification& note){ on_pre_apply_transaction(note); }, *this, 0 );
 }
 
 void debug_node_plugin::plugin_startup()
@@ -386,31 +386,19 @@ uint32_t debug_node_plugin::debug_generate_blocks_until(
   return new_blocks;
 }
 
-void debug_node_plugin::apply_debug_updates()
-{
-  // this was a method on database in Graphene
-  chain::database& db = database();
-  chain::block_id_type head_id = db.head_block_id();
-  auto it = _debug_updates.find( head_id );
-  if( it == _debug_updates.end() )
-    return;
-  //for( const fc::variant_object& update : it->second )
-  //   debug_apply_update( db, update, logging );
-  for( auto& update : it->second )
-    update( db );
-}
 
-void debug_node_plugin::on_post_apply_block( const chain::block_notification& note )
+void debug_node_plugin::on_pre_apply_transaction( const chain::transaction_notification& note )
 {
-  try
-  {
   if( allow_throw_exception )
     HIVE_ASSERT( false, hive::chain::plugin_exception, "Artificial exception was thrown" );
 
-  if( !_debug_updates.empty() )
-    apply_debug_updates();
+  chain::database& db = database();
+  auto it = _debug_updates.find(note.transaction_id);
+  if (it != _debug_updates.end())
+  {
+    for (const auto& update : it->second)
+      update(db);
   }
-  FC_LOG_AND_RETHROW()
 }
 
 /*void debug_node_plugin::set_json_object_stream( const std::string& filename )
@@ -451,7 +439,7 @@ void debug_node_plugin::on_post_apply_block( const chain::block_notification& no
 
 void debug_node_plugin::plugin_shutdown()
 {
-  chain::util::disconnect_signal( my->_post_apply_block_conn );
+  chain::util::disconnect_signal( my->_pre_apply_transaction_conn );
   /*if( _json_object_stream )
   {
     _json_object_stream->close();

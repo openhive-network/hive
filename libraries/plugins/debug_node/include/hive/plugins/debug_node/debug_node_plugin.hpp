@@ -61,34 +61,42 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     chain::database& database();
 
     template< typename Lambda >
-    void debug_update( Lambda&& callback, uint32_t skip = hive::chain::database::skip_nothing )
+    void debug_update( Lambda&& callback, uint32_t skip = hive::chain::database::skip_nothing, fc::optional<protocol::transaction_id_type> transaction_id = fc::optional<protocol::transaction_id_type>() )
     {
       // this was a method on database in Graphene
       chain::database& db = database();
-      chain::block_id_type head_id = db.head_block_id();
-      auto it = _debug_updates.find( head_id );
-      if( it == _debug_updates.end() )
-        it = _debug_updates.emplace( head_id, std::vector< std::function< void( chain::database& ) > >() ).first;
-      it->second.emplace_back( callback );
 
-      std::shared_ptr<hive::chain::full_block_type> head_block = db.fetch_block_by_id(head_id);
-      FC_ASSERT(head_block);
+      auto apply_callback_to_debug_updates = [&callback, &_debug_updates = _debug_updates](const protocol::transaction_id_type& tx_id)
+      {
+        auto it = _debug_updates.find(tx_id);
+        if (it == _debug_updates.end())
+          _debug_updates[tx_id] = { callback };
+        else
+          it->second.push_back(callback);
+      };
 
-      // What the last block does has been changed by adding to node_property_object, so we have to re-apply it
-      db.pop_block();
-      // ABW: this is highly problematic, since popping block moves all its transactions to popped list,
-      // which means they will be reapplied after push_block calls post-apply block notification (which
-      // calls apply_debug_updates). It means the order between transactions and debug update changes
-      // which can lead to exceptions (that will be fully handled inside HIVE_TRY_NOTIFY, so if you don't
-      // pay attention to log messages, you won't notice). Maybe a better way would be to create debug
-      // operation (that would only work in testnet configuration) or a custom_operation that would be
-      // observed and handled by debug plugin. Such solution would also mean it is possible to interweave
-      // normal transactions and debug updates in single block (f.e. account created, debug filled with
-      // currency, followed by transfer to another account and that repeated for another pair of accounts
-      // - currently it would not work, because there can only be one debug update per block and it is
-      // not applied where it was called in relation to rest of transactions).
-      hive::chain::existing_block_flow_control block_ctrl( head_block );
-      db.push_block( block_ctrl, skip );
+      if (transaction_id)
+        apply_callback_to_debug_updates(*transaction_id);
+      else
+      {
+        static size_t idx = 0;
+        ++idx;
+        std::string idx_str(std::to_string(idx));
+        hive::protocol::custom_operation op;
+        op.required_auths = {"initminer"};
+        op.id = 0;
+        op.data = std::vector<char>(idx_str.begin(), idx_str.end());
+
+        hive::protocol::signed_transaction tx;
+        tx.set_expiration(db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
+        tx.operations.push_back(op);
+        const auto pack_type = hive::protocol::serialization_mode_controller::get_current_pack();
+        const auto init_miner_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
+        hive::chain::full_transaction_ptr ftx = hive::chain::full_transaction_type::create_from_signed_transaction(tx, pack_type, false);
+        ftx->sign_transaction(std::vector<fc::ecc::private_key>{init_miner_priv_key}, db.get_chain_id(), fc::ecc::fc_canonical, pack_type);
+        apply_callback_to_debug_updates(ftx->get_transaction_id());
+        db.push_transaction(ftx, 0);
+      }
     }
 
     void debug_set_vest_price(const hive::protocol::price& new_price);
@@ -128,9 +136,7 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     bool allow_throw_exception = false;
 
   private:
-    void on_post_apply_block( const hive::chain::block_notification& note );
-
-    void apply_debug_updates();
+    void on_pre_apply_transaction( const hive::chain::transaction_notification& note );
 
     std::map<protocol::public_key_type, fc::ecc::private_key> _private_keys;
 
@@ -142,7 +148,7 @@ class debug_node_plugin : public plugin< debug_node_plugin >
 
     std::vector< std::string > _edit_scripts;
     //std::map< protocol::block_id_type, std::vector< fc::variant_object > > _debug_updates;
-    std::map< protocol::block_id_type, std::vector< std::function< void( chain::database& ) > > > _debug_updates;
+    std::map< protocol::transaction_id_type, std::vector< std::function< void( chain::database& ) > > > _debug_updates;
 };
 
 } } }
