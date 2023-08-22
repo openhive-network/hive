@@ -4,7 +4,7 @@ import pytest
 from dataclasses import dataclass, field
 from typing import Literal
 import test_tools as tt
-from hive_local_tools.functional.python.operation import get_current_mana
+from hive_local_tools.functional.python.operation import create_transaction_with_any_operation, get_current_mana
 
 
 @dataclass
@@ -83,6 +83,32 @@ class LimitOrderAccount(Account):
             tt.Asset.Tbd(min_to_receive) if buy_hbd else tt.Asset.Test(min_to_receive),
             fill_or_kill,
             expiration
+        )
+
+    def create_order_2(
+            self,
+            amount_to_sell: int,
+            min_to_receive: int,
+            *,
+            order_id: int = 0,
+            fill_or_kill: bool = False,
+            expiration: int = 60,
+            buy_hbd: bool = None):
+
+        expiration_time = tt.Time.serialize(self._node.get_head_block_time() + tt.Time.seconds(expiration),
+                                            format_=tt.Time.DEFAULT_FORMAT)
+        create_transaction_with_any_operation(
+            self._wallet,
+            "limit_order_create2",
+            owner=self._name,
+            orderid=order_id,
+            amount_to_sell=tt.Asset.Test(amount_to_sell) if buy_hbd else tt.Asset.Tbd(amount_to_sell),
+            exchange_rate={
+                "base": tt.Asset.Test(amount_to_sell) if buy_hbd else tt.Asset.Tbd(amount_to_sell),
+                "quote": tt.Asset.Tbd(min_to_receive) if buy_hbd else tt.Asset.Test(min_to_receive)
+            },
+            fill_or_kill=fill_or_kill,
+            expiration=expiration_time
         )
 
 
