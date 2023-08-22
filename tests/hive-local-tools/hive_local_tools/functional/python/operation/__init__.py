@@ -1,7 +1,7 @@
 from datetime import datetime
-
+from copy import deepcopy
 import test_tools as tt
-from hive_local_tools.constants import filters_enum_virtual_ops
+from hive_local_tools.constants import filters_enum_virtual_ops, TRANSACTION_TEMPLATE
 
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
@@ -10,6 +10,13 @@ def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, mem
         if vop['op']['value']['memo'] == memo:
             return True
     return False
+
+
+def create_transaction_with_any_operation(wallet, operation_name, **kwargs):
+    # function creates transaction manually because some operations are not added to wallet
+    transaction = deepcopy(TRANSACTION_TEMPLATE)
+    transaction["operations"].append([operation_name, kwargs])
+    return wallet.api.sign_transaction(transaction)
 
 
 def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_name: str) -> int:
