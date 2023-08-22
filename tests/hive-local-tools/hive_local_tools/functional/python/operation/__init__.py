@@ -12,6 +12,24 @@ def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, mem
     return False
 
 
+def create_transaction_with_any_operation(wallet, operation_name, **kwargs):
+    # function creates transaction manually because some operations are not added to test-tools wallet
+    transaction = {
+        'ref_block_num': 0,
+        'ref_block_prefix': 0,
+        'expiration': tt.Time.now(),
+        'operations': [],
+        'extensions': [],
+        'signatures': [],
+        'transaction_id': '',
+        'block_num': 0,
+        'transaction_num': 0,
+        'rc_cost': 0,
+    }
+    transaction['operations'].append([operation_name, kwargs])
+    return wallet.api.sign_transaction(transaction, broadcast=True)
+
+
 def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_name: str) -> int:
     try:
         wallet.api.set_voting_proxy(account_name, "initminer")
