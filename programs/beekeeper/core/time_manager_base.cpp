@@ -26,8 +26,8 @@ void time_manager_base::run()
   {
     if( now >= _it->time )
     {
-      _it->lock_method();
       _it->notification_method();
+      _it->lock_method();
       _idx.modify( _it, []( session_data &sd ){ sd.time = types::timepoint_t::max(); });
     }
     ++_it;
