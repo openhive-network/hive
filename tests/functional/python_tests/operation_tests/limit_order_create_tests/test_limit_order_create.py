@@ -29,7 +29,6 @@ def test_match_third_order_with_kill_or_fill(prepared_node, alice, bob, carol, u
 
     alice.assert_not_completed_order(112.5, hbd=use_hbd_in_matching_order)
 
-    # do all the combinations for two/three elements and save as constants?
     check_hbd = (0, 1, 0) if use_hbd_in_matching_order else (1, 0, 1)
 
     for account, amount, condition in zip((carol, carol, alice), (300, 587.5, 550), check_hbd):
