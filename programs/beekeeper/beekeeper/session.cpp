@@ -12,7 +12,12 @@ session::session( const std::string& notifications_endpoint, const std::string& 
 
 void session::prepare_notifications()
 {
-  appbase::application::dynamic_notify( notification_handler, "Attempt of closing all wallets");
+  fc::variant _v;
+
+  auto _wallets = get_wallet_manager()->list_wallets();
+  fc::to_variant( _wallets, _v );
+
+  appbase::application::dynamic_notify( notification_handler, "Attempt of closing all wallets", "token", get_token(), "wallets", _v );
 }
 
 } //beekeeper
