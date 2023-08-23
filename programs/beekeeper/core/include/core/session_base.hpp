@@ -23,6 +23,10 @@ class session_base
 
     std::shared_ptr<time_manager_base> time;
 
+  protected:
+
+    const std::string& get_token() const { return token; };
+
   public:
 
     session_base( const std::string& token, std::shared_ptr<time_manager_base> time );
