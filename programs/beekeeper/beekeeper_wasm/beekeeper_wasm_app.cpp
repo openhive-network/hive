@@ -46,7 +46,7 @@ void beekeeper_wasm_app::setup_notifications( const boost::program_options::vari
 {
 }
 
-std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_wasm_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit )
+std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_wasm_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, const std::string& notifications_endpoint/*not used*/ )
 {
   return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager_base>(), std::make_shared<beekeeper_instance_base>( cmd_wallet_dir ),
                                                                       cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit );
