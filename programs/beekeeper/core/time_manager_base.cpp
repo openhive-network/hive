@@ -32,7 +32,6 @@ void time_manager_base::run()
     }
     ++_it;
   }
-
 }
 
 void time_manager_base::add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method )
