@@ -140,7 +140,7 @@ init_data beekeeper_app_init::initialize_program_options()
       FC_ASSERT( _args.count("unlock-timeout") );
       auto _timeout = _args.at("unlock-timeout").as<uint64_t>();
 
-      wallet_manager_ptr = create_wallet( _dir, _timeout, session_limit );
+      wallet_manager_ptr = create_wallet( _dir, _timeout, session_limit, _notification );
 
       if( !wallet_manager_ptr->start() )
         return { false, "" };
