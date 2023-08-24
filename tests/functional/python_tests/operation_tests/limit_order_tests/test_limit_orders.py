@@ -2,34 +2,55 @@ import pytest
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_number_of_fill_order_operations
 
+"""
+All test cases are from spreadsheet: https://gitlab.syncad.com/hive/hive/-/issues/485#note_123196
+Every test is executed with following parametrization variables:
+- use_hbd_in_matching_order - boolean variable that determine whether matching order (purple one) buys HBDS 
+- create_main_order - function that will be used for creating matching order marked as purple
+- create_normal_order - function that will be used for creating all orders (without color) except main
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+In both cases - create_main_order and create_normal_order operation limit_order_create_operation or 
+limit_order_create2_operation may be used.
+"""
+parametrize_variables = "use_hbd_in_matching_order, create_main_order, create_normal_order"
+parametrize_values = (
+    (True, 'create_order', 'create_order'),
+    (True, 'create_order_2', 'create_order_2'),
+    (True, 'create_order', 'create_order_2'),
+    (True, 'create_order_2', 'create_order'),
+    (False, 'create_order', 'create_order'),
+    (False, 'create_order_2', 'create_order_2'),
+    (False, 'create_order', 'create_order_2'),
+    (False, 'create_order_2', 'create_order'),
+)
+
+
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
-def test_not_matching_orders_with_fill_or_kill(prepared_node, alice, bob, use_hbd_in_matching_order, create_order_func):
+def test_not_matching_orders_with_fill_or_kill(prepared_node, alice, bob, use_hbd_in_matching_order, create_main_order,
+                                               create_normal_order):
     """
     test case 1, 2 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
-    getattr(alice, create_order_func)(150, 200, buy_hbd=not use_hbd_in_matching_order)
+    getattr(alice, create_normal_order)(150, 200, buy_hbd=not use_hbd_in_matching_order)
     with pytest.raises(tt.exceptions.CommunicationError) as error:
-        getattr(bob, create_order_func)(200, 300, buy_hbd=use_hbd_in_matching_order, fill_or_kill=True)
+        getattr(bob, create_main_order)(200, 300, buy_hbd=use_hbd_in_matching_order, fill_or_kill=True)
 
     assert "Cancelling order because it was not filled" in str(error.value), "Other error than expected occurred."
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
 def test_match_third_order_with_kill_or_fill(prepared_node, alice, bob, carol, use_hbd_in_matching_order,
-                                             create_order_func):
+                                             create_main_order, create_normal_order):
     """
     test case 3 and 4 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
-    getattr(alice, create_order_func)(300, 160, buy_hbd=not use_hbd_in_matching_order)
-    getattr(bob, create_order_func)(100, 200, buy_hbd=not use_hbd_in_matching_order)
-    getattr(carol, create_order_func)(100, 150, buy_hbd=use_hbd_in_matching_order, fill_or_kill=True)
+    getattr(alice, create_normal_order)(300, 160, buy_hbd=not use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(100, 200, buy_hbd=not use_hbd_in_matching_order)
+    getattr(carol, create_main_order)(100, 150, buy_hbd=use_hbd_in_matching_order, fill_or_kill=True)
 
     alice.assert_not_completed_order(112.5, hbd=use_hbd_in_matching_order)
 
@@ -43,21 +64,20 @@ def test_match_third_order_with_kill_or_fill(prepared_node, alice, bob, carol, u
         "fill_order_operation virtual operation wasn't generated"
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
 def test_match_fifth_order(prepared_node, alice, bob, carol, daisy, elizabeth, use_hbd_in_matching_order,
-                           create_order_func):
+                           create_main_order, create_normal_order):
     """
     test case 5 and 6 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
 
-    getattr(alice, create_order_func)(100, 150, buy_hbd=not use_hbd_in_matching_order)
-    getattr(bob, create_order_func)(80, 100, buy_hbd=not use_hbd_in_matching_order)
-    getattr(carol, create_order_func)(90, 100, buy_hbd=not use_hbd_in_matching_order)
-    getattr(daisy, create_order_func)(100, 200, buy_hbd=not use_hbd_in_matching_order)
-    getattr(elizabeth, create_order_func)(300, 200, buy_hbd=use_hbd_in_matching_order, fill_or_kill=True)
+    getattr(alice, create_normal_order)(100, 150, buy_hbd=not use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(80, 100, buy_hbd=not use_hbd_in_matching_order)
+    getattr(carol, create_normal_order)(90, 100, buy_hbd=not use_hbd_in_matching_order)
+    getattr(daisy, create_normal_order)(100, 200, buy_hbd=not use_hbd_in_matching_order)
+    getattr(elizabeth, create_main_order)(300, 200, buy_hbd=use_hbd_in_matching_order, fill_or_kill=True)
 
     for account, amount in zip((alice, daisy), (33.334, 100)):
         account.assert_not_completed_order(amount, hbd=use_hbd_in_matching_order)
@@ -73,16 +93,16 @@ def test_match_fifth_order(prepared_node, alice, bob, carol, daisy, elizabeth, u
         "fill_order_operation virtual operation wasn't generated"
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
-def test_not_matching_orders(prepared_node, alice, bob, use_hbd_in_matching_order, create_order_func):
+def test_not_matching_orders(prepared_node, alice, bob, use_hbd_in_matching_order, create_main_order,
+                             create_normal_order):
     """
     test case 7, 8 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
-    getattr(alice, create_order_func)(150, 200, buy_hbd=not use_hbd_in_matching_order)
-    getattr(bob, create_order_func)(200, 300, buy_hbd=use_hbd_in_matching_order)
+    getattr(alice, create_normal_order)(150, 200, buy_hbd=not use_hbd_in_matching_order)
+    getattr(bob, create_main_order)(200, 300, buy_hbd=use_hbd_in_matching_order)
 
     # check if rc was reduced after fixing issue: https://gitlab.syncad.com/hive/hive/-/issues/507
     check_hbd = (1, 0, 1, 0) if use_hbd_in_matching_order else (0, 1, 0, 1)
@@ -93,18 +113,18 @@ def test_not_matching_orders(prepared_node, alice, bob, use_hbd_in_matching_orde
         account.assert_balance(amount=amount, check_hbd=condition, message="expiration")
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
-def test_full_match_third_order(prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_order_func):
+def test_full_match_third_order(prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order,
+                                create_normal_order):
     """
     test case 9, 10 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
 
-    getattr(alice, create_order_func)(300, 160, buy_hbd=not use_hbd_in_matching_order)
-    getattr(bob, create_order_func)(100, 200, buy_hbd=not use_hbd_in_matching_order)
-    getattr(carol, create_order_func)(100, 150, buy_hbd=use_hbd_in_matching_order)
+    getattr(alice, create_normal_order)(300, 160, buy_hbd=not use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(100, 200, buy_hbd=not use_hbd_in_matching_order)
+    getattr(carol, create_main_order)(100, 150, buy_hbd=use_hbd_in_matching_order)
 
     for account, amount in zip((alice, bob), (112.5, 100)):
         account.assert_not_completed_order(amount, hbd=use_hbd_in_matching_order)
@@ -124,22 +144,22 @@ def test_full_match_third_order(prepared_node, alice, bob, carol, use_hbd_in_mat
         account.assert_balance(amount=amount, check_hbd=condition, message="expiration")
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
-def test_full_match_first_order(prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_order_func):
+def test_full_match_first_order(prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order,
+                                create_normal_order):
     """
     test case 11, 12 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
 
-    getattr(alice, create_order_func)(150, 100, buy_hbd=use_hbd_in_matching_order)
+    getattr(alice, create_main_order)(150, 100, buy_hbd=use_hbd_in_matching_order)
     alice.assert_balance(amount=300, check_hbd=not use_hbd_in_matching_order, message="creation")
 
-    getattr(bob, create_order_func)(100, 200, buy_hbd=not use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(100, 200, buy_hbd=not use_hbd_in_matching_order)
     # make sure that first order wasn't matched
     alice.assert_balance(amount=450, check_hbd=use_hbd_in_matching_order, message="no_match")
-    getattr(carol, create_order_func)(210, 300, buy_hbd=not use_hbd_in_matching_order)
+    getattr(carol, create_normal_order)(210, 300, buy_hbd=not use_hbd_in_matching_order)
 
     for account, amount in zip((bob, carol), (100, 110)):
         account.assert_not_completed_order(amount=amount, hbd=use_hbd_in_matching_order)
@@ -156,19 +176,18 @@ def test_full_match_first_order(prepared_node, alice, bob, carol, use_hbd_in_mat
         account.assert_balance(amount=amount, check_hbd=condition, message="expiration")
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
 def test_partial_match_third_order(prepared_node, alice, bob, carol, daisy, use_hbd_in_matching_order,
-                                   create_order_func):
+                                   create_main_order, create_normal_order):
     """
     test case 13, 14 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
 
-    getattr(alice, create_order_func)(300, 160, buy_hbd=use_hbd_in_matching_order)
-    getattr(bob, create_order_func)(100, 200, buy_hbd=use_hbd_in_matching_order)
-    getattr(carol, create_order_func)(300, 450, buy_hbd=not use_hbd_in_matching_order)
+    getattr(alice, create_normal_order)(300, 160, buy_hbd=use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(100, 200, buy_hbd=use_hbd_in_matching_order)
+    getattr(carol, create_main_order)(300, 450, buy_hbd=not use_hbd_in_matching_order)
 
     check_hbd = (1, 0, 0) if use_hbd_in_matching_order else (0, 1, 1)
     for account, amount, condition in zip((alice, alice, carol), (610, 150, 700), check_hbd):
@@ -182,7 +201,7 @@ def test_partial_match_third_order(prepared_node, alice, bob, carol, daisy, use_
     assert get_number_of_fill_order_operations(prepared_node) == 1, \
         "fill_order_operation virtual operation wasn't generated"
 
-    getattr(daisy, create_order_func)(480, 300, buy_hbd=use_hbd_in_matching_order)
+    getattr(daisy, create_normal_order)(480, 300, buy_hbd=use_hbd_in_matching_order)
     for account, amount, condition in zip((daisy, carol), (620, 910), check_hbd):
         account.assert_balance(amount=amount, check_hbd=condition, message="order_match")
 
@@ -197,25 +216,24 @@ def test_partial_match_third_order(prepared_node, alice, bob, carol, daisy, use_
         "fill_order_operation virtual operation wasn't generated"
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
 def test_partially_match_every_next_order(prepared_node, alice, bob, carol, daisy, elizabeth, use_hbd_in_matching_order,
-                                          create_order_func):
+                                          create_main_order, create_normal_order):
     """
     test case 15, 16 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
 
-    getattr(alice, create_order_func)(450, 300, buy_hbd=not use_hbd_in_matching_order)
+    getattr(alice, create_main_order)(450, 300, buy_hbd=not use_hbd_in_matching_order)
 
     alice.assert_balance(amount=0, check_hbd=use_hbd_in_matching_order, message="creation")
 
     # check if rc was reduced after fixing issue: https://gitlab.syncad.com/hive/hive/-/issues/507
-    getattr(bob, create_order_func)(100, 200, buy_hbd=use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(100, 200, buy_hbd=use_hbd_in_matching_order)
     alice.assert_balance(amount=450, check_hbd=not use_hbd_in_matching_order, message="no_match")
 
-    getattr(carol, create_order_func)(100, 120, buy_hbd=use_hbd_in_matching_order)
+    getattr(carol, create_normal_order)(100, 120, buy_hbd=use_hbd_in_matching_order)
 
     for account, amount, condition in zip((alice, bob), (300, 100),
                                           (use_hbd_in_matching_order, not use_hbd_in_matching_order)):
@@ -229,7 +247,7 @@ def test_partially_match_every_next_order(prepared_node, alice, bob, carol, dais
     assert get_number_of_fill_order_operations(prepared_node) == 1, \
         "fill_order_operation virtual operation wasn't generated"
 
-    getattr(daisy, create_order_func)(100, 130, buy_hbd=use_hbd_in_matching_order)
+    getattr(daisy, create_normal_order)(100, 130, buy_hbd=use_hbd_in_matching_order)
     # check if rc was not reduced after fixing issue: https://gitlab.syncad.com/hive/hive/-/issues/507
 
     for account, amount, condition in zip((alice, bob), (150, 100),
@@ -242,7 +260,7 @@ def test_partially_match_every_next_order(prepared_node, alice, bob, carol, dais
 
     assert get_number_of_fill_order_operations(prepared_node) == 2, \
         "fill_order_operation virtual operation wasn't generated"
-    getattr(elizabeth, create_order_func)(200, 260, buy_hbd=use_hbd_in_matching_order)
+    getattr(elizabeth, create_normal_order)(200, 260, buy_hbd=use_hbd_in_matching_order)
 
     for account, amount in zip((bob, elizabeth), (100, 100)):
         account.assert_not_completed_order(amount=amount, hbd=not use_hbd_in_matching_order)
@@ -259,19 +277,19 @@ def test_partially_match_every_next_order(prepared_node, alice, bob, carol, dais
         account.assert_balance(amount=amount, check_hbd=not use_hbd_in_matching_order, message="expiration")
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
 def test_match_third_order_partially_and_wait_for_expiration(prepared_node, alice, bob, carol,
-                                                             use_hbd_in_matching_order, create_order_func):
+                                                             use_hbd_in_matching_order, create_main_order,
+                                                             create_normal_order):
     """
     test case 17, 18 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
 
-    getattr(alice, create_order_func)(300, 160, buy_hbd=use_hbd_in_matching_order)
-    getattr(bob, create_order_func)(100, 200, buy_hbd=use_hbd_in_matching_order)
-    getattr(carol, create_order_func)(300, 450, buy_hbd=not use_hbd_in_matching_order)
+    getattr(alice, create_normal_order)(300, 160, buy_hbd=use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(100, 200, buy_hbd=use_hbd_in_matching_order)
+    getattr(carol, create_main_order)(300, 450, buy_hbd=not use_hbd_in_matching_order)
 
     for account, amount, condition in zip((bob, carol), (100, 140),
                                           (not use_hbd_in_matching_order, use_hbd_in_matching_order)):
@@ -288,24 +306,24 @@ def test_match_third_order_partially_and_wait_for_expiration(prepared_node, alic
     carol.assert_balance(amount=240, check_hbd=use_hbd_in_matching_order, message="expiration")
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
 def test_match_third_order_partially_and_wait_for_expiration_scenario_2(prepared_node, alice, bob, carol,
-                                                                        use_hbd_in_matching_order, create_order_func):
+                                                                        use_hbd_in_matching_order, create_main_order,
+                                                                        create_normal_order):
     """
     test case 19, 20 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
 
-    getattr(alice, create_order_func)(450, 300, buy_hbd=not use_hbd_in_matching_order)
+    getattr(alice, create_main_order)(450, 300, buy_hbd=not use_hbd_in_matching_order)
     # check if rc was  reduced after fixing issue: https://gitlab.syncad.com/hive/hive/-/issues/507
     alice.assert_balance(amount=0, check_hbd=use_hbd_in_matching_order, message="creation")
 
-    getattr(bob, create_order_func)(100, 200, buy_hbd=use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(100, 200, buy_hbd=use_hbd_in_matching_order)
     alice.assert_balance(amount=450, check_hbd=not use_hbd_in_matching_order, message="no_match")
 
-    getattr(carol, create_order_func)(100, 120, buy_hbd=use_hbd_in_matching_order)
+    getattr(carol, create_normal_order)(100, 120, buy_hbd=use_hbd_in_matching_order)
 
     for account, amount, condition in zip((alice, bob), (300, 100),
                                           (use_hbd_in_matching_order, not use_hbd_in_matching_order)):
@@ -323,28 +341,27 @@ def test_match_third_order_partially_and_wait_for_expiration_scenario_2(prepared
     alice.assert_balance(amount=300, check_hbd=use_hbd_in_matching_order, message="expiration")
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
 def test_match_fifth_order_partially(prepared_node, alice, bob, carol, daisy, elizabeth, use_hbd_in_matching_order,
-                                     create_order_func):
+                                     create_main_order, create_normal_order):
     """
     test case 21, 22 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
 
-    getattr(alice, create_order_func)(100, 150, buy_hbd=use_hbd_in_matching_order)
+    getattr(alice, create_normal_order)(100, 150, buy_hbd=use_hbd_in_matching_order)
 
-    getattr(bob, create_order_func)(80, 100, buy_hbd=use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(80, 100, buy_hbd=use_hbd_in_matching_order)
     alice.assert_not_completed_order(amount=100, hbd=not use_hbd_in_matching_order)
 
-    getattr(carol, create_order_func)(90, 100, buy_hbd=use_hbd_in_matching_order)
+    getattr(carol, create_normal_order)(90, 100, buy_hbd=use_hbd_in_matching_order)
     alice.assert_not_completed_order(amount=100, hbd=not use_hbd_in_matching_order)
 
-    getattr(daisy, create_order_func)(100, 200, buy_hbd=use_hbd_in_matching_order)
+    getattr(daisy, create_normal_order)(100, 200, buy_hbd=use_hbd_in_matching_order)
     alice.assert_not_completed_order(amount=100, hbd=not use_hbd_in_matching_order)
 
-    getattr(elizabeth, create_order_func)(600, 400, buy_hbd=not use_hbd_in_matching_order)
+    getattr(elizabeth, create_main_order)(600, 400, buy_hbd=not use_hbd_in_matching_order)
     # check if rc was  reduced after fixing issue: https://gitlab.syncad.com/hive/hive/-/issues/507
     elizabeth.assert_not_completed_order(amount=250, hbd=use_hbd_in_matching_order)
 
@@ -358,20 +375,19 @@ def test_match_fifth_order_partially(prepared_node, alice, bob, carol, daisy, el
     elizabeth.assert_balance(amount=250, check_hbd=use_hbd_in_matching_order, message="expiration")
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
 def test_full_match_fifth_order(prepared_node, alice, bob, carol, daisy, elizabeth, use_hbd_in_matching_order,
-                                create_order_func):
+                                create_main_order, create_normal_order):
     """
     test case 23, 24 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    https://gitlab.syncad.com/hive/hive/-/issues/487
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
     """
 
-    getattr(alice, create_order_func)(400, 600, buy_hbd=not use_hbd_in_matching_order)
-    getattr(bob, create_order_func)(100, 200, buy_hbd=use_hbd_in_matching_order)
+    getattr(alice, create_main_order)(400, 600, buy_hbd=not use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(100, 200, buy_hbd=use_hbd_in_matching_order)
     alice.assert_balance(amount=450, check_hbd=not use_hbd_in_matching_order, message="no_match")
-    getattr(carol, create_order_func)(150, 80, buy_hbd=use_hbd_in_matching_order)
+    getattr(carol, create_normal_order)(150, 80, buy_hbd=use_hbd_in_matching_order)
 
     use_hbd_balances = (0, 1) if use_hbd_in_matching_order else (1, 0)
     use_hbd_not_completed_orders = (1, 0) if use_hbd_in_matching_order else (0, 1)
@@ -386,7 +402,7 @@ def test_full_match_fifth_order(prepared_node, alice, bob, carol, daisy, elizabe
     assert get_number_of_fill_order_operations(prepared_node) == 1, \
         "fill_order_operation virtual operation wasn't generated"
 
-    getattr(daisy, create_order_func)(150, 90, buy_hbd=use_hbd_in_matching_order)
+    getattr(daisy, create_normal_order)(150, 90, buy_hbd=use_hbd_in_matching_order)
 
     for account, amount, condition in zip((alice, bob), (200, 100), use_hbd_not_completed_orders):
         account.assert_not_completed_order(amount=amount, hbd=condition)
@@ -397,7 +413,7 @@ def test_full_match_fifth_order(prepared_node, alice, bob, carol, daisy, elizabe
     # check if rc was not reduced after fixing issue: https://gitlab.syncad.com/hive/hive/-/issues/507
     assert get_number_of_fill_order_operations(prepared_node) == 2, \
         "fill_order_operation virtual operation wasn't generated"
-    getattr(elizabeth, create_order_func)(150, 90, buy_hbd=use_hbd_in_matching_order)
+    getattr(elizabeth, create_normal_order)(150, 90, buy_hbd=use_hbd_in_matching_order)
 
     for account, amount, condition in zip((alice, bob), (100, 100), use_hbd_not_completed_orders):
         account.assert_not_completed_order(amount=amount, hbd=condition)
@@ -411,16 +427,18 @@ def test_full_match_fifth_order(prepared_node, alice, bob, carol, daisy, elizabe
     alice.assert_balance(amount=150, check_hbd=use_hbd_in_matching_order, message="expiration")
 
 
-@pytest.mark.parametrize("use_hbd_in_matching_order", [True, False])
-@pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
+@pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet
-def test_full_match_fourth_order(prepared_node, alice, bob, carol, daisy, use_hbd_in_matching_order, create_order_func):
-    # test case 25, 26 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+def test_full_match_fourth_order(prepared_node, alice, bob, carol, daisy, use_hbd_in_matching_order, create_main_order,
+                                 create_normal_order):
+    """
+    test case 25, 26 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
+    """
 
-    getattr(alice, create_order_func)(300, 160, buy_hbd=use_hbd_in_matching_order)
-    getattr(bob, create_order_func)(100, 200, buy_hbd=use_hbd_in_matching_order)
-    getattr(carol, create_order_func)(400, 600, buy_hbd=not use_hbd_in_matching_order)
+    getattr(alice, create_normal_order)(300, 160, buy_hbd=use_hbd_in_matching_order)
+    getattr(bob, create_normal_order)(100, 200, buy_hbd=use_hbd_in_matching_order)
+    getattr(carol, create_main_order)(400, 600, buy_hbd=not use_hbd_in_matching_order)
 
     use_hbd = (not use_hbd_in_matching_order, use_hbd_in_matching_order)
     for account, amount, condition in zip((bob, carol), (100, 240), use_hbd):
@@ -434,7 +452,7 @@ def test_full_match_fourth_order(prepared_node, alice, bob, carol, daisy, use_hb
     assert get_number_of_fill_order_operations(prepared_node) == 1, \
         "fill_order_operation virtual operation wasn't generated"
 
-    getattr(daisy, create_order_func)(160, 100, buy_hbd=use_hbd_in_matching_order)
+    getattr(daisy, create_normal_order)(160, 100, buy_hbd=use_hbd_in_matching_order)
 
     for account, amount, condition in zip((bob, carol), (100, 133.334), use_hbd):
         account.assert_not_completed_order(amount=amount, hbd=condition)
