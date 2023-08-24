@@ -48,6 +48,10 @@ class time_manager_base
 
     session_data_index items;
 
+  protected:
+
+    virtual void send_auto_lock_error_message( const std::string& message ){ /*not implemented here*/ };
+
   public:
 
     time_manager_base();
