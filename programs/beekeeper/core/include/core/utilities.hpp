@@ -9,6 +9,8 @@
 #include <string>
 #include <chrono>
 
+#include <boost/exception/diagnostic_information.hpp>
+
 namespace beekeeper {
 
 using seconds_type = uint32_t;
@@ -176,6 +178,38 @@ struct create_session_args
 using create_session_return = session_token_type;
 using close_session_args = session_token_type;
 using close_session_return = void_type;
+
+struct exception
+{
+  static std::string exception_handler( const std::string& empty_response, std::function<std::string()>&& method )
+  {
+    std::string _error_message = empty_response;
+
+    try
+    {
+      return method();
+    }
+    catch (const boost::exception& e)
+    {
+      _error_message = boost::diagnostic_information(e);
+    }
+    catch (const fc::exception& e)
+    {
+      _error_message = e.to_detail_string();
+    }
+    catch (const std::exception& e)
+    {
+      _error_message = e.what();
+    }
+    catch (...)
+    {
+      _error_message = "unknown exception";
+    }
+    elog( _error_message );
+
+    return _error_message;
+  }
+};
 
 }
 namespace fc
