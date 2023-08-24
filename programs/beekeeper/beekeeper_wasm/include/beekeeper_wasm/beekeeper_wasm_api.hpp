@@ -28,7 +28,6 @@ class beekeeper_api final
     std::string to_string( const T& src, bool valid = true );
     std::string extend_json( const std::string& src );
 
-    template<typename result_type>
     std::string exception_handler( std::function<std::string()>&& method );
 
   public:
