@@ -26,9 +26,20 @@ void time_manager_base::run()
   {
     if( now >= _it->time )
     {
-      _it->notification_method();
-      _it->lock_method();
-      _idx.modify( _it, []( session_data &sd ){ sd.time = types::timepoint_t::max(); });
+      auto _error_message = exception::exception_handler( "Automatic lock failed",
+                                                  [&]()
+                                                  {
+                                                    _idx.modify( _it, []( session_data &sd ){ sd.time = types::timepoint_t::max(); });
+                                                    _it->notification_method();
+                                                    _it->lock_method();
+                                                    return "";
+                                                  }
+                                                );
+      if( !_error_message.empty() )
+      {
+        send_auto_lock_error_message( _error_message );
+        continue;
+      }
     }
     ++_it;
   }
