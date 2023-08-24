@@ -245,7 +245,7 @@ namespace detail
 
   api_method* json_rpc_plugin_impl::find_api_method( const std::string& api, const std::string& method )
   {
-    const auto _ = hive::notify_hived_timer("jsonrpc/overhead/find_api_method");
+    const auto _ = appbase::app().notify_hived_timer("jsonrpc/overhead/find_api_method");
     auto api_itr = data._registered_apis.find( api );
     FC_ASSERT( api_itr != data._registered_apis.end(), "Could not find API ${api}", ("api", api) );
 
@@ -257,7 +257,7 @@ namespace detail
 
   api_method* json_rpc_plugin_impl::process_params( string method, const fc::variant_object& request, fc::variant& func_args, string* method_name )
   {
-    const auto _ = hive::notify_hived_timer("jsonrpc/overhead/process_params");
+    const auto _ = appbase::app().notify_hived_timer("jsonrpc/overhead/process_params");
     api_method* ret = nullptr;
 
     if( method == "call" )
@@ -299,7 +299,7 @@ namespace detail
 
   void json_rpc_plugin_impl::rpc_id( const fc::variant_object& request, json_rpc_response& response )
   {
-    const auto _ = hive::notify_hived_timer("jsonrpc/overhead/rpc_id");
+    const auto _ = appbase::app().notify_hived_timer("jsonrpc/overhead/rpc_id");
 
     if( request.contains( "id" ) )
     {
@@ -321,7 +321,7 @@ namespace detail
 
   void json_rpc_plugin_impl::rpc_jsonrpc( const fc::variant_object& request, json_rpc_response& response )
   {
-    const auto _ = hive::notify_hived_timer("jsonrpc/overhead/rpc_jsonrpc");
+    const auto _ = appbase::app().notify_hived_timer("jsonrpc/overhead/rpc_jsonrpc");
     if( request.contains( "jsonrpc" ) && request[ "jsonrpc" ].is_string() && request[ "jsonrpc" ].as_string() == "2.0" )
     {
       if( request.contains( "method" ) && request[ "method" ].is_string() )
@@ -350,7 +350,7 @@ namespace detail
             {
               if( call )
               {
-                const auto _ = hive::notify_hived_timer("jsonrpc/api/" + method_name);
+                const auto _ = appbase::app().notify_hived_timer("jsonrpc/api/" + method_name);
 
                 if( _check_serialization_status() )
                 {
@@ -437,7 +437,7 @@ namespace detail
 
     ddump( (message) );
 
-    const auto _ = hive::notify_hived_timer("jsonrpc/api/total");
+    const auto _ = appbase::app().notify_hived_timer("jsonrpc/api/total");
     try
     {
       const auto& request = message.get_object();
@@ -542,7 +542,7 @@ void json_rpc_plugin::add_api_method( const string& api_name, const string& meth
 
 string json_rpc_plugin::call( const string& message )
 {
-  const auto _ = hive::notify_hived_timer("jsonrpc/overhead/call");
+  const auto _ = appbase::app().notify_hived_timer("jsonrpc/overhead/call");
   try
   {
     fc::variant v = fc::json::from_string( message );

@@ -173,7 +173,7 @@ void detail::notification_handler::network_broadcaster::notification_connection_
 }
 } // detail
 
-bool notifications::error_handler( const std::function<void()>& foo )
+bool error_handler( const std::function<void()>& foo )
 {
   return notifications::detail::error_handler( foo );
 }

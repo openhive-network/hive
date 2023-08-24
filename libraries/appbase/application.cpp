@@ -720,7 +720,8 @@ void application::notify_error(const fc::string& error_message) const noexcept
 
 void application::setup_notifications(const boost::program_options::variables_map &args) const
 {
-  notification_handler.setup( hive::utilities::notifications::setup_notifications( args ) );
+  const auto [addresser, filter] = hive::utilities::notifications::setup_notifications( args );
+  notification_handler.setup(addresser, filter);
 }
 
 void scope_guarded_timer::send_notif()

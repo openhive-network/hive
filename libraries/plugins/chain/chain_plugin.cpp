@@ -112,7 +112,11 @@ namespace detail {
 class chain_plugin_impl
 {
   public:
-    chain_plugin_impl() {}
+    chain_plugin_impl(): webserver( appbase::app().get_plugin<hive::plugins::webserver::webserver_plugin>() )
+    {
+      appbase::app().get_plugin<hive::plugins::json_rpc::json_rpc_plugin>().add_serialization_status( [this](){ return db.has_hardfork( HIVE_HARDFORK_1_26 ); } );
+    }
+
     ~chain_plugin_impl()
     {
       stop_write_processing();
@@ -253,7 +257,7 @@ struct chain_plugin_impl::write_request_visitor
         throw fc::exception(fc::canceled_exception_code, "interrupted by user");
       }
 
-      const auto timer = hive::notify_hived_timer("chain_plugin/write_time/push_block");
+      const auto timer = appbase::app().notify_hived_timer("chain_plugin/write_time/push_block");
       on_block( p2p_block_ctrl.get() );
       fc::time_point time_before_pushing_block = fc::time_point::now();
       BOOST_SCOPE_EXIT(this_, time_before_pushing_block) {
@@ -277,7 +281,7 @@ struct chain_plugin_impl::write_request_visitor
   {
     try
     {
-      const auto _ = hive::notify_hived_timer("chain_plugin/write_time/push_transaction");
+      const auto _ = appbase::app().notify_hived_timer("chain_plugin/write_time/push_transaction");
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
       ++count_tx_pushed;
       cp.db.push_transaction( tx_ctrl->get_full_transaction() );
@@ -315,7 +319,7 @@ struct chain_plugin_impl::write_request_visitor
       if( !cp.block_generator )
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
-      const auto _ = hive::notify_hived_timer("chain_plugin/write_time/generate_block");
+      const auto _ = appbase::app().notify_hived_timer("chain_plugin/write_time/generate_block");
       on_block( generate_block_ctrl.get() );
       cp.block_generator->generate_block( generate_block_ctrl.get() );
     }
@@ -375,7 +379,7 @@ void chain_plugin_impl::start_write_processing()
       fc::time_point last_popped_item_time = fc::time_point::now();
       fc::time_point last_msg_time = last_popped_item_time;
       fc::time_point wait_start_time = last_popped_item_time;
-      auto notification_timer = hive::notify_hived_timer("chain_plugin/time_since_last_block/from_p2p");
+      auto notification_timer = appbase::app().notify_hived_timer("chain_plugin/time_since_last_block/from_p2p");
 
       appbase::app().notify_status("syncing");
       while (true)
@@ -428,7 +432,7 @@ void chain_plugin_impl::start_write_processing()
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
           fc_dlog(fc::logger::get("chainlock"), "write_lock_acquisition_time = ${write_lock_aquisition_time}μs",
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
-          const auto _ = hive::notify_hived_timer("chain_plugin/lock_time/write_lock");
+          const auto _ = appbase::app().notify_hived_timer("chain_plugin/lock_time/write_lock");
           while (true)
           {
             req_visitor.cxt = cxt;
@@ -793,7 +797,7 @@ void chain_plugin_impl_deleter::operator()( chain_plugin_impl* impl ) const
 {
   delete impl;
 }
-  
+
 } // detail
 
 

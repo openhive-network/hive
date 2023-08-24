@@ -269,18 +269,6 @@ namespace appbase {
         });
       }
 
-      inline void notify(
-          const fc::string &name,
-          hive::utilities::notifications::collector_t&& collector) const noexcept
-      {
-
-        hive::utilities::notifications::error_handler([&]{
-          notification_handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<hive::utilities::notifications::collector_t>(collector))
-          );
-        });
-      }
-
       template <typename... KeyValuesTypes>
       static inline void dynamic_notify(
           hive::utilities::notifications::notification_handler_wrapper& handler,
@@ -289,7 +277,7 @@ namespace appbase {
       {
         hive::utilities::notifications::error_handler([&]{
           handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+            name, std::forward<KeyValuesTypes>(key_value_pairs)...
           );
         });
       }
@@ -301,11 +289,10 @@ namespace appbase {
       {
         hive::utilities::notifications::error_handler([&]{
           this->notification_handler.broadcast(
-            hive::utilities::notifications::notification_t(name, std::forward<KeyValuesTypes>(key_value_pairs)...)
+            name, std::forward<KeyValuesTypes>(key_value_pairs)...
           );
         });
       }
-
   };
 
   application& app();

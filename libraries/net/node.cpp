@@ -1929,7 +1929,7 @@ namespace graphene { namespace net {
         auto iter = originating_peer->items_requested_from_peer.find( item_id( received_message.msg_type, message_hash ) );
         if(iter != originating_peer->items_requested_from_peer.end())
         {
-          auto timer = hive::notify_hived_timer(
+          auto timer = appbase::app().notify_hived_timer(
             "p2p/latency/" + fc::variant(core_message_type_enum(received_message.msg_type)).as_string(),
             iter->second
           );
