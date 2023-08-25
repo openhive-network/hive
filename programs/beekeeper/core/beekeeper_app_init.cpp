@@ -40,6 +40,9 @@ void beekeeper_app_init::set_program_options()
       "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required. By default is empty." )
 
     ("backtrace", bpo::value<std::string>()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" )
+
+    ("allow-implicit-session", bpo::value<bool>()->default_value(true),
+      "If true a session will be implicitly created at the start. By default is true.")
     ;
 }
 
@@ -148,7 +151,13 @@ init_data beekeeper_app_init::initialize_program_options()
       FC_ASSERT( _args.count("salt") );
       auto _salt = _args.at("salt").as<std::string>();
 
-      auto _token = wallet_manager_ptr->create_session( _salt, _notification );
+      FC_ASSERT( _args.count("allow-implicit-session") );
+      auto _allow_implicit_session = _args.at("allow-implicit-session").as<bool>();
+
+      std::string _token = "";
+
+      if( _allow_implicit_session )
+        _token = wallet_manager_ptr->create_session( _salt, _notification );
 
       FC_ASSERT( _args.count("backtrace") );
       if( _args.at( "backtrace" ).as<std::string>() == "yes" )
