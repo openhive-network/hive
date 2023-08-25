@@ -181,13 +181,13 @@ using close_session_return = void_type;
 
 struct exception
 {
-  static std::string exception_handler( const std::string& empty_response, std::function<std::string()>&& method )
+  static std::pair<std::string, bool> exception_handler( std::function<std::string()>&& method )
   {
-    std::string _error_message = empty_response;
+    std::string _error_message = "";
 
     try
     {
-      return method();
+      return { method(), true };
     }
     catch (const boost::exception& e)
     {
@@ -207,7 +207,7 @@ struct exception
     }
     elog( _error_message );
 
-    return _error_message;
+    return { _error_message, false };
   }
 };
 
