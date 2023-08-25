@@ -143,6 +143,8 @@ const my_entrypoint = async() => {
   console.log(`Storage root for testing is: ${STORAGE_ROOT}`);
 
   const args = `--wallet-dir ${STORAGE_ROOT}/.beekeeper --salt avocado`.split(' ');
+  const args_allow_implicit_session = `--wallet-dir ${STORAGE_ROOT}/.beekeeper --salt avocado --allow-implicit-session true`.split(' ');
+  const args_disallow_implicit_session = `--wallet-dir ${STORAGE_ROOT}/.beekeeper --salt avocado --allow-implicit-session false`.split(' ');
 
   const beekeper = BeekeeperInstanceHelper.for(provider);
 
@@ -732,6 +734,27 @@ const my_entrypoint = async() => {
       testThrow(() => {
         api.signTransaction(api.implicitSessionToken, longStr, signData[1].public_key, signData[1].expected_signature);
       });
+    }
+  }
+
+  {
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Use argument `allow-implicit-session`.");
+    console.log("**************************************************************************************");
+
+    {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args_allow_implicit_session);
+      api.closeSession(api.implicitSessionToken);
+    }
+
+    {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args_disallow_implicit_session);
+      assert.throws(() => {
+        api.closeSession(api.implicitSessionToken);
+      }, ExtractError);
     }
   }
 
