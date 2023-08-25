@@ -876,7 +876,9 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper_parameters)
       beekeeper::beekeeper_api _obj( { "--wallet-dir", _dir.string(), "--salt", "avocado", "--allow-implicit-session", "true" } );
       beekeeper::init_data _init_data = fc::json::from_string( extract_json( _obj.init() ) ).as<beekeeper::init_data>();
       BOOST_TEST_MESSAGE( _init_data.token );
+      BOOST_TEST_MESSAGE( _init_data.version );
       BOOST_REQUIRE( !_init_data.token.empty() );
+      BOOST_REQUIRE( !_init_data.version.empty() );
       BOOST_REQUIRE( _init_data.status );
     }
 

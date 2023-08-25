@@ -12,7 +12,6 @@ class beekeeper_app_base
 
     virtual void set_program_options() = 0;
     virtual bool save_keys( const std::string& token, const std::string& wallet_name, const std::string& wallet_password ) = 0;
-    virtual init_data initialize_program_options() = 0;
     virtual init_data initialize( int argc, char** argv ) = 0;
     virtual void start() = 0;
 
