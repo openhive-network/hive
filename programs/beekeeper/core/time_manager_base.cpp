@@ -26,8 +26,7 @@ void time_manager_base::run()
   {
     if( now >= _it->time )
     {
-      auto _error_message = exception::exception_handler( "Automatic lock failed",
-                                                  [&]()
+      auto _result = exception::exception_handler([&]()
                                                   {
                                                     _idx.modify( _it, []( session_data &sd ){ sd.time = types::timepoint_t::max(); });
                                                     _it->notification_method();
@@ -35,9 +34,9 @@ void time_manager_base::run()
                                                     return "";
                                                   }
                                                 );
-      if( !_error_message.empty() )
+      if( !_result.second )
       {
-        send_auto_lock_error_message( _error_message );
+        send_auto_lock_error_message( _result.first );
         continue;
       }
     }

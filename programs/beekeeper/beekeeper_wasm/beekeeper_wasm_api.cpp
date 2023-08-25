@@ -68,8 +68,11 @@ namespace beekeeper {
 
   std::string beekeeper_api::exception_handler( std::function<std::string()>&& method )
   {
-    auto _result = exception::exception_handler( empty_response, std::move( method ) );
-    return to_string( _result, false/*valid*/ );
+    auto _result = exception::exception_handler( std::move( method ) );
+    if( _result.second )
+      return _result.first;
+    else
+      return to_string( _result.first, _result.second );
   }
 
   std::string beekeeper_api::init()
