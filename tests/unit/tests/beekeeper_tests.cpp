@@ -608,6 +608,23 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
   } FC_LOG_AND_RETHROW()
 }
 
+std::string extract_json( const std::string& str )
+{
+  BOOST_TEST_MESSAGE( "JSON: " + str );
+  if( str.empty() )
+    return str;
+  auto _v_init = fc::json::from_string( str );
+  BOOST_REQUIRE( _v_init.is_object() && ( _v_init.get_object().contains("result") || _v_init.get_object().contains("error") ) );
+
+  std::string _result;
+  if( _v_init.get_object().contains("result") )
+    fc::from_variant( _v_init.get_object()["result"], _result );
+  else
+    fc::from_variant( _v_init.get_object()["error"], _result );
+
+  return _result;
+};
+
 BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 {
   try {
@@ -622,23 +639,6 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 
     if( fc::exists( _wallet_1_path ) )
       fc::remove( _wallet_1_path );
-
-    auto extract_json = []( const std::string& str )
-    {
-      BOOST_TEST_MESSAGE( "JSON: " + str );
-      if( str.empty() )
-        return str;
-      auto _v_init = fc::json::from_string( str );
-      BOOST_REQUIRE( _v_init.is_object() && ( _v_init.get_object().contains("result") || _v_init.get_object().contains("error") ) );
-
-      std::string _result;
-      if( _v_init.get_object().contains("result") )
-        fc::from_variant( _v_init.get_object()["result"], _result );
-      else
-        fc::from_variant( _v_init.get_object()["error"], _result );
-
-      return _result;
-    };
 
     beekeeper::beekeeper_api _obj( { "--wallet-dir", _dir.string(), "--salt", "avocado" } );
 
@@ -862,6 +862,31 @@ BOOST_AUTO_TEST_CASE(wallet_manager_brute_force_protection_test)
 
     BOOST_TEST_MESSAGE( std::to_string( _duration.count() ) + " [ms]" );
     //BOOST_REQUIRE( _duration.count() >= 5000 );
+
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(wasm_beekeeper_parameters)
+{
+  try {
+    auto _current_path = fc::current_path();
+    fc::path _dir("./beekeeper-storage/"); 
+
+    {
+      beekeeper::beekeeper_api _obj( { "--wallet-dir", _dir.string(), "--salt", "avocado", "--allow-implicit-session", "true" } );
+      beekeeper::init_data _init_data = fc::json::from_string( extract_json( _obj.init() ) ).as<beekeeper::init_data>();
+      BOOST_TEST_MESSAGE( _init_data.token );
+      BOOST_REQUIRE( !_init_data.token.empty() );
+      BOOST_REQUIRE( _init_data.status );
+    }
+
+    {
+      beekeeper::beekeeper_api _obj( { "--wallet-dir", _dir.string(), "--salt", "avocado", "--allow-implicit-session", "false" } );
+      beekeeper::init_data _init_data = fc::json::from_string( extract_json( _obj.init() ) ).as<beekeeper::init_data>();
+      BOOST_TEST_MESSAGE( _init_data.token );
+      BOOST_REQUIRE( _init_data.token.empty() );
+      BOOST_REQUIRE( _init_data.status );
+    }
 
   } FC_LOG_AND_RETHROW()
 }
