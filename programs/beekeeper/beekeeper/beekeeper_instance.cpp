@@ -10,8 +10,8 @@
 namespace beekeeper {
   namespace bfs = boost::filesystem;
 
-  beekeeper_instance::beekeeper_instance( const boost::filesystem::path& _wallet_directory )
-                    : beekeeper_instance_base( _wallet_directory )
+  beekeeper_instance::beekeeper_instance( const boost::filesystem::path& _wallet_directory, const std::string& _notifications_endpoint )
+                    : beekeeper_instance_base( _wallet_directory ), error_notifications_endpoint( _notifications_endpoint )
   {
     pid_file        = wallet_directory / "beekeeper.pid";
     connection_file = wallet_directory / "beekeeper.connection";
@@ -132,18 +132,16 @@ namespace beekeeper {
 
   void beekeeper_instance::send_fail_notification()
   {
-    std::vector<fc::variant> _content;
+    fc::variant _pid        = read_file( pid_file );
+    fc::variant _connection = read_file( connection_file );
 
-    fc::variant _pid_v        = read_file( pid_file );
-    fc::variant _connection_v = read_file( connection_file );
+    auto _map_pid = _pid.as<std::map<std::string, std::string>>();
+    auto __pid = _map_pid["pid"];
 
-    _content.push_back( "Opening beekeeper failed" );
-    _content.push_back( _pid_v );
-    _content.push_back( _connection_v );
+    hive::utilities::notifications::notification_handler_wrapper _notification_handler;
+    _notification_handler.register_endpoints( { error_notifications_endpoint } );
 
-    auto _json = fc::json::to_string( _content );
-
-    appbase::app().notify_status( _json );
+    appbase::application::dynamic_notify( _notification_handler, "Opening beekeeper failed", "pid", __pid, "connection", _connection );
   }
 
   bool beekeeper_instance::start()
