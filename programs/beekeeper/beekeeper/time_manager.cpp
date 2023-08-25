@@ -25,19 +25,18 @@ time_manager::~time_manager()
 
 void time_manager::send_auto_lock_error_message( const std::string& message )
 {
-  std::string _error_message = exception::exception_handler( "Send auto lock error_message",
-                                [&, this]()
-                                {
-                                  hive::utilities::notifications::notification_handler_wrapper _notification_handler;
-                                  _notification_handler.register_endpoints( { error_notifications_endpoint } );
+  auto _result = exception::exception_handler( [&, this]()
+                                                {
+                                                  hive::utilities::notifications::notification_handler_wrapper _notification_handler;
+                                                  _notification_handler.register_endpoints( { error_notifications_endpoint } );
 
-                                  appbase::application::dynamic_notify( _notification_handler, "Automatic lock error", "message", message );
-                                  return "";
-                                }
+                                                  appbase::application::dynamic_notify( _notification_handler, "Automatic lock error", "message", message );
+                                                  return "";
+                                                }
                               );
-  if( !_error_message.empty() )
+  if( !_result.second )
   {
-    elog( _error_message );
+    elog( _result.first );
   }
 }
 
