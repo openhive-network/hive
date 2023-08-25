@@ -4,7 +4,7 @@ import pytest
 from dataclasses import dataclass, field
 from typing import Literal
 import test_tools as tt
-from hive_local_tools.functional.python.operation import get_current_mana
+from hive_local_tools.functional.python.operation import create_transaction_with_any_operation, get_current_mana
 
 
 @dataclass
@@ -108,6 +108,26 @@ class TransferAccount(Account):
     def get_hive_savings_balance(self) -> tt.Asset.Test:
         return tt.Asset.from_(self._node.api.database.find_accounts(accounts=[self._name])[
                                   'accounts'][0]['savings_balance'])
+
+
+@dataclass
+class CommentAccount(Account):
+    # class with account representation created for comment/delete_comment tests
+    def post_comment(self, permlink: str, parent_author: str, parent_permlink: str, title: str, body: str,
+                     json: str = "{}", broadcast=True, only_result: bool = True,):
+        self._wallet.api.post_comment(self._name, permlink, parent_author, parent_permlink, title, body, json,
+                                      broadcast, only_result)
+
+    def delete_comment(self, permlink):
+        create_transaction_with_any_operation(self._wallet, "delete_comment", author=self._name,
+                                              permlink=permlink)
+
+    def upvote_comment(self):
+
+        ...
+
+    def downvote_comment(self):
+        ...
 
 
 @pytest.fixture
