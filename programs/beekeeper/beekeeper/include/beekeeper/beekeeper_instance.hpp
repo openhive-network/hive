@@ -25,6 +25,7 @@ namespace beekeeper
       boost::filesystem::path lock_path_file;
 
       std::unique_ptr<boost::interprocess::file_lock> wallet_dir_lock;
+      std::string error_notifications_endpoint;
 
       void start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t );
       void initialize_lock();
@@ -40,7 +41,7 @@ namespace beekeeper
 
     public:
 
-      beekeeper_instance( const boost::filesystem::path& _wallet_directory );
+      beekeeper_instance( const boost::filesystem::path& _wallet_directory, const std::string& _notifications_endpoint );
       ~beekeeper_instance() override;
 
       bool start() override;
