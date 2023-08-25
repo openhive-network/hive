@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(wallet_test)
 
 beekeeper_wallet_manager create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, std::function<void()>&& method = [](){} )
 {
-  return beekeeper_wallet_manager( std::make_shared<session_manager>( "127.0.0.1:666" ), std::make_shared<beekeeper_instance>( cmd_wallet_dir ),
+  return beekeeper_wallet_manager( std::make_shared<session_manager>( "127.0.0.1:666" ), std::make_shared<beekeeper_instance>( cmd_wallet_dir, "127.0.0.1:666" ),
                                     cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit, std::move( method ) );
 }
 
