@@ -26,7 +26,8 @@ class beekeeper_app_init : public beekeeper_app_base
   protected:
 
     bool save_keys( const std::string& token, const std::string& wallet_name, const std::string& wallet_password ) override;
-    init_data initialize_program_options() override;
+    init_data initialize_program_options();
+    std::string check_version();
 
     virtual const boost::program_options::variables_map& get_args() const = 0;
     virtual bfs::path get_data_dir() const = 0;

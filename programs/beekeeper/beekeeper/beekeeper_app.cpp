@@ -26,6 +26,7 @@ init_data beekeeper_app::initialize( int argc, char** argv )
 {
   app.add_program_options( bpo::options_description(), options );
   app.set_app_name( "beekeeper" );
+  app.set_version_string( check_version() );
 
   app.register_plugin<hive::plugins::webserver::webserver_plugin>();
 
