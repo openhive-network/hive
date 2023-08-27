@@ -667,11 +667,14 @@ bool chain_plugin_impl::check_data_consistency()
     }
     if( db.get_snapshot_loaded() )
     {
-      wlog( "Replaying has to be forced, after snapshot's loading. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+      wlog( "Warning: replaying has to be forced after snapshot is loaded. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
     }
     else
     {
-      wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+      if (head_block_num_state == 0)
+        wlog("Warning: need to replay block_log before syncing is allowed, try --replay-blockchain");
+      else
+        wlog( "Warning: replay is not finished or state file is invalid. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }, try --replay-blockchain", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
       appbase::app().generate_interrupt_request();
       return false;
     }
