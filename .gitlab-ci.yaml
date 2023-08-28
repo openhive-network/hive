@@ -922,3 +922,4 @@ publish_beekeeper_wasm_production:
   only:
     - master
     - develop
+  when: manual
