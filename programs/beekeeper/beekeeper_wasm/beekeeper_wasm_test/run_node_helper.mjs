@@ -13,6 +13,7 @@ export default class BeekeeperInstanceHelper {
 
   #instance = undefined;
   #implicitSessionToken = undefined;
+  #version = undefined;
 
   static #passwords = new Map();
 
@@ -24,6 +25,10 @@ export default class BeekeeperInstanceHelper {
 
   get instance() {
     return this.#instance;
+  }
+
+  get version() {
+    return this.#version;
   }
 
   // Private functions:
@@ -73,6 +78,7 @@ export default class BeekeeperInstanceHelper {
 
     const initResult = this.instance.init();
     this.#implicitSessionToken = this.#extract(initResult).token;
+    this.#version = this.#extract(initResult).version;
   }
 
   // Public helper methods:

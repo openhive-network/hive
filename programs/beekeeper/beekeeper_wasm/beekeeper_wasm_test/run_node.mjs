@@ -758,6 +758,20 @@ const my_entrypoint = async() => {
     }
   }
 
+  {
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Check if an instance of beekeeper has a version.");
+    console.log("**************************************************************************************");
+
+    {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+      console.log(api.version);
+      assert.equal(api.version.length > 0, true);
+    }
+  }
+
   console.log('##########################################################################################');
   console.log('##                             ALL TESTS PASSED                                         ##');
   console.log('##########################################################################################');
