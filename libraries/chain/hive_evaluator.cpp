@@ -1207,7 +1207,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   if( o.vesting_shares.amount == 0 )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
-      FC_ASSERT( account.vesting_withdraw_rate.amount  != 0, "This operation would not change the vesting withdraw rate." );
+      FC_ASSERT( account.vesting_withdraw_rate.amount != 0, "This operation would not change the vesting withdraw rate." );
 
     _db.modify( account, [&]( account_object& a ) {
       a.vesting_withdraw_rate = asset( 0, VESTS_SYMBOL );

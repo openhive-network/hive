@@ -7230,9 +7230,16 @@ void database::perform_vesting_share_split( uint32_t magnitude )
         new_vesting_shares = a.get_vesting();
         a.withdrawn.amount *= magnitude;
         a.to_withdraw.amount *= magnitude;
-        a.vesting_withdraw_rate  = asset( a.to_withdraw.amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
+        a.vesting_withdraw_rate = asset( a.to_withdraw.amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
         if( a.vesting_withdraw_rate.amount == 0 )
           a.vesting_withdraw_rate.amount = 1;
+        //ABW: above setting to 1 is unnecessary and a bug, but it is also a bug that is very hard to fix;
+        //it is a bug, because it sets 1 for all accounts that had no active power down, for whom the original 0
+        //was correct value; it is hard to fix, because some of affected accounts still have that 1 to this day
+        //and could exploit any lazy fix; the problem lies in "cancel active power down" - since HF5 there really
+        //needs to be active power down for it to be acceptable, however for the check code that unfortunate 1 looks
+        //like active power down - if we fix it and leave zero, suddenly some historical as well as potentially
+        //new operations become invalid
 
         for( uint32_t i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
           a.proxied_vsf_votes[i] *= magnitude;
