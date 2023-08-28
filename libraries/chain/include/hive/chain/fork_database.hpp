@@ -208,6 +208,9 @@ namespace hive { namespace chain {
       fork_multi_index_type    _unlinked_index;
       fork_multi_index_type    _index;
       item_ptr                 _head;
+    public:
+      void display();
+
   };
 
 } } // hive::chain

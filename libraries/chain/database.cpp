@@ -52,6 +52,18 @@
 
 #include <stdlib.h>
 
+
+std::string formatHash(const uint32_t hash[5]) {
+    std::ostringstream oss;
+    for (int i = 0; i < 5; ++i) { 
+        for (int j = 0; j < 4; ++j) { 
+            uint8_t byte = (hash[i] >> (j * 8)) & 0xFF; // Extract byte
+            oss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(byte);
+        }
+    }
+    return "x" + oss.str();
+}
+
 static volatile auto stop_in_attempting_to_rewind_all_undo_state = false;
 
 
@@ -1381,11 +1393,17 @@ void database::_push_block_simplified(const std::shared_ptr<full_block_type>& fu
 try
 {
 //const uint32_t skip = get_node_properties().skip_flags;
+
+  _node_property_object.skip_flags = skip;
+  
   std::vector<std::shared_ptr<full_block_type>> blocks;
 
   if (!(skip & skip_fork_db)) //if fork checking enabled
   {
+    _fork_db.display();
+    wlog("Try pushing block to fork database: ${id}, ${num}", ("id", full_block->get_block_id())("num", full_block->get_block_num()));
     const item_ptr new_head = _fork_db.push_block(full_block);
+    _fork_db.display();
     
 //mtlk block_ctrl.on_fork_db_insert();
     
@@ -7722,6 +7740,8 @@ account_info extract_account_balances(
 
 std::string database::display_all_account_balances()
 {
+  return {};
+  
   auto& idx = get_index< hive::chain::account_index, hive::chain::by_name >();
   auto itr = idx.begin();
   auto end = idx.end();

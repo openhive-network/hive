@@ -4,6 +4,9 @@
 #include <boost/range/algorithm/reverse.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 
+static volatile auto stop_in_unlinked = false;
+
+
 namespace hive { namespace chain {
 
 fork_database::fork_database()
@@ -42,6 +45,10 @@ void fork_database::start_block(const std::shared_ptr<full_block_type>& full_blo
 shared_ptr<fork_item> fork_database::push_block(const std::shared_ptr<full_block_type>& full_block)
 {
   auto item = std::make_shared<fork_item>(full_block);
+  wlog("Try pushing block to fork database: ${id}, ${num}", ("id", item->get_block_id())("num", item->get_block_num()));
+  wlog("Try pushing block to fork database: ${id}, ${num}", ("id", full_block->get_block_id())("num", full_block->get_block_num()));
+
+
   return with_write_lock([&]() {
     try 
     {
@@ -51,6 +58,14 @@ shared_ptr<fork_item> fork_database::push_block(const std::shared_ptr<full_block
     {
       wlog("Pushing block to fork database that failed to link: ${id}, ${num}", ("id", item->get_block_id())("num", item->get_block_num()));
       wlog("Head: ${num}, ${id}", ("num", _head->get_block_num())("id", _head->get_block_id()));
+      wlog("pid =${pid}", ("pid", getpid()));
+
+      while(stop_in_unlinked)
+      {
+        int a = 0;
+        a=a;
+      }
+
       _unlinked_index.insert(item);
       throw;
     }
@@ -514,5 +529,45 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     return synopsis;
   });    
 } FC_LOG_AND_RETHROW() }
+
+
+ void fork_database::display()
+ {
+
+    auto& by_num_idx = _unlinked_index.get<block_num>();
+    auto display_idx = [](std::string intro, decltype(by_num_idx) by_num_idx)
+    {
+      auto itr = by_num_idx.begin();
+      
+      wlog("${intro} begin", ("intro", intro));
+      while(itr != by_num_idx.end() )
+      {
+        wlog("  num=${num} block_id=${id} prev_block_id=${prev_id}", 
+          
+          ("num", (*itr)->get_block_num() ) 
+          ("id", (*itr)->get_block_id()) 
+          ("prev_id",  (*itr)->previous_id()));
+
+          itr++;
+      }
+      wlog("${intro} end", ("intro", intro));
+    };
+
+    display_idx("unlinked: ", by_num_idx);
+
+    auto& normal_by_num_idx = _index.get<block_num>();
+    display_idx("normal: ", normal_by_num_idx);
+
+    if(_head)
+    {
+      wlog("a head: num=${num} block_id=${id} prev_block_id=${prev_id}", 
+        ("num", (_head)->get_block_num() ) 
+        ("id", (_head)->get_block_id()) 
+        ("prev_id",  (_head)->previous_id()));
+    }
+
+
+
+ }
 
 } } // hive::chain
