@@ -106,3 +106,12 @@ def get_transaction_timestamp(node: tt.InitNode, transaction):
 
 def jump_to_date(node: tt.InitNode, time_offset: datetime) -> None:
     node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.Time.TIME_OFFSET_FORMAT,))
+
+
+def get_rc_manabar(node: tt.InitNode, account_name: str) -> dict:
+    response = node.api.rc.find_rc_accounts(accounts=[account_name])["rc_accounts"][0]
+    return {
+        "current_mana": int(response["rc_manabar"]["current_mana"]),
+        "last_update_time": response["rc_manabar"]["last_update_time"],
+        "max_rc": int(response["max_rc"]),
+    }
