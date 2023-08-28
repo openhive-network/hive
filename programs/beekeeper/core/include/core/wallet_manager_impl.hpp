@@ -36,7 +36,7 @@ class wallet_manager_impl {
     std::map<std::string, std::unique_ptr<beekeeper_wallet_base>> wallets;
 
     std::string gen_password();
-    bool valid_filename( const string& name );
+    void valid_filename( const string& name );
 
     signature_type sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const public_key_type& public_key );
 };
