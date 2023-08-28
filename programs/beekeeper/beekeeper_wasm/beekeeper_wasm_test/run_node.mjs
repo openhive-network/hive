@@ -772,6 +772,60 @@ const my_entrypoint = async() => {
     }
   }
 
+  {
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("Analyze error messages.");
+    console.log("**************************************************************************************");
+
+    /** @type {BeekeeperInstanceHelper} */
+    const api = new beekeper(args);
+
+    api.setAcceptError = true;
+
+    {
+      let _error_message = api.open(api.implicitSessionToken, "");
+      console.log(_error_message);
+      assert.equal(_error_message.includes("Name of wallet is incorrect. Is empty."), true);
+    }
+    {
+      let _error_message = api.open(api.implicitSessionToken, "%$%$");
+      console.log(_error_message);
+      assert.equal(_error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
+    }
+    {
+      let _error_message = api.create(api.implicitSessionToken, "", "cherry-password");
+      console.log(_error_message);
+      assert.equal(_error_message.includes("Name of wallet is incorrect. Is empty."), true);
+    }
+    {
+      let _error_message = api.create(api.implicitSessionToken, "%$%$", "cherry-password");
+      console.log(_error_message);
+      assert.equal(_error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
+    }
+    {
+      const walletNo = 9;
+      let _error_message = api.create(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
+      console.log(_error_message);
+      assert.equal(_error_message.includes("Wallet with name: 'w9' already exists at"), true);
+    }
+    {
+      let _error_message = api.open(api.implicitSessionToken, "abc");
+      console.log(_error_message);
+      assert.equal(_error_message.includes("Unable to open file: "), true);
+    }
+    {
+      let _error_message = api.close(api.implicitSessionToken, "abc");
+      console.log(_error_message);
+      assert.equal(_error_message.includes("Wallet not found: abc"), true);
+    }
+    {
+      let _error_message = api.getPublicKeys(api.implicitSessionToken);
+      console.log(_error_message);
+      assert.equal(_error_message.includes("You don't have any wallet!"), true);
+    }
+  }
+
   console.log('##########################################################################################');
   console.log('##                             ALL TESTS PASSED                                         ##');
   console.log('##########################################################################################');
