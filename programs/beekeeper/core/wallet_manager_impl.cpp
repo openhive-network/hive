@@ -18,16 +18,20 @@ std::string wallet_manager_impl::gen_password()
   return password_prefix + key.key_to_wif();
 }
 
-bool wallet_manager_impl::valid_filename(const string& name)
+void wallet_manager_impl::valid_filename( const string& name )
 {
-  if (name.empty()) return false;
-  if (std::find_if(name.begin(), name.end(), !boost::algorithm::is_alnum() && !boost::algorithm::is_any_of("._-")) != name.end()) return false;
-  return bfs::path(name).filename().string() == name;
+  FC_ASSERT( !name.empty(), "Name of wallet is incorrect. Is empty.");
+
+  FC_ASSERT( std::find_if(name.begin(), name.end(), !boost::algorithm::is_alnum() && !boost::algorithm::is_any_of("._-")) == name.end(),
+        "Name of wallet is incorrect. Name: ${name}. Only alphanumeric and '._-' chars are allowed", (name));
+
+  FC_ASSERT( bfs::path(name).filename().string() == name,
+          "Name of wallet is incorrect. Name: ${name}. File creation with given name is impossible." );
 }
 
 std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_filename_creator, const std::string& name, fc::optional<std::string> password )
 {
-  FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
+  valid_filename(name);
 
   auto wallet_filename = wallet_filename_creator( name );
   FC_ASSERT( !bfs::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
@@ -60,7 +64,7 @@ std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_fil
 
 void wallet_manager_impl::open( wallet_filename_creator_type wallet_filename_creator, const std::string& name )
 {
-  FC_ASSERT( valid_filename(name), "Invalid filename, path not allowed in wallet name ${n}", ("n", name));
+  valid_filename(name);
 
   wallet_data d;
   auto wallet = std::make_unique<beekeeper_wallet>(d);
