@@ -15,6 +15,8 @@ export default class BeekeeperInstanceHelper {
   #implicitSessionToken = undefined;
   #version = undefined;
 
+  #acceptError = false;
+
   static #passwords = new Map();
 
   // Getters for private properties:
@@ -29,6 +31,13 @@ export default class BeekeeperInstanceHelper {
 
   get version() {
     return this.#version;
+  }
+
+  /**
+   * @param {(arg0: boolean) => void} acceptError
+   */
+  set setAcceptError(acceptError) {
+    this.#acceptError = acceptError;
   }
 
   // Private functions:
@@ -47,10 +56,20 @@ export default class BeekeeperInstanceHelper {
   #extract(json) {
     const parsed = JSON.parse(json);
 
-    if( !parsed.hasOwnProperty('result') )
-      throw new ExtractError(parsed);
-
-    return JSON.parse(parsed.result);
+    if( this.#acceptError )
+    {
+      if( !parsed.hasOwnProperty('error') )
+        throw new ExtractError(parsed);
+  
+      return JSON.parse(parsed.error);
+    }
+    else
+    {
+      if( !parsed.hasOwnProperty('result') )
+        throw new ExtractError(parsed);
+  
+      return JSON.parse(parsed.result);
+    }
   }
 
   #parseStringList(provider, options) {
@@ -99,10 +118,17 @@ export default class BeekeeperInstanceHelper {
   create(sessionToken, walletName, explicitPassword) {
     const returnedValue = this.instance.create(sessionToken, walletName, explicitPassword);
 
-    const value = this.#extract(returnedValue);
-    BeekeeperInstanceHelper.#setPassword(walletName, value.password);
+    if( this.#acceptError )
+    {
+      return this.#extract(returnedValue);
+    }
+    else
+    {
+      const value = this.#extract(returnedValue);
+      BeekeeperInstanceHelper.#setPassword(walletName, value.password);
 
-    return value.password;
+      return value.password;
+    }
   }
 
   importKey(sessionToken, walletName, key) {
@@ -171,13 +197,13 @@ export default class BeekeeperInstanceHelper {
   open(sessionToken, walletName) {
     const returnedValue = this.instance.open(sessionToken, walletName);
 
-    this.#extract(returnedValue);
+    return this.#extract(returnedValue);
   }
 
   close(sessionToken, walletName) {
     const returnedValue = this.instance.close(sessionToken, walletName);
 
-    this.#extract(returnedValue);
+    return this.#extract(returnedValue);
   }
 
   unlock(sessionToken, walletName, explicitPassword = undefined) {
