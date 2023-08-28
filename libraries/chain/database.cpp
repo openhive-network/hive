@@ -2838,7 +2838,8 @@ void database::process_vesting_withdrawals()
       {
         a.vesting_withdraw_rate.amount = 0;
         a.next_vesting_withdrawal = fc::time_point_sec::maximum();
-        //to_withdraw/withdrawn should also be reset here
+        a.to_withdraw.amount = 0;
+        a.withdrawn.amount = 0;
       }
       else
       {
