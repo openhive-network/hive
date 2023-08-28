@@ -171,7 +171,7 @@ init_data beekeeper_app_init::initialize_program_options()
       FC_ASSERT( _args.count("export-keys-wallet-password") );
       bool _result = save_keys( _token, _args.at( "export-keys-wallet-name" ).as<std::string>(), _args.at( "export-keys-wallet-password" ).as<std::string>() );
 
-      return { _result, _token };
+      return { _result, _token, fc::git_revision_sha };
   } FC_LOG_AND_RETHROW()
 }
 
