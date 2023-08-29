@@ -7,8 +7,10 @@ from hive_local_tools.functional.python.operation import get_number_of_fill_orde
 @pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
 @pytest.mark.testnet
 def test_not_matching_orders_with_fill_or_kill(prepared_node, alice, bob, use_hbd_in_matching_order, create_order_func):
-    # test case 1, 2 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 1, 2 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
     getattr(alice, create_order_func)(150, 200, buy_hbd=not use_hbd_in_matching_order)
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         getattr(bob, create_order_func)(200, 300, buy_hbd=use_hbd_in_matching_order, fill_or_kill=True)
@@ -21,8 +23,10 @@ def test_not_matching_orders_with_fill_or_kill(prepared_node, alice, bob, use_hb
 @pytest.mark.testnet
 def test_match_third_order_with_kill_or_fill(prepared_node, alice, bob, carol, use_hbd_in_matching_order,
                                              create_order_func):
-    # test case 3 and 4 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 3 and 4 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
     getattr(alice, create_order_func)(300, 160, buy_hbd=not use_hbd_in_matching_order)
     getattr(bob, create_order_func)(100, 200, buy_hbd=not use_hbd_in_matching_order)
     getattr(carol, create_order_func)(100, 150, buy_hbd=use_hbd_in_matching_order, fill_or_kill=True)
@@ -44,8 +48,10 @@ def test_match_third_order_with_kill_or_fill(prepared_node, alice, bob, carol, u
 @pytest.mark.testnet
 def test_match_fifth_order(prepared_node, alice, bob, carol, daisy, elizabeth, use_hbd_in_matching_order,
                            create_order_func):
-    # test case 5 and 6 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 5 and 6 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
 
     getattr(alice, create_order_func)(100, 150, buy_hbd=not use_hbd_in_matching_order)
     getattr(bob, create_order_func)(80, 100, buy_hbd=not use_hbd_in_matching_order)
@@ -71,8 +77,10 @@ def test_match_fifth_order(prepared_node, alice, bob, carol, daisy, elizabeth, u
 @pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
 @pytest.mark.testnet
 def test_not_matching_orders(prepared_node, alice, bob, use_hbd_in_matching_order, create_order_func):
-    # test case 7, 8 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 7, 8 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
     getattr(alice, create_order_func)(150, 200, buy_hbd=not use_hbd_in_matching_order)
     getattr(bob, create_order_func)(200, 300, buy_hbd=use_hbd_in_matching_order)
 
@@ -89,8 +97,10 @@ def test_not_matching_orders(prepared_node, alice, bob, use_hbd_in_matching_orde
 @pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
 @pytest.mark.testnet
 def test_full_match_third_order(prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_order_func):
-    # test case 9, 10 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 9, 10 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
 
     getattr(alice, create_order_func)(300, 160, buy_hbd=not use_hbd_in_matching_order)
     getattr(bob, create_order_func)(100, 200, buy_hbd=not use_hbd_in_matching_order)
@@ -118,8 +128,10 @@ def test_full_match_third_order(prepared_node, alice, bob, carol, use_hbd_in_mat
 @pytest.mark.parametrize("create_order_func", ['create_order', 'create_order_2'])
 @pytest.mark.testnet
 def test_full_match_first_order(prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_order_func):
-    # test case 11, 12 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 11, 12 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
 
     getattr(alice, create_order_func)(150, 100, buy_hbd=use_hbd_in_matching_order)
     alice.assert_balance(amount=300, check_hbd=not use_hbd_in_matching_order, message="creation")
@@ -149,8 +161,10 @@ def test_full_match_first_order(prepared_node, alice, bob, carol, use_hbd_in_mat
 @pytest.mark.testnet
 def test_partial_match_third_order(prepared_node, alice, bob, carol, daisy, use_hbd_in_matching_order,
                                    create_order_func):
-    # test case 13, 14 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 13, 14 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
 
     getattr(alice, create_order_func)(300, 160, buy_hbd=use_hbd_in_matching_order)
     getattr(bob, create_order_func)(100, 200, buy_hbd=use_hbd_in_matching_order)
@@ -188,8 +202,10 @@ def test_partial_match_third_order(prepared_node, alice, bob, carol, daisy, use_
 @pytest.mark.testnet
 def test_partially_match_every_next_order(prepared_node, alice, bob, carol, daisy, elizabeth, use_hbd_in_matching_order,
                                           create_order_func):
-    # test case 15, 16 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 15, 16 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
 
     getattr(alice, create_order_func)(450, 300, buy_hbd=not use_hbd_in_matching_order)
 
@@ -248,8 +264,10 @@ def test_partially_match_every_next_order(prepared_node, alice, bob, carol, dais
 @pytest.mark.testnet
 def test_match_third_order_partially_and_wait_for_expiration(prepared_node, alice, bob, carol,
                                                              use_hbd_in_matching_order, create_order_func):
-    # test case 17, 18 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 17, 18 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
 
     getattr(alice, create_order_func)(300, 160, buy_hbd=use_hbd_in_matching_order)
     getattr(bob, create_order_func)(100, 200, buy_hbd=use_hbd_in_matching_order)
@@ -275,8 +293,10 @@ def test_match_third_order_partially_and_wait_for_expiration(prepared_node, alic
 @pytest.mark.testnet
 def test_match_third_order_partially_and_wait_for_expiration_scenario_2(prepared_node, alice, bob, carol,
                                                                         use_hbd_in_matching_order, create_order_func):
-    # test case 19, 20 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 19, 20 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
 
     getattr(alice, create_order_func)(450, 300, buy_hbd=not use_hbd_in_matching_order)
     # check if rc was  reduced after fixing issue: https://gitlab.syncad.com/hive/hive/-/issues/507
@@ -308,8 +328,10 @@ def test_match_third_order_partially_and_wait_for_expiration_scenario_2(prepared
 @pytest.mark.testnet
 def test_match_fifth_order_partially(prepared_node, alice, bob, carol, daisy, elizabeth, use_hbd_in_matching_order,
                                      create_order_func):
-    # test case 21, 22 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 21, 22 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
 
     getattr(alice, create_order_func)(100, 150, buy_hbd=use_hbd_in_matching_order)
 
@@ -341,8 +363,10 @@ def test_match_fifth_order_partially(prepared_node, alice, bob, carol, daisy, el
 @pytest.mark.testnet
 def test_full_match_fifth_order(prepared_node, alice, bob, carol, daisy, elizabeth, use_hbd_in_matching_order,
                                 create_order_func):
-    # test case 23, 24 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
-    # https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
+    test case 23, 24 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
+    https://gitlab.syncad.com/hive/hive/-/issues/487
+    """
 
     getattr(alice, create_order_func)(400, 600, buy_hbd=not use_hbd_in_matching_order)
     getattr(bob, create_order_func)(100, 200, buy_hbd=use_hbd_in_matching_order)
