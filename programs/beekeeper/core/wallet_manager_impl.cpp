@@ -110,7 +110,7 @@ map<public_key_type, private_key_type> wallet_manager_impl::list_keys( const str
 
 flat_set<public_key_type> wallet_manager_impl::get_public_keys()
 {
-  FC_ASSERT( !wallets.empty(), "You don't have any wallet!");
+  FC_ASSERT( !wallets.empty(), "You don't have any wallet");
 
   flat_set<public_key_type> result;
   bool is_all_wallet_locked = true;
@@ -124,7 +124,7 @@ flat_set<public_key_type> wallet_manager_impl::get_public_keys()
     is_all_wallet_locked &= i.second->is_locked();
   }
 
-  FC_ASSERT( !is_all_wallet_locked, "You don't have any unlocked wallet!");
+  FC_ASSERT( !is_all_wallet_locked, "You don't have any unlocked wallet");
   return result;
 }
 
@@ -144,10 +144,7 @@ void wallet_manager_impl::lock( const std::string& name )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
   auto& w = wallets.at(name);
-  if (w->is_locked())
-  {
-    return;
-  }
+
   w->lock();
 }
 
