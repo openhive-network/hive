@@ -734,6 +734,9 @@ struct comment_options_extension_visitor
   {
     FC_ASSERT( _c.get_beneficiaries().size() == 0, "Comment already has beneficiaries specified." );
     FC_ASSERT( !_c.has_votes(), "Comment must not have been voted on before specifying beneficiaries." );
+    // check below moved from witness plugin, it remains softfork check
+    FC_ASSERT( !_db.is_in_control() || cpb.beneficiaries.size() <= HIVE_MAX_COMMENT_BENEFICIARIES,
+      "Cannot specify more than ${x} beneficiaries.", ( "x", HIVE_MAX_COMMENT_BENEFICIARIES ) );
 
     _db.modify( _c, [&]( comment_cashout_object& c )
     {

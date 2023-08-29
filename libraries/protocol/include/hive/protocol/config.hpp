@@ -275,6 +275,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MAX_COMMENT_DEPTH_PRE_HF17       6
 #define HIVE_MAX_COMMENT_DEPTH                0xffff // 64k
 #define HIVE_SOFT_MAX_COMMENT_DEPTH           0xff // 255
+#define HIVE_MAX_COMMENT_BENEFICIARIES        8
 
 #define HIVE_MAX_RESERVE_RATIO                (20000)
 
