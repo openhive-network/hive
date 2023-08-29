@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Optional, Union
 import test_tools as tt
 from hive_local_tools.functional.python.operation import create_transaction_with_any_operation, Account
 
@@ -111,6 +111,81 @@ class TransferAccount(Account):
     def get_hive_savings_balance(self) -> tt.Asset.Test:
         return tt.Asset.from_(self._node.api.database.find_accounts(accounts=[self._name])[
                                   'accounts'][0]['savings_balance'])
+
+
+@dataclass
+class UpdateAccount(Account):
+    __key_generation_counter = 0
+
+    def assert_account_details_were_changed(self, *, new_json_meta: str = None, new_owner: Union[str, list] = None,
+                                            new_active: Union[str, list] = None,  new_posting: Union[str, list] = None,
+                                            new_memo: str = None):
+        # for owner/active/posting argument method accepts both the authority (list - [key, weight]) and key as string
+        self.update_account_info()
+        if new_owner is not None:
+            to_compare = list(self._acc_info["owner"]["key_auths"][0]) if isinstance(new_owner, list) else (
+                self._acc_info)["owner"]["key_auths"][0][0]
+            assert new_owner == to_compare, f"Owner authority of account {self._name} wasn't changed."
+
+        if new_active is not None:
+            to_compare = list(self._acc_info["active"]["key_auths"][0]) if isinstance(new_active, list) else (
+                self._acc_info)["active"]["key_auths"][0][0]
+            assert new_active == to_compare, f"Active authority of account {self._name} wasn't changed."
+
+        if new_posting is not None:
+            to_compare = list(self._acc_info["posting"]["key_auths"][0]) if isinstance(new_posting, list) else (
+                self._acc_info)["posting"]["key_auths"][0][0]
+            assert new_posting == to_compare, f"Posting authority of account {self._name} wasn't changed."
+
+        if new_memo is not None:
+            to_compare = self._acc_info["memo_key"]
+            assert new_memo == to_compare, f"Memo key of account {self._name} wasn't changed."
+
+        if new_json_meta is not None:
+            to_compare = self._acc_info["json_metadata"]
+            assert new_json_meta == to_compare, f"Json metadata of account {self._name} wasn't changed."
+
+    def generate_new_key(self):
+        self.__key_generation_counter += 1
+        return tt.Account(self._name, secret=f"other_than_previous_{self.__key_generation_counter}").public_key
+
+    def get_current_key(self, type_: str):
+        assert type_ in ("owner", "active", "posting", "memo"), "Wrong key type."
+        self.update_account_info()
+        return self._acc_info[type_]["key_auths"][0][0] if type_ is not "memo" else self._acc_info[type_+"_key"]
+
+    def update_all_account_details(self, *, json_meta: str, owner: str, active: str, posting: str, memo: str):
+        self._wallet.api.update_account(self._name, json_meta=json_meta, owner=owner, active=active, posting=posting,
+                                        memo=memo, broadcast=True)
+
+    def update_single_account_detail(self, *, json_meta: str = None, key_type: str = None, key: tt.PublicKey = None,
+                                     weight: Optional[int] = 1):
+        """
+        Swapping only one key owner/active/posting require firstly adding new key and then deleting old one
+        (setting weight equal to zero). This has to be done because update account requires all 5 arguments. Methods
+        changing only one variable like update_account_auth_key, update_account_meta and  update_account_memo_key call
+        update_account anyway, so it's still being tested.
+        """
+        if json_meta is not None:
+            self._wallet.api.update_account_meta(self._name, json_meta, broadcast=True)
+            return
+        assert key_type in ("owner", "active", "posting", "memo"), "Wrong authority type."
+        if key_type == "memo":
+            self._wallet.api.update_account_memo_key(self._name, key, broadcast=True)
+            return
+        self.update_account_info()
+        current_key = self._acc_info[key_type]["key_auths"][0][0]
+        # add new / update weight of existing key
+        self._wallet.api.update_account_auth_key(self._name, key_type, key, weight, broadcast=True)
+        if current_key != key:
+            # generate private key corresponding given public key
+            new_private = tt.Account(self._name, secret=f"other_than_previous_{self.__key_generation_counter}").private_key
+            # delete old one - make weight equal to zero
+            self._wallet.api.update_account_auth_key(self._name, key_type, current_key, 0, broadcast=True)
+            self._wallet.api.import_key(new_private)
+
+    def use_authority(self, authority_type: str):
+        self._wallet.api.use_authority(authority_type, self._name)
 
 
 @pytest.fixture
