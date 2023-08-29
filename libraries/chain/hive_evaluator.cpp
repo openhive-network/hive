@@ -1766,7 +1766,8 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   else
   {
-    FC_ASSERT( itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES, "Voter has used the maximum number of vote changes on this comment." );
+    if( !_db.has_hardfork( HIVE_HARDFORK_1_28_NO_VOTE_LIMIT ) )
+      FC_ASSERT( itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES, "Voter has used the maximum number of vote changes on this comment." );
     FC_ASSERT( itr->get_vote_percent() != o.weight, "Your current vote on this comment is identical to this vote." );
     previous_vote_percent = itr->get_vote_percent();
     previous_rshares = itr->get_rshares();
