@@ -220,19 +220,6 @@ namespace detail {
       limit_custom_op_count( o );
     }
 
-    void operator()( const comment_operation& o )const
-    {
-      if( o.parent_author != HIVE_ROOT_POST_PARENT )
-      {
-        const auto& parent = _db.find_comment( o.parent_author, o.parent_permlink );
-
-        if( parent != nullptr )
-        HIVE_ASSERT( parent->get_depth() < HIVE_SOFT_MAX_COMMENT_DEPTH,
-          plugin_exception,
-          "Comment is nested ${x} posts deep, maximum depth is ${y}.", ("x",parent->get_depth())("y",HIVE_SOFT_MAX_COMMENT_DEPTH) );
-      }
-    }
-
     void operator()( const transfer_operation& o )const
     {
       if( o.memo.length() > 0 )
