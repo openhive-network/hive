@@ -800,10 +800,11 @@ void comment_evaluator::do_apply( const comment_operation& o )
   if( o.parent_author != HIVE_ROOT_POST_PARENT )
   {
     parent = &_db.get_comment( o.parent_author, o.parent_permlink );
-    if( !_db.has_hardfork( HIVE_HARDFORK_0_17__767 ) )
-      FC_ASSERT( parent->get_depth() < HIVE_MAX_COMMENT_DEPTH_PRE_HF17, "Comment is nested ${x} posts deep, maximum depth is ${y}.", ("x",parent->get_depth())("y",HIVE_MAX_COMMENT_DEPTH_PRE_HF17) );
-    else
-      FC_ASSERT( parent->get_depth() < HIVE_MAX_COMMENT_DEPTH, "Comment is nested ${x} posts deep, maximum depth is ${y}.", ("x",parent->get_depth())("y",HIVE_MAX_COMMENT_DEPTH) );
+    uint16_t depth_limit = !_db.has_hardfork( HIVE_HARDFORK_0_17__767 ) ? HIVE_MAX_COMMENT_DEPTH_PRE_HF17 : HIVE_MAX_COMMENT_DEPTH;
+    if( _db.is_in_control() && depth_limit > HIVE_SOFT_MAX_COMMENT_DEPTH )
+      depth_limit = HIVE_SOFT_MAX_COMMENT_DEPTH; // soft check moved from witness plugin
+    FC_ASSERT( parent->get_depth() < depth_limit,
+      "Comment is nested ${x} posts deep, maximum depth is ${y}.", ( "x", parent->get_depth() )( "y", depth_limit ) );
   }
 
   FC_ASSERT( fc::is_utf8( o.json_metadata ), "JSON Metadata must be UTF-8" );
