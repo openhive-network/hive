@@ -268,6 +268,8 @@ void database::initialize_state_independent_data(const open_args& args)
 
 void database::load_state_initial_data(const open_args& args)
 {
+
+try{
   if (head_block_num())
   {
     std::shared_ptr<full_block_type> head_block = get_head_block();
@@ -279,6 +281,10 @@ void database::load_state_initial_data(const open_args& args)
     _fork_db.start_block(head_block);
   }
 
+}
+FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+
+try{
   with_read_lock([&]() {
     const auto& hardforks = get_hardfork_property_object();
     FC_ASSERT(hardforks.last_hardfork <= HIVE_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork", hardforks.last_hardfork)("HIVE_NUM_HARDFORKS", HIVE_NUM_HARDFORKS));
@@ -286,6 +292,11 @@ void database::load_state_initial_data(const open_args& args)
     FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION >= HIVE_BLOCKCHAIN_VERSION);
     FC_ASSERT(HIVE_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions.versions[HIVE_NUM_HARDFORKS], "Blockchain version mismatch", (HIVE_BLOCKCHAIN_HARDFORK_VERSION)(_hardfork_versions.versions[HIVE_NUM_HARDFORKS]));
   });
+}
+FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+
+
+try{
 
 #ifdef USE_ALTERNATE_CHAIN_ID
   /// Leave the chain-id passed to cmdline option.
@@ -299,6 +310,10 @@ void database::load_state_initial_data(const open_args& args)
     }
   });
 #endif /// IS_TEST_NET
+
+  }
+  FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
+
 }
 
 void database::rewind_undo_state(const open_args& args)
