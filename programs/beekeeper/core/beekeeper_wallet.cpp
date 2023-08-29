@@ -323,12 +323,15 @@ void beekeeper_wallet::lock()
   try
   {
     FC_ASSERT( !is_locked(), "Unable to lock a locked wallet" );
+
     encrypt_keys();
+
     for( auto key : my->_keys )
-    key.second = private_key_type();
+      key.second = private_key_type();
 
     my->_keys.clear();
     my->_checksum = fc::sha512();
+
   } FC_CAPTURE_AND_RETHROW()
 }
 
