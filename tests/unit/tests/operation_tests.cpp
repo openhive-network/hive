@@ -8107,7 +8107,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     op.extensions.insert( b );
     tx.clear();
     tx.operations.push_back( op );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), chain::plugin_exception );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
 
 
     BOOST_TEST_MESSAGE( "--- Test specifying a non-existent benefactor" );

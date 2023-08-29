@@ -104,30 +104,6 @@ namespace detail {
     }
   };
 
-  struct comment_options_extension_visitor
-  {
-    comment_options_extension_visitor( const comment_object& c, const database& db ) : _c( c ), _db( db ) {}
-
-    typedef void result_type;
-
-    const comment_object& _c;
-    const database& _db;
-
-#ifdef HIVE_ENABLE_SMT
-    void operator()( const allowed_vote_assets& va) const
-    {
-      FC_TODO("To be implemented support for allowed_vote_assets");
-    }
-#endif
-
-    void operator()( const comment_payout_beneficiaries& cpb )const
-    {
-      HIVE_ASSERT( cpb.beneficiaries.size() <= 8,
-        plugin_exception,
-        "Cannot specify more than 8 beneficiaries." );
-    }
-  };
-
   void check_memo( const string& memo, const chain::account_object& account, const account_authority_object& auth )
   {
     vector< public_key_type > keys;
@@ -242,18 +218,6 @@ namespace detail {
     void operator()( const custom_binary_operation& o )const
     {
       limit_custom_op_count( o );
-    }
-
-    void operator()( const comment_options_operation& o )const
-    {
-      const auto& comment = _db.get_comment( o.author, o.permlink );
-
-      comment_options_extension_visitor v( comment, _db );
-
-      for( auto& e : o.extensions )
-      {
-        e.visit( v );
-      }
     }
 
     void operator()( const comment_operation& o )const
