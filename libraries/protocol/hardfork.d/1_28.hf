@@ -13,5 +13,7 @@ long next_hf_time();
 
 // fix prolonged power down caused by disturbance introduced during HF1 (yes, that long ago)
 #define HIVE_HARDFORK_1_28_FIX_POWER_DOWN (HIVE_HARDFORK_1_28)
+// remove limit of vote edits (issue #458)
+#define HIVE_HARDFORK_1_28_NO_VOTE_LIMIT (HIVE_HARDFORK_1_28)
 
 #endif

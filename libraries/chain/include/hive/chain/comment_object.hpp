@@ -400,7 +400,7 @@ namespace hive { namespace chain {
       int64_t           rshares = 0; ///< The number of rshares this vote is responsible for
       int16_t           vote_percent = 0; ///< The percent weight of the vote
       time_point_sec    last_update; ///< The time of the last update of the vote
-      int8_t            num_changes = 0;
+      int8_t            num_changes = 0; ///< TODO: remove after HF28
 
     CHAINBASE_UNPACK_CONSTRUCTOR(comment_vote_object);
   };
