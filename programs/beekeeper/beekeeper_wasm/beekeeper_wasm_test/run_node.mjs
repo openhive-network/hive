@@ -784,45 +784,124 @@ const my_entrypoint = async() => {
     api.setAcceptError = true;
 
     {
-      let _error_message = api.open(api.implicitSessionToken, "");
-      console.log(_error_message);
-      assert.equal(_error_message.includes("Name of wallet is incorrect. Is empty."), true);
+      const error_message = api.open(api.implicitSessionToken, "");
+      console.log(error_message);
+      assert.equal(error_message.includes("Name of wallet is incorrect. Is empty."), true);
     }
     {
-      let _error_message = api.open(api.implicitSessionToken, "%$%$");
-      console.log(_error_message);
-      assert.equal(_error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
+      const error_message = api.open(api.implicitSessionToken, "%$%$");
+      console.log(error_message);
+      assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
     }
     {
-      let _error_message = api.create(api.implicitSessionToken, "", "cherry-password");
-      console.log(_error_message);
-      assert.equal(_error_message.includes("Name of wallet is incorrect. Is empty."), true);
+      const error_message = api.create(api.implicitSessionToken, "", "cherry-password");
+      console.log(error_message);
+      assert.equal(error_message.includes("Name of wallet is incorrect. Is empty."), true);
     }
     {
-      let _error_message = api.create(api.implicitSessionToken, "%$%$", "cherry-password");
-      console.log(_error_message);
-      assert.equal(_error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
+      const error_message = api.create(api.implicitSessionToken, "%$%$", "cherry-password");
+      console.log(error_message);
+      assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
     }
     {
       const walletNo = 9;
-      let _error_message = api.create(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
-      console.log(_error_message);
-      assert.equal(_error_message.includes("Wallet with name: 'w9' already exists at"), true);
+      const error_message = api.create(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
+      console.log(error_message);
+      assert.equal(error_message.includes("Wallet with name: 'w9' already exists at"), true);
     }
     {
-      let _error_message = api.open(api.implicitSessionToken, "abc");
-      console.log(_error_message);
-      assert.equal(_error_message.includes("Unable to open file: "), true);
+      const error_message = api.open(api.implicitSessionToken, "abc");
+      console.log(error_message);
+      assert.equal(error_message.includes("Unable to open file: "), true);
     }
     {
-      let _error_message = api.close(api.implicitSessionToken, "abc");
-      console.log(_error_message);
-      assert.equal(_error_message.includes("Wallet not found: abc"), true);
+      const error_message = api.close(api.implicitSessionToken, "abc");
+      console.log(error_message);
+      assert.equal(error_message.includes("Wallet not found: abc"), true);
     }
     {
-      let _error_message = api.getPublicKeys(api.implicitSessionToken);
-      console.log(_error_message);
-      assert.equal(_error_message.includes("You don't have any wallet!"), true);
+      const error_message = api.getPublicKeys(api.implicitSessionToken);
+      console.log(error_message);
+      assert.equal(error_message.includes("You don't have any wallet"), true);
+    }
+    {
+      api.setAcceptError = false;
+      const walletNo = 9;
+      api.open(api.implicitSessionToken, walletNames[walletNo]);
+
+      api.setAcceptError = true;
+      const error_message = api.getPublicKeys(api.implicitSessionToken);
+      console.log(error_message);
+      assert.equal(error_message.includes("You don't have any unlocked wallet"), true);
+    }
+    {
+      const walletNo = 8;
+
+      api.setAcceptError = true;
+      let error_message = api.lock(api.implicitSessionToken, walletNames[walletNo]);
+      console.log(error_message);
+      assert.equal(error_message.includes("Wallet not found: w8"), true);
+
+      api.setAcceptError = false;
+      error_message = api.open(api.implicitSessionToken, walletNames[walletNo]);
+      console.log(error_message);
+
+      api.setAcceptError = true;
+      error_message = api.lock(api.implicitSessionToken, walletNames[walletNo]);
+      console.log(error_message);
+      assert.equal(error_message.includes("Unable to lock a locked wallet"), true);
+    }
+    {
+      const walletNo = 2;
+
+      api.setAcceptError = true;
+      let error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo], "");
+      console.log(error_message);
+      assert.equal(error_message.includes("password.size() > 0"), true);
+      
+      error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo], "strawberry");
+      console.log(error_message);
+      assert.equal(error_message.includes("Invalid password for wallet"), true);
+
+      api.setAcceptError = false;
+      error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+      console.log(error_message);
+
+      api.setAcceptError = true;
+      error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+      console.log(error_message);
+      assert.equal(error_message.includes("Wallet is already unlocked: w2"), true);
+    }
+    {
+      api.setAcceptError = true;
+      let error_message = api.importKey(api.implicitSessionToken, "pear", "key");
+      console.log(error_message);
+      assert.equal(error_message.includes("Wallet not found: pear"), true);
+
+      api.setAcceptError = false;
+      const walletNo = 0;
+      api.open(api.implicitSessionToken, walletNames[walletNo]);
+
+      api.setAcceptError = true;
+      error_message = api.importKey(api.implicitSessionToken, walletNames[walletNo], "key");
+      console.log(error_message);
+      assert.equal(error_message.includes("Wallet is locked: w0"), true);
+
+      api.setAcceptError = false;
+      api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+
+      api.setAcceptError = true;
+      error_message = api.importKey(api.implicitSessionToken, walletNames[walletNo], "peach");
+      console.log(error_message);
+      assert.equal(error_message.includes("Key can't be constructed"), true);
+
+      api.setAcceptError = false;
+      api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
+
+      api.setAcceptError = true;
+      error_message = api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
+      console.log(error_message);
+      assert.equal(error_message.includes("Key already in wallet"), true);
     }
   }
 
