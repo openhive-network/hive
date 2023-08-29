@@ -16,6 +16,8 @@ add_library( beekeeper_core
 
 target_link_libraries( beekeeper_core hive_protocol )
 target_include_directories( beekeeper_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
+target_compile_options( beekeeper_core PUBLIC -fexceptions )
+target_link_options( beekeeper_core PUBLIC -fexceptions )
 
 INSTALL( TARGETS
    beekeeper_core

@@ -112,7 +112,7 @@ export default class BeekeeperInstanceHelper {
 
   closeSession(token) {
     const returnedValue = this.instance.close_session(token);
-    this.#extract(returnedValue);
+    return this.#extract(returnedValue);
   }
 
   create(sessionToken, walletName, explicitPassword) {
@@ -134,16 +134,23 @@ export default class BeekeeperInstanceHelper {
   importKey(sessionToken, walletName, key) {
     const returnedValue = this.instance.import_key(sessionToken, walletName, key);
 
-    const value = this.#extract(returnedValue);
-
-    return value.public_key;
+    if( this.#acceptError )
+    {
+      return this.#extract(returnedValue);
+    }
+    else
+    {
+      const value = this.#extract(returnedValue);
+  
+      return value.public_key;
+    }
   };
 
   removeKey(sessionToken, walletName, key, explicitPassword = undefined) {
     const pass = explicitPassword || BeekeeperInstanceHelper.#getPassword(walletName);
     const returnedValue = this.instance.remove_key(sessionToken, walletName, pass, key);
 
-    this.#extract(returnedValue);
+    return this.#extract(returnedValue);
   }
 
   signDigest(sessionToken, sigDigest, publicKey) {
@@ -173,25 +180,19 @@ export default class BeekeeperInstanceHelper {
   listWallets(sessionToken) {
     const returnedValue = this.instance.list_wallets(sessionToken);
 
-    const wallets = this.#extract(returnedValue);
-
-    return wallets;
+    return this.#extract(returnedValue);
   }
 
   getPublicKeys(sessionToken) {
     const returnedValue = this.instance.get_public_keys(sessionToken);
 
-    const keys = this.#extract(returnedValue);
-
-    return keys;
+    return this.#extract(returnedValue);
   }
 
   getInfo(sessionToken) {
     const returnedValue = this.instance.get_info(sessionToken);
 
-    const info = this.#extract(returnedValue);
-
-    return info;
+    return this.#extract(returnedValue);
   }
 
   open(sessionToken, walletName) {
@@ -206,23 +207,23 @@ export default class BeekeeperInstanceHelper {
     return this.#extract(returnedValue);
   }
 
-  unlock(sessionToken, walletName, explicitPassword = undefined) {
-    const pass = explicitPassword || BeekeeperInstanceHelper.#getPassword(walletName);
+  unlock(sessionToken, walletName, explicitPassword = null) {
+    const pass = ( explicitPassword == null ) ? BeekeeperInstanceHelper.#getPassword(walletName) : explicitPassword;
     const returnedValue = this.instance.unlock(sessionToken, walletName, pass);
 
-    this.#extract(returnedValue);
+    return this.#extract(returnedValue);
   }
 
   lock(sessionToken, walletName) {
     const returnedValue = this.instance.lock(sessionToken, walletName);
 
-    this.#extract(returnedValue);
+    return this.#extract(returnedValue);
   }
 
   lockAll(sessionToken) {
     const returnedValue = this.instance.lock_all(sessionToken);
 
-    this.#extract(returnedValue);
+    return this.#extract(returnedValue);
   }
 
   deleteInstance() {
@@ -232,6 +233,6 @@ export default class BeekeeperInstanceHelper {
   setTimeout(sessionToken, seconds) {
     let returnedValue = this.instance.set_timeout(sessionToken, seconds);
 
-    this.#extract(returnedValue);
+    return this.#extract(returnedValue);
   }
 }
