@@ -1,0 +1,22 @@
+include:
+  - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
+
+variables:
+  RUN_MIRRORNET_PIPELINE: "true"
+  TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS: 80000000
+
+block-conversion:
+  extends: .block-conversion-job-template
+  stage: deploy
+  when: manual
+  variables:
+    NUMBER_OF_BLOCKS: ${TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS}
+
+mirrornet-replay:
+  extends: .replay-template
+  stage: deploy
+  when: manual
+  needs:
+    - job: block-conversion
+  variables:
+    NUMBER_OF_BLOCKS: ${TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS}

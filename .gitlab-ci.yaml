@@ -4,6 +4,7 @@ stages:
 - test
 - cleanup
 - publish
+- deploy
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
@@ -906,3 +907,25 @@ comment_cashout_tests:
   allow_failure: true
   tags:
     - public-runner-docker
+
+Trigger-full-mirrornet-conversion:
+  stage: deploy
+
+  variables:
+    RUN_MIRRORNET_PIPELINE: "true"
+    MIRRORNET_IMAGE: "$HIVED_IMAGE_NAME"
+    # This job will need just a Hive source code (access to some configuration files and scripts)
+    GIT_STRATEGY: "clone"
+    GIT_SUBMODULE_STRATEGY: "none"
+
+  needs:
+    - job: mirrornet_node_build
+      artifacts: true
+
+  rules:
+    # Create a child pipeline only when master/develop are a target branches. Child pipeline definition has defined manual job, so it will not start automatically.
+    - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "develop")
+
+  trigger:
+    include:
+      - local: scripts/ci-helpers/full-mirrornet-conversion.yml
