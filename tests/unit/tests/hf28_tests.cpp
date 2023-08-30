@@ -746,6 +746,63 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( vote_edit_limit )
+{
+  try
+  {
+    autoscope reset( set_mainnet_cashout_values() );
+
+    inject_hardfork( HIVE_HARDFORK_0_20 ); // we don't care about old voting rules
+
+    ACTORS_DEFAULT_FEE( (alice)(bob)(carol) );
+    vest( HIVE_INIT_MINER_NAME, "bob", asset( 1000, HIVE_SYMBOL ), init_account_priv_key );
+    vest( HIVE_INIT_MINER_NAME, "carol", asset( 1000, HIVE_SYMBOL ), init_account_priv_key );
+    generate_block();
+
+    post_comment( "alice", "test", "test", "test", "category", alice_post_key );
+    generate_block();
+
+    vote( "alice", "test", "bob", HIVE_100_PERCENT, bob_post_key );
+    generate_block();
+    vote( "alice", "test", "bob", 90 * HIVE_1_PERCENT, bob_post_key ); // edit 1
+    generate_block();
+    vote( "alice", "test", "bob", 80 * HIVE_1_PERCENT, bob_post_key ); // edit 2
+    generate_block();
+    vote( "alice", "test", "bob", 70 * HIVE_1_PERCENT, bob_post_key ); // edit 3
+    generate_block();
+    vote( "alice", "test", "bob", 60 * HIVE_1_PERCENT, bob_post_key ); // edit 4
+    generate_block();
+    vote( "alice", "test", "bob", 50 * HIVE_1_PERCENT, bob_post_key ); // edit 5
+    generate_block();
+    HIVE_REQUIRE_ASSERT( vote( "alice", "test", "bob", 40 * HIVE_1_PERCENT, bob_post_key ), "itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES"); // edit 6 - fails
+
+    BOOST_TEST_MESSAGE( "Activate HF28" );
+    inject_hardfork( HIVE_HARDFORK_1_28 );
+    BOOST_TEST_MESSAGE( "Now there is no limit on vote edits (other than RC)" );
+
+    vote( "alice", "test", "bob", 40 * HIVE_1_PERCENT, bob_post_key ); // edit 6
+    generate_block();
+    vote( "alice", "test", "bob", 30 * HIVE_1_PERCENT, bob_post_key ); // edit 7
+    generate_block();
+    vote( "alice", "test", "bob", 20 * HIVE_1_PERCENT, bob_post_key ); // edit 8
+    generate_block();
+
+    // wait a day for voting power of 'bob' to regenerate
+    generate_blocks( HIVE_BLOCKS_PER_DAY );
+    vote( "alice", "test", "bob", 75 * HIVE_1_PERCENT, bob_post_key ); // edit 9
+    vote( "alice", "test", "carol", 75 * HIVE_1_PERCENT, carol_post_key ); // fresh vote of the same power
+
+    const auto& comment = db->get_comment( "alice", std::string( "test" ) );
+    const auto& comment_vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
+    const auto& vote_bob = *comment_vote_idx.find( boost::make_tuple( comment.get_id(), bob_id ) );
+    const auto& vote_carol = *comment_vote_idx.find( boost::make_tuple( comment.get_id(), carol_id ) );
+    BOOST_REQUIRE_EQUAL( vote_bob.get_rshares(), vote_carol.get_rshares() );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
