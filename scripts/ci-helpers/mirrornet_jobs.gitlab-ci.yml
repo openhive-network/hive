@@ -4,7 +4,6 @@ variables:
   MIRRORNET_CHAIN_ID: 42
   MIRRORNET_IMAGE: $CI_REGISTRY_IMAGE/mirrornet-instance:mirrornet-instance-$CI_COMMIT_SHA
   MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
-  NUMBER_OF_BLOCKS: 5000000
   NUMBER_OF_PROCESSES: 8
   SHARED_FILE_SIZE: 24G
   SHARED_FILE_SIZE_FULL_THRESHOLD: 9500
@@ -20,10 +19,14 @@ variables:
   tags:
     - mirrornet-runner
   rules:
-    - if: $CI_PIPELINE_SOURCE == "web" && $RUN_MIRRORNET_PIPELINE == "true"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $RUN_MIRRORNET_PIPELINE == "true"
 
 .block-conversion-job-template:
   extends: .mirrornet-job
+  variables:
+    GIT_STRATEGY: none
+    NUMBER_OF_BLOCKS: 5000000
+
   script:
     - |
       echo "Converting block log to mirrornet format"
@@ -52,6 +55,9 @@ variables:
 
 .replay-template:
   extends: .mirrornet-job
+  variables:
+    NUMBER_OF_BLOCKS: 5000000
+
   script:
     - |
       mkdir -p "hive-home/blockchain"
@@ -90,8 +96,11 @@ variables:
   extends: .mirrornet-job
   image: busybox:latest
   needs: [] # Allow to run cleanup even if the previous jobs failed
+  variables:
+    GIT_STRATEGY: none
+
   script:
     - rm -Rf $BLOCK_LOG_OUTPUT_DIR/*
   rules:
-    - if: $CI_PIPELINE_SOURCE == "web" && $RUN_MIRRORNET_PIPELINE == "true"  
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $RUN_MIRRORNET_PIPELINE == "true"
       when: manual
