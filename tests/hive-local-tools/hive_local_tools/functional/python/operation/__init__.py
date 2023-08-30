@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 import test_tools as tt
 from hive_local_tools.constants import filters_enum_virtual_ops, TRANSACTION_TEMPLATE
@@ -243,3 +243,140 @@ def get_rc_manabar(node: tt.InitNode, account_name: str) -> dict:
         "last_update_time": response["rc_manabar"]["last_update_time"],
         "max_rc": int(response["max_rc"]),
     }
+
+
+class Comment:
+    account_counter = 0
+    def __init__(self, node: tt.InitNode, wallet: tt.Wallet):
+        self.__node = node
+        self.__wallet = wallet
+        self.__comment_transaction: dict[str, Any] | None = None
+        self.__bottom_comment_sent: bool = False
+        self.__comment_exist: bool = False
+
+
+    @property
+    def author(self):
+        return self.__comment_author_obj.name
+
+    def __create_comment_account(self):
+        author = f'account-{Comment.account_counter}'
+        sample_vests_amount = 50
+        self.__wallet.create_account(author, vests=sample_vests_amount)
+        Comment.account_counter += 1
+        return Account(author, self.__node, self.__wallet)
+
+
+    def send_bottom_comment(self):
+        self.__bottom_comment_author_obj = self.__create_comment_account()
+        self.__bottom_comment_permlink = f'bottom-permlink-{self.__bottom_comment_author_obj.name}'
+        self.__wallet.api.post_comment(
+            author = self.__bottom_comment_author_obj.name,
+            permlink=self.__bottom_comment_permlink,
+            parent_author='',
+            parent_permlink='parent-permlink-is-not-empty',
+            title=f'parent-title-{self.__bottom_comment_author_obj.name}',
+            body=f'parent-body-{self.__bottom_comment_author_obj.name}',
+            json='{}',
+        )
+        self.__bottom_comment_sent = True
+
+    def send(self, reply_type: Literal['no_reply', 'reply_own_comment', 'reply_another_comment']):
+        if not self.__bottom_comment_sent and reply_type in {'reply_own_comment', 'reply_another_comment'}:
+            raise ValueError('Parent comment not exist')
+
+        def set_no_reply():
+            self.__parent_author: str = ''
+            self.__parent_permlink: str = 'parent-permlink-is-not-empty'
+            self.__comment_author_obj = self.__create_comment_account()
+
+        def set_reply_own_comment():
+            self.__parent_author: str =  self.__bottom_comment_author_obj.name
+            self.__parent_permlink: str = self.__bottom_comment_permlink
+            self.__comment_author_obj = self.__bottom_comment_author_obj
+
+        def set_reply_another_comment():
+            self.__parent_author: str =  self.__bottom_comment_author_obj.name
+            self.__parent_permlink: str = self.__bottom_comment_permlink
+            self.__comment_author_obj = self.__create_comment_account()
+
+        set_reply = {
+            "no_reply": set_no_reply,
+            "reply_own_comment": set_reply_own_comment,
+            "reply_another_comment": set_reply_another_comment
+        }
+
+        set_reply[reply_type]()
+        self.__comment_permlink = f'main-permlink-{self.__comment_author_obj.name}'
+
+        self.__comment_author_obj.update_account_info() # Refresh RC mana before send
+        self.__comment_transaction = self.__wallet.api.post_comment(
+            author=self.__comment_author_obj.name,
+            permlink=self.__comment_permlink,
+            parent_author=self.__parent_author,
+            parent_permlink=self.__parent_permlink,
+            title=f'main-title-{self.__comment_author_obj.name}',
+            body=f'main-body-{self.__comment_author_obj.name}',
+            json='{}',
+        )
+        self.__comment_exist = True
+
+    def send_top_comment(self, reply_type: Literal['reply_own_comment', 'reply_another_comment']):
+        if not self.__comment_exist:
+            raise ValueError('Parent comment not exist')
+
+        parent_author: str =  self.__comment_author_obj.name
+        parent_permlink: str = self.__comment_permlink
+        if reply_type == 'reply_own_comment':
+            top_comment_author_obj = self.__comment_author_obj
+        else:
+            top_comment_author_obj = self.__create_comment_account()
+
+        self.__wallet.api.post_comment(
+            author=top_comment_author_obj.name,
+            permlink=f'top-permlink-{top_comment_author_obj.name}',
+            parent_author=parent_author,
+            parent_permlink=parent_permlink,
+            title=f'top-title-{top_comment_author_obj.name}',
+            body=f'top-body-{top_comment_author_obj.name}',
+            json='{}'
+        )
+
+    def update(self):
+        self.__comment_author_obj.update_account_info() # Refresh RC mana before update
+        self.__comment_transaction = self.__wallet.api.post_comment(
+            author=self.__comment_author_obj.name,
+            permlink=self.__comment_permlink,
+            parent_author=self.__parent_author,
+            parent_permlink=self.__parent_permlink,
+            title=f'update-title-{self.__comment_author_obj.name}',
+            body=f'update--body-{self.__comment_author_obj.name}',
+            json='{\"tags\":[\"hiveio\",\"example\",\"tags\"]}'
+        )
+
+    def vote(self):
+        if not self.__comment_exist:
+            raise ValueError('Comment not exist')
+        voter = self.__create_comment_account()
+        self.__wallet.api.vote(voter.name, self.__comment_author_obj.name, self.__comment_permlink, 100)
+
+    def downvote(self):
+        if not self.__comment_exist:
+            raise ValueError('Comment not exist')
+        hater = self.__create_comment_account()
+        self.__wallet.api.vote(hater.name, self.__comment_author_obj.name, self.__comment_permlink, -10)
+
+    def assert_is_comment_sent_or_update(self):
+        comment_operation = self.__comment_transaction['operations'][0][1]
+        ops_in_block = self.__node.api.account_history.get_ops_in_block(block_num=self.__comment_transaction['block_num'])
+        for operation in ops_in_block['ops']:
+            if operation['op']['type'] == 'comment_operation' and operation['op']['value'] == comment_operation:
+                return
+        assert False
+
+    def assert_is_rc_mana_decreased_after_post_or_update(self):
+        if not self.__comment_exist:
+            raise ValueError("Try to post comment before verification")
+        comment_rc_cost = int(self.__comment_transaction ["rc_cost"])
+        comment_timestamp = get_transaction_timestamp(self.__node, self.__comment_transaction)
+        self.__comment_author_obj.rc_manabar.assert_rc_current_mana_is_reduced(comment_rc_cost, comment_timestamp)
