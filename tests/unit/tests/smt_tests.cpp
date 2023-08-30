@@ -346,7 +346,9 @@ BOOST_AUTO_TEST_CASE( setup_validate )
     HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
     gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 13 } };
-    gp.pre_soft_cap_unit.token_unit = { { "$from.vesting.vesting", 3 } };
+    // test failure on conversion from string to account_name_type (too long)
+    HIVE_REQUIRE_THROW( ( gp.pre_soft_cap_unit.token_unit = { { "$from.vesting.vesting", 3 } } ), fc::exception );
+    gp.pre_soft_cap_unit.token_unit = { { "$from.vesting.ve", 3 } }; // test failure of name validation (too short name element 've')
     op.initial_generation_policy = gp;
     HIVE_REQUIRE_THROW( op.validate(), fc::exception );
 
