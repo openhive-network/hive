@@ -207,3 +207,119 @@ def get_rc_manabar(node: tt.InitNode, account_name: str) -> dict:
         "last_update_time": response["rc_manabar"]["last_update_time"],
         "max_rc": int(response["max_rc"]),
     }
+
+
+class Comment:
+    def __init__(self, node, wallet: tt.Wallet, author: str, self_bottom_comment: bool = False, bottom_comment: bool = False):
+        if bottom_comment and self_bottom_comment:
+            raise ValueError("Both 'bottom_comment' and 'self_bottom_comment' cannot be True.")
+
+        self.__node = node
+        self.__wallet = wallet
+        self.__author = author
+        self.__permlink = f'permlink-{author}'
+        self.__title = f'title-{author}'
+        self.__body = f'body-{author}'
+        self.__json = '{}'
+        self._comment_json = None
+        self.__self_bottom_comment = self_bottom_comment
+        self.__bottom_comment = bottom_comment
+        self.__bottom_author = f'b-{self.__author}'
+        self.__bottom_permlink = f'permlink-{self.__bottom_author}'
+        self.__comment_posted = False
+        self.__mana_before_comment: int
+        self.__mana_after_comment: int
+        self.__mana_before_comment_update: int
+        self.__mana_after_comment_update: int
+        self.__parent_author = (self.__bottom_author if self.__bottom_comment else (self.__author if self.__self_bottom_comment else ''))
+        self.__parent_permlink = self.__bottom_permlink if self.__bottom_comment or self.__self_bottom_comment else 'parent-permlink-is-not-empty'
+        wallet.create_account(author, hives=300, hbds=300, vests=50)
+
+        if self.__bottom_comment or self.__self_bottom_comment:
+            self.__post_bottom_comment()
+
+    @property
+    def author_name(self):
+        return self.__author
+
+    def __post_bottom_comment(self):
+        if self.__bottom_comment:
+            self.__wallet.create_account(self.__bottom_author, hives=300, hbds=300, vests=50)
+        self.__wallet.api.post_comment(
+            author = self.__bottom_author if self.__bottom_comment else self.__author,
+            permlink=f'permlink-{self.__bottom_author}',
+            parent_author='',
+            parent_permlink='parent-permlink-is-not-empty',
+            title=f'title-{self.__bottom_author}',
+            body=f'body-{self.__bottom_author}',
+            json='{}'
+        )
+
+    def post(self):
+        self.__mana_before_comment = get_current_mana(self.__node, self.__author)
+        self._comment_json = self.__wallet.api.post_comment(
+            author=self.__author,
+            permlink=self.__permlink,
+            parent_author=self.__parent_author,
+            parent_permlink=self.__parent_permlink,
+            title=self.__title,
+            body=self.__body,
+            json=self.__json
+        )
+        self.__comment_posted = True
+        self.__mana_after_comment = get_current_mana(self.__node, self.__author)
+
+    def post_top_comment(self, self_comment: bool):
+        assert self.__comment_posted, 'Parent comment not exist'
+        __top_author = f't-{self.__author}'
+        if not self_comment:
+            self.__wallet.create_account(__top_author, hives=300, hbds=300, vests=50)
+        self.__wallet.api.post_comment(
+            author=self.__author if self_comment else __top_author,
+            permlink=f'permlink-{__top_author}',
+            parent_author=self.__author,
+            parent_permlink=self.__permlink,
+            title=f'title-{__top_author}',
+            body=f'body-{__top_author}',
+            json='{}'
+        )
+
+    def update(self):
+        self.__mana_before_comment_update = get_current_mana(self.__node, self.__author)
+        self._comment_json = self.__wallet.api.post_comment(
+            author=self.__author,
+            permlink=self.__permlink,
+            parent_author=self.__parent_author,
+            parent_permlink=self.__parent_permlink,
+            title=f'{self.__title}-up',
+            body=f'{self.__body}-up',
+            json='{\"tags\":[\"hiveio\",\"example\",\"tags\"]}'
+        )
+        self.__mana_after_comment_update = get_current_mana(self.__node, self.__author)
+
+    def vote(self):
+        assert self.__comment_posted, 'Comment not exist'
+        __voter = f'v-{self.__author}'
+        self.__wallet.create_account(__voter, hives=300, hbds=300, vests=50)
+        self.__wallet.api.vote(__voter, self.__author, self.__permlink, 100)
+
+    def downvote(self):
+        assert self.__comment_posted, 'Comment not exist'
+        __hater = f'h-{self.__author}'
+        self.__wallet.create_account(__hater, hives=300, hbds=300, vests=50)
+        self.__wallet.api.vote(__hater, self.__author, self.__permlink, -10)
+
+    def is_comment_post(self, node):
+        comment_operation = self._comment_json['operations'][0][1]
+        ops_in_block = node.api.account_history.get_ops_in_block(block_num=self._comment_json['block_num'])
+        for operation in ops_in_block['ops']:
+            if operation['op']['type'] == 'comment_operation' and operation['op']['value'] == comment_operation:
+                return True
+
+    def is_rc_mana_decrease_after_comment(self):
+        if self.__mana_before_comment > self.__mana_after_comment:
+            return True
+
+    def is_rc_mana_decrease_after_comment_update(self):
+        if self.__mana_before_comment_update > self.__mana_after_comment_update:
+            return True
