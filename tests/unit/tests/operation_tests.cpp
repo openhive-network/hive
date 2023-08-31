@@ -10456,6 +10456,175 @@ BOOST_AUTO_TEST_CASE( account_witness_block_approve_authorities )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( private_key_memo_test )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing checks for private key leaked into memo" );
+
+    ACTORS( (bob) )
+    generate_block();
+
+#define ALICE_MASTER_PASSWORD "Alice has a cat"
+
+    auto alice_private_key = generate_private_key( ALICE_MASTER_PASSWORD );
+    auto alice_key = alice_private_key.get_public_key();
+    auto alice_owner_private_key = generate_private_key( "alice1" "owner" ALICE_MASTER_PASSWORD );
+    auto alice_owner_key = alice_owner_private_key.get_public_key();
+    auto alice_active_private_key = generate_private_key( "alice2" "active" ALICE_MASTER_PASSWORD );
+    auto alice_active_key = alice_active_private_key.get_public_key();
+    auto alice_posting_private_key = generate_private_key( "alice3" "posting" ALICE_MASTER_PASSWORD );
+    auto alice_posting_key = alice_posting_private_key.get_public_key();
+    auto alice_other_owner_private_key = generate_private_key( "alice4" "owner" ALICE_MASTER_PASSWORD );
+    auto alice_other_owner_key = alice_other_owner_private_key.get_public_key();
+    auto other_private_key = generate_private_key( "something else" );
+    auto other_key = other_private_key.get_public_key();
+
+    // create account 'alice1' with owner key derived from master password
+    account_create_operation op;
+    op.new_account_name = "alice1";
+    op.creator = HIVE_INIT_MINER_NAME;
+    op.fee = asset( db->get_witness_schedule_object().median_props.account_creation_fee.amount, HIVE_SYMBOL );
+    op.owner = authority( 1, alice_owner_key, 1 );
+    op.active = authority( 1, other_key, 1 );
+    op.posting = authority( 1, other_key, 1 );
+    op.memo_key = other_key;
+    push_transaction( op, init_account_priv_key );
+    // create account 'alice2' with active key derived from master password
+    op.new_account_name = "alice2";
+    op.owner = authority( 1, other_key, 1 );
+    op.active = authority( 1, alice_active_key, 1 );
+    push_transaction( op, init_account_priv_key );
+    // create account 'alice3' with posting key derived from master password
+    op.new_account_name = "alice3";
+    op.active = authority( 1, other_key, 1 );
+    op.posting = authority( 1, alice_posting_key, 1 );
+    push_transaction( op, init_account_priv_key );
+    // create account 'alice4' with memo key derived from master password (but as 'owner' and not 'memo')
+    op.new_account_name = "alice4";
+    op.posting = authority( 1, other_key, 1 );
+    op.memo_key = alice_other_owner_key;
+    push_transaction( op, init_account_priv_key );
+    // create account 'alice' with all keys made directly from master password
+    op.new_account_name = "alice";
+    op.owner = authority( 1, alice_key, 1 );
+    op.active = authority( 1, alice_key, 1 );
+    op.posting = authority( 1, alice_key, 1 );
+    op.memo_key = alice_key;
+    push_transaction( op, init_account_priv_key );
+    generate_block();
+
+    transfer( HIVE_INIT_MINER_NAME, "alice1", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
+    transfer( HIVE_INIT_MINER_NAME, "alice2", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
+    transfer( HIVE_INIT_MINER_NAME, "alice3", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
+    transfer( HIVE_INIT_MINER_NAME, "alice4", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
+    transfer( HIVE_INIT_MINER_NAME, "alice", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
+    transfer( HIVE_INIT_MINER_NAME, "bob", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Testing master password based keys in memo - owner key" );
+    HIVE_REQUIRE_EXCEPTION( transfer( "alice1", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception);
+    HIVE_REQUIRE_EXCEPTION( recurrent_transfer( "alice1", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 24, 3, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( transfer_to_savings( "alice1", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    transfer_to_savings( "alice1", "alice1", ASSET( "1.000 TESTS" ), "", other_private_key );
+    HIVE_REQUIRE_EXCEPTION( transfer_from_savings( "alice1", "alice1", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 0, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+
+    BOOST_TEST_MESSAGE( "Testing master password based keys in memo - active key" );
+    HIVE_REQUIRE_EXCEPTION( transfer( "alice2", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( recurrent_transfer( "alice2", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 24, 3, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( transfer_to_savings( "alice2", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    transfer_to_savings( "alice2", "alice2", ASSET( "1.000 TESTS" ), "", other_private_key );
+    HIVE_REQUIRE_EXCEPTION( transfer_from_savings( "alice2", "alice2", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 0, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+
+    BOOST_TEST_MESSAGE( "Testing master password based keys in memo - posting key" );
+    HIVE_REQUIRE_EXCEPTION( transfer( "alice3", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( recurrent_transfer( "alice3", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 24, 3, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( transfer_to_savings( "alice3", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    transfer_to_savings( "alice3", "alice3", ASSET( "1.000 TESTS" ), "", other_private_key );
+    HIVE_REQUIRE_EXCEPTION( transfer_from_savings( "alice3", "alice3", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 0, other_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+
+    BOOST_TEST_MESSAGE( "Testing master password based keys in memo - memo key" );
+    HIVE_REQUIRE_EXCEPTION( transfer( "alice4", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+      "memo_key != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( recurrent_transfer( "alice4", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 24, 3, other_private_key ),
+      "memo_key != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( transfer_to_savings( "alice4", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+      "memo_key != key", plugin_exception );
+    transfer_to_savings( "alice4", "alice4", ASSET( "1.000 TESTS" ), "", other_private_key );
+    HIVE_REQUIRE_EXCEPTION( transfer_from_savings( "alice4", "alice4", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 0, other_private_key ),
+      "memo_key != key", plugin_exception );
+
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Testing keys derived directly from master password" );
+    // it is ok to put master password in memo if the key is derived directly (probably should be blocked)
+    transfer( "alice", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, alice_private_key );
+    recurrent_transfer( "alice", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 24, 3, alice_private_key );
+    transfer_to_savings( "alice", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, alice_private_key );
+    transfer_to_savings( "alice", "alice", ASSET( "1.000 TESTS" ), "", alice_private_key );
+    transfer_from_savings( "alice", "alice", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 0, alice_private_key );
+
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Testing memo that is a secret pulled from private key" );
+    std::string alice_secret = alice_private_key.get_secret().str();
+    ilog( "alice_secret: ${alice_secret}", ( alice_secret ) );
+    // it is ok to put private password secret in memo (normally people don't see it so I guess it is ok)
+    transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_secret, alice_private_key );
+    recurrent_transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_secret, 24, 3, alice_private_key );
+    transfer_to_savings( "alice", "bob", ASSET( "1.000 TESTS" ), alice_secret, alice_private_key );
+    transfer_to_savings( "alice", "alice", ASSET( "1.000 TESTS" ), "", alice_private_key );
+    transfer_from_savings( "alice", "alice", ASSET( "1.000 TESTS" ), alice_secret, 1, alice_private_key );
+
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Testing memo that is a WIF form of private key" );
+    // it is ok to put WIF private key in memo (definitely should be blocked)
+    std::string alice_wif = alice_private_key.to_base58();
+    ilog( "alice_wif: ${alice_wif}", ( alice_wif ) );
+    transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_wif, alice_private_key );
+    recurrent_transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_wif, 24, 3, alice_private_key );
+    transfer_to_savings( "alice", "bob", ASSET( "1.000 TESTS" ), alice_wif, alice_private_key );
+    transfer_to_savings( "alice", "alice", ASSET( "1.000 TESTS" ), "", alice_private_key );
+    transfer_from_savings( "alice", "alice", ASSET( "1.000 TESTS" ), alice_wif, 2, alice_private_key );
+
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Testing memo that is extended form of private key" );
+    auto alice_extended_private_key = fc::ecc::extended_private_key( alice_private_key, fc::sha256() );
+    std::string alice_xprv = alice_extended_private_key.to_base58();
+    ilog( "alice_xprv: ${alice_xprv}", ( alice_xprv ) );
+    HIVE_REQUIRE_EXCEPTION( transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_xprv, alice_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( recurrent_transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_xprv, 24, 3, alice_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( transfer_to_savings( "alice", "bob", ASSET( "1.000 TESTS" ), alice_xprv, alice_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    transfer_to_savings( "alice", "alice", ASSET( "1.000 TESTS" ), "", alice_private_key );
+    HIVE_REQUIRE_EXCEPTION( transfer_from_savings( "alice", "alice", ASSET( "1.000 TESTS" ), alice_xprv, 3, alice_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+
+    generate_block();
+
+#undef ALICE_MASTER_PASSWORD
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 template <int hardfork_number>
