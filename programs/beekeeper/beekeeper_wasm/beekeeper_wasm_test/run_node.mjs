@@ -226,7 +226,7 @@ const my_entrypoint = async() => {
         const wallets = api.listWallets(sessionToken);
         requireWalletsIn(wallets, 1, true, 2, false);
 
-        api.removeKey(sessionToken, walletNames[1], keys[2][1], '');
+        api.removeKey(sessionToken, walletNames[1], keys[2][1], null);
 
         const publicKeys = api.getPublicKeys(sessionToken);
         requireKeysIn(publicKeys, 1, 3);
@@ -902,6 +902,46 @@ const my_entrypoint = async() => {
       error_message = api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
       console.log(error_message);
       assert.equal(error_message.includes("Key already in wallet"), true);
+    }
+    {
+      const walletNo = 1;
+
+      api.setAcceptError = true;
+      let error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "", "");
+      console.log(error_message);
+      assert.equal(error_message.includes("Wallet not found: w1"), true);
+
+      api.setAcceptError = false;
+      error_message = api.open(api.implicitSessionToken, walletNames[walletNo]);
+
+      api.setAcceptError = true;
+      error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "", "");
+      console.log(error_message);
+      assert.equal(error_message.includes("Wallet is locked: w1"), true);
+      
+      api.setAcceptError = false;
+      error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+
+      api.setAcceptError = true;
+      error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "", "");
+      console.log(error_message);
+      assert.equal(error_message.includes("password.size() > 0"), true);
+
+      error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "", "xxxxx");
+      console.log(error_message);
+      assert.equal(error_message.includes("Invalid password for wallet:"), true);
+
+      error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "");
+      console.log(error_message);
+      assert.equal(error_message.includes("public_key.size() > 0"), true);
+
+      error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "currant");
+      console.log(error_message);
+      assert.equal(error_message.includes("s == sizeof(data)"), true);
+
+      error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+      console.log(error_message);
+      assert.equal(error_message.includes("Key not in wallet"), true);
     }
   }
 
