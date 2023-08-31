@@ -860,7 +860,7 @@ void database_fixture::transfer_to_savings( const string& from, const string& to
   push_transaction( op, key );
 }
 
-void database_fixture::transfer_from_savings( const string& from, const string& to, const asset& amount, uint32_t request_id,
+void database_fixture::transfer_from_savings( const string& from, const string& to, const asset& amount, const string& memo, uint32_t request_id,
                                               const fc::ecc::private_key& key )
 {
   transfer_from_savings_operation op;
@@ -868,6 +868,7 @@ void database_fixture::transfer_from_savings( const string& from, const string& 
   op.request_id = request_id;
   op.to = to;
   op.amount = amount;
+  op.memo = memo;
 
   push_transaction( op, key );
 }
