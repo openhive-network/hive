@@ -2,7 +2,6 @@ include:
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
 
 variables:
-  RUN_MIRRORNET_PIPELINE: "true"
   TOTAL_NUMBER_OF_BLOCKS_TO_PROCESS: 80000000
 
 block-conversion:
