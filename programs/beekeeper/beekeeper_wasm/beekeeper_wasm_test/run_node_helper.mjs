@@ -154,11 +154,18 @@ export default class BeekeeperInstanceHelper {
   }
 
   signDigest(sessionToken, sigDigest, publicKey) {
-    const returnedValue = this.instance.sign_digest(sessionToken, publicKey, sigDigest);
+    const returnedValue = this.instance.sign_digest(sessionToken, sigDigest, publicKey);
 
-    const value = this.#extract(returnedValue);
+    if( this.#acceptError )
+    {
+      return this.#extract(returnedValue);
+    }
+    else
+    {
+      const value = this.#extract(returnedValue);
 
-    return value.signature;
+      return value.signature;
+    }
   }
 
   signBinaryTransaction(sessionToken, binaryTransactionBody, chainId, publicKey) {

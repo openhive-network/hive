@@ -809,7 +809,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 
         auto _signature_local = _private_key.sign_compact( _sig_digest );
 
-        auto _signature_beekeeper = fc::json::from_string( extract_json( _obj.sign_digest( _token, _public_key_str, _sig_digest ) ) ).as<beekeeper::signature_return>();
+        auto _signature_beekeeper = fc::json::from_string( extract_json( _obj.sign_digest( _token, _sig_digest, _public_key_str ) ) ).as<beekeeper::signature_return>();
         auto _signature_beekeeper_2 = fc::json::from_string( extract_json( _obj.sign_transaction( _token, json_trx, HIVE_CHAIN_ID, _public_key_str ) ) ).as<beekeeper::signature_return>();
 
         auto _local = fc::json::to_string( _signature_local );

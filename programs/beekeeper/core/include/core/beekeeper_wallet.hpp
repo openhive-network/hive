@@ -164,7 +164,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
 
       /* Attempts to sign a digest via the given public_key
       */
-      std::optional<signature_type> try_sign_digest( const public_key_type& public_key, const digest_type& sig_digest ) override;
+      std::optional<signature_type> try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key ) override;
 
       /* Attempts to sign a binary transaction via the given public_key
       */

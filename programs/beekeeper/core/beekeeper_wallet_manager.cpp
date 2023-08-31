@@ -90,10 +90,10 @@ void beekeeper_wallet_manager::remove_key( const std::string& token, const std::
   sessions->get_wallet_manager( token )->remove_key( name, password, public_key );
 }
 
-signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const std::string& public_key, const digest_type& sig_digest )
+signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const digest_type& sig_digest, const std::string& public_key )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->sign_digest( create_public_key( public_key ), sig_digest );
+  return sessions->get_wallet_manager( token )->sign_digest( sig_digest, create_public_key( public_key ) );
 }
 
 signature_type beekeeper_wallet_manager::sign_binary_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const std::string& public_key )

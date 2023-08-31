@@ -943,6 +943,21 @@ const my_entrypoint = async() => {
       console.log(error_message);
       assert.equal(error_message.includes("Key not in wallet"), true);
     }
+    {
+      api.setAcceptError = true;
+
+      let error_message = api.signDigest(api.implicitSessionToken, "#", "lemon");
+      console.log(error_message);
+      assert.equal(error_message.includes("Invalid hex character '#'"), true);
+
+      error_message = api.signDigest(api.implicitSessionToken, "abCDe", "lemon");
+      console.log(error_message);
+      assert.equal(error_message.includes("public_key_size == public_key.size()"), true);
+
+      error_message = api.signDigest(api.implicitSessionToken, "abCDe", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+      console.log(error_message);
+      assert.equal(error_message.includes("Public key not found in unlocked wallets"), true);
+    }
   }
 
   console.log('##########################################################################################');
