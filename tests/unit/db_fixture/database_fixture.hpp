@@ -393,7 +393,7 @@ struct database_fixture {
                        const asset& hive_amount, const asset& hbd_amount, uint32_t escrow_id, const fc::ecc::private_key& key );
   void escrow_dispute( const string& from, const string& to, const string& agent, const string& who, uint32_t escrow_id, const fc::ecc::private_key& key );
   void transfer_to_savings( const string& from, const string& to, const asset& amount, const string& memo, const fc::ecc::private_key& key );
-  void transfer_from_savings( const string& from, const string& to, const asset& amount, uint32_t request_id,
+  void transfer_from_savings( const string& from, const string& to, const asset& amount, const string& memo, uint32_t request_id,
                               const fc::ecc::private_key& key );
   void cancel_transfer_from_savings( const string& from, uint32_t request_id, const fc::ecc::private_key& key );
 

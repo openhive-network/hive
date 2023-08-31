@@ -324,8 +324,8 @@ void condenser_api_fixture::escrow_and_savings_scenario( check_point_tester_t ch
   escrow_approve( "alice6ah", "ben6ah", "carol6ah", "carol6ah", false, 31, carol6ah_private_key );
 
   transfer_to_savings( "alice6ah", "ben6ah", ASSET( "0.009 TESTS" ), "ah savings", alice6ah_private_key );
-  transfer_from_savings( "ben6ah", "alice6ah", ASSET( "0.006 TESTS" ), 0, ben6ah_private_key );
-  transfer_from_savings( "ben6ah", "carol6ah", ASSET( "0.003 TESTS" ), 1, ben6ah_private_key );
+  transfer_from_savings( "ben6ah", "alice6ah", ASSET( "0.006 TESTS" ), "", 0, ben6ah_private_key);
+  transfer_from_savings( "ben6ah", "carol6ah", ASSET( "0.003 TESTS" ), "", 1, ben6ah_private_key );
   cancel_transfer_from_savings( "ben6ah", 0, ben6ah_private_key );
 
   // Now all the operations mentioned above can be checked. All of them will appear in 5th block,
