@@ -118,7 +118,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, get_public_keys )
 DEFINE_API_IMPL( beekeeper_api_impl, sign_digest )
 {
   using namespace beekeeper;
-  return { _wallet_mgr->sign_digest( args.token, args.public_key, digest_type( args.sig_digest ) ) };
+  return { _wallet_mgr->sign_digest( args.token, digest_type( args.sig_digest ), args.public_key ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, sign_binary_transaction )

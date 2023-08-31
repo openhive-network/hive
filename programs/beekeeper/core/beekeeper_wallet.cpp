@@ -105,7 +105,7 @@ public:
     return std::optional<private_key_type>();
   }
 
-  std::optional<signature_type> try_sign_digest( const public_key_type& public_key, const digest_type& sig_digest )
+  std::optional<signature_type> try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key )
   {
     auto it = _keys.find(public_key);
     if( it == _keys.end() )
@@ -125,7 +125,7 @@ public:
 
     hive::protocol::digest_type _sig_digest = _trx.sig_digest( chain_id, hive::protocol::pack_type::hf26 );
 
-    return try_sign_digest( public_key, _sig_digest );
+    return try_sign_digest( _sig_digest, public_key );
   }
 
   std::optional<signature_type> try_sign_transaction( const string& transaction/*JSON form*/, const chain_id_type& chain_id, const public_key_type& public_key )
@@ -135,7 +135,7 @@ public:
     hive::protocol::transaction _trx = fc::json::from_string( transaction ).as<hive::protocol::transaction>();
     hive::protocol::digest_type _sig_digest = _trx.sig_digest( chain_id, hive::protocol::pack_type::hf26 );
 
-    return try_sign_digest( public_key, _sig_digest );
+    return try_sign_digest( _sig_digest, public_key );
   }
 
   private_key_type get_private_key(const public_key_type& id)const
@@ -393,9 +393,9 @@ private_key_type beekeeper_wallet::get_private_key( public_key_type pubkey )cons
   return my->get_private_key( pubkey );
 }
 
-std::optional<signature_type> beekeeper_wallet::try_sign_digest( const public_key_type& public_key, const digest_type& sig_digest )
+std::optional<signature_type> beekeeper_wallet::try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key )
 {
-  return my->try_sign_digest( public_key, sig_digest );
+  return my->try_sign_digest( sig_digest, public_key );
 }
 
 std::optional<signature_type> beekeeper_wallet::try_sign_binary_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key )

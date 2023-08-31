@@ -27,7 +27,7 @@ class wallet_manager_impl {
     void unlock( wallet_filename_creator_type wallet_filename_creator, const std::string& name, const std::string& password );
     string import_key( const std::string& name, const std::string& wif_key );
     void remove_key( const std::string& name, const std::string& password, const std::string& public_key );
-    signature_type sign_digest( const public_key_type& public_key, const digest_type& sig_digest );
+    signature_type sign_digest( const digest_type& sig_digest, const public_key_type& public_key );
     signature_type sign_binary_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key );
     signature_type sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key );
 
