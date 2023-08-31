@@ -146,8 +146,8 @@ export default class BeekeeperInstanceHelper {
     }
   };
 
-  removeKey(sessionToken, walletName, key, explicitPassword = undefined) {
-    const pass = explicitPassword || BeekeeperInstanceHelper.#getPassword(walletName);
+  removeKey(sessionToken, walletName, key, explicitPassword = null) {
+    const pass = ( explicitPassword == null ) ? BeekeeperInstanceHelper.#getPassword(walletName) : explicitPassword;
     const returnedValue = this.instance.remove_key(sessionToken, walletName, pass, key);
 
     return this.#extract(returnedValue);

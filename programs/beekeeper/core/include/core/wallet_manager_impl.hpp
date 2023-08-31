@@ -38,6 +38,8 @@ class wallet_manager_impl {
     std::string gen_password();
     void valid_filename( const string& name );
 
+    bool is_locked( const string& name );
+
     signature_type sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const public_key_type& public_key );
 };
 

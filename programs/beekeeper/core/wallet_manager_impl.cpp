@@ -85,7 +85,10 @@ void wallet_manager_impl::open( wallet_filename_creator_type wallet_filename_cre
 void wallet_manager_impl::close( const std::string& name )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
-  lock( name );
+
+  if( !is_locked( name ) )
+    lock( name );
+
   wallets.erase( name );
 }
 
@@ -140,6 +143,14 @@ void wallet_manager_impl::lock_all()
   }
 }
 
+bool wallet_manager_impl::is_locked( const string& name )
+{
+  FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
+  auto& w = wallets.at(name);
+
+  return w->is_locked();
+}
+
 void wallet_manager_impl::lock( const std::string& name )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
@@ -170,7 +181,7 @@ string wallet_manager_impl::import_key( const std::string& name, const std::stri
   return w->import_key(wif_key);
 }
 
-void wallet_manager_impl::remove_key( const std::string& name, const std::string& password, const std::string& key )
+void wallet_manager_impl::remove_key( const std::string& name, const std::string& password, const std::string& public_key )
 {
   FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
 
@@ -178,7 +189,7 @@ void wallet_manager_impl::remove_key( const std::string& name, const std::string
   FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
 
   w->check_password(password); //throws if bad password
-  w->remove_key(key);
+  w->remove_key(public_key);
 }
 
 signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const public_key_type& public_key )

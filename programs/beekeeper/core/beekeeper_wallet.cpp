@@ -171,9 +171,11 @@ public:
   // Removes a key from the wallet
   // @returns true if the key matches a current active/owner/memo key for the named
   //     account, false otherwise (but it is removed either way)
-  bool remove_key(string key)
+  bool remove_key(string public_key)
   {
-    public_key_type pub( public_key_type::from_base58( key, false/*is_sha256*/ ) );
+    FC_ASSERT( public_key.size() > 0 );
+
+    public_key_type pub( public_key_type::from_base58( public_key, false/*is_sha256*/ ) );
     auto itr = _keys.find(pub);
     if( itr != _keys.end() )
     {
