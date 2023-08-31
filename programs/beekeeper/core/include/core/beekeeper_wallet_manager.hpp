@@ -47,7 +47,7 @@ public:
   /// @param key the public key of the corresponding private key to sign the digest with
   /// @return signature over the digest
   /// @throws fc::exception if corresponding private keys not found in unlocked wallets
-  signature_type sign_digest( const std::string& token, const std::string& public_key, const digest_type& sig_digest );
+  signature_type sign_digest( const std::string& token, const digest_type& sig_digest, const std::string& public_key );
 
   /// Sign a binary transaction with the private keys specified via their public keys.
   /// @param token represents a session

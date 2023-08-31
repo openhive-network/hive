@@ -220,11 +220,11 @@ namespace beekeeper {
     return exception_handler( _method );
   }
 
-  std::string beekeeper_api::sign_digest( const std::string& token, const std::string& public_key, const std::string& sig_digest )
+  std::string beekeeper_api::sign_digest( const std::string& token, const std::string& sig_digest, const std::string& public_key )
   {
     auto _method = [&, this]()
     {
-      signature_return _result = { _impl->app.get_wallet_manager()->sign_digest( token, public_key, digest_type( sig_digest ) ) };
+      signature_return _result = { _impl->app.get_wallet_manager()->sign_digest( token, digest_type( sig_digest ), public_key ) };
       return to_string( _result );
     };
     return exception_handler( _method );
