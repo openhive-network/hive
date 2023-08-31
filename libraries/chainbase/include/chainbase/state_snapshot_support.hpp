@@ -13,6 +13,9 @@
 #include <string>
 #include <vector>
 
+#define my_wlog(...)
+
+
 namespace chainbase
 {
 
@@ -267,7 +270,7 @@ private:
         //mtlk 
         std::string dump = worker->prettifyObject(fc::variant(object), serializedCache.back().second);
         if(dump.empty() == false)
-         ilog("Dumping object: id: ${id}, `${o}'", ("id", id)("o", dump));
+         my_wlog("Dumping object: id: ${id}, `${o}'", ("id", id)("o", dump));
 
         if(serializedCache.size() >= max_cache_size)
         {

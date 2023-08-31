@@ -45,8 +45,8 @@ void fork_database::start_block(const std::shared_ptr<full_block_type>& full_blo
 shared_ptr<fork_item> fork_database::push_block(const std::shared_ptr<full_block_type>& full_block)
 {
   auto item = std::make_shared<fork_item>(full_block);
-  wlog("Try pushing block to fork database: ${id}, ${num}", ("id", item->get_block_id())("num", item->get_block_num()));
-  wlog("Try pushing block to fork database: ${id}, ${num}", ("id", full_block->get_block_id())("num", full_block->get_block_num()));
+  my_wlog("Try pushing block to fork database: ${id}, ${num}", ("id", item->get_block_id())("num", item->get_block_num()));
+  my_wlog("Try pushing block to fork database: ${id}, ${num}", ("id", full_block->get_block_id())("num", full_block->get_block_num()));
 
 
   return with_write_lock([&]() {
@@ -56,9 +56,9 @@ shared_ptr<fork_item> fork_database::push_block(const std::shared_ptr<full_block
     }
     catch (const unlinkable_block_exception&)
     {
-      wlog("Pushing block to fork database that failed to link: ${id}, ${num}", ("id", item->get_block_id())("num", item->get_block_num()));
-      wlog("Head: ${num}, ${id}", ("num", _head->get_block_num())("id", _head->get_block_id()));
-      wlog("pid =${pid}", ("pid", getpid()));
+      my_wlog("Pushing block to fork database that failed to link: ${id}, ${num}", ("id", item->get_block_id())("num", item->get_block_num()));
+      my_wlog("Head: ${num}, ${id}", ("num", _head->get_block_num())("id", _head->get_block_id()));
+      my_wlog("pid =${pid}", ("pid", getpid()));
 
       while(stop_in_unlinked)
       {
@@ -151,7 +151,7 @@ void fork_database::set_max_size( uint32_t s )
   with_write_lock( [&]() {
     _max_size = s;
     if( !_head ) return;
-    //wlog("set_max_size(${s}), head is ${head}, erasing <= ${thresh}", (s)("head", _head->num)("thresh", _head->num - s));
+    //my_wlog("set_max_size(${s}), head is ${head}, erasing <= ${thresh}", (s)("head", _head->num)("thresh", _head->num - s));
   
     { /// index
       auto& by_num_idx = _index.get<block_num>();
@@ -539,10 +539,10 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
     {
       auto itr = by_num_idx.begin();
       
-      wlog("${intro} begin", ("intro", intro));
+      my_wlog("${intro} begin", ("intro", intro));
       while(itr != by_num_idx.end() )
       {
-        wlog("  num=${num} block_id=${id} prev_block_id=${prev_id}", 
+        my_wlog("  num=${num} block_id=${id} prev_block_id=${prev_id}", 
           
           ("num", (*itr)->get_block_num() ) 
           ("id", (*itr)->get_block_id()) 
@@ -550,7 +550,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
 
           itr++;
       }
-      wlog("${intro} end", ("intro", intro));
+      my_wlog("${intro} end", ("intro", intro));
     };
 
     display_idx("unlinked: ", by_num_idx);
@@ -560,7 +560,7 @@ std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type 
 
     if(_head)
     {
-      wlog("a head: num=${num} block_id=${id} prev_block_id=${prev_id}", 
+      my_wlog("a head: num=${num} block_id=${id} prev_block_id=${prev_id}", 
         ("num", (_head)->get_block_num() ) 
         ("id", (_head)->get_block_id()) 
         ("prev_id",  (_head)->previous_id()));
