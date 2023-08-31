@@ -304,7 +304,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::commit( int64_t revision )
   {
-    my_wlog("chainbase commit");
+    //my_wlog("chainbase commit");
     for( auto& item : _index_list )
     {
       item->commit( revision );
