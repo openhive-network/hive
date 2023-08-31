@@ -349,11 +349,12 @@ namespace fc { namespace ecc {
 
     static fc::string _to_base58( const extended_key_data& key )
     {
-        char *buffer = (char*)alloca(key.size() + 4);
+        size_t buffer_size = key.size() + 4;
+        char *buffer = (char*)alloca(buffer_size);
         memcpy( buffer, key.begin(), key.size() );
         fc::sha256 double_hash = fc::sha256::hash( fc::sha256::hash( key.begin(), key.size() ));
         memcpy( buffer + key.size(), double_hash.data(), 4 );
-        return fc::to_base58( buffer, sizeof(buffer) );
+        return fc::to_base58( buffer, buffer_size );
     }
 
     static void _parse_extended_data( unsigned char* buffer, fc::string base58 )
