@@ -204,7 +204,7 @@ void database::open( const open_args& args)
   {
     open_state_independent(args);
 
-    //rewind_undo_state(args); mtlk  perhaps it should be here ?
+    rewind_undo_state(args);// TODO mtlk  -- generally can move rewind_undo_state functionality where it was
     open_state_dependent(args);
 
   }
