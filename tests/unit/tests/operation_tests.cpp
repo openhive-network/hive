@@ -10475,7 +10475,9 @@ BOOST_AUTO_TEST_CASE( private_key_memo_test )
     auto alice_active_key = alice_active_private_key.get_public_key();
     auto alice_posting_private_key = generate_private_key( "alice3" "posting" ALICE_MASTER_PASSWORD );
     auto alice_posting_key = alice_posting_private_key.get_public_key();
-    auto alice_other_owner_private_key = generate_private_key( "alice4" "owner" ALICE_MASTER_PASSWORD );
+    auto alice_memo_private_key = generate_private_key( "alice4" "memo" ALICE_MASTER_PASSWORD );
+    auto alice_memo_key = alice_memo_private_key.get_public_key();
+    auto alice_other_owner_private_key = generate_private_key( "alice5" "owner" ALICE_MASTER_PASSWORD );
     auto alice_other_owner_key = alice_other_owner_private_key.get_public_key();
     auto other_private_key = generate_private_key( "something else" );
     auto other_key = other_private_key.get_public_key();
@@ -10500,9 +10502,13 @@ BOOST_AUTO_TEST_CASE( private_key_memo_test )
     op.active = authority( 1, other_key, 1 );
     op.posting = authority( 1, alice_posting_key, 1 );
     push_transaction( op, init_account_priv_key );
-    // create account 'alice4' with memo key derived from master password (but as 'owner' and not 'memo')
+    // create account 'alice4' with memo key derived from master password
     op.new_account_name = "alice4";
     op.posting = authority( 1, other_key, 1 );
+    op.memo_key = alice_memo_key;
+    push_transaction( op, init_account_priv_key );
+    // create account 'alice5' with memo key derived from master password (but as 'owner' and not 'memo')
+    op.new_account_name = "alice5";
     op.memo_key = alice_other_owner_key;
     push_transaction( op, init_account_priv_key );
     // create account 'alice' with all keys made directly from master password
@@ -10518,6 +10524,7 @@ BOOST_AUTO_TEST_CASE( private_key_memo_test )
     transfer( HIVE_INIT_MINER_NAME, "alice2", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
     transfer( HIVE_INIT_MINER_NAME, "alice3", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
     transfer( HIVE_INIT_MINER_NAME, "alice4", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
+    transfer( HIVE_INIT_MINER_NAME, "alice5", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
     transfer( HIVE_INIT_MINER_NAME, "alice", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
     transfer( HIVE_INIT_MINER_NAME, "bob", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
     generate_block();
@@ -10564,6 +10571,17 @@ BOOST_AUTO_TEST_CASE( private_key_memo_test )
       "memo_key != key", plugin_exception );
     transfer_to_savings( "alice4", "alice4", ASSET( "1.000 TESTS" ), "", other_private_key );
     HIVE_REQUIRE_EXCEPTION( transfer_from_savings( "alice4", "alice4", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 0, other_private_key ),
+      "memo_key != key", plugin_exception );
+
+    BOOST_TEST_MESSAGE( "Testing master password based keys in memo (alternative version) - memo key" );
+    HIVE_REQUIRE_EXCEPTION( transfer( "alice5", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+      "memo_key != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( recurrent_transfer( "alice5", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 24, 3, other_private_key ),
+      "memo_key != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( transfer_to_savings( "alice5", "bob", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, other_private_key ),
+      "memo_key != key", plugin_exception );
+    transfer_to_savings( "alice5", "alice5", ASSET( "1.000 TESTS" ), "", other_private_key );
+    HIVE_REQUIRE_EXCEPTION( transfer_from_savings( "alice5", "alice5", ASSET( "1.000 TESTS" ), ALICE_MASTER_PASSWORD, 0, other_private_key ),
       "memo_key != key", plugin_exception );
 
     generate_block();
