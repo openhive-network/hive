@@ -77,16 +77,23 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.Test, price: float, toleran
     return tt.Asset.Range(vests, tolerance=tolerance)
 
 
-def get_virtual_operation(node: tt.InitNode, vop: str) -> list:
-    return node.api.account_history.enum_virtual_ops(
-        # To stabilize operation costs while creating a test environment, the initminer performs the
-        # `transfer_to_vesting` operation. This happens in the initial blocks. So for testing purposes
-        # this method omits this transfer starting at block 10
-        block_range_begin=10,
-        block_range_end=1000,
+def get_virtual_operation(node: tt.InitNode, vop: str, skip_price_stabilization: bool = True) -> list:
+    """
+    :param vop: name of the virtual operation,
+    :param skip_price_stabilization: by default, removes from the list operations confirming vesting-stabilizing,
+    :return: a list of virtual operations of the type specified in the `vop` argument.
+    """
+    result = node.api.account_history.enum_virtual_ops(
         filter=filters_enum_virtual_ops[vop],
         include_reversible=True,
+        block_range_end=2000,
     )["ops"]
+
+    if skip_price_stabilization and vop == "transfer_to_vesting_completed_operation":
+        for vop_number, vop in enumerate(result):
+            if vop['op']['value']['hive_vested'] == tt.Asset.Test(10_000_000):
+                result.pop(vop_number)
+    return result
 
 
 def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
