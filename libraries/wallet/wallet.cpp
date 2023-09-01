@@ -7,6 +7,7 @@
 #include <hive/protocol/hardfork.hpp>
 #include <hive/protocol/dhf_operations.hpp>
 #include <hive/protocol/validation.hpp>
+#include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/version.hpp>
 #include <hive/wallet/wallet.hpp>
 #include <hive/wallet/api_documentation.hpp>
@@ -2035,26 +2036,7 @@ void wallet_api::check_memo(
 {
   vector< public_key_type > keys;
 
-  try
-  {
-    // Check if memo is a private key
-    keys.push_back( fc::ecc::extended_private_key::from_base58( memo ).get_public_key() );
-  }
-  catch( fc::parse_error_exception& ) {}
-  catch( fc::assert_exception& ) {}
-
-  // Get possible keys if memo was an account password
-  string owner_seed = account.name + "owner" + memo;
-  auto owner_secret = fc::sha256::hash( owner_seed.c_str(), owner_seed.size() );
-  keys.push_back( fc::ecc::private_key::regenerate( owner_secret ).get_public_key() );
-
-  string active_seed = account.name + "active" + memo;
-  auto active_secret = fc::sha256::hash( active_seed.c_str(), active_seed.size() );
-  keys.push_back( fc::ecc::private_key::regenerate( active_secret ).get_public_key() );
-
-  string posting_seed = account.name + "posting" + memo;
-  auto posting_secret = fc::sha256::hash( posting_seed.c_str(), posting_seed.size() );
-  keys.push_back( fc::ecc::private_key::regenerate( posting_secret ).get_public_key() );
+  collect_potential_keys( &keys, account.name, memo );
 
   // Check keys against public keys in authorites
   for( auto& key_weight_pair : account.owner.key_auths )

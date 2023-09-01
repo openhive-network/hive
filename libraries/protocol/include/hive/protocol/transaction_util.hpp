@@ -76,4 +76,11 @@ void verify_authority(const vector<AuthContainerType>& auth_containers,
                    posting_approvals);
 }
 
+/**
+ * Builds public keys paired with private keys generated through typical methods of deriving key from given string.
+ * Caller can use the collection to test it against actual keys associated with the account in order to detect leak,
+ * block user action and warn about the problem.
+ */
+void collect_potential_keys( std::vector< public_key_type >* keys, const account_name_type& account, const std::string& str );
+
 } } // hive::protocol
