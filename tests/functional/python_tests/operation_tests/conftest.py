@@ -191,12 +191,13 @@ def wallet(speed_up_node: tt.InitNode) -> tt.Wallet:
 
 @pytest.fixture
 def prepared_node(speed_up_node: tt.InitNode, wallet: tt.Wallet) -> tt.InitNode:
+    speed_up_node.set_vest_price(quote=tt.Asset.Vest(1800), invest=tt.Asset.Test(10_000_000))
+
     wallet.api.update_witness('initminer', 'http://url.html',
                               tt.Account('initminer').public_key,
                               {'account_creation_fee': tt.Asset.Test(3)}
                               )
 
-    speed_up_node.set_vest_price(quote=tt.Asset.Vest(1800), invest=tt.Asset.Test(10_000_000))
     speed_up_node.wait_number_of_blocks(43)
 
     return speed_up_node
