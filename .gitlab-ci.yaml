@@ -819,23 +819,6 @@ hardfork_schedule_tests:
   tags:
     - public-runner-docker
 
-block-conversion:
-  extends: .block-conversion-job-template
-  stage: build
-  needs:
-    - mirrornet_node_build
-
-mirrornet-replay:
-  extends: .replay-template
-  stage: replay
-  needs:
-    - mirrornet_node_build
-    - block-conversion
-
-mirrornet-data-cleanup:
-  extends: .data-cleanup-template
-  stage: cleanup
-
 several_node_restarts_tests:
   extends: .prepare_hived_data_5m
   stage: test
