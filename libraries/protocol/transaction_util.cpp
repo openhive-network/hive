@@ -128,6 +128,10 @@ void collect_potential_keys( std::vector< public_key_type >* keys,
   std::string posting_seed = account + "posting" + str;
   auto posting_secret = fc::sha256::hash( posting_seed.c_str(), posting_seed.size() );
   keys->push_back( fc::ecc::private_key::regenerate( posting_secret ).get_public_key() );
+
+  std::string memo_seed = account + "memo" + str;
+  auto memo_secret = fc::sha256::hash( memo_seed.c_str(), memo_seed.size() );
+  keys->push_back( fc::ecc::private_key::regenerate( memo_secret ).get_public_key() );
 }
 
 } } // hive::protocol
