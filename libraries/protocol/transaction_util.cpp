@@ -105,4 +105,29 @@ void verify_authority(const required_authorities_type& required_authorities,
     );
 } FC_CAPTURE_AND_RETHROW((sigs)) }
 
+void collect_potential_keys( std::vector< public_key_type >* keys,
+  const account_name_type& account, const std::string& str )
+{
+  try
+  {
+    //get possible key if str was an extended private key
+    keys->push_back( fc::ecc::extended_private_key::from_base58( str ).get_public_key() );
+  }
+  catch( fc::parse_error_exception& ) {}
+  catch( fc::assert_exception& ) {}
+
+  // get possible keys if str was an account password
+  std::string owner_seed = account + "owner" + str;
+  auto owner_secret = fc::sha256::hash( owner_seed.c_str(), owner_seed.size() );
+  keys->push_back( fc::ecc::private_key::regenerate( owner_secret ).get_public_key() );
+
+  std::string active_seed = account + "active" + str;
+  auto active_secret = fc::sha256::hash( active_seed.c_str(), active_seed.size() );
+  keys->push_back( fc::ecc::private_key::regenerate( active_secret ).get_public_key() );
+
+  std::string posting_seed = account + "posting" + str;
+  auto posting_secret = fc::sha256::hash( posting_seed.c_str(), posting_seed.size() );
+  keys->push_back( fc::ecc::private_key::regenerate( posting_secret ).get_public_key() );
+}
+
 } } // hive::protocol
