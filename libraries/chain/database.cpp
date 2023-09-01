@@ -1423,7 +1423,7 @@ try
   if (!(skip & skip_fork_db)) //if fork checking enabled
   {
     _fork_db.display();
-    wlog("Try pushing block to fork database: ${id}, ${num}", ("id", full_block->get_block_id())("num", full_block->get_block_num()));
+    my_wlog("Try pushing block to fork database: ${id}, ${num}", ("id", full_block->get_block_id())("num", full_block->get_block_num()));
     const item_ptr new_head = _fork_db.push_block(full_block);
     _fork_db.display();
     

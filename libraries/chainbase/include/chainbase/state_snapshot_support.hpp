@@ -13,10 +13,9 @@
 #include <string>
 #include <vector>
 
-#define my_wlog(format, ...) \
-    do { \
-        wlog(format, ##__VA_ARGS__); \
-    } while (0)
+#define my_wlog(...)
+
+// #define my_wlog(format, ...)      do {          wlog(format, ##__VA_ARGS__);      } while (0)
 
 
 namespace chainbase
