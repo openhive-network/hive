@@ -62,6 +62,7 @@ variables:
         --input-file contrib/config_mirrornet.ini.template \
         --output-file hive-home/config.ini
       ln -s $BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log hive-home/blockchain/block_log
+      ln -s $BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log.artifacts hive-home/blockchain/block_log.artifacts
       cd hive-home
       ls -lAhR
       /home/hived/bin/hived \
