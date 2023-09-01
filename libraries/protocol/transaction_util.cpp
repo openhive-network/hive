@@ -108,6 +108,13 @@ void verify_authority(const required_authorities_type& required_authorities,
 void collect_potential_keys( std::vector< public_key_type >* keys,
   const account_name_type& account, const std::string& str )
 {
+  // get possible key if str was WIF private key
+  {
+    auto private_key_ptr = fc::ecc::private_key::wif_to_key( str );
+    if( private_key_ptr )
+      keys->push_back( private_key_ptr->get_public_key() );
+  }
+
   // get possible key if str was an extended private key
   try
   {

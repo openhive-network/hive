@@ -10609,14 +10609,17 @@ BOOST_AUTO_TEST_CASE( private_key_memo_test )
     generate_block();
 
     BOOST_TEST_MESSAGE( "Testing memo that is a WIF form of private key" );
-    // it is ok to put WIF private key in memo (definitely should be blocked)
     std::string alice_wif = alice_private_key.to_base58();
     ilog( "alice_wif: ${alice_wif}", ( alice_wif ) );
-    transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_wif, alice_private_key );
-    recurrent_transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_wif, 24, 3, alice_private_key );
-    transfer_to_savings( "alice", "bob", ASSET( "1.000 TESTS" ), alice_wif, alice_private_key );
+    HIVE_REQUIRE_EXCEPTION( transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_wif, alice_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( recurrent_transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_wif, 24, 3, alice_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
+    HIVE_REQUIRE_EXCEPTION( transfer_to_savings( "alice", "bob", ASSET( "1.000 TESTS" ), alice_wif, alice_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
     transfer_to_savings( "alice", "alice", ASSET( "1.000 TESTS" ), "", alice_private_key );
-    transfer_from_savings( "alice", "alice", ASSET( "1.000 TESTS" ), alice_wif, 2, alice_private_key );
+    HIVE_REQUIRE_EXCEPTION( transfer_from_savings( "alice", "alice", ASSET( "1.000 TESTS" ), alice_wif, 2, alice_private_key ),
+      "key_weight_pair.first != key", plugin_exception );
 
     generate_block();
 
