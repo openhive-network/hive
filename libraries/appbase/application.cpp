@@ -44,6 +44,15 @@ io_handler::io_handler(application& _app, bool _allow_close_when_signal_is_recei
 {
 }
 
+io_handler::~io_handler()
+{
+  /*
+    The best moment for clearing signals is time of destroying an object then for sure we don't need signals.
+    Otherwise can be a situation that signals were removed, but an application gets another SIGINT and that signal won't be able to be process correctly.
+  */
+  clear_signals();
+}
+
 boost::asio::io_service& io_handler::get_io_service()
 {
   return io_serv;
@@ -61,7 +70,6 @@ void io_handler::close()
   {
     final_action();
 
-    close_signal();
     io_serv.stop();
 
     closed = true;
@@ -70,7 +78,7 @@ void io_handler::close()
   lock.clear( std::memory_order_release );
 }
 
-void io_handler::close_signal()
+void io_handler::clear_signals()
 {
   if( !signals )
     return;

@@ -75,12 +75,13 @@ namespace appbase {
       boost::asio::io_service io_serv;
       application&            app;
 
-      void close_signal();
+      void clear_signals();
 
       void handle_signal( uint32_t _last_signal_code );
 
     public:
       io_handler(application& app, bool _allow_close_when_signal_is_received, final_action_type&& _final_action);
+      ~io_handler();
 
       boost::asio::io_service& get_io_service();
 
