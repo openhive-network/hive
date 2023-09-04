@@ -62,6 +62,9 @@ void io_handler::close()
     final_action();
 
     close_signal();
+
+    signal(SIGINT, SIG_IGN);
+
     io_serv.stop();
 
     closed = true;
