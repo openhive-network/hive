@@ -2065,7 +2065,7 @@ void wallet_api::check_memo(
   for( auto& key_pair : my->_keys )
   {
     for( auto& key : keys )
-      FC_ASSERT( key != key_pair.first, "Detected imported private key in memo field. Cancelling trasanction." );
+      FC_ASSERT( key != key_pair.first, "Detected imported private key in memo field. Cancelling transaction." );
   }
 }
 
