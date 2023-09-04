@@ -7240,6 +7240,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
         //needs to be active power down for it to be acceptable, however for the check code that unfortunate 1 looks
         //like active power down - if we fix it and leave zero, suddenly some historical as well as potentially
         //new operations become invalid
+        //TODO: fix after HF28 - see HIVE_HARDFORK_1_28_FIX_POWER_DOWN_CANCEL
 
         for( uint32_t i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
           a.proxied_vsf_votes[i] *= magnitude;

@@ -15,5 +15,7 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_28_FIX_POWER_DOWN (HIVE_HARDFORK_1_28)
 // remove limit of vote edits (issue #458)
 #define HIVE_HARDFORK_1_28_NO_VOTE_LIMIT (HIVE_HARDFORK_1_28)
+// fix way of detecting "no-op" [cancel] power down operation
+#define HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN (HIVE_HARDFORK_1_28)
 
 #endif

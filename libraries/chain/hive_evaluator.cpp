@@ -1210,7 +1210,13 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 
   if( o.vesting_shares.amount == 0 )
   {
-    if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
+    //TODO: fix after HF28 along with problem in perform_vesting_share_split()
+    //new condition blocks cancel of power down even for accounts with artificial 1 in vesting_withdraw_rate;
+    //after HF28, once we remove artificial 1 (will be back to proper 0), check below will be again
+    //an equivalent of original check from HF5 (so we can revert back to it but with HF28 condition)
+    if( _db.has_hardfork( HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN ) )
+      FC_ASSERT( account.has_active_power_down(), "This operation would not change the vesting withdraw rate." );
+    else if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
       FC_ASSERT( account.vesting_withdraw_rate.amount != 0, "This operation would not change the vesting withdraw rate." );
 
     _db.modify( account, [&]( account_object& a ) {
@@ -1238,8 +1244,14 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
         new_vesting_withdraw_rate.amount += 1;
       }
 
-      if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
-        FC_ASSERT( account.vesting_withdraw_rate  != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
+      //TODO: fix after HF28 along with problem in perform_vesting_share_split()
+      //new condition allows change of power down rate to 1 even for accounts with artificial 1 already there;
+      //after HF28, once we remove artificial 1 (will be back to proper 0), original check from HF5 will
+      //be sufficient again, since account.has_active_power_down() <=> (account.vesting_withdraw_rate == 0)
+      if( _db.has_hardfork( HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN ) )
+        FC_ASSERT( account.vesting_withdraw_rate != new_vesting_withdraw_rate || !account.has_active_power_down(), "This operation would not change the vesting withdraw rate." );
+      else if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
+        FC_ASSERT( account.vesting_withdraw_rate != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
 
       a.vesting_withdraw_rate = new_vesting_withdraw_rate;
       a.next_vesting_withdrawal = _db.head_block_time() + fc::seconds(HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS);
