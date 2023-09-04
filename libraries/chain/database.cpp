@@ -1323,7 +1323,9 @@ bool database::_push_block(const block_flow_control& block_ctrl)
 
   if (!(skip & skip_fork_db)) //if fork checking enabled
   {
+    _fork_db.display();
     const item_ptr new_head = _fork_db.push_block(full_block);
+    _fork_db.display();
     block_ctrl.on_fork_db_insert();
     _maybe_warn_multiple_production( new_head->get_block_num() );
 
