@@ -381,8 +381,8 @@ int main( int argc, char** argv )
             resp.set_status( fc::http::reply::NotAuthorized );
             return;
           }
-          std::shared_ptr< fc::rpc::http_api_connection > conn =
-            std::make_shared< fc::rpc::http_api_connection>();
+          std::shared_ptr< fc::rpc::http_base_api_connection > conn =
+            std::make_shared< fc::rpc::http_base_api_connection>();
           conn->register_api( wapi );
           conn->on_request( req, resp );
 
