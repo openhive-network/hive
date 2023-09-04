@@ -89,7 +89,8 @@ std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_walle
 {
   instance = std::make_shared<beekeeper_instance>( cmd_wallet_dir, notifications_endpoint );
   return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager>( notifications_endpoint ), instance,
-                                                                       cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit );
+                                                                       cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit,
+                                                                       [this]() { std::raise(SIGINT); } );
 }
 
 }

@@ -25,7 +25,7 @@ public:
   /// @param command_line_unlock_timeout timeout for unlocked wallet [s]
   /// @param method an action that will be executed when all sessions are closed
   beekeeper_wallet_manager( std::shared_ptr<session_manager_base> sessions, std::shared_ptr<beekeeper_instance_base> instance, const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit,
-                            close_all_sessions_action_method&& method = [](){ std::raise(SIGINT); } );
+                            close_all_sessions_action_method&& method = [](){} );
 
   beekeeper_wallet_manager(const beekeeper_wallet_manager&) = delete;
   beekeeper_wallet_manager(beekeeper_wallet_manager&&) = delete;
