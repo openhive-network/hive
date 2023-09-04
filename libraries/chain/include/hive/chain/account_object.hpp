@@ -80,10 +80,12 @@ namespace hive { namespace chain {
       const VEST_asset& get_received_vesting() const { return received_vesting_shares; }
       //whole remainder of active power down (zero when not active)
       share_type get_total_vesting_withdrawal() const { return to_withdraw.amount - withdrawn.amount; }
+      //tells if account has active power down
+      bool has_active_power_down() const { return next_vesting_withdrawal != fc::time_point_sec::maximum(); }
       //value of active step of pending power down (or zero)
       share_type get_next_vesting_withdrawal() const
       {
-        if( next_vesting_withdrawal != fc::time_point_sec::maximum() )
+        if( has_active_power_down() )
           return std::min( vesting_withdraw_rate.amount, get_total_vesting_withdrawal() );
         else
           return 0;
