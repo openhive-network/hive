@@ -821,30 +821,30 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     vest( HIVE_INIT_MINER_NAME, "eric", asset( 1000, HIVE_SYMBOL ), init_account_priv_key );
     generate_block();
 
-    // vesting shares split puts artificial 1 on vesting withdraw rate on accounts with no power down
+    // after fix vesting shares split no longer affects accounts with no active power down
     inject_hardfork( HIVE_HARDFORK_0_1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).vesting_withdraw_rate.amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).vesting_withdraw_rate.amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).vesting_withdraw_rate.amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "dave" ).vesting_withdraw_rate.amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "eric" ).vesting_withdraw_rate.amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).vesting_withdraw_rate.amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).vesting_withdraw_rate.amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).vesting_withdraw_rate.amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "dave" ).vesting_withdraw_rate.amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "eric" ).vesting_withdraw_rate.amount.value, 0 );
 
-    // HF5 activates "no op" check during power down and cancel power down
+    // HF5 used to activate "no op" check during power down and cancel power down, but now the check only activates after HF28
     inject_hardfork( HIVE_HARDFORK_0_5 );
 
-    // activate actual power down on 'alice' - it will clear effect of artificial 1 putting account into normal state
+    // activate actual power down on 'alice'
     withdraw_vesting( "alice", get_vesting( "alice" ), alice_private_key );
     generate_block();
 
-    // 'alice' can cancel power down since she is no longer affected by the bug and actually is powering down
+    // 'alice' can cancel power down
     withdraw_vesting( "alice", asset( 0, VESTS_SYMBOL ), alice_private_key );
-    // 'bob' can cancel nonexisting power down due to bug
+    // 'bob' can cancel nonexisting power down because check is not activated until HF28
     withdraw_vesting( "bob", asset( 0, VESTS_SYMBOL ), bob_private_key );
-    // 'eric' cannot change power down rate to 1 due to bug
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "eric", asset( 1, VESTS_SYMBOL ), eric_private_key ), "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
+    // 'eric' used to not be able to change power down rate to 1 due to bug, but we don't care about past actions that didn't reach block log
+    //HIVE_REQUIRE_ASSERT( withdraw_vesting( "eric", asset( 1, VESTS_SYMBOL ), eric_private_key ), "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
     generate_block();
 
-    // since 'alice' and 'bob' are now no longer affected by a bug, we can use them to check the power down with natural 1 withdraw rate
+    // we can use 'alice' and 'bob' to check the power down with natural 1 withdraw rate
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).vesting_withdraw_rate.amount.value, 0 );
     BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).vesting_withdraw_rate.amount.value, 0 );
 
@@ -860,10 +860,10 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
 
     // make sure code behaves "properly" (I mean in unchanged way) right before HF28 too
     inject_hardfork( HIVE_HARDFORK_1_27 );
-    // 'carol' can cancel nonexisting power down due to bug
+    // 'carol' can cancel nonexisting power down because check is not active until HF28
     withdraw_vesting( "carol", asset( 0, VESTS_SYMBOL ), carol_private_key );
-    // 'eric' still can't change rate to 1
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "eric", asset( 1, VESTS_SYMBOL ), eric_private_key ), "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
+    // 'eric' used to not be able to change rate to 1 still, but like before, that operation didn't reach block log, so we don't care
+    //HIVE_REQUIRE_ASSERT( withdraw_vesting( "eric", asset( 1, VESTS_SYMBOL ), eric_private_key ), "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
     generate_block();
 
     // also since HF21 there is different rate correction mechanism, so the same operation as for 'bob'
@@ -877,17 +877,17 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     // 'alice' and 'bob' have 1 in vesting withdraw rate, but they are actually performing power down
     // it means they can't change rate to 1, because it is already 1
     HIVE_REQUIRE_ASSERT( withdraw_vesting( "alice", asset( 1, VESTS_SYMBOL ), alice_private_key ),
-      "account.vesting_withdraw_rate != new_vesting_withdraw_rate || !account.has_active_power_down()" );
+      "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
     HIVE_REQUIRE_ASSERT( withdraw_vesting( "bob", asset( 1, VESTS_SYMBOL ), bob_private_key ),
-      "account.vesting_withdraw_rate != new_vesting_withdraw_rate || !account.has_active_power_down()" );
+      "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
     withdraw_vesting( "alice", asset( 0, VESTS_SYMBOL ), alice_private_key );
     withdraw_vesting( "bob", asset( 0, VESTS_SYMBOL ), bob_private_key );
     // 'carol' does not have 1 as power down rate, so she can change it to 1 or cancel power down
     withdraw_vesting( "carol", asset( 1, VESTS_SYMBOL ), carol_private_key );
     withdraw_vesting( "carol", asset( 0, VESTS_SYMBOL ), carol_private_key );
-    // only 'dave' does not have power down despite having 1 as power down rate
+    // only 'dave' does not have power down
     HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", asset( 0, VESTS_SYMBOL ), dave_private_key ), "account.has_active_power_down()" );
-    // 'eric' can finally change rate to 1
+    // 'eric' can change rate to 1
     withdraw_vesting( "eric", asset( 1, VESTS_SYMBOL ), eric_private_key );
 
     validate_database();
