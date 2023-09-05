@@ -4,7 +4,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import post_comment
-from hive_local_tools.functional.python.operation import get_virtual_operation
+from hive_local_tools.functional.python.operation import get_virtual_operations
 
 
 @run_for("testnet")
@@ -42,7 +42,7 @@ def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_ac
     node.wait_for_irreversible_block()
     node.restart(time_offset="+62m")
 
-    assert len(get_virtual_operation(node, "curation_reward_operation")) == 1
+    assert len(get_virtual_operations(node, "curation_reward_operation")) == 1
     assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
     assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
 
@@ -66,7 +66,7 @@ def test_vote_for_comment_when_decline_voting_rights_is_being_executed(prepare_e
     node.wait_for_irreversible_block()
     node.restart(time_offset="+62m")
 
-    assert len(get_virtual_operation(node, "curation_reward_operation")) == 1
+    assert len(get_virtual_operations(node, "curation_reward_operation")) == 1
     assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
     assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
 
@@ -132,7 +132,7 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node):
 
     # The virtual operation confirms that decline_voting_rights_operation was done.
     assert vops["ops"][2]["op"]["type"] == "declined_voting_rights_operation"
-    assert len(get_virtual_operation(node, "declined_voting_rights_operation")) == 1
+    assert len(get_virtual_operations(node, "declined_voting_rights_operation")) == 1
 
     assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
     assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)

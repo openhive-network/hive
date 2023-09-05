@@ -5,7 +5,7 @@ from hive_local_tools.constants import filters_enum_virtual_ops, TRANSACTION_TEM
 
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
-    payout_vops = get_virtual_operation(node, "fill_transfer_from_savings_operation")
+    payout_vops = get_virtual_operations(node, "fill_transfer_from_savings_operation")
     for vop in payout_vops:
         if vop['op']['value']['memo'] == memo:
             return True
@@ -77,7 +77,7 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.Test, price: float, toleran
     return tt.Asset.Range(vests, tolerance=tolerance)
 
 
-def get_virtual_operation(node: tt.InitNode, vop: str, skip_price_stabilization: bool = True) -> list:
+def get_virtual_operations(node: tt.InitNode, vop: str, skip_price_stabilization: bool = True) -> list:
     """
     :param vop: name of the virtual operation,
     :param skip_price_stabilization: by default, removes from the list operations confirming vesting-stabilizing,

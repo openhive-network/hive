@@ -10,7 +10,7 @@ from hive_local_tools.functional.python.operation import (
     get_rc_max_mana,
     get_transaction_timestamp,
     get_vesting_price,
-    get_virtual_operation,
+    get_virtual_operations,
     convert_hive_to_vest_range,
     jump_to_date,
 )
@@ -191,4 +191,4 @@ def __assert_virtual_operation_was_generated(node: tt.InitNode,
                                              virtual_operation_name: str,
                                              expected_number_of_virtual_operations: int) -> None:
     err = f"The virtual operation: {virtual_operation_name} is not generated."
-    assert (len(get_virtual_operation(node, f"{virtual_operation_name}")) == expected_number_of_virtual_operations), err
+    assert (len(get_virtual_operations(node, f"{virtual_operation_name}")) == expected_number_of_virtual_operations), err
