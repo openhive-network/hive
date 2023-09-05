@@ -3749,7 +3749,6 @@ FC_TODO( "Supplement ^ once SMT rewards are implemented" )
   FC_CAPTURE_LOG_AND_RETHROW( (head_block_num()) );
 }
 #endif
-
 void database::remove_expired_governance_votes()
 {
   if (!has_hardfork(HIVE_HARDFORK_1_25))

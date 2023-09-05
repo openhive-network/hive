@@ -1661,7 +1661,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_authorities )
 
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure with additional incorrect signature. Now is a failure because of logic of given operation." );
     HIVE_REQUIRE_ASSERT( push_transaction( tx, { alice_private_key, bob_private_key } ),
-      "account.vesting_withdraw_rate != new_vesting_withdraw_rate || !account.has_active_power_down()" );
+      "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
 
     BOOST_TEST_MESSAGE( "--- Test failure with incorrect signature" );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_post_key ), tx_missing_active_auth );
