@@ -22,7 +22,7 @@ void beekeeper_wallet_manager::set_timeout( const std::string& token, seconds_ty
   sessions->set_timeout( token, std::chrono::seconds( seconds ) );
 }
 
-std::string beekeeper_wallet_manager::create( const std::string& token, const std::string& name, fc::optional<std::string> password )
+std::string beekeeper_wallet_manager::create( const std::string& token, const std::string& name, const std::optional<std::string>& password )
 {
   sessions->check_timeout( token );
 
@@ -141,7 +141,7 @@ public_key_type beekeeper_wallet_manager::create_public_key( const std::string& 
   FC_ASSERT( public_key_size == public_key.size(), "Incorrect size of public key. Expected ${public_key_size}, but got ${public_key_size_2}",
                                                     (public_key_size)("public_key_size_2", public_key.size()) );
 
-  return utility::get_public_key( public_key );
+  return utility::public_key::create( public_key );
 }
 
 } //beekeeper

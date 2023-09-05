@@ -781,38 +781,38 @@ const my_entrypoint = async() => {
     /** @type {BeekeeperInstanceHelper} */
     const api = new beekeper(args);
 
-    api.setAcceptError = true;
+    {
+      api.setAcceptError = true;
 
-    {
-      const error_message = api.open(api.implicitSessionToken, "");
+      let error_message = api.open(api.implicitSessionToken, "");
       console.log(error_message);
       assert.equal(error_message.includes("Name of wallet is incorrect. Is empty."), true);
-    }
-    {
-      const error_message = api.open(api.implicitSessionToken, "%$%$");
+
+      error_message = api.open(api.implicitSessionToken, "%$%$");
       console.log(error_message);
       assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
-    }
-    {
-      const error_message = api.create(api.implicitSessionToken, "", "cherry-password");
-      console.log(error_message);
-      assert.equal(error_message.includes("Name of wallet is incorrect. Is empty."), true);
-    }
-    {
-      const error_message = api.create(api.implicitSessionToken, "%$%$", "cherry-password");
-      console.log(error_message);
-      assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
-    }
-    {
-      const walletNo = 9;
-      const error_message = api.create(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
-      console.log(error_message);
-      assert.equal(error_message.includes("Wallet with name: 'w9' already exists at"), true);
-    }
-    {
-      const error_message = api.open(api.implicitSessionToken, "abc");
+
+      error_message = api.open(api.implicitSessionToken, "abc");
       console.log(error_message);
       assert.equal(error_message.includes("Unable to open file: "), true);
+      assert.equal(error_message.includes("abc.wallet"), true);
+    }
+    {
+      api.setAcceptError = true;
+
+      let error_message = api.create(api.implicitSessionToken, "", "cherry-password");
+      console.log(error_message);
+      assert.equal(error_message.includes("Name of wallet is incorrect. Is empty."), true);
+
+      error_message = api.create(api.implicitSessionToken, "%$%$", "cherry-password");
+      console.log(error_message);
+      assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
+
+      const walletNo = 9;
+      error_message = api.create(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
+      console.log(error_message);
+      assert.equal(error_message.includes("Wallet with name: 'w9' already exists at"), true);
+
     }
     {
       const error_message = api.close(api.implicitSessionToken, "abc");
@@ -957,6 +957,43 @@ const my_entrypoint = async() => {
       error_message = api.signDigest(api.implicitSessionToken, "abCDe", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
       console.log(error_message);
       assert.equal(error_message.includes("Public key not found in unlocked wallets"), true);
+      assert.equal(error_message.includes("6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"), true);
+    }
+    {
+      api.setAcceptError = true;
+
+      let error_message = api.signTransaction(api.implicitSessionToken, "+", chainId, "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+      console.log(error_message);
+      assert.equal(error_message.includes("Unexpected char '43' in \"\""), true);
+
+      error_message = api.signTransaction(api.implicitSessionToken, "{}", "$", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+      console.log(error_message);
+      assert.equal(error_message.includes("Invalid hex character '$'"), true);
+
+      error_message = api.signTransaction(api.implicitSessionToken, "{}", "6542634abcef", "444444444444");
+      console.log(error_message);
+      assert.equal(error_message.includes("public_key_size == public_key.size()"), true);
+
+      error_message = api.signTransaction(api.implicitSessionToken, "{}", "6542634abcef", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSXbtsxm");
+      console.log(error_message);
+      assert.equal(error_message.includes("memcmp( (char*)&check, data.data + sizeof(key), sizeof(check) ) == 0"), true);
+
+      error_message = api.signTransaction(api.implicitSessionToken, "{}", "6542634abcef", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+      console.log(error_message);
+      assert.equal(error_message.includes("Public key not found in unlocked wallets"), true);
+      assert.equal(error_message.includes("6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"), true);
+    }
+    {
+      api.setAcceptError = true;
+
+      let error_message = api.signBinaryTransaction(api.implicitSessionToken, "+", chainId, "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+      console.log(error_message);
+      assert.equal(error_message.includes("Public key not found in unlocked wallets"), true);
+      assert.equal(error_message.includes("6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"), true);
+
+      error_message = api.signBinaryTransaction(api.implicitSessionToken, "!@", chainId, "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+      console.log(error_message);
+      assert.equal(error_message.includes("Invalid hex character '!'"), true);
     }
   }
 

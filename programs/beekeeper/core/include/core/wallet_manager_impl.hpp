@@ -16,7 +16,7 @@ class wallet_manager_impl {
 
     wallet_manager_impl(){}
 
-    std::string create( wallet_filename_creator_type wallet_filename_creator, const std::string& name, fc::optional<std::string> password = fc::optional<std::string>{} );
+    std::string create( wallet_filename_creator_type wallet_filename_creator, const std::string& name, const std::optional<std::string>& password );
     void open( wallet_filename_creator_type wallet_filename_creator, const std::string& name );
     void close( const std::string& name );
     std::vector<wallet_details> list_wallets();

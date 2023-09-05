@@ -12,6 +12,8 @@
 
 #include <core/beekeeper_wallet.hpp>
 #include <core/beekeeper_wallet_manager.hpp>
+#include <core/utilities.hpp>
+
 #include <beekeeper_wasm/beekeeper_wasm_api.hpp>
 #include <beekeeper_wasm/beekeeper_wasm_app.hpp>
 
@@ -88,6 +90,11 @@ beekeeper_wallet_manager create_wallet( const boost::filesystem::path& cmd_walle
                                     cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit, std::move( method ) );
 }
 
+std::string create( beekeeper_wallet_manager& mgr, const std::string& token, const std::string& name )
+{
+  return mgr.create( token, name, std::optional<std::string>() );
+}
+
 /// Test wallet manager
 BOOST_AUTO_TEST_CASE(wallet_manager_test)
 { try {
@@ -116,7 +123,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_THROW(wm.unlock(_token, "test", "pw"), fc::exception);
   BOOST_REQUIRE_THROW(wm.import_key(_token, "test", "pw"), fc::exception);
 
-  auto pw = wm.create(_token, "test");
+  auto pw = create(wm, _token, "test");
   BOOST_REQUIRE(!pw.empty());
   BOOST_REQUIRE_EQUAL(0u, pw.find("PW")); // starts with PW
   BOOST_REQUIRE_EQUAL(1u, wm.list_wallets(_token).size());
@@ -155,7 +162,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   // key3 was not automatically imported
   BOOST_REQUIRE( cmp_keys( key3, keys ) == keys.end() );
 
-  wm.remove_key(_token, "test", pw, public_key_type::to_base58( pub_pri_pair(key2).first, false/*is_sha256*/ ) );
+  wm.remove_key(_token, "test", pw, beekeeper::utility::public_key::to_string( pub_pri_pair(key2).first ) );
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token).size());
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key2, keys ) == keys.end() );
@@ -163,9 +170,9 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key2, keys ) != keys.end() );
-  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", pw, public_key_type::to_base58( pub_pri_pair(key3).first, false/*is_sha256*/ ) ), fc::exception);
+  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", pw, beekeeper::utility::public_key::to_string( pub_pri_pair(key3).first ) ), fc::exception);
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
-  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", "PWnogood", public_key_type::to_base58( pub_pri_pair(key2).first, false/*is_sha256*/ ) ), fc::exception);
+  BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", "PWnogood", beekeeper::utility::public_key::to_string( pub_pri_pair(key2).first ) ), fc::exception);
   BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
 
   wm.lock(_token, "test");
@@ -178,7 +185,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_THROW(wm.get_public_keys(_token), fc::exception);
   BOOST_REQUIRE(!wm.list_wallets(_token)[0].unlocked);
 
-  auto pw2 = wm.create(_token, "test2");
+  auto pw2 = create(wm, _token, "test2");
   BOOST_REQUIRE_EQUAL(2u, wm.list_wallets(_token).size());
   // wallet has no keys when it is created
   BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token).size());
@@ -207,11 +214,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 
   wm.set_timeout(_token, 15);
 
-  wm.create(_token, "testgen");
+  create(wm, _token, "testgen");
   wm.lock(_token, "testgen");
   fc::remove("testgen.wallet");
 
-  pw = wm.create(_token, "testgen");
+  pw = create(wm, _token, "testgen");
 
   wm.lock(_token, "testgen");
   BOOST_REQUIRE(fc::exists("testgen.wallet"));
@@ -235,42 +242,42 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test)
     BOOST_REQUIRE( wm.start() );
     std::string _token = wm.create_session( "this is salt", "127.0.0.1:666" );
 
-    wm.create(_token, "test");
+    create(wm, _token, "test");
     constexpr auto key1 = "5JktVNHnRX48BUdtewU7N1CyL4Z886c42x7wYW7XhNWkDQRhdcS";
     wm.import_key(_token, "test", key1);
-    BOOST_REQUIRE_THROW(wm.create(_token, "test"),        fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, "test"),        fc::exception);
 
-    BOOST_REQUIRE_THROW(wm.create(_token, "./test"),      fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "../../test"),  fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "/tmp/test"),   fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "/tmp/"),       fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "/"),           fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, ",/"),          fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, ","),           fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "<<"),          fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, "<"),           fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, ",<"),          fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, ",<<"),         fc::exception);
-    BOOST_REQUIRE_THROW(wm.create(_token, ""),            fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, "./test"),      fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, "../../test"),  fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, "/tmp/test"),   fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, "/tmp/"),       fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, "/"),           fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, ",/"),          fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, ","),           fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, "<<"),          fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, "<"),           fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, ",<"),          fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, ",<<"),         fc::exception);
+    BOOST_REQUIRE_THROW(create(wm, _token, ""),            fc::exception);
 
     fc::remove("test.wallet");
 
-    wm.create(_token, ".test");
+    create(wm, _token, ".test");
     BOOST_REQUIRE(fc::exists(".test.wallet"));
     fc::remove(".test.wallet");
-    wm.create(_token, "..test");
+    create(wm, _token, "..test");
     BOOST_REQUIRE(fc::exists("..test.wallet"));
     fc::remove("..test.wallet");
-    wm.create(_token, "...test");
+    create(wm, _token, "...test");
     BOOST_REQUIRE(fc::exists("...test.wallet"));
     fc::remove("...test.wallet");
-    wm.create(_token, ".");
+    create(wm, _token, ".");
     BOOST_REQUIRE(fc::exists("..wallet"));
     fc::remove("..wallet");
-    wm.create(_token, "__test_test");
+    create(wm, _token, "__test_test");
     BOOST_REQUIRE(fc::exists("__test_test.wallet"));
     fc::remove("__test_test.wallet");
-    wm.create(_token, "t-t");
+    create(wm, _token, "t-t");
     BOOST_REQUIRE(fc::exists("t-t.wallet"));
     fc::remove("t-t.wallet");
 
@@ -316,9 +323,9 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
       if (fc::exists("banana.wallet")) fc::remove("banana.wallet");
       if (fc::exists("cherry.wallet")) fc::remove("cherry.wallet");
 
-      std::string _pass_00 = wm.create( _token_00, "avocado" );
-      std::string _pass_01 = wm.create( _token_01, "banana" );
-      std::string _pass_02 = wm.create( _token_01, "cherry" );
+      std::string _pass_00 = create(wm,  _token_00, "avocado" );
+      std::string _pass_01 = create(wm,  _token_01, "banana" );
+      std::string _pass_02 = create(wm,  _token_01, "cherry" );
 
       BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token" ), fc::exception );
       BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_00 ).size(), 1 );
@@ -468,7 +475,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
       if (fc::exists("1.wallet")) fc::remove("1.wallet");
 
       auto _token = wm.create_session( "salt", _port );
-      wm.create( _token, wallet_name_0 );
+      create(wm,  _token, wallet_name_0 );
 
       auto _wallets = wm.list_wallets( _token );
       BOOST_REQUIRE( _wallets.size() == 1 );
@@ -480,7 +487,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
       _wallets = wm.list_wallets( _token );
       BOOST_REQUIRE( _wallets.size() == 0 );
 
-      wm.create( _token, wallet_name_1 );
+      create(wm,  _token, wallet_name_1 );
 
       _wallets = wm.list_wallets( _token );
       BOOST_REQUIRE( _wallets.size() == 1 );
@@ -497,7 +504,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
       if (fc::exists("1.wallet")) fc::remove("1.wallet");
 
       auto _token = wm.create_session( "salt", _port );
-      wm.create( _token, wallet_name_0 );
+      create(wm,  _token, wallet_name_0 );
 
       wm.lock_all( _token );
 
@@ -516,8 +523,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
       if (fc::exists("1.wallet")) fc::remove("1.wallet");
 
       auto _token = wm.create_session( "salt", _port );
-      wm.create( _token, wallet_name_0 );
-      wm.create( _token, wallet_name_1 );
+      create(wm,  _token, wallet_name_0 );
+      create(wm,  _token, wallet_name_1 );
 
       wm.lock( _token, wallet_name_1 );
 
@@ -571,7 +578,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
       BOOST_REQUIRE( wm.start() );
 
       auto _token = wm.create_session( "salt", _port );
-      auto _password = wm.create( _token, "0" );
+      auto _password = create(wm,  _token, "0" );
       auto _imported_public_key = wm.import_key( _token, "0", _private_key_str );
       BOOST_REQUIRE( _imported_public_key == _public_key_str );
 

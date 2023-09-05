@@ -108,13 +108,9 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      create_return _result;
-
-      if( password.empty() )
-        _result = { _impl->app.get_wallet_manager()->create( token, wallet_name ) };
-      else
-        _result = { _impl->app.get_wallet_manager()->create( token, wallet_name, password ) };
-
+      create_return _result{ _impl->app.get_wallet_manager()->create( token, wallet_name,
+                                                                      password.empty() ? std::optional<std::string>() : std::optional<std::string>( password )
+                                                                    ) };
       return to_string( _result );
     };
     return exception_handler( _method );
