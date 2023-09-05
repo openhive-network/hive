@@ -67,7 +67,7 @@ bool beekeeper_app_init::save_keys( const std::string& token, const std::string&
     std::transform( _keys.begin(), _keys.end(), std::inserter( _result, _result.end() ),
     []( const std::pair<beekeeper::public_key_type, beekeeper::private_key_type>& item )
     {
-      return std::make_pair( beekeeper::public_key_type::to_base58( item.first, false/*is_sha256*/ ), item.second.key_to_wif() );
+      return std::make_pair( beekeeper::utility::public_key::to_string( item.first ), item.second.key_to_wif() );
     } );
     
     fc::path _file( _filename );

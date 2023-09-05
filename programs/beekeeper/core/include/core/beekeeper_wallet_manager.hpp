@@ -75,7 +75,7 @@ public:
   /// @return Plaintext password that is needed to unlock wallet. Caller is responsible for saving password otherwise
   ///      they will not be able to unlock their wallet. Note user supplied passwords are not supported.
   /// @throws fc::exception if wallet with name already exists (or filename already exists)
-  std::string create( const std::string& token, const std::string& name, fc::optional<std::string> password = fc::optional<std::string>{} );
+  std::string create( const std::string& token, const std::string& name, const std::optional<std::string>& password );
 
   /// Open an existing wallet file dir/{name}.wallet.
   /// Note this does not unlock the wallet, see beekeeper_wallet_manager::unlock.

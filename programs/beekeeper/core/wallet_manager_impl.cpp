@@ -29,23 +29,22 @@ void wallet_manager_impl::valid_filename( const string& name )
           "Name of wallet is incorrect. Name: ${name}. File creation with given name is impossible." );
 }
 
-std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_filename_creator, const std::string& name, fc::optional<std::string> password )
+std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_filename_creator, const std::string& name, const std::optional<std::string>& password )
 {
   valid_filename(name);
 
   auto wallet_filename = wallet_filename_creator( name );
   FC_ASSERT( !bfs::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
 
-  if(!password)
-    password = gen_password();
+  std::string _password = password ? ( *password ) : gen_password();
 
   wallet_data d;
   auto wallet = make_unique<beekeeper_wallet>(d);
-  wallet->set_password(*password);
+  wallet->set_password( _password );
   wallet->set_wallet_filename(wallet_filename.string());
-  wallet->unlock(*password);
+  wallet->unlock( _password );
   wallet->lock();
-  wallet->unlock(*password);
+  wallet->unlock( _password );
 
   // Explicitly save the wallet file here, to ensure it now exists.
   wallet->save_wallet_file();
@@ -59,7 +58,7 @@ std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_fil
   }
   wallets.emplace(name, std::move(wallet));
 
-  return *password;
+  return _password;
 }
 
 void wallet_manager_impl::open( wallet_filename_creator_type wallet_filename_creator, const std::string& name )
@@ -73,7 +72,7 @@ void wallet_manager_impl::open( wallet_filename_creator_type wallet_filename_cre
   FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));
 
   // If we have name in our map then remove it since we want the emplace below to replace.
-  // This can happen if the wallet file is added while eos-walletd is running.
+  // This can happen if the wallet file is added while a wallet is running.
   auto it = wallets.find(name);
   if (it != wallets.end())
   {
@@ -207,7 +206,7 @@ signature_type wallet_manager_impl::sign( std::function<std::optional<signature_
     }
   } FC_LOG_AND_RETHROW();
 
-  FC_ASSERT( false, "Public key not found in unlocked wallets ${public_key}", (public_key));
+  FC_ASSERT( false, "Public key not found in unlocked wallets ${public_key}", (utility::public_key::to_string( public_key )));
 }
 
 signature_type wallet_manager_impl::sign_digest( const digest_type& sig_digest, const public_key_type& public_key )

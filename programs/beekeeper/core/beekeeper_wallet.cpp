@@ -163,7 +163,7 @@ public:
     if( itr == _keys.end() )
     {
       _keys[wif_pub_key] = *priv;
-      return public_key_type::to_base58( wif_pub_key, false/*is_sha256*/ );
+      return utility::public_key::to_string( wif_pub_key );
     }
     FC_ASSERT( false, "Key already in wallet" );
   }
