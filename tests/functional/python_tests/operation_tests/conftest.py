@@ -1,33 +1,10 @@
 from __future__ import annotations
 
 import pytest
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 import test_tools as tt
-from hive_local_tools.functional.python.operation import create_transaction_with_any_operation, get_current_mana
-
-
-@dataclass
-class Account:
-    _acc_info: dict = field(init=False, default_factory=dict)
-    _name: str
-    _node: tt.InitNode
-    _wallet: tt.Wallet
-
-    def get_hbd_balance(self):
-        self._update_account_info()
-        return tt.Asset.from_(self._acc_info['hbd_balance'])
-
-    def get_hive_balance(self):
-        self._update_account_info()
-        return tt.Asset.from_(self._acc_info['balance'])
-
-    def get_rc_current_mana(self):
-        self._update_account_info()
-        return get_current_mana(self._node, self._name)
-    
-    def _update_account_info(self):
-        self._acc_info = self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]
+from hive_local_tools.functional.python.operation import create_transaction_with_any_operation, Account
 
 
 @dataclass
