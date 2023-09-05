@@ -1,9 +1,10 @@
 #pragma once
 
-#include <core/beekeeper_wallet_base.hpp>
-
+#include <hive/protocol/fixed_string.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/container/flat.hpp>
+#include <fc/container/flat_fwd.hpp>
+#include <fc/crypto/elliptic.hpp>
 
 #include <functional>
 #include <string>
@@ -12,6 +13,14 @@
 #include <boost/exception/diagnostic_information.hpp>
 
 namespace beekeeper {
+
+using private_key_type  = fc::ecc::private_key;
+using public_key_type   = fc::ecc::public_key;
+using signature_type    = fc::ecc::compact_signature;
+using digest_type       = fc::sha256;
+using chain_id_type     = fc::sha256;
+
+using fc::flat_set;
 
 using seconds_type = uint32_t;
 
@@ -50,9 +59,17 @@ namespace types
 
 namespace utility
 {
-  inline public_key_type get_public_key( const std::string& source )
+  namespace public_key
   {
-    return public_key_type::from_base58( source, false/*is_sha256*/ );
+    inline public_key_type create( const std::string& source )
+    {
+      return public_key_type::from_base58( source, false/*is_sha256*/ );
+    }
+
+    inline std::string to_string( const public_key_type& source )
+    {
+      return public_key_type::to_base58( source, false/*is_sha256*/ );
+    }
   }
 
   template<typename source_type>
@@ -61,7 +78,7 @@ namespace utility
     flat_set<public_key_details> _result;
 
     std::transform( source.begin(), source.end(), std::inserter( _result, _result.end() ),
-    []( const public_key_type& public_key ){ return public_key_details{ public_key_type::to_base58( public_key, false/*is_sha256*/ ) }; } );
+    []( const public_key_type& public_key ){ return public_key_details{ public_key::to_string( public_key ) }; } );
 
     return _result;
   }
@@ -85,7 +102,7 @@ struct wallet_password_args: public session_token_type
 struct create_args: public session_token_type
 {
   std::string wallet_name;
-  fc::optional<std::string> password{};
+  std::optional<std::string> password;
 };
 struct create_return
 {

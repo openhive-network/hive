@@ -1,20 +1,10 @@
 #pragma once
 
-
-#include <fc/container/flat_fwd.hpp>
-#include <fc/crypto/elliptic.hpp>
+#include <core/utilities.hpp>
 
 using namespace std;
 
 namespace beekeeper {
-
-using private_key_type  = fc::ecc::private_key;
-using public_key_type   = fc::ecc::public_key;
-using signature_type    = fc::ecc::compact_signature;
-using digest_type       = fc::sha256;
-using chain_id_type     = fc::sha256;
-
-using fc::flat_set;
 
 class beekeeper_wallet_base
 {
