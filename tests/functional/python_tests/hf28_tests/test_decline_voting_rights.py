@@ -4,7 +4,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD, TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
-from hive_local_tools.functional.python.operation import get_virtual_operation, get_current_mana
+from hive_local_tools.functional.python.operation import get_virtual_operations, get_current_mana
 
 
 @run_for("testnet")
@@ -22,7 +22,7 @@ def test_decline_voting_rights(prepare_environment):
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT])["requests"]) == 0
     assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])['accounts'][0]["can_vote"] == False
-    assert len(get_virtual_operation(node, "declined_voting_rights_operation")) == 1
+    assert len(get_virtual_operations(node, "declined_voting_rights_operation")) == 1
 
 
 @run_for("testnet")
@@ -52,7 +52,7 @@ def test_create_two_decline_voting_rights_requests(prepare_environment):
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT])["requests"]) == 0
     assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])['accounts'][0]["can_vote"] == False
-    assert len(get_virtual_operation(node, "declined_voting_rights_operation")) == 1
+    assert len(get_virtual_operations(node, "declined_voting_rights_operation")) == 1
 
 
 @run_for("testnet")
@@ -80,4 +80,4 @@ def test_remove_decline_voting_rights_request(prepare_environment):
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT])["requests"]) == 0
     assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])['accounts'][0]["can_vote"] == True
-    assert len(get_virtual_operation(node, "declined_voting_rights_operation")) == 0
+    assert len(get_virtual_operations(node, "declined_voting_rights_operation")) == 0

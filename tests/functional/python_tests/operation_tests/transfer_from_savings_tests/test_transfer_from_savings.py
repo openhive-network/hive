@@ -1,7 +1,7 @@
 import pytest
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (check_if_fill_transfer_from_savings_vop_was_generated,
-                                                          get_virtual_operation)
+                                                          get_virtual_operations)
 
 
 @pytest.mark.parametrize(
@@ -45,7 +45,7 @@ def test_transfer_from_savings_account(prepared_node, wallet, alice, bob, receiv
     assert receiver_balance_before_withdrawal + currency(5) == receiver_balance_after_withdrawal, \
         f"{currency.token} balance of withdrawal receiver wasn't increased."
 
-    payout_vops = get_virtual_operation(prepared_node, "fill_transfer_from_savings_operation")
+    payout_vops = get_virtual_operations(prepared_node, "fill_transfer_from_savings_operation")
     assert len(payout_vops) == 1, "fill_transfer_from_savings_operation wasn't generated"
 
 

@@ -1,6 +1,6 @@
 import pytest
 import test_tools as tt
-from hive_local_tools.functional.python.operation import get_virtual_operation
+from hive_local_tools.functional.python.operation import get_virtual_operations
 
 
 @pytest.mark.parametrize(
@@ -47,7 +47,7 @@ def test_transfer_hives_to_hive_fund_account(prepared_node, wallet, alice, hive_
 
     alice.transfer("hive.fund", tt.Asset.Test(5), "")
 
-    assert len(get_virtual_operation(prepared_node, "dhf_conversion_operation")) == 1, ("'dhf_conversion_operation'"
+    assert len(get_virtual_operations(prepared_node, "dhf_conversion_operation")) == 1, ("'dhf_conversion_operation'"
                                                                                         "virtual operation wasn't "
                                                                                         "generated")
     rc_amount_after_sending_op = alice.get_rc_current_mana()
