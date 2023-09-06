@@ -1,9 +1,10 @@
 {
-  "name": "@hive/beekeeper",
-  "version": "0.0.1-alpha.1",
+  "name": "",
+  "version": "",
   "description": "call hived functions from JavaScript",
   "main": "build_wasm/beekeeper_wasm.mjs",
   "type": "module",
+  "private": false,
   "scripts": {
     "test": "node programs/beekeeper/beekeeper_wasm/beekeeper_wasm_test/run_node.mjs"
   },
