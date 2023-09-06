@@ -50,7 +50,7 @@ std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_fil
   wallet->save_wallet_file();
 
   // If we have name in our map then remove it since we want the emplace below to replace.
-  // This can happen if the wallet file is removed while eos-walletd is running.
+  // This can happen if the wallet file is removed while a wallet is running.
   auto it = wallets.find(name);
   if (it != wallets.end())
   {

@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <optional>
 
 namespace beekeeper {
 
@@ -30,6 +31,8 @@ class beekeeper_api final
 
     std::string exception_handler( std::function<std::string()>&& method );
 
+    std::string create_impl( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password );
+
   public:
 
     beekeeper_api( const std::vector<std::string>& _params );
@@ -39,7 +42,9 @@ class beekeeper_api final
     std::string create_session( const std::string& salt );
     std::string close_session( const std::string& token );
 
+    std::string create( const std::string& token, const std::string& wallet_name );
     std::string create( const std::string& token, const std::string& wallet_name, const std::string& password );
+
     std::string unlock( const std::string& token, const std::string& wallet_name, const std::string& password );
     std::string open( const std::string& token, const std::string& wallet_name );
     std::string close( const std::string& token, const std::string& wallet_name );
