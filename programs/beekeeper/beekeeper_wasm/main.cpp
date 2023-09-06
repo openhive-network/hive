@@ -58,12 +58,16 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
       params:
         token:        a token representing a session
         wallet_name:  a name of wallet
-        password:     a password used for creation of a wallet. Not required and in this case a password is generated automatically.
+        password:     a password used for creation of a wallet. Not required and in this case a password is automatically generated.
+                      If the password is:
+                       - not given, chosen is a version (1)
+                       -     given, chosen is a version (2)
       result:
         {"password":"PW5KNCWdnMZFKzrvVyA2xwKLRxcAZWxPoyGVSN9r38te3p1ceEjo1"}
         password: a password of newly created a wallet
     */
-    .function("create", &beekeeper_api::create)
+    .function("create", select_overload<std::string(const std::string&, const std::string&)>(&beekeeper_api::create))                     //(1)
+    .function("create", select_overload<std::string(const std::string&, const std::string&, const std::string&)>(&beekeeper_api::create)) //(2)
 
     /*
       ****unlocking of a wallet****
