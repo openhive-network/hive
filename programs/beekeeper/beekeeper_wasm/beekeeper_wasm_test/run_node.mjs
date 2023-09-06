@@ -819,7 +819,7 @@ const my_entrypoint = async() => {
 
       /*
         Without a password limit (`wallet_manager_impl::create`), we get:
-        
+
         Aborted(OOM)
         RuntimeError: Aborted(OOM). Build with -sASSERTIONS for more info.
         at abort (file:///src/build_wasm/beekeeper_wasm.mjs:8:5768)
@@ -833,38 +833,64 @@ const my_entrypoint = async() => {
       assert.equal(error_message.includes("!password || password->size() < max_password_length"), true);
     }
     {
+      api.setAcceptError = true;
+
       const error_message = api.close(api.implicitSessionToken, "abc");
       console.log(error_message);
       assert.equal(error_message.includes("Wallet not found: abc"), true);
     }
     {
-      const error_message = api.getPublicKeys(api.implicitSessionToken);
+      api.setAcceptError = true;
+
+      let error_message = api.getPublicKeys(api.implicitSessionToken);
       console.log(error_message);
       assert.equal(error_message.includes("You don't have any wallet"), true);
-    }
-    {
+
       api.setAcceptError = false;
-      const walletNo = 9;
-      api.open(api.implicitSessionToken, walletNames[walletNo]);
+
+      const walletNo_9 = 9;
+      api.open(api.implicitSessionToken, walletNames[walletNo_9]);
 
       api.setAcceptError = true;
-      const error_message = api.getPublicKeys(api.implicitSessionToken);
+
+      error_message = api.getPublicKeys(api.implicitSessionToken);
       console.log(error_message);
       assert.equal(error_message.includes("You don't have any unlocked wallet"), true);
+
+      api.setAcceptError = false;
+
+      const walletNo_4 = 4;
+      api.open(api.implicitSessionToken, walletNames[walletNo_4]);
+      let wallets = api.listWallets(api.implicitSessionToken);
+      requireWalletsIn(wallets, 4, false, 9, false);
+      console.log(wallets);
+
+      api.unlock(api.implicitSessionToken, walletNames[walletNo_4]);
+      wallets = api.listWallets(api.implicitSessionToken);
+      requireWalletsIn(wallets, 4, true, 9, false);
+      console.log(wallets);
+
+      api.setAcceptError = false;
+
+      error_message = api.getPublicKeys(api.implicitSessionToken);
+      console.log(error_message);
     }
     {
       const walletNo = 8;
 
       api.setAcceptError = true;
+
       let error_message = api.lock(api.implicitSessionToken, walletNames[walletNo]);
       console.log(error_message);
       assert.equal(error_message.includes("Wallet not found: w8"), true);
 
       api.setAcceptError = false;
+
       error_message = api.open(api.implicitSessionToken, walletNames[walletNo]);
       console.log(error_message);
 
       api.setAcceptError = true;
+
       error_message = api.lock(api.implicitSessionToken, walletNames[walletNo]);
       console.log(error_message);
       assert.equal(error_message.includes("Unable to lock a locked wallet"), true);
@@ -873,6 +899,7 @@ const my_entrypoint = async() => {
       const walletNo = 2;
 
       api.setAcceptError = true;
+
       let error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo], "");
       console.log(error_message);
       assert.equal(error_message.includes("password.size() > 0"), true);
@@ -881,11 +908,17 @@ const my_entrypoint = async() => {
       console.log(error_message);
       assert.equal(error_message.includes("Invalid password for wallet"), true);
 
+      error_message = api.unlock(api.implicitSessionToken, "this_not_wallet", "strawberry");
+      console.log(error_message);
+      assert.equal(error_message.includes("Unable to open file"), true);
+
       api.setAcceptError = false;
+
       error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
       console.log(error_message);
 
       api.setAcceptError = true;
+
       error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
       console.log(error_message);
       assert.equal(error_message.includes("Wallet is already unlocked: w2"), true);
