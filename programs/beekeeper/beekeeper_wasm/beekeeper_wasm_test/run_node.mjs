@@ -157,7 +157,7 @@ const my_entrypoint = async() => {
     console.log("Basic tests which execute all endpoints");
     console.log("**************************************************************************************");
 
-    api.create(api.implicitSessionToken, walletNames[0], '');
+    api.create(api.implicitSessionToken, walletNames[0]);
 
     api.importKey(api.implicitSessionToken, walletNames[0], keys[0][0]);
 
@@ -169,9 +169,9 @@ const my_entrypoint = async() => {
     {
       const sessionToken = api.createSession('pear');
 
-      api.create(sessionToken, walletNames[1], 'cherry');
+      api.create_with_password(sessionToken, walletNames[1], 'cherry');
 
-      api.create(sessionToken, walletNames[2], '');
+      api.create(sessionToken, walletNames[2]);
 
       api.importKey(sessionToken, walletNames[1], keys[1][0]);
       api.importKey(sessionToken, walletNames[1], keys[2][0]);
@@ -256,7 +256,7 @@ const my_entrypoint = async() => {
     /** @type {BeekeeperInstanceHelper} */
     const api = new beekeper(args);
 
-    api.create(api.implicitSessionToken, walletNames[3], '');
+    api.create(api.implicitSessionToken, walletNames[3]);
     api.unlock(api.implicitSessionToken, walletNames[1]);
     api.importKey(api.implicitSessionToken, walletNames[3], keys[9][0]);
 
@@ -273,9 +273,9 @@ const my_entrypoint = async() => {
     /** @type {BeekeeperInstanceHelper} */
     const api = new beekeper(args);
 
-    api.create(api.implicitSessionToken, walletNames[4], '');
-    api.create(api.implicitSessionToken, walletNames[5], '');
-    api.create(api.implicitSessionToken, walletNames[6], '');
+    api.create(api.implicitSessionToken, walletNames[4]);
+    api.create(api.implicitSessionToken, walletNames[5]);
+    api.create(api.implicitSessionToken, walletNames[6]);
 
     // Import keys 7-9 to wallets 4-6
     for(let walletNo = 4; walletNo <= 6; ++walletNo)
@@ -327,7 +327,7 @@ const my_entrypoint = async() => {
 
     let walletNo = 7;
     for(const { session, keyNo } of sessions) {
-      api.create(session, walletNames[walletNo], '');
+      api.create(session, walletNames[walletNo]);
       api.importKey(session, walletNames[walletNo], keys[keyNo][0]);
       ++walletNo;
     }
@@ -800,19 +800,22 @@ const my_entrypoint = async() => {
     {
       api.setAcceptError = true;
 
-      let error_message = api.create(api.implicitSessionToken, "", "cherry-password");
+      let error_message = api.create_with_password(api.implicitSessionToken, "", "cherry-password");
       console.log(error_message);
       assert.equal(error_message.includes("Name of wallet is incorrect. Is empty."), true);
 
-      error_message = api.create(api.implicitSessionToken, "%$%$", "cherry-password");
+      error_message = api.create_with_password(api.implicitSessionToken, "%$%$", "cherry-password");
       console.log(error_message);
       assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
 
       const walletNo = 9;
-      error_message = api.create(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
+      error_message = api.create_with_password(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
       console.log(error_message);
       assert.equal(error_message.includes("Wallet with name: 'w9' already exists at"), true);
 
+      error_message = api.create_with_password(api.implicitSessionToken, "new.wallet", "");
+      console.log(error_message);
+      assert.equal(error_message.includes("password.size() > 0"), true);
     }
     {
       const error_message = api.close(api.implicitSessionToken, "abc");

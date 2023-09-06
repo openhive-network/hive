@@ -115,7 +115,23 @@ export default class BeekeeperInstanceHelper {
     return this.#extract(returnedValue);
   }
 
-  create(sessionToken, walletName, explicitPassword) {
+  create(sessionToken, walletName) {
+    const returnedValue = this.instance.create(sessionToken, walletName);
+
+    if( this.#acceptError )
+    {
+      return this.#extract(returnedValue);
+    }
+    else
+    {
+      const value = this.#extract(returnedValue);
+      BeekeeperInstanceHelper.#setPassword(walletName, value.password);
+
+      return value.password;
+    }
+  }
+
+  create_with_password(sessionToken, walletName, explicitPassword) {
     const returnedValue = this.instance.create(sessionToken, walletName, explicitPassword);
 
     if( this.#acceptError )

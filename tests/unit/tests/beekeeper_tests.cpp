@@ -663,7 +663,7 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
     BOOST_TEST_MESSAGE( _token );
     _token = get_data( _token );
 
-    auto _password_0 = extract_json( _obj.create( _token, "wallet_0", "" ) );
+    auto _password_0 = extract_json( _obj.create( _token, "wallet_0", "pear" ) );
     BOOST_TEST_MESSAGE( _password_0 );
     _password_0 = get_data( _password_0 );
 
