@@ -816,6 +816,21 @@ const my_entrypoint = async() => {
       error_message = api.create_with_password(api.implicitSessionToken, "new.wallet", "");
       console.log(error_message);
       assert.equal(error_message.includes("password.size() > 0"), true);
+
+      /*
+        Without a password limit (`wallet_manager_impl::create`), we get:
+        
+        Aborted(OOM)
+        RuntimeError: Aborted(OOM). Build with -sASSERTIONS for more info.
+        at abort (file:///src/build_wasm/beekeeper_wasm.mjs:8:5768)
+        at abortOnCannotGrowMemory (file:///src/build_wasm/beekeeper_wasm.mjs:8:108604)
+        at _emscripten_resize_heap (file:///src/build_wasm/beekeeper_wasm.mjs:8:108707)
+      */
+      const length = 1e7; // 10M
+      const longStr = 'a'.repeat(length);
+      error_message = api.create_with_password(api.implicitSessionToken, "new.wallet", longStr);
+      console.log(error_message);
+      assert.equal(error_message.includes("!password || password->size() < max_password_length"), true);
     }
     {
       const error_message = api.close(api.implicitSessionToken, "abc");

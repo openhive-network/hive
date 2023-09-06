@@ -23,18 +23,21 @@ void wallet_manager_impl::valid_filename( const string& name )
   FC_ASSERT( !name.empty(), "Name of wallet is incorrect. Is empty.");
 
   FC_ASSERT( std::find_if(name.begin(), name.end(), !boost::algorithm::is_alnum() && !boost::algorithm::is_any_of("._-")) == name.end(),
-        "Name of wallet is incorrect. Name: ${name}. Only alphanumeric and '._-' chars are allowed", (name));
+        "Name of wallet is incorrect. Name: ${name}. Only alphanumeric and '._-' chars are allowed", (name) );
 
   FC_ASSERT( bfs::path(name).filename().string() == name,
-          "Name of wallet is incorrect. Name: ${name}. File creation with given name is impossible." );
+          "Name of wallet is incorrect. Name: ${name}. File creation with given name is impossible.", (name) );
 }
 
 std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_filename_creator, const std::string& name, const std::optional<std::string>& password )
 {
+  FC_ASSERT( !password || password->size() < max_password_length,
+            "Got ${password_size} bytes, but a password limit has ${max_password_length} bytes", ("password_size", password->size())(max_password_length) );
+
   valid_filename(name);
 
   auto wallet_filename = wallet_filename_creator( name );
-  FC_ASSERT( !bfs::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path",fc::path(wallet_filename)));
+  FC_ASSERT( !bfs::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path", fc::path(wallet_filename)) );
 
   std::string _password = password ? ( *password ) : gen_password();
 
