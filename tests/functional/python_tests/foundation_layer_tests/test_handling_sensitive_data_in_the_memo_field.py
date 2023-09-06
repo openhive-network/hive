@@ -59,6 +59,21 @@ def test_handling_sensitive_data_in_the_memo_field(node, wallet, broadcast_way, 
     assert error_message in response["error"]["message"]
 
 
+@run_for("testnet")
+@pytest.mark.parametrize("operation", ["transfer", "recurrent_transfer", "transfer_to_savings", "transfer_from_savings"])
+def test_handle_by_wallet_additional_private_key_in_memo_field(node, wallet, operation):
+    extra_private_key = tt.PrivateKey("alice", secret="extra_key")
+    wallet.api.import_key(extra_private_key)
+
+    wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+
+    with pytest.raises(tt.exceptions.CommunicationError) as error:
+        broadcast_transaction_by_wallet(wallet, operation, memo=extra_private_key)
+
+    response = error.value.response
+    assert "Detected imported private key in memo field. Cancelling transaction." in response["error"]["message"]
+
+
 def broadcast_transaction_by_api(node, wallet, op, memo_type):
     transaction = deepcopy(TRANSACTION_TEMPLATE)
     transaction["operations"] = generate_operation(op, memo_type)
