@@ -15,9 +15,6 @@ variables:
   # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu22.04-6
   TEST_IMAGE_TAG: "@sha256:8132802ca3b7ddba1bf78e4cc5ce1fbda6874cb029e35ae855c4cb3443e477b7"
 
-  # uses registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:1d271c28906d267c1172641bb2aa42727f16b513
-  EMSCRIPTEN_IMAGE_TAG: "@sha256:14287297ffbb7a55d134f1ab326f67aa8b387151f5118b21bf68e74ff1d437ed"
-
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
   PYTHON_DATEUTIL_VERSION: "2.8.2"
@@ -41,6 +38,9 @@ include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
+  - project: 'hive/common-ci-configuration'
+    ref: ac35c204e1b836c9be2ad4cd59aaa89f4ee48c3f # develop
+    file: '/templates/wasm_build.gitlab-ci.yml'
 
 prepare_hived_image:
   extends: .prepare_hived_image
@@ -102,33 +102,34 @@ testnet_node_build:
     - if: $RUN_MIRRORNET_PIPELINE == "false"
 
 beekeeper_wasm_build:
+  extends: .wasm_build_job_template
   stage: build
-  image: registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:3.1.43$EMSCRIPTEN_IMAGE_TAG
-  interruptible: true
   variables:
-    BINARIES_DIR: "build_wasm"
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/"
+    BINARIES_DIR: "${CI_PROJECT_DIR}/build_wasm"
+
+  tags:
+    - public-runner-docker
+
+beekeeper_wasm_package_generation:
+  stage: build
+  # emscripten image can be used as it contains all needed tools.
+  image: ${EMSCRIPTEN_IMAGE}
+  variables:
+    PUBLISH_TOKEN: "$NPM_TOKEN"
+    NPM_SCOPE: "@hive"
+    NPM_REGISTRY: "gitlab.syncad.com/api/v4/projects/${CI_PROJECT_ID}/packages/npm/"
   script:
-    - echo "Building Beekeeper tool WASM version"
-    - git config --global --add safe.directory '*'
-    - mkdir -vp "$CI_PROJECT_DIR/$BINARIES_DIR"
-    - cd "$CI_PROJECT_DIR/$BINARIES_DIR"
-    - cmake -DBoost_NO_WARN_NEW_VERSIONS=1 -DBoost_USE_STATIC_RUNTIME=ON -DCMAKE_TOOLCHAIN_FILE=/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" -S "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/" -B "$CI_PROJECT_DIR/$BINARIES_DIR"
-    - make -j 8
-    - cd "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/beekeeper_wasm_test"
-    - node run_node.mjs
+    - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
   artifacts:
     paths:
-      - "$CI_PROJECT_DIR/$BINARIES_DIR/beekeeper.d.ts"
-      - "$CI_PROJECT_DIR/$BINARIES_DIR/beekeeper_wasm.mjs"
-      - "$CI_PROJECT_DIR/$BINARIES_DIR/beekeeper_wasm.wasm"
+      - "$CI_PROJECT_DIR/package.json"
 
     when: always
     expire_in: 1 week
 
   tags:
     - public-runner-docker
-    - hived-for-tests
-
 
 mirrornet_node_build:
   stage: build
@@ -164,6 +165,23 @@ mirrornet_node_build:
   tags:
     - public-runner-docker
     - hived-for-tests
+
+test_beekeeper_wasm:
+  stage: test
+  # emscripten image can be used as it contains all needed tools (node and npm).
+  image: ${EMSCRIPTEN_IMAGE}
+
+  interruptible: true
+  needs:
+    - job: beekeeper_wasm_build
+      artifacts: true
+    - job: beekeeper_wasm_package_generation
+      artifacts: true
+  tags:
+    - public-runner-docker
+
+  script:
+    - npm run test
 
 mirrornet_replay_test:
   stage: test
@@ -909,17 +927,43 @@ comment_cashout_tests:
   tags:
     - public-runner-docker
 
-publish_beekeeper_wasm_production:
+deploy_beekeeper_wasm_dev_package:
   stage: publish
-  image: node:16-alpine
+  # emscripten image can be used as it contains all needed tools.
+  image: ${EMSCRIPTEN_IMAGE}
+  variables:
+    PUBLISH_TOKEN: "$NPM_TOKEN"
+    NPM_SCOPE: "@hive"
+    NPM_REGISTRY: "gitlab.syncad.com/api/v4/projects/${CI_PROJECT_ID}/packages/npm/"
+
   script:
-    - npm publish
+    - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
+    - npm publish --access=public
+  needs:
+    - job: test_beekeeper_wasm
+    - job: beekeeper_wasm_build
+      artifacts: true
+  tags:
+    - public-runner-docker
+
+deploy_beekeeper_wasm_production_public_npm:
+  stage: publish
+  # emscripten image can be used as it contains all needed tools.
+  image: ${EMSCRIPTEN_IMAGE}
+  variables:
+    PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN" # Add token variable here
+    NPM_SCOPE: "@hiveio"
+    NPM_REGISTRY: "registry.npmjs.org/"
+  script:
+    - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
+    - npm publish --access=public
   needs:
     - job: beekeeper_wasm_build
       artifacts: true
   tags:
     - public-runner-docker
-  only:
-    - master
-    - develop
-  when: manual
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
+      when: manual
+      allow_failure: true
+
