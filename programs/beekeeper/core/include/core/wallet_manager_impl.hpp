@@ -33,6 +33,8 @@ class wallet_manager_impl {
 
   private:
 
+    const uint32_t max_password_length = 128;
+
     std::map<std::string, std::unique_ptr<beekeeper_wallet_base>> wallets;
 
     std::string gen_password();
