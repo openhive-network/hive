@@ -31,6 +31,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         {"status":true,"token":"e653fc43f2c98df497ae7adf9874d7cf04b2dc90d551088aca56d18b87d8f0ba"}
         status: if an initialization passed/failed
         token:  A token of a session created implicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
+        version: A hash of current commit.
     */
     .function("init", &beekeeper_api::init)
 
