@@ -10,8 +10,8 @@
 namespace beekeeper {
   namespace bfs = boost::filesystem;
 
-  beekeeper_instance::beekeeper_instance( const boost::filesystem::path& _wallet_directory, const std::string& _notifications_endpoint )
-                    : beekeeper_instance_base( _wallet_directory ), error_notifications_endpoint( _notifications_endpoint )
+  beekeeper_instance::beekeeper_instance( appbase::application& _app, const boost::filesystem::path& _wallet_directory, const std::string& _notifications_endpoint )
+                    : app( _app ), beekeeper_instance_base( _wallet_directory ), error_notifications_endpoint( _notifications_endpoint )
   {
     pid_file        = wallet_directory / "beekeeper.pid";
     connection_file = wallet_directory / "beekeeper.connection";
@@ -40,7 +40,7 @@ namespace beekeeper {
         {
           if( rc.type() == bfs::file_not_found )
           {
-              appbase::app().generate_interrupt_request();
+              app.generate_interrupt_request();
               FC_ASSERT( false, "Lock file removed while `beekeeper` still running. Terminating.");
           }
         }
@@ -72,7 +72,7 @@ namespace beekeeper {
 
     instance_started = true;
 
-    auto timer = std::make_shared<boost::asio::deadline_timer>( appbase::app().get_io_service(), boost::posix_time::seconds(1) );
+    auto timer = std::make_shared<boost::asio::deadline_timer>( app.get_io_service(), boost::posix_time::seconds(1) );
     start_lock_watch(timer);
   }
 
