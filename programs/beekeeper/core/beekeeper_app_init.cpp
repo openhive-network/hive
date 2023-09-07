@@ -119,6 +119,20 @@ bool beekeeper_app_init::save_keys( const std::string& token, const std::string&
   return _result;
 }
 
+std::string beekeeper_app_init::get_notifications_endpoint( const boost::program_options::variables_map& args )
+{
+  std::string _notification;
+
+  if( args.count("notifications-endpoint") )
+  {
+    auto _notifications = args.at("notifications-endpoint").as<std::vector<std::string>>();
+    if( !_notifications.empty() )
+      _notification = *_notifications.begin();
+  }
+
+  return _notification;
+}
+
 init_data beekeeper_app_init::initialize_program_options()
 {
   ilog("initializing options");
@@ -126,13 +140,7 @@ init_data beekeeper_app_init::initialize_program_options()
       const boost::program_options::variables_map& _args = get_args();
       setup_notifications( _args );
 
-      std::string _notification;
-      if( _args.count("notifications-endpoint") )
-      {
-        auto _notifications = _args.at("notifications-endpoint").as<std::vector<std::string>>();
-        if( !_notifications.empty() )
-          _notification = *_notifications.begin();
-      }
+      std::string _notification = get_notifications_endpoint( _args );
 
       FC_ASSERT( _args.count("wallet-dir") );
       auto _dir = _args.at("wallet-dir").as<boost::filesystem::path>();
@@ -144,7 +152,7 @@ init_data beekeeper_app_init::initialize_program_options()
       FC_ASSERT( _args.count("unlock-timeout") );
       auto _timeout = _args.at("unlock-timeout").as<uint64_t>();
 
-      wallet_manager_ptr = create_wallet( _dir, _timeout, session_limit, _notification );
+      wallet_manager_ptr = create_wallet( _dir, _timeout, session_limit );
 
       if( !wallet_manager_ptr->start() )
         return { false, "" };

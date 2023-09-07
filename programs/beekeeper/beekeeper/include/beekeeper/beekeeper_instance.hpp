@@ -22,14 +22,14 @@ namespace beekeeper
 
       bool instance_started = false;
 
+      appbase::application& app;
+
       boost::filesystem::path pid_file;
       boost::filesystem::path connection_file;
       boost::filesystem::path lock_path_file;
 
       std::unique_ptr<boost::interprocess::file_lock> wallet_dir_lock;
       std::string error_notifications_endpoint;
-
-      appbase::application& app;
 
       void start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t );
       void initialize_lock();
