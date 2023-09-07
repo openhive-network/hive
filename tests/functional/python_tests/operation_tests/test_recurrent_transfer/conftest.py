@@ -20,7 +20,7 @@ def wallet(node) -> tt.Wallet:
 def receiver(node, wallet):
     wallet.create_account("receiver")
     receiver = RecurrentTransferAccount("receiver", node, wallet)
-    receiver._update_account_info()
+    receiver.update_account_info()
     return receiver
 
 
