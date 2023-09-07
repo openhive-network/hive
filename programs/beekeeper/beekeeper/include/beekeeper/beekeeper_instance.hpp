@@ -1,5 +1,7 @@
 #pragma once
 
+#include <appbase/application.hpp>
+
 #include <core/beekeeper_instance_base.hpp>
 
 #include <boost/asio/deadline_timer.hpp>
@@ -27,6 +29,8 @@ namespace beekeeper
       std::unique_ptr<boost::interprocess::file_lock> wallet_dir_lock;
       std::string error_notifications_endpoint;
 
+      appbase::application& app;
+
       void start_lock_watch( std::shared_ptr<boost::asio::deadline_timer> t );
       void initialize_lock();
 
@@ -41,7 +45,7 @@ namespace beekeeper
 
     public:
 
-      beekeeper_instance( const boost::filesystem::path& _wallet_directory, const std::string& _notifications_endpoint );
+      beekeeper_instance( appbase::application& _app, const boost::filesystem::path& _wallet_directory, const std::string& _notifications_endpoint );
       ~beekeeper_instance() override;
 
       bool start() override;
