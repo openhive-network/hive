@@ -12,7 +12,7 @@ class LimitOrderAccount(Account):
 
     def assert_balance(self, *, amount: int | float, check_hbd: bool, message: Literal["expiration", "creation",
                                                                                        "order_match", "no_match"]):
-        super()._update_account_info()
+        super().update_account_info()
         get_balance = self.get_hbd_balance if check_hbd else self.get_hive_balance
         currency = tt.Asset.Tbd if check_hbd else tt.Asset.Test
         messages = {
