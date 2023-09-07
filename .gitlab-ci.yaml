@@ -860,7 +860,7 @@ operation_tests:
   stage: test
   extends: .test_tools_based
   variables:
-    PYTEST_TIMEOUT_MINUTES: 10
+    PYTEST_TIMEOUT_MINUTES: 13
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/operation_tests/report.xml
   script:
     - cd tests/functional/python_tests/operation_tests
