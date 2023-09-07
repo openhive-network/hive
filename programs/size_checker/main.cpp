@@ -105,7 +105,7 @@ int main( int argc, char** argv )
         std::cout << "\n";
     }
     std::cout << "]\n";
-    std::cerr << "Size of block header: " << sizeof( block_header ) << " " << fc::raw::pack_size( block_header() ) << "\n";
+    elog("Size of block header: ${block_header} ${pack_size}", ("block_header", sizeof( block_header ) ) ("pack_size", fc::raw::pack_size( block_header() ) ) );
   }
   catch ( const fc::exception& e ){ edump((e.to_detail_string())); }
   idump((sizeof(signed_block)));
