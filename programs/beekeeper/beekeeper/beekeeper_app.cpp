@@ -15,6 +15,13 @@ beekeeper_app::~beekeeper_app()
 {
 }
 
+std::string beekeeper_app::get_notifications_endpoint( const boost::program_options::variables_map& args )
+{
+  notifications_endpoint = beekeeper_app_init::get_notifications_endpoint( args );
+
+  return notifications_endpoint;
+}
+
 void beekeeper_app::set_program_options()
 {
   hive::utilities::notifications::add_program_options( options );
@@ -85,7 +92,7 @@ void beekeeper_app::setup_notifications( const boost::program_options::variables
   app.setup_notifications( args );
 }
 
-std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, const std::string& notifications_endpoint )
+std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit )
 {
   instance = std::make_shared<beekeeper_instance>( app, cmd_wallet_dir, notifications_endpoint );
   return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager>( notifications_endpoint ), instance,
