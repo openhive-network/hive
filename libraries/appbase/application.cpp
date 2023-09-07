@@ -475,7 +475,7 @@ void application::finish()
 
   auto plugin_exception_info = [&_actual_plugin_name]()
   {
-    std::cerr << "Plugin: "<< _actual_plugin_name <<" raised an exception..."<< "\n";
+    elog("Plugin ${plugin} raised an exception...", ("plugin", _actual_plugin_name));
   };
 
   try
@@ -497,12 +497,12 @@ void application::finish()
   catch ( const boost::exception& e )
   {
     plugin_exception_info();
-    std::cerr << boost::diagnostic_information(e) << "\n";
+    elog(boost::diagnostic_information(e));
   }
   catch( std::exception& e )
   {
     plugin_exception_info();
-    std::cerr << ("exception: ") << e.what() << std::endl;
+    elog("exception: ${what}", ("what", e.what()));
   }
   catch(...)
   {
@@ -513,7 +513,7 @@ void application::finish()
     }
     catch( const std::exception& e )
     {
-      std::cerr << ("exception: ") << e.what() << std::endl;
+      elog("exception: ${what}", ("what", e.what()));
     }
   }
 }
