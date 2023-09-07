@@ -95,25 +95,25 @@ namespace beekeeper {
     catch ( const boost::exception& e )
     {
       auto _message = boost::diagnostic_information(e);
-      std::cerr << _message << "\n";
+      elog(_message);
       return _message;
     }
     catch ( const fc::exception& e )
     {
       auto _message = e.to_detail_string();
-      std::cerr << _message << "\n";
+      elog(_message);
       return _message;
     }
     catch ( const std::exception& e )
     {
       auto _message = e.what();
-      std::cerr << _message << "\n";
+      elog(_message);
       return _message;
     }
     catch ( ... )
     {
       auto _message = "unknown exception\n";
-      std::cerr << _message << "\n";
+      elog(_message);
       return _message;
     }
   }
