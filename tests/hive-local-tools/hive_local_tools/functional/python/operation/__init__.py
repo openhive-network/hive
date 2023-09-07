@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
-from copy import deepcopy
+
 import test_tools as tt
 from hive_local_tools.constants import filters_enum_virtual_ops, TRANSACTION_TEMPLATE
+import wax
 
 
 @dataclass
@@ -13,6 +15,28 @@ class Account:
     _name: str
     _node: tt.InitNode
     _wallet: tt.Wallet
+    _hive: tt.Asset.Test = field(init=False, default=None)
+    _vest: tt.Asset.Vest = field(init=False, default=None)
+    _hbd: tt.Asset.Tbd = field(init=False, default=None)
+
+    def __post_init__(self):
+        self._rc_manabar = self.RcManabar(self._node, self._name)
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def hive(self):
+        return self._hive
+
+    @property
+    def hbd(self):
+        return self._hbd
+
+    @property
+    def rc_manabar(self):
+        return self._rc_manabar
 
     def get_hbd_balance(self):
         self._update_account_info()
@@ -28,6 +52,10 @@ class Account:
 
     def _update_account_info(self):
         self._acc_info = self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]
+        self._hive = tt.Asset.from_(self._acc_info["balance"])
+        self._hbd = tt.Asset.from_(self._acc_info["hbd_balance"])
+        self._vest = tt.Asset.from_(self._acc_info["vesting_shares"])
+        self._rc_manabar.update(self._node, self._name)
 
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
