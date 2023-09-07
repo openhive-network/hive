@@ -41,15 +41,14 @@ namespace bpo = boost::program_options;
 
 void new_chain_banner( const chain::database& db )
 {
-  std::cerr << "\n"
+  ilog("\n"
     "********************************\n"
     "*                              *\n"
     "*   ------- NEW CHAIN ------   *\n"
     "*   -   Welcome to Hive!   -   *\n"
     "*   ------------------------   *\n"
     "*                              *\n"
-    "********************************\n"
-    "\n";
+    "********************************\n");
   return;
 }
 
