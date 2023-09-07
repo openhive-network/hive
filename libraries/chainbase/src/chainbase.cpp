@@ -279,7 +279,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   void database::require_lock_fail( const char* method, const char* lock_type, const char* tname )const
   {
     std::string err_msg = "database::" + std::string( method ) + " require_" + std::string( lock_type ) + "_lock() failed on type " + std::string( tname );
-    std::cerr << err_msg << std::endl;
+    elog(err_msg);
     BOOST_THROW_EXCEPTION( std::runtime_error( err_msg ) );
   }
 #endif
