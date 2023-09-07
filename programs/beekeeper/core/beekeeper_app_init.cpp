@@ -200,19 +200,19 @@ init_data beekeeper_app_init::init( int argc, char** argv )
   }
   catch ( const boost::exception& e )
   {
-    std::cerr << boost::diagnostic_information(e) << "\n";
+    elog(boost::diagnostic_information(e));
   }
   catch ( const fc::exception& e )
   {
-    std::cerr << e.to_detail_string() << "\n";
+    elog(e.to_detail_string());
   }
   catch ( const std::exception& e )
   {
-    std::cerr << e.what() << "\n";
+    elog(e.what());
   }
   catch ( ... )
   {
-    std::cerr << "unknown exception\n";
+    elog("unknown exception");
   }
 
   return init_data();
