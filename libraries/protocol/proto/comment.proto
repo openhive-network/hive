@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+message comment {
+    required string parent_author = 1;
+    required string parent_permlink = 2;
+    required string author = 3;
+    required string permlink = 4;
+    required string title = 5;
+    required string body = 6;
+    required string json_metadata = 7; 
+}

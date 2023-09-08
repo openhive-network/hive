@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+message asset {
+  required string amount = 1;
+  required uint32 precision = 2;
+  required string nai = 3;
+}
