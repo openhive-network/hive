@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+message vote {
+    required string voter = 10;
+    required string author = 11;
+    required string permlink = 12;
+    required uint32 weight = 13;
+}
