@@ -122,11 +122,11 @@ int main( int argc, char** argv )
       return initializationResult.get_result_code();
     else appbase::app().notify_status("starting");
 
+    theApp.load_logging_config();
+
     const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
     auto chainId = chainPlugin.db().get_chain_id();
     info(chainId);
-
-    theApp.load_logging_config();
 
     if( theApp.get_args().at( "backtrace" ).as< string >() == "yes" )
     {
