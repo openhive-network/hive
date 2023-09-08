@@ -100,6 +100,11 @@ void application::generate_interrupt_request()
 
 void io_handler::handle_signal( uint32_t _last_signal_code )
 {
+  signals->async_wait([](const boost::system::error_code& err, int signal_number )
+  {
+    std::cout<<"Caught "<<signal_number<<". Nothing to do..."<<std::endl;
+  });
+
   last_signal_code = _last_signal_code;
 
   if(_last_signal_code == SIGINT || _last_signal_code == SIGTERM)
