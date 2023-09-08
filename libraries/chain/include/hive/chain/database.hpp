@@ -191,9 +191,9 @@ namespace chain {
         */
       void open( const open_args& args );
     private:      
-      void state_independent_open( const open_args& args);
+      void state_dependent_open( const open_args& args);
     protected:
-      virtual void state_dependent_open( const open_args& args);
+      virtual void state_independent_open( const open_args& args);
 
     private:
 
@@ -946,7 +946,7 @@ public:
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
   private:
-      void state_dependent_open( const open_args& args) override;
+      void state_independent_open( const open_args& args) override;
 
   private:
     bool is_included_block_unlocked(const block_id_type& block_id);

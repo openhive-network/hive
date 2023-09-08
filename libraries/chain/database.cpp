@@ -176,10 +176,10 @@ void database::state_dependent_open( const open_args& args)
     load_state_initial_data(args);
 }
 
-void full_database::state_dependent_open( const open_args& args )
+void full_database::state_independent_open( const open_args& args )
 {
     open_block_log(args);
-    database::state_dependent_open(args);
+    database::state_independent_open(args);
 }
 
 void database::open( const open_args& args)
