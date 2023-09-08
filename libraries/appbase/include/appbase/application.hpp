@@ -92,6 +92,12 @@ namespace appbase {
       void run();
   };
 
+  class application;
+
+  application& app();
+  /// Allows to reset (destroy) application object.
+  void reset();
+
   class application final
   {
     public:
@@ -127,8 +133,6 @@ namespace appbase {
         *  Wait until quit(), SIGINT or SIGTERM and then shutdown
         */
       void exec();
-
-      static application& instance( bool reset = false );
 
       template< typename Plugin >
       auto& register_plugin()
@@ -216,6 +220,11 @@ namespace appbase {
       application(); ///< private because application is a singleton that should be accessed via instance()
       ~application();
 
+      friend application& appbase::app();
+      friend void appbase::reset();
+
+      static application* instance(bool reset, bool recreate);
+
       map< string, std::shared_ptr< abstract_plugin > >  plugins; ///< all registered plugins
       vector< abstract_plugin* >                         initialized_plugins; ///< stored in the order they were started running
 
@@ -284,9 +293,6 @@ namespace appbase {
       }
 
   };
-
-  application& app();
-  application& reset();
 
   template< typename Impl >
   class plugin : public abstract_plugin

@@ -23,6 +23,7 @@
 
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/program_options.hpp>
+#include <boost/scope_exit.hpp>
 
 #include <iostream>
 #include <csignal>
@@ -84,6 +85,12 @@ int main( int argc, char** argv )
   try
   {
     auto& theApp = appbase::app();
+
+    BOOST_SCOPE_EXIT(void)
+    {
+      appbase::reset();
+    } BOOST_SCOPE_EXIT_END
+
     // Setup logging config
     theApp.add_logging_program_options();
 
