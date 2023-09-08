@@ -178,6 +178,11 @@ void database::state_dependent_open( const open_args& args)
 
 void full_database::state_independent_open( const open_args& args )
 {
+    namespace bfs = boost::filesystem;
+    const bfs::path& dir = args.shared_mem_dir;
+    assert( dir.is_absolute() );
+    bfs::create_directories( dir );
+
     open_block_log(args);
     database::state_independent_open(args);
 }
