@@ -142,7 +142,7 @@ const my_entrypoint = async() => {
 
   console.log(`Storage root for testing is: ${STORAGE_ROOT}`);
 
-  const args = `--wallet-dir ${STORAGE_ROOT}/.beekeeper --salt avocado`.split(' ');
+  const args = `--wallet-dir ${STORAGE_ROOT}/.beekeeper --salt avocado --allow-implicit-session true`.split(' ');
   const args_allow_implicit_session = `--wallet-dir ${STORAGE_ROOT}/.beekeeper --salt avocado --allow-implicit-session true`.split(' ');
   const args_disallow_implicit_session = `--wallet-dir ${STORAGE_ROOT}/.beekeeper --salt avocado --allow-implicit-session false`.split(' ');
 

@@ -42,7 +42,7 @@ void beekeeper_app_init::set_program_options()
 
     ("backtrace", bpo::value<std::string>()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" )
 
-    ("allow-implicit-session", bpo::value<bool>()->default_value(true),
+    ("allow-implicit-session", bpo::value<bool>()->default_value(false),
       "If true a session will be implicitly created at the start. By default is true.")
     ;
 }
