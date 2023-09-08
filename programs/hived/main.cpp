@@ -42,42 +42,40 @@ string version_string()
 
 void info(const hive::protocol::chain_id_type& chainId)
   {
-  std::cerr << "------------------------------------------------------\n\n";
+  ilog("------------------------------------------------------\n");
 #ifdef USE_ALTERNATE_CHAIN_ID
-  std::cerr << "            STARTING "
 # ifdef IS_TEST_NET
-                            "TEST"
+  ilog("            STARTING TEST NETWORK\n");
 # else
-                            "MIRROR"
+  ilog("            STARTING MIRROR NETWORK\n");
 # endif
-                            " NETWORK\n\n";
-  std::cerr << "------------------------------------------------------\n";
-  std::cerr << "initminer private key: " << HIVE_INIT_PRIVATE_KEY.key_to_wif() << "\n";
+  ilog("------------------------------------------------------");
+  ilog("initminer private key: ${key}", ("key", HIVE_INIT_PRIVATE_KEY.key_to_wif() ) );
 #else
-  std::cerr << "                @     @@@@@@    ,@@@@@%               \n";
-  std::cerr << "               @@@@    (@@@@@*    @@@@@@              \n";
-  std::cerr << "             %@@@@@@     @@@@@@    %@@@@@,            \n";
-  std::cerr << "            @@@@@@@@@@    @@@@@@     @@@@@@           \n";
-  std::cerr << "          ,@@@@@@@@@@@@     @@@@@@    @@@@@@          \n";
-  std::cerr << "         @@@@@@@@@@@@@@@&    @@@@@@     @@@@@@        \n";
-  std::cerr << "        @@@@@@@@@@@@@@@@@@    .@@@@@%    @@@@@@       \n";
-  std::cerr << "      @@@@@@@@@@@@@@@@@@@@@(              .@@@@@%     \n";
-  std::cerr << "       @@@@@@@@@@@@@@@@@@@@               @@@@@@      \n";
-  std::cerr << "        *@@@@@@@@@@@@@@@@     @@@@@@    @@@@@@.       \n";
-  std::cerr << "          @@@@@@@@@@@@@@    &@@@@@.    @@@@@@         \n";
-  std::cerr << "           #@@@@@@@@@@     @@@@@@    #@@@@@/          \n";
-  std::cerr << "             @@@@@@@@    /@@@@@/    @@@@@@            \n";
-  std::cerr << "              @@@@@(    @@@@@@    .@@@@@&             \n";
-  std::cerr << "                @@     @@@@@&    @@@@@@               \n\n";
-  std::cerr << "                STARTING HIVE NETWORK\n\n";
-  std::cerr << "------------------------------------------------------\n";
+  ilog("                @     @@@@@@    ,@@@@@%               ");
+  ilog("               @@@@    (@@@@@*    @@@@@@              ");
+  ilog("             %@@@@@@     @@@@@@    %@@@@@,            ");
+  ilog("            @@@@@@@@@@    @@@@@@     @@@@@@           ");
+  ilog("          ,@@@@@@@@@@@@     @@@@@@    @@@@@@          ");
+  ilog("         @@@@@@@@@@@@@@@&    @@@@@@     @@@@@@        ");
+  ilog("        @@@@@@@@@@@@@@@@@@    .@@@@@%    @@@@@@       ");
+  ilog("      @@@@@@@@@@@@@@@@@@@@@(              .@@@@@%     ");
+  ilog("       @@@@@@@@@@@@@@@@@@@@               @@@@@@      ");
+  ilog("        *@@@@@@@@@@@@@@@@     @@@@@@    @@@@@@.       ");
+  ilog("          @@@@@@@@@@@@@@    &@@@@@.    @@@@@@         ");
+  ilog("           #@@@@@@@@@@     @@@@@@    #@@@@@/          ");
+  ilog("             @@@@@@@@    /@@@@@/    @@@@@@            ");
+  ilog("              @@@@@(    @@@@@@    .@@@@@&             ");
+  ilog("                @@     @@@@@&    @@@@@@               \n");
+  ilog("                STARTING HIVE NETWORK\n");
+  ilog("------------------------------------------------------");
 #endif
-  std::cerr << "initminer public key: " << HIVE_INIT_PUBLIC_KEY_STR << "\n";
-  std::cerr << "chain id: " << std::string(chainId) << "\n";
-  std::cerr << "blockchain version: " << fc::string(HIVE_BLOCKCHAIN_VERSION) << "\n";
-  std::cerr << "------------------------------------------------------\n\n";
+  ilog("initminer public key: ${key}", ("key", HIVE_INIT_PUBLIC_KEY_STR) );
+  ilog("chain id: ${chain_id}", ("chain_id", std::string(chainId) ) );
+  ilog("blockchain version: ${version}", ("version", fc::string(HIVE_BLOCKCHAIN_VERSION) ) );
+  ilog("------------------------------------------------------\n");
 
-  std::cerr << "hived git_revision: \"" + fc::string(hive::utilities::git_revision_sha) + "\"\n\n";
+  ilog("hived git_revision: \"${revision}\"\n", ("revision", fc::string(hive::utilities::git_revision_sha) ) );
   }
 
 int main( int argc, char** argv )
