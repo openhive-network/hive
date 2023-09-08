@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+message authority {
+  required uint32 weight_threshold = 1;
+  map<string, uint32> account_auths = 2;
+  map<string, uint32> key_auths = 3;
+}

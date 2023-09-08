@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+message limit_order_cancel {
+    required string order = 8;
+    required uint32 orderid = 9;   
+}

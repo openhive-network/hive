@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+import "asset.proto";
+import "authority.proto";
+
+package hive.protocol.buffers;
+
+message account_create {
+  required asset fee = 1;
+  required string creator = 2;
+  required string new_account_name = 3;
+  required authority owner = 4;
+  required string memo_key = 5;
+  required string json_metadata = 6;
+}
