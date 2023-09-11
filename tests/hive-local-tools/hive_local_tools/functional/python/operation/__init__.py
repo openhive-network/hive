@@ -311,7 +311,7 @@ class Comment:
 
     def is_comment_post(self, node):
         comment_operation = self._comment_json['operations'][0][1]
-        ops_in_block = node.api.account_history.get_ops_in_block(block_num=self._comment_json['block_num'])
+        ops_in_block = node.api.account_history.get_ops_in_block(block_num=self._comment_json['block_num'], include_reversible=True)
         for operation in ops_in_block['ops']:
             if operation['op']['type'] == 'comment_operation' and operation['op']['value'] == comment_operation:
                 return True
@@ -323,3 +323,22 @@ class Comment:
     def is_rc_mana_decrease_after_comment_update(self):
         if self.__mana_before_comment_update > self.__mana_after_comment_update:
             return True
+
+    def delete(self):
+        self.__mana_before_comment_delete = get_current_mana(self.__node, self.__author)
+        create_transaction_with_any_operation(self.__wallet, 'delete_comment', author=self.__author, permlink=self.__permlink)
+        self.__mana_after_comment_delete = get_current_mana(self.__node, self.__author)
+        pass
+
+    def is_rc_mana_decrease_after_comment_delete(self):
+        if self.__mana_before_comment_delete > self.__mana_after_comment_delete:
+            return True
+
+    def is_comment_deleted(self):
+        __voter = f'jv-{self.__author}'
+        self.__wallet.create_account(__voter, hives=300, hbds=300, vests=50)
+        try:
+            self.__wallet.api.vote(__voter, self.__author, self.__permlink, 1)
+        except CommunicationError as error:
+            return True
+        return False
