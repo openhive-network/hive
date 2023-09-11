@@ -209,6 +209,12 @@ namespace chain {
 
       void verify_match_of_state_objects_definitions_from_shm();
 
+      void load_state_init_fork_db();
+      void inject_into_fork_db(std::shared_ptr<full_block_type>& head_block);
+      
+    protected:
+      virtual void start_fork_db(std::shared_ptr<full_block_type> head_block = {});
+
     public:
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
@@ -587,8 +593,6 @@ namespace chain {
       std::string get_current_decoded_types_data_json();
 
       void resetState(const open_args& args);
-
-      virtual std::shared_ptr<full_block_type> get_head_block() const = 0;
 
       void init_schema();
       void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
@@ -993,13 +997,13 @@ public:
     std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
     std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
     std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
-    std::shared_ptr<full_block_type> get_head_block() const override;
+
   private:
     void migrate_irreversible_state_perform(uint32_t old_last_irreversible) override; 
 
     void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
     void open_block_log(const open_args& args);
-
+    void start_fork_db(std::shared_ptr<full_block_type> head_block) override;
 
 
   };

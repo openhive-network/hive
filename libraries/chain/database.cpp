@@ -274,16 +274,8 @@ void database::load_state_initial_data(const open_args& args)
       validate_invariants();
   });
 
-  if (head_block_num())
-  {
-    std::shared_ptr<full_block_type> head_block = get_head_block();
-    // This assertion should be caught and a reindex should occur
-    FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
-    "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
-    ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
+  load_state_init_fork_db();
 
-    _fork_db.start_block(head_block);
-  }
 
   with_read_lock([&]() {
     const auto& hardforks = get_hardfork_property_object();
@@ -306,6 +298,53 @@ void database::load_state_initial_data(const open_args& args)
   });
 #endif /// IS_TEST_NET
 }
+
+
+void database::load_state_init_fork_db()
+{
+  if (head_block_num())
+  {
+    start_fork_db();
+  }
+}
+
+
+void database::start_fork_db(std::shared_ptr<full_block_type> head_block)
+{
+  if(head_block)
+  {
+    auto block_num = head_block->get_block_num();
+    wlog(
+      "database::start_fork_db block_num=${block_num}",
+      ("block_num", block_num) );
+  }
+  else
+  {
+    wlog("database::start_fork_db head_block==nullptr}");
+  }
+  
+  inject_into_fork_db(head_block);
+}
+
+
+void full_database::start_fork_db(std::shared_ptr<full_block_type>)
+{
+  std::shared_ptr<full_block_type> head_block = _block_log.read_block_by_num(head_block_num());
+  database::start_fork_db();
+}
+
+
+void database::inject_into_fork_db(std::shared_ptr<full_block_type>& head_block)
+{    
+  // This assertion should be caught and a reindex should occur
+  FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
+  "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
+  ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
+
+  _fork_db.start_block(head_block);
+}
+
+
 
 uint32_t full_database::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
 {
@@ -7611,11 +7650,6 @@ std::vector<block_id_type> full_database::get_block_ids(const std::vector<block_
     remaining_item_count = 0;
 
   return result;
-}
-
-std::shared_ptr<full_block_type> full_database::get_head_block() const
-{
-  return _block_log.read_block_by_num(head_block_num());
 }
 
 } } //hive::chain
