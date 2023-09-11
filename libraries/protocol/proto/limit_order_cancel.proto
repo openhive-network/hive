@@ -2,6 +2,9 @@ syntax = "proto2";
 
 package hive.protocol.buffers;
 
+/*
+ *  Cancels an order and returns the balance to owner.
+ */
 message limit_order_cancel {
     required string order = 8;
     required uint32 orderid = 9;   

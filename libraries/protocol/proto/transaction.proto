@@ -6,6 +6,9 @@ import "limit_order_cancel.proto";
 
 package hive.protocol.buffers;
 
+/* NOTE: do not change the order of any operations prior to the virtual operations
+ * or it will trigger a hardfork.
+ */
 message operation {
     oneof value {
         comment comment = 15;
@@ -14,9 +17,6 @@ message operation {
     }
 }
 
-/**
-Example jsdoc
-*/
 message transaction {
     repeated operation operations = 18;
 }
