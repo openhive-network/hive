@@ -49,13 +49,11 @@ int main(int argc, char** argv)
 
     if (!options_map.count("input-block-log"))
     {
-      std::cerr << "Error: missing parameter for input-block-log \n";
+      elog("Error: missing parameter for input-block-log ");
       return 1;
     }
 
-    fc::path input_block_log_path;
-    if (options_map.count("input-block-log"))
-      input_block_log_path = options_map["input-block-log"].as<std::string>();
+    fc::path input_block_log_path = options_map["input-block-log"].as<std::string>();
 
     ilog("Trying to perform full block log generation ...");
     generate_from_scratch(input_block_log_path);
