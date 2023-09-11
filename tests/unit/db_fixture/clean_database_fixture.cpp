@@ -35,6 +35,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
   open_database( get_data_dir(), shared_file_size_in_mb );
 
   inject_hardfork( hardfork.valid() ? ( *hardfork ) : HIVE_BLOCKCHAIN_VERSION.minor_v() );
+  db->_log_hardforks = true;
 
   vest( "initminer", 10000 );
 

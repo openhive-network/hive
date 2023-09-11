@@ -115,6 +115,7 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
 
       db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
       BOOST_REQUIRE( db );
+      db->_log_hardforks = false;
 
       // Load configuration file into logging config structure, used to create loggers & appenders.
       // Store the structure for further examination (in tests).
@@ -167,6 +168,7 @@ json_rpc_database_fixture::json_rpc_database_fixture()
   generate_block();
   db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
   generate_block();
+  db->_log_hardforks = true;
 
   vest( "initminer", 10000 );
 

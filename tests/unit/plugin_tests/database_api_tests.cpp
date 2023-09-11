@@ -31,6 +31,7 @@ struct database_api_fixture : hived_fixture
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );
     generate_block();
+    db->_log_hardforks = true;
 
     ACTORS((top1)(top2)(top3)(top4)(top5)(top6)(top7)(top8)(top9)(top10)
            (top11)(top12)(top13)(top14)(top15)(top16)(top17)(top18)(top19)(top20))

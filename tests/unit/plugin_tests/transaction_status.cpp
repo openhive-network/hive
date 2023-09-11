@@ -31,6 +31,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
     configuration_data.init_supply = INITIAL_TEST_SUPPLY;
     configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
+    configuration_data.allow_not_enough_rc = false;
 
     postponed_init(
       { 
@@ -59,7 +60,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );
     generate_block();
-    configuration_data.allow_not_enough_rc = false;
+    db->_log_hardforks = true;
 
     vest( "initminer", 10000 );
 

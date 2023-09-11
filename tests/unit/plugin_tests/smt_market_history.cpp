@@ -45,6 +45,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );
     generate_block();
+    db->_log_hardforks = true;
 
     vest( "initminer", 10000 );
 
