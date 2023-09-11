@@ -16,7 +16,12 @@ namespace hive { namespace chain {
   {
     CHAINBASE_OBJECT( hardfork_property_object );
     public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( hardfork_property_object, (processed_hardforks)(h23_balances) )
+      template< typename Allocator >
+      hardfork_property_object( allocator< Allocator > a, uint64_t _id, fc::time_point_sec genesis_time )
+        : id( _id ), processed_hardforks( a ), h23_balances( a )
+      {
+        processed_hardforks.push_back( genesis_time );
+      }
 
       using t_processed_hardforks = t_vector< fc::time_point_sec >;
       using t_hf23_items          = t_flat_map< account_name_type, hf23_item >;
