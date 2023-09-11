@@ -123,7 +123,6 @@ void database_fixture::open_database( const fc::path& _data_dir, uint16_t shared
   if( !data_dir )
   {
     data_dir = fc::temp_directory( _data_dir );
-    db->_log_hardforks = false;
 
     idump( (data_dir->path()) );
 

@@ -99,7 +99,7 @@ std::ostream& operator<<( std::ostream& o, const block_flow_control::phase& p )
 
 BOOST_AUTO_TEST_SUITE(block_tests)
 
-void open_test_database( database& db, const fc::path& dir )
+void open_test_database( database& db, const fc::path& dir, bool log_hardforks = false )
 {
   hive::chain::open_args args;
   args.data_dir = dir;
@@ -108,6 +108,7 @@ void open_test_database( database& db, const fc::path& dir )
   args.database_cfg = hive::utilities::default_database_configuration();
   configuration_data.init_supply = INITIAL_TEST_SUPPLY;
   configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
+  db._log_hardforks = log_hardforks;
   db.open( args );
 }
 
@@ -124,7 +125,6 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
     {
       database db;
       witness::block_producer bp( db );
-      db._log_hardforks = false;
       open_test_database( db, data_dir.path() );
       b = GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
         init_account_priv_key, database::skip_nothing );
@@ -152,7 +152,6 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
     {
       database db;
       witness::block_producer bp( db );
-      db._log_hardforks = false;
       open_test_database( db, data_dir.path() );
 
       BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block->get_block_num() );
@@ -181,7 +180,6 @@ BOOST_AUTO_TEST_CASE( undo_block )
     {
       database db;
       witness::block_producer bp( db );
-      db._log_hardforks = false;
       open_test_database( db, data_dir.path() );
       fc::time_point_sec now( HIVE_TESTING_GENESIS_TIMESTAMP );
       std::vector< time_point_sec > time_stack;
@@ -236,11 +234,9 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
 
     database db1;
     witness::block_producer bp1( db1 );
-    db1._log_hardforks = false;
     open_test_database( db1, data_dir1.path() );
     database db2;
     witness::block_producer bp2( db2 );
-    db2._log_hardforks = false;
     open_test_database( db2, data_dir2.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
@@ -312,9 +308,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
           db2;
     witness::block_producer bp1( db1 ),
                     bp2( db2 );
-    db1._log_hardforks = false;
     open_test_database( db1, dir1.path() );
-    db2._log_hardforks = false;
     open_test_database( db2, dir2.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
@@ -430,7 +424,7 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
     // we'll call the fixture's database "db1"
     database db2;
     fc::temp_directory dir2(hive::utilities::temp_directory_path());
-    open_test_database(db2, dir2.path());
+    open_test_database(db2, dir2.path(), true);
 
     BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
     // dump_witnesses("db2", db2);
@@ -587,7 +581,7 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
     // we'll call the fixture's database "db1"
     database db2;
     fc::temp_directory dir2(hive::utilities::temp_directory_path());
-    open_test_database(db2, dir2.path());
+    open_test_database(db2, dir2.path(), true);
 
     BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
     // dump_witnesses("db2", db2);
@@ -708,9 +702,7 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
     database db1,
           db2;
     witness::block_producer bp1( db1 );
-    db1._log_hardforks = false;
     open_test_database( db1, dir1.path() );
-    db2._log_hardforks = false;
     open_test_database( db2, dir2.path() );
     BOOST_CHECK( db1.get_chain_id() == db2.get_chain_id() );
 
@@ -760,7 +752,6 @@ BOOST_AUTO_TEST_CASE( tapos )
     fc::temp_directory dir1( hive::utilities::temp_directory_path() );
     database db1;
     witness::block_producer bp1( db1 );
-    db1._log_hardforks = false;
     open_test_database( db1, dir1.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
@@ -1277,7 +1268,6 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     database db;
     witness::block_producer bp( db );
-    db._log_hardforks = false;
     open_test_database( db, data_dir.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
@@ -1463,7 +1453,6 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_generation, clean_database_fixture )
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     database db;
     witness::block_producer bp( db );
-    db._log_hardforks = false;
     open_test_database( db, data_dir.path() );
 
     auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
@@ -1520,18 +1509,15 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     fc::temp_directory data_dir_bp1( hive::utilities::temp_directory_path() );
     database db_bp1;
     witness::block_producer bp1( db_bp1 );
-    db_bp1._log_hardforks = false;
     open_test_database( db_bp1, data_dir_bp1.path() );
 
     fc::temp_directory data_dir_bp2( hive::utilities::temp_directory_path() );
     database db_bp2;
     witness::block_producer bp2( db_bp2 );
-    db_bp2._log_hardforks = false;
     open_test_database( db_bp2, data_dir_bp2.path() );
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     database db;
-    db._log_hardforks = false;
     open_test_database( db, data_dir.path() );
 
     auto report_block = []( const database& db, const std::shared_ptr<full_block_type>& block, const char* suffix )

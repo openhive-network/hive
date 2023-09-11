@@ -54,6 +54,7 @@ condenser_api_fixture::condenser_api_fixture()
 
   generate_block();
   validate_database();
+  db->_log_hardforks = true;
 }
 
 condenser_api_fixture::~condenser_api_fixture()
