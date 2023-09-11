@@ -27,7 +27,6 @@ using seconds_type = uint32_t;
 struct init_data
 {
   bool status = false;
-  std::string token;
   std::string version;
 };
 
@@ -244,7 +243,7 @@ namespace fc
   void to_variant( const beekeeper::init_data& var, fc::variant& vo );
 }
 
-FC_REFLECT( beekeeper::init_data, (status)(token)(version) )
+FC_REFLECT( beekeeper::init_data, (status)(version) )
 
 FC_REFLECT( beekeeper::wallet_details, (name)(unlocked) )
 FC_REFLECT( beekeeper::public_key_details, (public_key) )

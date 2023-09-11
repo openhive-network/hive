@@ -52,10 +52,7 @@ init_data beekeeper_app::initialize( int argc, char** argv )
 
     api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr );
 
-    if( _initialization.token.empty() )
-      app.notify_status( "starting without a session" );
-    else
-      app.notify_status( "starting a session with token: " + _initialization.token );
+    app.notify_status( "beekeeper is starting" );
 
     return _initialization;
   }
