@@ -302,7 +302,7 @@ plugin_test:
      - processes: ${PYTEST_NUMBER_OF_PROCESSES}
      - log durations: ${PYTEST_LOG_DURATIONS}
      - additional arguments: ${PYTEST_ARGS[@]}"
-  - timeout $((($PYTEST_TIMEOUT_MINUTES + 2) * 60)) pytest --timeout=$(($PYTEST_TIMEOUT_MINUTES * 60)) --junitxml="$JUNIT_REPORT" "${PROCESSES}" "${DURATIONS}" "${PYTEST_ARGS[@]}"
+  - timeout -v $((($PYTEST_TIMEOUT_MINUTES + 2) * 60)) pytest --timeout=$(($PYTEST_TIMEOUT_MINUTES * 60)) --junitxml="$JUNIT_REPORT" "${PROCESSES}" "${DURATIONS}" "${PYTEST_ARGS[@]}"
 
 .pytest_based:
     variables:
