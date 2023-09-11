@@ -19,14 +19,16 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
 {
   try {
 
+  configuration_data.init_supply = INITIAL_TEST_SUPPLY;
+  configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
+  configuration_data.allow_not_enough_rc = true;
+
   postponed_init(
     { config_line_t( { "plugin",
       { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
         HIVE_WITNESS_PLUGIN_NAME } } ) },
     &ah_plugin
   );
-
-  configuration_data.allow_not_enough_rc = true;
 
   init_account_pub_key = init_account_priv_key.get_public_key();
 

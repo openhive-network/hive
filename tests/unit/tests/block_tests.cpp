@@ -104,10 +104,10 @@ void open_test_database( database& db, const fc::path& dir )
   hive::chain::open_args args;
   args.data_dir = dir;
   args.shared_mem_dir = dir;
-  args.initial_supply = INITIAL_TEST_SUPPLY;
-  args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
   args.shared_file_size = TEST_SHARED_MEM_SIZE;
   args.database_cfg = hive::utilities::default_database_configuration();
+  configuration_data.init_supply = INITIAL_TEST_SUPPLY;
+  configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
   db.open( args );
 }
 
