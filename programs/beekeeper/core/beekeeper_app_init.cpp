@@ -31,9 +31,6 @@ void beekeeper_app_init::set_program_options()
       "Wallets will automatically lock after specified number of seconds of inactivity. "
       "Activity is defined as any wallet command e.g. list-wallets.")
 
-    ("salt", bpo::value<std::string>()->default_value(""),
-      "Random data that is used as an additional input so as to create token")
-
     ("export-keys-wallet-name", bpo::value<std::string>()->default_value(""),
       "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required. By default is empty." )
 
@@ -41,18 +38,17 @@ void beekeeper_app_init::set_program_options()
       "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required. By default is empty." )
 
     ("backtrace", bpo::value<std::string>()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" )
-
-    ("allow-implicit-session", bpo::value<bool>()->default_value(false),
-      "If true a session will be implicitly created at the start. By default is true.")
     ;
 }
 
-bool beekeeper_app_init::save_keys( const std::string& token, const std::string& wallet_name, const std::string& wallet_password )
+bool beekeeper_app_init::save_keys( const std::string& notification, const std::string& wallet_name, const std::string& wallet_password )
 {
   bool _result = true;
 
-  if( token.empty() || wallet_name.empty() || wallet_password.empty() )
+  if( wallet_name.empty() || wallet_password.empty() )
     return _result;
+
+  std::string _token = wallet_manager_ptr->create_session( "salt", notification );
 
   const std::string _filename = wallet_name + ".keys";
 
@@ -60,8 +56,8 @@ bool beekeeper_app_init::save_keys( const std::string& token, const std::string&
 
   auto _save_keys = [&]()
   {
-    wallet_manager_ptr->unlock( token, wallet_name, wallet_password );
-    auto _keys = wallet_manager_ptr->list_keys( token, wallet_name, wallet_password );
+    wallet_manager_ptr->unlock( _token, wallet_name, wallet_password );
+    auto _keys = wallet_manager_ptr->list_keys( _token, wallet_name, wallet_password );
 
     map<std::string, std::string> _result;
     std::transform( _keys.begin(), _keys.end(), std::inserter( _result, _result.end() ),
@@ -76,9 +72,10 @@ bool beekeeper_app_init::save_keys( const std::string& token, const std::string&
     ilog( "Keys have been saved.", (_filename) );
   };
 
-  auto _lock_wallet = [this, &token, &wallet_name]()
+  auto _finish = [this, &_token, &wallet_name]()
   {
-    wallet_manager_ptr->lock( token, wallet_name );
+    wallet_manager_ptr->lock( _token, wallet_name );
+    wallet_manager_ptr->close_session( _token, false/*allow_close_all_sessions_action*/ );
   };
 
   auto _exec_action = [&_filename, &_result]( std::function<void()>&& call )
@@ -109,9 +106,9 @@ bool beekeeper_app_init::save_keys( const std::string& token, const std::string&
     }
   };
 
-  BOOST_SCOPE_EXIT(&wallet_manager_ptr, &_exec_action, &_lock_wallet)
+  BOOST_SCOPE_EXIT(&wallet_manager_ptr, &_exec_action, &_finish)
   {
-    _exec_action( _lock_wallet );
+    _exec_action( _finish );
   } BOOST_SCOPE_EXIT_END
 
   _exec_action( _save_keys );
@@ -157,17 +154,6 @@ init_data beekeeper_app_init::initialize_program_options()
       if( !wallet_manager_ptr->start() )
         return { false, "" };
 
-      FC_ASSERT( _args.count("salt") );
-      auto _salt = _args.at("salt").as<std::string>();
-
-      FC_ASSERT( _args.count("allow-implicit-session") );
-      auto _allow_implicit_session = _args.at("allow-implicit-session").as<bool>();
-
-      std::string _token = "";
-
-      if( _allow_implicit_session )
-        _token = wallet_manager_ptr->create_session( _salt, _notification );
-
       FC_ASSERT( _args.count("backtrace") );
       if( _args.at( "backtrace" ).as<std::string>() == "yes" )
       {
@@ -177,9 +163,9 @@ init_data beekeeper_app_init::initialize_program_options()
 
       FC_ASSERT( _args.count("export-keys-wallet-name") );
       FC_ASSERT( _args.count("export-keys-wallet-password") );
-      bool _result = save_keys( _token, _args.at( "export-keys-wallet-name" ).as<std::string>(), _args.at( "export-keys-wallet-password" ).as<std::string>() );
+      bool _result = save_keys( _notification, _args.at( "export-keys-wallet-name" ).as<std::string>(), _args.at( "export-keys-wallet-password" ).as<std::string>() );
 
-      return { _result, _token, fc::git_revision_sha };
+      return { _result, fc::git_revision_sha };
   } FC_LOG_AND_RETHROW()
 }
 

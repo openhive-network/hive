@@ -145,7 +145,7 @@ public:
    *
    * @param token represents a session. After closing the session expires.
    */
-  void close_session( const string& token );
+  void close_session( const string& token, bool allow_close_all_sessions_action = true );
 
 private:
 
