@@ -130,8 +130,6 @@ void database_fixture::open_database( const fc::path& _data_dir, uint16_t shared
     hive::chain::open_args args;
     args.data_dir = data_dir->path();
     args.shared_mem_dir = args.data_dir;
-    args.initial_supply = INITIAL_TEST_SUPPLY;
-    args.hbd_initial_supply = HBD_INITIAL_TEST_SUPPLY;
     args.shared_file_size = 1024 * 1024 * shared_file_size_in_mb; // 8MB(default) or more:  file for testing
     args.database_cfg = hive::utilities::default_database_configuration();
     db->open(args);

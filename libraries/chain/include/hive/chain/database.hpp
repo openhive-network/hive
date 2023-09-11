@@ -81,8 +81,6 @@ namespace chain {
   {
     fc::path data_dir;
     fc::path shared_mem_dir;
-    uint64_t initial_supply = HIVE_INIT_SUPPLY;
-    uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
     uint64_t shared_file_size = 0;
     uint16_t shared_file_full_threshold = 0;
     uint16_t shared_file_scale_rate = 0;
@@ -621,7 +619,7 @@ namespace chain {
       void resetState(const open_args& args);
 
       void init_schema();
-      void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
+      void init_genesis();
 
       /** when popping a block, the transactions that were removed get cached here so they
         * can be reapplied at the proper time */

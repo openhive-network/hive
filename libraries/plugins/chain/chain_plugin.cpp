@@ -631,8 +631,6 @@ void chain_plugin_impl::initial_settings()
 
   db_open_args.data_dir = app().data_dir() / "blockchain";
   db_open_args.shared_mem_dir = shared_memory_dir;
-  db_open_args.initial_supply = HIVE_INIT_SUPPLY;
-  db_open_args.hbd_initial_supply = HIVE_HBD_INIT_SUPPLY;
   db_open_args.shared_file_size = shared_memory_size;
   db_open_args.shared_file_full_threshold = shared_file_full_threshold;
   db_open_args.shared_file_scale_rate = shared_file_scale_rate;

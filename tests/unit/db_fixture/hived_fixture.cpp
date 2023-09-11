@@ -143,6 +143,9 @@ json_rpc_database_fixture::json_rpc_database_fixture()
 {
   try {
 
+  configuration_data.init_supply = INITIAL_TEST_SUPPLY;
+  configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
+
   hive::plugins::condenser_api::condenser_api_plugin* denser_api_plugin = nullptr;
   postponed_init(
     { config_line_t( { "plugin",

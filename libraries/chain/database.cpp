@@ -194,7 +194,7 @@ void database::initialize_state_independent_data(const open_args& args)
   {
     with_write_lock([&]()
     {
-      init_genesis(args.initial_supply, args.hbd_initial_supply);
+      init_genesis();
     });
   }
 
@@ -4084,7 +4084,7 @@ void database::init_schema()
   return;*/
 }
 
-void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
+void database::init_genesis()
 {
   try
   {
@@ -4183,12 +4183,12 @@ void database::init_genesis( uint64_t init_supply, uint64_t hbd_init_supply )
       } );
     }
 
-    create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( init_supply, HIVE_SYMBOL ), asset( hbd_init_supply, HBD_SYMBOL ) );
+    create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( HIVE_INIT_SUPPLY, HIVE_SYMBOL ), asset( HIVE_HBD_INIT_SUPPLY, HBD_SYMBOL ) );
     // feed initial token supply to first miner
     modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
     {
-      a.balance = asset( init_supply, HIVE_SYMBOL );
-      a.hbd_balance = asset( hbd_init_supply, HBD_SYMBOL );
+      a.balance = asset( HIVE_INIT_SUPPLY, HIVE_SYMBOL );
+      a.hbd_balance = asset( HIVE_HBD_INIT_SUPPLY, HBD_SYMBOL );
     } );
 
 #ifdef IS_TEST_NET
