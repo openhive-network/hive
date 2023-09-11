@@ -20,7 +20,7 @@ class Account:
     _hbd: tt.Asset.Tbd = field(init=False, default=None)
 
     def __post_init__(self):
-        self._rc_manabar = self.RcManabar(self._node, self._name)
+        self._rc_manabar = _RcManabar(self._node, self._name)
 
     @property
     def name(self):
@@ -56,6 +56,44 @@ class Account:
         self._hbd = tt.Asset.from_(self._acc_info["hbd_balance"])
         self._vest = tt.Asset.from_(self._acc_info["vesting_shares"])
         self._rc_manabar.update(self._node, self._name)
+
+
+class _RcManabar:
+    def __init__(self, node, name):
+        self._node = node
+        self._name = name
+        self.current_rc_mana = None
+        self.last_update_time = None
+        self.max_rc = None
+        self.update(node, name)
+
+    def calculate_current_value(self, head_block_time):
+        return int(
+            wax.calculate_current_manabar_value(
+                now=int(head_block_time.timestamp()),
+                max_mana=self.max_rc,
+                current_mana=self.current_rc_mana,
+                last_update_time=self.last_update_time,
+            ).result
+        )
+
+    def update(self, node, name):
+        rc_manabar = get_rc_manabar(node, name)
+        self.current_rc_mana = rc_manabar["current_mana"]
+        self.last_update_time = rc_manabar["last_update_time"]
+        self.max_rc = rc_manabar["max_rc"]
+
+    def assert_rc_current_mana_is_unchanged(self):
+        assert get_current_mana(self._node, self._name) == self.current_rc_mana, f"The {self._name} account rc_current_mana has been changed."
+
+    def assert_rc_current_mana_is_reduced(self, operation_rc_cost: int, operation_timestamp=None):
+        err = f"The account {self._name} did not incur the operation cost."
+        if operation_timestamp:
+            mana_before_operation = self.calculate_current_value(
+                operation_timestamp - tt.Time.seconds(3))
+            assert mana_before_operation == get_current_mana(self._node, self._name) + operation_rc_cost, err
+        else:
+            assert get_current_mana(self._node, self._name) + operation_rc_cost == self.current_rc_mana, err
 
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
