@@ -96,8 +96,8 @@ export default class BeekeeperInstanceHelper {
     this.#instance = new provider.beekeeper_api(params);
 
     const initResult = this.instance.init();
-    this.#implicitSessionToken = this.#extract(initResult).token;
     this.#version = this.#extract(initResult).version;
+    this.#implicitSessionToken = this.createSession("this.is.salt");
   }
 
   // Public helper methods:

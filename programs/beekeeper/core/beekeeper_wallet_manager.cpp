@@ -125,10 +125,10 @@ string beekeeper_wallet_manager::create_session( const string& salt, const strin
   return _token;
 }
 
-void beekeeper_wallet_manager::close_session( const string& token )
+void beekeeper_wallet_manager::close_session( const string& token, bool allow_close_all_sessions_action )
 {
   sessions->close_session( token );
-  if( sessions->empty() )
+  if( allow_close_all_sessions_action && sessions->empty() )
   {
     close_all_sessions_action();
   }
