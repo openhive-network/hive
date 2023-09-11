@@ -4184,6 +4184,7 @@ void database::init_genesis()
     }
 
     create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( HIVE_INIT_SUPPLY, HIVE_SYMBOL ), asset( HIVE_HBD_INIT_SUPPLY, HBD_SYMBOL ) );
+    create< hardfork_property_object >( HIVE_GENESIS_TIME );
     // feed initial token supply to first miner
     modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
     {
@@ -4206,10 +4207,6 @@ void database::init_genesis()
 
     for( int i = 0; i < 0x10000; i++ )
       create< block_summary_object >( [&]( block_summary_object& ) {});
-    create< hardfork_property_object >( [&](hardfork_property_object& hpo )
-    {
-      hpo.processed_hardforks.push_back( HIVE_GENESIS_TIME );
-    } );
 
     // Create witness scheduler
     create< witness_schedule_object >( [&]( witness_schedule_object& wso )
