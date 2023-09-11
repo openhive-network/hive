@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 import test_tools as tt
 from hive_local_tools.constants import filters_enum_virtual_ops, TRANSACTION_TEMPLATE
+from test_tools.__private.exceptions import CommunicationError
 import wax
 
 @dataclass
@@ -253,6 +254,7 @@ class Comment:
         self.__comment_transaction: dict[str, Any] | None = None
         self.__bottom_comment_sent: bool = False
         self.__comment_exist: bool = False
+        self.__comment_deleted: bool = False
 
 
     @property
@@ -368,7 +370,7 @@ class Comment:
 
     def assert_is_comment_sent_or_update(self):
         comment_operation = self.__comment_transaction['operations'][0][1]
-        ops_in_block = self.__node.api.account_history.get_ops_in_block(block_num=self.__comment_transaction['block_num'])
+        ops_in_block = self.__node.api.account_history.get_ops_in_block(block_num=self.__comment_transaction['block_num'], include_reversible=True)
         for operation in ops_in_block['ops']:
             if operation['op']['type'] == 'comment_operation' and operation['op']['value'] == comment_operation:
                 return
@@ -380,3 +382,30 @@ class Comment:
         comment_rc_cost = int(self.__comment_transaction ["rc_cost"])
         comment_timestamp = get_transaction_timestamp(self.__node, self.__comment_transaction)
         self.__comment_author_obj.rc_manabar.assert_rc_current_mana_is_reduced(comment_rc_cost, comment_timestamp)
+
+    def delete(self):
+        self.__comment_author_obj.update_account_info() # Refresh RC mana before update
+        self.__delete_transaction = create_transaction_with_any_operation(self.__wallet, 'delete_comment', author=self.__comment_author_obj.name, permlink=self.__comment_permlink)
+        self.__comment_deleted = True
+
+    def assert_is_rc_mana_decreased_after_comment_delete(self):
+        if not self.__comment_deleted:
+            raise ValueError("Try to delete comment before verification")
+        delete_rc_cost = int(self.__delete_transaction["rc_cost"])
+        delete_timestamp = get_transaction_timestamp(self.__node, self.__delete_transaction)
+        self.__comment_author_obj.rc_manabar.assert_rc_current_mana_is_reduced(delete_rc_cost, delete_timestamp)
+
+    def assert_comment(self, mode: Literal['deleted', 'not_deleted']):
+        voter = self.__create_comment_account()
+        try:
+            self.__wallet.api.vote(voter.name, self.__comment_author_obj.name, self.__comment_permlink, 1)
+            vote_send = True
+        except CommunicationError:
+            vote_send = False
+
+        if mode == 'deleted':
+            assert vote_send == False, 'Vote send. Comment is not deleted'
+        elif mode == 'not_deleted':
+            assert vote_send == True, 'Vote not send. Comment is deleted'
+        else:
+            raise ValueError(f"Unexpected value for 'mode': '{mode}'")
