@@ -101,6 +101,13 @@ cluster_database_fixture::~cluster_database_fixture()
   configuration_data.reset_cashout_values();
 }
 
+config_database_fixture::config_database_fixture( std::function< void() > action, uint16_t shared_file_size_in_mb )
+  : clean_database_fixture( ( action(), shared_file_size_in_mb ) )
+{}
+
+config_database_fixture::~config_database_fixture()
+{}
+
 genesis_database_fixture::genesis_database_fixture( uint16_t shared_file_size_in_mb )
   : clean_database_fixture( shared_file_size_in_mb, 0 )
 {}
@@ -109,9 +116,8 @@ genesis_database_fixture::~genesis_database_fixture()
 {}
 
 curation_database_fixture::curation_database_fixture( uint16_t shared_file_size_in_mb )
-  : clean_database_fixture( ( set_mainnet_cashout_values( false ), shared_file_size_in_mb ) )
-{
-}
+  : config_database_fixture( [](){ set_mainnet_cashout_values( false ); }, shared_file_size_in_mb )
+{}
 
 curation_database_fixture::~curation_database_fixture()
 {
@@ -314,8 +320,8 @@ template smt_capped_generation_policy t_smt_database_fixture< clean_database_fix
 
 
 delayed_vote_database_fixture::delayed_vote_database_fixture( uint16_t shared_file_size_in_mb )
-  : clean_database_fixture( ( set_mainnet_cashout_values( false ), set_mainnet_feed_values( false ), shared_file_size_in_mb ) )
-  {}
+  : config_database_fixture( [](){ set_mainnet_cashout_values( false ); set_mainnet_feed_values( false ); }, shared_file_size_in_mb )
+{}
 
 delayed_vote_database_fixture::~delayed_vote_database_fixture()
 {

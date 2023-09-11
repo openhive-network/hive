@@ -41,13 +41,19 @@ struct cluster_database_fixture
 
 };
 
+struct config_database_fixture : public clean_database_fixture
+{
+  config_database_fixture( std::function< void() > action, uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
+  virtual ~config_database_fixture();
+};
+
 struct genesis_database_fixture : public clean_database_fixture
 {
   genesis_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
   virtual ~genesis_database_fixture();
 };
 
-struct curation_database_fixture : public clean_database_fixture
+struct curation_database_fixture : public config_database_fixture
 {
   curation_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512 );
   virtual ~curation_database_fixture();
@@ -125,7 +131,7 @@ struct hf24_database_fixture : public clean_database_fixture
   virtual ~hf24_database_fixture() {}
 };
 
-struct delayed_vote_database_fixture : public clean_database_fixture
+struct delayed_vote_database_fixture : public config_database_fixture
 {
   public:
 
