@@ -871,7 +871,8 @@ operation_tests:
     - *run-pytest
   parallel:
     matrix:
-      - OPERATION: [ cancel_transfer_from_savings,
+      - OPERATION: [ account_update_tests,
+      		     cancel_transfer_from_savings,
                      limit_order_tests,
                      test_recurrent_transfer,
                      test_transfer_to_vesting_operation,
