@@ -592,6 +592,9 @@ namespace chain {
 
       void resetState(const open_args& args);
 
+      virtual std::shared_ptr<full_block_type> get_head_block() const = 0;
+
+
 
       void init_schema();
       void init_genesis(uint64_t initial_supply = HIVE_INIT_SUPPLY, uint64_t hbd_initial_supply = HIVE_HBD_INIT_SUPPLY );
@@ -998,6 +1001,7 @@ public:
     std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
     std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
     std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
+    std::shared_ptr<full_block_type> get_head_block() const override;
     
   private:
     void migrate_irreversible_state_perform(uint32_t old_last_irreversible) override; 

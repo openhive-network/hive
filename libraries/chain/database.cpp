@@ -173,13 +173,14 @@ void database::state_independent_open( const open_args& args)
 
 void database::state_dependent_open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func)
 {
-    load_state_initial_data(args);
+    load_state_initial_data(args, get_head_block_func);
 }
 
 void full_database::state_dependent_open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func )
 {
     open_block_log(args);
-    database::state_dependent_open(args);
+    database::state_dependent_open(args, [](const database& db) { return db.get_head_block(); });
+    //database::state_dependent_open(args, [this]() { return _block_log.read_block_by_num(head_block_num()); });
 }
 
 void database::open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func)
@@ -7603,6 +7604,10 @@ std::vector<block_id_type> full_database::get_block_ids(const std::vector<block_
   return result;
 }
 
+std::shared_ptr<full_block_type> full_database::get_head_block() const
+{
+  return _block_log.read_block_by_num(head_block_num());
+}
 
 } } //hive::chain
 
