@@ -149,21 +149,25 @@ json_rpc_database_fixture::json_rpc_database_fixture()
 
   hive::plugins::condenser_api::condenser_api_plugin* denser_api_plugin = nullptr;
   postponed_init(
-    { config_line_t( { "plugin",
-      { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
-        HIVE_WITNESS_PLUGIN_NAME,
-        HIVE_JSON_RPC_PLUGIN_NAME,
-        HIVE_BLOCK_API_PLUGIN_NAME,
-        HIVE_DATABASE_API_PLUGIN_NAME,
-        HIVE_CONDENSER_API_PLUGIN_NAME } } ) },
+    {
+      config_line_t( { "plugin",
+        { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
+          HIVE_WITNESS_PLUGIN_NAME,
+          HIVE_JSON_RPC_PLUGIN_NAME,
+          HIVE_BLOCK_API_PLUGIN_NAME,
+          HIVE_DATABASE_API_PLUGIN_NAME,
+          HIVE_CONDENSER_API_PLUGIN_NAME } }
+      ),
+      config_line_t( { "shared-file-size",
+        { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
+      )
+    },
     &ah_plugin,
     &rpc_plugin,
     &denser_api_plugin
   );
 
   init_account_pub_key = init_account_priv_key.get_public_key();
-
-  open_database( get_data_dir() );
 
   generate_block();
   db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );

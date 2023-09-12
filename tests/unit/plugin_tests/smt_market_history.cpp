@@ -23,24 +23,16 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
     configuration_data.init_supply = INITIAL_TEST_SUPPLY;
     configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
 
-    auto _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
-    {
-      app.register_plugin< market_history_plugin >();
-      db_plugin = &app.register_plugin< hive::plugins::debug_node::debug_node_plugin >();
-
-      db_plugin->logging = false;
-      app.initialize<
-        hive::plugins::market_history::market_history_plugin,
-        hive::plugins::debug_node::debug_node_plugin
-      >( argc, argv );
-
-      db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
-      BOOST_REQUIRE( db );
-    } );
+    postponed_init(
+      {
+        config_line_t( { "plugin", { HIVE_MARKET_HISTORY_PLUGIN_NAME } } ),
+        config_line_t( { "shared-file-size",
+          { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
+        )
+      }
+    );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
-
-    open_database( _data_dir );
 
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );

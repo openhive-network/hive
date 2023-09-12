@@ -237,7 +237,6 @@ autoscope set_mainnet_feed_values( bool auto_reset = true );
 
 //common code for preparing arguments and data path
 //caller needs to register plugins and call initialize() on given application object
-//returned path should be passed as open_database() call parameter
 fc::path common_init( const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer );
 
 struct database_fixture {
@@ -272,8 +271,6 @@ struct database_fixture {
   static const uint16_t shared_file_size_in_mb_64 = 64;
   static const uint16_t shared_file_size_in_mb_512 = 512;
 
-  void open_database( const fc::path& _data_dir,
-                      uint16_t shared_file_size_in_mb = shared_file_size_in_mb_64 );
   void generate_block(uint32_t skip = 0,
                       const fc::ecc::private_key& key = generate_private_key("init_key"),
                       int miss_blocks = 0);

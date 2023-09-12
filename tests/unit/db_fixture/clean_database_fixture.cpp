@@ -24,15 +24,19 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
   configuration_data.allow_not_enough_rc = true;
 
   postponed_init(
-    { config_line_t( { "plugin",
-      { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
-        HIVE_WITNESS_PLUGIN_NAME } } ) },
+    {
+      config_line_t( { "plugin",
+        { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
+          HIVE_WITNESS_PLUGIN_NAME } }
+      ),
+      config_line_t( { "shared-file-size",
+        { std::to_string( 1024 * 1024 * shared_file_size_in_mb ) } }
+      )
+    },
     &ah_plugin
   );
 
   init_account_pub_key = init_account_priv_key.get_public_key();
-
-  open_database( get_data_dir(), shared_file_size_in_mb );
 
   inject_hardfork( hardfork.valid() ? ( *hardfork ) : HIVE_BLOCKCHAIN_VERSION.minor_v() );
   db->_log_hardforks = true;
