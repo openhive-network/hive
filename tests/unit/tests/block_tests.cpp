@@ -1805,5 +1805,67 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
   FC_LOG_AND_RETHROW()
 }
 
+struct init_supply_database_fixture : public hived_fixture
+{
+  init_supply_database_fixture()
+  {
+    try
+    {
+      postponed_init( {
+        config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } } )
+      } );
+      init_account_pub_key = init_account_priv_key.get_public_key();
+      validate_database();
+    }
+    catch( const fc::exception& e )
+    {
+      edump( ( e.to_detail_string() ) );
+      throw;
+    }
+  }
+  virtual ~init_supply_database_fixture() {}
+};
+
+BOOST_FIXTURE_TEST_CASE( init_hive_hbd_supply, init_supply_database_fixture )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing transfer to null from initial supply" );
+
+    // the test replicates issue #574 on HBD, for completeness it does similar checks on initial HIVE supply
+
+    // default configuration for testnet includes some HIVE/HBD, for mainnet the value is 0 - genesis puts that supply on balance of 'initminer'
+    BOOST_CHECK_EQUAL( get_balance( HIVE_INIT_MINER_NAME ).amount.value, HIVE_INIT_SUPPLY );
+    BOOST_CHECK_EQUAL( get_hbd_balance( HIVE_INIT_MINER_NAME ).amount.value, HIVE_HBD_INIT_SUPPLY );
+    // current HBD supply as well as virtual supply must include those values
+    const auto& dgpo = db->get_dynamic_global_properties();
+    BOOST_CHECK_EQUAL( dgpo.get_current_supply().amount.value, HIVE_INIT_SUPPLY );
+    BOOST_CHECK_EQUAL( dgpo.get_current_hbd_supply().amount.value, HIVE_HBD_INIT_SUPPLY );
+    BOOST_CHECK_EQUAL( dgpo.virtual_supply.amount.value, HIVE_INIT_SUPPLY + HIVE_HBD_INIT_SUPPLY ); //initial HIVE price is 1-1 with HBD
+
+    // 'null' account balances are cleared only starting at HF14 and supply checks, that were the assertion
+    // raised as result of the, bug are performed since HF20
+    generate_block();
+    db->set_hardfork( HIVE_NUM_HARDFORKS );
+    generate_block();
+
+    transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "100.000 TESTS" ) );
+    transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "100.000 TBD" ) );
+
+    generate_block(); // the bug caused assertion during reapplication of block containing HBD transfer to 'null'
+
+    BOOST_CHECK_EQUAL( get_balance( HIVE_INIT_MINER_NAME ).amount.value, HIVE_INIT_SUPPLY - 100'000);
+    BOOST_CHECK_EQUAL( get_hbd_balance( HIVE_INIT_MINER_NAME ).amount.value, HIVE_HBD_INIT_SUPPLY - 100'000 );
+    // application of block burns HIVE/HBD on 'null' balances but block production adds inflation to
+    // HIVE and HBD global balances (HBD goes to treasury)
+    BOOST_CHECK_GT( dgpo.get_current_supply().amount.value, HIVE_INIT_SUPPLY - 100'000 );
+    BOOST_CHECK_GT( dgpo.get_current_hbd_supply().amount.value, HIVE_HBD_INIT_SUPPLY - 100'000 );
+    BOOST_CHECK_GT( dgpo.virtual_supply.amount.value, HIVE_INIT_SUPPLY + HIVE_HBD_INIT_SUPPLY - 200'000 );
+
+    validate_database(); // fix for the bug included change in validate_invariants() called here
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
