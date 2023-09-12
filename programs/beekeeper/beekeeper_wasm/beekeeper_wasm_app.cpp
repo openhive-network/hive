@@ -29,7 +29,7 @@ init_data beekeeper_wasm_app::initialize( int argc, char** argv )
 
 void beekeeper_wasm_app::start()
 {
-  std::cout << "Start in progress. Nothing to do\n";
+  ilog( "Start in progress. Nothing to do" );
 }
 
 const boost::program_options::variables_map& beekeeper_wasm_app::get_args() const

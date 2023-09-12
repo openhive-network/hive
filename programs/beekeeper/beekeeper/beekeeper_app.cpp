@@ -74,7 +74,7 @@ void beekeeper_app::start()
 
   app.startup();
   app.exec();
-  std::cout << "exited cleanly\n";
+  ilog( "exited cleanly" );
 }
 
 const boost::program_options::variables_map& beekeeper_app::get_args() const

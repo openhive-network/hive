@@ -245,7 +245,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
 int main() {
   // Main should not be run during TypeScript generation.
   //abort();
-  std::cout << "This function does nothing... You have to instantiate beekeeper_api on JS side to play with..." << std::endl;
+  elog( "This function does nothing... You have to instantiate beekeeper_api on JS side to play with..." );
   return 0;
 }
 
