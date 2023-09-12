@@ -184,7 +184,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       if (env.first->created_storage)
         env.first->created_storage = false;
 
-      std::cout << "Compiler and build environment read from persistent storage: `" << env.first->dump() << '\'' << std::endl;
+      ilog( "Compiler and build environment read from persistent storage: `${storage}'", ( "storage", env.first->dump() ) );
     } else {
       _file_size = shared_file_size;
       _segment.reset( new bip::managed_mapped_file( bip::create_only,
@@ -245,7 +245,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     bfs::remove_all( shared_memory_bin_path );
     bfs::remove_all( shared_memory_meta_path );
     std::string log("Requested to clear shared memory data. Removed files:\n- " + shared_memory_bin_path.string() + "\n- " + shared_memory_meta_path.string() + "\n");
-    std::cout << log;
+    ilog( log );
     _data_dir = bfs::path();
     wipe_indexes();
   }
