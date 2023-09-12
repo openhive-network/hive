@@ -17,7 +17,12 @@ struct database_api_fixture : hived_fixture
 
     hive::plugins::database_api::database_api_plugin* db_api_plugin = nullptr;
     postponed_init(
-      { config_line_t( { "plugin", { HIVE_DATABASE_API_PLUGIN_NAME } } ) },
+      {
+        config_line_t( { "plugin", { HIVE_DATABASE_API_PLUGIN_NAME } } ),
+        config_line_t( { "shared-file-size",
+          { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
+        )
+      },
       &db_api_plugin
     );
 
@@ -25,8 +30,6 @@ struct database_api_fixture : hived_fixture
     BOOST_REQUIRE( database_api );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
-
-    open_database( get_data_dir() );
 
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );

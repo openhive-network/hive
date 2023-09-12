@@ -1106,13 +1106,14 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, hived_fixture )
     ah_plugin_type* ah_plugin = nullptr;
 
     postponed_init(
-      { config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ) },
+      {
+        config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ),
+        config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } } )
+      },
       &ah_plugin
     );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
-
-    open_database( get_data_dir() );
 
     generate_blocks( 2 );
 

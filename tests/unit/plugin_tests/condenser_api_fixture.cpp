@@ -27,12 +27,18 @@ condenser_api_fixture::condenser_api_fixture()
   hive::plugins::condenser_api::condenser_api_plugin* denser_api_plugin = nullptr;
   hive::plugins::database_api::database_api_plugin* db_api_plugin = nullptr;
   postponed_init(
-    { config_line_t( { "plugin",
-      { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
-        HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME,
-        HIVE_RC_API_PLUGIN_NAME,
-        HIVE_DATABASE_API_PLUGIN_NAME,
-        HIVE_CONDENSER_API_PLUGIN_NAME } } ) },
+    {
+      config_line_t( { "plugin",
+        { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
+          HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME,
+          HIVE_RC_API_PLUGIN_NAME,
+          HIVE_DATABASE_API_PLUGIN_NAME,
+          HIVE_CONDENSER_API_PLUGIN_NAME } }
+      ),
+      config_line_t( { "shared-file-size",
+        { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
+      )
+    },
     &ah_plugin,
     &ah_api_plugin,
     &db_api_plugin,
@@ -49,8 +55,6 @@ condenser_api_fixture::condenser_api_fixture()
   BOOST_REQUIRE( condenser_api );
 
   init_account_pub_key = init_account_priv_key.get_public_key();
-
-  open_database( get_data_dir()/*, shared_file_size_in_mb_512*/ );
 
   generate_block();
   validate_database();

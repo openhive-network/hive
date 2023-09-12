@@ -32,15 +32,17 @@ BOOST_AUTO_TEST_CASE( mh_test )
     postponed_init(
       { 
         config_line_t( { "plugin",
-          { HIVE_MARKET_HISTORY_PLUGIN_NAME, HIVE_MARKET_HISTORY_API_PLUGIN_NAME } } )
+          { HIVE_MARKET_HISTORY_PLUGIN_NAME, HIVE_MARKET_HISTORY_API_PLUGIN_NAME } }
+        ),
+        config_line_t( { "shared-file-size",
+          { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
+        )
       },
       &mh_plug );
 
     market_history_api* mh_api = mh_plug->api.get();
 
     init_account_pub_key = init_account_priv_key.get_public_key();
-
-    open_database( get_data_dir() );
 
     generate_block();
     db->set_hardfork( HIVE_NUM_HARDFORKS );

@@ -37,19 +37,23 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       { 
         config_line_t( { "plugin",
           { HIVE_TRANSACTION_STATUS_PLUGIN_NAME,
-            HIVE_TRANSACTION_STATUS_API_PLUGIN_NAME } } ),
+            HIVE_TRANSACTION_STATUS_API_PLUGIN_NAME } }
+        ),
         config_line_t( { "transaction-status-block-depth",
-          { TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR } } ),
+          { TRANSACTION_STATUS_TEST_BLOCK_DEPTH_STR } }
+        ),
         config_line_t( { "transaction-status-track-after-block",
-          { TRANSCATION_STATUS_TRACK_AFTER_BLOCK_STR } } )
+          { TRANSCATION_STATUS_TRACK_AFTER_BLOCK_STR } }
+        ),
+        config_line_t( { "shared-file-size",
+          { std::to_string( 1024 * 1024 * shared_file_size_in_mb_64 ) } }
+        )
       },
       &tx_status_api,
       &tx_status
     );
 
     init_account_pub_key = init_account_priv_key.get_public_key();
-
-    open_database( get_data_dir() );
 
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_id >().empty() );
     BOOST_REQUIRE( db->get_index< transaction_status_index >().indices().get< by_trx_id >().empty() );
