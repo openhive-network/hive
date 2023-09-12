@@ -1320,16 +1320,6 @@ bool database::_push_block(const block_flow_control& block_ctrl)
   return false;
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::_push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip)
-{
-  try
-  {
-    _node_property_object.skip_flags = skip;
-    existing_block_flow_control flow_control(full_block);
-    push_block(flow_control, skip);
-
-  }FC_CAPTURE_AND_RETHROW() 
-}
 
 bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 {

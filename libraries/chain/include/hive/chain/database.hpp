@@ -235,7 +235,7 @@ namespace chain {
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
     public:
-      void _push_block_simplified(const std::shared_ptr<full_block_type>& full_block, uint32_t skip);
+
 
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
@@ -813,7 +813,9 @@ namespace chain {
 
       flat_map<uint32_t,block_id_type>  _checkpoints;
 
+    protected:
       node_property_object              _node_property_object;
+    private:
 
       uint32_t                      _flush_blocks = 0;
       uint32_t                      _next_flush_block = 0;
