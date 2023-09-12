@@ -243,9 +243,9 @@ cat << EOT > data/alternate-chain-spec.json
   "min_comment_edit_interval": 0,
   "witness_custom_op_block_limit": 10000000,
   "init_witnesses": [
-    "uknwn.wit01", "uknwn.wit02", "uknwn.wit03", "uknwn.wit04", "uknwn.wit05", "uknwn.wit06"
+    "uknwn.wit01", "uknwn.wit02", "uknwn.wit03", "uknwn.wit04", "uknwn.wit05", "uknwn.wit06",
     "uknwn.wit07", "uknwn.wit08", "uknwn.wit09", "uknwn.wit10", "uknwn.wit11", "uknwn.wit12",
-    "uknwn.wit13", "uknwn.wit14", "uknwn.wit15", "uknwn.wit16", "unkwn.wit17", "uknwn.wit18",
+    "uknwn.wit13", "uknwn.wit14", "uknwn.wit15", "uknwn.wit16", "uknwn.wit17", "uknwn.wit18",
     "uknwn.wit19", "uknwn.wit20"
   ]
 }

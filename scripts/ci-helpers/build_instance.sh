@@ -22,7 +22,7 @@ print_help () {
     echo
     echo "Allows to build docker image containing Hived installation"
     echo "OPTIONS:"
-    echo "  --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet"
+    echo "  --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet, mirrornet-iceberg"
     echo "  --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image."
     echo "  --help                    Display this help screen and exit"
     echo
@@ -43,7 +43,14 @@ while [ $# -gt 0 ]; do
           "mirrornet"*)
             BUILD_HIVE_TESTNET=OFF
             HIVE_CONVERTER_BUILD=ON
+            HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED=ON
             IMAGE_TAG_PREFIX=mirrornet-
+            ;;
+          "iceberg"*)
+            BUILD_HIVE_TESTNET=OFF
+            HIVE_CONVERTER_BUILD=ON
+            HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED=ON
+            IMAGE_TAG_PREFIX=iceberg-
             ;;
           "mainnet"*)
             BUILD_HIVE_TESTNET=OFF
@@ -103,6 +110,7 @@ docker build --target=base_instance \
   --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
+  --build-arg HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED=$HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED \
   --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
   -t ${REGISTRY}base_instance:base_instance-${BUILD_IMAGE_TAG} \
   -t ${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${IMAGE_TAG_PREFIX}base_instance-${BUILD_IMAGE_TAG} \
@@ -112,6 +120,7 @@ docker build --target=instance \
   --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
+  --build-arg HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED=$HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED \
   --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}instance:${IMAGE_TAG_PREFIX}instance-${BUILD_IMAGE_TAG} -f Dockerfile .
 
 popd
