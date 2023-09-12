@@ -1,18 +1,30 @@
 #pragma once
-#include <hive/chain/block_log.hpp>
+
 #include <hive/chain/full_transaction.hpp>
+#include <hive/chain/detail/block_attributes.hpp>
+
 #include <hive/protocol/block.hpp>
+#include <hive/protocol/types.hpp>
+
 #include <atomic>
 #include <mutex>
 
 namespace hive { namespace chain {
+
+using detail::block_attributes_t;
+using hive::protocol::block_header;
+using hive::protocol::block_id_type;
+using hive::protocol::checksum_type;
+using hive::protocol::digest_type;
+using hive::protocol::signed_block;
+using hive::protocol::signed_block_header;
 
 // stores a compressed block and the information about how it was compressed
 // (the attributes are needed to correctly decompress it & to tell what peers
 // can understand it)
 struct compressed_block_data
 {
-  block_log::block_attributes_t compression_attributes;
+  block_attributes_t compression_attributes;
   std::unique_ptr<char[]> compressed_bytes;
   size_t compressed_size;
 };
@@ -98,7 +110,7 @@ class full_block_type
 
     static std::shared_ptr<full_block_type> create_from_compressed_block_data(std::unique_ptr<char[]>&& compressed_bytes, 
                                                                               size_t compressed_size,
-                                                                              const block_log::block_attributes_t& compression_attributes,
+                                                                              const block_attributes_t& compression_attributes,
                                                                               const std::optional<block_id_type> block_id = std::optional<block_id_type>());
     static std::shared_ptr<full_block_type> create_from_uncompressed_block_data(std::unique_ptr<char[]>&& raw_bytes, size_t raw_size,
                                                                                 const std::optional<block_id_type> block_id = std::optional<block_id_type>());
