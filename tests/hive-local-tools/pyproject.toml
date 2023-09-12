@@ -14,6 +14,12 @@ packages = [
 ]
 
 
+source = [
+    { name = "PyPI", priority = "primary" },
+    { name = "gitlab", url = "https://gitlab.syncad.com/api/v4/projects/419/packages/pypi/simple", priority = "supplemental" },
+]
+
+
 [tool.poetry.dependencies]
 python = "^3.10"
 pytest = "7.2.2"
@@ -26,3 +32,4 @@ types-PyYAML = "6.0.12.11"
 shared-tools = { path = "shared-tools", develop = true }
 test-tools = { path = "test-tools", develop = true }
 tests_api = { path = "tests_api", develop = true }
+wax = "0.0.1a4+277cf4f"
