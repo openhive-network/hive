@@ -12,8 +12,10 @@
 
 namespace hive { namespace chain {
 
-  using hive::protocol::signed_block;
+  using hive::protocol::account_name_type;
   using hive::protocol::block_id_type;
+  using hive::protocol::signed_block;
+  using hive::protocol::signed_block_header;
 
   struct fork_item
   {

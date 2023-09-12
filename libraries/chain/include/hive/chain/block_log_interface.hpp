@@ -1,17 +1,16 @@
 #pragma once
 
 #include <hive/protocol/block.hpp>
+#include <hive/chain/full_block.hpp>
 
 namespace hive { namespace chain {
-
-  class full_block_type;
 
   class block_log_read_i
   {
   public:
     // block_log::read_block_by_num
     // postgres_block_log::get_full_block
-    virtual std::shared_ptr<full_block_type> get_full_block(uint32_t block_num) const = 0;
+    virtual std::shared_ptr<full_block_type> read_block_by_num(uint32_t block_num) const = 0;
     
     // block_log::read_block_range_by_num
     // postgres_block_log::get_postgres_data
