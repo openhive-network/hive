@@ -624,7 +624,7 @@ std::shared_ptr<full_block_type> full_database::fetch_block_by_id( const block_i
 { try {
   shared_ptr<fork_item> fork_item = _fork_db.fetch_block( id );
   if (fork_item)
-    return fork_item->full_block;
+    return fork_item->get_full_block_from_fork_item();
 
   std::shared_ptr<full_block_type> block_from_block_log = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
   if( block_from_block_log && block_from_block_log->get_block_id() == id )
@@ -637,7 +637,7 @@ std::shared_ptr<full_block_type> full_database::fetch_block_by_number( uint32_t 
 { try {
   shared_ptr<fork_item> forkdb_item = _fork_db.fetch_block_on_main_branch_by_number(block_num, wait_for_microseconds);
   if (forkdb_item)
-    return forkdb_item->full_block;
+    return forkdb_item->get_full_block_from_fork_item();
 
   return _block_log.read_block_by_num(block_num);
 } FC_LOG_AND_RETHROW() }
@@ -672,7 +672,7 @@ std::vector<std::shared_ptr<full_block_type>> full_database::fetch_block_range( 
     idump((result.front()->get_block_num())(result.back()->get_block_num()));
   result.reserve(result.size() + fork_items.size());
   for (fork_item& item : fork_items)
-    result.push_back(item.full_block);
+    result.push_back(item.get_full_block_from_fork_item());
 
   return result;
 } FC_LOG_AND_RETHROW() }
@@ -1110,7 +1110,7 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
     vector<std::pair<account_name_type, fc::time_point_sec>> witness_time_pairs;
     witness_time_pairs.reserve(blocks.size());
     for (const auto& b : blocks)
-      witness_time_pairs.push_back(std::make_pair(b->get_block_header().witness, b->get_block_header().timestamp));
+      witness_time_pairs.push_back(std::make_pair(b->get_witness(), b->get_timestamp()));
 
     ilog("Encountered block num collision at block ${height} due to a fork, witnesses are: ${witness_time_pairs}", (height)(witness_time_pairs));
   }
@@ -1175,8 +1175,8 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
       // when we are handling block that triggered fork switch, we want to release related promise so P2P
       // can broadcast the block; it should happen even if some other block later causes reversal of the
       // fork switch (the block was good after all)
-      bool is_pushed_block = ( pushed_block_ctrl != nullptr ) && ( ( *ritr )->full_block->get_block_id() == pushed_block_ctrl->get_full_block()->get_block_id() );
-      apply_block( ( *ritr )->full_block, skip, is_pushed_block ? pushed_block_ctrl : nullptr );
+      bool is_pushed_block = ( pushed_block_ctrl != nullptr ) && ( ( *ritr )->get_block_id() == pushed_block_ctrl->get_full_block()->get_block_id() );
+      apply_block( ( *ritr )->get_full_block_from_fork_item(), skip, is_pushed_block ? pushed_block_ctrl : nullptr );
       session.push();
     }
     catch (const fc::exception& e)
@@ -1228,7 +1228,6 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
             set_tx_status(database::TX_STATUS_P2P_BLOCK);
             _fork_db.set_head(*ritr);
             auto session = start_undo_session();
-            apply_block((*ritr)->full_block, skip);
             session.push();
           }
           ilog("done restoring blocks from original fork");
@@ -1268,7 +1267,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
          block->get_block_num() > head_block_num();
          block = block->prev.lock())
     {
-      blocks.push_back(block->full_block);
+      blocks.push_back(block->get_full_block_from_fork_item());
       if (block->get_block_num() == 1) //prevent crash backing up to null in for-loop
         break;
     }
@@ -1419,7 +1418,7 @@ void database::pop_block()
     {
       shared_ptr<fork_item> fork_item = _fork_db.fetch_block( head_id );
       if(fork_item)
-          full_head_block =  fork_item->full_block;
+          full_head_block =  fork_item->get_full_block_from_fork_item();
     }
     FC_CAPTURE_AND_RETHROW()
 
@@ -5605,7 +5604,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
 
     try
     {
-      detail::without_pending_transactions(*this, existing_block_flow_control(new_head_block->full_block), std::move(_pending_tx), [&]() {
+      detail::without_pending_transactions(*this, existing_block_flow_control(new_head_block->get_full_block_from_fork_item()), std::move(_pending_tx), [&]() {
         try
         {
           dlog("calling switch_forks() from update_last_irreversible_block()");
@@ -5712,7 +5711,7 @@ void full_database::migrate_irreversible_state_to_blocklog(uint32_t old_last_irr
         }
 
         for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-            _block_log.append( block_itr->get()->full_block, _is_at_live_sync );
+            _block_log.append( block_itr->get()->get_full_block_from_fork_item(), _is_at_live_sync );
 
           _block_log.flush();
       }

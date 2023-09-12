@@ -247,7 +247,7 @@ std::map<account_name_type, block_id_type> fork_database::get_last_block_generat
 
     const auto& block_num_idx = _index.get<block_num>();
     for (const item_ptr& fork_item : block_num_idx)
-      result[fork_item->get_block_header().witness] = fork_item->get_block_id();
+      result[fork_item->get_witness()] = fork_item->get_block_id();
 
     return result;
   });
@@ -256,7 +256,7 @@ std::map<account_name_type, block_id_type> fork_database::get_last_block_generat
 time_point_sec fork_database::head_block_time(fc::microseconds wait_for_microseconds)const
 { try {
   return with_read_lock( [&]() {
-    return _head ? _head->get_block_header().timestamp : time_point_sec();
+    return _head ? _head->get_timestamp() : time_point_sec();
   }, wait_for_microseconds);
 } FC_RETHROW_EXCEPTIONS(warn, "") }
 

@@ -24,6 +24,7 @@ namespace hive { namespace chain {
         * building on top of it.
         */
       bool                  invalid = false;
+    private:
       std::shared_ptr<full_block_type> full_block;
 
     private:
@@ -31,11 +32,19 @@ namespace hive { namespace chain {
     public:
       fork_item(const std::shared_ptr<full_block_type>& full_block) : full_block(full_block) {}
 
-      const signed_block& get_block() { return full_block->get_block(); }
-      const signed_block_header& get_block_header() { return full_block->get_block_header(); }
-      const block_id_type& previous_id() { return get_block_header().previous; }
+      //const signed_block& get_block() { return full_block->get_block(); }
+      //const signed_block_header& get_block_header() { return ; }
+
       const block_id_type& get_block_id() { return full_block->get_block_id(); }
       uint32_t get_block_num() { return full_block->get_block_num(); }
+
+
+      const block_id_type& previous_id() { return full_block->get_block_header().previous; }
+      auto get_witness() const{ return full_block->get_block_header().witness; }
+      auto get_timestamp() const { return full_block->get_block_header().timestamp; }
+
+      auto get_full_block_from_fork_item() const { return full_block;} 
+
   };
   typedef shared_ptr<fork_item> item_ptr;
 
