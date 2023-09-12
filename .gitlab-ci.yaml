@@ -300,6 +300,10 @@ plugin_test:
   - if [ $PYTEST_NUMBER_OF_PROCESSES -gt 1 ]; then PROCESSES="-n ${PYTEST_NUMBER_OF_PROCESSES}";  fi
   - if [ ${PYTEST_LOG_DURATIONS:=0} -ge 1 ]; then DURATIONS="--durations 0";  fi
   - |
+    timeout 5 sleep 15
+    - exit_status=$?
+    - if [[ $exit_status -eq 124 ]]; then echo "TIMEOUT WORKS-BASH"; fi
+  - |
     echo "Launching pytest
      - timeout (minutes): ${PYTEST_TIMEOUT_MINUTES}
      - processes: ${PYTEST_NUMBER_OF_PROCESSES}
