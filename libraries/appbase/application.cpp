@@ -88,7 +88,7 @@ void io_handler::clear_signals()
   signals.reset();
 
   if( ec.value() != 0 )
-    cout<<"Error during cancelling signal: "<< ec.message() << std::endl;
+    elog( "Error during cancelling signal: ${msg}", ( "msg", ec.message() ) );
 }
 
 void application::generate_interrupt_request()
@@ -190,7 +190,7 @@ fc::optional< fc::logging_config > application::load_logging_config()
 
 void application::startup() {
 
-  std::cout << "Setting up a startup_io_handler..." << std::endl;
+  ilog("Setting up a startup_io_handler...");
 
   io_handler startup_io_handler(*this, false/*allow_close_when_signal_is_received*/, []() {});
   startup_io_handler.attach_signals();
@@ -439,7 +439,7 @@ initialization_result application::initialize_impl( int argc, char** argv,
 
 void application::pre_shutdown( std::string& actual_plugin_name )
 {
-  std::cout << "Before shutting down...\n";
+  ilog("Before shutting down...");
 
   for( auto& plugin : pre_shutdown_plugins )
   {
@@ -452,7 +452,7 @@ void application::pre_shutdown( std::string& actual_plugin_name )
 
 void application::shutdown( std::string& actual_plugin_name ) {
 
-  std::cout << "Shutting down...\n";
+  ilog("Shutting down...");
 
   for(auto ritr = running_plugins.rbegin();
       ritr != running_plugins.rend(); ++ritr) {
@@ -480,10 +480,10 @@ void application::finish()
 
   try
   {
-    std::cout << "Executing `pre shutdown` for all plugins..." << "\n";
+    ilog("Executing `pre shutdown` for all plugins...");
     pre_shutdown( _actual_plugin_name );
 
-    std::cout << "Executing `shutdown` for all plugins..." << "\n";
+    ilog("Executing `shutdown` for all plugins...");
     shutdown( _actual_plugin_name );
 
     is_finished = true;
@@ -520,7 +520,7 @@ void application::finish()
 
 void application::exec()
 {
-  std::cout << ("Entering application main loop...") << std::endl;
+  ilog("Entering application main loop...");
 
   if( !is_interrupt_request() )
   {
@@ -532,11 +532,11 @@ void application::exec()
   }
   else
   {
-    std::cout << ("performing shutdown on interrupt request...") << std::endl;
+    ilog("performing shutdown on interrupt request...");
     finish();
   }
 
-  std::cout << ("Leaving application main loop...") << std::endl;
+  ilog("Leaving application main loop...");
 }
 
 void application::write_default_config(const bfs::path& cfg_file)
