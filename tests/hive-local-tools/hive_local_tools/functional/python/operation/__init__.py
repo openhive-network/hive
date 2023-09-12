@@ -91,7 +91,8 @@ class _RcManabar:
         if operation_timestamp:
             mana_before_operation = self.calculate_current_value(
                 operation_timestamp - tt.Time.seconds(3))
-            assert mana_before_operation == get_current_mana(self._node, self._name) + operation_rc_cost, err
+            current_mana = get_current_mana(self._node, self._name)
+            assert mana_before_operation == current_mana + operation_rc_cost, err
         else:
             assert get_current_mana(self._node, self._name) + operation_rc_cost == self.current_rc_mana, err
 
@@ -135,7 +136,7 @@ def get_hive_power(node: tt.InitNode, account_name: str) -> tt.Asset.Vest:
 
 
 def get_current_mana(node: tt.InitNode, account_name: str) -> int:
-    return node.api.rc.find_rc_accounts(accounts=[account_name])['rc_accounts'][0]['rc_manabar']['current_mana']
+    return int(node.api.rc.find_rc_accounts(accounts=[account_name])['rc_accounts'][0]['rc_manabar']['current_mana'])
 
 
 def get_number_of_fill_order_operations(node):
@@ -233,7 +234,8 @@ class Comment:
         self.__mana_after_comment_update: int
         self.__parent_author = (self.__bottom_author if self.__bottom_comment else (self.__author if self.__self_bottom_comment else ''))
         self.__parent_permlink = self.__bottom_permlink if self.__bottom_comment or self.__self_bottom_comment else 'parent-permlink-is-not-empty'
-        wallet.create_account(author, hives=300, hbds=300, vests=50)
+        self.__wallet.create_account(author, hives=300, hbds=300, vests=50)
+        self.__author_obj = Account(self.__author, self.__node, self.__wallet)
 
         if self.__bottom_comment or self.__self_bottom_comment:
             self.__post_bottom_comment()
@@ -241,6 +243,10 @@ class Comment:
     @property
     def author_name(self):
         return self.__author
+
+    @property
+    def author_obj(self):
+        return self.__author_obj
 
     def __post_bottom_comment(self):
         if self.__bottom_comment:
@@ -268,6 +274,7 @@ class Comment:
         )
         self.__comment_posted = True
         self.__mana_after_comment = get_current_mana(self.__node, self.__author)
+        return self._comment_json
 
     def post_top_comment(self, self_comment: bool):
         assert self.__comment_posted, 'Parent comment not exist'
@@ -301,7 +308,7 @@ class Comment:
         assert self.__comment_posted, 'Comment not exist'
         __voter = f'v-{self.__author}'
         self.__wallet.create_account(__voter, hives=300, hbds=300, vests=50)
-        self.__wallet.api.vote(__voter, self.__author, self.__permlink, 100)
+        return self.__wallet.api.vote(__voter, self.__author, self.__permlink, 100)
 
     def downvote(self):
         assert self.__comment_posted, 'Comment not exist'
@@ -326,9 +333,9 @@ class Comment:
 
     def delete(self):
         self.__mana_before_comment_delete = get_current_mana(self.__node, self.__author)
-        create_transaction_with_any_operation(self.__wallet, 'delete_comment', author=self.__author, permlink=self.__permlink)
+        transaction = create_transaction_with_any_operation(self.__wallet, 'delete_comment', author=self.__author, permlink=self.__permlink)
         self.__mana_after_comment_delete = get_current_mana(self.__node, self.__author)
-        pass
+        return transaction
 
     def is_rc_mana_decrease_after_comment_delete(self):
         if self.__mana_before_comment_delete > self.__mana_after_comment_delete:
