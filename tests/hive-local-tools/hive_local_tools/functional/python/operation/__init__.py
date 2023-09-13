@@ -135,7 +135,7 @@ def get_hive_power(node: tt.InitNode, account_name: str) -> tt.Asset.Vest:
 
 
 def get_current_mana(node: tt.InitNode, account_name: str) -> int:
-    return node.api.rc.find_rc_accounts(accounts=[account_name])['rc_accounts'][0]['rc_manabar']['current_mana']
+    return int(node.api.rc.find_rc_accounts(accounts=[account_name])['rc_accounts'][0]['rc_manabar']['current_mana'])
 
 
 def get_number_of_fill_order_operations(node):
