@@ -949,11 +949,11 @@ namespace chain {
         */
       fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
 
-public:
+  public:
       boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
-  private:
+  public: //(used by load snapshot plugin)
       void state_dependent_open( const open_args& args, get_block_by_num_t get_head_block_func ) override;
 
   private:

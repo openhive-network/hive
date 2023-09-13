@@ -895,7 +895,7 @@ size_t index_dump_reader::getCurrentlyProcessedId() const
 
 class state_snapshot_plugin::impl final : protected chain::state_snapshot_provider
   {
-  using full_database = hive::chain::full_database;
+  using database = hive::chain::database;
 
   public:
     impl(state_snapshot_plugin& self, const bpo::variables_map& options) :
@@ -908,7 +908,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
       ilog("Registering add_prepare_snapshot_handler...");
 
-      _mainDb.add_prepare_snapshot_handler([&](const hive::chain::database& db, const hive::chain::database::abstract_index_cntr_t& indexContainer) -> void
+      _mainDb.add_prepare_snapshot_handler([&](const database& db, const database::abstract_index_cntr_t& indexContainer) -> void
         {
         std::string name = generate_name();
         prepare_snapshot(name);
@@ -937,7 +937,8 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
     private:
       state_snapshot_plugin&  _self;
-      full_database&          _mainDb;
+      hive::chain::
+      full_database&           _mainDb;
       bfs::path               _storagePath;
       std::unique_ptr<DB>     _storage;
       std::string             _snapshot_name;
@@ -1505,7 +1506,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   ilog("Setting chainbase revision to ${b} block... Loaded irreversible block is: ${lib}.", ("b", blockNo)("lib", last_irr_block));
 
   _mainDb.set_revision(blockNo);
-  _mainDb.load_state_initial_data(openArgs, {});
+  _mainDb.state_dependent_open(openArgs, {});
 
 
   const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool) {});
