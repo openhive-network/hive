@@ -48,6 +48,8 @@ namespace chain {
   using hive::protocol::asset_symbol_type;
   using hive::protocol::price;
   using abstract_plugin = appbase::abstract_plugin;
+  using get_block_by_num_t = std::function<std::shared_ptr<full_block_type>(int block_num)> ;
+
 
   struct prepare_snapshot_supplement_notification;
   struct load_snapshot_supplement_notification;
@@ -190,12 +192,12 @@ namespace chain {
         * @param data_dir Path to open or create database in
         */
     void open( const open_args& args,
-                std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func = {}
+                get_block_by_num_t get_head_block_func = {}
                );
     private:      
       void state_independent_open( const open_args& args);
     protected:
-      virtual void state_dependent_open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func = {});
+      virtual void state_dependent_open( const open_args& args, get_block_by_num_t get_head_block_func = {});
 
     private:
 
@@ -216,7 +218,7 @@ namespace chain {
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
       void load_state_initial_data(
           const open_args& args,
-          std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func = {});
+          get_block_by_num_t get_head_block_func = {});
 
 
       /**
@@ -954,7 +956,7 @@ public:
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
   private:
-      void state_dependent_open( const open_args& args, std::function<std::shared_ptr<full_block_type>(const database&)> get_head_block_func = {}) override;
+      void state_dependent_open( const open_args& args, get_block_by_num_t get_head_block_func = {}) override;
 
   private:
     bool is_included_block_unlocked(const block_id_type& block_id);
