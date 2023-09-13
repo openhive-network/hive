@@ -7608,10 +7608,5 @@ std::vector<block_id_type> full_database::get_block_ids(const std::vector<block_
   return result;
 }
 
-std::shared_ptr<full_block_type> full_database::get_head_block() const
-{
-  return _block_log.read_block_by_num(head_block_num());
-}
-
 } } //hive::chain
 
