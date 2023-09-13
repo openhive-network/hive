@@ -191,9 +191,7 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-    void open( const open_args& args,
-                get_block_by_num_t get_head_block_func = {}
-               );
+    void open( const open_args& args);
     private:      
       void state_independent_open( const open_args& args);
     protected:

@@ -187,7 +187,7 @@ void full_database::state_dependent_open( const open_args& args, get_block_by_nu
 
 }
 
-void database::open( const open_args& args, get_block_by_num_t get_head_block_func)
+void database::open( const open_args& args)
 {
   try
   {
