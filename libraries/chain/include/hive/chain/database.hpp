@@ -191,11 +191,11 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-    void open( const open_args& args);
+    void open( const open_args& args );
     private:      
       void state_independent_open( const open_args& args);
     public: //(used by load snapshot plugin)
-      virtual void state_dependent_open( const open_args& args, get_block_by_num_t get_head_block_func );
+      virtual void state_dependent_open( const open_args& args, get_block_by_num_t get_block_by_num_func );
 
     private:
 
@@ -216,7 +216,7 @@ namespace chain {
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
       void load_state_initial_data(
           const open_args& args,
-          get_block_by_num_t get_head_block_func );
+          get_block_by_num_t get_block_by_num_func );
 
 
       /**
@@ -953,7 +953,7 @@ namespace chain {
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
   private: 
-      void state_dependent_open( const open_args& args, get_block_by_num_t get_head_block_func ) override;
+      void state_dependent_open( const open_args& args, get_block_by_num_t get_block_by_num_func ) override;
 
   private:
     bool is_included_block_unlocked(const block_id_type& block_id);
