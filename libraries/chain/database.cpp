@@ -178,7 +178,7 @@ void database::state_dependent_open( const open_args& args, get_block_by_num_t g
     load_state_initial_data(args, get_head_block_func);
 }
 
-void full_database::state_dependent_open( const open_args& args, get_block_by_num_t get_head_block_func )
+void full_database::state_dependent_open( const open_args& args, get_block_by_num_t )
 {
     open_block_log(args);
     database::state_dependent_open(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
@@ -192,7 +192,7 @@ void database::open( const open_args& args)
   try
   {
     state_independent_open(args);
-    state_dependent_open(args, get_head_block_func);
+    state_dependent_open(args, {});
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
