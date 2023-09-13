@@ -194,7 +194,7 @@ namespace chain {
     void open( const open_args& args);
     private:      
       void state_independent_open( const open_args& args);
-    protected:
+    public: //(used by load snapshot plugin)
       virtual void state_dependent_open( const open_args& args, get_block_by_num_t get_head_block_func );
 
     private:
@@ -953,7 +953,7 @@ namespace chain {
       boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
-  public: //(used by load snapshot plugin)
+  private: 
       void state_dependent_open( const open_args& args, get_block_by_num_t get_head_block_func ) override;
 
   private:

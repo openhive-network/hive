@@ -937,8 +937,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
     private:
       state_snapshot_plugin&  _self;
-      hive::chain::
-      full_database&           _mainDb;
+      database&                _mainDb;
       bfs::path               _storagePath;
       std::unique_ptr<DB>     _storage;
       std::string             _snapshot_name;
