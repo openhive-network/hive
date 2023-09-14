@@ -4183,14 +4183,8 @@ void database::init_genesis()
       } );
     }
 
-    create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME, asset( HIVE_INIT_SUPPLY, HIVE_SYMBOL ), asset( HIVE_HBD_INIT_SUPPLY, HBD_SYMBOL ) );
+    const auto& dgpo = create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME );
     create< hardfork_property_object >( HIVE_GENESIS_TIME );
-    // feed initial token supply to first miner
-    modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
-    {
-      a.balance = asset( HIVE_INIT_SUPPLY, HIVE_SYMBOL );
-      a.hbd_balance = asset( HIVE_HBD_INIT_SUPPLY, HBD_SYMBOL );
-    } );
 
 #ifdef IS_TEST_NET
     create< feed_history_object >( [&]( feed_history_object& o )
@@ -4199,10 +4193,28 @@ void database::init_genesis()
       o.market_median_history = o.current_median_history;
       o.current_min_history = o.current_median_history;
       o.current_max_history = o.current_median_history;
-    });
+    } );
+    // issue initial token supply to balance of first miner
+    if( HIVE_INIT_SUPPLY != 0 || HIVE_HBD_INIT_SUPPLY != 0 )
+    {
+      modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
+      {
+        a.balance = asset( HIVE_INIT_SUPPLY, HIVE_SYMBOL );
+        a.hbd_balance = asset( HIVE_HBD_INIT_SUPPLY, HBD_SYMBOL );
+      } );
+      modify( dgpo, []( dynamic_global_property_object& gpo )
+      {
+        gpo.current_supply.amount += HIVE_INIT_SUPPLY;
+        gpo.current_hbd_supply.amount += HIVE_HBD_INIT_SUPPLY;
+        gpo.init_hbd_supply.amount = HIVE_HBD_INIT_SUPPLY;
+      } );
+      update_virtual_supply();
+    }
 #else
     // Nothing to do
     create< feed_history_object >( [&]( feed_history_object& o ) {});
+    FC_ASSERT( HIVE_INIT_SUPPLY == 0 && HIVE_HBD_INIT_SUPPLY == 0, "Wrong configuration" );
+      // for mainnet these values must be 0, mirrornet should be compatible
 #endif
 
     for( int i = 0; i < 0x10000; i++ )
@@ -7062,7 +7074,7 @@ void database::validate_invariants()const
     total_supply += gpo.get_total_vesting_fund_hive() + gpo.get_total_reward_fund_hive() + gpo.get_pending_rewarded_vesting_hive();
 
     FC_ASSERT( gpo.current_supply == total_supply, "", ("gpo.current_supply",gpo.current_supply)("total_supply",total_supply) );
-    FC_ASSERT( gpo.get_current_hbd_supply() + gpo.get_init_hbd_supply() == total_hbd, "", ("gpo.current_hbd_supply",gpo.get_current_hbd_supply())("total_hbd",total_hbd) );
+    FC_ASSERT( gpo.get_current_hbd_supply() == total_hbd, "", ("gpo.current_hbd_supply",gpo.get_current_hbd_supply())("total_hbd",total_hbd) );
     FC_ASSERT( gpo.total_vesting_shares + gpo.pending_rewarded_vesting_shares == total_vesting, "", ("gpo.total_vesting_shares",gpo.total_vesting_shares)("total_vesting",total_vesting) );
     FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes + total_delayed_votes.value, "", ("total_vesting_shares",gpo.total_vesting_shares)("total_vsf_votes + total_delayed_votes",total_vsf_votes + total_delayed_votes.value) );
     FC_ASSERT( gpo.get_pending_rewarded_vesting_hive() == pending_vesting_hive, "", ("pending_rewarded_vesting_hive",gpo.get_pending_rewarded_vesting_hive())("pending_vesting_hive", pending_vesting_hive));
@@ -7078,7 +7090,7 @@ void database::validate_invariants()const
     ilog( "successful scan of ${p} witnesses, ${a} accounts, ${c} convert requests, ${cc} collateralized convert requests, ${o} limit orders, ${e} escrow transfers, ${w} saving withdrawals, ${r} reward funds and ${s} SMT contributions.",
       ( "p", witness_no )( "a", account_no )( "c", convert_no )( "cc", collateralized_convert_no )( "o", order_no )( "e", escrow_no )( "w", withdrawal_no )( "r", reward_fund_no )( "s", contribution_no ) );
     ilog( "HIVE supply: ${h}", ( "h", gpo.current_supply.amount.value ) );
-    ilog( "HBD supply: ${s} ( + ${i} initial )", ( "s", gpo.get_current_hbd_supply().amount.value )( "i", gpo.get_init_hbd_supply().amount.value ) );
+    ilog( "HBD supply: ${s} ( including ${i} initial )", ( "s", gpo.get_current_hbd_supply().amount.value )( "i", gpo.init_hbd_supply.amount.value ) );
     ilog( "virtual supply (HIVE): ${w}", ( "w", gpo.virtual_supply.amount.value ) );
     ilog( "VESTS: ${v} ( + ${p} pending ) worth (HIVE): ${x} ( + ${y} )", ( "v", gpo.total_vesting_shares.amount.value )( "p", gpo.pending_rewarded_vesting_shares.amount.value )( "x", gpo.get_total_vesting_fund_hive().amount.value )( "y", gpo.get_pending_rewarded_vesting_hive().amount.value ) );
   }

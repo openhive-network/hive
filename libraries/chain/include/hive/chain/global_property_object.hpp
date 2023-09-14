@@ -27,17 +27,14 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       dynamic_global_property_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _initial_witness, const asset& _initial_hive_supply, const asset& _initial_hbd_supply )
-        : id( _id ), current_witness( _initial_witness ), virtual_supply( _initial_hive_supply, HIVE_SYMBOL ),
-        current_supply( _initial_hive_supply, HIVE_SYMBOL ), init_hbd_supply( _initial_hbd_supply, HBD_SYMBOL )
+        const account_name_type& _initial_witness )
+        : id( _id ), current_witness( _initial_witness )
       {}
 
-      //main HIVE token counter (see also get_full_hive_supply)
+      //main HIVE token counter
       const asset& get_current_supply() const { return current_supply; }
 
-      //initial amount of HBD issued (see also get_full_hbd_supply)
-      const asset& get_init_hbd_supply() const { return init_hbd_supply; }
-      //main HBD token counter (see also get_full_hbd_supply)
+      //main HBD token counter
       const asset& get_current_hbd_supply() const { return current_hbd_supply; }
       //rate of interest for holding HBD (in BPS - basis points)
       uint16_t get_hbd_interest_rate() const { return hbd_interest_rate; }
@@ -75,7 +72,7 @@ namespace hive { namespace chain {
 
       asset       virtual_supply             = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
       asset       current_supply             = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
-      asset       init_hbd_supply            = asset( 0, HBD_SYMBOL ); //< TODO: replace with HBD_asset
+      asset       init_hbd_supply            = asset( 0, HBD_SYMBOL ); //< TODO: remove
       asset       current_hbd_supply         = asset( 0, HBD_SYMBOL ); //< TODO: replace with HBD_asset
       asset       total_vesting_fund_hive    = asset( 0, HIVE_SYMBOL ); //< TODO: replace with HIVE_asset
       asset       total_vesting_shares       = asset( 0, VESTS_SYMBOL ); //< TODO: replace with VEST_asset
