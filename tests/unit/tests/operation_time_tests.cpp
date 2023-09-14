@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     const account_object& bob_account   = db->get_account("bob");
     const account_object& dave_account  = db->get_account("dave");
 
-    BOOST_CHECK( alice_account.get_hbd_rewards() == ASSET( "6236.000 TBD" ) );
+    BOOST_CHECK( alice_account.get_hbd_rewards() == ASSET( "6140.000 TBD" ) );
     BOOST_CHECK( bob_account.get_hbd_rewards() == ASSET( "0.000 TBD" ) );
     BOOST_CHECK( dave_account.get_hbd_rewards() == alice_account.get_hbd_rewards() );
   }
@@ -2690,7 +2690,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.hbd_balance = hbd_balance;
+        a.hbd_balance = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
       });
     }, database::skip_witness_signature );
 
@@ -2735,7 +2735,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.hbd_balance = hbd_balance;
+        a.hbd_balance = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
       });
     }, database::skip_witness_signature );
 
