@@ -49,4 +49,31 @@ boost::signals2::connection database::connect_impl( TSignal& signal, const TNoti
   return signal.connect(group, fcall_wrapper);
 }
 
+template< bool IS_PRE_OPERATION >
+boost::signals2::connection database::any_apply_operation_handler_impl( const apply_operation_handler_t& func,
+  const abstract_plugin& plugin, int32_t group )
+{
+  std::string context = util::advanced_benchmark_dumper::generate_context_desc< IS_PRE_OPERATION >( plugin.get_name() );
+  auto complex_func = [this, func, &plugin, context]( const operation_notification& o )
+  {
+    std::string name;
+
+    if (_benchmark_dumper.is_enabled())
+    {
+      name = o.op.get_stored_type_name();
+      _benchmark_dumper.begin();
+    }
+
+    func( o );
+
+    if (_benchmark_dumper.is_enabled())
+      _benchmark_dumper.end( context, name );
+  };
+
+  if( IS_PRE_OPERATION )
+    return _pre_apply_operation_signal.connect(group, complex_func);
+  else
+    return _post_apply_operation_signal.connect(group, complex_func);
+}
+
 }}
