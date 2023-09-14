@@ -584,7 +584,7 @@ void witness_plugin::plugin_startup()
 
   if( !my->_is_p2p_enabled )
   {
-    ilog("Witness plugin is not enabled, beause P2P plugin is disabled...");
+    ilog("Witness plugin is not enabled, because P2P plugin is disabled...");
     return;
   }
 

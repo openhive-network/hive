@@ -1351,4 +1351,9 @@ bool chain_plugin::is_p2p_enabled() const
   return my->is_p2p_enabled;
 }
 
+void chain_plugin::disable_p2p() const
+{
+  my->is_p2p_enabled = false;
+}
+
 } } } // namespace hive::plugis::chain::chain_apis
