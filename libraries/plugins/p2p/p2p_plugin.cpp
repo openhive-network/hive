@@ -82,7 +82,18 @@ public:
   virtual ~p2p_plugin_impl()
   {
     ilog("P2P plugin is closing...");
-    shutdown_helper.shutdown();
+    try
+    {
+      shutdown_helper.shutdown();
+    }
+    catch (...)
+    {
+      // this seems like it should never happen, the plugin should always be shut down
+      // via pre_shutdown_plugin().  But if we do get here, we want to make
+      // sure that exceptions thrown by shutdown() are caught so the standard library
+      // doesn't terminate us
+      elog("Swallowing exceptions from shutdown_helper");
+    }
     ilog("P2P plugin was closed...");
     appbase::app().notify_status("P2P stopped");
   }
@@ -550,9 +561,22 @@ void p2p_plugin::plugin_pre_shutdown() {
     return;
   }
 
-  my->shutdown_helper.shutdown();
+  try
+  {
+    my->shutdown_helper.shutdown();
+  }
+  catch (const fc::exception& e)
+  {
+    // if shutdown fails, maybe because there are unprocessed blocks in the 
+    // write queue and the write thread didn't finish processing them before
+    // the timeout expired, swallow the exception and try to continue
+    // shutting down the p2p plugin.  There's a small chance this will cause
+    // a crash, but if we let the exception leak then we're guaranteed to 
+    // exit uncleanly.
+    elog("P2P shutdown timed out before all blocks/transactions were processed: ${e}", (e));
+  }
 
-  ilog("P2P Plugin: checking handle_block and handle_transaction activity");
+  ilog("P2P Plugin: terminating p2p tasks");
   my->node->close();
   fc::promise<void>::ptr quitDone(new fc::promise<void>("P2P thread quit"));
   my->p2p_thread.quit(quitDone.get());
