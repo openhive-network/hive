@@ -135,6 +135,34 @@ namespace hive {
       {
         running.store( false );
 
+        // this comment doesn't really fit well anywhere, but it needs to be somewhere.
+        // note: it seems that the original intent of the shutdown manager was primarily to 
+        // introduce a pause in the shutdown process, which would allow the write_processor_thread
+        // to process any remaining work, before continuing shutdown.
+        //
+        // The write_processor_thread (in chain_plugin.cpp) is responsible for taking blocks & 
+        // transactions from the queue and pushing them to the chain database for processing,
+        // and then notifying the p2p code whether the block/transaction was accepted or not.
+        // If this doesn't happen, the write_processor_thread could notify the p2p plugin that
+        // it finished processing a block/transaction while the p2p plugin is in the process of
+        // being shutdown.  If the p2p plugin code tries to do something with that notification
+        // when its data structures are being destroyed, crashes are likely.
+        //
+        // The intent here was to prevent the write queue from accepting any new work, and 
+        // process any existing work, before allowing the p2p plugin to begin shutdown in 
+        // earnest.
+        //
+        // That said, at the moment, this doesn't work very well.  As soon as a shutdown
+        // request is received (SIGINT), the write_processor_thread exits.  Anything that was
+        // on the write queue at the time will stay on the write queue forever, and never
+        // have a chance to be pushed to the database.  If there are 10 blocks on the queue,
+        // you could wait forever and they will never be processed.
+        // It's not entirely useless though.  If the write_processor_thread is actively
+        // working on a single block (meaning that block has been removed from the queue
+        // and the queue is now empty, and the thread is now in the middle of a 
+        // push_block()/push_transaction() call), this code should successfully wait for
+        // that block or transaction to be processed before it allows the p2p plugin to 
+        // continue shutdown.
         for( auto& state : states )
           wait( state.second );
       }
