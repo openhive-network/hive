@@ -29,10 +29,6 @@
 #include <functional>
 #include <map>
 
-
-// template<typename... Types>
-// struct ShowType;
-
 namespace hive {
 
 namespace plugins {namespace chain
