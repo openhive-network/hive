@@ -97,7 +97,7 @@ int main( int argc, char** argv ) {
       return initResult.get_result_code();
     
     appbase::app().startup();
-    appbase::app().exec();
+    appbase::app().wait();
   } catch ( const boost::exception& e ) {
     std::cerr << boost::diagnostic_information(e) << "\n";
   } catch ( const std::exception& e ) {

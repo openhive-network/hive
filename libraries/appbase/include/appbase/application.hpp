@@ -1,5 +1,7 @@
 #pragma once
 #include <appbase/plugin.hpp>
+#include <appbase/signals_handler.hpp>
+
 #include <boost/filesystem/path.hpp>
 #include <boost/core/demangle.hpp>
 #include <boost/asio.hpp>
@@ -53,45 +55,6 @@ namespace appbase {
       bool start_loop_flag;
   };
 
-  class io_handler
-  {
-    public:
-
-      using p_signal_set = std::shared_ptr< boost::asio::signal_set >;
-      using final_action_type = std::function< void() >;
-
-    private:
-
-      std::atomic_flag        lock = ATOMIC_FLAG_INIT;
-
-      bool                    closed = false;
-      bool                    allow_close_when_signal_is_received = false;
-      uint32_t                last_signal_code = 0;
-
-      final_action_type       final_action;
-
-      p_signal_set            signals;
-
-      boost::asio::io_service io_serv;
-      application&            app;
-
-      void clear_signals();
-
-      void handle_signal( uint32_t _last_signal_code );
-
-    public:
-      io_handler(application& app, bool _allow_close_when_signal_is_received, final_action_type&& _final_action);
-      ~io_handler();
-
-      boost::asio::io_service& get_io_service();
-
-      void close();
-
-      void attach_signals();
-
-      void run();
-  };
-
   class application;
 
   application& app();
@@ -132,7 +95,7 @@ namespace appbase {
       /**
         *  Wait until quit(), SIGINT or SIGTERM and then shutdown
         */
-      void exec();
+      void wait();
 
       template< typename Plugin >
       auto& register_plugin()
@@ -186,7 +149,7 @@ namespace appbase {
       template< typename... Plugin >
       void set_default_plugins() { default_plugins = { Plugin::name()... }; }
 
-      boost::asio::io_service& get_io_service() { return main_io_handler.get_io_service(); }
+      boost::asio::io_service& get_io_service() { return handler_wrapper.get_io_service(); }
 
       void generate_interrupt_request();
 
@@ -241,13 +204,20 @@ namespace appbase {
       void generate_completions();
       std::unique_ptr< class application_impl > my;
 
-      io_handler                 main_io_handler;
+      signals_handler_wrapper                 handler_wrapper;
 
       std::atomic_bool _is_interrupt_request{false};
 
       mutable hive::utilities::notifications::notification_handler_wrapper notification_handler;
 
       bool is_finished = false;
+
+      /*
+        When the application is closed very fast (milliseconds after launch),
+        then SIGFAULT can be generated, because a startup or an initialization can be done in the same time.
+        The best solution is to synchronize these methods.
+      */
+      std::mutex app_mtx;
 
     public:
 

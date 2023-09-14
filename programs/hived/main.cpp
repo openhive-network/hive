@@ -82,11 +82,21 @@ int main( int argc, char** argv )
 {
   try
   {
+    appbase::initialization_result initializationResult( appbase::initialization_result::ok, false);
     auto& theApp = appbase::app();
 
-    BOOST_SCOPE_EXIT(void)
+    BOOST_SCOPE_EXIT(&theApp, &initializationResult)
     {
+      auto _should_start_loop = initializationResult.should_start_loop();
+      if( !_should_start_loop )
+        kill(getpid(), SIGINT);
+
+      theApp.wait();
       appbase::reset();
+
+      if( _should_start_loop )
+        ilog("exited cleanly");
+
     } BOOST_SCOPE_EXIT_END
 
     // Setup logging config
@@ -97,10 +107,16 @@ int main( int argc, char** argv )
       ("backtrace", bpo::value< string >()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" );
     theApp.add_program_options( hive::utilities::options_description_ex(), options );
 
+    if( theApp.is_interrupt_request() ) return 0;
+
     hive::plugins::register_plugins();
+
+    if( theApp.is_interrupt_request() ) return 0;
 
     theApp.set_version_string( version_string() );
     theApp.set_app_name( "hived" );
+
+    if( theApp.is_interrupt_request() ) return 0;
 
     // These plugins are included in the default config
     theApp.set_default_plugins<
@@ -108,13 +124,16 @@ int main( int argc, char** argv )
       hive::plugins::account_by_key::account_by_key_plugin,
       hive::plugins::account_by_key::account_by_key_api_plugin >();
 
+    if( theApp.is_interrupt_request() ) return 0;
 
     // These plugins are loaded regardless of the config
-    auto initializationResult = theApp.initialize<
+    initializationResult = theApp.initialize<
         hive::plugins::chain::chain_plugin,
         hive::plugins::p2p::p2p_plugin,
         hive::plugins::webserver::webserver_plugin >
         ( argc, argv );
+
+    if( theApp.is_interrupt_request() ) return 0;
 
     if( !initializationResult.should_start_loop() ) 
       return initializationResult.get_result_code();
@@ -122,21 +141,36 @@ int main( int argc, char** argv )
 
     theApp.load_logging_config();
 
-    const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
-    auto chainId = chainPlugin.db().get_chain_id();
-    info(chainId);
+    try
+    {
+      const auto& chainPlugin = theApp.get_plugin<hive::plugins::chain::chain_plugin>();
+      auto chainId = chainPlugin.db().get_chain_id();
+      info(chainId);
+    }
+    catch(const std::exception& e)
+    {
+      if( theApp.is_interrupt_request() )
+      {
+        ilog("Error ${error} occured, but it's skipped because the application is closing",("error", e.what()));
+        std::cerr << e.what() << '\n';
+      }
+      else
+        throw e;
+    }
 
     if( theApp.get_args().at( "backtrace" ).as< string >() == "yes" )
     {
       fc::print_stacktrace_on_segfault();
-      ilog( "Backtrace on segfault is enabled." );
     }
 
-    theApp.startup();
-    theApp.exec();
+    if( theApp.is_interrupt_request() ) return 0;
 
-    std::cout << "exited cleanly\n";
-    
+    theApp.startup();
+
+    if( theApp.is_interrupt_request() ) return 0;
+
+    theApp.wait();
+
     return initializationResult.get_result_code();
   }
   catch ( const boost::exception& e )
