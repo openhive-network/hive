@@ -22,8 +22,8 @@
 #include <array>
 #include <iostream>
 
-#define INITIAL_TEST_SUPPLY (10000000000ll)
-#define HBD_INITIAL_TEST_SUPPLY (300000000ll)
+#define INITIAL_TEST_SUPPLY (9'900'000'000ll)
+#define HBD_INITIAL_TEST_SUPPLY (100'000'000ll)
 
 extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
 
