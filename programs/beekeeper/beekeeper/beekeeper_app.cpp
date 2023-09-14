@@ -70,8 +70,8 @@ void beekeeper_app::start()
   _webserver_plugin.start_webserver();
 
   app.startup();
-  app.exec();
-  ilog( "exited cleanly" );
+  app.wait();
+  ilog("exited cleanly");
 }
 
 const boost::program_options::variables_map& beekeeper_app::get_args() const
@@ -94,7 +94,7 @@ std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_walle
   instance = std::make_shared<beekeeper_instance>( app, cmd_wallet_dir, notifications_endpoint );
   return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager>( notifications_endpoint ), instance,
                                                                        cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit,
-                                                                       [this]() { std::raise(SIGINT); } );
+                                                                       [this]() { kill(getpid(), SIGINT); } );
 }
 
 bool beekeeper_app::should_start_loop() const
