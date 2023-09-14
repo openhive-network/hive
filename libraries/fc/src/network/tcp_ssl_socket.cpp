@@ -39,23 +39,39 @@ namespace fc {
           {
             _sock.next_layer().close();
           }
+          catch (const boost::system::system_error& se)
+          {
+            elog("Error closing socket: ${msg}", ("msg",se.code().message()));
+          }
           catch( ... )
-          {}
+          {
+            elog("Error closing socket: Unknown error");
+          }
         if( _read_in_progress.valid() )
           try
           {
             _read_in_progress.wait();
           }
-          catch ( ... )
+          catch (const boost::system::system_error& se)
           {
+            elog("Error waiting for read: ${msg}", ("msg",se.code().message()));
+          }
+          catch( ... )
+          {
+            elog("Error waiting for read: Unknown error");
           }
         if( _write_in_progress.valid() )
           try
           {
             _write_in_progress.wait();
           }
-          catch ( ... )
+          catch (const boost::system::system_error& se)
           {
+            elog("Error waiting for write: ${msg}", ("msg",se.code().message()));
+          }
+          catch( ... )
+          {
+            elog("Error waiting for write: Unknown error");
           }
       }
       virtual size_t readsome(ssl_socket& socket, char* buffer, size_t length) override;
