@@ -233,7 +233,7 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       }
 
 #ifdef IS_TEST_NET
-      uint64_t init_supply = int64_t( 250 ) * int64_t( 1000000 ) * int64_t( 1000 );
+      uint64_t init_supply = int64_t( 243 ) * int64_t( 1000000 ) * int64_t( 1000 );
       uint64_t hbd_init_supply = int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 );
 #else // hive converter build
       uint64_t init_supply = 0;
