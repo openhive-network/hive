@@ -157,7 +157,7 @@ database::~database()
   clear_pending();
 }
 
-void database::state_independent_open( const open_args& args)
+void database::state_independent_open( const open_args& args )
 {
   init_schema();
 
@@ -170,7 +170,6 @@ void database::state_independent_open( const open_args& args)
   chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, wipe_shared_file );
   initialize_state_independent_data(args);
 }
-
 
 void database::state_dependent_open( const open_args& args, get_block_by_num_t get_block_by_num_func)
 {
@@ -228,7 +227,6 @@ void database::initialize_state_independent_data(const open_args& args)
   /// Initialize all static (state independent) specific to hardforks
   init_hardforks();
 }
-
 
 void full_database::open_block_log(const open_args& args)
 {
@@ -1319,7 +1317,6 @@ bool database::_push_block(const block_flow_control& block_ctrl)
   }
   return false;
 } FC_CAPTURE_AND_RETHROW() }
-
 
 bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 {
@@ -5607,7 +5604,6 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
         FC_CAPTURE_AND_RETHROW()
       });
     }
-
     catch (const fc::exception&)
     {
       return old_last_irreversible;
