@@ -195,7 +195,18 @@ namespace chain {
     private:      
       void state_independent_open( const open_args& args);
 
-    public: //(used by load snapshot plugin)
+    public: 
+      /**
+         * @brief Opens a state with a block provided externally
+         *
+         * In derived classes, this function provides an interface to supply a block from the outside 
+         * (e.g., from an external system). Essential for initiating the fork database 
+         * when specific block data needs to be provided. This function is public because it is 
+         * used by the load snapshot plugin to inject block data. Takes part in normal open process.
+         *
+         * @param args Arguments required for the open operation
+         * @param get_block_by_num_function A function type to fetch the block by its number
+         */
       virtual void state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function );
 
     private:
@@ -226,6 +237,12 @@ namespace chain {
         */
       void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
       void close(bool rewind = true);
+
+      /**
+        * Derived classes can override this method to provide specific behavior during clos
+        * e.g. to close some external resources opened during database::open
+        * It's utilized by the main `close` method.      
+        */
       virtual void close_chainbase(bool rewind);
       void close_forkbase(bool rewind);
 
@@ -704,6 +721,16 @@ namespace chain {
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
       void migrate_irreversible_state(uint32_t old_last_irreversible);
     protected:
+      /**
+       * @brief Handle the proper execution of the irreversible state migration.
+       * 
+       * In derived implementations, this method can be overridden to manage 
+       * updates to external resources during the update irreversible state process. When overriding, 
+       * it's recommended to call the `database::migrate_irreversible_state_perform` 
+       * method to ensure proper base functionality.
+       *
+       * @param old_last_irreversible Represents the previous irreversible point before migration.
+       */
       virtual void migrate_irreversible_state_perform(uint32_t old_last_irreversible); 
     private:
       void clear_expired_transactions();
