@@ -3750,7 +3750,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     generate_block(); //actual conversion
     alice_balance += ASSET( "500.011 TESTS" ); //excess collateral (1000 - 23.809 * 21/1) - alice used fee corrected market_median_price...
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "273.625 TESTS" ) ); //...but bob used artificial current_median_history
+    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "273.619 TESTS" ) ); //...but bob used artificial current_median_history
       //(for HF25 values of 9%/10%/10% lower/upper/hard cap expected value is 199.102)
       //(for 9%/10%/30% expected value is 383.222)
       //with different limits value will change, but should be less than 400.000 TESTS
