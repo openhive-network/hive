@@ -4,6 +4,7 @@
 #include <boost/range/adaptor/reversed.hpp>
 #include <appbase/application.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/signal_wrapper.hpp>
 
 
 namespace hive { namespace chain {
@@ -334,62 +335,6 @@ std::vector<std::shared_ptr<full_block_type>> full_database::fetch_block_range( 
 
   return result;
 } FC_LOG_AND_RETHROW() }
-
-
-//template boost::signals2::connection database::connect_impl<true, /*appropriate signal type*/, /*appropriate notification type*/>( /*arguments*/ );
-
-// boost::signals2::connection full_database::add_pre_reindex_handler(const reindex_handler_t& func,
-//   const abstract_plugin& plugin, int32_t group )
-// {
-//   return database::connect_impl<true>(_pre_reindex_signal, func, plugin, group, "reindex");
-// }
-
-template <typename TFunction> struct fcall {};
-template <typename TResult, typename... TArgs>
-struct fcall<TResult(TArgs...)>
-{
-  using TNotification = std::function<TResult(TArgs...)>;
-
-  fcall() = default;
-  fcall(const TNotification& func, util::advanced_benchmark_dumper& dumper,
-    const abstract_plugin& plugin, const std::string& context, const std::string& item_name)
-    : _func(func), _benchmark_dumper(dumper), _context(context), _name(item_name) {}
-
-  void operator () (TArgs&&... args)
-  {
-    if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.begin();
-
-    _func(std::forward<TArgs>(args)...);
-
-    if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.end( _context, _name );
-  }
-
-private:
-  TNotification                    _func;
-  util::advanced_benchmark_dumper& _benchmark_dumper;
-  std::string                      _context;
-  std::string                      _name;
-};
-
-template <typename TResult, typename... TArgs>
-struct fcall<std::function<TResult(TArgs...)>>
-  : public fcall<TResult(TArgs...)>
-{
-  typedef fcall<TResult(TArgs...)> TBase;
-  using TBase::TBase;
-};
-
-template <bool IS_PRE_OPERATION, typename TSignal, typename TNotification>
-boost::signals2::connection database::connect_impl( TSignal& signal, const TNotification& func,
-  const abstract_plugin& plugin, int32_t group, const std::string& item_name )
-{
-  fcall<TNotification> fcall_wrapper( func, _benchmark_dumper, plugin,
-    util::advanced_benchmark_dumper::generate_context_desc<IS_PRE_OPERATION>( plugin.get_name() ), item_name );
-
-  return signal.connect(group, fcall_wrapper);
-}
 
 
 boost::signals2::connection full_database::add_pre_reindex_handler(const reindex_handler_t& func,
