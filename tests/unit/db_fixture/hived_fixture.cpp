@@ -56,11 +56,7 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
       // Register every plugin existing in repository as hived does.
       hive::plugins::register_plugins();
 
-      // We don't want p2p plugin connections at all.
-      config_arg_override_t default_overrides = {
-        config_line_t( { "p2p-endpoint", { "127.0.0.1:2345" } } ),
-        config_line_t( { "p2p-seed-node",{ " " } } )
-      };
+      config_arg_override_t default_overrides = {};
 
       if( not config_arg_overrides.empty() )
         std::copy_if( config_arg_overrides.begin(),
@@ -113,7 +109,9 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
       BOOST_REQUIRE( db_plugin );
       db_plugin->logging = false;
 
-      db = &app.get_plugin< hive::plugins::chain::chain_plugin >().db();
+      auto& chain = app.get_plugin< hive::plugins::chain::chain_plugin >();
+      chain.disable_p2p(); // We don't want p2p plugin connections at all.
+      db = &chain.db();
       BOOST_REQUIRE( db );
       db->_log_hardforks = false;
 

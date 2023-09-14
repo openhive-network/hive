@@ -132,6 +132,7 @@ public:
   synchronization_type on_sync;
 
   bool is_p2p_enabled() const;
+  void disable_p2p() const;
 
 private:
   std::unique_ptr< detail::chain_plugin_impl, detail::chain_plugin_impl_deleter > my;
