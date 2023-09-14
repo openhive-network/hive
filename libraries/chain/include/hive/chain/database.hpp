@@ -48,7 +48,7 @@ namespace chain {
   using hive::protocol::asset_symbol_type;
   using hive::protocol::price;
   using abstract_plugin = appbase::abstract_plugin;
-  using get_block_by_num_t = std::function<std::shared_ptr<full_block_type>(int block_num)> ;
+  using get_block_by_num_function_type = std::function<std::shared_ptr<full_block_type>(int block_num)>;
 
   struct prepare_snapshot_supplement_notification;
   struct load_snapshot_supplement_notification;
@@ -196,7 +196,7 @@ namespace chain {
       void state_independent_open( const open_args& args);
 
     public: //(used by load snapshot plugin)
-      virtual void state_dependent_open( const open_args& args, get_block_by_num_t get_block_by_num_func );
+      virtual void state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function );
 
     private:
 
@@ -215,7 +215,7 @@ namespace chain {
     public:
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
-      void load_state_initial_data( const open_args& args, get_block_by_num_t get_block_by_num_func );
+      void load_state_initial_data( const open_args& args, get_block_by_num_function_type get_block_by_num_function );
 
 
       /**
@@ -947,7 +947,7 @@ namespace chain {
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
     private: 
-      void state_dependent_open( const open_args& args, get_block_by_num_t get_block_by_num_func ) override;
+      void state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function ) override;
 
     private:
       bool is_included_block_unlocked(const block_id_type& block_id);

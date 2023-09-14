@@ -171,12 +171,12 @@ void database::state_independent_open( const open_args& args )
   initialize_state_independent_data(args);
 }
 
-void database::state_dependent_open( const open_args& args, get_block_by_num_t get_block_by_num_func)
+void database::state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function)
 {
-  load_state_initial_data(args, get_block_by_num_func);
+  load_state_initial_data(args, get_block_by_num_function);
 }
 
-void full_database::state_dependent_open( const open_args& args, get_block_by_num_t )
+void full_database::state_dependent_open( const open_args& args, get_block_by_num_function_type )
 {
   open_block_log(args);
   database::state_dependent_open(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
@@ -238,7 +238,7 @@ void full_database::open_block_log(const open_args& args)
   });
 }
 
-void database::load_state_initial_data(const open_args& args, get_block_by_num_t get_block_by_num_func)
+void database::load_state_initial_data( const open_args& args, get_block_by_num_function_type get_block_by_num_function )
 {
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
@@ -274,7 +274,7 @@ void database::load_state_initial_data(const open_args& args, get_block_by_num_t
 
   if (head_block_num())
   {
-    std::shared_ptr<full_block_type> head_block = get_block_by_num_func(head_block_num());
+    std::shared_ptr<full_block_type> head_block = get_block_by_num_function(head_block_num());
     // This assertion should be caught and a reindex should occur
     FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
     "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",

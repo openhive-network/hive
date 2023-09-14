@@ -937,7 +937,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
     private:
       state_snapshot_plugin&  _self;
-      database&                _mainDb;
+      database&               _mainDb;
       bfs::path               _storagePath;
       std::unique_ptr<DB>     _storage;
       std::string             _snapshot_name;
@@ -1506,7 +1506,6 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
 
   _mainDb.set_revision(blockNo);
   _mainDb.state_dependent_open(openArgs, {});
-
 
   const auto& measure = dumper.measure(blockNo, [](benchmark_dumper::index_memory_details_cntr_t&, bool) {});
   ilog("State snapshot load. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes.",
