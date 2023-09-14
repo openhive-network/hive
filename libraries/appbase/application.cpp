@@ -39,104 +39,6 @@ using bpo::variables_map;
 using hive::utilities::options_description_ex;
 using std::cout;
 
-io_handler::io_handler(application& _app, bool _allow_close_when_signal_is_received, final_action_type&& _final_action )
-      : allow_close_when_signal_is_received( _allow_close_when_signal_is_received ), final_action( _final_action ), app(_app)
-{
-}
-
-io_handler::~io_handler()
-{
-  /*
-    The best moment for clearing signals is time of destroying an object then for sure we don't need signals.
-    Otherwise can be a situation that signals were removed, but an application gets another SIGINT and that signal won't be able to be process correctly.
-  */
-  clear_signals();
-}
-
-boost::asio::io_service& io_handler::get_io_service()
-{
-  return io_serv;
-}
-
-void io_handler::close()
-{
-  /** Since signals can be processed asynchronously, it would be possible to call this twice
-  *    concurrently while op service is stopping.
-  */
-  while( lock.test_and_set( std::memory_order_acquire ) )
-    ;
-
-  if( !closed )
-  {
-    final_action();
-
-    io_serv.stop();
-
-    closed = true;
-  }
-
-  lock.clear( std::memory_order_release );
-}
-
-void io_handler::clear_signals()
-{
-  if( !signals )
-    return;
-
-  boost::system::error_code ec;
-  signals->cancel( ec );
-  signals.reset();
-
-  if( ec.value() != 0 )
-    elog( "Error during cancelling signal: ${msg}", ( "msg", ec.message() ) );
-}
-
-void application::generate_interrupt_request()
-{
-  notify_status("interrupted");
-  _is_interrupt_request = true;
-  ilog("interrupt requested!");
-}
-
-void io_handler::handle_signal( uint32_t _last_signal_code )
-{
-  signals->async_wait([](const boost::system::error_code& err, int signal_number )
-  {
-    std::cout<<"Caught "<<signal_number<<". Nothing to do..."<<std::endl;
-  });
-
-  last_signal_code = _last_signal_code;
-
-  if(_last_signal_code == SIGINT || _last_signal_code == SIGTERM)
-  {
-    idump((_last_signal_code));
-    app.generate_interrupt_request();
-  }
-
-  if( allow_close_when_signal_is_received )
-    close();
-}
-
-void io_handler::attach_signals()
-{
-  /** To avoid killing process by broken pipe and continue regular app shutdown.
-    *  Useful for usecase: `hived | tee hived.log` and pressing Ctrl+C
-    **/
-  signal(SIGPIPE, SIG_IGN);
-
-  signals = p_signal_set( new boost::asio::signal_set( io_serv, SIGINT, SIGTERM ) );
-  signals->async_wait([ this ](const boost::system::error_code& err, int signal_number ) {
-  /// Handle signal only if it was really present (it is possible to get error_code for 'Operation cancelled' together with signal_number == 0)
-  if(signal_number != 0)
-    handle_signal( signal_number );
-  });
-}
-
-void io_handler::run()
-{
-  io_serv.run();
-}
-
 class application_impl {
   public:
     application_impl() : 
@@ -161,11 +63,19 @@ application::application()
     return a->get_pre_shutdown_order() > b->get_pre_shutdown_order();
   }
 ),
-  my(new application_impl()), main_io_handler(*this, true/*allow_close_when_signal_is_received*/, [ this ](){ finish(); } )
+  my(new application_impl()), handler_wrapper( [this](){ generate_interrupt_request(); }, [this](){ finish(); } )
 {
+  handler_wrapper.init();
+  notify_status("signals attached");
 }
 
 application::~application() { }
+
+void application::generate_interrupt_request()
+{
+  notify_status("interrupted");
+  _is_interrupt_request = true;
+}
 
 fc::optional< fc::logging_config > application::load_logging_config()
 {
@@ -189,22 +99,11 @@ fc::optional< fc::logging_config > application::load_logging_config()
 }
 
 void application::startup() {
+  std::lock_guard<std::mutex> guard( app_mtx );
 
-  ilog("Setting up a startup_io_handler...");
+  if( is_interrupt_request() ) return;
 
-  io_handler startup_io_handler(*this, false/*allow_close_when_signal_is_received*/, []() {});
-  startup_io_handler.attach_signals();
-
-  std::thread startup_thread = std::thread( [&startup_io_handler]()
-  {
-    startup_io_handler.run();
-  });
-
-  BOOST_SCOPE_EXIT(&startup_io_handler, &startup_thread)
-  {
-    startup_io_handler.close();
-    startup_thread.join();
-  } BOOST_SCOPE_EXIT_END
+  ilog("Startup...");
 
   for (const auto& plugin : initialized_plugins)
   {
@@ -219,6 +118,9 @@ void application::startup() {
     for( const auto& plugin : initialized_plugins )
     {
       plugin->finalize_startup();
+
+      if( is_interrupt_request() )
+        break;
     }
   }
 }
@@ -286,6 +188,10 @@ void application::set_plugin_options(
 initialization_result application::initialize_impl( int argc, char** argv, 
   vector<abstract_plugin*> autostart_plugins, const bpo::variables_map& arg_overrides )
 {
+  std::lock_guard<std::mutex> guard( app_mtx );
+
+  if( is_interrupt_request() ) return { initialization_result::ok, true };
+
   try
   {
     // Due to limitations of boost::program_options::store function (used twice below),
@@ -421,8 +327,6 @@ initialization_result application::initialize_impl( int argc, char** argv,
 
 void application::pre_shutdown( std::string& actual_plugin_name )
 {
-  ilog("Before shutting down...");
-
   for( auto& plugin : pre_shutdown_plugins )
   {
     actual_plugin_name = plugin->get_name();
@@ -433,9 +337,6 @@ void application::pre_shutdown( std::string& actual_plugin_name )
 }
 
 void application::shutdown( std::string& actual_plugin_name ) {
-
-  ilog("Shutting down...");
-
   for(auto ritr = running_plugins.rbegin();
       ritr != running_plugins.rend(); ++ritr) {
     actual_plugin_name = (*ritr)->get_name();
@@ -453,6 +354,8 @@ void application::shutdown( std::string& actual_plugin_name ) {
 
 void application::finish()
 {
+  std::lock_guard<std::mutex> guard( app_mtx );
+
   std::string _actual_plugin_name;
 
   auto plugin_exception_info = [&_actual_plugin_name]()
@@ -462,19 +365,14 @@ void application::finish()
 
   try
   {
-    ilog("Executing `pre shutdown` for all plugins...");
     pre_shutdown( _actual_plugin_name );
-
-    ilog("Executing `shutdown` for all plugins...");
     shutdown( _actual_plugin_name );
 
     is_finished = true;
 
     fc::promise<void>::ptr quitDone( new fc::promise<void>("Logging thread quit") );
     my->_logging_thread.quit( quitDone.get() );
-    ilog("Waiting for logging_thread quit");
     quitDone->wait();
-    ilog("logging_thread quit done");
   }
   catch ( const boost::exception& e )
   {
@@ -500,25 +398,9 @@ void application::finish()
   }
 }
 
-void application::exec()
+void application::wait()
 {
-  ilog("Entering application main loop...");
-
-  if( !is_interrupt_request() )
-  {
-    main_io_handler.attach_signals();
-
-    notify_status("signals attached");
-
-    main_io_handler.run();
-  }
-  else
-  {
-    ilog("performing shutdown on interrupt request...");
-    finish();
-  }
-
-  ilog("Leaving application main loop...");
+  handler_wrapper.wait();
 }
 
 void application::write_default_config(const bfs::path& cfg_file)

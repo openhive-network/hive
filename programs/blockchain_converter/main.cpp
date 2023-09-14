@@ -79,7 +79,7 @@ int main( int argc, char** argv )
       return initResult.get_result_code();
 
     bc_converter_app.startup();
-    bc_converter_app.exec();
+    bc_converter_app.wait();
 
     return 0;
   }

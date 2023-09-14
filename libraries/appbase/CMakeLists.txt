@@ -27,6 +27,7 @@ if(ENABLE_COVERAGE_TESTING)
 endif()
 
 add_library( appbase STATIC
+             signals_handler.cpp
              application.cpp
              ${HEADERS}
            )
