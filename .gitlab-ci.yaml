@@ -929,7 +929,7 @@ deploy_beekeeper_wasm_dev_package:
 
   script:
     - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
-    - npm publish --access=public
+    - scripts/ci-helpers/npm_publish.sh
   needs:
     - job: test_beekeeper_wasm
     - job: beekeeper_wasm_build
@@ -947,7 +947,7 @@ deploy_beekeeper_wasm_production_public_npm:
     NPM_REGISTRY: "registry.npmjs.org/"
   script:
     - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
-    - npm publish --access=public
+    - scripts/ci-helpers/npm_publish.sh
   needs:
     - job: beekeeper_wasm_build
       artifacts: true
