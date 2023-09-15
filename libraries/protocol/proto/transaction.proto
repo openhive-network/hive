@@ -3,6 +3,7 @@ syntax = "proto2";
 import "comment.proto";
 import "vote.proto";
 import "limit_order_cancel.proto";
+import "recurrent_transfer.proto";
 
 package hive.protocol.buffers;
 
@@ -14,6 +15,7 @@ message operation {
         comment comment = 15;
         vote vote = 16;
         limit_order_cancel limit_order_cancel = 17;
+        recurrent_transfer recurrent_transfer = 18;
     }
 }
 

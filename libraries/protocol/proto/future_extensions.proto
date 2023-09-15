@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+message void_t {}
+
+message future_extensions {
+  oneof extension {
+    void_t void_t = 1;
+  }
+}
