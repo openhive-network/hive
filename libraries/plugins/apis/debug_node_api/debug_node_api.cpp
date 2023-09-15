@@ -175,19 +175,23 @@ debug_node_api::debug_node_api(): my( new detail::debug_node_api_impl() )
 
 debug_node_api::~debug_node_api() {}
 
-DEFINE_LOCKLESS_APIS( debug_node_api,
+DEFINE_WRITE_APIS( debug_node_api,
   (debug_push_blocks)
   (debug_generate_blocks)
   (debug_generate_blocks_until)
+  (debug_set_hardfork)
+  (debug_set_vest_price)
+)
+DEFINE_READ_APIS( debug_node_api,
   (debug_get_head_block)
   (debug_get_witness_schedule)
   (debug_get_future_witness_schedule)
   (debug_get_hardfork_property_object)
-  (debug_set_hardfork)
   (debug_has_hardfork)
-  (debug_set_vest_price)
-  (debug_get_json_schema)
-  (debug_throw_exception)
+)
+DEFINE_LOCKLESS_APIS( debug_node_api,
+  (debug_get_json_schema) // the whole schema thing is (and pretty much always was) dead
+  (debug_throw_exception) // might be lockless because it just sets flag to trigger exception on next on_post_apply_block
 )
 
 } } } // hive::plugins::debug_node
