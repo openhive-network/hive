@@ -36,7 +36,7 @@ if [ "$CURRENT_BRANCH" = "master" ]; then
 elif [ "$CURRENT_BRANCH" = "develop" ]; then
   NEW_VERSION="${TAG}-stable.${SHORT_HASH}"
 else
-  NEW_VERSION="${TAG}-dev.${SHORT_HASH}"
+  NEW_VERSION="${TAG}-${SHORT_HASH}"
 fi
 
 echo> "${PROJECT_DIR}/.npmrc"
