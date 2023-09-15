@@ -127,7 +127,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_get_future_witness_schedule )
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_hardfork_property_object )
 {
-  return _db.get( chain::hardfork_property_id_type() );
+  return _db.get_hardfork_property_object();
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_set_hardfork )
@@ -145,7 +145,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_set_hardfork )
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_has_hardfork )
 {
-  return { _db.get( chain::hardfork_property_id_type() ).last_hardfork >= args.hardfork_id };
+  return { _db.has_hardfork( args.hardfork_id ) };
 }
 
 DEFINE_API_IMPL(debug_node_api_impl, debug_set_vest_price)
