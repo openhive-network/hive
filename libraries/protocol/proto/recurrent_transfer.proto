@@ -1,0 +1,57 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+import "future_extensions.proto";
+import "asset.proto";
+
+message recurrent_transfer_pair_id {
+  required uint32 pair_id = 1;
+}
+
+message recurrent_transfer_extension {
+  oneof extension {
+    void_t void_t = 1;
+    recurrent_transfer_pair_id recurrent_transfer_pair_id = 2;
+  }
+}
+
+/* Creates/updates/removes a recurrent transfer in the currency Hive or HBD.
+ * Since HF 28, if user has more than one recurrent transfer to the same receiver
+ * or if user creates the recurrent transfer using pair_id in the extensions,
+ * user has to specify the pair_id in order to update or remove the defined recurrent transfer. 
+ * - If amount is set to 0, the recurrent transfer will be deleted and the virtual operation
+ *   fill_recurrent_transfer_operation is not generated
+ * - If there is already a recurrent transfer matching 'from' and 'to', the recurrent transfer will be replaced, but:
+ * - If the 'recurrence' is not changed, the next execution will be according to “old definition” 
+ * - If the 'recurrence' is changed, then the next execution will be “update date” + 'recurrence' there is no execution on the update date. 
+ * - Up to HF28 there can be only one recurrent transfer for sender 'from' and receiver 'to'.
+ *   Since H28 users may define more recurrent transfers to the same sender and receiver using pair_id in the 'executions'.
+ * - The one account may define up to 255 recurrent transfers to other accounts. 
+ * - The execution date of the last transfer should be no more than 730 days in the future.
+ *
+ * @param {string} from_
+ * @param {string} to - Account to transfer asset to. Cannot set a transfer to yourself.
+ * @param {asset} amount - The amount of asset to transfer from @ref from to @ref to.
+ *                         If the recurrent transfer failed 10 (HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES)
+ *                         times because of the lack of funds, the recurrent transfer will be deleted.
+ *                         Allowed currency: Hive and HBD.
+ * @param {string} memo - must be shorter than 2048.
+ * @param {number} recurrence - How often will the payment be triggered, unit: hours.
+ *                              The first transfer is executed immediately.
+ *                              The minimum value of the parameter is 24 h.
+ * @param {number} executions - How many times the recurrent payment will be executed.
+ *                              Executions must be at least 2, if you set executions to 1 the recurrent transfer will not be executed.
+ * @param {recurrent_transfer_extension} extensions - Extensions. Since HF 28 it may contain the 'pair_id'.
+ *                                                    It allows to define more than one recurrent transfer from sender to the same receiver 'to'. 
+ *                                                    Default value 'pair_id=0'.
+ */
+message recurrent_transfer {
+  required string                       from_ = 1 [json_name = "from"];
+  required string                       to = 2;
+  required asset                        amount = 3;
+  required string                       memo = 4;
+  required uint32                       recurrence = 5;
+  required uint32                       executions = 6;
+  repeated recurrent_transfer_extension extensions = 7;
+}
