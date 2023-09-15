@@ -4,6 +4,7 @@
 
 #include <hive/chain/detail/block_attributes.hpp>
 #include <hive/chain/block_log_artifacts.hpp>
+#include <hive/chain/block_log_interface.hpp>
 
 extern "C"
 {
@@ -53,7 +54,7 @@ namespace hive { namespace chain {
     * linear scan of the main file.
     */
 
-  class block_log {
+  class block_log : public block_log_read_i {
     public:
       using block_flags=detail::block_flags;
       using block_attributes_t=detail::block_attributes_t;
@@ -80,10 +81,10 @@ namespace hive { namespace chain {
       /** Allows to read just block_id for block identified by given block number. 
       *   \warning Can return empty `block_id_type` if block_num is out of valid range.
       */
-      hive::protocol::block_id_type    read_block_id_by_num(uint32_t block_num) const;
-      std::shared_ptr<full_block_type> read_block_by_num(uint32_t block_num) const;
+      virtual hive::protocol::block_id_type    read_block_id_by_num(uint32_t block_num) const override;
+      virtual std::shared_ptr<full_block_type> read_block_by_num(uint32_t block_num) const override;
       std::shared_ptr<full_block_type> read_block_by_offset(uint64_t offset, size_t size, block_attributes_t attributes) const;
-      std::vector<std::shared_ptr<full_block_type>> read_block_range_by_num(uint32_t first_block_num, uint32_t count) const;
+      virtual std::vector<std::shared_ptr<full_block_type>> read_block_range_by_num(uint32_t first_block_num, uint32_t count) const override;
 
       std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> read_raw_head_block() const;
       std::shared_ptr<full_block_type> read_head() const;
