@@ -169,15 +169,18 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.Test, price: float, toleran
     return tt.Asset.Range(vests, tolerance=tolerance)
 
 
-def get_virtual_operations(node: tt.InitNode, vop: str, skip_price_stabilization: bool = True) -> list:
+def get_virtual_operations(node: tt.InitNode, vop: str, skip_price_stabilization: bool = True,
+                           start_block: int = None) -> list:
     """
     :param vop: name of the virtual operation,
     :param skip_price_stabilization: by default, removes from the list operations confirming vesting-stabilizing,
+    :param start_block: block from which virtual operations will be given,
     :return: a list of virtual operations of the type specified in the `vop` argument.
     """
     result = node.api.account_history.enum_virtual_ops(
         filter=filters_enum_virtual_ops[vop],
         include_reversible=True,
+        block_range_begin=start_block,
         block_range_end=2000,
     )["ops"]
 
