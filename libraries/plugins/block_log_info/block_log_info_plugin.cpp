@@ -131,7 +131,7 @@ void block_log_info_plugin_impl::print_message( const block_log_message_data& da
 
 } // detail
 
-block_log_info_plugin::block_log_info_plugin() {}
+block_log_info_plugin::block_log_info_plugin( appbase::application& app ): appbase::plugin<block_log_info_plugin>( app ) {}
 block_log_info_plugin::~block_log_info_plugin() {}
 
 void block_log_info_plugin::set_program_options( options_description& cli, options_description& cfg )

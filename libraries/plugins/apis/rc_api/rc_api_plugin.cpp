@@ -4,7 +4,7 @@
 
 namespace hive { namespace plugins { namespace rc {
 
-rc_api_plugin::rc_api_plugin() {}
+rc_api_plugin::rc_api_plugin( appbase::application& app ): appbase::plugin<rc_api_plugin>( app ) {}
 rc_api_plugin::~rc_api_plugin() {}
 
 void rc_api_plugin::set_program_options( options_description& cli, options_description& cfg ) {}

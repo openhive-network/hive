@@ -152,7 +152,7 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
 
 } // detail
 
-market_history_plugin::market_history_plugin() {}
+market_history_plugin::market_history_plugin( appbase::application& app ): appbase::plugin<market_history_plugin>( app ) {}
 market_history_plugin::~market_history_plugin() {}
 
 void market_history_plugin::set_program_options(

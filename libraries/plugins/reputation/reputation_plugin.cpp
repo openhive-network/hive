@@ -186,7 +186,7 @@ void reputation_plugin_impl::post_operation( const operation_notification& note 
 
 } // detail
 
-reputation_plugin::reputation_plugin() {}
+reputation_plugin::reputation_plugin( appbase::application& app ): appbase::plugin<reputation_plugin>( app ) {}
 
 reputation_plugin::~reputation_plugin() {}
 

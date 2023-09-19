@@ -20,7 +20,7 @@ namespace detail { class block_log_conversion_plugin_impl; }
   public:
     APPBASE_PLUGIN_REQUIRES()
 
-    block_log_conversion_plugin();
+    block_log_conversion_plugin( appbase::application& app );
     virtual ~block_log_conversion_plugin();
 
     static const std::string& name() { static std::string name = HIVE_BLOCK_LOG_CONVERSION_PLUGIN_NAME; return name; }

@@ -21,7 +21,7 @@ class state_snapshot_plugin final : public appbase::plugin< state_snapshot_plugi
 
     static const std::string& name() { static std::string name = "state_snapshot"; return name; }
 
-    state_snapshot_plugin();
+    state_snapshot_plugin( appbase::application& app );
     virtual ~state_snapshot_plugin();
 
     virtual void set_program_options(

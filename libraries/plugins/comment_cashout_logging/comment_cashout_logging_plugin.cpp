@@ -239,7 +239,7 @@ void comment_cashout_logging_plugin_impl::on_pre_apply_operation(const operation
 
 } // detail
 
-comment_cashout_logging_plugin::comment_cashout_logging_plugin() {}
+comment_cashout_logging_plugin::comment_cashout_logging_plugin( appbase::application& app ): appbase::plugin<comment_cashout_logging_plugin>( app ) {}
 comment_cashout_logging_plugin::~comment_cashout_logging_plugin() {}
 
 void comment_cashout_logging_plugin::set_program_options(options_description& cli, options_description& cfg)

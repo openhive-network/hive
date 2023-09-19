@@ -53,7 +53,7 @@ struct trigger_bug : appbase::plugin< trigger_bug >
   boost::signals2::connection _post_apply_block;
   bool trigger = false;
 
-  trigger_bug( database& db ) : _db( db )
+  trigger_bug( appbase::application& app, database& db ) : appbase::plugin<trigger_bug>( app ), _db( db )
   {
     _post_apply_block = _db.add_post_apply_block_handler( [this]( const block_notification& )
     {
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE( mutex_reentry_bug )
   {
     BOOST_TEST_MESSAGE( "Testing bug where mutex used to stop API during block processing is not unlocked" );
 
-    trigger_bug bug( *db );
+    trigger_bug bug( appbase::app(), *db );
 
     bug.trigger = true;
     generate_block();

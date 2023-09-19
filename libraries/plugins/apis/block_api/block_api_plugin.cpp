@@ -3,7 +3,7 @@
 
 namespace hive { namespace plugins { namespace block_api {
 
-block_api_plugin::block_api_plugin() {}
+block_api_plugin::block_api_plugin( appbase::application& app ): appbase::plugin<block_api_plugin>( app ) {}
 block_api_plugin::~block_api_plugin() {}
 
 void block_api_plugin::set_program_options(

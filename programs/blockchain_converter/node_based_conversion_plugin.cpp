@@ -489,7 +489,7 @@ namespace detail {
 
 } // detail
 
-  node_based_conversion_plugin::node_based_conversion_plugin() {}
+  node_based_conversion_plugin::node_based_conversion_plugin( appbase::application& app ): appbase::plugin<node_based_conversion_plugin>( app ) {}
   node_based_conversion_plugin::~node_based_conversion_plugin() {}
 
   void node_based_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg )

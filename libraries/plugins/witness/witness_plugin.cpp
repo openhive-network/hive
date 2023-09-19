@@ -494,7 +494,7 @@ namespace detail {
 } // detail
 
 
-witness_plugin::witness_plugin() {}
+witness_plugin::witness_plugin( appbase::application& app ): appbase::plugin<witness_plugin>( app ) {}
 witness_plugin::~witness_plugin() {}
 
 void witness_plugin::enable_fast_confirm()

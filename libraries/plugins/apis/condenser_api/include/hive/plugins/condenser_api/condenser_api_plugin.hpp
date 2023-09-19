@@ -16,7 +16,7 @@ class condenser_api_plugin : public appbase::plugin< condenser_api_plugin >
 public:
   APPBASE_PLUGIN_REQUIRES( (hive::plugins::json_rpc::json_rpc_plugin)(hive::plugins::database_api::database_api_plugin) )
 
-  condenser_api_plugin();
+  condenser_api_plugin( appbase::application& app );
   virtual ~condenser_api_plugin();
 
   static const std::string& name() { static std::string name = HIVE_CONDENSER_API_PLUGIN_NAME; return name; }

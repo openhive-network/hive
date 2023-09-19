@@ -274,7 +274,7 @@ void block_data_export_plugin_impl::on_post_apply_block( const block_notificatio
 
 } // detail
 
-block_data_export_plugin::block_data_export_plugin() {}
+block_data_export_plugin::block_data_export_plugin( appbase::application& app ): appbase::plugin<block_data_export_plugin>( app ) {}
 block_data_export_plugin::~block_data_export_plugin() {}
 
 void block_data_export_plugin::register_export_data_factory(

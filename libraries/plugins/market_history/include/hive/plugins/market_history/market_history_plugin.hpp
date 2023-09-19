@@ -39,7 +39,7 @@ namespace detail { class market_history_plugin_impl; }
 class market_history_plugin : public plugin< market_history_plugin >
 {
   public:
-    market_history_plugin();
+    market_history_plugin( appbase::application& app );
     virtual ~market_history_plugin();
 
     APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )

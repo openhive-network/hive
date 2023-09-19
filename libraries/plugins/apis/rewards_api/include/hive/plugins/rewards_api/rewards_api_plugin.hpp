@@ -12,7 +12,7 @@ namespace hive { namespace plugins { namespace rewards_api {
 class rewards_api_plugin : public appbase::plugin< rewards_api_plugin >
 {
   public:
-    rewards_api_plugin();
+    rewards_api_plugin( appbase::application& app );
     virtual ~rewards_api_plugin();
 
     APPBASE_PLUGIN_REQUIRES(

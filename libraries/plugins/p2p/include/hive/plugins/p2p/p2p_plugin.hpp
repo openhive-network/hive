@@ -33,7 +33,7 @@ class p2p_plugin : public appbase::plugin<p2p_plugin>
 public:
   APPBASE_PLUGIN_REQUIRES((plugins::chain::chain_plugin))
 
-  p2p_plugin();
+  p2p_plugin( appbase::application& app );
   virtual ~p2p_plugin();
 
   virtual void set_program_options(bpo::options_description &,

@@ -18,7 +18,7 @@ using hive::chain::generic_custom_operation_interpreter;
 class reputation_plugin : public appbase::plugin< reputation_plugin >
 {
   public:
-    reputation_plugin();
+    reputation_plugin( appbase::application& app );
     virtual ~reputation_plugin();
 
     APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )

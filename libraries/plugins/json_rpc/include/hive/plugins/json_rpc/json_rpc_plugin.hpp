@@ -88,7 +88,7 @@ namespace detail
 class json_rpc_plugin : public appbase::plugin< json_rpc_plugin >
 {
   public:
-    json_rpc_plugin();
+    json_rpc_plugin( appbase::application& app );
     virtual ~json_rpc_plugin();
 
     APPBASE_PLUGIN_REQUIRES();

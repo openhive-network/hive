@@ -20,7 +20,7 @@ class statsd_plugin : public appbase::plugin< statsd_plugin >
   public:
     APPBASE_PLUGIN_REQUIRES()
 
-    statsd_plugin();
+    statsd_plugin( appbase::application& app );
     virtual ~statsd_plugin();
 
     virtual void set_program_options( options_description&, options_description& ) override;

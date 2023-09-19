@@ -276,7 +276,7 @@ void account_by_key_plugin_impl::on_post_apply_operation( const operation_notifi
 
 } // detail
 
-account_by_key_plugin::account_by_key_plugin() {}
+account_by_key_plugin::account_by_key_plugin( appbase::application& app ): appbase::plugin<account_by_key_plugin>( app ) {}
 account_by_key_plugin::~account_by_key_plugin() {}
 
 void account_by_key_plugin::set_program_options( options_description& cli, options_description& cfg ){}

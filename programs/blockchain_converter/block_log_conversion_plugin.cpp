@@ -192,7 +192,7 @@ namespace detail {
 
 } // detail
 
-  block_log_conversion_plugin::block_log_conversion_plugin() {}
+  block_log_conversion_plugin::block_log_conversion_plugin( appbase::application& app ): appbase::plugin<block_log_conversion_plugin>( app ) {}
   block_log_conversion_plugin::~block_log_conversion_plugin() {}
 
   void block_log_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg ) {}
