@@ -880,7 +880,8 @@ operation_tests:
                      test_withdraw_vesting_operation,
                      transfer_from_savings_tests,
                      transfer_tests,
-                     transfer_to_savings_tests ]
+                     transfer_to_savings_tests,
+                     comment_tests ]
   tags:
     - public-runner-docker
 
