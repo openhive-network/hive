@@ -38,17 +38,24 @@ class Account:
     def rc_manabar(self):
         return self._rc_manabar
 
+    @property
+    def vest(self):
+        return self._vest
+
     def get_hbd_balance(self):
-        self.update_account_info()
-        return tt.Asset.from_(self._acc_info['hbd_balance'])
+        return get_hbd_balance(self._node, self._name)
 
     def get_hive_balance(self):
-        self.update_account_info()
-        return tt.Asset.from_(self._acc_info['balance'])
+        return get_hive_balance(self._node, self._name)
+
+    def get_hive_power(self):
+        return get_hive_power(self._node, self._name)
 
     def get_rc_current_mana(self):
-        self.update_account_info()
         return get_rc_current_mana(self._node, self._name)
+
+    def get_rc_max_mana(self):
+        return get_rc_max_mana(self._node, self._name)
 
     def update_account_info(self):
         self._acc_info = self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]
