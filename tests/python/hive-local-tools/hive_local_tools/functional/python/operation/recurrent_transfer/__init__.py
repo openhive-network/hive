@@ -12,25 +12,29 @@ from hive_local_tools.functional.python.operation import (
 
 
 class RecurrentTransferAccount(Account):
-    def assert_balance_is_reduced_by_transfer(self, amount):
+    def assert_balance_is_reduced_by_transfer(self, amount: Union[tt.Asset.Test, tt.Asset.Tbd]) -> None:
         if isinstance(amount, tt.Asset.Test):
             assert self._hive - amount == get_hive_balance(
                 self._node, self._name
             ), f"The `{self._name}` account balance has not been reduced."
-        if isinstance(amount, tt.Asset.Tbd):
+        elif isinstance(amount, tt.Asset.Tbd):
             assert self._hbd - amount == get_hbd_balance(
                 self._node, self._name
-            ), f"The {self._name}` account hbd_balance has not been reduced."
+            ), f"The `{self._name}` account hbd_balance has not been reduced."
+        else:
+            raise TypeError("Invalid argument type.")
 
-    def assert_balance_is_increased_by_transfer(self, amount):
+    def assert_balance_is_increased_by_transfer(self, amount: Union[tt.Asset.Test, tt.Asset.Tbd]) -> None:
         if isinstance(amount, tt.Asset.Test):
             assert self._hive + amount == get_hive_balance(
                 self._node, self._name
-            ), f"The {self._name}` account balance has not been increased."
-        if isinstance(amount, tt.Asset.Tbd):
+            ), f"The `{self._name}` account balance has not been increased."
+        elif isinstance(amount, tt.Asset.Tbd):
             assert self._hbd + amount == get_hbd_balance(
                 self._node, self._name
-            ), f"The {self._name}` account hbd_balance has not been increased."
+            ), f"The `{self._name}` account hbd_balance has not been increased."
+        else:
+            raise TypeError("Invalid argument type.")
 
     def assert_hives_and_hbds_are_not_changed(self):
         assert self._hive == get_hive_balance(
@@ -65,7 +69,7 @@ class RecurrentTransfer:
             memo=self._memo,
             recurrence=self._recurrence,
             executions=self._executions,
-            **self._pair_id_argument
+            **self._pair_id_argument,
         )
 
         self._timestamp: datetime = get_transaction_timestamp(node, self._transaction)
