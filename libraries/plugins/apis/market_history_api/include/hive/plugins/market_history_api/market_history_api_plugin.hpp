@@ -20,7 +20,7 @@ public:
     (hive::plugins::json_rpc::json_rpc_plugin)
   )
 
-  market_history_api_plugin();
+  market_history_api_plugin( appbase::application& app );
   virtual ~market_history_api_plugin();
 
   static const std::string& name() { static std::string name = HIVE_MARKET_HISTORY_API_PLUGIN_NAME; return name; }

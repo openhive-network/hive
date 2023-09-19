@@ -31,7 +31,7 @@ Shutdown is called in the reverse order of Startup.
 class net_plugin : public appbase::plugin<net_plugin>
 {
    public:
-     net_plugin(){};
+     net_plugin( appbase::application& app ): appbase::plugin<net_plugin>( app ){};
      ~net_plugin(){};
 
      APPBASE_PLUGIN_REQUIRES( (chain_plugin) );

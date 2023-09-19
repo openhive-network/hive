@@ -34,7 +34,7 @@ namespace hive { namespace example_api_plugin {
   class example_api_plugin : public appbase::plugin< example_api_plugin >
   {
     public:
-      example_api_plugin();
+      example_api_plugin( appbase::application& app );
       virtual ~example_api_plugin();
 
       // This defines what plugins are required to run this plugin.
@@ -60,7 +60,7 @@ namespace hive { namespace example_api_plugin {
       echo_return echo( const echo_args& args );
   };
 
-  example_api_plugin::example_api_plugin() {}
+  example_api_plugin::example_api_plugin( appbase::application& app ): appbase::plugin<example_api_plugin>( app ) {}
   example_api_plugin::~example_api_plugin() {}
 
   void example_api_plugin::plugin_initialize( const variables_map& options )

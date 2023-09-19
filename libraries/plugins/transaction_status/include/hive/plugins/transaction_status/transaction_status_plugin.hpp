@@ -13,7 +13,7 @@ namespace detail { class transaction_status_impl; }
 class transaction_status_plugin : public appbase::plugin< transaction_status_plugin >
 {
   public:
-    transaction_status_plugin();
+    transaction_status_plugin( appbase::application& app );
     virtual ~transaction_status_plugin();
 
     APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )

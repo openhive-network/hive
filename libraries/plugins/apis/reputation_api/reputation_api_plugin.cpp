@@ -4,7 +4,7 @@
 
 namespace hive { namespace plugins { namespace reputation {
 
-reputation_api_plugin::reputation_api_plugin() {}
+reputation_api_plugin::reputation_api_plugin( appbase::application& app ): appbase::plugin<reputation_api_plugin>( app ) {}
 reputation_api_plugin::~reputation_api_plugin() {}
 
 void reputation_api_plugin::set_program_options( options_description& cli, options_description& cfg ) {}

@@ -1547,7 +1547,7 @@ void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive:
     }
   }
 
-state_snapshot_plugin::state_snapshot_plugin()
+state_snapshot_plugin::state_snapshot_plugin( appbase::application& app ): appbase::plugin<state_snapshot_plugin>( app )
   {
   }
 

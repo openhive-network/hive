@@ -44,7 +44,7 @@ tags_plugin_impl::~tags_plugin_impl() {}
 
 } /// end detail namespace
 
-tags_plugin::tags_plugin() {}
+tags_plugin::tags_plugin( appbase::application& app ): appbase::plugin<tags_plugin>( app ) {}
 tags_plugin::~tags_plugin() {}
 
 void tags_plugin::set_program_options(

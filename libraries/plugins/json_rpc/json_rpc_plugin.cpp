@@ -494,7 +494,7 @@ using detail::json_rpc_error;
 using detail::json_rpc_response;
 using detail::json_rpc_logger;
 
-json_rpc_plugin::json_rpc_plugin(){}
+json_rpc_plugin::json_rpc_plugin( appbase::application& app ): appbase::plugin<json_rpc_plugin>( app ){}
 json_rpc_plugin::~json_rpc_plugin() {}
 
 void json_rpc_plugin::set_program_options( options_description& , options_description& cfg)

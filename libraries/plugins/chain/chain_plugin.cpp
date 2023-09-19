@@ -810,7 +810,7 @@ void chain_plugin_impl_deleter::operator()( chain_plugin_impl* impl ) const
 } // detail
 
 
-chain_plugin::chain_plugin(){}
+chain_plugin::chain_plugin( appbase::application& app ): appbase::plugin<chain_plugin>( app ){}
 chain_plugin::~chain_plugin(){}
 
 database& chain_plugin::db() { return my->db; }

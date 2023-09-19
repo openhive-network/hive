@@ -49,7 +49,7 @@ debug_node_plugin_impl::~debug_node_plugin_impl() {}
 
 }
 
-debug_node_plugin::debug_node_plugin() {}
+debug_node_plugin::debug_node_plugin( appbase::application& app ): appbase::plugin<debug_node_plugin>( app ) {}
 debug_node_plugin::~debug_node_plugin() {}
 
 void debug_node_plugin::set_program_options(

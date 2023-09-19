@@ -31,7 +31,7 @@ using collector_t = hive::utilities::notifications::collector_t;
 class webserver_plugin : public appbase::plugin< webserver_plugin >
 {
   public:
-    webserver_plugin();
+    webserver_plugin( appbase::application& app );
     virtual ~webserver_plugin();
 
     APPBASE_PLUGIN_REQUIRES( (hive::plugins::json_rpc::json_rpc_plugin) );

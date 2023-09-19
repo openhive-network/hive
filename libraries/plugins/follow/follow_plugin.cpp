@@ -323,7 +323,7 @@ void follow_plugin_impl::post_operation( const operation_notification& note )
 
 } // detail
 
-follow_plugin::follow_plugin() {}
+follow_plugin::follow_plugin( appbase::application& app ): appbase::plugin<follow_plugin>( app ) {}
 
 follow_plugin::~follow_plugin() {}
 

@@ -3,7 +3,7 @@
 
 namespace hive { namespace plugins { namespace network_broadcast_api {
 
-network_broadcast_api_plugin::network_broadcast_api_plugin() {}
+network_broadcast_api_plugin::network_broadcast_api_plugin( appbase::application& app ): appbase::plugin<network_broadcast_api_plugin>( app ) {}
 network_broadcast_api_plugin::~network_broadcast_api_plugin() {}
 
 void network_broadcast_api_plugin::set_program_options( options_description& cli, options_description& cfg ) {}

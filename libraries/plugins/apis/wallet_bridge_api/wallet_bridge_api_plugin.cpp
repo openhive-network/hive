@@ -3,7 +3,7 @@
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
-wallet_bridge_api_plugin::wallet_bridge_api_plugin() {}
+wallet_bridge_api_plugin::wallet_bridge_api_plugin( appbase::application& app ): appbase::plugin<wallet_bridge_api_plugin>( app ) {}
 wallet_bridge_api_plugin::~wallet_bridge_api_plugin() {}
 
 void wallet_bridge_api_plugin::set_program_options(

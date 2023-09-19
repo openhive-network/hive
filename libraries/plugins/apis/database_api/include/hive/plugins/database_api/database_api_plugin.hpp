@@ -14,7 +14,7 @@ using namespace appbase;
 class database_api_plugin : public plugin< database_api_plugin >
 {
   public:
-    database_api_plugin();
+    database_api_plugin( appbase::application& app );
     virtual ~database_api_plugin();
 
     APPBASE_PLUGIN_REQUIRES(

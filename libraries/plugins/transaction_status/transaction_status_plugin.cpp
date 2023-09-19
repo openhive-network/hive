@@ -237,7 +237,7 @@ uint32_t transaction_status_impl::get_earliest_tracked_block_num()
 
 } // detail
 
-transaction_status_plugin::transaction_status_plugin() {}
+transaction_status_plugin::transaction_status_plugin( appbase::application& app ): appbase::plugin<transaction_status_plugin>( app ) {}
 transaction_status_plugin::~transaction_status_plugin() {}
 
 void transaction_status_plugin::set_program_options( boost::program_options::options_description& cli, boost::program_options::options_description& cfg )

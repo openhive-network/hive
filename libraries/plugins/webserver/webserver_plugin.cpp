@@ -558,7 +558,7 @@ boost::signals2::connection webserver_plugin_impl<websocket_server_type>::add_co
 
 } // detail
 
-webserver_plugin::webserver_plugin()
+webserver_plugin::webserver_plugin( appbase::application& app ): appbase::plugin<webserver_plugin>( app )
 {
   set_pre_shutdown_order(webserver_order);
 }

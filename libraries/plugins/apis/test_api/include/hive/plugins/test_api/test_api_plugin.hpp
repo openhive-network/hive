@@ -20,7 +20,7 @@ struct test_api_b_return { std::string value; };
 class test_api_plugin : public appbase::plugin< test_api_plugin >
 {
   public:
-    test_api_plugin();
+    test_api_plugin( appbase::application& app );
     virtual ~test_api_plugin();
 
     //APPBASE_PLUGIN_REQUIRES()

@@ -37,7 +37,7 @@ class chain_plugin : public plugin< chain_plugin >
 public:
   APPBASE_PLUGIN_REQUIRES( (hive::plugins::webserver::webserver_plugin)(hive::plugins::json_rpc::json_rpc_plugin) )
 
-  chain_plugin();
+  chain_plugin( appbase::application& app );
   virtual ~chain_plugin();
 
   bfs::path state_storage_dir() const;
