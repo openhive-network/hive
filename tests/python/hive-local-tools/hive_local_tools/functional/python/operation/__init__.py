@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 import wax
 
@@ -79,6 +79,10 @@ class Account:
         self._hbd = tt.Asset.from_(self._acc_info["hbd_balance"])
         self._vest = tt.Asset.from_(self._acc_info["vesting_shares"])
         self._rc_manabar.update()
+
+    def top_up(self, amount: Union[tt.Asset.Test, tt.Asset.Tbd]):
+        self._wallet.api.transfer("initminer", self._name, amount, "{}")
+        self.update_account_info()
 
 
 class _RcManabar:
