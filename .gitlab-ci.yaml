@@ -876,6 +876,7 @@ operation_tests:
                      limit_order_tests,
                      test_recurrent_transfer,
                      test_transfer_to_vesting_operation,
+                     test_withdraw_vesting_operation,
                      transfer_from_savings_tests,
                      transfer_tests,
                      transfer_to_savings_tests ]
