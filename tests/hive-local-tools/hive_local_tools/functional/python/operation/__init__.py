@@ -9,6 +9,14 @@ import test_tools as tt
 from hive_local_tools.constants import filters_enum_virtual_ops, TRANSACTION_TEMPLATE
 import wax
 
+@dataclass
+class Operation:
+    _node: tt.InitNode
+    _wallet: tt.Wallet
+    _rc_cost: int = field(init=False, default=None)
+
+    def assert_minimal_operation_rc_cost(self):
+        assert self._rc_cost > 0, "RC cost is less than or equal to zero."
 
 @dataclass
 class Account:
