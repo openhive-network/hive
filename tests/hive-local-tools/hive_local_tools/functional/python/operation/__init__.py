@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Literal
 
 import test_tools as tt
 from hive_local_tools.constants import filters_enum_virtual_ops, TRANSACTION_TEMPLATE
@@ -102,6 +103,16 @@ class _RcManabar:
         else:
             assert get_rc_current_mana(self._node, self._name) + operation_rc_cost == self.current_rc_mana, err
 
+    def assert_max_rc_mana_state(self, state: Literal['reduced', 'unchanged', 'increased']):
+        actual_max_rc_mana = get_rc_max_mana(self._node, self._name)
+        error_message = f"The {self._name} account `rc_max_mana` has been not {state}"
+        match state:
+            case "unchanged":
+                assert actual_max_rc_mana == self.max_rc, error_message
+            case "reduced":
+                assert actual_max_rc_mana < self.max_rc, error_message
+            case "increased":
+                assert actual_max_rc_mana > self.max_rc, error_message
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
     payout_vops = get_virtual_operations(node, "fill_transfer_from_savings_operation")
