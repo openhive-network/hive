@@ -3,7 +3,7 @@
 
 namespace hive { namespace plugins { namespace rewards_api {
 
-rewards_api_plugin::rewards_api_plugin() {}
+rewards_api_plugin::rewards_api_plugin( appbase::application& app ): appbase::plugin<rewards_api_plugin>( app ) {}
 rewards_api_plugin::~rewards_api_plugin() {}
 
 void rewards_api_plugin::set_program_options( boost::program_options::options_description& cli, boost::program_options::options_description& cfg ) {}

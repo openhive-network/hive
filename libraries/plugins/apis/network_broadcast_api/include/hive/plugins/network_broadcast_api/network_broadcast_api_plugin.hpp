@@ -21,7 +21,7 @@ public:
     (hive::plugins::p2p::p2p_plugin)
   )
 
-  network_broadcast_api_plugin();
+  network_broadcast_api_plugin( appbase::application& app );
   virtual ~network_broadcast_api_plugin();
 
   static const std::string& name() { static std::string name = HIVE_NETWORK_BROADCAST_API_PLUGIN_NAME; return name; }

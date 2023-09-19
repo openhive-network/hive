@@ -2137,7 +2137,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
   }
 }
 
-account_history_rocksdb_plugin::account_history_rocksdb_plugin()
+account_history_rocksdb_plugin::account_history_rocksdb_plugin( appbase::application& app ): appbase::plugin<account_history_rocksdb_plugin>( app )
 {
 }
 

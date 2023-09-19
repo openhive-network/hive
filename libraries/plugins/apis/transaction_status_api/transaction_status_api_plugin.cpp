@@ -3,7 +3,7 @@
 
 namespace hive { namespace plugins { namespace transaction_status_api {
 
-transaction_status_api_plugin::transaction_status_api_plugin() {}
+transaction_status_api_plugin::transaction_status_api_plugin( appbase::application& app ): appbase::plugin<transaction_status_api_plugin>( app ) {}
 transaction_status_api_plugin::~transaction_status_api_plugin() {}
 
 void transaction_status_api_plugin::set_program_options( boost::program_options::options_description& cli, boost::program_options::options_description& cfg ) {}

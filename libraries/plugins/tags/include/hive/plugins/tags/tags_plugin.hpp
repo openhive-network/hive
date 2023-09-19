@@ -142,7 +142,7 @@ struct comment_metadata { set<string> tags; };
 class tags_plugin : public plugin< tags_plugin >
 {
   public:
-    tags_plugin();
+    tags_plugin( appbase::application& app );
     virtual ~tags_plugin();
 
     APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )

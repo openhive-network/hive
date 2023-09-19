@@ -3,7 +3,7 @@
 
 namespace hive { namespace plugins { namespace database_api {
 
-database_api_plugin::database_api_plugin() {}
+database_api_plugin::database_api_plugin( appbase::application& app ): appbase::plugin<database_api_plugin>( app ) {}
 database_api_plugin::~database_api_plugin() {}
 
 void database_api_plugin::set_program_options(

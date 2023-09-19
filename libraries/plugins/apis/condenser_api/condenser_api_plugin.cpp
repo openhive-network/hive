@@ -4,7 +4,7 @@
 
 namespace hive { namespace plugins { namespace condenser_api {
 
-condenser_api_plugin::condenser_api_plugin() {}
+condenser_api_plugin::condenser_api_plugin( appbase::application& app ): appbase::plugin<condenser_api_plugin>( app ) {}
 condenser_api_plugin::~condenser_api_plugin() {}
 
 void condenser_api_plugin::set_program_options( options_description& cli, options_description& cfg )

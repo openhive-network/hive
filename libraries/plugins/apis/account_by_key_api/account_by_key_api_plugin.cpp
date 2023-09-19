@@ -4,7 +4,8 @@
 
 namespace hive { namespace plugins { namespace account_by_key {
 
-account_by_key_api_plugin::account_by_key_api_plugin() {}
+account_by_key_api_plugin::account_by_key_api_plugin( appbase::application& app ): appbase::plugin<account_by_key_api_plugin>( app ){};
+
 account_by_key_api_plugin::~account_by_key_api_plugin() {}
 
 void account_by_key_api_plugin::set_program_options( options_description& cli, options_description& cfg ) {}

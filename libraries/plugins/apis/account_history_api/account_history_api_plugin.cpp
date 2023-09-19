@@ -4,7 +4,7 @@
 
 namespace hive { namespace plugins { namespace account_history {
 
-account_history_api_plugin::account_history_api_plugin() {}
+account_history_api_plugin::account_history_api_plugin( appbase::application& app ): appbase::plugin<account_history_api_plugin>( app ) {}
 account_history_api_plugin::~account_history_api_plugin() {}
 
 void account_history_api_plugin::set_program_options( options_description& cli, options_description& cfg ) {}

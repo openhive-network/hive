@@ -3,7 +3,7 @@
 
 namespace hive { namespace plugins { namespace witness_api {
 
-witness_api_plugin::witness_api_plugin() {}
+witness_api_plugin::witness_api_plugin( appbase::application& app ): appbase::plugin<witness_api_plugin>( app ) {}
 witness_api_plugin::~witness_api_plugin() {}
 
 void witness_api_plugin::set_program_options( options_description& cli, options_description& cfg ) {}

@@ -20,7 +20,7 @@ public:
     (hive::plugins::json_rpc::json_rpc_plugin)
   )
 
-  debug_node_api_plugin();
+  debug_node_api_plugin( appbase::application& app );
   virtual ~debug_node_api_plugin();
 
   static const std::string& name() { static std::string name = HIVE_DEBUG_NODE_API_PLUGIN_NAME; return name; }

@@ -14,6 +14,9 @@ using std::vector;
 class plugin_a : public appbase::plugin<plugin_a>
 {
   public:
+
+    plugin_a( appbase::application& app ): appbase::plugin<plugin_a>( app ){};
+
     APPBASE_PLUGIN_REQUIRES();
 
     static const std::string& name() { static std::string name = "plugin_a"; return name; }
@@ -52,7 +55,7 @@ class plugin_a : public appbase::plugin<plugin_a>
 class plugin_b : public appbase::plugin<plugin_b>
 {
   public:
-    plugin_b(){};
+    plugin_b( appbase::application& app ): appbase::plugin<plugin_b>( app ){};
     ~plugin_b(){};
 
     APPBASE_PLUGIN_REQUIRES( (plugin_a) );

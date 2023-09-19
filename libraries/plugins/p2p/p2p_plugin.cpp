@@ -375,7 +375,7 @@ bool p2p_plugin_impl::is_included_block(const block_id_type& block_id)
 
 } // detail
 
-p2p_plugin::p2p_plugin()
+p2p_plugin::p2p_plugin( appbase::application& app ): appbase::plugin<p2p_plugin>( app )
 {
   set_pre_shutdown_order( p2p_order );
 }
