@@ -1542,6 +1542,8 @@ void chain_plugin::plugin_startup()
   }
 
   ilog("Chain plugin initialization finished...");
+  if( appbase::app().is_interrupt_request() )
+    kill(getpid(), SIGINT);
 }
 
 void chain_plugin::plugin_shutdown()
