@@ -1373,7 +1373,9 @@ void database::pop_block()
     std::shared_ptr<full_block_type> full_head_block;
     try
     {
-      full_head_block = fetch_block_by_id(head_id);
+      shared_ptr<fork_item> fork_item = _fork_db.fetch_block( head_id );
+      if(fork_item)
+          full_head_block =  fork_item->full_block;
     }
     FC_CAPTURE_AND_RETHROW()
 
