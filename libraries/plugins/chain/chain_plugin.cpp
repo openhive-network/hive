@@ -1,5 +1,7 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
+#include <hive/chain/irreversible_block_writer.hpp>
+#include <hive/chain/sync_block_writer.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
@@ -195,6 +197,9 @@ class chain_plugin_impl
     bfs::path                        database_cfg;
 
     database  db;
+    fork_database                    fork_db;
+    block_log                        the_block_log;
+
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
 
@@ -566,6 +571,12 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing()
 {
+  db.set_block_writer( new irreversible_block_writer( the_block_log, fork_db ) );
+
+  BOOST_SCOPE_EXIT(this_) {
+    this_->db.set_block_writer( new sync_block_writer( this_->the_block_log, this_->fork_db ) );
+  } BOOST_SCOPE_EXIT_END
+  
   theApp.notify_status("replaying");
   bool replay_is_last_operation = replay_blockchain();
   theApp.notify_status("finished replaying");
@@ -1094,6 +1105,8 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 void chain_plugin::plugin_startup()
 {
   ilog("Chain plugin initialization...");
+
+  my->db.set_block_writer( new sync_block_writer( my->the_block_log, my->fork_db ) );
 
   my->initial_settings();
 

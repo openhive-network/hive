@@ -54,6 +54,8 @@ add_library( hive_chain
              block_log.cpp
              block_log_artifacts.cpp
              block_compression_dictionaries.cpp
+             irreversible_block_writer.cpp
+             sync_block_writer.cpp
 
              generic_custom_operation_interpreter.cpp
 
