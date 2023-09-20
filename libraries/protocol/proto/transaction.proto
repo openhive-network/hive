@@ -14,8 +14,8 @@ message operation {
     oneof value {
         comment comment = 15;
         vote vote = 16;
-        limit_order_cancel limit_order_cancel = 17;
-        recurrent_transfer recurrent_transfer = 18;
+        limit_order_cancel limit_order_cancel = 17 [json_name = "limit_order_cancel"];
+        recurrent_transfer recurrent_transfer = 18 [json_name = "recurrent_transfer"];
     }
 }
 
