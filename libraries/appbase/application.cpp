@@ -65,11 +65,15 @@ application::application()
 ),
   my(new application_impl()), handler_wrapper( [this](){ generate_interrupt_request(); }, [this](){ finish(); } )
 {
-  handler_wrapper.init();
-  notify_status("signals attached");
 }
 
 application::~application() { }
+
+void application::init_signals_handler()
+{
+  handler_wrapper.init();
+  notify_status("signals attached");
+}
 
 void application::generate_interrupt_request()
 {

@@ -9,6 +9,7 @@ namespace beekeeper {
 
 beekeeper_app::beekeeper_app(): app( appbase::app() )
 {
+  app.init_signals_handler();
 }
 
 beekeeper_app::~beekeeper_app()
