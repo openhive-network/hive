@@ -59,42 +59,34 @@ class debug_node_plugin : public plugin< debug_node_plugin >
 
     chain::database& database();
 
+    // creates and pushes internal custom op transaction when there is none to be reused; returns id
+    const protocol::transaction_id_type& make_artificial_transaction_for_debug_update();
+
     template< typename Lambda >
     void debug_update( Lambda&& callback, uint32_t skip = hive::chain::database::skip_nothing, fc::optional<protocol::transaction_id_type> transaction_id = fc::optional<protocol::transaction_id_type>() )
     {
-      // this was a method on database in Graphene
-      chain::database& db = database();
-
-      auto apply_callback_to_debug_updates = [&callback, &_debug_updates = _debug_updates](const protocol::transaction_id_type& tx_id)
+      auto apply_callback_to_debug_updates = [&]( const protocol::transaction_id_type& tx_id )
       {
-        auto it = _debug_updates.find(tx_id);
-        if (it == _debug_updates.end())
+        auto it = _debug_updates.find( tx_id );
+        if( it == _debug_updates.end() )
           _debug_updates[tx_id] = { callback };
         else
-          it->second.push_back(callback);
+          it->second.emplace_back( callback );
       };
 
-      if (transaction_id)
-        apply_callback_to_debug_updates(*transaction_id);
+      if( transaction_id )
+      {
+        // in this mode caller should first register all necessary callbacks and then push transaction
+        // (if transaction is not pushed or is from the past, the callbacks will never execute)
+        apply_callback_to_debug_updates( *transaction_id );
+      }
       else
       {
-        static size_t idx = 0;
-        ++idx;
-        std::string idx_str(std::to_string(idx));
-        hive::protocol::custom_operation op;
-        op.required_auths = {"initminer"};
-        op.id = 0;
-        op.data = std::vector<char>(idx_str.begin(), idx_str.end());
-
-        hive::protocol::signed_transaction tx;
-        tx.set_expiration(db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
-        tx.operations.push_back(op);
-        const auto pack_type = hive::protocol::serialization_mode_controller::get_current_pack();
-        const auto init_miner_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
-        hive::chain::full_transaction_ptr ftx = hive::chain::full_transaction_type::create_from_signed_transaction(tx, pack_type, false);
-        ftx->sign_transaction(std::vector<fc::ecc::private_key>{init_miner_priv_key}, db.get_chain_id(), fc::ecc::fc_canonical, pack_type);
-        apply_callback_to_debug_updates(ftx->get_transaction_id());
-        db.push_transaction(ftx, 0);
+        // in this mode callbacks are executed immediately and then again as a result of reapplying
+        // artificial transaction (most likely on next block generation)
+        const auto& dummy_tx_id = make_artificial_transaction_for_debug_update();
+        apply_callback_to_debug_updates( dummy_tx_id );
+        callback( database() );
       }
     }
 
@@ -136,7 +128,7 @@ class debug_node_plugin : public plugin< debug_node_plugin >
 
   private:
     void on_pre_apply_transaction( const hive::chain::transaction_notification& note );
-
+    void on_post_apply_block( const hive::chain::block_notification& note );
     std::map<protocol::public_key_type, fc::ecc::private_key> _private_keys;
 
     std::shared_ptr< detail::debug_node_plugin_impl > my;
