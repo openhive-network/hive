@@ -75,7 +75,7 @@ FC_REFLECT( hive_schema, (schema_map)(chain_object_types) )
 
 int main( int argc, char** argv, char** envp )
 {
-  hive::chain::database db;
+  hive::chain::full_database db;
   hive::chain::open_args db_args;
 
   db_args.data_dir = "tempdata";
