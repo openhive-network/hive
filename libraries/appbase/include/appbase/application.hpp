@@ -73,6 +73,8 @@ namespace appbase {
       application(application&&) = delete;
       application& operator=(application&&) = delete;
 
+      void init_signals_handler();
+
       /**
         * @brief Looks for the --plugin commandline / config option and calls initialize on those plugins
         *

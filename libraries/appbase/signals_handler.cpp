@@ -122,12 +122,17 @@ void signals_handler_wrapper::init()
   after_attach_signals_future.get();
 
   block_signals();
+
+  initialized = true;
 }
 
 void signals_handler_wrapper::wait()
 {
-  if( handler_thread->joinable() )
-    handler_thread->join();
+  if( initialized )
+  {
+    if( handler_thread->joinable() )
+      handler_thread->join();
+  }
 }
 
 void signals_handler_wrapper::block_signals()

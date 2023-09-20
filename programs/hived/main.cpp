@@ -84,6 +84,7 @@ int main( int argc, char** argv )
   {
     appbase::initialization_result initializationResult( appbase::initialization_result::ok, false);
     appbase::application theApp;
+    theApp.init_signals_handler();
 
     BOOST_SCOPE_EXIT(&theApp, &initializationResult)
     {
