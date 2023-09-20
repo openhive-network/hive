@@ -1,5 +1,7 @@
 #pragma once
 
+#include <appbase/application.hpp>
+
 #include <hive/protocol/types.hpp>
 
 #include <hive/chain/detail/block_attributes.hpp>
@@ -52,6 +54,7 @@ public:
 
   typedef std::vector<artifacts_t> artifact_container_t;
 
+  block_log_artifacts( appbase::application& app );
   ~block_log_artifacts();
 
   /** Allows to open a block log artifacts file located in the same directory as specified block_log file itself.
@@ -63,7 +66,7 @@ public:
   * 
   *   Function throws on any error f.e. related to IO.
   */
-  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification);
+  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, appbase::application& app);
 
   /// Allows to read a number of last block the artifacts are stored for.
   uint32_t read_head_block_num() const;
@@ -93,8 +96,6 @@ public:
 
 private:
   class impl;
-
-  block_log_artifacts();
 
   block_log_artifacts(const block_log_artifacts&) = delete;
   block_log_artifacts(block_log_artifacts&&) = delete;

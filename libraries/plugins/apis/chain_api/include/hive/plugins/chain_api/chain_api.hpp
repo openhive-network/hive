@@ -20,7 +20,7 @@ struct push_transaction_return
 class chain_api
 {
   public:
-    chain_api();
+    chain_api( appbase::application& app );
     ~chain_api();
 
     DECLARE_API(

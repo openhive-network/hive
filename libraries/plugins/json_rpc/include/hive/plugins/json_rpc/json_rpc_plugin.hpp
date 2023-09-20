@@ -19,7 +19,7 @@
   * register itself using add_api.
   *
   * Ex.
-  * appbase::app().get_plugin< json_rpc_plugin >().add_api(
+  * theApp.get_plugin< json_rpc_plugin >().add_api(
   *    name(),
   *    {
   *       API_METHOD( method_1 ),
@@ -37,9 +37,9 @@
 
 #define HIVE_JSON_RPC_PLUGIN_NAME "json_rpc"
 
-#define JSON_RPC_REGISTER_API( API_NAME )                                                       \
+#define JSON_RPC_REGISTER_API( API_NAME, app )                                                       \
 {                                                                                               \
-  hive::plugins::json_rpc::detail::register_api_method_visitor vtor( API_NAME );              \
+  hive::plugins::json_rpc::detail::register_api_method_visitor vtor( API_NAME, app );              \
   for_each_api( vtor );                                                                        \
 }
 
@@ -116,9 +116,9 @@ namespace detail {
   class register_api_method_visitor
   {
     public:
-      register_api_method_visitor( const std::string& api_name )
+      register_api_method_visitor( const std::string& api_name, appbase::application& app )
         : _api_name( api_name ),
-          _json_rpc_plugin( appbase::app().get_plugin< hive::plugins::json_rpc::json_rpc_plugin >() )
+          _json_rpc_plugin( app.get_plugin< hive::plugins::json_rpc::json_rpc_plugin >() )
       {}
 
       template< typename Plugin, typename Method, typename Args, typename Ret >

@@ -171,11 +171,11 @@ fc::optional< fc::logging_config > application::load_logging_config()
 {
   fc::optional< fc::logging_config > logging_config;
   const variables_map& args = get_args();
-  my->_logging_thread.async( [args, &logging_config]{
+  my->_logging_thread.async( [this, args, &logging_config]{
     try
     {
       logging_config = 
-        hive::utilities::load_logging_config( args, appbase::app().data_dir() );
+        hive::utilities::load_logging_config( args, data_dir() );
       if( logging_config )
         fc::configure_logging( *logging_config );
     }

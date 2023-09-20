@@ -1,3 +1,5 @@
+#include <appbase/application.hpp>
+
 #include <fc/log/logger.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/filesystem.hpp>
@@ -13,29 +15,30 @@
 
 using namespace hive::chain;
 
-void generate_artifacts(const fc::path& block_log_path)
+void generate_artifacts(const fc::path& block_log_path, appbase::application& app)
 {
-  block_log bl;
+  block_log bl( app );
 
   bl.open(block_log_path, true, false);
-  auto bla = block_log_artifacts::open(block_log_path, bl, false, false);
+  auto bla = block_log_artifacts::open(block_log_path, bl, false, false, app);
   bla.reset();
   ilog("open and generation finished...");
 }
 
-void generate_from_scratch(const fc::path& block_log_path)
+void generate_from_scratch(const fc::path& block_log_path, appbase::application& app)
 {
   fc::path artifact_file_path = block_log_path.generic_string() + ".artifacts";
 
   fc::remove_all(artifact_file_path);
 
-  generate_artifacts(block_log_path);
+  generate_artifacts(block_log_path, app);
 }
 
 int main(int argc, char** argv)
 {
   try
   {
+    appbase::application theApp;
     boost::program_options::options_description options("Allowed options");
     options.add_options()("input-block-log,i", boost::program_options::value<std::string>()->required(), "The path pointing the input block log file");
     options.add_options()("help,h", "Print usage instructions");
@@ -56,7 +59,7 @@ int main(int argc, char** argv)
     fc::path input_block_log_path = options_map["input-block-log"].as<std::string>();
 
     ilog("Trying to perform full block log generation ...");
-    generate_from_scratch(input_block_log_path);
+    generate_from_scratch(input_block_log_path, theApp);
   }
   catch(const fc::exception& e)
   {

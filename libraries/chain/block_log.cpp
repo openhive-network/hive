@@ -128,7 +128,7 @@ namespace hive { namespace chain {
 
   } // end namespace detail
 
-  block_log::block_log() : my( new detail::block_log_impl() )
+  block_log::block_log( appbase::application& app ) : my( new detail::block_log_impl() ), theApp( app )
   {
     my->block_log_fd = -1;
   }
@@ -196,7 +196,7 @@ namespace hive { namespace chain {
       }
 
       if (auto_open_artifacts)
-          my->_artifacts = block_log_artifacts::open(file, *this, read_only, false);
+          my->_artifacts = block_log_artifacts::open(file, *this, read_only, false, theApp );
   }
 
   void block_log::close()

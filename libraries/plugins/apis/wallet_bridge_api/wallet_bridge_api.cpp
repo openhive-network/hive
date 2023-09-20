@@ -19,7 +19,7 @@ using mode_guard = hive::protocol::serialization_mode_controller::mode_guard;
 class wallet_bridge_api_impl
 {
   public:
-    wallet_bridge_api_impl();
+    wallet_bridge_api_impl( appbase::application& app );
     ~wallet_bridge_api_impl();
 
     void on_post_apply_block( const chain::block_notification& note );
@@ -79,6 +79,8 @@ class wallet_bridge_api_impl
 
   private:
 
+    appbase::application& theApp;
+
     protocol::signed_transaction get_trx( const variant& args );
 
     /**
@@ -89,10 +91,10 @@ class wallet_bridge_api_impl
 
 /* CONSTRUCTORS AND DESTRUCTORS */
 
-wallet_bridge_api::wallet_bridge_api()
-  : my( new wallet_bridge_api_impl() )
+wallet_bridge_api::wallet_bridge_api( appbase::application& app )
+  : my( new wallet_bridge_api_impl( app ) ), theApp( app )
 {
-  JSON_RPC_REGISTER_API( HIVE_WALLET_BRIDGE_API_PLUGIN_NAME );
+  JSON_RPC_REGISTER_API( HIVE_WALLET_BRIDGE_API_PLUGIN_NAME, app );
 }
 
 wallet_bridge_api::~wallet_bridge_api() {}
@@ -102,56 +104,56 @@ void wallet_bridge_api::api_startup()
   std::string not_enabled_plugins;
 
   //=====
-  auto db_api = appbase::app().find_plugin< database_api::database_api_plugin >();
+  auto db_api = theApp.find_plugin< database_api::database_api_plugin >();
   if (db_api)
     my->_database_api = db_api->api;
   else
     not_enabled_plugins += "database_api ";
 
   //=====
-  auto block_api = appbase::app().find_plugin< block_api::block_api_plugin >();
+  auto block_api = theApp.find_plugin< block_api::block_api_plugin >();
   if (block_api)
     my->_block_api = block_api->api;
   else
     not_enabled_plugins += "block_api ";
 
   //=====
-  auto account_history_api = appbase::app().find_plugin< account_history::account_history_api_plugin >();
+  auto account_history_api = theApp.find_plugin< account_history::account_history_api_plugin >();
   if (account_history_api)
     my->_account_history_api = account_history_api->api;
   else
     not_enabled_plugins += "account_history_api ";
 
   //=====
-  auto account_by_key_api = appbase::app().find_plugin< account_by_key::account_by_key_api_plugin >();
+  auto account_by_key_api = theApp.find_plugin< account_by_key::account_by_key_api_plugin >();
   if (account_by_key_api)
     my->_account_by_key_api = account_by_key_api->api;
   else
     not_enabled_plugins += "account_by_key_api ";
 
   //=====
-  auto market_history_api = appbase::app().find_plugin< market_history::market_history_api_plugin >();
+  auto market_history_api = theApp.find_plugin< market_history::market_history_api_plugin >();
   if (market_history_api)
     my->_market_history_api = market_history_api->api;
   else
     not_enabled_plugins += "market_history_api ";
 
   //=====
-  auto network_broadcast_api = appbase::app().find_plugin< network_broadcast_api::network_broadcast_api_plugin >();
+  auto network_broadcast_api = theApp.find_plugin< network_broadcast_api::network_broadcast_api_plugin >();
   if (network_broadcast_api)
     my->_network_broadcast_api = network_broadcast_api->api;
   else
     not_enabled_plugins += "network_broadcast_api ";
 
   //=====
-  auto rc_api = appbase::app().find_plugin< rc::rc_api_plugin >();
+  auto rc_api = theApp.find_plugin< rc::rc_api_plugin >();
   if (rc_api)
     my->_rc_api = rc_api->api;
   else
     not_enabled_plugins += "rc_api_plugin";
 
   //=====
-  auto p2p = appbase::app().find_plugin< p2p::p2p_plugin >();
+  auto p2p = theApp.find_plugin< p2p::p2p_plugin >();
   if (p2p)
     my->_p2p = p2p;
   else
@@ -163,12 +165,13 @@ void wallet_bridge_api::api_startup()
     ilog("Wallet bridge api initialized. Missing plugins: ${missing_plugins}", ( "missing_plugins", not_enabled_plugins ));
 }
 
-wallet_bridge_api_impl::wallet_bridge_api_impl() : 
-  _chain(appbase::app().get_plugin< hive::plugins::chain::chain_plugin >()),
-  _db( _chain.db() )
+wallet_bridge_api_impl::wallet_bridge_api_impl( appbase::application& app ): 
+                _chain(app.get_plugin< hive::plugins::chain::chain_plugin >()),
+                _db( _chain.db() ),
+                theApp( app )
 {
   _on_post_apply_block_conn = _db.add_post_apply_block_handler([&]( const chain::block_notification& note ){ on_post_apply_block( note ); },
-  appbase::app().get_plugin< hive::plugins::wallet_bridge_api::wallet_bridge_api_plugin >(), 0 );
+  theApp.get_plugin< hive::plugins::wallet_bridge_api::wallet_bridge_api_plugin >(), 0 );
 }
 
 wallet_bridge_api_impl::~wallet_bridge_api_impl() {}
@@ -737,7 +740,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
   const boost::chrono::milliseconds _wait_time = boost::chrono::milliseconds( 100 );
   do
   {
-    if( appbase::app().is_interrupt_request() )
+    if( theApp.is_interrupt_request() )
     {
       return broadcast_transaction_synchronous_return();
     }

@@ -969,7 +969,7 @@ DEFINE_API_ARGS( list_rc_direct_delegations,             vector< variant >,   ve
 class condenser_api
 {
 public:
-  condenser_api();
+  condenser_api( appbase::application& app );
   ~condenser_api();
 
   DECLARE_API(
@@ -1072,6 +1072,8 @@ public:
     void api_startup();
 
     std::unique_ptr< detail::condenser_api_impl > my;
+
+    appbase::application& theApp;
 };
 
 } } } // hive::plugins::condenser_api

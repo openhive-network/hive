@@ -110,7 +110,7 @@ namespace detail { class market_history_api_impl; }
 class market_history_api
 {
   public:
-    market_history_api();
+    market_history_api( appbase::application& app );
     ~market_history_api();
 
     DECLARE_API(

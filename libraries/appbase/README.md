@@ -53,14 +53,15 @@ class net_plugin : public appbase::plugin<net_plugin>
 
 int main( int argc, char** argv ) {
    try {
-      appbase::app().register_plugin<net_plugin>(); // implicit registration of chain_plugin dependency
+      appbase::application theApp;
+      theApp.register_plugin<net_plugin>(); // implicit registration of chain_plugin dependency
 
-      auto initResult = appbase::app().initialize( argc, argv );
+      auto initResult = theApp.initialize( argc, argv );
       if( !initResult.should_start_loop() )
         return initResult.get_result_code();
       
-      appbase::app().startup();
-      appbase::app().exec();
+      theApp.startup();
+      theApp.exec();
    } catch ( const boost::exception& e ) {
       std::cerr << boost::diagnostic_information(e) << "\n";
    } catch ( const std::exception& e ) {
@@ -89,8 +90,7 @@ exited cleanly
 
 ### Boost ASIO 
 
-AppBase maintains a singleton `application` instance which can be accessed via `appbase::app()`.  This 
-application owns a `boost::asio::io_service` which starts running when appbase::exec() is called. If 
+The application owns a `boost::asio::io_service` which starts running when appbase::exec() is called. If 
 a plugin needs to perform IO or other asynchronous operations then it should dispatch it via 
 `app().get_io_service().post( lambda )`.  
 
@@ -99,7 +99,7 @@ posted to the io_service should be run in the same thread.
 
 ## Graceful Exit 
 
-To trigger a graceful exit call `appbase::app().quit()` or send SIGTERM or SIGINT to the process.
+To trigger a graceful exit send SIGTERM or SIGINT to the process.
 
 ## Dependencies 
 

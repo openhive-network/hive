@@ -60,7 +60,7 @@ namespace hive { namespace chain {
 
       using block_id_type=hive::protocol::block_id_type;
 
-      block_log();
+      block_log( appbase::application& app );
       ~block_log();
 
       void open( const fc::path& file, bool read_only = false, bool auto_open_artifacts = true );
@@ -123,6 +123,8 @@ namespace hive { namespace chain {
       void truncate(uint32_t new_head_block_num);
     private:
       std::unique_ptr<detail::block_log_impl> my;
+
+      appbase::application& theApp;
   };
 
 } }

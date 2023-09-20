@@ -69,6 +69,8 @@ namespace hive {
 
       std::map< hive_p2p_handler_type, shutdown_state::ptr_shutdown_state > states;
 
+      appbase::application& theApp;
+
       const char* fStatus(std::future_status s)
       {
         switch(s)
@@ -120,8 +122,8 @@ namespace hive {
 
     public:
 
-      shutdown_mgr( std::string _name )
-        : name( _name ), running( true )
+      shutdown_mgr( std::string _name, appbase::application& app )
+        : name( _name ), running( true ), theApp( app )
       {
         std::map< hive_p2p_handler_type, std::string > input = {
                     { hive_p2p_handler_type::HIVE_P2P_BLOCK_HANDLER, "P2P_BLOCK" },
@@ -169,7 +171,7 @@ namespace hive {
 
       bool is_running() const
       {
-        return running.load() && !appbase::app().is_interrupt_request();
+        return running.load() && !theApp.is_interrupt_request();
       }
 
       shutdown_state& get_state( hive_p2p_handler_type handler )

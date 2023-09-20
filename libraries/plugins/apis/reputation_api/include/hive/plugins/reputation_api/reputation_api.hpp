@@ -38,7 +38,7 @@ struct get_account_reputations_return
 class reputation_api
 {
   public:
-    reputation_api();
+    reputation_api( appbase::application& app );
     ~reputation_api();
 
     DECLARE_API(

@@ -60,13 +60,16 @@ namespace hive { namespace example_api_plugin {
       echo_return echo( const echo_args& args );
   };
 
-  example_api_plugin::example_api_plugin( appbase::application& app ): appbase::plugin<example_api_plugin>( app ) {}
+  example_api_plugin::example_api_plugin( appbase::application& app ): appbase::plugin<example_api_plugin>( app )
+  {
+    // This registers the API with the json rpc plugin
+    JSON_RPC_REGISTER_API( name(), app );
+  }
+
   example_api_plugin::~example_api_plugin() {}
 
   void example_api_plugin::plugin_initialize( const variables_map& options )
   {
-    // This registers the API with the json rpc plugin
-    JSON_RPC_REGISTER_API( name(), (hello_world)(echo) );
   }
 
   void example_api_plugin::plugin_startup() {}

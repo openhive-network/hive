@@ -1,5 +1,7 @@
 #pragma once
 
+#include <appbase/application.hpp>
+
 #include <core/beekeeper_wallet_manager.hpp>
 #include <core/utilities.hpp>
 
@@ -21,7 +23,7 @@ namespace detail
 class beekeeper_wallet_api
 {
   public:
-    beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr );
+    beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, appbase::application& app );
     ~beekeeper_wallet_api();
 
     DECLARE_API(

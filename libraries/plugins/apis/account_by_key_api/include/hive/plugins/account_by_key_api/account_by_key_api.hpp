@@ -1,4 +1,7 @@
 #pragma once
+
+#include <appbase/application.hpp>
+
 #include <hive/plugins/json_rpc/utility.hpp>
 
 #include <hive/protocol/types.hpp>
@@ -27,7 +30,7 @@ struct get_key_references_return
 class account_by_key_api
 {
   public:
-    account_by_key_api();
+    account_by_key_api( appbase::application& app );
     ~account_by_key_api();
 
     DECLARE_API( (get_key_references) )

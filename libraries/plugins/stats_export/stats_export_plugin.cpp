@@ -65,9 +65,9 @@ class stats_export_plugin_impl
 {
   public:
     stats_export_plugin_impl( stats_export_plugin& _plugin ) :
-      _db( appbase::app().get_plugin< chain_plugin >().db() ),
+      _db( _plugin.get_app().get_plugin< chain_plugin >().db() ),
       _self( _plugin ),
-      _export_plugin( appbase::app().get_plugin< block_data_export_plugin >() )
+      _export_plugin( _plugin.get_app().get_plugin< block_data_export_plugin >() )
       {}
 
     void on_post_apply_block( const block_notification& note );

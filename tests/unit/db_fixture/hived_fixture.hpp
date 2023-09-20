@@ -46,7 +46,7 @@ struct hived_fixture : public database_fixture
     if constexpr ( sizeof...( plugin_ptr ) > 0 )
     {
       // ... use fold expression on parameter pack to fill each provided plugin pointer.
-      ((*plugin_ptr = &appbase::app().get_plugin< Plugin >()), ...);
+      ((*plugin_ptr = &theApp.get_plugin< Plugin >()), ...);
     }
   }
 

@@ -22,7 +22,7 @@ class block_log_info_plugin_impl
 {
   public:
     block_log_info_plugin_impl( block_log_info_plugin& _plugin ) :
-      _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+      _db( _plugin.get_app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin ) {}
 
     void on_post_apply_block( const block_notification& note );
@@ -149,7 +149,7 @@ void block_log_info_plugin::plugin_initialize( const boost::program_options::var
   try
   {
     ilog( "Initializing block_log_info plugin" );
-    chain::database& db = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
+    chain::database& db = theApp.get_plugin< hive::plugins::chain::chain_plugin >().db();
 
     my->_post_apply_block_conn = db.add_post_apply_block_handler(
       [&]( const block_notification& note ){ my->on_post_apply_block( note ); }, *this );
@@ -166,7 +166,7 @@ void block_log_info_plugin::plugin_initialize( const boost::program_options::var
       wlog( "print_interval_seconds set to value <= 0, if you don't need printing, consider disabling block_log_info_plugin entirely to improve performance" );
     }
 
-    appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), fc::variant_object() );
+    theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), fc::variant_object() );
   }
   FC_CAPTURE_AND_RETHROW()
 }

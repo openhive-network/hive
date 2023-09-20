@@ -7,6 +7,6 @@
 
 namespace hive { namespace plugins {
 
-void register_plugins();
+void register_plugins( appbase::application& app );
 
 } }

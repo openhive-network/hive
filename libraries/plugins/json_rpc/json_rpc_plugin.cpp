@@ -151,7 +151,7 @@ namespace detail
     } data, proxy_data;
 
     public:
-      json_rpc_plugin_impl();
+      json_rpc_plugin_impl( appbase::application& app );
       ~json_rpc_plugin_impl();
 
       void add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig );
@@ -180,9 +180,12 @@ namespace detail
 
       std::unique_ptr< json_rpc_logger >                 _logger;
       std::function<bool()>                              _check_serialization_status = [](){ return true; };
+
+      appbase::application& theApp;
   };
 
-  json_rpc_plugin_impl::json_rpc_plugin_impl() {}
+  json_rpc_plugin_impl::json_rpc_plugin_impl( appbase::application& app ): theApp( app ) {}
+
   json_rpc_plugin_impl::~json_rpc_plugin_impl() {}
 
 
@@ -220,7 +223,7 @@ namespace detail
   void json_rpc_plugin_impl::initialize()
   {
     ilog("initializing JSON RPC plugin");
-    JSON_RPC_REGISTER_API( "jsonrpc" );
+    JSON_RPC_REGISTER_API( "jsonrpc", theApp );
   }
 
   get_methods_return json_rpc_plugin_impl::get_methods( const get_methods_args& args, bool lock )
@@ -506,7 +509,7 @@ void json_rpc_plugin::set_program_options( options_description& , options_descri
 
 void json_rpc_plugin::plugin_initialize( const variables_map& options )
 {
-  my = std::make_unique< detail::json_rpc_plugin_impl >();
+  my = std::make_unique< detail::json_rpc_plugin_impl >( theApp );
 
   my->initialize();
 

@@ -10,9 +10,9 @@ namespace detail
    class network_node_api_impl
    {
       public:
-         network_node_api_impl() :
-            _p2p( appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >() )
-            //_chain( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >() )
+         network_node_api_impl( appbase::application& app ) :
+            _p2p( app.get_plugin< hive::plugins::p2p::p2p_plugin >() )
+            //_chain( app.get_plugin< hive::plugins::chain::chain_plugin >() )
          {}
 
          DECLARE_API_IMPL(
@@ -54,9 +54,9 @@ namespace detail
 
 } // detail
 
-network_node_api::network_node_api() : my( new detail::network_node_api_impl() )
+network_node_api::network_node_api( appbase::application& app ) : my( new detail::network_node_api_impl( app ) )
 {
-   JSON_RPC_REGISTER_API( HIVE_NETWORK_NODE_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( HIVE_NETWORK_NODE_API_PLUGIN_NAME, app );
 }
 
 network_node_api::~network_node_api() {}

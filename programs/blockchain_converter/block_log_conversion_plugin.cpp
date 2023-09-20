@@ -41,12 +41,14 @@ namespace detail {
   public:
     block_log log_in, log_out;
 
-    block_log_conversion_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size = 1 )
-      : conversion_plugin_impl( _private_key, chain_id, signers_size, true ) {}
+    block_log_conversion_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, appbase::application& app, size_t signers_size = 1 )
+      : conversion_plugin_impl( _private_key, chain_id, signers_size, true ), log_in( app ), log_out( app ), theApp( app ) {}
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
     void open( const fc::path& input, const fc::path& output );
     void close();
+
+    appbase::application& theApp;
   };
 
   void block_log_conversion_plugin_impl::open( const fc::path& input, const fc::path& output )
@@ -105,7 +107,7 @@ namespace detail {
 
       while( !chain_id_match && it_block_num >= 1 )
       {
-        if( appbase::app().is_interrupt_request() ) break;
+        if( theApp.is_interrupt_request() ) break;
         std::shared_ptr<hive::chain::full_block_type> _full_block = log_out.read_block_by_num( it_block_num );
         FC_ASSERT( _full_block, "unable to read block", ("block_num", it_block_num) );
 
@@ -148,7 +150,7 @@ namespace detail {
     if( !stop_block_num || stop_block_num > log_in.head()->get_block_num() )
       stop_block_num = log_in.head()->get_block_num();
 
-    for( ; start_block_num <= stop_block_num && !appbase::app().is_interrupt_request(); ++start_block_num )
+    for( ; start_block_num <= stop_block_num && !theApp.is_interrupt_request(); ++start_block_num )
     {
       std::shared_ptr<hive::chain::full_block_type> _full_block = log_in.read_block_by_num( start_block_num );
       FC_ASSERT( _full_block, "unable to read block", ("block_num", start_block_num) );
@@ -230,7 +232,7 @@ namespace detail {
     const auto private_key = fc::ecc::private_key::wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
-    my = std::make_unique< detail::block_log_conversion_plugin_impl >( *private_key, _hive_chain_id, options.at( "jobs" ).as< size_t >() );
+    my = std::make_unique< detail::block_log_conversion_plugin_impl >( *private_key, _hive_chain_id, theApp, options.at( "jobs" ).as< size_t >() );
 
     my->log_per_block = options["log-per-block"].as< uint32_t >();
     my->log_specific = options["log-specific"].as< uint32_t >();
@@ -244,14 +246,14 @@ namespace detail {
     try
     {
       my->convert(
-        appbase::app().get_args().at("resume-block").as< uint32_t >(),
-        appbase::app().get_args().at( "stop-block" ).as< uint32_t >()
+        theApp.get_args().at("resume-block").as< uint32_t >(),
+        theApp.get_args().at( "stop-block" ).as< uint32_t >()
       );
     }
     catch( const fc::exception& e )
     {
       elog( e.to_detail_string() );
-      appbase::app().generate_interrupt_request();
+      theApp.generate_interrupt_request();
     }
   }
   void block_log_conversion_plugin::plugin_shutdown()

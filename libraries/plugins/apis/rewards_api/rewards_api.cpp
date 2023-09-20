@@ -13,8 +13,8 @@ namespace detail {
 class rewards_api_impl
 {
 public:
-  rewards_api_impl() :
-    _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+  rewards_api_impl( appbase::application& app ) :
+    _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
   DECLARE_API_IMPL( (simulate_curve_payouts) );
 
@@ -28,9 +28,9 @@ DEFINE_API_IMPL( rewards_api_impl, simulate_curve_payouts )
 
 } // hive::plugins::rewards_api::detail
 
-rewards_api::rewards_api() : my( std::make_unique< detail::rewards_api_impl >() )
+rewards_api::rewards_api( appbase::application& app ) : my( std::make_unique< detail::rewards_api_impl >( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_REWARDS_API_PLUGIN_NAME );
+  JSON_RPC_REGISTER_API( HIVE_REWARDS_API_PLUGIN_NAME, app );
 }
 
 rewards_api::~rewards_api() {}
