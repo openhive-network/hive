@@ -51,6 +51,9 @@ namespace appbase {
   {
     private:
 
+
+      bool initialized = false;
+
       std::unique_ptr<std::thread>  handler_thread;
       signals_handler               handler;
 
