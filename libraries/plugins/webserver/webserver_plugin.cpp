@@ -156,8 +156,8 @@ template<typename websocket_server_type>
 class webserver_plugin_impl : public webserver_base
 {
   public:
-    webserver_plugin_impl( thread_pool_size_t _thread_pool_size ) :
-      thread_pool_size( _thread_pool_size )
+    webserver_plugin_impl( thread_pool_size_t _thread_pool_size, appbase::application& app ) :
+      thread_pool_size( _thread_pool_size ), theApp( app )
     {
     }
 
@@ -196,6 +196,9 @@ class webserver_plugin_impl : public webserver_base
     boost::signals2::connection add_connection( std::function<void(const collector_t&)> func ) override;
 
   private:
+
+    appbase::application& theApp;
+
     void update_http_endpoint();
     void update_ws_endpoint();
 
@@ -205,7 +208,7 @@ class webserver_plugin_impl : public webserver_base
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::startup()
 {
-  api = appbase::app().find_plugin< plugins::json_rpc::json_rpc_plugin >();
+  api = theApp.find_plugin< plugins::json_rpc::json_rpc_plugin >();
   FC_ASSERT( api != nullptr, "Could not find API Register Plugin" );
 
   prepare_threads();
@@ -232,7 +235,7 @@ void webserver_plugin_impl<websocket_server_type>::notify( const std::string& ty
   );
 
   listen( collector );
-  appbase::app().notify( "webserver listening", std::move( collector ) );
+  theApp.notify( "webserver listening", std::move( collector ) );
 };
 
 template<typename websocket_server_type>
@@ -589,9 +592,9 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
   auto _ws_deflate_enabled = options.at( "webserver-ws-deflate" ).as< bool >();
   ilog("Compression in webserver is ${_ws_deflate_enabled}", ("_ws_deflate_enabled", _ws_deflate_enabled ? "enabled" : "disabled"));
   if( _ws_deflate_enabled )
-    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size ) );
+    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size, theApp ) );
   else
-    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_nondeflate>( thread_pool_size ) );
+    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_nondeflate>( thread_pool_size, theApp ) );
 
   if( options.count( "webserver-http-endpoint" ) )
   {

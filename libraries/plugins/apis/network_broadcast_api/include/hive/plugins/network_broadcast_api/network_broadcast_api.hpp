@@ -42,7 +42,7 @@ namespace detail{ class network_broadcast_api_impl; }
 class network_broadcast_api
 {
   public:
-    network_broadcast_api();
+    network_broadcast_api( appbase::application& app );
     ~network_broadcast_api();
 
     DECLARE_API(

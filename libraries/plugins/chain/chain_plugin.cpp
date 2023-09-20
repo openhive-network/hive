@@ -113,9 +113,9 @@ namespace detail {
 class chain_plugin_impl
 {
   public:
-    chain_plugin_impl(): webserver( appbase::app().get_plugin<hive::plugins::webserver::webserver_plugin>() )
+    chain_plugin_impl( appbase::application& app ): db( app ), webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ), theApp( app )
     {
-      appbase::app().get_plugin<hive::plugins::json_rpc::json_rpc_plugin>().add_serialization_status( [this](){ return db.has_hardfork( HIVE_HARDFORK_1_26 ); } );
+      theApp.get_plugin<hive::plugins::json_rpc::json_rpc_plugin>().add_serialization_status( [this](){ return db.has_hardfork( HIVE_HARDFORK_1_26 ); } );
     }
 
     ~chain_plugin_impl() 
@@ -224,6 +224,8 @@ class chain_plugin_impl
 
     boost::signals2::connection                 chain_sync_con;
     hive::plugins::webserver::webserver_plugin& webserver;
+
+    appbase::application& theApp;
 };
 
 struct chain_plugin_impl::write_request_visitor
@@ -343,7 +345,7 @@ struct chain_plugin_impl::write_request_visitor
 
 bool chain_plugin_impl::is_running() const
 {
-  return running && !appbase::app().is_interrupt_request();
+  return running && !theApp.is_interrupt_request();
 }
 
 void chain_plugin_impl::start_write_processing()
@@ -352,7 +354,7 @@ void chain_plugin_impl::start_write_processing()
   {
     try
     {
-      appbase::app().notify_status("syncing");
+      theApp.notify_status("syncing");
       ilog("Write processing thread started.");
       fc::set_thread_name("write_queue");
       fc::thread::current().set_name("write_queue");
@@ -385,7 +387,7 @@ void chain_plugin_impl::start_write_processing()
       fc::time_point last_msg_time = last_popped_item_time;
       fc::time_point wait_start_time = last_popped_item_time;
 
-      appbase::app().notify_status("syncing");
+      theApp.notify_status("syncing");
       while (true)
       {
         // print a message if we haven't gotten any new data in a while
@@ -494,7 +496,7 @@ void chain_plugin_impl::start_write_processing()
         {
           is_syncing = false;
           db.notify_end_of_syncing();
-          appbase::app().notify_status("entering live mode");
+          theApp.notify_status("entering live mode");
           wlog("entering live mode");
         }
 
@@ -544,7 +546,7 @@ void chain_plugin_impl::start_write_processing()
 
 void chain_plugin_impl::stop_write_processing()
 {
-  appbase::app().notify_status("finished syncing");
+  theApp.notify_status("finished syncing");
   {
     std::unique_lock<std::mutex> lock(queue_mutex);
     running = false;
@@ -563,13 +565,13 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing()
 {
-  appbase::app().notify_status("replaying");
+  theApp.notify_status("replaying");
   bool replay_is_last_operation = replay_blockchain();
-  appbase::app().notify_status("finished replaying");
+  theApp.notify_status("finished replaying");
 
   if( replay_is_last_operation )
   {
-    if( !appbase::app().is_interrupt_request() )
+    if( !theApp.is_interrupt_request() )
     {
       ilog("Generating artificial interrupt request...");
 
@@ -578,7 +580,7 @@ bool chain_plugin_impl::start_replay_processing()
         Whole application should be closed in identical way, as if it was closed by user.
         This case occurs only when `exit-after-replay` switch is used.
       */
-      appbase::app().generate_interrupt_request();
+      theApp.generate_interrupt_request();
     }
   }
   else
@@ -595,7 +597,7 @@ void chain_plugin_impl::initial_settings()
 {
   if( statsd_on_replay )
   {
-    auto statsd = appbase::app().find_plugin< hive::plugins::statsd::statsd_plugin >();
+    auto statsd = theApp.find_plugin< hive::plugins::statsd::statsd_plugin >();
     if( statsd != nullptr )
     {
       statsd->start_logging();
@@ -662,7 +664,7 @@ bool chain_plugin_impl::check_data_consistency()
   {
     if( head_block_num_state > head_block_num_origin )
     {
-      appbase::app().generate_interrupt_request();
+      theApp.generate_interrupt_request();
       return false;
     }
     if( db.get_snapshot_loaded() )
@@ -672,7 +674,7 @@ bool chain_plugin_impl::check_data_consistency()
     else
     {
       wlog( "Replaying is not finished. Synchronization is not allowed. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
-      appbase::app().generate_interrupt_request();
+      theApp.generate_interrupt_request();
       return false;
     }
   }
@@ -701,7 +703,7 @@ void chain_plugin_impl::open()
 
     wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
     wlog( " Error: ${e}", ("e", e) );
-    appbase::app().notify_status("exitting with open database error");
+    theApp.notify_status("exitting with open database error");
     
     /// this exit shall be eliminated and exception caught inside application::startup, then force app exit with given code (but without calling exit function).
     exit(EXIT_FAILURE);
@@ -735,7 +737,7 @@ bool chain_plugin_impl::replay_blockchain()
     /*
       Returns information if the replay is last operation.
     */
-    return appbase::app().is_interrupt_request()/*user triggered SIGINT/SIGTERM*/ || exit_after_replay/*shutdown node definitely*/;
+    return theApp.is_interrupt_request()/*user triggered SIGINT/SIGTERM*/ || exit_after_replay/*shutdown node definitely*/;
   } FC_CAPTURE_LOG_AND_RETHROW( () )
 
   return true;
@@ -874,9 +876,9 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 }
 
 void chain_plugin::plugin_initialize(const variables_map& options) {
-  my.reset( new detail::chain_plugin_impl() );
+  my.reset( new detail::chain_plugin_impl( theApp ) );
 
-  appbase::app().setup_notifications(options);
+  theApp.setup_notifications(options);
   my->shared_memory_dir = app().data_dir() / "blockchain";
 
   if( options.count("shared-file-dir") )
@@ -1078,7 +1080,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
           ("cm", measure.current_mem)
           ("pm", measure.peak_mem) );
 
-        appbase::app().notify("hived_benchmark", "multiindex_stats", fc::variant{measure});
+        theApp.notify("hived_benchmark", "multiindex_stats", fc::variant{measure});
       }
     }, *this, 0);
   }
@@ -1140,7 +1142,7 @@ void chain_plugin::plugin_shutdown()
   my->stop_write_processing();
   my->db.close();
   ilog("database closed successfully");
-  appbase::app().notify_status("finished syncing");
+  theApp.notify_status("finished syncing");
 }
 
 void chain_plugin::register_snapshot_provider(state_snapshot_provider& provider)

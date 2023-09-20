@@ -23,7 +23,7 @@ const uint64_t BLOCK_INTERVAL = 1000000;
 class comment_cashout_logging_plugin_impl
 {
    public:
-      comment_cashout_logging_plugin_impl(const std::string &path) : _db(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
+      comment_cashout_logging_plugin_impl(const std::string &path, appbase::application& app ) : _db(app.get_plugin<hive::plugins::chain::chain_plugin>().db()),
         _log_dir_path(path) 
       {
       }
@@ -265,11 +265,11 @@ void comment_cashout_logging_plugin::plugin_initialize( const boost::program_opt
     {
       throw std::runtime_error("Path is not directory");
     }
-    my = std::make_unique<detail::comment_cashout_logging_plugin_impl>(pth.string());
+    my = std::make_unique<detail::comment_cashout_logging_plugin_impl>(pth.string(), theApp);
   }
   else
   {
-    my = std::make_unique<detail::comment_cashout_logging_plugin_impl>("./");
+    my = std::make_unique<detail::comment_cashout_logging_plugin_impl>("./", theApp);
   }
 
   my->_pre_apply_operation_conn = my->_db.add_pre_apply_operation_handler(

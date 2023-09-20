@@ -43,7 +43,7 @@ namespace detail{ class witness_api_impl; }
 class witness_api
 {
    public:
-      witness_api();
+      witness_api( appbase::application& app );
       ~witness_api();
 
       DECLARE_API(

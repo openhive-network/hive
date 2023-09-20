@@ -110,7 +110,7 @@ namespace chain {
   class database : public chainbase::database
   {
     public:
-      database();
+      database( appbase::application& app );
       ~database();
 
       enum transaction_status
@@ -951,6 +951,8 @@ namespace chain {
         *  This signal is emitted when pushing block is completely finished
         */
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
+
+      appbase::application& theApp;
   };
 
   struct reindex_notification

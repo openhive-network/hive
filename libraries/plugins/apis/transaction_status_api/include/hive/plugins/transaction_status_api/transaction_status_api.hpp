@@ -10,7 +10,7 @@ namespace detail { class transaction_status_api_impl; }
 class transaction_status_api
 {
 public:
-  transaction_status_api();
+  transaction_status_api( appbase::application& app );
   ~transaction_status_api();
 
   DECLARE_API( (find_transaction) )

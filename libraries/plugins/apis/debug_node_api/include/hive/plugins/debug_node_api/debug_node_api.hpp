@@ -143,7 +143,7 @@ typedef void_type debug_throw_exception_return;
 class debug_node_api
 {
   public:
-    debug_node_api();
+    debug_node_api( appbase::application& app );
     ~debug_node_api();
 
     DECLARE_API(

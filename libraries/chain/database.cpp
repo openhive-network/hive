@@ -144,8 +144,8 @@ void database_impl::delete_decoded_types_data_storage()
   _decoded_types_data_storage.reset();
 }
 
-database::database()
-  : rc(*this), _my( new database_impl(*this) ) {}
+database::database( appbase::application& app )
+  : rc(*this), _my( new database_impl(*this) ), _block_log( app ), theApp( app ) {}
 
 void database::begin_type_register_process(util::abstract_type_registrar& r)
 {
@@ -164,8 +164,8 @@ void database::open( const open_args& args )
     init_schema();
 
     helpers::environment_extension_resources environment_extension(
-                                                appbase::app().get_version_string(),
-                                                appbase::app().get_plugins_names(),
+                                                theApp.get_version_string(),
+                                                theApp.get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
     const bool wipe_shared_file = args.force_replay || args.load_snapshot;
@@ -332,7 +332,7 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
     apply_block(full_block, skip_flags);
     last_applied_block = full_block;
 
-    return !appbase::app().is_interrupt_request();
+    return !theApp.is_interrupt_request();
   };
 
   const uint32_t start_block_number = start_block->get_block_num();
@@ -341,7 +341,7 @@ uint32_t database::reindex_internal( const open_args& args, const std::shared_pt
   if (start_block_number < last_block_num)
     _block_log.for_each_block(start_block_number + 1, last_block_num, process_block, block_log::for_each_purpose::replay);
 
-  if (appbase::app().is_interrupt_request())
+  if (theApp.is_interrupt_request())
     ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})",
          ("n", last_applied_block->get_block_num())("id", last_applied_block->get_block_id()));
 
@@ -383,7 +383,7 @@ uint32_t database::reindex( const open_args& args )
     ilog( "Reindexing Blockchain" );
 
 
-    if( appbase::app().is_interrupt_request() )
+    if( theApp.is_interrupt_request() )
       return 0;
 
     uint32_t _head_block_num = head_block_num();
@@ -1204,7 +1204,7 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
     }
   }
   ilog("done pushing blocks from new fork");
-  appbase::app().notify("switching forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
+  theApp.notify("switching forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
 }
 
 bool database::_push_block(const block_flow_control& block_ctrl)
@@ -5646,9 +5646,9 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
     }
 
   }
-  FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
+  FC_CAPTURE_CALL_LOG_AND_RETHROW( [this](){
                                           elog( "An error occured during migrating an irreversible state. The node will be closed." );
-                                          appbase::app().generate_interrupt_request();
+                                          theApp.generate_interrupt_request();
                                        }, (old_last_irreversible) )
 }
 

@@ -12,7 +12,7 @@ namespace detail {
 class account_by_key_api_impl
 {
   public:
-    account_by_key_api_impl() : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+    account_by_key_api_impl( appbase::application& app ) : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
     get_key_references_return get_key_references( const get_key_references_args& args )const;
 
@@ -45,7 +45,7 @@ get_key_references_return account_by_key_api_impl::get_key_references( const get
 
 } // detail
 
-account_by_key_api::account_by_key_api(): my( new detail::account_by_key_api_impl() )
+account_by_key_api::account_by_key_api( appbase::application& app ): my( new detail::account_by_key_api_impl( app ) )
 {
   JSON_RPC_REGISTER_API( HIVE_ACCOUNT_BY_KEY_API_PLUGIN_NAME );
 }

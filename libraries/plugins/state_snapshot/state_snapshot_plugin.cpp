@@ -900,11 +900,11 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
   public:
     impl(state_snapshot_plugin& self, const bpo::variables_map& options) :
       _self(self),
-      _mainDb(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db())
+      _mainDb(_self.get_app().get_plugin<hive::plugins::chain::chain_plugin>().db())
       {
       collectOptions(options);
 
-      appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().register_snapshot_provider(*this);
+      _self.get_app().get_plugin<hive::plugins::chain::chain_plugin>().register_snapshot_provider(*this);
 
       ilog("Registering add_prepare_snapshot_handler...");
 
@@ -956,7 +956,7 @@ void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& optio
 
   if(snapshotPath.is_absolute() == false)
     {
-    auto basePath = appbase::app().data_dir();
+    auto basePath = _self.get_app().data_dir();
     auto actualPath = basePath / snapshotPath;
     snapshotPath = actualPath;
     }
@@ -975,7 +975,7 @@ void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& optio
 
   fc::mutable_variant_object state_opts;
 
-  appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().report_state_options(_self.name(), state_opts);
+  _self.get_app().get_plugin< hive::plugins::chain::chain_plugin >().report_state_options(_self.name(), state_opts);
   }
 
 std::string state_snapshot_plugin::impl::generate_name() const
@@ -1534,16 +1534,16 @@ void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive:
   {
     if(_do_immediate_load)
     {
-      appbase::app().notify_status("loading snapshot");
+      _self.get_app().notify_status("loading snapshot");
       load_snapshot(_snapshot_name, openArgs);
-      appbase::app().notify_status("finished loading snapshot");
+      _self.get_app().notify_status("finished loading snapshot");
     }
 
     if(_do_immediate_dump)
     {
-      appbase::app().notify_status("dumping snapshot");
+      _self.get_app().notify_status("dumping snapshot");
       prepare_snapshot(_snapshot_name);
-      appbase::app().notify_status("finished dumping snapshot");
+      _self.get_app().notify_status("finished dumping snapshot");
     }
   }
 

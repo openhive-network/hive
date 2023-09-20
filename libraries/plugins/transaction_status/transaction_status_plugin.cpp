@@ -45,7 +45,7 @@ namespace detail {
 class transaction_status_impl
 {
 public:
-  transaction_status_impl() : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+  transaction_status_impl( appbase::application& app ) : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
   virtual ~transaction_status_impl() {}
 
   void on_post_apply_transaction( const transaction_notification& note );
@@ -256,7 +256,7 @@ void transaction_status_plugin::plugin_initialize( const boost::program_options:
   try
   {
     ilog( "transaction_status: plugin_initialize() begin" );
-    my = std::make_unique< detail::transaction_status_impl >();
+    my = std::make_unique< detail::transaction_status_impl >( theApp );
 
     fc::mutable_variant_object state_opts;
 
@@ -296,7 +296,7 @@ void transaction_status_plugin::plugin_initialize( const boost::program_options:
 
     HIVE_ADD_PLUGIN_INDEX(my->_db, transaction_status_index);
 
-    appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+    theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 
     my->post_apply_transaction_connection = my->_db.add_post_apply_transaction_handler( [&]( const transaction_notification& note ) { try { my->on_post_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->post_apply_block_connection = my->_db.add_post_apply_block_handler( [&]( const block_notification& note ) { try { my->on_post_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );

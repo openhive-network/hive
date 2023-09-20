@@ -446,13 +446,14 @@ private:
 class account_history_rocksdb_plugin::impl final
 {
 public:
-  impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath) :
+  impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath, appbase::application& app) :
     _self(self),
-    _mainDb(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
-    _blockchainStoragePath(appbase::app().get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
+    _mainDb(self.get_app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
+    _blockchainStoragePath(self.get_app().get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
     _storagePath(storagePath),
     _writeBuffer(_storage, _columnHandles),
-    _filter("ah-rb")
+    _filter("ah-rb"),
+    theApp( app )
     {
     collectOptions(options);
 
@@ -911,6 +912,8 @@ private:
   std::ofstream                    _balance_csv_file;
   std::map<string, saved_balances> _saved_balances;
   unsigned                         _balance_csv_line_count = 0;
+
+  appbase::application& theApp;
 };
 
 void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_options::variables_map& options)
@@ -969,7 +972,7 @@ void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_o
     _balance_csv_file.flush();
   }
 
-  appbase::app().get_plugin< chain::chain_plugin >().report_state_options( _self.name(), state_opts );
+  theApp.get_plugin< chain::chain_plugin >().report_state_options( _self.name(), state_opts );
 }
 
 inline bool account_history_rocksdb_plugin::impl::isTrackedAccount(const account_name_type& name) const
@@ -1678,7 +1681,7 @@ std::tuple<bool, bool> account_history_rocksdb_plugin::impl::createDbSchema(cons
     elog("RocksDB can not create storage at location: `${p}'.\nReturned error: ${e}",
       ("p", strPath)("e", s.ToString()));
 
-    appbase::app().generate_interrupt_request();
+    theApp.generate_interrupt_request();
 
     return { false, false };/// { DB does not need data import, an application is closed }
   }
@@ -2176,12 +2179,12 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
 
   if(dbPath.is_absolute() == false)
   {
-    auto basePath = appbase::app().data_dir();
+    auto basePath = theApp.data_dir();
     auto actualPath = basePath / dbPath;
     dbPath = actualPath;
   }
 
-  _my = std::make_unique<impl>( *this, options, dbPath );
+  _my = std::make_unique<impl>( *this, options, dbPath, theApp );
 
   _my->openDb(_destroyOnStartup);
 }

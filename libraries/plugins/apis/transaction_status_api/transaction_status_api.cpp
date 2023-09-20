@@ -10,9 +10,9 @@ namespace detail {
 class transaction_status_api_impl
 {
 public:
-  transaction_status_api_impl() :
-    _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
-    _tsp( appbase::app().get_plugin< hive::plugins::transaction_status::transaction_status_plugin >() ) {}
+  transaction_status_api_impl( appbase::application& app ) :
+    _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+    _tsp( app.get_plugin< hive::plugins::transaction_status::transaction_status_plugin >() ) {}
 
   DECLARE_API_IMPL( (find_transaction) )
 
@@ -90,7 +90,7 @@ DEFINE_API_IMPL( transaction_status_api_impl, find_transaction )
 
 } // hive::plugins::transaction_status_api::detail
 
-transaction_status_api::transaction_status_api() : my( std::make_unique< detail::transaction_status_api_impl >() )
+transaction_status_api::transaction_status_api( appbase::application& app ) : my( std::make_unique< detail::transaction_status_api_impl >( app ) )
 {
   JSON_RPC_REGISTER_API( HIVE_TRANSACTION_STATUS_API_PLUGIN_NAME );
 }

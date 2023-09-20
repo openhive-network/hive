@@ -31,7 +31,7 @@ class follow_plugin_impl
 {
   public:
     follow_plugin_impl( follow_plugin& _plugin ) :
-      _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+      _db( _plugin.get_app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin ) {}
     ~follow_plugin_impl() {}
 
@@ -381,7 +381,7 @@ void follow_plugin::plugin_initialize( const boost::program_options::variables_m
       state_opts[ "follow-start-feeds" ] = start_feeds;
     }
 
-    appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+    theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
   }
   FC_CAPTURE_AND_RETHROW()
 }

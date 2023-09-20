@@ -194,9 +194,9 @@ void compress_blocks(uint32_t& current_block_num)
   }
 }
 
-void drain_completed_queue(const fc::path &block_log, uint32_t &current_block_number)
+void drain_completed_queue(const fc::path &block_log, uint32_t &current_block_number, appbase::application& app)
 {
-  hive::chain::block_log log;
+  hive::chain::block_log log( app );
   log.open(block_log);
   ilog("Opened output block log");
   if (log.head())
@@ -270,10 +270,10 @@ void drain_completed_queue(const fc::path &block_log, uint32_t &current_block_nu
   log.close();
 }
 
-void fill_pending_queue(const fc::path &block_log, const bool read_only, uint32_t &current_block_number)
+void fill_pending_queue(const fc::path &block_log, const bool read_only, uint32_t &current_block_number, appbase::application& app)
 {
   ilog("Starting fill_pending_queue");
-  hive::chain::block_log log;
+  hive::chain::block_log log( app );
 
   log.open(block_log, read_only);
 
@@ -394,12 +394,12 @@ void function_wrapper(const Func& function, const std::string function_name)
   }
 }
 
-void do_job(const fc::path& input_block_log_path, const fc::path& output_block_log_path, const unsigned compress_jobs, const bool input_read_only)
+void do_job(const fc::path& input_block_log_path, const fc::path& output_block_log_path, const unsigned compress_jobs, const bool input_read_only, appbase::application& app)
 {
   FC_ASSERT(compress_jobs);
 
-  auto fpq = [&input_block_log_path, input_read_only](uint32_t& block_number) {fill_pending_queue((input_block_log_path / "block_log"), input_read_only, block_number);};
-  auto dcq = [&output_block_log_path](uint32_t& block_number) { drain_completed_queue((output_block_log_path / "block_log"), block_number); };
+  auto fpq = [&input_block_log_path, input_read_only, &app](uint32_t& block_number) {fill_pending_queue((input_block_log_path / "block_log"), input_read_only, block_number, app);};
+  auto dcq = [&output_block_log_path, &app](uint32_t& block_number) { drain_completed_queue((output_block_log_path / "block_log"), block_number, app); };
   auto cb = [](uint32_t& block_number) {compress_blocks(block_number);};
 
   std::vector<std::thread> workers;
@@ -421,6 +421,7 @@ int main(int argc, char** argv)
 {
   try
   {
+    appbase::application theApp;
     // zstd doesn't have well-defined levels, so we get these at runtime
     std::ostringstream zstd_levels_description_stream;
     zstd_levels_description_stream << "The zstd compression level to use";
@@ -509,7 +510,7 @@ int main(int argc, char** argv)
     // we would have to attempt to compress the blocks each time we sent them to a peer.
     use_compressed_even_when_larger = options_map["use-compressed-even-when-larger"].as<bool>();
 
-    do_job(input_block_log_path, output_block_log_path, jobs, input_readonly);
+    do_job(input_block_log_path, output_block_log_path, jobs, input_readonly, theApp);
 
     if (error_detected.load())
     {

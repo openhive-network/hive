@@ -14,7 +14,7 @@ using namespace hive::plugins::market_history;
 class market_history_api_impl
 {
   public:
-    market_history_api_impl() : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+    market_history_api_impl( appbase::application& app ) : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ), theApp( app ) {}
 
     DECLARE_API_IMPL(
       (get_ticker)
@@ -27,13 +27,14 @@ class market_history_api_impl
     )
 
     chain::database& _db;
+    appbase::application& theApp;
 };
 
 DEFINE_API_IMPL( market_history_api_impl, get_ticker )
 {
   get_ticker_return result;
 
-  const auto& bucket_sizes = appbase::app().get_plugin< hive::plugins::market_history::market_history_plugin >().get_tracked_buckets();
+  const auto& bucket_sizes = theApp.get_plugin< hive::plugins::market_history::market_history_plugin >().get_tracked_buckets();
   if( !bucket_sizes.empty() )
   {
     // compare opening and closing price using smallest buckets, spanning at most last 24 hours in case we
@@ -70,7 +71,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_volume )
 {
   get_volume_return result;
 
-  const auto& bucket_sizes = appbase::app().get_plugin< hive::plugins::market_history::market_history_plugin >().get_tracked_buckets();
+  const auto& bucket_sizes = theApp.get_plugin< hive::plugins::market_history::market_history_plugin >().get_tracked_buckets();
   if( !bucket_sizes.empty() )
   {
     // see get_ticker
@@ -187,14 +188,14 @@ DEFINE_API_IMPL( market_history_api_impl, get_market_history )
 DEFINE_API_IMPL( market_history_api_impl, get_market_history_buckets )
 {
   get_market_history_buckets_return result;
-  result.bucket_sizes = appbase::app().get_plugin< hive::plugins::market_history::market_history_plugin >().get_tracked_buckets();
+  result.bucket_sizes = theApp.get_plugin< hive::plugins::market_history::market_history_plugin >().get_tracked_buckets();
   return result;
 }
 
 
 } // detail
 
-market_history_api::market_history_api(): my( new detail::market_history_api_impl() )
+market_history_api::market_history_api( appbase::application& app ): my( new detail::market_history_api_impl( app ) )
 {
   JSON_RPC_REGISTER_API( HIVE_MARKET_HISTORY_API_PLUGIN_NAME );
 }

@@ -298,7 +298,7 @@ struct enum_virtual_ops_return
 class account_history_api
 {
   public:
-    account_history_api();
+    account_history_api( appbase::application& app );
     ~account_history_api();
 
     DECLARE_API(

@@ -57,7 +57,7 @@ namespace detail{ class network_node_api_impl; }
 class network_node_api
 {
    public:
-      network_node_api();
+      network_node_api( appbase::application& app );
       ~network_node_api();
 
       DECLARE_API(

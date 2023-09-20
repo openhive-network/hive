@@ -44,7 +44,7 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
   {
     bpo::variables_map option_overrides;
 
-    _data_dir = common_init( [&]( appbase::application& app, int argc, char** argv )
+    _data_dir = common_init( theApp, [&]( appbase::application& app, int argc, char** argv )
     {
       
       // Global value should always default to true.

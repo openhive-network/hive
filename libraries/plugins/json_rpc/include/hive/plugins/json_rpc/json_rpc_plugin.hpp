@@ -19,7 +19,7 @@
   * register itself using add_api.
   *
   * Ex.
-  * appbase::app().get_plugin< json_rpc_plugin >().add_api(
+  * theApp.get_plugin< json_rpc_plugin >().add_api(
   *    name(),
   *    {
   *       API_METHOD( method_1 ),

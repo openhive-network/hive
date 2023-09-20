@@ -11,7 +11,7 @@ namespace detail
   class witness_api_impl
   {
     public:
-      witness_api_impl() : _witness(appbase::app().get_plugin<hive::plugins::witness::witness_plugin>())
+      witness_api_impl( appbase::application& app ) : _witness(app.get_plugin<hive::plugins::witness::witness_plugin>())
       {}
 
       DECLARE_API_IMPL((enable_fast_confirm)
@@ -39,7 +39,7 @@ namespace detail
   }
 } // detail
 
-witness_api::witness_api() : my(new detail::witness_api_impl())
+witness_api::witness_api( appbase::application& app ) : my(new detail::witness_api_impl( app ))
 {
   JSON_RPC_REGISTER_API(HIVE_WITNESS_API_PLUGIN_NAME);
 }

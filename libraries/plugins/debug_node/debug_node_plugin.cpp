@@ -25,7 +25,7 @@ namespace detail {
 class debug_node_plugin_impl
 {
   public:
-    debug_node_plugin_impl();
+    debug_node_plugin_impl( appbase::application& app );
     virtual ~debug_node_plugin_impl();
 
     plugins::chain::chain_plugin&             _chain_plugin;
@@ -34,8 +34,8 @@ class debug_node_plugin_impl
     boost::signals2::connection               _post_apply_block_conn;
 };
 
-debug_node_plugin_impl::debug_node_plugin_impl() :
-  _chain_plugin(appbase::app().get_plugin< hive::plugins::chain::chain_plugin >()),
+debug_node_plugin_impl::debug_node_plugin_impl( appbase::application& app ) :
+  _chain_plugin(app.get_plugin< hive::plugins::chain::chain_plugin >()),
   _db(_chain_plugin.db())
   {}
 
@@ -61,7 +61,7 @@ void debug_node_plugin::set_program_options(
 
 void debug_node_plugin::plugin_initialize( const variables_map& options )
 {
-  my = std::make_shared< detail::debug_node_plugin_impl >();
+  my = std::make_shared< detail::debug_node_plugin_impl >( theApp );
 
   if( options.count( "debug-node-edit-script" ) > 0 )
   {

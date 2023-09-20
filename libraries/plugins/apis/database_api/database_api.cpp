@@ -41,7 +41,7 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
 class database_api_impl
 {
   public:
-    database_api_impl();
+    database_api_impl( appbase::application& app );
     ~database_api_impl();
 
     DECLARE_API_IMPL
@@ -240,16 +240,16 @@ class database_api_impl
 //                                                                  //
 //////////////////////////////////////////////////////////////////////
 
-database_api::database_api()
-  : my( new database_api_impl() )
+database_api::database_api( appbase::application& app )
+  : my( new database_api_impl( app ) )
 {
   JSON_RPC_REGISTER_API( HIVE_DATABASE_API_PLUGIN_NAME );
 }
 
 database_api::~database_api() {}
 
-database_api_impl::database_api_impl()
-  : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+database_api_impl::database_api_impl( appbase::application& app )
+  : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
 database_api_impl::~database_api_impl() {}
 

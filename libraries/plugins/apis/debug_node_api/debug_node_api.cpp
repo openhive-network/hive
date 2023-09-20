@@ -17,9 +17,10 @@ namespace detail {
 class debug_node_api_impl
 {
   public:
-    debug_node_api_impl() :
-      _db( appbase::app().get_plugin< chain::chain_plugin >().db() ),
-      _debug_node( appbase::app().get_plugin< debug_node_plugin >() ) {}
+    debug_node_api_impl( appbase::application& app ) :
+      _db( app.get_plugin< chain::chain_plugin >().db() ),
+      _debug_node( app.get_plugin< debug_node_plugin >() ),
+      theApp( app ) {}
 
     DECLARE_API_IMPL(
       (debug_push_blocks)
@@ -38,6 +39,8 @@ class debug_node_api_impl
 
     chain::database& _db;
     debug_node::debug_node_plugin& _debug_node;
+
+    appbase::application& theApp;
 };
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
@@ -57,7 +60,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
   {
     ilog( "Loading ${n} from block_log ${fn}", ("n", count)("fn", src_filename) );
     idump( (src_filename)(count)(skip_validate_invariants) );
-    chain::block_log log;
+    chain::block_log log( theApp );
     log.open( src_path );
     uint32_t first_block = _db.head_block_num()+1;
     uint32_t skip_flags = chain::database::skip_nothing;
@@ -168,7 +171,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_throw_exception )
 
 } // detail
 
-debug_node_api::debug_node_api(): my( new detail::debug_node_api_impl() )
+debug_node_api::debug_node_api( appbase::application& app): my( new detail::debug_node_api_impl( app ) )
 {
   JSON_RPC_REGISTER_API( HIVE_DEBUG_NODE_API_PLUGIN_NAME );
 }

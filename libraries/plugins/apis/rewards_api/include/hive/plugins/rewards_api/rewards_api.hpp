@@ -1,5 +1,7 @@
 #pragma once
 
+#include <appbase/application.hpp>
+
 #include <hive/plugins/rewards_api/rewards_api_args.hpp>
 #include <hive/plugins/json_rpc/utility.hpp>
 
@@ -10,7 +12,7 @@ namespace detail { class rewards_api_impl; }
 class rewards_api
 {
 public:
-  rewards_api();
+  rewards_api( appbase::application& app );
   ~rewards_api();
 
   DECLARE_API(

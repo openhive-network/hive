@@ -54,7 +54,7 @@ autoscope set_mainnet_feed_values( bool auto_reset )
     return autoscope([](){});
 }
 
-fc::path common_init( const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer )
+fc::path common_init( appbase::application& app, const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer )
 {
   int argc = boost::unit_test::framework::master_test_suite().argc;
   char** argv = boost::unit_test::framework::master_test_suite().argv;
@@ -93,7 +93,7 @@ fc::path common_init( const std::function< void( appbase::application& app, int 
   // and blockchain directory (including shared memory file)
   fc::remove_all( ( temp_data_dir + "/blockchain" ).c_str() );
 
-  app_initializer( appbase::app(), argc, (char**)argv_ext.data() );
+  app_initializer( app, argc, (char**)argv_ext.data() );
   return _data_dir;
 }
 

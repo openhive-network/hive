@@ -112,11 +112,13 @@ namespace detail {
 
     uint64_t             error_response_count = 0;
     uint64_t             total_request_count = 0;
+
+    appbase::application& theApp;
   };
 
   node_based_conversion_plugin_impl::node_based_conversion_plugin_impl( const std::string& input_url, const std::vector< std::string >& output_urls,
-    const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, size_t block_buffer_size )
-    : conversion_plugin_impl( _private_key, chain_id, signers_size, false ), input_url( input_url ), block_buffer_size( block_buffer_size )
+    const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, size_t block_buffer_size, appbase::application& app )
+    : conversion_plugin_impl( _private_key, chain_id, signers_size, false ), input_url( input_url ), block_buffer_size( block_buffer_size ), theApp( app )
   {
     FC_ASSERT( block_buffer_size && block_buffer_size <= 1000, "Blocks buffer size should be in the range 1-1000", ("block_buffer_size",block_buffer_size) );
     idump((input_url)(output_urls));
@@ -263,7 +265,7 @@ namespace detail {
     };
     bool retry_flag = false;
 
-    for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !appbase::app().is_interrupt_request(); ++start_block_num )
+    for( ; ( start_block_num <= stop_block_num || !stop_block_num ) && !theApp.is_interrupt_request(); ++start_block_num )
     {
       try
       {
@@ -306,7 +308,7 @@ namespace detail {
           dlog("After conversion: ${block}", ("block", *block));
 
         for( size_t i = 0; i < transactions.size(); ++i )
-          if( appbase::app().is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
+          if( theApp.is_interrupt_request() ) // If there were multiple trxs in block user would have to wait for them to transmit before exiting without this check
             break;
           else
             transmit( *transactions.at(i), output_urls.at( i % output_urls.size() ) );
@@ -337,8 +339,8 @@ namespace detail {
       wlog("${errors} (${percent}% of total ${total}) node errors detected",
         ("errors", error_response_count)("percent", int(float(error_response_count) / total_request_count * 100))("total", total_request_count));
 
-    if( !appbase::app().is_interrupt_request() )
-      appbase::app().generate_interrupt_request();
+    if( !theApp.is_interrupt_request() )
+      theApp.generate_interrupt_request();
   }
 
   void node_based_conversion_plugin_impl::transmit( const hc::full_transaction_type& trx, const fc::url& using_url )
@@ -546,14 +548,14 @@ namespace detail {
     try
     {
       my->convert(
-        appbase::app().get_args().at("resume-block").as< uint32_t >(),
-        appbase::app().get_args().at( "stop-block" ).as< uint32_t >()
+        theApp.get_args().at("resume-block").as< uint32_t >(),
+        theApp.get_args().at( "stop-block" ).as< uint32_t >()
       );
     }
     catch( const fc::exception& e )
     {
       elog( e.to_detail_string() );
-      appbase::app().generate_interrupt_request();
+      theApp.generate_interrupt_request();
     }
   }
   void node_based_conversion_plugin::plugin_shutdown()

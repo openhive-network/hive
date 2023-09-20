@@ -27,7 +27,7 @@ using namespace hive::protocol;
 class tags_plugin_impl
 {
   public:
-    tags_plugin_impl();
+    tags_plugin_impl( appbase::application& app );
     virtual ~tags_plugin_impl();
 
     chain::database&     _db;
@@ -36,8 +36,8 @@ class tags_plugin_impl
 
 };
 
-tags_plugin_impl::tags_plugin_impl() :
-  _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+tags_plugin_impl::tags_plugin_impl( appbase::application& app ) :
+  _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
 tags_plugin_impl::~tags_plugin_impl() {}
 
@@ -65,7 +65,7 @@ void tags_plugin::plugin_initialize(const boost::program_options::variables_map&
 {
   FC_ASSERT( false, "A plugin `tags` is deprecated and is no longer supported.");
   ilog("Intializing tags plugin" );
-  my = std::make_unique< detail::tags_plugin_impl >();
+  my = std::make_unique< detail::tags_plugin_impl >( theApp );
 
   fc::mutable_variant_object state_opts;
 
@@ -76,7 +76,7 @@ void tags_plugin::plugin_initialize(const boost::program_options::variables_map&
     idump( (my->_promoted_start_time) );
   }
 
-  appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+  theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 }
 
 

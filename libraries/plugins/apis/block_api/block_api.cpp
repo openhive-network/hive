@@ -11,7 +11,7 @@ namespace hive { namespace plugins { namespace block_api {
 class block_api_impl
 {
   public:
-    block_api_impl();
+    block_api_impl( appbase::application& app );
     ~block_api_impl();
 
     DECLARE_API_IMPL(
@@ -29,16 +29,16 @@ class block_api_impl
 //                                                                  //
 //////////////////////////////////////////////////////////////////////
 
-block_api::block_api()
-  : my( new block_api_impl() )
+block_api::block_api( appbase::application& app )
+  : my( new block_api_impl( app ) )
 {
   JSON_RPC_REGISTER_API( HIVE_BLOCK_API_PLUGIN_NAME );
 }
 
 block_api::~block_api() {}
 
-block_api_impl::block_api_impl()
-  : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+block_api_impl::block_api_impl( appbase::application& app )
+  : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
 block_api_impl::~block_api_impl() {}
 
