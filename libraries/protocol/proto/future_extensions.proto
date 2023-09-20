@@ -6,6 +6,6 @@ message void_t {}
 
 message future_extensions {
   oneof extension {
-    void_t void_t = 1;
+    void_t void_t = 1 [json_name = "void_t"];
   }
 }

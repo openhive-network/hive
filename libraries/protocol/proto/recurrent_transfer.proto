@@ -6,13 +6,13 @@ import "future_extensions.proto";
 import "asset.proto";
 
 message recurrent_transfer_pair_id {
-  required uint32 pair_id = 1;
+  required uint32 pair_id = 1 [json_name = "pair_id"];
 }
 
 message recurrent_transfer_extension {
   oneof extension {
-    void_t void_t = 1;
-    recurrent_transfer_pair_id recurrent_transfer_pair_id = 2;
+    void_t void_t = 1 [json_name = "void_t"];
+    recurrent_transfer_pair_id recurrent_transfer_pair_id = 2 [json_name = "recurrent_transfer_pair_id"];
   }
 }
 
@@ -30,8 +30,8 @@ message recurrent_transfer_extension {
  * - The one account may define up to 255 recurrent transfers to other accounts. 
  * - The execution date of the last transfer should be no more than 730 days in the future.
  *
- * @param {string} from_
- * @param {string} to - Account to transfer asset to. Cannot set a transfer to yourself.
+ * @param {string} from_account
+ * @param {string} to_account - Account to transfer asset to. Cannot set a transfer to yourself.
  * @param {asset} amount - The amount of asset to transfer from @ref from to @ref to.
  *                         If the recurrent transfer failed 10 (HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES)
  *                         times because of the lack of funds, the recurrent transfer will be deleted.
@@ -47,8 +47,8 @@ message recurrent_transfer_extension {
  *                                                    Default value 'pair_id=0'.
  */
 message recurrent_transfer {
-  required string                       from_ = 1 [json_name = "from"];
-  required string                       to = 2;
+  required string                       from_account = 1 [json_name = "from"];
+  required string                       to_account = 2 [json_name = "to"];
   required asset                        amount = 3;
   required string                       memo = 4;
   required uint32                       recurrence = 5;
