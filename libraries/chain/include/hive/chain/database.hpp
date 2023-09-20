@@ -4,6 +4,7 @@
 #pragma once
 #include <hive/chain/block_flow_control.hpp>
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/block_write_interface.hpp>
 #include <hive/chain/fork_database.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/hardfork_property_object.hpp>
@@ -111,6 +112,8 @@ namespace chain {
     public:
       database( appbase::application& app );
       ~database();
+
+      void set_block_writer( block_write_i* writer );
 
       enum transaction_status
       {
@@ -758,6 +761,11 @@ namespace chain {
         return note;
       }
 
+      block_log&        _block_log();
+      const block_log&  _block_log() const;
+      fork_database&        _fork_db();
+      const fork_database&  _fork_db() const;
+
     public:
 
       const transaction_id_type& get_current_trx() const
@@ -815,10 +823,9 @@ namespace chain {
 
       std::unique_ptr< database_impl > _my;
 
-      fork_database                 _fork_db;
       hardfork_versions             _hardfork_versions;
 
-      block_log                     _block_log;
+      std::unique_ptr< block_write_i > _block_writer;
 
       // this function needs access to _plugin_index_signal
       template< typename MultiIndexType >
@@ -847,7 +854,6 @@ namespace chain {
       uint16_t                      _shared_file_scale_rate = 0;
 
       bool                          snapshot_loaded = false;
-      bool                          _is_at_live_sync = false;
 
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
       std::string                   _json_schema;

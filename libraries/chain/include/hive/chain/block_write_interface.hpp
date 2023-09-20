@@ -6,17 +6,27 @@
 
 namespace hive { namespace chain {
 
-  class block_write_i : public block_read_i
+  class block_log;
+  class fork_database;
+
+  class block_write_i //: public block_read_i
   {
   public:
-	/**
+  virtual ~block_write_i() {}
+
+  virtual block_log& get_block_log() = 0;
+  virtual fork_database& get_fork_db() = 0;
+
+  /// Call on interested writer when hived goes into live sync.
+  virtual void set_is_at_live_sync() = 0;
+
+  /**
 	 * Check that fork head (head block of the longest fork) matches state head.
 	 * Update block log up to current (not old) LIB (excluding) with the reversible blocks on main branch.
 	 * Trim new irreversible blocks from reversible main branch.
-	 * Drop undo sessions up to current (not old) LIB (including).
-	 * Notify registered callback about irreversibility of the blocks up to current (not old) LIB (including).
-	 */
-	virtual void migrate_irreversible_state(uint32_t old_last_irreversible) = 0;
+   */
+  virtual void store_block( uint32_t current_irreversible_block_num,
+                            uint32_t state_head_block_number ) = 0;
   };
 
 } }
