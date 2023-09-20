@@ -836,7 +836,7 @@ private:
 /// Class attributes:
 private:
   account_history_rocksdb_plugin&  _self;
-  chain::database&                 _mainDb;
+  chain::full_database&            _mainDb;
   bfs::path                        _blockchainStoragePath;
   bfs::path                        _storagePath;
   std::unique_ptr<DB>              _storage;

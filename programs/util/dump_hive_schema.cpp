@@ -79,7 +79,7 @@ int main( int argc, char** argv, char** envp )
 {
   appbase::application app;
 
-  hive::chain::database db( app );
+  hive::chain::full_database db(app);
   hive::chain::open_args db_args;
 
   db_args.data_dir = "tempdata";

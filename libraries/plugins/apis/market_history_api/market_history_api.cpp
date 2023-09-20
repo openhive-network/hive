@@ -26,7 +26,7 @@ class market_history_api_impl
       (get_market_history_buckets)
     )
 
-    chain::database& _db;
+    chain::full_database& _db;
     appbase::application& theApp;
 };
 
