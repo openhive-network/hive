@@ -56,11 +56,12 @@ namespace detail {
 
   class witness_plugin_impl {
   public:
-    witness_plugin_impl( boost::asio::io_service& io ) :
+    witness_plugin_impl( boost::asio::io_service& io, appbase::application& app ) :
       _timer(io),
-      _chain_plugin( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >() ),
-      _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
-      _block_producer( std::make_shared< witness::block_producer >( _db ) )
+      _chain_plugin( app.get_plugin< hive::plugins::chain::chain_plugin >() ),
+      _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+      _block_producer( std::make_shared< witness::block_producer >( _db ) ),
+      theApp( app )
       {}
 
     void on_post_apply_block( const chain::block_notification& note );
@@ -90,6 +91,8 @@ namespace detail {
     uint32_t _last_fast_confirmation_block_number = 0;
 
     std::atomic<bool> _enable_fast_confirm = true;
+
+    appbase::application& theApp;
   };
 
   class witness_generate_block_flow_control final : public generate_block_flow_control
@@ -316,7 +319,7 @@ namespace detail {
                 uint32_t skip = _db.get_node_skip_flags();
 
                 _db.push_transaction(full_transaction, skip);
-                appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
+                theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
               }
               else
               {
@@ -486,7 +489,7 @@ namespace detail {
     const std::shared_ptr<full_block_type>& full_block = generate_block_ctrl->get_full_block();
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
 
-    //appbase::app().get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_block(full_block);
+    //theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_block(full_block);
     // above is executed by generate_block_ctrl after block is inserted to fork-db, but the thread is kept waiting
     // until block is reapplied, or the same block would try to be produced again
     return block_production_condition::produced;
@@ -532,7 +535,7 @@ void witness_plugin::set_program_options(
 void witness_plugin::plugin_initialize(const boost::program_options::variables_map& options)
 { try {
   ilog( "Initializing witness plugin" );
-  my = std::make_unique< detail::witness_plugin_impl >( appbase::app().get_io_service() );
+  my = std::make_unique< detail::witness_plugin_impl >( theApp.get_io_service(), theApp );
 
   my->_chain_plugin.register_block_generator( get_name(), my->_block_producer );
 
@@ -578,7 +581,7 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 void witness_plugin::plugin_startup()
 { try {
   ilog("witness plugin:  plugin_startup() begin" );
-  auto& _chain_plugin = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >();
+  auto& _chain_plugin = theApp.get_plugin< hive::plugins::chain::chain_plugin >();
   my->_is_p2p_enabled = _chain_plugin.is_p2p_enabled();
   chain::database& d  = _chain_plugin.db();
 
@@ -591,7 +594,7 @@ void witness_plugin::plugin_startup()
   if( !my->_witnesses.empty() )
   {
     ilog( "Launching block production for ${n} witnesses.", ("n", my->_witnesses.size()) );
-    appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().set_block_production( true );
+    theApp.get_plugin< hive::plugins::p2p::p2p_plugin >().set_block_production( true );
     if( my->_production_enabled )
     {
       if( d.head_block_num() == 0 )

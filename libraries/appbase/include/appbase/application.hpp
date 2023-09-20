@@ -101,6 +101,10 @@ namespace appbase {
   class application final
   {
     public:
+
+      application();
+      ~application();
+
       application(const application&) = delete;
       application& operator=(const application&) = delete;
       application(application&&) = delete;
@@ -217,8 +221,6 @@ namespace appbase {
       ///@}
 
     private:
-      application(); ///< private because application is a singleton that should be accessed via instance()
-      ~application();
 
       friend application& appbase::app();
       friend void appbase::reset();
@@ -378,6 +380,11 @@ namespace appbase {
           this->plugin_shutdown();
         }
       }
+
+    application& get_app()
+    {
+      return theApp;
+    }
 
     protected:
 

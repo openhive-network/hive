@@ -10,7 +10,7 @@ class wallet_bridge_api_impl;
 class wallet_bridge_api
 {
   public:
-    wallet_bridge_api();
+    wallet_bridge_api( appbase::application& app );
     ~wallet_bridge_api();
 
     DECLARE_API(
@@ -56,6 +56,7 @@ class wallet_bridge_api
 
   private:
     std::unique_ptr< wallet_bridge_api_impl > my;
+    appbase::application& theApp;
 };
 
 } } } //hive::plugins::wallet_bridge_api

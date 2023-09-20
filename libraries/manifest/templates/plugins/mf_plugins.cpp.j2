@@ -9,10 +9,10 @@
 
 namespace hive { namespace plugins {
 
-void register_plugins()
+void register_plugins( appbase::application& app )
 {
    {% for plugin in plugins %}
-   appbase::app().register_plugin< hive::plugins::{{ plugin["plugin_namespace"] }}::{{ plugin["plugin_name" ] }}_plugin >();
+   app.register_plugin< hive::plugins::{{ plugin["plugin_namespace"] }}::{{ plugin["plugin_name" ] }}_plugin >();
    {% endfor %}
 }
 

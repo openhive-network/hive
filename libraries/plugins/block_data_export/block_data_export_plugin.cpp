@@ -64,10 +64,11 @@ class block_data_export_plugin_impl
 {
   public:
     block_data_export_plugin_impl( block_data_export_plugin& _plugin ) :
-      _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+      _db( _plugin.get_app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin ),
       _data_queue( _max_queue_size ),
-      _output_queue( _max_queue_size ) {}
+      _output_queue( _max_queue_size ),
+      theApp( _plugin.get_app() ) {}
 
     void on_pre_apply_block( const block_notification& note );
     void on_post_apply_block( const block_notification& note );
@@ -105,6 +106,8 @@ class block_data_export_plugin_impl
     std::shared_ptr< boost::thread >                      _output_thread;
 
     std::vector< boost::thread >  _json_conversion_threads;
+
+    appbase::application& theApp;
 };
 
 void block_data_export_plugin_impl::start_threads()
@@ -145,7 +148,7 @@ void block_data_export_plugin_impl::convert_to_json_thread_main()
 {
   while( true )
   {
-    if (appbase::app().is_interrupt_request() )
+    if (theApp.is_interrupt_request() )
       break;
 
     std::shared_ptr< work_item > work;
@@ -169,7 +172,7 @@ void block_data_export_plugin_impl::output_thread_main()
   std::ofstream output_file( _output_name, std::ios::binary );
   while( true )
   {
-    if (appbase::app().is_interrupt_request() )
+    if (theApp.is_interrupt_request() )
       break;
 
     std::shared_ptr< work_item > work;

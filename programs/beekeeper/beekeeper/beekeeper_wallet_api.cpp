@@ -151,9 +151,9 @@ DEFINE_API_IMPL( beekeeper_api_impl, close_session )
 
 } // detail
 
-beekeeper_wallet_api::beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr ): my( new detail::beekeeper_api_impl( wallet_mgr ) )
+beekeeper_wallet_api::beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, appbase::application& app ): my( new detail::beekeeper_api_impl( wallet_mgr ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_BEEKEEPER_API_NAME );
+  JSON_RPC_REGISTER_API( HIVE_BEEKEEPER_API_NAME, app );
 }
 
 beekeeper_wallet_api::~beekeeper_wallet_api() {}

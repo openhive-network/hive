@@ -49,11 +49,11 @@ void append_full_block(const std::shared_ptr<hive::chain::full_block_type>& full
   start_offset += uncompressed.raw_size + sizeof(start_offset);
 }
 
-void checksum_block_log(const fc::path& block_log, std::optional<uint32_t> checkpoint_every_n_blocks) 
+void checksum_block_log(const fc::path& block_log, std::optional<uint32_t> checkpoint_every_n_blocks, appbase::application& app) 
 {
   try
   {
-    hive::chain::block_log log;
+    hive::chain::block_log log( app );
     log.open(block_log, true);
 
     uint64_t uncompressed_block_start_offset = 0; // as we go, keep track of the block's starting offset if it were recorded uncompressed
@@ -87,11 +87,11 @@ void checksum_block_log(const fc::path& block_log, std::optional<uint32_t> check
   FC_LOG_AND_RETHROW()
 }
 
-bool validate_block_log_checksum(const fc::path& block_log, const block_log_hashes& hashes_to_validate)
+bool validate_block_log_checksum(const fc::path& block_log, const block_log_hashes& hashes_to_validate, appbase::application& app)
 {
   try
   {
-    hive::chain::block_log log;
+    hive::chain::block_log log( app );
     log.open(block_log, true);
 
     uint64_t uncompressed_block_start_offset = 0; // as we go, keep track of the block's starting offset if it were recorded uncompressed
@@ -220,14 +220,14 @@ block_logs_and_hashes_type parse_checkpoints(const fc::path& checkpoints_file)
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool validate_block_log_checksums_from_file(const fc::path& checksums_file)
+bool validate_block_log_checksums_from_file(const fc::path& checksums_file, appbase::application& app)
 {
   try
   {
     block_logs_and_hashes_type hashes_in_checksums_file = parse_checkpoints(checksums_file);
     unsigned fail_count = 0;
     for (const auto& [block_log, hashes_to_validate] : hashes_in_checksums_file)
-      if (!validate_block_log_checksum(block_log, hashes_to_validate))
+      if (!validate_block_log_checksum(block_log, hashes_to_validate, app))
         ++fail_count;
     if (fail_count)
       std::cout << "WARNING: " << fail_count << " block logs had checksums that did NOT match\n";
@@ -237,16 +237,16 @@ bool validate_block_log_checksums_from_file(const fc::path& checksums_file)
 }
 
 bool compare_block_logs(const fc::path& first_filename, const fc::path& second_filename, 
-                        std::optional<uint32_t> start_at_block)
+                        std::optional<uint32_t> start_at_block, appbase::application& app)
 {
   try
   {
     // open both block log files
-    hive::chain::block_log first_block_log;
+    hive::chain::block_log first_block_log( app );
     first_block_log.open(first_filename, true);
     const uint32_t first_head_block_num = first_block_log.head() ? first_block_log.head()->get_block_num() : 0;
 
-    hive::chain::block_log second_block_log;
+    hive::chain::block_log second_block_log( app );
     second_block_log.open(second_filename, true);
     const uint32_t second_head_block_num = second_block_log.head() ? second_block_log.head()->get_block_num() : 0;
 
@@ -334,7 +334,7 @@ bool compare_block_logs(const fc::path& first_filename, const fc::path& second_f
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool truncate_block_log(const fc::path& block_log_filename, uint32_t new_head_block_num, bool force)
+bool truncate_block_log(const fc::path& block_log_filename, uint32_t new_head_block_num, bool force, appbase::application& app)
 {
   try
   {
@@ -350,7 +350,7 @@ bool truncate_block_log(const fc::path& block_log_filename, uint32_t new_head_bl
         return false;
       }
     }
-    hive::chain::block_log log;
+    hive::chain::block_log log( app );
     log.open(block_log_filename, false);
     log.truncate(new_head_block_num);
     return true;
@@ -494,11 +494,11 @@ bool find_end(const fc::path& block_log_filename)
   FC_CAPTURE_AND_RETHROW()
 }
 
-void get_head_block_number(const fc::path& block_log_filename)
+void get_head_block_number(const fc::path& block_log_filename, appbase::application& app)
 {
   try
   {
-    hive::chain::block_log log;
+    hive::chain::block_log log( app );
     log.open(block_log_filename, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     std::cout << head_block_num << "\n";
@@ -506,11 +506,11 @@ void get_head_block_number(const fc::path& block_log_filename)
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_number, std::optional<uint32_t> ending_block_number, bool print_block_numbers)
+bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_number, std::optional<uint32_t> ending_block_number, bool print_block_numbers, appbase::application& app)
 {
   try
   {
-    hive::chain::block_log log;
+    hive::chain::block_log log( app );
     log.open(block_log_filename, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     if (starting_block_number > head_block_num ||
@@ -531,11 +531,11 @@ bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_n
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block(const fc::path& block_log_filename, uint32_t block_number, bool header_only, bool pretty_print, bool binary)
+bool get_block(const fc::path& block_log_filename, uint32_t block_number, bool header_only, bool pretty_print, bool binary, appbase::application& app)
 {
   try
   {
-    hive::chain::block_log log;
+    hive::chain::block_log log( app );
     log.open(block_log_filename, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
     if (block_number < head_block_num)
@@ -576,16 +576,16 @@ bool get_block(const fc::path& block_log_filename, uint32_t block_number, bool h
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_artifacts(const fc::path& block_log_path, const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, const bool header_only, const bool full_match_verification)
+bool get_block_artifacts(const fc::path& block_log_path, const std::optional<uint32_t>& starting_block_number, const std::optional<uint32_t>& ending_block_number, const bool header_only, const bool full_match_verification, appbase::application& app)
 {
   try
   {
-    hive::chain::block_log block_log;
+    hive::chain::block_log block_log( app );
     block_log.open(block_log_path, true, false);
     if (full_match_verification)
       std::cout << "Opening artifacts file with full artifacts match verification ...\n";
 
-    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log, true, full_match_verification);
+    hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts = hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log, true, full_match_verification, app);
 
     if (full_match_verification)
       std::cout << "Artifacts file match verification done.\n\n";
@@ -611,6 +611,8 @@ bool get_block_artifacts(const fc::path& block_log_path, const std::optional<uin
 
 int main(int argc, char** argv)
 {
+  appbase::application theApp;
+
   boost::program_options::options_description global_options("Global options");
   global_options.add_options()("jobs,j", boost::program_options::value<int>()->default_value(4), "The number of worker threads to spawn");
   global_options.add_options()("verbose,v", "Enable info messages to stderr");
@@ -776,7 +778,7 @@ int main(int argc, char** argv)
         if (options_map.count("checkpoint"))
           checkpoint_every_n_blocks = options_map["checkpoint"].as<uint32_t>();
         for (const std::string& input_block_log : input_block_logs)
-          checksum_block_log(input_block_log, checkpoint_every_n_blocks);
+          checksum_block_log(input_block_log, checkpoint_every_n_blocks, theApp);
         return 0;
       }
       else if (options_map.count("check"))
@@ -786,7 +788,7 @@ int main(int argc, char** argv)
           std::cerr << "the --checkpoint option doesn't make sense with the --check option\n";
           return 1;
         }
-        return validate_block_log_checksums_from_file(options_map["check"].as<std::string>()) ? 0 : 1;
+        return validate_block_log_checksums_from_file(options_map["check"].as<std::string>(), theApp) ? 0 : 1;
       }
     }
     else if (command == "cmp")
@@ -803,7 +805,7 @@ int main(int argc, char** argv)
       std::optional<uint32_t> start_at_block;
       if (options_map.count("start-at-block"))
         start_at_block = options_map["start-at-block"].as<uint32_t>();
-      return compare_block_logs(options_map["first-block-log"].as<std::string>(), options_map["second-block-log"].as<std::string>(), start_at_block) ? 0 : 1;
+      return compare_block_logs(options_map["first-block-log"].as<std::string>(), options_map["second-block-log"].as<std::string>(), start_at_block, theApp) ? 0 : 1;
     }
     else if (command == "truncate")
     {
@@ -816,7 +818,7 @@ int main(int argc, char** argv)
         run();
       boost::program_options::store(parsed_truncate_options, options_map);
 
-      return truncate_block_log(options_map["block-log"].as<std::string>(), options_map["block-number"].as<uint32_t>(), options_map.count("force")) ? 0 : 1;
+      return truncate_block_log(options_map["block-log"].as<std::string>(), options_map["block-number"].as<uint32_t>(), options_map.count("force"), theApp) ? 0 : 1;
     }
     else if (command == "find-end")
     {
@@ -842,7 +844,7 @@ int main(int argc, char** argv)
         run();
       boost::program_options::store(parsed_get_head_block_number_options, options_map);
 
-      get_head_block_number(options_map["block-log"].as<std::string>());
+      get_head_block_number(options_map["block-log"].as<std::string>(), theApp);
       return 0;
     }
     else if (command == "get-block-ids")
@@ -863,7 +865,7 @@ int main(int argc, char** argv)
 
       bool print_block_numbers = options_map.count("print-block-numbers") != 0;
 
-      return get_block_ids(options_map["block-log"].as<std::string>(), starting_block_number, ending_block_number, print_block_numbers) ? 0 : 1;
+      return get_block_ids(options_map["block-log"].as<std::string>(), starting_block_number, ending_block_number, print_block_numbers, theApp) ? 0 : 1;
     }
     else if (command == "get-block")
     {
@@ -881,7 +883,7 @@ int main(int argc, char** argv)
       const bool pretty = options_map.count("pretty") != 0;
       const bool binary = options_map.count("binary") != 0;
 
-      return get_block(options_map["block-log"].as<std::string>(), block_number, header_only, pretty, binary) ? 0 : 1;
+      return get_block(options_map["block-log"].as<std::string>(), block_number, header_only, pretty, binary, theApp) ? 0 : 1;
     }
     else if (command == "get-block-artifacts")
     {
@@ -910,7 +912,7 @@ int main(int argc, char** argv)
         }
       }
 
-      return get_block_artifacts(options_map["block-log"].as<std::string>(), starting_block_number, ending_block_number, header_only, full_match_verification);
+      return get_block_artifacts(options_map["block-log"].as<std::string>(), starting_block_number, ending_block_number, header_only, full_match_verification, theApp);
     }
     else
     {

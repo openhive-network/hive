@@ -176,6 +176,9 @@ inline size_t calculate_block_serialized_data_size(const artifact_file_chunk& ne
 class block_log_artifacts::impl final
 {
 public:
+
+  impl( appbase::application& app );
+
   void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification);
 
   uint32_t read_head_block_num() const
@@ -284,7 +287,14 @@ private:
   const size_t header_pack_size = sizeof(_header);
   const size_t artifact_chunk_size = sizeof(artifact_file_chunk);
   bool _is_writable = false;
+
+  appbase::application& theApp;
 };
+
+block_log_artifacts::impl::impl( appbase::application& app ): theApp( app )
+{
+
+}
 
 void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification)
 {
@@ -374,7 +384,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
           if (_header.generating_interrupted_at_block)
             generate_artifacts_file(source_block_provider);
 
-          if (block_log_head_block_num > _header.head_block_num && !_header.generating_interrupted_at_block && !appbase::app().is_interrupt_request())
+          if (block_log_head_block_num > _header.head_block_num && !_header.generating_interrupted_at_block && !theApp.is_interrupt_request())
           {
             wlog("block_log file is longer than current block_log.artifact file. Artifacts head block num: ${header_head_block_num}, block log head block num: ${block_log_head_block_num}.",
                 ("header_head_block_num", _header.head_block_num)(block_log_head_block_num));
@@ -492,10 +502,10 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
       std::shared_ptr<full_block_with_artifacts> block_with_artifacts;
       {
         std::unique_lock<std::mutex> lock(queue_mutex);
-        while (!appbase::app().is_interrupt_request() && !full_block_queue.pop(block_with_artifacts))
+        while (!theApp.is_interrupt_request() && !full_block_queue.pop(block_with_artifacts))
           queue_condition.wait(lock);
 
-        if (appbase::app().is_interrupt_request() || !block_with_artifacts)
+        if (theApp.is_interrupt_request() || !block_with_artifacts)
         {
           ilog("Artifacts file generation interrupted at block: ${current_block_number}", (current_block_number));
           generating_interrupted = true;
@@ -525,13 +535,13 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
 
   auto block_processor = [&](const std::shared_ptr<full_block_type>& full_block, const uint64_t block_pos, const uint32_t block_num, const block_attributes_t attributes) -> bool
   {
-    if (!appbase::app().is_interrupt_request() && queue_size.load(std::memory_order_relaxed) >= MAX_BLOCK_TO_PREFETCH)
+    if (!theApp.is_interrupt_request() && queue_size.load(std::memory_order_relaxed) >= MAX_BLOCK_TO_PREFETCH)
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
-      while (!appbase::app().is_interrupt_request() && queue_size.load(std::memory_order_relaxed) >= MAX_BLOCK_TO_PREFETCH)
+      while (!theApp.is_interrupt_request() && queue_size.load(std::memory_order_relaxed) >= MAX_BLOCK_TO_PREFETCH)
         queue_condition.wait(lock);
     }
-    if (appbase::app().is_interrupt_request())
+    if (theApp.is_interrupt_request())
       return false;
 
     std::shared_ptr<full_block_with_artifacts> block_with_artifacts(new full_block_with_artifacts{full_block, block_pos, attributes});
@@ -713,7 +723,7 @@ block_log_artifacts::artifacts_t block_log_artifacts::impl::read_block_artifacts
 }
 
 
-block_log_artifacts::block_log_artifacts() : _impl(std::make_unique<impl>())
+block_log_artifacts::block_log_artifacts( appbase::application& app ) : _impl(std::make_unique<impl>( app ))
 {
 }
 
@@ -723,9 +733,9 @@ block_log_artifacts::~block_log_artifacts()
     _impl->close();
 }
 
-block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification)
+block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, appbase::application& app)
 {
-  block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts);
+  block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts( app ));
   block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only, full_match_verification);
   return block_artifacts;
 }

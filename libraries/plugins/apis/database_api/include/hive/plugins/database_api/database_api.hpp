@@ -12,7 +12,7 @@ class database_api_impl;
 class database_api
 {
   public:
-    database_api();
+    database_api( appbase::application& app );
     ~database_api();
 
     DECLARE_API(

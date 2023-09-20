@@ -20,7 +20,7 @@ static bool filter_default( const ValueType& r ) { return true; }
 class rc_api_impl
 {
   public:
-    rc_api_impl() : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+    rc_api_impl( appbase::application& app ) : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
     DECLARE_API_IMPL
     (
@@ -259,9 +259,9 @@ DEFINE_API_IMPL( rc_api_impl, get_rc_operation_stats )
 
 } // detail
 
-rc_api::rc_api(): my( new detail::rc_api_impl() )
+rc_api::rc_api( appbase::application& app ): my( new detail::rc_api_impl( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_RC_API_PLUGIN_NAME );
+  JSON_RPC_REGISTER_API( HIVE_RC_API_PLUGIN_NAME, app );
 }
 
 rc_api::~rc_api() {}

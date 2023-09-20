@@ -16,8 +16,9 @@ int main( int argc, char** argv, char** envp )
 {
   try
   {
+    appbase::application theApp;
     //hive::chain::database db;
-    hive::chain::block_log log;
+    hive::chain::block_log log( theApp );
 
     fc::temp_directory temp_dir( "." );
 

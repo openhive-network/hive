@@ -18,7 +18,7 @@ class account_by_key_plugin_impl
 {
   public:
     account_by_key_plugin_impl( account_by_key_plugin& _plugin ) :
-      _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+      _db( _plugin.get_app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin ) {}
 
     void on_pre_apply_operation( const operation_notification& note );
@@ -287,14 +287,14 @@ void account_by_key_plugin::plugin_initialize( const boost::program_options::var
   try
   {
     ilog( "Initializing account_by_key plugin" );
-    chain::database& db = appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db();
+    chain::database& db = theApp.get_plugin< hive::plugins::chain::chain_plugin >().db();
 
     my->_pre_apply_operation_conn = db.add_pre_apply_operation_handler( [&]( const operation_notification& note ){ my->on_pre_apply_operation( note ); }, *this, 0 );
     my->_post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ my->on_post_apply_operation( note ); }, *this, 0 );
 
     HIVE_ADD_PLUGIN_INDEX(db, key_lookup_index);
 
-    appbase::app().get_plugin< chain::chain_plugin >().report_state_options( name(), fc::variant_object() );
+    theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), fc::variant_object() );
   }
   FC_CAPTURE_AND_RETHROW()
 }

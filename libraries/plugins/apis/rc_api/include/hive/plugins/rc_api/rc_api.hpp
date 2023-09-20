@@ -169,7 +169,7 @@ struct get_rc_operation_stats_return
 class rc_api
 {
   public:
-    rc_api();
+    rc_api( appbase::application& app );
     ~rc_api();
 
     DECLARE_API(

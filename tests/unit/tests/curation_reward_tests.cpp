@@ -184,7 +184,7 @@ struct curation_rewards_handler
       {
         comment_rewards.emplace_back( comment_reward_info{ note.total_reward, note.author_tokens, note.curation_tokens } );
       },
-      appbase::app().get_plugin< hive::plugins::debug_node::debug_node_plugin >()
+      _test_object.theApp.get_plugin< hive::plugins::debug_node::debug_node_plugin >()
     );
   }
 

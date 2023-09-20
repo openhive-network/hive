@@ -55,14 +55,14 @@ namespace detail
       }
 
     public:
-      condenser_api_impl() :
+      condenser_api_impl( appbase::application& app ) :
         legacy_substitutes( create_legacy_substitutes() ),
-        _chain( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >() ),
+        _chain( app.get_plugin< hive::plugins::chain::chain_plugin >() ),
         _db( _chain.db() )
       {
         _on_post_apply_block_conn = _db.add_post_apply_block_handler(
           [&]( const block_notification& note ){ on_post_apply_block( note ); },
-          appbase::app().get_plugin< hive::plugins::condenser_api::condenser_api_plugin >(),
+          app.get_plugin< hive::plugins::condenser_api::condenser_api_plugin >(),
           0 );
       }
 
@@ -1349,65 +1349,65 @@ uint16_t api_account_object::_compute_voting_power( const database_api::api_acco
   return vp_t1;
 }
 
-condenser_api::condenser_api()
-  : my( new detail::condenser_api_impl() )
+condenser_api::condenser_api( appbase::application& app )
+  : my( new detail::condenser_api_impl( app ) ), theApp( app )
 {
-  JSON_RPC_REGISTER_API( HIVE_CONDENSER_API_PLUGIN_NAME );
+  JSON_RPC_REGISTER_API( HIVE_CONDENSER_API_PLUGIN_NAME, app );
 }
 
 condenser_api::~condenser_api() {}
 
 void condenser_api::api_startup()
 {
-  auto database = appbase::app().find_plugin< database_api::database_api_plugin >();
+  auto database = theApp.find_plugin< database_api::database_api_plugin >();
   if( database != nullptr )
   {
     my->_database_api = database->api;
   }
 
-  auto block = appbase::app().find_plugin< block_api::block_api_plugin >();
+  auto block = theApp.find_plugin< block_api::block_api_plugin >();
   if( block != nullptr )
   {
     my->_block_api = block->api;
   }
 
-  auto account_by_key = appbase::app().find_plugin< account_by_key::account_by_key_api_plugin >();
+  auto account_by_key = theApp.find_plugin< account_by_key::account_by_key_api_plugin >();
   if( account_by_key != nullptr )
   {
     my->_account_by_key_api = account_by_key->api;
   }
 
-  auto account_history = appbase::app().find_plugin< account_history::account_history_api_plugin >();
+  auto account_history = theApp.find_plugin< account_history::account_history_api_plugin >();
   if( account_history != nullptr )
   {
     my->_account_history_api = account_history->api;
   }
 
-  auto network_broadcast = appbase::app().find_plugin< network_broadcast_api::network_broadcast_api_plugin >();
+  auto network_broadcast = theApp.find_plugin< network_broadcast_api::network_broadcast_api_plugin >();
   if( network_broadcast != nullptr )
   {
     my->_network_broadcast_api = network_broadcast->api;
   }
 
-  auto p2p = appbase::app().find_plugin< p2p::p2p_plugin >();
+  auto p2p = theApp.find_plugin< p2p::p2p_plugin >();
   if( p2p != nullptr )
   {
     my->_p2p = p2p;
   }
 
-  auto reputation = appbase::app().find_plugin< reputation::reputation_api_plugin >();
+  auto reputation = theApp.find_plugin< reputation::reputation_api_plugin >();
   if( reputation != nullptr )
   {
     my->_reputation_api = reputation->api;
   }
 
-  auto market_history = appbase::app().find_plugin< market_history::market_history_api_plugin >();
+  auto market_history = theApp.find_plugin< market_history::market_history_api_plugin >();
   if( market_history != nullptr )
   {
     my->_market_history_api = market_history->api;
   }
 
-  auto rc = appbase::app().find_plugin< rc::rc_api_plugin >();
+  auto rc = theApp.find_plugin< rc::rc_api_plugin >();
   if( rc != nullptr )
   {
     my->_rc_api = rc->api;

@@ -8,7 +8,7 @@ namespace detail {
 class chain_api_impl
 {
   public:
-    chain_api_impl() : _chain( appbase::app().get_plugin<chain_plugin>() ) {}
+    chain_api_impl( appbase::application& app ) : _chain( app.get_plugin<chain_plugin>() ) {}
 
     DECLARE_API_IMPL(
       (push_transaction) )
@@ -47,9 +47,9 @@ DEFINE_API_IMPL( chain_api_impl, push_transaction )
 
 } // detail
 
-chain_api::chain_api(): my( new detail::chain_api_impl() )
+chain_api::chain_api( appbase::application& app ): my( new detail::chain_api_impl( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_CHAIN_API_PLUGIN_NAME );
+  JSON_RPC_REGISTER_API( HIVE_CHAIN_API_PLUGIN_NAME, app );
 }
 
 chain_api::~chain_api() {}

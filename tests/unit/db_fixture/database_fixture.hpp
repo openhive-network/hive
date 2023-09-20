@@ -237,7 +237,7 @@ autoscope set_mainnet_feed_values( bool auto_reset = true );
 
 //common code for preparing arguments and data path
 //caller needs to register plugins and call initialize() on given application object
-fc::path common_init( const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer );
+fc::path common_init( appbase::application& app, const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer );
 
 struct database_fixture {
   // the reason we use an app is to exercise the indexes of built-in
@@ -259,6 +259,8 @@ struct database_fixture {
 
   optional<fc::temp_directory> data_dir;
   bool skip_key_index_test = false;
+
+  appbase::application theApp;
 
   database_fixture() {}
   virtual ~database_fixture() { appbase::reset(); }

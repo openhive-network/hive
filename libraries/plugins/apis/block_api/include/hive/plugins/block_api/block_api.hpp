@@ -13,7 +13,7 @@ class block_api_impl;
 class block_api
 {
   public:
-    block_api();
+    block_api( appbase::application& app );
     ~block_api();
 
     DECLARE_API(

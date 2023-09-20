@@ -4,12 +4,15 @@
 
 namespace hive { namespace plugins { namespace test_api {
 
-test_api_plugin::test_api_plugin( appbase::application& app ): appbase::plugin<test_api_plugin>( app ) {}
+test_api_plugin::test_api_plugin( appbase::application& app ): appbase::plugin<test_api_plugin>( app )
+{
+  JSON_RPC_REGISTER_API( name(), app );
+}
+
 test_api_plugin::~test_api_plugin() {}
 
 void test_api_plugin::plugin_initialize( const variables_map& options )
 {
-  JSON_RPC_REGISTER_API( name() );
 }
 
 void test_api_plugin::plugin_startup() {}

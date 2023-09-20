@@ -8,7 +8,7 @@ namespace detail {
 class abstract_account_history_api_impl
 {
   public:
-    abstract_account_history_api_impl() : _db( appbase::app().get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+    abstract_account_history_api_impl( appbase::application& app ) : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
     virtual ~abstract_account_history_api_impl() {}
 
     virtual get_ops_in_block_return get_ops_in_block( const get_ops_in_block_args& ) = 0;
@@ -22,8 +22,8 @@ class abstract_account_history_api_impl
 class account_history_api_rocksdb_impl : public abstract_account_history_api_impl
 {
   public:
-    account_history_api_rocksdb_impl() :
-      abstract_account_history_api_impl(), _dataSource( appbase::app().get_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >() ) {}
+    account_history_api_rocksdb_impl( appbase::application& app ) :
+      abstract_account_history_api_impl( app ), _dataSource( app.get_plugin< hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin >() ) {}
     ~account_history_api_rocksdb_impl() {}
 
     get_ops_in_block_return get_ops_in_block( const get_ops_in_block_args& ) override;
@@ -346,10 +346,10 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 
 } // detail
 
-account_history_api::account_history_api()
+account_history_api::account_history_api( appbase::application& app )
 {
-  my = std::make_unique< detail::account_history_api_rocksdb_impl >();
-  JSON_RPC_REGISTER_API( HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME );
+  my = std::make_unique< detail::account_history_api_rocksdb_impl >( app );
+  JSON_RPC_REGISTER_API( HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME, app );
 }
 
 account_history_api::~account_history_api() {}
