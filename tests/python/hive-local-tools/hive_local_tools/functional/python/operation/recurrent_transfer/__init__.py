@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Union
+
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
     Account,
@@ -40,15 +43,15 @@ class RecurrentTransferAccount(Account):
 
 class RecurrentTransfer:
     def __init__(self, node, wallet, from_, to, amount, recurrence, executions):
-        self._wallet = wallet
-        self._node = node
-        self._from_ = from_
-        self._to = to
-        self._amount = amount
-        self._memo = "{}"
-        self._recurrence = recurrence
-        self._executions = executions
-        self._transaction = wallet.api.recurrent_transfer(
+        self._wallet: tt.Wallet = wallet
+        self._node: tt.InitNode = node
+        self._from_: str = from_
+        self._to: str = to
+        self._amount: Union[tt.Asset.Test, tt.Asset.Tbd] = amount
+        self._memo: str = "{}"
+        self._recurrence: int = recurrence
+        self._executions: int = executions
+        self._transaction: dict = wallet.api.recurrent_transfer(
             from_=self._from_,
             to=self._to,
             amount=self._amount,
@@ -56,11 +59,11 @@ class RecurrentTransfer:
             recurrence=self._recurrence,
             executions=self._executions,
         )
-        self._timestamp = get_transaction_timestamp(node, self._transaction)
-        self._current_schedule = self.__get_transfer_schedule()
+        self._timestamp: datetime = get_transaction_timestamp(node, self._transaction)
+        self._current_schedule: list[datetime] = self.__get_transfer_schedule()
         self._executions_schedules: list = [self._current_schedule]
-        self._last_execution_time = self._timestamp
-        self._rc_cost = self._transaction["rc_cost"]
+        self._last_execution_time: datetime = self._timestamp
+        self._rc_cost: int = self._transaction["rc_cost"]
         self.__assert_minimal_operation_rc_cost()
 
     @property
