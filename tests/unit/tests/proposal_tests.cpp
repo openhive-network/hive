@@ -318,15 +318,6 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     //if we vote before hardfork 25
     generate_block();
     fc::time_point_sec hardfork_25_time(HIVE_HARDFORK_1_25_TIME);
-    db_plugin->debug_update( [=]( database& db )
-    {
-      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
-      {
-        //fake timestamp of current block so we don't need to wait for creation of 39mln blocks in next line
-        //even though it is skipping it still takes a lot of time, especially under debugger
-        gpo.time = hardfork_25_time - fc::days( 202 );
-      } );
-    } );
     generate_blocks(hardfork_25_time - fc::days(201));
     BOOST_REQUIRE(db->head_block_time() < hardfork_25_time - fc::days(200));
     witness_vote("acc1", "accw2", acc1_private_key); //201 days before HF25

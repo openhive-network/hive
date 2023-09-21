@@ -108,7 +108,7 @@ const protocol::transaction_id_type& debug_node_plugin::make_artificial_transact
   ++idx;
   std::string idx_str( std::to_string( idx ) );
   hive::protocol::custom_operation op;
-  op.required_auths = { "initminer" };
+  op.required_auths = { HIVE_TEMP_ACCOUNT }; // we are using 'temp' account because it has open authority, so it should work even in mainnet
   op.id = 0;
   op.data = std::vector<char>( idx_str.begin(), idx_str.end() );
 
@@ -119,9 +119,8 @@ const protocol::transaction_id_type& debug_node_plugin::make_artificial_transact
   tx.operations.push_back( op );
 
   const auto pack_type = hive::protocol::serialization_mode_controller::get_current_pack();
-  const auto init_miner_priv_key = HIVE_INIT_PRIVATE_KEY; //fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
   hive::chain::full_transaction_ptr ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
-  ftx->sign_transaction( std::vector<fc::ecc::private_key>{init_miner_priv_key}, database().get_chain_id(), fc::ecc::fc_canonical, pack_type );
+  ftx->sign_transaction( std::vector<fc::ecc::private_key>{}, database().get_chain_id(), fc::ecc::fc_canonical, pack_type );
   database().push_transaction( ftx, 0 );
 
   my->_current_debug_update_tx_id = ftx->get_transaction_id();
@@ -347,25 +346,20 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
       wlog( "slot: ${sl}   time: ${t}   scheduled key is: ${sk}   dbg key is: ${dk}",
         ("sk", scheduled_key)("dk", debug_public_key)("sl", slot)("t", scheduled_time) );
     }
+    uint32_t skip = args.skip;
     if( scheduled_key != debug_public_key )
     {
       if( args.edit_if_needed )
       {
-        if( logging ) wlog( "Modified key for witness ${w}", ("w", scheduled_witness_name) );
-        debug_update( [=]( chain::database& db )
-        {
-          db.modify( db.get_witness( scheduled_witness_name ), [&]( chain::witness_object& w )
-          {
-            w.signing_key = debug_public_key;
-          });
-        }, args.skip );
+        if( logging ) wlog( "Missing key for witness ${w}, skipping witness signature.", ("w", scheduled_witness_name) );
+        skip |= hive::chain::database::skip_witness_signature;
       }
       else
         break;
     }
 
     auto generate_block_ctrl = std::make_shared< hive::chain::generate_block_flow_control >(scheduled_time,
-      scheduled_witness_name, *debug_private_key, args.skip);
+      scheduled_witness_name, *debug_private_key, skip);
 
     if( immediate_generation )
     {
