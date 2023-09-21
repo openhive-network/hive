@@ -3,7 +3,7 @@ syntax = "proto2";
 package hive.protocol.buffers;
 
 message authority {
-  required uint32 weight_threshold = 1 [json_name = "weight_threshold"];
+  required uint32     weight_threshold = 1 [json_name = "weight_threshold"];
   map<string, uint32> account_auths = 2 [json_name = "account_auths"];
   map<string, uint32> key_auths = 3 [json_name = "key_auths"];
 }
