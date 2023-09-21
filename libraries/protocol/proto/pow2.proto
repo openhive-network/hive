@@ -1,0 +1,43 @@
+syntax = "proto2";
+
+import "legacy_chain_properties.proto";
+
+package hive.protocol.buffers;
+
+message pow2_input {
+  required string worker_account = 1 [json_name = "worker_account"];
+  required string prev_block = 2 [json_name = "prev_block"];
+  required uint64 nonce = 3;
+}
+
+message pow2_pow {
+  required pow2_input input = 1;
+  required uint32     pow_summary = 2 [json_name = "pow_summary"];
+}
+
+message equihash_proof {
+  required uint32 n = 1;
+  required uint32 k = 2;
+  required string seed = 3;
+  repeated uint32 inputs = 4;
+}
+
+message equihash_pow {
+  required pow2_input     input = 1;
+  required equihash_proof proof = 2;
+  required string         prev_block = 3 [json_name = "prev_block"];
+  required uint32         pow_summary = 4 [json_name = "pow_summary"];
+}
+
+message pow2_work {
+  oneof value {
+    pow2_pow pow2 = 1;
+    equihash_pow equihash_pow = 2 [json_name = "equihash_pow"];
+  }
+}
+
+message pow2 {
+  required pow2_work               work = 1;
+  optional string                  new_owner_key = 2 [json_name = "new_owner_key"];
+  required legacy_chain_properties props = 3;
+}
