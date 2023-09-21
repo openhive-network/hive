@@ -142,6 +142,8 @@ class chain_plugin_impl
 
     void initial_settings();
     void open();
+    uint32_t reindex( const open_args& args );
+    uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block );
     bool replay_blockchain();
     void process_snapshot();
     bool check_data_consistency();
@@ -721,13 +723,175 @@ void chain_plugin_impl::open()
   }
 }
 
+uint32_t chain_plugin_impl::reindex( const open_args& args )
+{
+  reindex_notification note( args );
+
+  BOOST_SCOPE_EXIT(this_,&note) {
+    HIVE_TRY_NOTIFY(this_->db._post_reindex_signal, note);
+  } BOOST_SCOPE_EXIT_END
+
+  try
+  {
+    ilog( "Reindexing Blockchain" );
+
+
+    if( theApp.is_interrupt_request() )
+      return 0;
+
+    uint32_t _head_block_num = db.head_block_num();
+
+    std::shared_ptr<full_block_type> _head = the_block_log.head();
+    if( _head )
+    {
+      if( args.stop_replay_at == 0 )
+        note.max_block_number = _head->get_block_num();
+      else
+        note.max_block_number = std::min( args.stop_replay_at, _head->get_block_num() );
+    }
+    else
+      note.max_block_number = 0;//anyway later an assert is triggered
+
+    note.force_replay = args.force_replay || _head_block_num == 0;
+    note.validate_during_replay = args.validate_during_replay;
+
+    HIVE_TRY_NOTIFY(db._pre_reindex_signal, note);
+
+    fork_db.reset();    // override effect of fork_db.start_block() call in open()
+
+    auto start_time = fc::time_point::now();
+    HIVE_ASSERT( _head, block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
+
+    ilog( "Replaying blocks..." );
+
+    db.with_write_lock( [&]()
+    {
+      std::shared_ptr<full_block_type> start_block;
+
+      bool replay_required = true;
+
+      if( _head_block_num > 0 )
+      {
+        if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
+          start_block = the_block_log.read_block_by_num( _head_block_num + 1 );
+
+        if( !start_block )
+        {
+          start_block = the_block_log.read_block_by_num( _head_block_num );
+          FC_ASSERT( start_block, "Head block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", _head_block_num ) );
+
+          replay_required = false;
+        }
+      }
+      else
+      {
+        start_block = the_block_log.read_block_by_num( 1 );
+      }
+
+      if( replay_required )
+      {
+        auto _last_block_number = start_block->get_block_num();
+        if( _last_block_number && !args.force_replay )
+          ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
+
+        note.last_block_number = reindex_internal( args, start_block );
+      }
+      else
+      {
+        note.last_block_number = start_block->get_block_num();
+      }
+
+      db.set_revision( db.head_block_num() );
+
+      //get_index< account_index >().indices().print_stats();
+    });
+
+    FC_ASSERT( the_block_log.head()->get_block_num(), "this should never happen" );
+    fork_db.start_block( the_block_log.head() );
+
+    auto end_time = fc::time_point::now();
+    ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
+         ("elapsed_time", double((end_time - start_time).count()) / 1000000.0));
+
+    note.reindex_success = true;
+
+    return note.last_block_number;
+  }
+  FC_CAPTURE_AND_RETHROW( (args.data_dir)(args.shared_mem_dir) )
+}
+
+uint32_t chain_plugin_impl::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
+{
+  uint64_t skip_flags = chain::database::skip_validate_invariants | chain::database::skip_block_log;
+  if (args.validate_during_replay)
+    ulog("Doing full validation during replay at user request");
+  else
+  {
+    skip_flags |= chain::database::skip_witness_signature |
+      chain::database::skip_transaction_signatures |
+      chain::database::skip_transaction_dupe_check |
+      chain::database::skip_tapos_check |
+      chain::database::skip_merkle_check |
+      chain::database::skip_witness_schedule_check |
+      chain::database::skip_authority_check |
+      chain::database::skip_validate; /// no need to validate operations
+  }
+
+  uint32_t last_block_num = the_block_log.head()->get_block_num();
+  if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
+    last_block_num = args.stop_replay_at;
+
+  bool rat = fc::enable_record_assert_trip;
+  bool as = fc::enable_assert_stacktrace;
+  fc::enable_record_assert_trip = true; //enable detailed backtrace from FC_ASSERT (that should not ever be triggered during replay)
+  fc::enable_assert_stacktrace = true;
+
+  BOOST_SCOPE_EXIT( this_ ) { this_->db.clear_tx_status(); } BOOST_SCOPE_EXIT_END
+  db.set_tx_status( chain::database::TX_STATUS_BLOCK );
+
+  std::shared_ptr<full_block_type> last_applied_block;
+  const auto process_block = [&](const std::shared_ptr<full_block_type>& full_block) {
+    const uint32_t current_block_num = full_block->get_block_num();
+
+    if (current_block_num % 100000 == 0)
+    {
+      std::ostringstream percent_complete_stream;
+      percent_complete_stream << std::fixed << std::setprecision(2) << double(current_block_num) * 100 / last_block_num;
+      ulog("   ${current_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shared memory free)",
+           ("percent_complete", percent_complete_stream.str())
+           (current_block_num)(last_block_num)
+           ("free_memory_megabytes", db.get_free_memory() >> 20));
+    }
+
+    db.apply_block(full_block, skip_flags);
+    last_applied_block = full_block;
+
+    return !theApp.is_interrupt_request();
+  };
+
+  const uint32_t start_block_number = start_block->get_block_num();
+  process_block(start_block);
+
+  if (start_block_number < last_block_num)
+    the_block_log.for_each_block(start_block_number + 1, last_block_num, process_block, block_log::for_each_purpose::replay);
+
+  if (theApp.is_interrupt_request())
+    ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})",
+         ("n", last_applied_block->get_block_num())("id", last_applied_block->get_block_id()));
+
+  fc::enable_record_assert_trip = rat; //restore flag
+  fc::enable_assert_stacktrace = as;
+
+  return last_applied_block->get_block_num();
+}
+
 bool chain_plugin_impl::replay_blockchain()
 {
   try
   {
     ilog("Replaying blockchain on user request.");
     uint32_t last_block_number = 0;
-    last_block_number = db.reindex( db_open_args );
+    last_block_number = reindex( db_open_args );
 
     if( benchmark_interval > 0 )
     {
