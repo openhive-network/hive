@@ -12,7 +12,7 @@ namespace hive { namespace chain {
   class block_write_i //: public block_read_i
   {
   public:
-  virtual ~block_write_i() {}
+  virtual ~block_write_i() = default;
 
   virtual block_log& get_block_log() = 0;
   virtual fork_database& get_fork_db() = 0;

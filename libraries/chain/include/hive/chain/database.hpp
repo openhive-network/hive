@@ -689,6 +689,8 @@ namespace chain {
       // return the witness schedule object whose current_shuffled_witnesses we use for computing irreversibility.  Roughly, before HF26, it's the 
       // current witnesses_schedule_object; after, it's future_witness_schedule_object
       const witness_schedule_object& get_witness_schedule_object_for_irreversibility() const;
+
+      void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing, const block_flow_control* block_ctrl = nullptr );
     protected:
       //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
       //void pop_undo() { object_database::pop_undo(); }
@@ -697,7 +699,6 @@ namespace chain {
     private:
       optional< chainbase::database::session > _pending_tx_session;
 
-      void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing, const block_flow_control* block_ctrl = nullptr );
       void switch_forks(item_ptr new_head, const block_flow_control* pushed_block_ctrl = nullptr);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, const block_flow_control* block_ctrl = nullptr );
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
@@ -909,6 +910,7 @@ namespace chain {
         */
       fc::signal<void(const transaction_notification&)>     _post_apply_transaction_signal;
 
+  public:
       /**
         * Emitted when reindexing starts
         */
@@ -918,7 +920,7 @@ namespace chain {
         * Emitted when reindexing finishes
         */
       fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
-
+  private:
       fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
 
       /// <summary>

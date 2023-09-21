@@ -11,7 +11,7 @@ namespace hive { namespace chain {
   {
   public:
     irreversible_block_writer( block_log& block_log, fork_database& fork_db );
-    virtual ~irreversible_block_writer() {}
+    virtual ~irreversible_block_writer() = default;
 
     virtual block_log& get_block_log() override { return _block_log; };
     virtual fork_database& get_fork_db() override { return _fork_db; };
