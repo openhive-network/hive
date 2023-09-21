@@ -37,7 +37,20 @@ fi
 if [ -n "$BLOCK_LOG_SOURCE_DIR" ] && [ -e $BLOCK_LOG_SOURCE_DIR/block_log ];
 then
   mkdir -p $DATA_BASE_DIR/datadir/blockchain
-  cp $BLOCK_LOG_SOURCE_DIR/block_log $DATA_BASE_DIR/datadir/blockchain/block_log
+
+  if [ -n "${HIVE_NETWORK_TYPE+x}" ] && [ "$HIVE_NETWORK_TYPE" = mirrornet ];
+  then
+    echo "creating copy of block_log as mirrornet block_log can't be shared between pipelines"
+    cp "$BLOCK_LOG_SOURCE_DIR/block_log" "$DATA_BASE_DIR/datadir/blockchain/block_log"
+  else
+    BLOCK_LOG_TARGET_DIR="$DATA_BASE_DIR/..$BLOCK_LOG_SOURCE_DIR"
+    echo "using $BLOCK_LOG_TARGET_DIR/block_log as hardlink target"
+    mkdir -p "$DATA_BASE_DIR/..$BLOCK_LOG_SOURCE_DIR"
+    cp -u "$BLOCK_LOG_SOURCE_DIR/block_log" "$DATA_BASE_DIR/..$BLOCK_LOG_SOURCE_DIR/block_log"
+    echo "creating hardlink of $DATA_BASE_DIR/..$BLOCK_LOG_SOURCE_DIR/block_log in $DATA_BASE_DIR/datadir/blockchain/block_log"
+    ln "$BLOCK_LOG_TARGET_DIR/block_log" "$DATA_BASE_DIR/datadir/blockchain/block_log"
+  fi
+
   if [ -e $BLOCK_LOG_SOURCE_DIR/block_log.artifacts ];
   then
     cp $BLOCK_LOG_SOURCE_DIR/block_log.artifacts $DATA_BASE_DIR/datadir/blockchain/block_log.artifacts
