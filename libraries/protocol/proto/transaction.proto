@@ -1,8 +1,11 @@
 syntax = "proto2";
 
-import "comment.proto";
+import "future_extensions.proto";
 import "vote.proto";
+import "comment.proto";
+import "transfer.proto";
 import "limit_order_cancel.proto";
+import "account_create.proto";
 import "recurrent_transfer.proto";
 
 package hive.protocol.buffers;
@@ -12,13 +15,19 @@ package hive.protocol.buffers;
  */
 message operation {
     oneof value {
-        comment comment = 15;
-        vote vote = 16;
-        limit_order_cancel limit_order_cancel = 17 [json_name = "limit_order_cancel"];
-        recurrent_transfer recurrent_transfer = 18 [json_name = "recurrent_transfer"];
+        vote vote = 1;
+        comment comment = 2;
+        transfer transfer = 3;
+        limit_order_cancel limit_order_cancel = 7 [json_name = "limit_order_cancel"];
+        account_create account_create = 10 [json_name = "account_create"];
+        recurrent_transfer recurrent_transfer = 50 [json_name = "recurrent_transfer"];
     }
 }
 
 message transaction {
-    repeated operation operations = 18;
+    required uint32            ref_block_num = 1 [json_name = "ref_block_num"];
+    required uint32            ref_block_prefix = 2 [json_name = "ref_block_prefix"];
+    required string            expiration = 3;
+    repeated operation         operations = 4;
+    repeated future_extensions extensions = 5;
 }
