@@ -1,5 +1,4 @@
 #include <hive/chain/database_exceptions.hpp>
-#include <hive/chain/block_log_reader.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
@@ -585,10 +584,10 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing()
 {
-  db.set_block_writer( new irreversible_block_writer( new block_log_reader( the_block_log ), the_block_log, fork_db ) );
+  db.set_block_writer( new irreversible_block_writer( the_block_log, fork_db ) );
 
   BOOST_SCOPE_EXIT(this_) {
-    this_->db.set_block_writer( new sync_block_writer( new block_log_reader( this_->the_block_log ), this_->the_block_log, this_->fork_db ) );
+    this_->db.set_block_writer( new sync_block_writer( this_->the_block_log, this_->fork_db ) );
   } BOOST_SCOPE_EXIT_END
   
   theApp.notify_status("replaying");
@@ -1301,7 +1300,7 @@ void chain_plugin::plugin_startup()
 {
   ilog("Chain plugin initialization...");
 
-  my->db.set_block_writer( new sync_block_writer( new block_log_reader( my->the_block_log ), my->the_block_log, my->fork_db ) );
+  my->db.set_block_writer( new sync_block_writer( my->the_block_log, my->fork_db ) );
 
   my->initial_settings();
 
@@ -1546,7 +1545,7 @@ int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )
 bool chain_plugin::block_is_on_preferred_chain(const hive::chain::block_id_type& block_id )
 {
   // If it's not known, it's not preferred.
-  if( !db().is_known_block(block_id) ) return false;
+  if( !db().block_reader().is_known_block(block_id) ) return false;
 
   // Extract the block number from block_id, and fetch that block number's ID from the database.
   // If the database's block ID matches block_id, then block_id is on the preferred chain. Otherwise, it's on a fork.

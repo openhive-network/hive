@@ -146,7 +146,7 @@ bool p2p_plugin_impl::has_item( const graphene::net::item_id& id )
   try
   {
     if( id.item_type == graphene::net::block_message_type )
-      return chain.db().is_known_block(id.item_hash);
+      return chain.db().block_reader().is_known_block(id.item_hash);
     else
       return chain.db().with_read_lock( [&]() {
         return chain.db().is_known_transaction(id.item_hash);

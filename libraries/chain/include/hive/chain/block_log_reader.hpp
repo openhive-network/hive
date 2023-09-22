@@ -9,7 +9,7 @@ namespace hive { namespace chain {
   class block_log_reader : public block_read_i
   {
   public:
-    block_log_reader( block_log& block_log );
+    block_log_reader( block_log& the_log );
     virtual ~block_log_reader() = default;
 
     virtual std::shared_ptr<full_block_type> head() const override;
@@ -18,6 +18,8 @@ namespace hive { namespace chain {
 
     virtual void process_blocks( uint32_t starting_block_number, uint32_t ending_block_number,
                                  block_processor_t processor ) override;
+
+    virtual bool is_known_block(const block_id_type& id) const override;
 
   private:
     block_log&      _block_log;

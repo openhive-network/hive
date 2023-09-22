@@ -242,11 +242,6 @@ namespace chain {
 
       //////////////////// db_block.cpp ////////////////////
 
-      /**
-        *  @return true if the block is in our fork DB or saved to disk as
-        *  part of the official chain, otherwise return false
-        */
-      bool                       is_known_block( const block_id_type& id )const;
     private:
       bool                       is_known_block_unlocked(const block_id_type& id)const;
     public:
