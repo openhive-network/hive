@@ -88,6 +88,7 @@ install_user_packages() {
 
   curl -sSL https://install.python-poetry.org | python3 -  # install poetry in an isolated environment
   poetry self update 1.5.1
+  poetry self add "poetry-dynamic-versioning[plugin]@>=1.0.0,<2.0.0"
 }
 
 create_hived_admin_account() {
