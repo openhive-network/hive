@@ -7,24 +7,20 @@
 namespace hive { namespace chain {
 
 irreversible_block_writer::irreversible_block_writer( 
-  block_log& block_log, fork_database& fork_db )
-  : _block_log( block_log ), _fork_db( fork_db )
-{}
+  block_read_i* reader, block_log& block_log, fork_database& fork_db )
+  : _reader( reader ), _block_log( block_log ), _fork_db( fork_db )
+{
+  FC_ASSERT( _reader.get() != nullptr, "Can't work without block reader!" );
+}
+
+block_read_i& irreversible_block_writer::get_block_reader()
+{
+  return *( _reader.get() );
+}
 
 void irreversible_block_writer::store_block( uint32_t current_irreversible_block_num,
   uint32_t state_head_block_number )
-{
-  /*const auto fork_head = _fork_db.head();
-  if (fork_head)
-    FC_ASSERT(fork_head->get_block_num() == state_head_block_number,
-              "Fork Head Block Number: ${fork_head}, Chain Head Block Number: ${chain_head}",
-              ("fork_head", fork_head->get_block_num())("chain_head", state_head_block_number));*/
-
-  // Here was block_log related code, always skipped during replay.
-
-  /*// This deletes blocks from the fork db
-  _fork_db.set_max_size( state_head_block_number - current_irreversible_block_num + 1 );*/
-}
+{}
 
 } } //hive::chain
 
