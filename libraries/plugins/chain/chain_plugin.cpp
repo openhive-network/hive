@@ -1,4 +1,5 @@
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/block_log_reader.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
@@ -144,6 +145,17 @@ class chain_plugin_impl
     void open();
     uint32_t reindex( const open_args& args );
     uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block );
+    /**
+      * @brief Check if replaying was finished and all blocks from `block_reader` were processed.
+      *
+      * If returns `true` then a synchronization is allowed.
+      * If returns `false`, then opening a node should be forbidden.
+      *
+      * There are output-type arguments: `head_block_num_origin`, `head_block_num_state` for information purposes only.
+      *
+      * @return information if replaying was finished
+      */
+    bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
     bool replay_blockchain();
     void process_snapshot();
     bool check_data_consistency();
@@ -573,10 +585,10 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing()
 {
-  db.set_block_writer( new irreversible_block_writer( the_block_log, fork_db ) );
+  db.set_block_writer( new irreversible_block_writer( new block_log_reader( the_block_log ), the_block_log, fork_db ) );
 
   BOOST_SCOPE_EXIT(this_) {
-    this_->db.set_block_writer( new sync_block_writer( this_->the_block_log, this_->fork_db ) );
+    this_->db.set_block_writer( new sync_block_writer( new block_log_reader( this_->the_block_log ), this_->the_block_log, this_->fork_db ) );
   } BOOST_SCOPE_EXIT_END
   
   theApp.notify_status("replaying");
@@ -671,7 +683,7 @@ bool chain_plugin_impl::check_data_consistency()
   uint64_t head_block_num_origin = 0;
   uint64_t head_block_num_state = 0;
 
-  auto _is_reindex_complete = db.is_reindex_complete( &head_block_num_origin, &head_block_num_state );
+  auto _is_reindex_complete = is_reindex_complete( &head_block_num_origin, &head_block_num_state );
 
   if( !_is_reindex_complete )
   {
@@ -741,7 +753,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
 
     uint32_t _head_block_num = db.head_block_num();
 
-    std::shared_ptr<full_block_type> _head = the_block_log.head();
+    std::shared_ptr<full_block_type> _head = db.block_reader().head();
     if( _head )
     {
       if( args.stop_replay_at == 0 )
@@ -773,11 +785,11 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
       if( _head_block_num > 0 )
       {
         if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
-          start_block = the_block_log.read_block_by_num( _head_block_num + 1 );
+          start_block = db.block_reader().read_block_by_num( _head_block_num + 1 );
 
         if( !start_block )
         {
-          start_block = the_block_log.read_block_by_num( _head_block_num );
+          start_block = db.block_reader().read_block_by_num( _head_block_num );
           FC_ASSERT( start_block, "Head block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", _head_block_num ) );
 
           replay_required = false;
@@ -785,7 +797,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
       }
       else
       {
-        start_block = the_block_log.read_block_by_num( 1 );
+        start_block = db.block_reader().read_block_by_num( 1 );
       }
 
       if( replay_required )
@@ -806,8 +818,8 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
       //get_index< account_index >().indices().print_stats();
     });
 
-    FC_ASSERT( the_block_log.head()->get_block_num(), "this should never happen" );
-    fork_db.start_block( the_block_log.head() );
+    FC_ASSERT( db.block_reader().head()->get_block_num(), "this should never happen" );
+    fork_db.start_block( db.block_reader().head() );
 
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
@@ -837,7 +849,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args, const std::
       chain::database::skip_validate; /// no need to validate operations
   }
 
-  uint32_t last_block_num = the_block_log.head()->get_block_num();
+  uint32_t last_block_num = db.block_reader().head()->get_block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
     last_block_num = args.stop_replay_at;
 
@@ -873,7 +885,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args, const std::
   process_block(start_block);
 
   if (start_block_number < last_block_num)
-    the_block_log.for_each_block(start_block_number + 1, last_block_num, process_block, block_log::for_each_purpose::replay);
+    db.block_reader().process_blocks(start_block_number + 1, last_block_num, process_block);
 
   if (theApp.is_interrupt_request())
     ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})",
@@ -883,6 +895,25 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args, const std::
   fc::enable_assert_stacktrace = as;
 
   return last_applied_block->get_block_num();
+}
+
+bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64_t* head_block_num_in_db ) const
+{
+  std::shared_ptr<full_block_type> head = db.block_reader().head();
+  uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
+  uint32_t head_block_num_state = db.head_block_num();
+
+  if( head_block_num_in_blocklog ) //if head block number requested
+    *head_block_num_in_blocklog = head_block_num_origin;
+
+  if( head_block_num_in_db ) //if head block number in database requested
+    *head_block_num_in_db = head_block_num_state;
+
+  if( head_block_num_state > head_block_num_origin )
+  elog( "Incorrect number of blocks in `block_log` vs `state`. { \"block_log-head\": ${head_block_num_origin}, \"state-head\": ${head_block_num_state} }",
+      ( head_block_num_origin )(head_block_num_state ) );
+
+  return head_block_num_origin == head_block_num_state;
 }
 
 bool chain_plugin_impl::replay_blockchain()
@@ -1270,7 +1301,7 @@ void chain_plugin::plugin_startup()
 {
   ilog("Chain plugin initialization...");
 
-  my->db.set_block_writer( new sync_block_writer( my->the_block_log, my->fork_db ) );
+  my->db.set_block_writer( new sync_block_writer( new block_log_reader( my->the_block_log ), my->the_block_log, my->fork_db ) );
 
   my->initial_settings();
 

@@ -9,13 +9,17 @@ namespace hive { namespace chain {
   class block_log;
   class fork_database;
 
-  class block_write_i //: public block_read_i
+  class block_write_i
   {
   public:
   virtual ~block_write_i() = default;
 
+  // Temporary, to be removed
   virtual block_log& get_block_log() = 0;
+  // Temporary, to be removed
   virtual fork_database& get_fork_db() = 0;
+
+  virtual block_read_i& get_block_reader() = 0;
 
   /// Call on interested writer when hived goes into live sync.
   virtual void set_is_at_live_sync() = 0;

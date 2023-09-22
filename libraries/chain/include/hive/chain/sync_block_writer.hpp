@@ -10,11 +10,13 @@ namespace hive { namespace chain {
   class sync_block_writer : public block_write_i
   {
   public:
-    sync_block_writer( block_log& block_log, fork_database& fork_db );
+    sync_block_writer( block_read_i* reader, block_log& block_log, fork_database& fork_db );
     virtual ~sync_block_writer() = default;
 
     virtual block_log& get_block_log() override { return _block_log; };
     virtual fork_database& get_fork_db() override { return _fork_db; };
+
+    virtual block_read_i& get_block_reader() override;
 
     virtual void set_is_at_live_sync() override { _is_at_live_sync = true; }
 
@@ -25,9 +27,10 @@ namespace hive { namespace chain {
                               uint32_t state_head_block_number ) override;
 
   private:
-    block_log&      _block_log;
-    fork_database&  _fork_db;
-    bool            _is_at_live_sync = false;
+    unique_ptr< block_read_i >  _reader;
+    block_log&                  _block_log;
+    fork_database&              _fork_db;
+    bool                        _is_at_live_sync = false;
   };
 
 } }

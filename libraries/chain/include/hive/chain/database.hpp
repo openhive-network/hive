@@ -115,6 +115,9 @@ namespace chain {
 
       void set_block_writer( block_write_i* writer );
 
+      block_read_i& block_reader();
+      const block_read_i& block_reader() const;
+
       enum transaction_status
       {
         TX_STATUS_NONE       = 0x00, //outside any transaction processing
@@ -217,18 +220,6 @@ namespace chain {
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
       void load_state_initial_data(const open_args& args);
-
-      /**
-        * @brief Check if replaying was finished and all blocks from `block_log` were processed.
-        *
-        * This method is called from a chain plugin, if returns `true` then a synchronization is allowed.
-        * If returns `false`, then opening a node should be forbidden.
-        *
-        * There are output-type arguments: `head_block_num_origin`, `head_block_num_state` for information purposes only.
-        *
-        * @return information if replaying was finished
-        */
-      bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
 
       /**
         * @brief Rebuild object graph from block history and open detabase
@@ -762,6 +753,7 @@ namespace chain {
         return note;
       }
 
+      // Temporary, to be removed
       block_log&        _block_log();
       const block_log&  _block_log() const;
       fork_database&        _fork_db();
