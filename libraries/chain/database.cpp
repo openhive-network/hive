@@ -256,7 +256,7 @@ void database::load_state_initial_data(const open_args& args)
 
   if (head_block_num())
   {
-    std::shared_ptr<full_block_type> head_block = _block_log().read_block_by_num(head_block_num());
+    std::shared_ptr<full_block_type> head_block = block_reader().read_block_by_num(head_block_num());
     // This assertion should be caught and a reindex should occur
     FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
     "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
@@ -285,25 +285,6 @@ void database::load_state_initial_data(const open_args& args)
     }
   });
 #endif /// IS_TEST_NET
-}
-
-bool database::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64_t* head_block_num_in_db ) const
-{
-  std::shared_ptr<full_block_type> head = _block_log().head();
-  uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
-  uint32_t head_block_num_state = head_block_num();
-
-  if( head_block_num_in_blocklog ) //if head block number requested
-    *head_block_num_in_blocklog = head_block_num_origin;
-
-  if( head_block_num_in_db ) //if head block number in database requested
-    *head_block_num_in_db = head_block_num_state;
-
-  if( head_block_num_state > head_block_num_origin )
-  elog( "Incorrect number of blocks in `block_log` vs `state`. { \"block_log-head\": ${head_block_num_origin}, \"state-head\": ${head_block_num_state} }",
-      ( head_block_num_origin )(head_block_num_state ) );
-
-  return head_block_num_origin == head_block_num_state;
 }
 
 void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks)
@@ -430,7 +411,7 @@ std::shared_ptr<full_block_type> database::fetch_block_by_id( const block_id_typ
   if (fork_item)
     return fork_item->full_block;
 
-  std::shared_ptr<full_block_type> block_from_block_log = _block_log().read_block_by_num( protocol::block_header::num_from_id( id ) );
+  std::shared_ptr<full_block_type> block_from_block_log = block_reader().read_block_by_num( protocol::block_header::num_from_id( id ) );
   if( block_from_block_log && block_from_block_log->get_block_id() == id )
     return block_from_block_log;
   return std::shared_ptr<full_block_type>();
@@ -443,7 +424,7 @@ std::shared_ptr<full_block_type> database::fetch_block_by_number( uint32_t block
   if (forkdb_item)
     return forkdb_item->full_block;
 
-  return _block_log().read_block_by_num(block_num);
+  return block_reader().read_block_by_num(block_num);
 } FC_LOG_AND_RETHROW() }
 
 //no chainbase lock required
@@ -7359,6 +7340,16 @@ std::vector<block_id_type> database::get_block_ids(const std::vector<block_id_ty
     remaining_item_count = 0;
 
   return result;
+}
+
+block_read_i& database::block_reader()
+{
+  return _block_writer->get_block_reader();
+}
+
+const block_read_i& database::block_reader() const
+{
+  return _block_writer->get_block_reader();
 }
 
 block_log& database::_block_log()
