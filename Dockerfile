@@ -117,7 +117,7 @@ COPY --from=build --chown=hived:users /home/hived_admin/hive/doc/example_config.
 USER hived_admin
 WORKDIR /home/hived_admin
 
-COPY --from=build --chown=hived_admin:users /home/hived_admin/hive/scripts/common.sh ./scripts/common.sh
+COPY --from=build --chown=hived_admin:users /home/hived_admin/hive/scripts ./scripts
 
 COPY --chown=hived_admin:users ./docker/docker_entrypoint.sh .
 

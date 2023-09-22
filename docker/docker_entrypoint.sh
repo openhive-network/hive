@@ -9,6 +9,12 @@ then
 fi
 
 
+SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+SCRIPTSDIR="$SCRIPTDIR/scripts"
+
+"$SCRIPTSDIR/copy_datadir.sh"
+
+
 if sudo -Enu hived test ! -d "$DATADIR"
 then
     echo "Data directory (DATADIR) $DATADIR does not exist. Exiting."
@@ -20,10 +26,6 @@ then
     echo "Shared memory file directory (SHM_DIR) $SHM_DIR does not exist. Exiting."
     exit 1
 fi
-
-
-SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-SCRIPTSDIR="$SCRIPTDIR/scripts"
 
 LOG_FILE="${DATADIR}/${LOG_FILE:=docker_entrypoint.log}"
 sudo -n touch "$LOG_FILE"

@@ -119,7 +119,7 @@ else
   time docker push "$img_instance"
 fi
 
-echo "$DOTENV_VAR_NAME=$img" > docker_image_name.env
+echo "${DOTENV_VAR_NAME}_IMAGE_NAME=$img" > docker_image_name.env
 {
   echo "${DOTENV_VAR_NAME}_BASE_INSTANCE=$img"
   echo "${DOTENV_VAR_NAME}_INSTANCE=$img_instance"
