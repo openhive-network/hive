@@ -7,15 +7,13 @@
 namespace hive { namespace chain {
 
 sync_block_writer::sync_block_writer( 
-  block_read_i* reader, block_log& block_log, fork_database& fork_db )
-  : _reader( reader ), _block_log( block_log ), _fork_db( fork_db )
-{
-  FC_ASSERT( _reader.get() != nullptr, "Can't work without block reader!" );
-}
+  block_log& block_log, fork_database& fork_db )
+  : _reader( fork_db, block_log ), _block_log( block_log ), _fork_db( fork_db )
+{}
 
 block_read_i& sync_block_writer::get_block_reader()
 {
-  return *( _reader.get() );
+  return _reader;
 }
 
 void sync_block_writer::store_block( uint32_t current_irreversible_block_num,

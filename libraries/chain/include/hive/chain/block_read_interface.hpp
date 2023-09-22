@@ -34,7 +34,7 @@ namespace hive { namespace chain {
     fc::microseconds wait_for_microseconds = fc::microseconds() ) = 0;*/
 
 	/// Check among (linked & unlinked) reversible blocks then among irreversible if needed.
-	//virtual bool is_known_block(const block_id_type& id) const = 0;
+	virtual bool is_known_block(const block_id_type& id) const = 0;
 	/** Needed by p2p plugin only. 
    *  Check among (linked only) reversible blocks then among irreversible if needed.
   */
