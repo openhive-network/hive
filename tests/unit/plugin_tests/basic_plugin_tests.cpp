@@ -123,6 +123,54 @@ BOOST_AUTO_TEST_CASE( debug_node_plugin_state_modification )
 
 }
 
+BOOST_AUTO_TEST_CASE( debug_update_use_bug )
+{
+  BOOST_TEST_MESSAGE( "Illustration for bug in debug_set_vest_price" );
+
+  db_plugin->debug_update( []( database& db )
+  {
+    BOOST_TEST_MESSAGE( "First set some value in state so we can check if it was changed later" );
+    db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+    {
+      gpo.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT;
+    } );
+  } );
+
+  generate_block();
+
+  db_plugin->debug_set_vest_price( hive::protocol::price( hive::protocol::asset( 1, HIVE_SYMBOL ), hive::protocol::asset( 2000, VESTS_SYMBOL ) ) );
+
+  // when your call to debug_update refers to local variables you must make sure they will remain
+  // alive at least until registered action can no longer be called again
+  uint32_t BAADF00D = 0xBAADF00D;
+  uint32_t* stack_cleaner = ( uint32_t* )alloca( sizeof( BAADF00D ) * 100 );
+  std::fill_n( stack_cleaner, 100, BAADF00D );
+
+  BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().maximum_block_size, HIVE_MIN_BLOCK_SIZE_LIMIT );
+  const uint32_t new_value = HIVE_MIN_BLOCK_SIZE_LIMIT * 4;
+
+  // in order to show the bug it is important that this debug_update is called in the same block as
+  // previous one hidden inside debug_set_vest_price()
+  db_plugin->debug_update( [new_value]( database& db )
+  {
+    BOOST_TEST_MESSAGE( "Second call to debug_update within the same block reveals problem" );
+    db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+    {
+      gpo.maximum_block_size = new_value;
+    } );
+  } );
+
+  BOOST_TEST_MESSAGE( "Make sure the value we've set in second debug_update was actually changed" );
+  BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().maximum_block_size, new_value );
+
+  generate_block();
+  BOOST_TEST_MESSAGE( "The value should still be set after generating block" );
+    // if we generated more blocks the value would eventually be overwritten from witness values
+  BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().maximum_block_size, new_value );
+
+  validate_database();
+}
+
 BOOST_AUTO_TEST_CASE( plugin_object_size )
 {
   BOOST_CHECK_EQUAL( sizeof( account_by_key::key_lookup_object ), 56u ); //3.4M, lasting, expected 3*account_object on average
