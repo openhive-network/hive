@@ -25,5 +25,15 @@ void block_log_reader::process_blocks(uint32_t starting_block_number, uint32_t e
                              block_log::for_each_purpose::replay );
 }
 
+bool block_log_reader::is_known_block(const block_id_type& id) const
+{
+  try {
+    auto requested_block_num = protocol::block_header::num_from_id(id);
+    auto read_block_id = _block_log.read_block_id_by_num(requested_block_num);
+
+    return read_block_id != block_id_type() && read_block_id == id;
+  } FC_CAPTURE_AND_RETHROW()
+}
+
 } } //hive::chain
 

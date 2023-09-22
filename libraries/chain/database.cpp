@@ -330,18 +330,6 @@ void database::close(bool rewind)
   FC_CAPTURE_AND_RETHROW()
 }
 
-//no chainbase lock required
-bool database::is_known_block(const block_id_type& id)const
-{ try {
-  if (_fork_db().fetch_block(id))
-    return true;
-
-  auto requested_block_num = protocol::block_header::num_from_id(id);
-  auto read_block_id = _block_log().read_block_id_by_num(requested_block_num);
-
-  return read_block_id != block_id_type() && read_block_id == id;
-} FC_CAPTURE_AND_RETHROW() }
-
 //no chainbase lock required, but fork database read lock is required
 bool database::is_known_block_unlocked(const block_id_type& id)const
 { try {
