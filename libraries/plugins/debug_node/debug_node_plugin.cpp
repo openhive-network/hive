@@ -32,6 +32,7 @@ class debug_node_plugin_impl
     chain::database&                          _db;
 
     protocol::transaction_id_type             _current_debug_update_tx_id;
+    bool                                      _current_debug_update_tx_applied = false;
 
     boost::signals2::connection               _pre_apply_transaction_conn;
     boost::signals2::connection               _post_apply_block_conn;
@@ -101,6 +102,10 @@ chain::database& debug_node_plugin::database() { return my->_db; }
 const protocol::transaction_id_type& debug_node_plugin::make_artificial_transaction_for_debug_update()
 {
   static size_t idx = 0;
+
+  FC_ASSERT( !my->_current_debug_update_tx_applied, "Internal debug_update transaction already applied, while not fully configured" );
+    // it will fail if debug_update tries to call another debug_update or if there was problem with applying previous block
+    // that contained debug_update (f.e. because witness key was updated for witness that was supposed to produce the block)
 
   if( my->_current_debug_update_tx_id != protocol::transaction_id_type() )
     return my->_current_debug_update_tx_id; // reuse existing transaction
@@ -219,14 +224,14 @@ void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool
 */
 
 void debug_node_plugin::calculate_modifiers_according_to_new_price(const hive::protocol::price& new_price,
-                                                                    const hive::protocol::asset& total_hive, const hive::protocol::asset& total_vests,
-                                                                    hive::protocol::asset& hive_modifier, hive::protocol::asset& vest_modifier ) const
+  const hive::protocol::HIVE_asset& total_hive, const hive::protocol::VEST_asset& total_vests,
+  hive::protocol::HIVE_asset& hive_modifier, hive::protocol::VEST_asset& vest_modifier ) const
 {
   FC_ASSERT(new_price.base.symbol == HIVE_SYMBOL);
   FC_ASSERT(new_price.quote.symbol == VESTS_SYMBOL);
 
-  hive_modifier = hive::protocol::asset(0, HIVE_SYMBOL);
-  vest_modifier = hive::protocol::asset(0, VESTS_SYMBOL);
+  hive_modifier = hive::protocol::HIVE_asset( 0 );
+  vest_modifier = hive::protocol::VEST_asset( 0 );
 
   auto alpha_x = new_price.quote.amount * total_hive.amount;
   auto alpha_y = new_price.base.amount * total_vests.amount;
@@ -237,7 +242,7 @@ void debug_node_plugin::calculate_modifiers_according_to_new_price(const hive::p
     fc::uint128_t a = total_vests.amount.value;
     a *= (alpha_x - alpha_y).value;
     a /= alpha_y.value;
-    vest_modifier = hive::protocol::asset(fc::uint128_to_int64(a), VESTS_SYMBOL);
+    vest_modifier = hive::protocol::VEST_asset( fc::uint128_to_int64(a) );
   }
   else
   {
@@ -245,54 +250,47 @@ void debug_node_plugin::calculate_modifiers_according_to_new_price(const hive::p
     fc::uint128_t b = total_hive.amount.value;
     b *= (alpha_y - alpha_x).value;
     b /= alpha_x.value;
-    hive_modifier = hive::protocol::asset(fc::uint128_to_int64(b), HIVE_SYMBOL);
+    hive_modifier = hive::protocol::HIVE_asset( fc::uint128_to_int64(b) );
   }
 }
 
 void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_price)
 {
-  hive::protocol::asset vest_modifier;
-  hive::protocol::asset hive_modifier;
+  hive::protocol::VEST_asset vest_modifier;
+  hive::protocol::HIVE_asset hive_modifier;
 
-  chain::database& db = database();
-
-  const auto& dgpo = db.get_dynamic_global_properties();
-
+  const auto& dgpo = database().get_dynamic_global_properties();
   calculate_modifiers_according_to_new_price( new_price, dgpo.total_vesting_fund_hive, dgpo.total_vesting_shares, hive_modifier, vest_modifier );
+  ilog( "vest_modifier=${vest_modifier}, hive_modifier=${hive_modifier}", ( vest_modifier ) ( hive_modifier ) );
 
-  ilog("vest_modifier=${vest_modifier}, hive_modifier=${hive_modifier}", (vest_modifier)(hive_modifier));
+  ilog( "Before modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}",
+    ( "vest", dgpo.total_vesting_shares )( "hive", dgpo.total_vesting_fund_hive ) );
 
-  debug_update([&dgpo, &vest_modifier, &hive_modifier](chain::database& db)
+  debug_update( [ this, vest_modifier, hive_modifier ]( chain::database& db )
+  {
+    const hive::chain::account_object& miner_account = db.get_account( HIVE_INIT_MINER_NAME );
+    auto _update_initminer = [ &db, &vest_modifier, &miner_account ]()
     {
-      const hive::chain::account_object& miner_account = db.get_account( HIVE_INIT_MINER_NAME );
-      auto _update_initminer = [ &db, &vest_modifier, &miner_account ]()
+      /// If we increased vests pool, we need to put them to initminer account to avoid validate_invariants failure 
+      db.modify( miner_account, [ &vest_modifier ]( hive::chain::account_object& account )
       {
-        /// If we increased vests pool, we need to put them to initminer account to avoid validate_invariants failure 
+        account.vesting_shares += vest_modifier;
+      } );
+    };
+    db.rc.update_rc_for_custom_action( _update_initminer, miner_account );
 
-        db.modify(miner_account, [&vest_modifier](hive::chain::account_object& account)
-        {
-          account.vesting_shares += vest_modifier;
-        });
-      };
-      db.rc.update_rc_for_custom_action( _update_initminer, miner_account );
+    db.modify( db.get_dynamic_global_properties(), [ &vest_modifier, &hive_modifier ]( hive::chain::dynamic_global_property_object& p )
+    {
+      p.total_vesting_shares += vest_modifier;
+      p.total_vesting_fund_hive += hive_modifier;
+      p.current_supply += hive_modifier;
+      p.virtual_supply += hive_modifier;
+    } );
+  } );
 
-      db.modify(dgpo, [&vest_modifier, &hive_modifier](hive::chain::dynamic_global_property_object& p)
-        {
-          ilog("Before modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}", ("vest", p.total_vesting_shares)("hive", p.total_vesting_fund_hive));
-
-          p.total_vesting_shares += vest_modifier;
-          p.total_vesting_fund_hive += hive_modifier;
-
-          ilog("After modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}", ("vest", p.total_vesting_shares)("hive", p.total_vesting_fund_hive));
-
-          p.current_supply += hive_modifier;
-          p.virtual_supply += hive_modifier;
-        });
-
-      ilog("Final total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}", ("vest", dgpo.total_vesting_shares)("hive", dgpo.total_vesting_fund_hive));
-
-      ilog("Final price=${p}", ("p", hive::protocol::price(dgpo.total_vesting_fund_hive, dgpo.total_vesting_shares)));
-    });
+  ilog( "After modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}",
+    ( "vest", dgpo.total_vesting_shares )( "hive", dgpo.total_vesting_fund_hive ) );
+  ilog( "Final price=${p}", ( "p", hive::protocol::price( dgpo.total_vesting_fund_hive, dgpo.total_vesting_shares ) ) );
 }
 
 uint32_t debug_node_plugin::debug_generate_blocks(const std::string& debug_key, uint32_t count, uint32_t skip, uint32_t miss_blocks, bool immediate_generation)
@@ -418,12 +416,14 @@ void debug_node_plugin::on_pre_apply_transaction( const chain::transaction_notif
   try
   {
     chain::database& db = database();
-    auto it = _debug_updates.find(note.transaction_id);
+    auto it = _debug_updates.find( note.transaction_id );
 
-    if (it != _debug_updates.end())
+    if( it != _debug_updates.end() )
     {
-      for (const auto& update : it->second)
+      for( const auto& update : it->second )
         update(db);
+      if( db.is_validating_block() && note.transaction_id == my->_current_debug_update_tx_id )
+        my->_current_debug_update_tx_applied = true;
     }
   }
   catch (const fc::exception& e)
@@ -451,16 +451,18 @@ void debug_node_plugin::on_pre_apply_transaction( const chain::transaction_notif
 }
 
 void debug_node_plugin::on_post_apply_block( const chain::block_notification& note )
-{
-  try
-  {
+{ try {
   if( allow_throw_exception )
     HIVE_ASSERT( false, hive::chain::plugin_exception, "Artificial exception was thrown" );
   if( my->_current_debug_update_tx_id != protocol::transaction_id_type() )
+  {
+    HIVE_ASSERT( my->_current_debug_update_tx_applied, hive::chain::plugin_exception, "Failed to apply debug_update transaction" );
+      // example source of above failing: debug_update changing timestamp of head block so internal transaction
+      // is treated as exired when block is produced
     my->_current_debug_update_tx_id = protocol::transaction_id_type();
+    my->_current_debug_update_tx_applied = false;
   }
-  FC_LOG_AND_RETHROW()
-}
+} FC_LOG_AND_RETHROW() }
 
 /*void debug_node_plugin::set_json_object_stream( const std::string& filename )
 {

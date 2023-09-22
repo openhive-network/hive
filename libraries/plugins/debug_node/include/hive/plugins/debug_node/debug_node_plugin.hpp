@@ -119,8 +119,8 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     void load_debug_updates( const fc::variant_object& target );
 
     void calculate_modifiers_according_to_new_price(const hive::protocol::price& new_price,
-                                                    const hive::protocol::asset& total_hive, const hive::protocol::asset& total_vests,
-                                                    hive::protocol::asset& hive_modifier, hive::protocol::asset& vest_modifier ) const;
+      const hive::protocol::HIVE_asset& total_hive, const hive::protocol::VEST_asset& total_vests,
+      hive::protocol::HIVE_asset& hive_modifier, hive::protocol::VEST_asset& vest_modifier ) const;
 
     bool logging = true;
 

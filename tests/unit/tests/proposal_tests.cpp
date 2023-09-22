@@ -652,15 +652,6 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
     int64_t proposal_2 = create_proposal( "accp", "acc2", hardfork_25_time - fc::days( 150 ), LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days( 150 ), asset( 100, HBD_SYMBOL ), accp_private_key );
     generate_block();
 
-    db_plugin->debug_update( [=]( database& db )
-    {
-      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
-      {
-        //fake timestamp of current block so we don't need to wait for creation of 39mln blocks in next line
-        //even though it is skipping it still takes a lot of time, especially under debugger
-        gpo.time = hardfork_25_time - fc::days( 202 );
-      } );
-    } );
     generate_blocks( hardfork_25_time - fc::days( 201 ) );
     BOOST_REQUIRE( db->head_block_time() < hardfork_25_time - fc::days( 200 ) );
 
@@ -755,15 +746,6 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
     const auto& account_idx = db->get_index<account_index, by_governance_vote_expiration_ts>();
 
     const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
-    db_plugin->debug_update( [=]( database& db )
-    {
-      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
-      {
-        //fake timestamp of current block so we don't need to wait for creation of 40mln blocks in next line
-        //even though it is skipping it still takes a lot of time, especially under debugger
-        gpo.time = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS - fc::days( 1 );
-      } );
-    } );
     generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
 
     std::vector<int64_t> proposals;

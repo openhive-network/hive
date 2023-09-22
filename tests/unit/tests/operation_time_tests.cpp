@@ -2638,7 +2638,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       {
         gpo.proposal_fund_percent = 0;
       });
-    }, database::skip_witness_signature );
+    } );
 
     auto debug_key = "5JdouSvkK75TKWrJixYufQgePT21V7BAVWbNUWt3ktqhPmy8Z78"; //get_dev_key debug node
 
@@ -2692,7 +2692,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       {
         a.hbd_balance = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
       });
-    }, database::skip_witness_signature );
+    } );
 
     db_plugin->debug_update( [&]( database& db )
     {
@@ -2701,7 +2701,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
         gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
         gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * exchange_rate;
       });
-    }, database::skip_witness_signature );
+    } );
 
     validate_database();
 
@@ -2737,7 +2737,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       {
         a.hbd_balance = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
       });
-    }, database::skip_witness_signature );
+    } );
 
     db_plugin->debug_update( [&]( database& db )
     {
@@ -2746,7 +2746,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
         gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
         gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * exchange_rate;
       } );
-    }, database::skip_witness_signature );
+    } );
 
     validate_database();
 
