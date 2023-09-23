@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* This operation instructs the blockchain to start a conversion of HBD to Hive.  
+ * The funds are deposited after 3.5 days.
+ *
+ * @param {string} owner - Account name.
+ * @param {number} requestid - The number is given by a user. Should be unique for a user.
+ * @param {asset} amount - Amount > 0, have to be in HBD.
+ */
+message convert {
+  required string owner = 1;
+  required uint32 requestid = 2;
+  required asset  amount = 3;
+}

@@ -1,0 +1,24 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Represents quotation of the relative value of asset against another asset.
+ * Similar to 'currency pair' used to determine value of currencies.
+ *
+ * For example:
+ * 1 EUR / 1.25 USD where:
+ * 1 EUR is an asset specified as a base
+ * 1.25 USD us an asset specified as a qute
+ *
+ * can determine value of EUR against USD.
+ *
+ * @param {asset} base - Represents a value of the price object to be expressed relatively to quote asset.
+ *                       Cannot have amount == 0 if you want to build valid price.
+ * @param {asset} quote - represents an relative asset. Cannot have amount == 0, otherwise asertion fail.
+ */
+message price {
+  required asset base = 1;
+  required asset quote = 2;
+}
