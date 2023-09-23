@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+/* This is an operation for witnesses.
+ * This operation is used in the process of block_validity_vote
+ * (see https://hive.blog/hive-139531/@blocktrades/one-block-irreversibility-for-delegated-proof-of-stake-dpos).
+ *
+ * @param {string} witness
+ * @param {string} block_id
+ */
+message witness_block_approve {
+  required string witness = 1;
+  required string block_id = 2 [json_name = "block_id"];
+}

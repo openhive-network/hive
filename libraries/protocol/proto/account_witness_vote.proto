@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+/* A user may vote for a witness directly using an operation:
+ * account_witness_vote_operation or indirectly using the proxy - operation:  account_witness_proxy_operation.
+ * All accounts with a Hive Power (also called Vesting Fund Shares or VESTS) can vote for up to 30 witnesses,
+ * but you cannot vote twice for the same witnesses. 
+ * If a proxy is specified then all existing votes are removed.
+ * Your vote power depends on your HP.
+ * If the operation account_witness_vote_operation or account_witness_proxy_operation or update_proposal_votes_operation
+ * is not executed in a HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD, the votes are removed and the virtual operation:
+ * expired_account_notification_operation is generated.
+ *
+ * @param {string} account
+ * @param {string} witness - Witness account.
+ * @param {bool} approve - To vote for the witness, the approve = true. To remove the vote, the approve = false.
+ */
+message account_witness_vote {
+  required string account = 1;
+  required string witness = 2;
+  required bool   approve = 3;
+}

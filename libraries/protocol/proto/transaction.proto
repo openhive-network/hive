@@ -4,8 +4,18 @@ import "future_extensions.proto";
 import "vote.proto";
 import "comment.proto";
 import "transfer.proto";
+import "transfer_to_vesting.proto";
+import "withdraw_vesting.proto";
+import "limit_order_create.proto";
 import "limit_order_cancel.proto";
+import "feed_publish.proto";
+import "convert.proto";
 import "account_create.proto";
+import "account_update.proto";
+import "account_witness_vote.proto";
+import "account_witness_proxy.proto";
+import "custom.proto";
+import "witness_block_approve.proto";
 import "recurrent_transfer.proto";
 
 package hive.protocol.buffers;
@@ -18,8 +28,18 @@ message operation {
         vote vote = 1;
         comment comment = 2;
         transfer transfer = 3;
+        transfer_to_vesting transfer_to_vesting = 4 [json_name = "transfer_to_vesting"];
+        withdraw_vesting withdraw_vesting = 5 [json_name = "withdraw_vesting"];
+        limit_order_create limit_order_create = 6 [json_name = "limit_order_create"];
         limit_order_cancel limit_order_cancel = 7 [json_name = "limit_order_cancel"];
+        feed_publish feed_publish = 8 [json_name = "feed_publish"];
+        convert convert = 9;
         account_create account_create = 10 [json_name = "account_create"];
+        account_update account_update = 11 [json_name = "account_update"];
+        account_witness_vote account_witness_vote = 13 [json_name = "account_witness_vote"];
+        account_witness_proxy account_witness_proxy = 14 [json_name = "account_witness_proxy"];
+        custom custom = 16;
+        witness_block_approve witness_block_approve = 17 [json_name = "witness_block_approve"];
         recurrent_transfer recurrent_transfer = 50 [json_name = "recurrent_transfer"];
     }
 }
