@@ -1,0 +1,24 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* This operation converts Hive Power (also called Vesting Fund Shares or VESTS) into HIVE.
+ * At any given point in time an account can be withdrawing from their vesting shares.
+ * A user may change the number of shares they wish to cash out at any time between 0 and their total vesting stake.
+ * After applying this operation, vesting_shares will be withdrawn at a rate of vesting_shares/13 per week for 13 weeks
+ * starting one week after this operation is included in the blockchain.
+ * This operation is not valid if a user has no vesting shares.
+ * There can be only one withdraw_vesting_operation  processed at the same time.
+ * If a user wants to stop withdraw_vesting_operation, they should create an operation withdraw_vesting_operation with amount =0.
+ * If a user creates a new withdraw_vesting_operation when the old one is still processed,
+ * then the old withdraw_vesting_operation will be canceled and a new one will be processed.
+ *
+ * @param {string} account - The account the funds are coming from.
+ * @param {asset} vesting_shares - Amount of VESTS (HP)
+ */
+message withdraw_vesting {
+  required string account = 1;
+  required asset  vesting_shares = 2 [json_name = "vesting_shares"];
+}

@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* The operation is also called Staking.
+ * This operation converts Hive into Hive Power (also called Vesting Fund Shares  or VESTS) at the current exchange rate.
+ * The conversion may be done between the same account or to another account.
+ * The more HP (Hive Power) the account has, the more:
+ * a.       Governance voting power (for witnesses and proposals) has
+ * b.       Social voting power has (indirectly affects Increase curation rewards)
+ * c.       Resource Credit has
+ *
+ * @param {string} from_account - The account the funds are coming from.
+ * @param {string} to_account - The account the funds are going to. If null, then the same as 'from_account'.
+ * @param {asset} amount - Must be HIVE, amount > 0.
+ */
+message transfer_to_vesting {
+  required string from_account = 1 [json_name = "from"];
+  required string to_account = 2 [json_name = "to"];
+  required asset  amount = 3;
+}
