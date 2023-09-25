@@ -1,0 +1,25 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+/* The operation custom_json_operation works similar as custom_operation,
+ * but it is designed to be human readable/developer friendly.
+ * The custom_json_operation is larger than custom_operation or custom_binary, that is why it costs more RC.
+ * It should be signed as required in { required_auths } or { required_posting_auths }. 
+ * The examples of custom_json_operation:
+ * - reblog
+ * - muted
+ * - pinned
+ * - follow
+ *
+ * @param {string} required_auths
+ * @param {string} required_posting_auths
+ * @param {string} id - Must be less than 32 characters long.
+ * @param {string} json - Must be a proper utf8 JSON string.
+ */
+message custom_json {
+  repeated string required_auths = 1 [json_name = "required_auths"];
+  repeated string required_posting_auths = 2 [json_name = "required_posting_auths"];
+  required string id = 3;
+  required string json = 4;
+}

@@ -1,0 +1,25 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* A user can place Hive and Hive Dollars into savings balances.
+ * Funds can be withdrawn from these balances after a three day delay.
+ * Keeping funds on the savings balance mitigates loss from hacked and compromised accounts.
+ * The maximum amount a user can lose instantaneously is the sum of what they hold in liquid balances.
+ * Assuming an account can be recovered quickly, loss in such situations can be kept to a minimum
+ * Additionally for keeping Hive Dollars on the savings balance, the interests are calculated.
+ *
+ * @param {string} from_account - The account the funds are coming from.
+ * @param {string} to_account - The account the funds are going to.
+ *                              The funds may be transferred to someone else savings balance.
+ * @param {asset} amount - The allowed currency: HIVE and HBD, amount > 0.
+ * @param {string} memo - Have to be UTF8, must be shorter than 2048.
+ */
+message transfer_to_savings {
+  required string from_account = 1 [json_name = "from"];
+  required string to_account = 2 [json_name = "to"];
+  required asset  amount = 3;
+  required string memo = 4;
+}

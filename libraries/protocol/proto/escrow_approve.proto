@@ -1,0 +1,26 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+/* The operation escrow_approve_operation is used to approve the escrow.
+ * The approval should be done by { to } and by the { agent }.
+ * The escrow approval is irreversible.
+ * If { agent } or { to } haven’t approved the escrow before the { ratification_deadline} or either
+ * of them explicitly rejected the escrow, the escrow is rejected.
+ * If {agent} and {to} have approved the escrow, the {fee} is transferred from temporary balance to {agent} account.
+ *
+ * @param {string} from_account - Account name.
+ * @param {string} to_account - Account name.
+ * @param {string} agent - Account name.
+ * @param {string} who - Account name. Either {to} or {agent}.
+ * @param {number} escrow_id - Escrow identifier.
+ * @param {bool} approve - approve = true; (approve = false explicitly rejects the escrow)
+ */
+message escrow_approve {
+  required string from_account = 1 [json_name = "from"];
+  required string to_account = 2 [json_name = "to"];
+  required string agent = 3;
+  required string who = 4;
+  required uint32 escrow_id = 5 [json_name = "escrow_id"];
+  required bool   approve = 6;
+}

@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+import "asset.proto";
+import "future_extensions.proto";
+
+package hive.protocol.buffers;
+
+/* A user may create a new account using a pair of operations: claim_account_operation and create_claimed_account_operation.
+ * After the operation claim_account_operation a user receives a token:
+ * pending claimed accounts and later (using operation create_claimed_account_operation) a user may create a new account.
+ * After executing the operation claim_account_operation, a new account is not created.
+ *
+ * @param {string} creator - Account name.
+ * @param {asset} fee - The amount of fee for creating a new account is decided by the witnesses.
+ *                      It may be paid in HIVE or in the Recourse Credit (RC).
+ *                      If a user wants to pay a fee in RC, it should be set {fee= 0}.
+ * @param {future_extensions} extensions - Not currently used.
+ */
+message claim_account {
+  required string            creator = 1;
+  required asset             fee = 2;
+  repeated future_extensions extensions = 3;
+}
