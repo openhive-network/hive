@@ -31,6 +31,9 @@ class debug_node_plugin_impl
     plugins::chain::chain_plugin&             _chain_plugin;
     chain::database&                          _db;
 
+    protocol::transaction_id_type             _current_debug_update_tx_id;
+
+    boost::signals2::connection               _pre_apply_transaction_conn;
     boost::signals2::connection               _post_apply_block_conn;
 };
 
@@ -76,6 +79,8 @@ void debug_node_plugin::plugin_initialize( const variables_map& options )
   }
 
   // connect needed signals
+  my->_pre_apply_transaction_conn = my->_db.add_pre_apply_transaction_handler(
+    [this](const chain::transaction_notification& note){ on_pre_apply_transaction(note); }, *this, 0 );
   my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
     [this](const chain::block_notification& note){ on_post_apply_block(note); }, *this, 0 );
 }
@@ -92,6 +97,37 @@ void debug_node_plugin::plugin_startup()
 }
 
 chain::database& debug_node_plugin::database() { return my->_db; }
+
+const protocol::transaction_id_type& debug_node_plugin::make_artificial_transaction_for_debug_update()
+{
+  static size_t idx = 0;
+
+  if( my->_current_debug_update_tx_id != protocol::transaction_id_type() )
+    return my->_current_debug_update_tx_id; // reuse existing transaction
+
+  ++idx;
+  std::string idx_str( std::to_string( idx ) );
+  hive::protocol::custom_operation op;
+  op.required_auths = { HIVE_TEMP_ACCOUNT }; // we are using 'temp' account because it has open authority, so it should work even in mainnet
+  op.id = 0;
+  op.data = std::vector<char>( idx_str.begin(), idx_str.end() );
+
+  const auto& dgpo = database().get_dynamic_global_properties();
+  protocol::signed_transaction tx;
+  tx.set_reference_block( dgpo.head_block_id );
+  tx.set_expiration( dgpo.time + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+
+  const auto pack_type = hive::protocol::serialization_mode_controller::get_current_pack();
+  hive::chain::full_transaction_ptr ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
+  ftx->sign_transaction( std::vector<fc::ecc::private_key>{}, database().get_chain_id(), fc::ecc::fc_canonical, pack_type );
+  database().push_transaction( ftx, 0 );
+
+  my->_current_debug_update_tx_id = ftx->get_transaction_id();
+
+  return my->_current_debug_update_tx_id;
+}
+
 
 /*
 void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool logging )
@@ -370,32 +406,52 @@ uint32_t debug_node_plugin::debug_generate_blocks_until(
   return new_blocks;
 }
 
-void debug_node_plugin::apply_debug_updates()
-{
-  // this was a method on database in Graphene
-  chain::database& db = database();
-  chain::block_id_type head_id = db.head_block_id();
-  auto it = _debug_updates.find( head_id );
-  if( it == _debug_updates.end() )
-    return;
-  //for( const fc::variant_object& update : it->second )
-  //   debug_apply_update( db, update, logging );
-  for( auto& update : it->second )
-    update( db );
-}
-
-void debug_node_plugin::on_post_apply_block( const chain::block_notification& note )
+void debug_node_plugin::on_pre_apply_transaction( const chain::transaction_notification& note )
 {
   try
   {
+    chain::database& db = database();
+    auto it = _debug_updates.find( note.transaction_id );
+
+    if( it != _debug_updates.end() )
+    {
+      for( const auto& update : it->second )
+        update(db);
+    }
+  }
+  catch (const fc::exception& e)
+  {
+    FC_THROW_EXCEPTION(chain::plugin_exception, "An fc error occured during applying debug updates: ${what}",("what", e.to_detail_string()));
+  }
+  catch (...)
+  {
+    const auto current_exception = std::current_exception();
+
+    if (current_exception)
+    {
+      try
+      {
+        std::rethrow_exception(current_exception);
+      }
+      catch( const std::exception& e )
+      {
+         FC_THROW_EXCEPTION(chain::plugin_exception, "An std error occured during applying debug updates: ${what}",("what", e.what()));
+      }
+    }
+    else
+      FC_THROW_EXCEPTION(chain::plugin_exception, "An unknown error occured during applying debug updates.");
+  }
+}
+
+void debug_node_plugin::on_post_apply_block( const chain::block_notification& note )
+{ try {
   if( allow_throw_exception )
     HIVE_ASSERT( false, hive::chain::plugin_exception, "Artificial exception was thrown" );
-
-  if( !_debug_updates.empty() )
-    apply_debug_updates();
+  if( my->_current_debug_update_tx_id != protocol::transaction_id_type() )
+  {
+    my->_current_debug_update_tx_id = protocol::transaction_id_type();
   }
-  FC_LOG_AND_RETHROW()
-}
+} FC_LOG_AND_RETHROW() }
 
 /*void debug_node_plugin::set_json_object_stream( const std::string& filename )
 {
@@ -435,6 +491,7 @@ void debug_node_plugin::on_post_apply_block( const chain::block_notification& no
 
 void debug_node_plugin::plugin_shutdown()
 {
+  chain::util::disconnect_signal( my->_pre_apply_transaction_conn );
   chain::util::disconnect_signal( my->_post_apply_block_conn );
   /*if( _json_object_stream )
   {
