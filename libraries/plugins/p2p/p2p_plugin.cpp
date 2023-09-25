@@ -78,6 +78,7 @@ public:
   p2p_plugin_impl( plugins::chain::chain_plugin& c )
     : shutdown_helper( "P2P plugin" ), chain( c )
   {
+
   }
   virtual ~p2p_plugin_impl()
   {
