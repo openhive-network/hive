@@ -108,18 +108,23 @@ typedef database_api::api_hardfork_property_object debug_get_hardfork_property_o
 struct debug_set_hardfork_args
 {
   uint32_t hardfork_id;
+  fc::optional<protocol::transaction_id_type> hook_to_tx;
 };
 
 struct debug_set_vest_price_args
 {
   hive::protocol::price vest_price;
+  fc::optional<protocol::transaction_id_type> hook_to_tx;
 };
 
 typedef void_type debug_set_vest_price_return;
 
 typedef void_type debug_set_hardfork_return;
 
-typedef debug_set_hardfork_args debug_has_hardfork_args;
+struct debug_has_hardfork_args
+{
+  uint32_t hardfork_id;
+};
 
 struct debug_has_hardfork_return
 {
@@ -213,10 +218,13 @@ FC_REFLECT( hive::plugins::debug_node::api_witness_schedule_object,
         (min_witness_account_subsidy_decay) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_set_hardfork_args,
-        (hardfork_id) )
+        (hardfork_id)(hook_to_tx) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_set_vest_price_args,
-        (vest_price) )
+        (vest_price)(hook_to_tx) )
+
+FC_REFLECT( hive::plugins::debug_node::debug_has_hardfork_args,
+        (hardfork_id) )
 
 FC_REFLECT( hive::plugins::debug_node::debug_has_hardfork_return,
         (has_hardfork) )

@@ -138,7 +138,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_set_hardfork )
   _debug_node.debug_update( [=]( chain::database& db )
   {
     db.set_hardfork( args.hardfork_id, false );
-  });
+  }, hive::chain::database::skip_nothing, args.hook_to_tx );
 
   return {};
 }
@@ -148,9 +148,9 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_has_hardfork )
   return { _db.has_hardfork( args.hardfork_id ) };
 }
 
-DEFINE_API_IMPL(debug_node_api_impl, debug_set_vest_price)
+DEFINE_API_IMPL( debug_node_api_impl, debug_set_vest_price )
 {
-  _debug_node.debug_set_vest_price(args.vest_price);
+  _debug_node.debug_set_vest_price( args.vest_price, args.hook_to_tx );
 
   return {};
 }
