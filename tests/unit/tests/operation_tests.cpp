@@ -2558,15 +2558,7 @@ BOOST_AUTO_TEST_CASE( proxy_cleared_operation_basic )
       generate_block();
 
       fc::time_point_sec hardfork_25_time(HIVE_HARDFORK_1_25_TIME);
-      db_plugin->debug_update( [=]( database& db )
-      {
-        db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
-        {
-          //fake timestamp of current block so we don't need to wait for creation of 39mln blocks in next line
-          //even though it is skipping it still takes a lot of time, especially under debugger
-          gpo.time = hardfork_25_time;
-        } );
-      } );
+      generate_blocks( hardfork_25_time );
 
       account_witness_proxy_operation op;
       op.account = "carol";
