@@ -16,7 +16,8 @@ packages = [
 
 source = [
     { name = "PyPI", priority = "primary" },
-    { name = "gitlab", url = "https://gitlab.syncad.com/api/v4/projects/419/packages/pypi/simple", priority = "supplemental" },
+    { name = "gitlab-wax", url = "https://gitlab.syncad.com/api/v4/projects/419/packages/pypi/simple", priority = "supplemental" },  # wax
+    { name = "gitlab-schemas", url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental" },  # schemas
 ]
 
 
