@@ -157,5 +157,129 @@ BOOST_AUTO_TEST_CASE( debug_update_use_bug )
   validate_database();
 }
 
+BOOST_AUTO_TEST_CASE( debug_update_with_explicit_hook )
+{
+  BOOST_TEST_MESSAGE( "Hooking debug_update to transactions" );
+
+  ACTORS( (alice)(bob)(carol)(dan) );
+  generate_block();
+
+  auto make_transfer = [&]( const account_name_type& from, const account_name_type& to,
+    const asset& tokens, const fc::ecc::private_key& key )
+  {
+    transfer_operation op;
+    op.from = from;
+    op.to = to;
+    op.amount = tokens;
+    signed_transaction tx;
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( op );
+    auto pack_type = hive::protocol::serialization_mode_controller::get_current_pack();
+    full_transaction_ptr ftx = hive::chain::full_transaction_type::create_from_signed_transaction(
+      tx, pack_type, false );
+    ftx->sign_transaction( std::vector<fc::ecc::private_key>{ key }, db->get_chain_id(),
+      fc::ecc::fc_canonical, pack_type );
+    return ftx;
+  };
+
+  auto alice_to_bob = make_transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_private_key );
+  auto alice_to_carol = make_transfer( "alice", "carol", ASSET( "2.000 TESTS" ), alice_private_key );
+  auto bob_to_dan = make_transfer( "bob", "dan", ASSET( "0.700 TESTS" ), bob_private_key );
+  auto carol_to_dan = make_transfer( "carol", "dan", ASSET( "6.000 TESTS" ), carol_private_key );
+
+  // everyone starts with zero balance
+  BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 0 );
+  BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 0 );
+  BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 0 );
+  BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 0 );
+
+  // make bindings of callbacks to transactions out of order (to show they are not executed immediately)
+  auto direct_transfer = [this]( const account_name_type& from, const account_name_type& to,
+    int delta_from, int delta_to, database& db )
+  {
+    const auto& from_account = db.get_account( from );
+    const auto& to_account = db.get_account( to );
+    ilog( "Transfering directly from ${from} to ${to}", (from)(to) );
+    db.modify( from_account, [=]( account_object& _from )
+    {
+      _from.balance.amount += delta_from;
+    } );
+    db.modify( to_account, [=]( account_object& _to )
+    {
+      _to.balance.amount += delta_to;
+    } );
+  };
+
+  db_plugin->debug_update( [&]( database& db ) // if it executed now, bob would go negative
+  {
+    direct_transfer( "bob", "alice", -10, 10, db );
+  }, 0, bob_to_dan->get_transaction_id() );
+
+  db_plugin->debug_update( [&]( database& db )
+  {
+    direct_transfer( "initminer", "carol", -200, 200, db );
+  }, 0, alice_to_carol->get_transaction_id() );
+
+  db_plugin->debug_update( [&]( database& db ) // if it ever executed, validate_database would fail
+  {
+    direct_transfer( "dan", "alice", -100, 10000, db );
+  }, 0, carol_to_dan->get_transaction_id() );
+
+  db_plugin->debug_update( [&]( database& db )
+  {
+    direct_transfer( "initminer", "alice", -3100, 3100, db );
+  }, 0, alice_to_bob->get_transaction_id() );
+
+  // none of above debug_updates was executed yet
+  BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 0 );
+  BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 0 );
+  BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 0 );
+  BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 0 );
+
+  db->push_transaction( alice_to_bob );
+  BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 3100 - 1000 ); // direct from initminer / normal to bob
+  BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 ); // normal from alice
+  BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 0 );
+  BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 0 );
+
+  db->push_transaction( alice_to_carol );
+  BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 3100 - 1000 - 2000 ); // ... / normal to carol
+  BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 );
+  BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 200 + 2000 ); // direct from initminer / normal from alice
+  BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 0 );
+
+  generate_block();
+
+  // direct transfers are properly reapplied when block is generated
+  BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 3100 - 1000 - 2000 );
+  BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 );
+  BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 200 + 2000 );
+  BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 0 );
+
+  // since bob was already given tokens by alice, he can transfer now
+  db->push_transaction( bob_to_dan );
+  BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 3100 - 1000 - 2000 + 10 ); // ... / direct from bob
+  BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 - 10 - 700 ); // ... / direct to alice / normal to dan
+  BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 200 + 2000 );
+  BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 700 ); // normal from bob
+
+  // carol has not enough balance to make transfer - hooked callback will also have no lasting effect
+  BOOST_REQUIRE_THROW( db->push_transaction( carol_to_dan ), fc::assert_exception );
+  BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 3100 - 1000 - 2000 + 10 );
+  BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 - 10 - 700 );
+  BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 200 + 2000 );
+  BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 700 );
+
+  generate_block();
+
+  // once again, check balances after block generation
+  BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 3100 - 1000 - 2000 + 10 );
+  BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 - 10 - 700 );
+  BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 200 + 2000 );
+  BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 700 );
+
+  validate_database();
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
