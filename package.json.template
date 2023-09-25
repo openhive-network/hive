@@ -19,5 +19,12 @@
   "repository": {
     "type": "git",
     "url": "https://gitlab.syncad.com/hive/hive.git"
+  },
+  "engines": {
+    "node": ">= 12"
+  },
+  "publishConfig": {
+    "registry": "",
+    "tag": ""
   }
 }

@@ -29,13 +29,17 @@ if [ "${TAG}" = "" ]; then
   exit 1
 fi
 
+DIST_TAG=""
 NEW_VERSION=""
 
 if [ "$CURRENT_BRANCH" = "master" ]; then
+  DIST_TAG="latest"
   NEW_VERSION="${TAG}"
 elif [ "$CURRENT_BRANCH" = "develop" ]; then
+  DIST_TAG="stable"
   NEW_VERSION="${TAG}-stable.${SHORT_HASH}"
 else
+  DIST_TAG="dev"
   NEW_VERSION="${TAG}-${SHORT_HASH}"
 fi
 
@@ -47,4 +51,8 @@ fi
 
 echo "//${REGISTRY_URL}:_authToken=\"${PUBLISH_TOKEN}\"" >> "${PROJECT_DIR}/.npmrc"
 
-jq ".name = \"${SCOPE}/beekeeper\" | .version = \"$NEW_VERSION\"" "${PROJECT_DIR}/package.json.template" > "${PROJECT_DIR}/package.json"
+jq ".name = \"${SCOPE}/beekeeper\" | .version = \"$NEW_VERSION\" | .publishConfig.registry = \"https://${REGISTRY_URL}\" | .publishConfig.tag = \"${DIST_TAG}\"" "${PROJECT_DIR}/package.json.template" > "${PROJECT_DIR}/package.json"
+
+# Display detailed publish config data
+jq -r '.name + "@" + .version + " (" + .publishConfig.tag + ") " + .publishConfig.registry' "package.json"
+
