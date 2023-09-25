@@ -934,6 +934,9 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     std::array< int, HIVE_RC_NUM_RESOURCE_TYPES > empty = { 0, 0, 0, 0, 0 };
 
     BOOST_TEST_MESSAGE( "Pending usage and pending cost are all zero at the start of block" );
+      //ABW: above comment is true, but only when applying block; when checking after nonempty
+      //block, we'll still have values from that block (in our case data from funding 'alice')
+    generate_block(); //empty block that clears pending_data left from previous block
     check_direction( pending_data.get_pending_usage(), empty );
     check_direction( pending_data.get_pending_cost(), empty );
     check_direction( pending_data.get_differential_usage(), empty ); //it is empty only because last tx was a transfer
