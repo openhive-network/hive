@@ -70,7 +70,7 @@ namespace hive { namespace converter {
 
   public:
     /// All converted blocks will be signed using given private key
-    blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size = 1, bool increase_block_size = true );
+    blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, appbase::application& app, size_t signers_size = 1, bool increase_block_size = true );
     ~blockchain_converter();
 
     /// Sets previous id of the block to the given value and re-signs content of the block. Converts transactions. Returns current block id

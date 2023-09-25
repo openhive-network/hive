@@ -209,22 +209,22 @@ namespace hive { namespace converter {
   }
 
 
-  blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, size_t signers_size, bool increase_block_size )
+  blockchain_converter::blockchain_converter( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, appbase::application& app, size_t signers_size, bool increase_block_size )
     : _private_key( _private_key ), chain_id( chain_id ), shared_signatures_stack_in(10000), shared_signatures_stack_out(10000), increase_block_size( increase_block_size ), signers_exit( false )
   {
     FC_ASSERT( signers_size > 0, "There must be at least 1 signer thread!" );
     for( size_t i = 0; i < signers_size; ++i )
       signers.emplace( signers.end(), std::bind( [&]( size_t worker_index ) {
         sig_stack_in_type local_trx;
-        while( !signers_exit.load() && !appbase::app().is_interrupt_request() )
+        while( !signers_exit.load() && !app.is_interrupt_request() )
           if( shared_signatures_stack_in.pop( local_trx ) )
           {
             sign_transaction( *local_trx.second );
 
-            while( !shared_signatures_stack_out.push( local_trx.first ) && !appbase::app().is_interrupt_request() ) continue;
+            while( !shared_signatures_stack_out.push( local_trx.first ) && !app.is_interrupt_request() ) continue;
           }
 
-        if( appbase::app().is_interrupt_request() )
+        if( app.is_interrupt_request() )
           ilog("Signer thread #${worker_index} interrupted on user request", (worker_index));
       }, i ) );
   }

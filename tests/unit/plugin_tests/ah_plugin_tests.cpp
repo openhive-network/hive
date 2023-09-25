@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE( mutex_reentry_bug )
   {
     BOOST_TEST_MESSAGE( "Testing bug where mutex used to stop API during block processing is not unlocked" );
 
-    trigger_bug bug( appbase::app(), *db );
+    trigger_bug bug( theApp, *db );
 
     bug.trigger = true;
     generate_block();

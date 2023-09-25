@@ -51,6 +51,10 @@ struct blockchain_worker_thread_pool::impl
   bool is_block_producer = false;
   std::optional<uint32_t> last_checkpoint;
 
+  appbase::application& theApp;
+
+  impl( appbase::application& app );
+
   bool allow_enqueue_work() const;
   bool is_running() const;
 
@@ -61,6 +65,11 @@ struct blockchain_worker_thread_pool::impl
   void thread_function();
 };
 
+blockchain_worker_thread_pool::impl::impl( appbase::application& app ): theApp( app )
+{
+
+}
+
 bool blockchain_worker_thread_pool::impl::allow_enqueue_work() const
 {
   return !threads.empty() && is_running();
@@ -68,7 +77,7 @@ bool blockchain_worker_thread_pool::impl::allow_enqueue_work() const
 
 bool blockchain_worker_thread_pool::impl::is_running() const
 {
-  return running.load(std::memory_order_relaxed) && !appbase::app().is_interrupt_request();
+  return running.load(std::memory_order_relaxed) && !theApp.is_interrupt_request();
 }
 
 bool blockchain_worker_thread_pool::impl::dequeue_work(work_request_type*& work_request_ptr)
@@ -106,8 +115,8 @@ void blockchain_worker_thread_pool::impl::thread_function()
 }
 
 //std::shared_ptr<std::thread> fill_queue_thread = std::make_shared<std::thread>([&](){ fill_pending_queue(input_block_log_path / "block_log"); });
-blockchain_worker_thread_pool::blockchain_worker_thread_pool() :
-  my(std::make_unique<impl>())
+blockchain_worker_thread_pool::blockchain_worker_thread_pool( appbase::application& app ) :
+  my(std::make_unique<impl>( app ))
 {
   lazy_init();
 }
@@ -160,7 +169,7 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
         full_block->decode_block();
 
         // now we have the full_transactions, get started working on them
-        blockchain_worker_thread_pool::get_instance().enqueue_work(full_block->get_full_transactions(), 
+        blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block->get_full_transactions(), 
                                                                    blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p,
                                                                    full_block->get_block_num());
         // precompute some stuff we'll need for validating the block
@@ -210,7 +219,7 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
         if (validate_during_replay)
         {
           // now we have the full_transactions, get started working on them
-          blockchain_worker_thread_pool::get_instance().enqueue_work(full_block->get_full_transactions(), 
+          blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block->get_full_transactions(), 
                                                                      blockchain_worker_thread_pool::data_source_type::transaction_inside_block_for_replay,
                                                                      full_block->get_block_num());
           full_block->compute_signing_key();
@@ -495,9 +504,9 @@ void blockchain_worker_thread_pool::shutdown()
   thread_pool_size = new_thread_pool_size;
 }
 
-/* static */ blockchain_worker_thread_pool& blockchain_worker_thread_pool::get_instance()
+/* static */ blockchain_worker_thread_pool& blockchain_worker_thread_pool::get_instance( appbase::application& app )
 {
-  static blockchain_worker_thread_pool thread_pool;
+  static blockchain_worker_thread_pool thread_pool( app );
   thread_pool.lazy_init();
   return thread_pool;
 }

@@ -525,7 +525,7 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
     switch( auto_report_output )
     {
     case report_output::NOTIFY:
-      appbase::app().notify( "RC stats", "rc_stats", report );
+      db.get_app().notify( "RC stats", "rc_stats", report );
       break;
     case report_output::ILOG:
       ilog( "RC stats:${report}", ( report ) );

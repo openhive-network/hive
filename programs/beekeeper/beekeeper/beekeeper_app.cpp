@@ -7,7 +7,7 @@
 
 namespace beekeeper {
 
-beekeeper_app::beekeeper_app(): app( appbase::app() )
+beekeeper_app::beekeeper_app()
 {
 }
 

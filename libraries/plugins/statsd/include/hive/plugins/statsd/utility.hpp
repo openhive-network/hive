@@ -8,8 +8,8 @@ namespace hive { namespace plugins { namespace statsd { namespace util {
 
 using hive::plugins::statsd::statsd_plugin;
 
-bool statsd_enabled();
-const statsd_plugin& get_statsd();
+bool statsd_enabled( appbase::application& app );
+const statsd_plugin& get_statsd( appbase::application& app );
 
 class statsd_timer_helper
 {
@@ -56,55 +56,55 @@ inline uint32_t timing_helper( uint32_t time ) { return time; }
 
 } } } } // hive::plugins::statsd::util
 
-#define STATSD_INCREMENT( NAMESPACE, STAT, KEY, FREQ )   \
-if( hive::plugins::statsd::util::statsd_enabled() )     \
+#define STATSD_INCREMENT( NAMESPACE, STAT, KEY, FREQ, APP )   \
+if( hive::plugins::statsd::util::statsd_enabled( APP ) )     \
 {                                                        \
-  hive::plugins::statsd::util::get_statsd().increment( \
+  hive::plugins::statsd::util::get_statsd( APP ).increment( \
     NAMESPACE, STAT, KEY, FREQ                         \
   );                                                    \
 }
 
-#define STATSD_DECREMENT( NAMESPACE, STAT, KEY, FREQ )   \
-if( hive::plugins::statsd::util::statsd_enabled() )     \
+#define STATSD_DECREMENT( NAMESPACE, STAT, KEY, FREQ, APP )   \
+if( hive::plugins::statsd::util::statsd_enabled( APP ) )     \
 {                                                        \
-  hive::plugins::statsd::util::get_statsd().decrement( \
+  hive::plugins::statsd::util::get_statsd( APP ).decrement( \
     NAMESPACE, STAT, KEY, FREQ                         \
   );                                                    \
 }
 
-#define STATSD_COUNT( NAMESPACE, STAT, KEY, VAL, FREQ )  \
-if( hive::plugins::statsd::util::statsd_enabled() )     \
+#define STATSD_COUNT( NAMESPACE, STAT, KEY, VAL, FREQ, APP )  \
+if( hive::plugins::statsd::util::statsd_enabled( APP ) )     \
 {                                                        \
-  hive::plugins::statsd::util::get_statsd().count(     \
+  hive::plugins::statsd::util::get_statsd( APP ).count(     \
     NAMESPACE, STAT, KEY, VAL, FREQ                    \
   );                                                    \
 }
 
-#define STATSD_GAUGE( NAMESPACE, STAT, KEY, VAL, FREQ )  \
-if( hive::plugins::statsd::util::statsd_enabled() )     \
+#define STATSD_GAUGE( NAMESPACE, STAT, KEY, VAL, FREQ, APP )  \
+if( hive::plugins::statsd::util::statsd_enabled( APP ) )     \
 {                                                        \
-  hive::plugins::statsd::util::get_statsd().gauge(     \
+  hive::plugins::statsd::util::get_statsd( APP ).gauge(     \
     NAMESPACE, STAT, KEY, VAL, FREQ                    \
   );                                                    \
 }
 
 // You can only have one statsd timer in the current scope at a time
-#define STATSD_START_TIMER( NAMESPACE, STAT, KEY, FREQ )                         \
+#define STATSD_START_TIMER( NAMESPACE, STAT, KEY, FREQ, APP )                         \
 fc::optional< hive::plugins::statsd::util::statsd_timer_helper > statsd_timer;  \
-if( hive::plugins::statsd::util::statsd_enabled() )                             \
+if( hive::plugins::statsd::util::statsd_enabled( APP ) )                             \
 {                                                                                \
   statsd_timer = hive::plugins::statsd::util::statsd_timer_helper(             \
-    NAMESPACE, STAT, KEY, FREQ, hive::plugins::statsd::util::get_statsd()     \
+    NAMESPACE, STAT, KEY, FREQ, hive::plugins::statsd::util::get_statsd( APP )     \
   );                                                                            \
 }
 
 #define STATSD_STOP_TIMER( NAMESPACE, STAT, KEY )        \
   statsd_timer.reset();
 
-#define STATSD_TIMER( NAMESPACE, STAT, KEY, VAL, FREQ )  \
-if( hive::plugins::statsd::util::statsd_enabled() )     \
+#define STATSD_TIMER( NAMESPACE, STAT, KEY, VAL, FREQ, APP )  \
+if( hive::plugins::statsd::util::statsd_enabled( APP ) )     \
 {                                                        \
-  hive::plugins::statsd::util::get_statsd().timing(    \
+  hive::plugins::statsd::util::get_statsd( APP ).timing(    \
     NAMESPACE, STAT, KEY,                              \
     hive::plugins::statsd::util::timing_helper( VAL ),\
     FREQ                                               \

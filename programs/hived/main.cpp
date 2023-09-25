@@ -82,12 +82,7 @@ int main( int argc, char** argv )
 {
   try
   {
-    auto& theApp = appbase::app();
-
-    BOOST_SCOPE_EXIT(void)
-    {
-      appbase::reset();
-    } BOOST_SCOPE_EXIT_END
+    appbase::application theApp;
 
     // Setup logging config
     theApp.add_logging_program_options();
@@ -97,7 +92,7 @@ int main( int argc, char** argv )
       ("backtrace", bpo::value< string >()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" );
     theApp.add_program_options( hive::utilities::options_description_ex(), options );
 
-    hive::plugins::register_plugins();
+    hive::plugins::register_plugins( theApp );
 
     theApp.set_version_string( version_string() );
     theApp.set_app_name( "hived" );
@@ -118,7 +113,7 @@ int main( int argc, char** argv )
 
     if( !initializationResult.should_start_loop() ) 
       return initializationResult.get_result_code();
-    else appbase::app().notify_status("starting");
+    else theApp.notify_status("starting");
 
     theApp.load_logging_config();
 

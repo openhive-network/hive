@@ -819,7 +819,7 @@ namespace hive { namespace chain {
         FC_THROW("unknown purpose");
     }
 
-    std::thread queue_filler_thread([&]() {
+    std::thread queue_filler_thread([&, this]() {
       fc::set_thread_name("for_each_io"); // tells the OS the thread's name
       fc::thread::current().set_name("for_each_io"); // tells fc the thread's name for logging
       for (uint32_t block_number = starting_block_number; block_number <= ending_block_number; ++block_number)
@@ -837,7 +837,7 @@ namespace hive { namespace chain {
           block_queue.push(full_block);
           block_queue_condition.notify_one();
         }
-        hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, worker_thread_processing);
+        hive::chain::blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block, worker_thread_processing);
       }
     
       ilog("Exiting the queue thread");
@@ -874,9 +874,9 @@ namespace hive { namespace chain {
           break;
         }
       }
-      FC_CAPTURE_CALL_LOG_AND_RETHROW([&]()
+      FC_CAPTURE_CALL_LOG_AND_RETHROW(([&, this]()
         {
-          blockchain_worker_thread_pool::get_instance().shutdown();
+          blockchain_worker_thread_pool::get_instance( theApp ).shutdown();
 
           {
             std::unique_lock<std::mutex> lock(block_queue_mutex);
@@ -887,7 +887,7 @@ namespace hive { namespace chain {
           ilog("Attempting to join queue_filler_thread...");
           queue_filler_thread.join();
           ilog("queue_filler_thread joined.");
-        }, ());
+        }), ());
     }
 
     ilog("Attempting to join queue_filler_thread...");

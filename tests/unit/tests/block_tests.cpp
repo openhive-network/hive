@@ -1470,7 +1470,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_generation, clean_database_fixture )
     auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
 
     test_block_flow_control<generate_block_flow_control> bfc( db.get_slot_time(1),
-      db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing );
+      db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing, theApp );
 
     bfc.expect( bfc.WRITE_QUEUE_POP );
     bfc.expect( bfc.FORK_DB_INSERT );
@@ -1548,7 +1548,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     report_block( db_bp2, block, "pushed to BP2" );
 
     {
-      test_block_flow_control<p2p_block_flow_control> bfc( block, database::skip_nothing );
+      test_block_flow_control<p2p_block_flow_control> bfc( block, database::skip_nothing, theApp );
       bfc.expect( bfc.WRITE_QUEUE_POP );
       bfc.expect( bfc.FORK_DB_INSERT );
       bfc.expect( bfc.FORK_NORMAL );
@@ -1610,7 +1610,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     // is possibility of syncing with pre-HF26 node too)
 
     {
-      test_block_flow_control<p2p_block_flow_control> bfc( block1, database::skip_nothing );
+      test_block_flow_control<p2p_block_flow_control> bfc( block1, database::skip_nothing, theApp );
       bfc.expect( bfc.WRITE_QUEUE_POP );
       bfc.expect( bfc.FORK_DB_INSERT );
       bfc.expect( bfc.FORK_IGNORE );
@@ -1634,7 +1634,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     BOOST_TEST_MESSAGE( "Testing block flow during double produced block push" );
 
     {
-      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing );
+      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing, theApp );
       bfc.expect( bfc.WRITE_QUEUE_POP );
       bfc.expect( bfc.FORK_DB_INSERT );
       bfc.expect( bfc.FORK_IGNORE );
@@ -1665,7 +1665,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     BOOST_TEST_MESSAGE( "Testing block flow during regular fork" );
 
     {
-      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing );
+      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing, theApp );
       bfc.expect( bfc.WRITE_QUEUE_POP );
       bfc.expect( bfc.FORK_DB_INSERT );
       bfc.expect( bfc.FORK_APPLY );
@@ -1686,7 +1686,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     BOOST_TEST_MESSAGE( "Testing block flow during unlinkable block push" );
 
     {
-      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing );
+      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing, theApp );
       bfc.expect( bfc.WRITE_QUEUE_POP );
       bfc.expect( bfc.END_PROCESSING );
       bfc.expect( bfc.FAILURE );
@@ -1714,7 +1714,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     {
       // we are now applying previously saved block so the block2 that is unlinked in db_bp1 becomes linked
       // and causes new fork to be longer than current one for that node
-      test_block_flow_control<p2p_block_flow_control> bfc( block, database::skip_nothing );
+      test_block_flow_control<p2p_block_flow_control> bfc( block, database::skip_nothing, theApp );
       bfc.expect( bfc.WRITE_QUEUE_POP );
       bfc.expect( bfc.FORK_DB_INSERT );
       bfc.expect( bfc.FORK_APPLY );
@@ -1765,7 +1765,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     BOOST_TEST_MESSAGE( "Testing block flow during unlinkable block push that can form link with other unlinkable" );
 
     {
-      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing );
+      test_block_flow_control<p2p_block_flow_control> bfc( block2, database::skip_nothing, theApp );
       bfc.expect( bfc.WRITE_QUEUE_POP );
       bfc.expect( bfc.END_PROCESSING );
       bfc.expect( bfc.FAILURE );
@@ -1791,7 +1791,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     BOOST_TEST_MESSAGE( "Testing block flow during normal block push with out of order block" );
 
     {
-      test_block_flow_control<p2p_block_flow_control> bfc( block, database::skip_nothing );
+      test_block_flow_control<p2p_block_flow_control> bfc( block, database::skip_nothing, theApp );
       bfc.expect( bfc.WRITE_QUEUE_POP );
       bfc.expect( bfc.FORK_DB_INSERT );
       bfc.expect( bfc.FORK_NORMAL );

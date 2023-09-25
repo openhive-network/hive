@@ -547,7 +547,7 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
     std::shared_ptr<full_block_with_artifacts> block_with_artifacts(new full_block_with_artifacts{full_block, block_pos, attributes});
     full_block_queue.push(block_with_artifacts);
     queue_size.fetch_add(1, std::memory_order_relaxed);
-    blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation);
+    blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block, blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation);
     queue_condition.notify_one();
     return true;
   };

@@ -11,6 +11,8 @@ public:
   virtual ~abstract_block_producer() = default;
 
   virtual void generate_block( hive::chain::generate_block_flow_control* generate_block_ctrl ) = 0;
+
+  virtual appbase::application& get_app() = 0;
 };
 
 } } } // hive::plugins::chain

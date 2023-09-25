@@ -62,7 +62,7 @@ namespace graphene { namespace net {
     memcpy(data.data() + uncompressed_data.raw_size, &msg.full_block->get_block_id(), sizeof(block_id_type));
   }
 
-  block_message message::as_block_message() const
+  block_message message::as_block_message( appbase::application& app ) const
   {
     try {
       FC_ASSERT(msg_type == block_message::type);
@@ -87,7 +87,7 @@ namespace graphene { namespace net {
 
       // begin processing the block in the worker threads
       std::shared_ptr<full_block_type> full_block = full_block_type::create_from_uncompressed_block_data(std::move(uncompressed_block.raw_bytes), uncompressed_block.raw_size);
-      hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_received_from_p2p);
+      hive::chain::blockchain_worker_thread_pool::get_instance( app ).enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_received_from_p2p);
 
       return block_message(full_block);
     } FC_RETHROW_EXCEPTIONS(warn, "error unpacking network message as a block_message");
@@ -117,7 +117,7 @@ namespace graphene { namespace net {
     size = data.size();
   }
 
-  compressed_block_message message::as_compressed_block_message() const
+  compressed_block_message message::as_compressed_block_message( appbase::application& app ) const
   {
     try {
       FC_ASSERT(msg_type == compressed_block_message::type);
@@ -142,7 +142,7 @@ namespace graphene { namespace net {
       std::shared_ptr<full_block_type> full_block = full_block_type::create_from_compressed_block_data(std::move(compressed_data_bytes), 
                                                                                                        compressed_data_size, 
                                                                                                        block_attributes);
-      hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_received_from_p2p);
+      hive::chain::blockchain_worker_thread_pool::get_instance( app ).enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_received_from_p2p);
 
       return compressed_block_message(full_block);
     } FC_RETHROW_EXCEPTIONS(warn, "error unpacking network message as a compressed_block_message");
@@ -159,14 +159,14 @@ namespace graphene { namespace net {
     memcpy(data.data(), serialized_tranaction.begin, size);
   }
 
-  trx_message message::as_trx_message() const
+  trx_message message::as_trx_message( appbase::application& app ) const
   {
     try {
       FC_ASSERT(msg_type == trx_message::type);
 
       std::shared_ptr<hive::chain::full_transaction_type> full_transaction = hive::chain::full_transaction_type::create_from_serialized_transaction(data.data(), data.size(), 
                                                                                                                                                     true /* cache this transaction */);
-      hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_transaction, hive::chain::blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_p2p);
+      hive::chain::blockchain_worker_thread_pool::get_instance( app ).enqueue_work(full_transaction, hive::chain::blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_p2p);
 
       return trx_message(full_transaction);
     } FC_RETHROW_EXCEPTIONS(warn, "error unpacking network message as a trx_message");

@@ -93,14 +93,15 @@ class plugin_b : public appbase::plugin<plugin_b>
 
 int main( int argc, char** argv ) {
   try {
-    appbase::app().register_plugin<plugin_b>();
+    appbase::application theApp;
+    theApp.register_plugin<plugin_b>();
 
-    auto initResult = appbase::app().initialize( argc, argv );
+    auto initResult = theApp.initialize( argc, argv );
     if( !initResult.should_start_loop() )
       return initResult.get_result_code();
     
-    appbase::app().startup();
-    appbase::app().exec();
+    theApp.startup();
+    theApp.exec();
   } catch ( const boost::exception& e ) {
     std::cerr << boost::diagnostic_information(e) << "\n";
   } catch ( const std::exception& e ) {

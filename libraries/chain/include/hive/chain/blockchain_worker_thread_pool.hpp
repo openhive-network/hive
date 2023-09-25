@@ -27,7 +27,7 @@ class blockchain_worker_thread_pool
 public:
   struct impl;
 private:
-  blockchain_worker_thread_pool(); 
+  blockchain_worker_thread_pool( appbase::application& app );
   void lazy_init();
   std::unique_ptr<impl> my;
 public: 
@@ -62,7 +62,7 @@ public:
 
   void shutdown();
   static void set_thread_pool_size(uint32_t thread_pool_size);
-  static blockchain_worker_thread_pool& get_instance();
+  static blockchain_worker_thread_pool& get_instance( appbase::application& app );
 };
 
 } } // end namespace hive::chain

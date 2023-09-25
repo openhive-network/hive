@@ -20,6 +20,8 @@ public:
     */
   virtual void generate_block( chain::generate_block_flow_control* generate_block_ctrl ) override;
 
+  appbase::application& get_app() override;
+
 private:
   chain::database& _db;
 

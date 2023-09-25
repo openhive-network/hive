@@ -988,7 +988,7 @@ void database::add_checkpoints( const flat_map< uint32_t, block_id_type >& check
   for( const auto& i : checkpts )
     _checkpoints[i.first] = i.second;
   if (!_checkpoints.empty())
-    blockchain_worker_thread_pool::get_instance().set_last_checkpoint(_checkpoints.rbegin()->first);
+    blockchain_worker_thread_pool::get_instance( theApp ).set_last_checkpoint(_checkpoints.rbegin()->first);
 }
 
 bool database::before_last_checkpoint()const
@@ -5567,7 +5567,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
 
     try
     {
-      detail::without_pending_transactions(*this, existing_block_flow_control(new_head_block->full_block), std::move(_pending_tx), [&]() {
+      detail::without_pending_transactions(*this, existing_block_flow_control(new_head_block->full_block, theApp), std::move(_pending_tx), [&]() {
         try
         {
           dlog("calling switch_forks() from update_last_irreversible_block()");
