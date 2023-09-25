@@ -30,8 +30,12 @@ else
   NEW_VERSION="dev"
 fi
 
-echo "Unpublishing ${NAME}@${TAG}"
-npm unpublish "${NAME}@${TAG}"
+# Check if package with given version has been already published
+npm install "${NAME}@${TAG}" --tag="$NEW_VERSION" --dry-run --no-fund --omit=optional --omit=dev --no-audit --no-package-lock
 
-echo "Publishing ${NAME}@${TAG} to tag ${NEW_VERSION}"
-npm publish --access=public --tag "${NEW_VERSION}"
+if [ $? -eq 0 ]; then
+  echo "Package already published"
+else
+  echo "Publishing ${NAME}@${TAG} to tag ${NEW_VERSION}"
+  npm publish --access=public --tag "${NEW_VERSION}"
+fi
