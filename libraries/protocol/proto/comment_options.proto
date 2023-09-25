@@ -1,0 +1,58 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+message beneficiary_route_type {
+  required string account = 1;
+  required uint32 weight = 2;
+}
+
+message comment_payout_beneficiaries {
+  repeated beneficiary_route_type beneficiaries = 1;
+}
+
+/* The operation comment_options_operation allows to set properties regarding payouts,
+ * rewards or beneficiaries (using {extensions}) for comments.
+ * If the operation: comment_options_operation is done by one of the frontends,
+ * it is usually in the same transaction with the operation: comment_operation.
+ * If a comment has received any votes, only the parameter {percent_hbd} may be changed.
+ *
+ * @param {string} author - Account name, the author of the comment.
+ * @param {string} permlink - The identifier of the comment.
+ * @param {asset} max_accepted_payout - The maximum value of payout in HBD.
+ *                                      Default value: max_accepted_payout = asset( 1000000000, HBD_SYMBOL ).
+ *                                      The allowed value should be less than the default value.
+ *                                      If max_accepted_payout = 0, then voters and authors will not receive the payout.
+ * @param {number} percent_hbd - By default the author reward is paid 50% HP and 50 % HBD.
+ *                               In some rare situations, instead of HBD, the Hive may be paid.
+ *                               percent_hbd = HIVE_100_PERCENT means that 100 % of HBD part is paid in HBD.
+ *                               A user may decide how many percent of HBD (from 50 %) they wants to receive in the HBD,
+ *                               the rest will be paid out in HP.
+ *                               Default value: percent_hbd = HIVE_100_PERCENT.
+ *                               The allowed value should be less than the default value.
+ *                               This is the only parameter that can be modified after the comment receives any vote.
+ * @param {bool} allow_votes - The flag that allows to decide whether the comment may receive a vote.
+ *                             Default value: allow_votes = true.
+ * @param {bool} allow_curation_rewards - The flag that allows to decide whether the voters for the comment should
+ *                                        receive the curation rewards. Rewards return to the reward fund.
+ *                                        Default value: allow_curation_rewards = true.
+ * @param {comment_payout_beneficiaries} extensions - It may contain the list of the beneficiaries,
+ *                                                    the accounts that should receive the author reward.
+ *                                                    The list consists of the account name and the weight of the shares in the author reward.
+ *                                                    If the sum of the weights is less than 100%,
+ *                                                    the rest of the reward is received by the author.
+ *                                                    It should be defined less than 128 accounts.
+ *                                                    The allowed range of the weight is from 0 to 10000 (0 – 100%).
+ *                                                    The beneficiaries should be listed in alphabetical order, no duplicates.
+ */
+message comment_options {
+  required string                       author = 1;
+  required string                       permlink = 2;
+  required asset                        max_accepted_payout = 3 [json_name = "max_accepted_payout"];
+  required uint32                       percent_hbd = 4 [json_name = "percent_hbd"];
+  required bool                         allow_votes = 5 [json_name = "allow_votes"];
+  required bool                         allow_curation_rewards = 6 [json_name = "allow_curation_rewards"];
+  repeated comment_payout_beneficiaries extensions = 7;
+}

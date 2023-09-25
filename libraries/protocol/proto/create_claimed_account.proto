@@ -1,0 +1,33 @@
+syntax = "proto2";
+
+import "authority.proto";
+import "future_extensions.proto";
+
+package hive.protocol.buffers;
+
+/* The operation create_claimed_account_operation may be used by the user who has the token.
+ * Pending claimed accounts (see claim_account_operation).
+ * After executing the operation create_claimed_account_operation, a new account is created.
+ *
+ * @param {string} creator - An account who create a new account.
+ * @param {string} new_account_name - Account name.
+ *                                    Valid account name may consist of many parts separated by a dot,
+ *                                    total may have up to 16 characters, parts have to start from a letter,
+ *                                    may be followed by numbers, or “-“.
+ * @param {authority} owner
+ * @param {authority} active
+ * @param {authority} posting
+ * @param {string} memo_key
+ * @param {string} json_metadata - Json string.
+ * @param {future_extensions} extensions - Not currently used.
+ */
+message create_claimed_account {
+  required string            creator = 1;
+  required string            new_account_name = 2 [json_name = "new_account_name"];
+  required authority         owner = 3;
+  required authority         active = 4;
+  required authority         posting = 5;
+  required string            memo_key = 6 [json_name = "memo_key"];
+  required string            json_metadata = 7 [json_name = "json_metadata"];
+  required future_extensions extensions = 8;
+}

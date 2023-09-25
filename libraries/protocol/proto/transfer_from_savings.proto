@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Funds withdrawals from the savings to an account take three days.
+ *
+ * @param {string} from_account - Account name.
+ * @param {number} request_id - The number is given by a user. Should be unique for a user.
+ * @param {string} to_account - Account name.
+ * @param {asset} amount - The allowed currency: HIVE and HBD, amount > 0.
+ * @param {string} memo - Have to be UTF8,  must be shorter than 2048.
+ */
+message transfer_from_savings {
+  required string from_account = 1 [json_name = "from"];
+  required uint32 request_id = 2 [json_name = "request_id"];
+  required string to_account = 3 [json_name = "to"];
+  required asset  amount = 4;
+  required string memo = 5;
+}

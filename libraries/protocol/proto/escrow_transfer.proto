@@ -1,0 +1,42 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* The escrow allows the account { from_account } to send money to an account { to_account }
+ * only if the agreed terms will be fulfilled. In case of dispute { agent } may divide the funds
+ * between { from } and { to }. The escrow lasts up to { escrow_expiration }.
+ * When the escrow is created, the funds are transferred {from} to a temporary account.
+ * The funds are on the temporary balance, till the operation escrow_release_operation is created.
+ * To create an valid escrow:
+ * 1. Sender { from } creates the escrow using the operation: escrow_transfer_operation indicated  { to } and { agent }.
+ * 2. The { agent } and { to } have up to { ratification_deadline } for approving the escrow using operation: escrow_approve_operation.
+ * If there is a dispute, the operation: escrow_dispute_operation should be used.
+ * In case of the escrow releases, the operation: escrow_release_operation should be used.
+ *
+ * @param {string} from_account - Account name.
+ * @param {string} to_account - Account name.
+ * @param {string} agent - Account name.
+ * @param {number} escrow_id - It is defined by the sender. It should be unique for { from }.
+ * @param {asset} hbd_amount - Escrow amount.
+ * @param {asset} hive_amount - Escrow amount.
+ * @param {asset} fee - The fee amount depends on the agent. The fee is paid to the agent when approved.
+ * @param {string} ratification_deadline - Time for approval for { to } and { agent }.
+ *                                         If the escrow is not approved till { ratification_deadline },
+ *                                         it will be rejected and all funds returned to { from }.
+ * @param {string} escrow_expiration - See description of escrow_release_operation.
+ * @param {string} json_meta - json string.
+ */
+message escrow_transfer {
+  required string from_account = 1 [json_name = "from"];
+  required string to = 2 [json_name = "to"];
+  required string agent = 3;
+  required uint32 escrow_id = 4 [json_name = "escrow_id"];
+  required asset  hbd_amount = 5 [json_name = "hbd_amount"];
+  required asset  hive_amount = 6 [json_name = "hive_amount"];
+  required asset  fee = 7;
+  required string ratification_deadline = 8 [json_name = "ratification_deadline"];
+  required string escrow_expiration = 9 [json_name = "escrow_expiration"];
+  required string json_meta = 10 [json_name = "json_meta"];
+}
