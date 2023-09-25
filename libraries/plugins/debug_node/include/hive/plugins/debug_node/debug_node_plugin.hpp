@@ -4,6 +4,7 @@
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/chain/full_block.hpp>
 
+#include <fc/optional.hpp>
 #include <fc/variant_object.hpp>
 
 #include <map>
@@ -63,7 +64,8 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     const protocol::transaction_id_type& make_artificial_transaction_for_debug_update();
 
     template< typename Lambda >
-    void debug_update( Lambda&& callback, uint32_t skip = hive::chain::database::skip_nothing )
+    void debug_update( Lambda&& callback, uint32_t skip = hive::chain::database::skip_nothing,
+      fc::optional<protocol::transaction_id_type> transaction_id = fc::optional<protocol::transaction_id_type>() )
     {
       auto apply_callback_to_debug_updates = [&]( const protocol::transaction_id_type& tx_id )
       {
@@ -74,12 +76,25 @@ class debug_node_plugin : public plugin< debug_node_plugin >
           it->second.emplace_back( callback );
       };
 
-      const auto& dummy_tx_id = make_artificial_transaction_for_debug_update();
-      apply_callback_to_debug_updates( dummy_tx_id );
-      callback( database() );
+      if( transaction_id )
+      {
+        // in this mode caller should first register all necessary callbacks and then push transaction
+        // (if transaction is not pushed or is from the past, the callbacks will never execute)
+        apply_callback_to_debug_updates( *transaction_id );
+      }
+      else
+      {
+        // in this mode callbacks are executed immediately and then again as a result of reapplying
+        // artificial transaction (most likely on next block generation)
+        const auto& dummy_tx_id = make_artificial_transaction_for_debug_update();
+        apply_callback_to_debug_updates( dummy_tx_id );
+        callback( database() );
+      }
     }
 
-    void debug_set_vest_price(const hive::protocol::price& new_price);
+    void debug_set_vest_price(
+      const hive::protocol::price& new_price,
+      fc::optional<protocol::transaction_id_type> transaction_id = fc::optional<protocol::transaction_id_type>() );
 
     void debug_generate_blocks(
       debug_generate_blocks_return& ret,
