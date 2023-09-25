@@ -1875,7 +1875,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
       });
 
       db.update_virtual_supply();
-    }, database::skip_witness_signature );
+    } );
 
     withdraw_vesting_operation op;
     signed_transaction tx;
