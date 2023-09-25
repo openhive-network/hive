@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+import "authority.proto";
+
+package hive.protocol.buffers;
+
+/* Currently is disabled.
+ *
+ * @param {string} required_owner_auths
+ * @param {string} required_active_auths
+ * @param {string} required_posting_auths
+ * @param {authority} required_auths
+ * @param {string} id
+ * @param {string} data
+ */
+message custom_binary {
+  repeated string    required_owner_auths = 1 [json_name = "required_owner_auths"];
+  repeated string    required_active_auths = 2 [json_name = "required_active_auths"];
+  repeated string    required_posting_auths = 3 [json_name = "required_posting_auths"];
+  repeated authority required_auths = 4 [json_name = "required_auths"];
+  required string    id = 5;
+  required string    data = 6;
+}

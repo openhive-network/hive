@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+import "future_extensions.proto";
+
+package hive.protocol.buffers;
+
+/* The operation change_recovery_account_operation allows a user to update their recovery account.
+ * It is important to keep it actual, because only a recovery account may create a request
+ * account recovery in case of compromised the owner authority.
+ * By default the recovery account is set to the account creator or it is empty if it was created by temp account or mined.
+ * In order to cancel the change_recovery_account_operation, the operation change_recovery_account_operation,
+ * the operation should be created with {new_recovery_account} set to the old one.
+ * The operation is done with a 30 days (HIVE_OWNER_AUTH_RECOVERY_PERIOD) delay.
+ *
+ * @param {string} account_to_recover
+ * @param {string} new_recovery_account
+ * @param {future_extensions} extensions
+ */
+message change_recovery_account {
+  required string            account_to_recover = 1 [json_name = "account_to_recover"];
+  required string            new_recovery_account = 2 [json_name = "new_recovery_account"];
+  repeated future_extensions extensions = 3;
+}

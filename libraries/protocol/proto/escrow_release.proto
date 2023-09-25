@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* The operation is used to release the funds of the escrow.
+ * The escrow may be released by { from }, { to } or { agent } – depending on the following conditions:
+ * If there is no dispute and escrow has not expired, either party can release funds to the other.
+ * If escrow expires and there is no dispute, either party can release funds to either party.
+ * If there is a dispute regardless of expiration, the agent can release funds to either party
+ * following whichever agreement was in place between the parties.
+ *
+ * @param {string} from_account - Account name.
+ * @param {string} to_account - Account name.
+ * @param {string} agent - Account name.
+ * @param {string} who - The account that is attempting to release the funds.
+ * @param {string} receiver - The account that should receive funds (might be {from}, might be {to}).
+ * @param {number} escrow_id - Escrow indicator.
+ * @param {asset} hbd_amount - The amount of HBD to release.
+ * @param {asset} hive_amount - The amount of HIVE to release.
+ */
+message escrow_release {
+  required string from_account = 1 [json_name = "from"];
+  required string to_account = 2 [json_name = "to"];
+  required string agent = 3;
+  required string who = 4;
+  required string receiver = 5;
+  required uint32 escrow_id = 6 [json_name = "escrow_id"];
+  required asset  hbd_amount = 7 [json_name = "hbd_amount"];
+  required asset  hive_amount = 8 [json_name = "hive_amount"];
+}
