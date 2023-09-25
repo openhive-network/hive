@@ -2638,9 +2638,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       {
         gpo.proposal_fund_percent = 0;
       });
-    }, database::skip_witness_signature );
-
-    auto debug_key = "5JdouSvkK75TKWrJixYufQgePT21V7BAVWbNUWt3ktqhPmy8Z78"; //get_dev_key debug node
+    } );
 
     ACTORS( (alice)(bob)(sam) );
 
@@ -2680,7 +2678,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     BOOST_TEST_MESSAGE( "Generating blocks up to comment payout" );
 
-    generate_blocks_until( debug_key, fc::time_point_sec( db->find_comment_cashout( db->get_comment( comment.author, comment.permlink ) )->get_cashout_time().sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true, database::skip_witness_signature );
+    generate_blocks( fc::time_point_sec( db->find_comment_cashout( db->get_comment( comment.author, comment.permlink ) )->get_cashout_time().sec_since_epoch() - 2 * HIVE_BLOCK_INTERVAL ), true );
 
     BOOST_TEST_MESSAGE( "Changing sam and gpo to set up market cap conditions" );
 
@@ -2692,7 +2690,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       {
         a.hbd_balance = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
       });
-    }, database::skip_witness_signature );
+    } );
 
     db_plugin->debug_update( [&]( database& db )
     {
@@ -2701,11 +2699,11 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
         gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
         gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * exchange_rate;
       });
-    }, database::skip_witness_signature );
+    } );
 
     validate_database();
 
-    generate_blocks( debug_key, 1, database::skip_witness_signature );
+    generate_block();
 
     BOOST_TEST_MESSAGE( "Checking printing HBD has stopped" );
     BOOST_REQUIRE_EQUAL( dgpo.get_hbd_print_rate(), 0 );
@@ -2717,7 +2715,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     BOOST_REQUIRE_EQUAL( alice_hive.amount.value, 0 );
 
     BOOST_TEST_MESSAGE( "Pay out comment and check rewards are paid as HIVE" );
-    generate_blocks( debug_key, 1, database::skip_witness_signature );
+    generate_block();
 
     validate_database();
 
@@ -2737,7 +2735,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       {
         a.hbd_balance = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
       });
-    }, database::skip_witness_signature );
+    } );
 
     db_plugin->debug_update( [&]( database& db )
     {
@@ -2746,11 +2744,11 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
         gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
         gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * exchange_rate;
       } );
-    }, database::skip_witness_signature );
+    } );
 
     validate_database();
 
-    generate_blocks( debug_key, 1, database::skip_witness_signature );
+    generate_block();
     BOOST_REQUIRE( dgpo.get_hbd_print_rate() < HIVE_100_PERCENT );
 
     auto last_print_rate = dgpo.get_hbd_print_rate();
@@ -2760,7 +2758,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       BOOST_REQUIRE( dgpo.get_hbd_print_rate() >= last_print_rate );
       last_print_rate = dgpo.get_hbd_print_rate();
-      generate_blocks( debug_key, 1, database::skip_witness_signature );
+      generate_block();
       if( db->head_block_num() % 1000 == 0 )
         validate_database();
     }
