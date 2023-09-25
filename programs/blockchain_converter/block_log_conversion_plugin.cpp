@@ -42,7 +42,7 @@ namespace detail {
     block_log log_in, log_out;
 
     block_log_conversion_plugin_impl( const hp::private_key_type& _private_key, const hp::chain_id_type& chain_id, appbase::application& app, size_t signers_size = 1 )
-      : conversion_plugin_impl( _private_key, chain_id, signers_size, true ), log_in( app ), log_out( app ), theApp( app ) {}
+      : conversion_plugin_impl( _private_key, chain_id, signers_size, app, true ), log_in( app ), log_out( app ), theApp( app ) {}
 
     virtual void convert( uint32_t start_block_num, uint32_t stop_block_num ) override;
     void open( const fc::path& input, const fc::path& output );
@@ -176,8 +176,8 @@ namespace detail {
       head_block_time = block.timestamp;
     }
 
-    if( !appbase::app().is_interrupt_request() )
-      appbase::app().generate_interrupt_request();
+    if( !theApp.is_interrupt_request() )
+      theApp.generate_interrupt_request();
   }
 
   void block_log_conversion_plugin_impl::close()

@@ -92,7 +92,7 @@ void block_flow_control::on_worker_done() const
   switch (auto_report_output)
   {
   case report_output::NOTIFY:
-    appbase::app().notify("Block stats", "block_stats", report);
+    theApp.notify("Block stats", "block_stats", report);
     break;
   case report_output::ILOG:
     ilog("Block stats:${report}", (report));

@@ -26,6 +26,11 @@ void block_producer::generate_block( chain::generate_block_flow_control* generat
   } );
 }
 
+appbase::application& block_producer::get_app()
+{
+  return _db.get_app();
+}
+
 void block_producer::_generate_block( chain::generate_block_flow_control* generate_block_ctrl,
                                       fc::time_point_sec when, const chain::account_name_type& witness_owner,
                                       const fc::ecc::private_key& block_signing_private_key)

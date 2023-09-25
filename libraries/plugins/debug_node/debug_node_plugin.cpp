@@ -370,7 +370,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     }
 
     auto generate_block_ctrl = std::make_shared< hive::chain::generate_block_flow_control >(scheduled_time,
-      scheduled_witness_name, *debug_private_key, skip);
+      scheduled_witness_name, *debug_private_key, skip, theApp);
 
     if( immediate_generation )
     {

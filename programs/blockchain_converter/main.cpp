@@ -38,7 +38,7 @@ int main( int argc, char** argv )
 {
   try
   {
-    auto& bc_converter_app = appbase::app();
+    appbase::application bc_converter_app;
 
     // Setup converter options
     bpo::options_description logging_opts{"Logging options"};

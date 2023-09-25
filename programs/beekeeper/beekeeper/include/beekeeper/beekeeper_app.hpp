@@ -23,7 +23,7 @@ class beekeeper_app: public beekeeper_app_init
 
     std::unique_ptr<beekeeper::beekeeper_wallet_api> api_ptr;
 
-    appbase::application& app;
+    appbase::application app;
 
     const boost::program_options::variables_map& get_args() const override;
     bfs::path get_data_dir() const override;

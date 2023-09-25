@@ -28,8 +28,6 @@ using std::vector;
 
 namespace hive { namespace plugins { namespace p2p {
 
-using appbase::app;
-
 using graphene::net::item_hash_t;
 using graphene::net::item_id;
 using graphene::net::message;
@@ -188,16 +186,16 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
         uint32_t skip_flags = (block_producer | force_validate) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures;
         std::shared_ptr<chain::p2p_block_flow_control> p2p_block_ctrl;
         if (sync_mode)
-          p2p_block_ctrl = std::make_shared<chain::sync_block_flow_control>(full_block, skip_flags);
+          p2p_block_ctrl = std::make_shared<chain::sync_block_flow_control>(full_block, skip_flags, theApp);
         else
-          p2p_block_ctrl = std::make_shared<chain::p2p_block_flow_control>(full_block, skip_flags);
+          p2p_block_ctrl = std::make_shared<chain::p2p_block_flow_control>(full_block, skip_flags, theApp);
         result = chain.accept_block(p2p_block_ctrl, sync_mode);
       }
 
       if (!sync_mode)
       {
         fc::microseconds offset = fc::time_point::now() - full_block->get_block_header().timestamp;
-        STATSD_TIMER("p2p", "offset", "block_arrival", offset, 1.0f)
+        STATSD_TIMER("p2p", "offset", "block_arrival", offset, 1.0f, theApp)
         ilog("Got ${t} transactions on block ${b} by ${w} -- Block Time Offset: ${l} ms",
              ("t", full_block->get_block().transactions.size())
              ("b", full_block->get_block_num())
@@ -349,9 +347,9 @@ std::deque<block_id_type>::const_iterator p2p_plugin_impl::find_first_item_not_i
 void p2p_plugin_impl::request_precomputing_transaction_signatures_if_useful()
 {
   if (force_validate)
-    chain::blockchain_worker_thread_pool::get_instance().set_p2p_force_validate();
+    chain::blockchain_worker_thread_pool::get_instance( theApp ).set_p2p_force_validate();
   if (block_producer)
-    chain::blockchain_worker_thread_pool::get_instance().set_is_block_producer();
+    chain::blockchain_worker_thread_pool::get_instance( theApp ).set_is_block_producer();
 }
 
 fc::time_point_sec p2p_plugin_impl::get_blockchain_now()
@@ -486,8 +484,8 @@ void p2p_plugin::plugin_startup()
 
   my->p2p_thread.async( [this]
   {
-    my->node.reset(new graphene::net::node(my->user_agent));
-    my->node->load_configuration(app().data_dir() / "p2p");
+    my->node.reset(new graphene::net::node(my->user_agent, theApp));
+    my->node->load_configuration(theApp.data_dir() / "p2p");
     my->node->set_node_delegate( &(*my) );
 
     if( my->endpoint )

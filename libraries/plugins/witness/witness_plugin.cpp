@@ -103,7 +103,7 @@ namespace detail {
 
     virtual void on_fork_db_insert() const override
     {
-      appbase::app().get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( full_block );
+      theApp.get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( full_block );
       generate_block_flow_control::on_fork_db_insert();
     }
   };
@@ -484,7 +484,7 @@ namespace detail {
     }
 
     auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( scheduled_time,
-      scheduled_witness, private_key_itr->second, _production_skip_flags );
+      scheduled_witness, private_key_itr->second, _production_skip_flags, theApp );
     _chain_plugin.generate_block( generate_block_ctrl );
     const std::shared_ptr<full_block_type>& full_block = generate_block_ctrl->get_full_block();
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);

@@ -951,6 +951,13 @@ namespace chain {
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
 
       appbase::application& theApp;
+
+    public:
+      
+      appbase::application& get_app()
+      {
+        return theApp;
+      }
   };
 
   struct reindex_notification

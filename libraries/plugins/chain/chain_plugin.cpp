@@ -261,7 +261,7 @@ struct chain_plugin_impl::write_request_visitor
         throw fc::exception(fc::canceled_exception_code, "interrupted by user");
       }
 
-      STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f)
+      STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f, cp.theApp)
       on_block( p2p_block_ctrl.get() );
       fc::time_point time_before_pushing_block = fc::time_point::now();
       BOOST_SCOPE_EXIT(this_, time_before_pushing_block, &statsd_timer) { 
@@ -286,7 +286,7 @@ struct chain_plugin_impl::write_request_visitor
   {
     try
     {
-      STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f )
+      STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f, cp.theApp)
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
       ++count_tx_pushed;
       cp.db.push_transaction( tx_ctrl->get_full_transaction() );
@@ -325,7 +325,7 @@ struct chain_plugin_impl::write_request_visitor
       if( !cp.block_generator )
         FC_THROW_EXCEPTION( chain_exception, "Received a generate block request, but no block generator has been registered." );
 
-      STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f )
+      STATSD_START_TIMER( "chain", "write_time", "generate_block", 1.0f, cp.theApp )
       on_block( generate_block_ctrl.get() );
       cp.block_generator->generate_block( generate_block_ctrl.get() );
       STATSD_STOP_TIMER( "chain", "write_time", "generate_block" )
@@ -436,7 +436,7 @@ void chain_plugin_impl::start_write_processing()
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
           fc_dlog(fc::logger::get("chainlock"), "write_lock_acquisition_time = ${write_lock_aquisition_time}μs",
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
-          STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f )
+          STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f, theApp )
           while (true)
           {
             req_visitor.cxt = cxt;
@@ -697,7 +697,7 @@ void chain_plugin_impl::open()
   catch( const fc::exception& e )
   {
     /// This is a hack - seems blockchain_worker_thread_pool is completely out of control in the errorneous cases and can lead to 2nd level crash
-    blockchain_worker_thread_pool::get_instance().shutdown();
+    blockchain_worker_thread_pool::get_instance( theApp ).shutdown();
 
     wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
     wlog( " Error: ${e}", ("e", e) );
@@ -769,7 +769,7 @@ void chain_plugin_impl::work( synchronization_type& on_sync )
   if(this->exit_before_sync)
   {
     ilog("Shutting down node without performing any action on user request");
-    appbase::app().generate_interrupt_request();
+    theApp.generate_interrupt_request();
     return;
   }else ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
@@ -1057,7 +1057,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   blockchain_worker_thread_pool::set_thread_pool_size(blockchain_thread_pool_size);
 
   if (my->validate_during_replay)
-    blockchain_worker_thread_pool::get_instance().set_validate_during_replay();
+    blockchain_worker_thread_pool::get_instance( theApp ).set_validate_during_replay();
 
 
   block_flow_control::set_auto_report(options.at("block-stats-report-type").as<std::string>(),
@@ -1146,7 +1146,7 @@ void chain_plugin::plugin_startup()
 void chain_plugin::plugin_shutdown()
 {
   ilog("closing chain database");
-  blockchain_worker_thread_pool::get_instance().shutdown();
+  blockchain_worker_thread_pool::get_instance( theApp ).shutdown();
   my->stop_write_processing();
   my->db.close();
   ilog("database closed successfully");
@@ -1278,7 +1278,7 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
   result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::hf26, true /* cache this transaction */);
   on_full_trx( false );
   // the only reason we'd be getting something in singed_transaction form is from the API, coming in as json
-  blockchain_worker_thread_pool::get_instance().enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
+  blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
   try
   {
     accept_transaction(result, lock);
@@ -1288,7 +1288,7 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
     on_full_trx( true );
     result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::legacy, true /* cache this transaction */);
     on_full_trx( false );
-    blockchain_worker_thread_pool::get_instance().enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
+    blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
     try
     {
       accept_transaction(result, lock);

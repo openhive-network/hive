@@ -606,7 +606,9 @@ namespace graphene { namespace net {
       std::atomic_int        _activeCalls;
       fc::promise<void>::ptr _shutdownNotifier;
 
-      node_impl(const std::string& user_agent);
+      appbase::application& theApp;
+
+      node_impl(const std::string& user_agent, appbase::application& app);
       virtual ~node_impl();
       void save_active_peers_to_peer_database();
 
@@ -876,7 +878,7 @@ namespace graphene { namespace net {
 #endif // P2P_IN_DEDICATED_THREAD
     }
 
-    node_impl::node_impl(const std::string& user_agent) :
+    node_impl::node_impl(const std::string& user_agent, appbase::application& app) :
 #ifdef P2P_IN_DEDICATED_THREAD
       _thread(std::make_shared<fc::thread>("p2p")),
 #endif // P2P_IN_DEDICATED_THREAD
@@ -902,7 +904,8 @@ namespace graphene { namespace net {
       _average_network_usage_second_counter(0),
       _average_network_usage_minute_counter(0),
       _node_is_shutting_down(false),
-      _activeCalls(0)
+      _activeCalls(0),
+      theApp( app )
     {
       _rate_limiter.set_actual_rate_time_constant(fc::seconds(2));
       fc::rand_bytes(&_node_id.data[0], (int)_node_id.size());
@@ -1970,7 +1973,7 @@ namespace graphene { namespace net {
         fc::async( [=]() { process_block_message(originating_peer, received_message, message_hash); }, "process_block_msg");
         break;
       case core_message_type_enum::trx_message_type:
-        process_trx_message(originating_peer, received_message.as_trx_message());
+        process_trx_message(originating_peer, received_message.as_trx_message( theApp ));
         break;
       case core_message_type_enum::current_time_request_message_type:
         on_current_time_request_message(originating_peer, received_message.as<current_time_request_message>());
@@ -2970,12 +2973,12 @@ namespace graphene { namespace net {
           if (originating_peer->supports_compressed_blocks())
           {
             if (originating_peer->requires_alternate_compression_for_block(full_block))
-              hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed); // trigger alternate compression
+              hive::chain::blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed); // trigger alternate compression
             else
-              hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed); // trigger default compression
+              hive::chain::blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed); // trigger default compression
           }
           else
-            hive::chain::blockchain_worker_thread_pool::get_instance().enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed); // decompress if necessary
+            hive::chain::blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed); // decompress if necessary
 
           reply_blocks.push_back(std::move(full_block));
         }
@@ -3845,7 +3848,7 @@ namespace graphene { namespace net {
       {
       case core_message_type_enum::block_message_type:
         {
-          graphene::net::block_message message(message_to_process.as_block_message());
+          graphene::net::block_message message(message_to_process.as_block_message( theApp ));
           full_block = message.full_block;
           legacy_message_hash = actual_message_hash;
           // remove this check, just needed during initial development
@@ -3854,7 +3857,7 @@ namespace graphene { namespace net {
         }
       case core_message_type_enum::compressed_block_message_type:
         {
-          graphene::net::compressed_block_message message(message_to_process.as_compressed_block_message());
+          graphene::net::compressed_block_message message(message_to_process.as_compressed_block_message( theApp ));
           full_block = message.full_block;
           ++originating_peer->compressed_blocks_received_from_peer;
           break;
@@ -5767,17 +5770,17 @@ namespace graphene { namespace net {
 
     bool node_impl::node_is_shutting_down() const
     {
-      return _node_is_shutting_down || appbase::app().is_interrupt_request();
+      return _node_is_shutting_down || theApp.is_interrupt_request();
     }
 
     void node_impl::send_message_timing_to_statsd( peer_connection* originating_peer, const message& received_message, const message_hash_type& message_hash )
     {
-      if( hive::plugins::statsd::util::statsd_enabled() )
+      if( hive::plugins::statsd::util::statsd_enabled( theApp ) )
       {
         auto iter = originating_peer->items_requested_from_peer.find( item_id( received_message.msg_type, message_hash ) );
         if( iter != originating_peer->items_requested_from_peer.end() )
         {
-          hive::plugins::statsd::util::get_statsd().timing(
+          hive::plugins::statsd::util::get_statsd( theApp ).timing(
             "p2p",
             "latency",
             fc::variant( core_message_type_enum( received_message.msg_type ) ).as_string(),
@@ -5803,8 +5806,8 @@ namespace graphene { namespace net {
     return my->method_name(__VA_ARGS__)
 #endif // P2P_IN_DEDICATED_THREAD
 
-  node::node(const std::string& user_agent) :
-    my(new detail::node_impl(user_agent))
+  node::node(const std::string& user_agent, appbase::application& app) :
+    my(new detail::node_impl(user_agent, app))
   {
   }
 

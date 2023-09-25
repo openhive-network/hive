@@ -28,8 +28,8 @@ hived_fixture::~hived_fixture()
     }
 
     // Try to finish appbase nominally.
-    appbase::app().generate_interrupt_request();
-    appbase::app().finish(); // performs plugin shutdown too
+    theApp.generate_interrupt_request();
+    theApp.finish(); // performs plugin shutdown too
     
     // Possible exception during test is NOT a reason to stop. Let BOOST handle the rest.
     return;
