@@ -1,5 +1,6 @@
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/program_options.hpp>
+#include <boost/scope_exit.hpp>
 
 #include <appbase/application.hpp>
 
@@ -40,7 +41,22 @@ int main( int argc, char** argv )
 {
   try
   {
+    appbase::initialization_result initResult( appbase::initialization_result::ok, false);
     appbase::application bc_converter_app;
+
+    BOOST_SCOPE_EXIT(&bc_converter_app, &initResult)
+    {
+      auto _should_start_loop = initResult.should_start_loop();
+      if( !_should_start_loop )
+        kill(getpid(), SIGINT);
+
+      bc_converter_app.wait();
+      appbase::reset();
+
+      if( _should_start_loop )
+        ilog("exited cleanly");
+
+    } BOOST_SCOPE_EXIT_END
 
     // Setup converter options
     bpo::options_description logging_opts{"Logging options"};
@@ -74,7 +90,7 @@ int main( int argc, char** argv )
     bc_converter_app.set_version_string( version_string() );
     bc_converter_app.set_app_name( "blockchain_converter" );
 
-    auto initResult = bc_converter_app.initialize( argc, argv );
+    initResult = bc_converter_app.initialize( argc, argv );
     if( !initResult.should_start_loop() )
       return initResult.get_result_code();
 
