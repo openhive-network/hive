@@ -32,6 +32,7 @@ class debug_node_plugin_impl
     chain::database&                          _db;
 
     protocol::transaction_id_type             _current_debug_update_tx_id;
+    bool                                      _current_debug_update_tx_applied = false;
 
     boost::signals2::connection               _pre_apply_transaction_conn;
     boost::signals2::connection               _post_apply_block_conn;
@@ -101,6 +102,10 @@ chain::database& debug_node_plugin::database() { return my->_db; }
 const protocol::transaction_id_type& debug_node_plugin::make_artificial_transaction_for_debug_update()
 {
   static size_t idx = 0;
+
+  FC_ASSERT( !my->_current_debug_update_tx_applied, "Internal debug_update transaction already applied, while not fully configured" );
+    // it will fail if debug_update tries to call another debug_update or if there was problem with applying previous block
+    // that contained debug_update (f.e. because witness key was updated for witness that was supposed to produce the block)
 
   if( my->_current_debug_update_tx_id != protocol::transaction_id_type() )
     return my->_current_debug_update_tx_id; // reuse existing transaction
@@ -417,6 +422,8 @@ void debug_node_plugin::on_pre_apply_transaction( const chain::transaction_notif
     {
       for( const auto& update : it->second )
         update(db);
+      if( db.is_validating_block() && note.transaction_id == my->_current_debug_update_tx_id )
+        my->_current_debug_update_tx_applied = true;
     }
   }
   catch (const fc::exception& e)
@@ -449,7 +456,11 @@ void debug_node_plugin::on_post_apply_block( const chain::block_notification& no
     HIVE_ASSERT( false, hive::chain::plugin_exception, "Artificial exception was thrown" );
   if( my->_current_debug_update_tx_id != protocol::transaction_id_type() )
   {
+    HIVE_ASSERT( my->_current_debug_update_tx_applied, hive::chain::plugin_exception, "Failed to apply debug_update transaction" );
+      // example source of above failing: debug_update changing timestamp of head block so internal transaction
+      // is treated as expired when block is produced
     my->_current_debug_update_tx_id = protocol::transaction_id_type();
+    my->_current_debug_update_tx_applied = false;
   }
 } FC_LOG_AND_RETHROW() }
 
