@@ -72,6 +72,8 @@ class debug_node_plugin : public plugin< debug_node_plugin >
 
       std::shared_ptr<hive::chain::full_block_type> head_block = db.fetch_block_by_id(head_id);
       FC_ASSERT(head_block);
+      if( head_block->get_block_header().witness_signature == protocol::signature_type() )
+        skip |= hive::chain::database::skip_witness_signature;
 
       // What the last block does has been changed by adding to node_property_object, so we have to re-apply it
       db.pop_block();
