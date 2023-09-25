@@ -303,30 +303,22 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
       wlog( "slot: ${sl}   time: ${t}   scheduled key is: ${sk}   dbg key is: ${dk}",
         ("sk", scheduled_key)("dk", debug_public_key)("sl", slot)("t", scheduled_time) );
     }
+    uint32_t skip = args.skip;
     if( scheduled_key != debug_public_key )
     {
       if( args.edit_if_needed )
       {
-        if( logging ) wlog( "Modified key for witness ${w}", ("w", scheduled_witness_name) );
-        debug_update( [=]( chain::database& db )
-        {
-          db.modify( db.get_witness( scheduled_witness_name ), [&]( chain::witness_object& w )
-          {
-            w.signing_key = debug_public_key;
-          });
-        }, args.skip );
+        if( logging ) wlog( "Missing key for witness ${w}, skipping witness signature.", ("w", scheduled_witness_name) );
+        skip |= hive::chain::database::skip_witness_signature;
       }
       else
         break;
     }
 
     auto generate_block_ctrl = std::make_shared< hive::chain::generate_block_flow_control >(scheduled_time,
-      scheduled_witness_name, *debug_private_key, args.skip);
+      scheduled_witness_name, *debug_private_key, skip);
 
-    /// FIXME: this parameter and condition is bad, but regular path using chain_plugin::generate_block can't be used in unit tests, where chain_plugin is not initialized at all.
-    /// Because of that, there is no write processing thread started, and created block-generation-requests are not procesed at all...
-    /// To fix it correctly, database fixtures should perform the same initialization as regular appbase::application does, what additionally would allow to better test startup and shutdown conditions.
-    if(immediate_generation)
+    if( immediate_generation )
     {
       witness::block_producer bp(db);
       bp.generate_block(generate_block_ctrl.get());
