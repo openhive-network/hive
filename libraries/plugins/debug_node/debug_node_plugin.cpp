@@ -254,7 +254,8 @@ void debug_node_plugin::calculate_modifiers_according_to_new_price(const hive::p
   }
 }
 
-void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_price)
+void debug_node_plugin::debug_set_vest_price( const hive::protocol::price& new_price,
+  fc::optional<protocol::transaction_id_type> transaction_id )
 {
   hive::protocol::VEST_asset vest_modifier;
   hive::protocol::HIVE_asset hive_modifier;
@@ -286,7 +287,7 @@ void debug_node_plugin::debug_set_vest_price(const hive::protocol::price& new_pr
       p.current_supply += hive_modifier;
       p.virtual_supply += hive_modifier;
     } );
-  } );
+  }, hive::chain::database::skip_nothing, transaction_id );
 
   ilog( "After modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}",
     ( "vest", dgpo.total_vesting_shares )( "hive", dgpo.total_vesting_fund_hive ) );
