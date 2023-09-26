@@ -330,18 +330,6 @@ void database::close(bool rewind)
   FC_CAPTURE_AND_RETHROW()
 }
 
-//no chainbase lock required, but fork database read lock is required
-bool database::is_known_block_unlocked(const block_id_type& id)const
-{ try {
-  if (_fork_db().fetch_block_unlocked(id, true /* only search linked blocks */))
-    return true;
-
-  auto requested_block_num = protocol::block_header::num_from_id(id);
-  auto read_block_id = _block_log().read_block_id_by_num(requested_block_num);
-
-  return read_block_id != block_id_type() && read_block_id == id;
-} FC_CAPTURE_AND_RETHROW() }
-
 /**
   * Only return true *if* the transaction has not expired or been invalidated. If this
   * method is called with a VERY old transaction we will return false, they should
@@ -7205,15 +7193,6 @@ std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type
     }
   }
   return synopsis;
-}
-
-std::deque<block_id_type>::const_iterator database::find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received)
-{
-  return _fork_db().with_read_lock([&](){
-    return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) {
-      return is_known_block_unlocked(block_id);
-    });
-  });
 }
 
 // requires forkdb read lock, does not require chainbase lock

@@ -8,7 +8,7 @@ fork_db_block_reader::fork_db_block_reader( const fork_database& fork_db, block_
   : block_log_reader( the_log ), _fork_db( fork_db )
 {}
 
-bool fork_db_block_reader::is_known_block(const block_id_type& id) const
+bool fork_db_block_reader::is_known_block( const block_id_type& id ) const
 {
   try {
     if( _fork_db.fetch_block( id ) )
@@ -18,5 +18,24 @@ bool fork_db_block_reader::is_known_block(const block_id_type& id) const
   } FC_CAPTURE_AND_RETHROW()
 }
 
-} } //hive::chain
+bool fork_db_block_reader::is_known_block_unlocked( const block_id_type& id ) const
+{ 
+  try {
+    if (_fork_db.fetch_block_unlocked(id, true /* only search linked blocks */))
+      return true;
 
+    return block_log_reader::is_known_block_unlocked( id );
+  } FC_CAPTURE_AND_RETHROW()
+}
+
+std::deque<block_id_type>::const_iterator fork_db_block_reader::find_first_item_not_in_blockchain(
+  const std::deque<block_id_type>& item_hashes_received ) const
+{
+  return _fork_db.with_read_lock([&](){
+    return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) {
+      return is_known_block_unlocked(block_id);
+    });
+  });
+}
+
+} } //hive::chain

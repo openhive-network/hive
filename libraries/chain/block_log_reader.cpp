@@ -35,5 +35,23 @@ bool block_log_reader::is_known_block(const block_id_type& id) const
   } FC_CAPTURE_AND_RETHROW()
 }
 
+bool block_log_reader::is_known_block_unlocked(const block_id_type& id) const
+{ 
+  try {
+    auto requested_block_num = protocol::block_header::num_from_id(id);
+    auto read_block_id = _block_log.read_block_id_by_num(requested_block_num);
+
+    return read_block_id != block_id_type() && read_block_id == id;
+  } FC_CAPTURE_AND_RETHROW()
+}
+
+std::deque<block_id_type>::const_iterator block_log_reader::find_first_item_not_in_blockchain(
+  const std::deque<block_id_type>& item_hashes_received ) const
+{
+  return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) {
+    return is_known_block_unlocked(block_id);
+  });
+}
+
 } } //hive::chain
 
