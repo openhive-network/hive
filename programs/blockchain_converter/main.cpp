@@ -43,17 +43,17 @@ int main( int argc, char** argv )
   {
     appbase::initialization_result initResult( appbase::initialization_result::ok, false);
     appbase::application bc_converter_app;
+    bc_converter_app.init_signals_handler();
 
-    BOOST_SCOPE_EXIT(&bc_converter_app, &initResult)
+    BOOST_SCOPE_EXIT(&bc_converter_app)
     {
-      auto _should_start_loop = initResult.should_start_loop();
-      if( !_should_start_loop )
+      auto _is_thread_closed = bc_converter_app.is_thread_closed();
+      if( !_is_thread_closed )
         kill(getpid(), SIGINT);
 
       bc_converter_app.wait();
-      appbase::reset();
 
-      if( _should_start_loop )
+      if( _is_thread_closed )
         ilog("exited cleanly");
 
     } BOOST_SCOPE_EXIT_END
@@ -90,7 +90,7 @@ int main( int argc, char** argv )
     bc_converter_app.set_version_string( version_string() );
     bc_converter_app.set_app_name( "blockchain_converter" );
 
-    initResult = bc_converter_app.initialize( argc, argv );
+    auto initResult = bc_converter_app.initialize( argc, argv );
     if( !initResult.should_start_loop() )
       return initResult.get_result_code();
 

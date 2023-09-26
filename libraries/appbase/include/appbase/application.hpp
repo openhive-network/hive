@@ -102,6 +102,7 @@ namespace appbase {
         *  Wait until quit(), SIGINT or SIGTERM and then shutdown
         */
       void wait();
+      bool is_thread_closed();
 
       template< typename Plugin >
       auto& register_plugin()

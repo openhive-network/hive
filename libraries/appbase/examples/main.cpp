@@ -1,6 +1,7 @@
 #include <appbase/application.hpp>
 #include <iostream>
 #include <boost/exception/diagnostic_information.hpp>
+#include <boost/scope_exit.hpp>
 
 struct database { };
 
@@ -89,8 +90,24 @@ class plugin_b : public appbase::plugin<plugin_b>
 
 
 int main( int argc, char** argv ) {
-  try {
+  try
+  {
+    appbase::initialization_result initializationResult( appbase::initialization_result::ok, false);
     appbase::application theApp;
+
+    theApp.init_signals_handler();
+
+    BOOST_SCOPE_EXIT(&theApp)
+    {
+      if( !theApp.is_thread_closed() )
+        kill(getpid(), SIGINT);
+
+      theApp.wait();
+
+      ilog("exited cleanly");
+
+    } BOOST_SCOPE_EXIT_END
+
     theApp.register_plugin<plugin_b>();
 
     auto initResult = theApp.initialize( argc, argv );

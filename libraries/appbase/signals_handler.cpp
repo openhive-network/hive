@@ -133,6 +133,12 @@ void signals_handler_wrapper::wait()
     if( handler_thread->joinable() )
       handler_thread->join();
   }
+  thread_closed = true;
+}
+
+bool signals_handler_wrapper::is_thread_closed()
+{
+  return thread_closed;
 }
 
 void signals_handler_wrapper::block_signals()
