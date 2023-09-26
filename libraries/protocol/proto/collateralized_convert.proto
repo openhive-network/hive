@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Similar to convert_operation, this operation instructs the blockchain to convert HIVE to HBD.
+ * The operation is performed after 3.5 days, but the owner gets HBD immediately.
+ * The price risk is cushioned by extra HIVE (HIVE_COLLATERAL_RATIO = 200 % ).
+ * After actual conversion takes place the excess HIVE is returned to the owner.
+ *
+ * @param {string} owner - Account name.
+ * @param {number} requestid - The number is given by a user. Should be unique for a user.
+ * @param {asset} amount - Amount > 0, have to be in Hive.
+ */
+message collateralized_convert {
+  required string owner = 1;
+  required uint32 requestid = 2;
+  required asset  amount = 3;
+}

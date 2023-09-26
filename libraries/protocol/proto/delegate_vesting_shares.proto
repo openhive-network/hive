@@ -1,0 +1,28 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* The operation delegate_vesting_shares_operation allows to delegate an amount
+ * of { vesting_shares } to an { delegatee } account. The { vesting_shares } are still owned by { delegator },
+ * but the voting rights and resource credit are transferred.
+ * A user may not delegate:
+ * - the vesting shares that are already delegated
+ * - the delegated vesting shares to him (a user does not own them)
+ * - the vesting shares in the Power down process
+ * - the already used voting shares for voting or downvoting
+ * In order to remove the vesting shares delegation, the operation delegate_vesting_shares_operation
+ * should be created with {vesting_shares = 0}. When a delegation is removed, the delegated vesting shares
+ * are frozen for five days (HIVE_DELEGATION_RETURN_PERIOD_HF20) to prevent voting twice.
+ *
+ * @param {string} delegator - The account delegating vesting shares.
+ * @param {string} delegatee - The account receiving vesting shares.
+ * @param {asset} vesting_shares - The amount of vesting shares to be delegated.
+ *                                 Minimal amount = 1/3 of the fee for creating a new account.
+ */
+message delegate_vesting_shares {
+  required string delegator = 1;
+  required string delegatee = 2;
+  required asset  vesting_shares = 3 [json_name = "vesting_shares"];
+}

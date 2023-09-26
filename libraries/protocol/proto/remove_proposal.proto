@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+import "future_extensions.proto";
+
+package hive.protocol.buffers;
+
+/* Using operation remove_proposal_operation, a user may remove proposals specified by given IDs.
+ *
+ * @param {string} proposal_owner
+ * @param {number} proposal_ids
+ * @param {future_extensions} extensions
+ */
+message remove_proposal {
+  required string            proposal_owner = 1 [json_name = "proposal_owner"];
+  repeated int64             proposal_ids = 2 [json_name = "proposal_ids"];
+  repeated future_extensions extensions = 3;
+}
