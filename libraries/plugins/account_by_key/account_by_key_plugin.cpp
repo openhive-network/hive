@@ -17,8 +17,8 @@ namespace detail {
 class account_by_key_plugin_impl
 {
   public:
-    account_by_key_plugin_impl( account_by_key_plugin& _plugin ) :
-      _db( _plugin.get_app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+    account_by_key_plugin_impl( account_by_key_plugin& _plugin, appbase::application& app ) :
+      _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin ) {}
 
     void on_pre_apply_operation( const operation_notification& note );
@@ -283,7 +283,7 @@ void account_by_key_plugin::set_program_options( options_description& cli, optio
 
 void account_by_key_plugin::plugin_initialize( const boost::program_options::variables_map& options )
 {
-  my = std::make_unique< detail::account_by_key_plugin_impl >( *this );
+  my = std::make_unique< detail::account_by_key_plugin_impl >( *this, theApp );
   try
   {
     ilog( "Initializing account_by_key plugin" );

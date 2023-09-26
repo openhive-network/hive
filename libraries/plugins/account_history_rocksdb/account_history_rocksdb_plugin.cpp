@@ -448,8 +448,8 @@ class account_history_rocksdb_plugin::impl final
 public:
   impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath, appbase::application& app) :
     _self(self),
-    _mainDb(self.get_app().get_plugin<hive::plugins::chain::chain_plugin>().db()),
-    _blockchainStoragePath(self.get_app().get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
+    _mainDb(app.get_plugin<hive::plugins::chain::chain_plugin>().db()),
+    _blockchainStoragePath(app.get_plugin<hive::plugins::chain::chain_plugin>().state_storage_dir()),
     _storagePath(storagePath),
     _writeBuffer(_storage, _columnHandles),
     _filter("ah-rb"),

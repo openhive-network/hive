@@ -28,8 +28,8 @@ namespace detail {
 class reputation_plugin_impl
 {
   public:
-    reputation_plugin_impl( reputation_plugin& _plugin ) :
-      _db( _plugin.get_app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+    reputation_plugin_impl( reputation_plugin& _plugin, appbase::application& app ) :
+      _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin ) {}
     ~reputation_plugin_impl() {}
 
@@ -202,7 +202,7 @@ void reputation_plugin::plugin_initialize( const boost::program_options::variabl
   {
     ilog("Intializing reputation plugin" );
 
-    my = std::make_unique< detail::reputation_plugin_impl >( *this );
+    my = std::make_unique< detail::reputation_plugin_impl >( *this, theApp );
 
     my->_pre_apply_operation_conn = my->_db.add_pre_apply_operation_handler( [&]( const operation_notification& note ){ my->pre_operation( note ); }, *this, 0 );
     my->_post_apply_operation_conn = my->_db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ my->post_operation( note ); }, *this, 0 );
