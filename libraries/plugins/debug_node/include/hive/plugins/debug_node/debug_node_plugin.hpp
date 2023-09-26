@@ -67,27 +67,27 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     void debug_update( Lambda&& callback, uint32_t skip = hive::chain::database::skip_nothing,
       fc::optional<protocol::transaction_id_type> transaction_id = fc::optional<protocol::transaction_id_type>() )
     {
-      auto apply_callback_to_debug_updates = [&]( const protocol::transaction_id_type& tx_id )
+      auto apply_callback_to_debug_updates = [&]( const protocol::transaction_id_type& tx_id, bool internal_tx )
       {
         auto it = _debug_updates.find( tx_id );
         if( it == _debug_updates.end() )
-          _debug_updates[tx_id] = { callback };
+          _debug_updates[tx_id] = {{ callback }, internal_tx };
         else
-          it->second.emplace_back( callback );
+          it->second.callbacks.emplace_back( callback );
       };
 
       if( transaction_id )
       {
         // in this mode caller should first register all necessary callbacks and then push transaction
         // (if transaction is not pushed or is from the past, the callbacks will never execute)
-        apply_callback_to_debug_updates( *transaction_id );
+        apply_callback_to_debug_updates( *transaction_id, false );
       }
       else
       {
         // in this mode callbacks are executed immediately and then again as a result of reapplying
         // artificial transaction (most likely on next block generation)
         const auto& dummy_tx_id = make_artificial_transaction_for_debug_update();
-        apply_callback_to_debug_updates( dummy_tx_id );
+        apply_callback_to_debug_updates( dummy_tx_id, true );
         callback( database() );
       }
     }
@@ -142,8 +142,12 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     //boost::signals2::scoped_connection _removed_objects_conn;
 
     std::vector< std::string > _edit_scripts;
-    //std::map< protocol::block_id_type, std::vector< fc::variant_object > > _debug_updates;
-    std::map< protocol::transaction_id_type, std::vector< std::function< void( chain::database& ) > > > _debug_updates;
+    struct debug_update_type
+    {
+      std::vector< std::function< void( chain::database& ) > > callbacks;
+      bool internal_tx = false;
+    };
+    std::map< protocol::transaction_id_type, debug_update_type > _debug_updates;
 };
 
 } } }
