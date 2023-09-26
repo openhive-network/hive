@@ -222,11 +222,6 @@ namespace appbase {
 
     private:
 
-      friend application& appbase::app();
-      friend void appbase::reset();
-
-      static application* instance(bool reset, bool recreate);
-
       map< string, std::shared_ptr< abstract_plugin > >  plugins; ///< all registered plugins
       vector< abstract_plugin* >                         initialized_plugins; ///< stored in the order they were started running
 
