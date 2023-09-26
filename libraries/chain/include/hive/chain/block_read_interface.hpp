@@ -5,6 +5,8 @@
 
 #include <fc/time.hpp>
 
+#include <deque>
+
 namespace hive { namespace chain {
 
   class block_read_i
@@ -38,7 +40,12 @@ namespace hive { namespace chain {
 	/** Needed by p2p plugin only. 
    *  Check among (linked only) reversible blocks then among irreversible if needed.
   */
-	//virtual bool is_known_block_unlocked(const block_id_type& id) const = 0;
+	virtual bool is_known_block_unlocked(const block_id_type& id) const = 0;
+	/** Needed by p2p plugin only. 
+   *  Check among (linked only) reversible blocks then among irreversible if needed.
+  */
+  virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(
+    const std::deque<block_id_type>& item_hashes_received ) const = 0;
 	/// Check among reversible blocks on main branch then among irreversible.
 	//virtual block_id_type find_block_id_for_num( uint32_t block_num ) const = 0;
 	/** Needed by p2p plugin only.

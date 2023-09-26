@@ -341,7 +341,7 @@ void p2p_plugin_impl::error_encountered( const string& message, const fc::oexcep
 
 std::deque<block_id_type>::const_iterator p2p_plugin_impl::find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received)
 {
-  return chain.db().find_first_item_not_in_blockchain(item_hashes_received);
+  return chain.db().block_reader().find_first_item_not_in_blockchain(item_hashes_received);
 }
 
 void p2p_plugin_impl::request_precomputing_transaction_signatures_if_useful()
