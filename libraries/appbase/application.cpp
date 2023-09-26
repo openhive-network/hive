@@ -223,24 +223,6 @@ void application::startup() {
   }
 }
 
-application* application::instance( bool reset, bool recreate ) {
-  static application* _app = new application();
-
-  if (reset || (_app != nullptr && _app->is_finished))
-  {
-    delete _app;
-    _app = nullptr;
-  }
-
-  if (_app == nullptr && recreate)
-    _app = new application();
-
-  return _app;
-}
-
-application& app() { return *application::instance(false, true); }
-void reset() { application::instance( true, false ); }
-
 void application::set_program_options()
 {
   std::stringstream data_dir_ss;

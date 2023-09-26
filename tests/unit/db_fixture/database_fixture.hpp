@@ -263,7 +263,7 @@ struct database_fixture {
   appbase::application theApp;
 
   database_fixture() {}
-  virtual ~database_fixture() { appbase::reset(); }
+  virtual ~database_fixture() {}
 
   static fc::ecc::private_key generate_private_key( string seed = "init_key" );
 #ifdef HIVE_ENABLE_SMT
