@@ -26,6 +26,8 @@ namespace hive { namespace chain {
     virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(
       const std::deque<block_id_type>& item_hashes_received ) const override;
 
+    virtual block_id_type find_block_id_for_num( uint32_t block_num ) const override;
+
   private:
     block_log&      _block_log;
   };
