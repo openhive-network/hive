@@ -339,20 +339,23 @@ struct curation_rewards_handler
 
   }
 
-  void prepare_funds_impl( uint32_t idx, uint32_t amount )
+  uint64_t prepare_funds_impl( uint32_t idx, uint32_t amount )
   {
-      test_object.fund( voters[idx], asset( amount, HIVE_SYMBOL ) );
-      test_object.vest( voters[idx], voters[idx], asset( amount / 10, HIVE_SYMBOL ), voter_keys[idx] );
+    test_object.fund( voters[idx], amount );
+    test_object.vest( voters[idx], voters[idx], asset( amount / 10, HIVE_SYMBOL ), voter_keys[idx] );
+    return amount;
   }
 
-  void prepare_funds( uint32_t& counter, const window_input_data& window )
+  uint64_t prepare_funds( uint32_t& counter, const window_input_data& window )
   {
+    uint64_t funds = 0;
     for( uint32_t i = counter; i < counter + window.nr_voters; ++i )
     {
-      prepare_funds_impl( i, window.amount );
+      funds += prepare_funds_impl( i, window.amount );
     }
 
     counter += window.nr_voters;
+    return funds;
   }
 
   void prepare_funds( const window_input_data& early, const window_input_data& mid, const window_input_data& late )
@@ -360,18 +363,23 @@ struct curation_rewards_handler
     BOOST_REQUIRE_GE( voters.size(), early.nr_voters + mid.nr_voters + late.nr_voters );
 
     uint32_t counter = 0;
+    uint64_t funds = 0;
 
-    prepare_funds( counter, early );
-    prepare_funds( counter, mid );
-    prepare_funds( counter, late );
+    funds += prepare_funds( counter, early );
+    funds += prepare_funds( counter, mid );
+    funds += prepare_funds( counter, late );
+
+    test_object.fund( HIVE_INIT_MINER_NAME, asset( funds, HIVE_SYMBOL ) );
   }
 
   void prepare_funds( uint32_t amount = curation_rewards_handler::default_amount )
   {
+    uint64_t funds = 0;
     for( uint32_t i = 0; i < voters.size(); ++i )
     {
-      prepare_funds_impl( i, amount );
+      funds += prepare_funds_impl( i, amount );
     }
+    test_object.fund( HIVE_INIT_MINER_NAME, asset( funds, HIVE_SYMBOL ) );
   }
 
   void prepare_comment( const std::string& permlink, uint32_t creator_number )
