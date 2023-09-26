@@ -1,0 +1,37 @@
+syntax = "proto2";
+
+import "asset.proto";
+import "future_extensions.proto";
+
+package hive.protocol.buffers;
+
+message update_proposal_end_date {
+  required string end_date = 1 [json_name = "end_date"];
+}
+
+message update_proposal_extension {
+  oneof value {
+    void_t void_t = 1 [json_name = "void_t"];
+	update_proposal_end_date update_proposal_end_date = 2 [json_name = "update_proposal_end_date"];
+  }
+}
+
+/* A user who created the proposal may update it. A user may decrease {daily_pay},
+ * change subject, permlink and {end_date} (using {extensions}).
+ * In order to update the proposal parameters, all parameters should be entered.
+ *
+ * @param {number} proposal_id
+ * @param {string} creator
+ * @param {asset} daily_pay
+ * @param {string} subject
+ * @param {string} permlink
+ * @param {update_proposal_extension} extensions
+ */
+message update_proposal {
+  required int64                     proposal_id = 1 [json_name = "proposal_id"];
+  required string                    creator = 2;
+  required asset                     daily_pay = 3 [json_name = "daily_pay"];
+  required string                    subject = 4;
+  required string                    permlink = 5;
+  repeated update_proposal_extension extensions = 6;
+}

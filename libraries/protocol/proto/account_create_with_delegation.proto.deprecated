@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+import "asset.proto";
+import "authority.proto";
+import "future_extensions.proto";
+
+package hive.protocol.buffers;
+
+/* Deprecated.
+ */
+message account_create_with_delegation {
+  required asset             fee = 1;
+  required asset             delegation = 2;
+  required string            creator = 3;
+  required string            new_account_name = 4 [json_name = "new_account_name"];
+  required authority         owner = 5;
+  required authority         active = 6;
+  required authority         posting = 7;
+  required string            memo_key = 8 [json_name = "memo_key"];
+  required string            json_metadata = 9 [json_name = "json_metadata"];
+  repeated future_extensions extensions = 10;
+}

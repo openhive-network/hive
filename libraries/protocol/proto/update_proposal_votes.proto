@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+import "future_extensions.proto";
+
+package hive.protocol.buffers;
+
+/* A user may vote for proposals directly using an operation: update_proposal_votes_operation,
+ * or indirectly using the proxy - operation:  account_witness_proxy_operation.
+ * A user may vote for proposals submitted by the other users.
+ * By voting for the proposal, a user may select which proposals should be funded.
+ * A user may vote for as many proposals as they wants, but you cannot vote twice for the same proposal.
+ * If a proxy is specified then all existing votes are deactivated. When the proxy is removed, the votes will be activated.
+ * Your vote power depends on your HP.
+ * If the operation account_witness_vote_operation or account_witness_proxy_operation or update_proposal_votes_operation
+ * is not executed in HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD, the votes are removed and the virtual operation:
+ * expired_account_notification_operation is generated.
+ *
+ * @param {string} voter - Account name.
+ * @param {number} proposal_ids - IDs of proposals to vote for/against. Nonexisting IDs are ignored.
+ * @param {bool} approve - To vote for the proposal, the approve = true.
+ *                         To remove the vote, the approve = false.
+ * @param {future_extensions} extensions
+ */
+message update_proposal_votes {
+  required string            voter = 1;
+  repeated int64             proposal_ids = 2 [json_name = "proposal_ids"];
+  required bool              approve = 3;
+  repeated future_extensions extensions = 4;
+}
