@@ -53,5 +53,24 @@ std::deque<block_id_type>::const_iterator block_log_reader::find_first_item_not_
   });
 }
 
+block_id_type block_log_reader::find_block_id_for_num( uint32_t block_num )const
+{
+  block_id_type result;
+
+  try
+  {
+    if( block_num != 0 )
+    {
+      result = _block_log.read_block_id_by_num(block_num);
+    }
+  }
+  FC_CAPTURE_AND_RETHROW( (block_num) )
+
+  if( result == block_id_type() )
+    FC_THROW_EXCEPTION(fc::key_not_found_exception, "block number not found");
+
+  return result;
+}
+
 } } //hive::chain
 

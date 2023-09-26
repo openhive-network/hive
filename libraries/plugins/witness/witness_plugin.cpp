@@ -305,7 +305,10 @@ namespace detail {
 
                 transaction tx;
                 uint32_t last_irreversible_block = _db.get_last_irreversible_block_num();
-                const block_id_type reference_block_id = last_irreversible_block ? _db.get_block_id_for_num(last_irreversible_block) : _db.head_block_id();
+                const block_id_type reference_block_id = 
+                  last_irreversible_block ?
+                    _db.block_reader().find_block_id_for_num(last_irreversible_block) :
+                    _db.head_block_id();
                 tx.set_reference_block(reference_block_id);
                 tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION/2);
                 tx.operations.push_back( op );

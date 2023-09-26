@@ -1549,7 +1549,7 @@ bool chain_plugin::block_is_on_preferred_chain(const hive::chain::block_id_type&
 
   // Extract the block number from block_id, and fetch that block number's ID from the database.
   // If the database's block ID matches block_id, then block_id is on the preferred chain. Otherwise, it's on a fork.
-  return db().get_block_id_for_num( hive::chain::block_header::num_from_id( block_id ) ) == block_id;
+  return db().block_reader().find_block_id_for_num( hive::chain::block_header::num_from_id( block_id ) ) == block_id;
 }
 
 void chain_plugin::check_time_in_block(const hive::chain::signed_block& block)

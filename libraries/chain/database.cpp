@@ -342,45 +342,6 @@ bool database::is_known_transaction( const transaction_id_type& id )const
 } FC_CAPTURE_AND_RETHROW() }
 
 //no chainbase lock required
-block_id_type database::find_block_id_for_num( uint32_t block_num )const
-{
-  try
-  {
-    if( block_num == 0 )
-      return block_id_type();
-/*
-    // Reversible blocks are *usually* in the TAPOS buffer.  Since this
-    // is the fastest check, we do it first.
-    block_summary_object::id_type bsid( block_num & 0xFFFF );
-    const block_summary_object* bs = find< block_summary_object, by_id >( bsid );
-    if( bs != nullptr )
-    {
-      if( protocol::block_header::num_from_id(bs->block_id) == block_num )
-        return bs->block_id;
-    }
-*/
-
-    // See if fork DB has the item
-    shared_ptr<fork_item> fitem = _fork_db().fetch_block_on_main_branch_by_number( block_num );
-    if( fitem )
-      return fitem->get_block_id();
-
-    // Next we check if block_log has it. Irreversible blocks are here.
-    return _block_log().read_block_id_by_num(block_num);
-  }
-  FC_CAPTURE_AND_RETHROW( (block_num) )
-}
-
-//no chainbase lock required
-block_id_type database::get_block_id_for_num( uint32_t block_num )const
-{
-  block_id_type bid = find_block_id_for_num( block_num );
-  if (bid == block_id_type())
-    FC_THROW_EXCEPTION(fc::key_not_found_exception, "block number not found");
-  return bid;
-}
-
-//no chainbase lock required
 std::shared_ptr<full_block_type> database::fetch_block_by_id( const block_id_type& id )const
 { try {
   shared_ptr<fork_item> fork_item = _fork_db().fetch_block( id );

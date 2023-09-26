@@ -245,9 +245,7 @@ namespace chain {
       bool                       is_known_transaction( const transaction_id_type& id )const;
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
-      block_id_type              find_block_id_for_num( uint32_t block_num )const;
     public:
-      block_id_type              get_block_id_for_num( uint32_t block_num )const;
       std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
       std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
       std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 

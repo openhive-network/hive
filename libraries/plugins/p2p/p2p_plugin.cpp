@@ -362,7 +362,8 @@ bool p2p_plugin_impl::is_included_block(const block_id_type& block_id)
   uint32_t block_num = block_header::num_from_id(block_id);
   try
   {
-    block_id_type block_id_in_preferred_chain = chain.db().get_block_id_for_num(block_num);
+    block_id_type block_id_in_preferred_chain = 
+      chain.db().block_reader().find_block_id_for_num(block_num);
     return block_id == block_id_in_preferred_chain;
   }
   catch (fc::key_not_found_exception&)
