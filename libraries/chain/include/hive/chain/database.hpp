@@ -215,7 +215,6 @@ namespace chain {
 
     public:
       std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
-      std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received);
       std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
@@ -242,8 +241,6 @@ namespace chain {
 
       //////////////////// db_block.cpp ////////////////////
 
-    private:
-      bool                       is_known_block_unlocked(const block_id_type& id)const;
     public:
       bool                       is_known_transaction( const transaction_id_type& id )const;
       fc::sha256                 get_pow_target()const;
