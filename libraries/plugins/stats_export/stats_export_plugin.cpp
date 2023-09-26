@@ -64,10 +64,10 @@ namespace hive { namespace plugins { namespace stats_export { namespace detail {
 class stats_export_plugin_impl
 {
   public:
-    stats_export_plugin_impl( stats_export_plugin& _plugin ) :
-      _db( _plugin.get_app().get_plugin< chain_plugin >().db() ),
+    stats_export_plugin_impl( stats_export_plugin& _plugin, appbase::application& app ) :
+      _db( app.get_plugin< chain_plugin >().db() ),
       _self( _plugin ),
-      _export_plugin( _plugin.get_app().get_plugin< block_data_export_plugin >() )
+      _export_plugin( app.get_plugin< block_data_export_plugin >() )
       {}
 
     void on_post_apply_block( const block_notification& note );
@@ -137,7 +137,7 @@ void stats_export_plugin::set_program_options( options_description& cli, options
 
 void stats_export_plugin::plugin_initialize( const boost::program_options::variables_map& options )
 {
-  my = std::make_unique< detail::stats_export_plugin_impl >( *this );
+  my = std::make_unique< detail::stats_export_plugin_impl >( *this, theApp );
   try
   {
     ilog( "Initializing stats_export plugin" );

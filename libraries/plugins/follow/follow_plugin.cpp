@@ -30,8 +30,8 @@ namespace detail {
 class follow_plugin_impl
 {
   public:
-    follow_plugin_impl( follow_plugin& _plugin ) :
-      _db( _plugin.get_app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+    follow_plugin_impl( follow_plugin& _plugin, appbase::application& app ) :
+      _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin ) {}
     ~follow_plugin_impl() {}
 
@@ -345,7 +345,7 @@ void follow_plugin::plugin_initialize( const boost::program_options::variables_m
     FC_ASSERT( false, "A plugin `follow` is deprecated and is no longer supported.");
     ilog("Intializing follow plugin" );
 
-    my = std::make_unique< detail::follow_plugin_impl >( *this );
+    my = std::make_unique< detail::follow_plugin_impl >( *this, theApp );
 
     // Each plugin needs its own evaluator registry.
     _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::plugins::follow::follow_plugin_operation > >( my->_db, name() );

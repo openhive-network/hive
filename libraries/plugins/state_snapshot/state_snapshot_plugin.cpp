@@ -898,13 +898,13 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
   using database = hive::chain::database;
 
   public:
-    impl(state_snapshot_plugin& self, const bpo::variables_map& options) :
+    impl(state_snapshot_plugin& self, const bpo::variables_map& options, appbase::application& app) :
       _self(self),
-      _mainDb(_self.get_app().get_plugin<hive::plugins::chain::chain_plugin>().db())
+      _mainDb(app.get_plugin<hive::plugins::chain::chain_plugin>().db())
       {
       collectOptions(options);
 
-      _self.get_app().get_plugin<hive::plugins::chain::chain_plugin>().register_snapshot_provider(*this);
+      app.get_plugin<hive::plugins::chain::chain_plugin>().register_snapshot_provider(*this);
 
       ilog("Registering add_prepare_snapshot_handler...");
 
@@ -1574,7 +1574,7 @@ void state_snapshot_plugin::set_program_options(
 void state_snapshot_plugin::plugin_initialize(const boost::program_options::variables_map& options)
   {
   ilog("Initializing state_snapshot_plugin...");
-  _my = std::make_unique<impl>(*this, options);
+  _my = std::make_unique<impl>(*this, options, theApp);
   }
 
 void state_snapshot_plugin::plugin_startup()

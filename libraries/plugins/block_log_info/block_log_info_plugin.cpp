@@ -21,8 +21,8 @@ namespace detail {
 class block_log_info_plugin_impl
 {
   public:
-    block_log_info_plugin_impl( block_log_info_plugin& _plugin ) :
-      _db( _plugin.get_app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+    block_log_info_plugin_impl( block_log_info_plugin& _plugin, appbase::application& app ) :
+      _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin ) {}
 
     void on_post_apply_block( const block_notification& note );
@@ -145,7 +145,7 @@ void block_log_info_plugin::set_program_options( options_description& cli, optio
 
 void block_log_info_plugin::plugin_initialize( const boost::program_options::variables_map& options )
 {
-  my = std::make_unique< detail::block_log_info_plugin_impl >( *this );
+  my = std::make_unique< detail::block_log_info_plugin_impl >( *this, theApp );
   try
   {
     ilog( "Initializing block_log_info plugin" );
