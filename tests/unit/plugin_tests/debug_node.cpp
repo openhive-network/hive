@@ -7,6 +7,36 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
 
+full_transaction_ptr make_transfer( const account_name_type& from, const account_name_type& to,
+  const asset& tokens, const fc::ecc::private_key& key, database& db )
+{
+  transfer_operation op;
+  op.from = from;
+  op.to = to;
+  op.amount = tokens;
+  signed_transaction tx;
+  tx.set_expiration( db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  auto pack_type = serialization_mode_controller::get_current_pack();
+  full_transaction_ptr ftx = full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
+  ftx->sign_transaction( std::vector<fc::ecc::private_key>{ key }, db.get_chain_id(),
+    fc::ecc::fc_canonical, pack_type );
+  return ftx;
+};
+
+void direct_transfer( const account_name_type& from, const account_name_type& to,
+  const asset& delta_from, const asset& delta_to, database& db )
+{
+  ilog( "Transfering directly from ${from} to ${to}", ( from ) ( to ) );
+  db.adjust_balance( from, delta_from );
+  db.adjust_balance( to, delta_to );
+}
+
+asset operator * ( const asset& a, int multiplier )
+{
+  return asset( a.amount * multiplier, a.symbol );
+}
+
 BOOST_FIXTURE_TEST_SUITE( debug_node, clean_database_fixture )
 
 BOOST_AUTO_TEST_CASE( vests_hive_evaluation )
@@ -164,28 +194,10 @@ BOOST_AUTO_TEST_CASE( debug_update_with_explicit_hook )
   ACTORS( (alice)(bob)(carol)(dan) );
   generate_block();
 
-  auto make_transfer = [&]( const account_name_type& from, const account_name_type& to,
-    const asset& tokens, const fc::ecc::private_key& key )
-  {
-    transfer_operation op;
-    op.from = from;
-    op.to = to;
-    op.amount = tokens;
-    signed_transaction tx;
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( op );
-    auto pack_type = hive::protocol::serialization_mode_controller::get_current_pack();
-    full_transaction_ptr ftx = hive::chain::full_transaction_type::create_from_signed_transaction(
-      tx, pack_type, false );
-    ftx->sign_transaction( std::vector<fc::ecc::private_key>{ key }, db->get_chain_id(),
-      fc::ecc::fc_canonical, pack_type );
-    return ftx;
-  };
-
-  auto alice_to_bob = make_transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_private_key );
-  auto alice_to_carol = make_transfer( "alice", "carol", ASSET( "2.000 TESTS" ), alice_private_key );
-  auto bob_to_dan = make_transfer( "bob", "dan", ASSET( "0.700 TESTS" ), bob_private_key );
-  auto carol_to_dan = make_transfer( "carol", "dan", ASSET( "6.000 TESTS" ), carol_private_key );
+  auto alice_to_bob = make_transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_private_key, *db );
+  auto alice_to_carol = make_transfer( "alice", "carol", ASSET( "2.000 TESTS" ), alice_private_key, *db );
+  auto bob_to_dan = make_transfer( "bob", "dan", ASSET( "0.700 TESTS" ), bob_private_key, *db );
+  auto carol_to_dan = make_transfer( "carol", "dan", ASSET( "6.000 TESTS" ), carol_private_key, *db );
 
   // everyone starts with zero balance
   BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 0 );
@@ -194,40 +206,28 @@ BOOST_AUTO_TEST_CASE( debug_update_with_explicit_hook )
   BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 0 );
 
   // make bindings of callbacks to transactions out of order (to show they are not executed immediately)
-  auto direct_transfer = [this]( const account_name_type& from, const account_name_type& to,
-    int delta_from, int delta_to, database& db )
-  {
-    const auto& from_account = db.get_account( from );
-    const auto& to_account = db.get_account( to );
-    ilog( "Transfering directly from ${from} to ${to}", (from)(to) );
-    db.modify( from_account, [=]( account_object& _from )
-    {
-      _from.balance.amount += delta_from;
-    } );
-    db.modify( to_account, [=]( account_object& _to )
-    {
-      _to.balance.amount += delta_to;
-    } );
-  };
 
   db_plugin->debug_update( [&]( database& db ) // if it executed now, bob would go negative
   {
-    direct_transfer( "bob", "alice", -10, 10, db );
+    asset delta = ASSET( "0.010 TESTS" );
+    direct_transfer( "bob", "alice", -delta, delta, db );
   }, 0, bob_to_dan->get_transaction_id() );
 
   db_plugin->debug_update( [&]( database& db )
   {
-    direct_transfer( "initminer", "carol", -200, 200, db );
+    asset delta = ASSET( "0.200 TESTS" );
+    direct_transfer( "initminer", "carol", -delta, delta, db );
   }, 0, alice_to_carol->get_transaction_id() );
 
   db_plugin->debug_update( [&]( database& db ) // if it ever executed, validate_database would fail
   {
-    direct_transfer( "dan", "alice", -100, 10000, db );
+    direct_transfer( "dan", "alice", -ASSET( "0.100 TESTS" ), ASSET( "10.000 TESTS" ), db );
   }, 0, carol_to_dan->get_transaction_id() );
 
   db_plugin->debug_update( [&]( database& db )
   {
-    direct_transfer( "initminer", "alice", -3100, 3100, db );
+    asset delta = ASSET( "3.100 TESTS" );
+    direct_transfer( "initminer", "alice", -delta, delta, db );
   }, 0, alice_to_bob->get_transaction_id() );
 
   // none of above debug_updates was executed yet
@@ -277,6 +277,146 @@ BOOST_AUTO_TEST_CASE( debug_update_with_explicit_hook )
   BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 - 10 - 700 );
   BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 200 + 2000 );
   BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 700 );
+
+  validate_database();
+}
+
+BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
+{
+  BOOST_TEST_MESSAGE( "Calling many debug_update in the same block mixed with transactions" );
+
+  ACTORS( (alice)(bob)(carol)(dan)(eric)(frank)(greg) );
+  generate_block();
+
+  // we are going to pass single token and leave increasing amount of satoshis in each step:
+  // - initminer to alice (normal)
+  // - alice to bob (direct on internal(1))
+  // - bob to carol (direct hooked to next normal)
+  // - carol to dan (normal)
+  // - dan to eric (direct on internal(2))
+  // - eric to frank (direct on internal(2))
+  // - frank to greg (normal)
+  // - greg to temp (direct on internal(3))
+  // if the order is different than above one of the transfers will fail
+
+  const asset token = ASSET( "1.000 TESTS" );
+  const asset step = ASSET( "0.001 TESTS" );
+  const asset zero = ASSET( "0.000 TESTS" );
+
+  auto carol_to_dan = make_transfer( "carol", "dan", token - step * 6, carol_private_key, *db );
+  db_plugin->debug_update( [&]( database& db )
+  {
+    asset delta = token - step * 3;
+    direct_transfer( "bob", "carol", -delta, delta, db );
+  }, 0, carol_to_dan->get_transaction_id() );
+
+  // before any action
+  BOOST_REQUIRE( get_balance( "alice" ) == zero );
+  BOOST_REQUIRE( get_balance( "bob" ) == zero );
+  BOOST_REQUIRE( get_balance( "carol" ) == zero );
+  BOOST_REQUIRE( get_balance( "dan" ) == zero );
+  BOOST_REQUIRE( get_balance( "eric" ) == zero );
+  BOOST_REQUIRE( get_balance( "frank" ) == zero );
+  BOOST_REQUIRE( get_balance( "greg" ) == zero );
+
+  // initminer -> alice
+  fund( "alice", token.amount.value );
+  BOOST_REQUIRE( get_balance( "alice" ) == token );
+  BOOST_REQUIRE( get_balance( "bob" ) == zero );
+  BOOST_REQUIRE( get_balance( "carol" ) == zero );
+  BOOST_REQUIRE( get_balance( "dan" ) == zero );
+  BOOST_REQUIRE( get_balance( "eric" ) == zero );
+  BOOST_REQUIRE( get_balance( "frank" ) == zero );
+  BOOST_REQUIRE( get_balance( "greg" ) == zero );
+
+  // alice -> bob
+  db_plugin->debug_update( [&]( database& db )
+  {
+    asset delta = token - step * 1;
+    direct_transfer( "alice", "bob", -delta, delta, db );
+  } );
+  BOOST_REQUIRE( get_balance( "alice" ) == ( step * 1 ) );
+  BOOST_REQUIRE( get_balance( "bob" ) == ( token - step * 1 ) );
+  BOOST_REQUIRE( get_balance( "carol" ) == zero );
+  BOOST_REQUIRE( get_balance( "dan" ) == zero );
+  BOOST_REQUIRE( get_balance( "eric" ) == zero );
+  BOOST_REQUIRE( get_balance( "frank" ) == zero );
+  BOOST_REQUIRE( get_balance( "greg" ) == zero );
+
+  // bob -> carol -> dan
+  db->push_transaction( carol_to_dan );
+  BOOST_REQUIRE( get_balance( "alice" ) == ( step * 1 ) );
+  BOOST_REQUIRE( get_balance( "bob" ) == ( step * 2 ) );
+  BOOST_REQUIRE( get_balance( "carol" ) == ( step * 3 ) );
+  BOOST_REQUIRE( get_balance( "dan" ) == ( token - step * 6 ) );
+  BOOST_REQUIRE( get_balance( "eric" ) == zero );
+  BOOST_REQUIRE( get_balance( "frank" ) == zero );
+  BOOST_REQUIRE( get_balance( "greg" ) == zero );
+
+  // dan -> eric
+  db_plugin->debug_update( [&]( database& db )
+  {
+    asset delta = token - step * 10;
+    direct_transfer( "dan", "eric", -delta, delta, db );
+  } );
+  BOOST_REQUIRE( get_balance( "alice" ) == ( step * 1 ) );
+  BOOST_REQUIRE( get_balance( "bob" ) == ( step * 2 ) );
+  BOOST_REQUIRE( get_balance( "carol" ) == ( step * 3 ) );
+  BOOST_REQUIRE( get_balance( "dan" ) == ( step * 4 ) );
+  BOOST_REQUIRE( get_balance( "eric" ) == ( token - step * 10 ) );
+  BOOST_REQUIRE( get_balance( "frank" ) == zero );
+  BOOST_REQUIRE( get_balance( "greg" ) == zero );
+
+  // eric -> frank
+  db_plugin->debug_update( [&]( database& db )
+  {
+    asset delta = token - step * 15;
+    direct_transfer( "eric", "frank", -delta, delta, db );
+  } );
+  BOOST_REQUIRE( get_balance( "alice" ) == ( step * 1 ) );
+  BOOST_REQUIRE( get_balance( "bob" ) == ( step * 2 ) );
+  BOOST_REQUIRE( get_balance( "carol" ) == ( step * 3 ) );
+  BOOST_REQUIRE( get_balance( "dan" ) == ( step * 4 ) );
+  BOOST_REQUIRE( get_balance( "eric" ) == ( step * 5 ) );
+  BOOST_REQUIRE( get_balance( "frank" ) == ( token - step * 15 ) );
+  BOOST_REQUIRE( get_balance( "greg" ) == zero );
+
+  // frank -> greg
+  transfer( "frank", "greg", token - step * 21, "almost done", frank_private_key);
+  BOOST_REQUIRE( get_balance( "alice" ) == ( step * 1 ) );
+  BOOST_REQUIRE( get_balance( "bob" ) == ( step * 2 ) );
+  BOOST_REQUIRE( get_balance( "carol" ) == ( step * 3 ) );
+  BOOST_REQUIRE( get_balance( "dan" ) == ( step * 4 ) );
+  BOOST_REQUIRE( get_balance( "eric" ) == ( step * 5 ) );
+  BOOST_REQUIRE( get_balance( "frank" ) == ( step * 6 ) );
+  BOOST_REQUIRE( get_balance( "greg" ) == ( token - step * 21 ) );
+
+  // greg -> temp
+  db_plugin->debug_update( [&]( database& db )
+  {
+    asset delta = token - step * 28;
+    direct_transfer( "greg", HIVE_TEMP_ACCOUNT, -delta, delta, db );
+  } );
+  BOOST_REQUIRE( get_balance( "alice" ) == ( step * 1 ) );
+  BOOST_REQUIRE( get_balance( "bob" ) == ( step * 2 ) );
+  BOOST_REQUIRE( get_balance( "carol" ) == ( step * 3 ) );
+  BOOST_REQUIRE( get_balance( "dan" ) == ( step * 4 ) );
+  BOOST_REQUIRE( get_balance( "eric" ) == ( step * 5 ) );
+  BOOST_REQUIRE( get_balance( "frank" ) == ( step * 6 ) );
+  BOOST_REQUIRE( get_balance( "greg" ) == ( step * 7 ) );
+  BOOST_REQUIRE( get_balance( HIVE_TEMP_ACCOUNT ) == ( token - step * 28 ) );
+
+  generate_block();
+
+  // state of balances should be the same after generating block
+  BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "0.001 TESTS" ) );
+  BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "0.002 TESTS" ) );
+  BOOST_REQUIRE( get_balance( "carol" ) == ASSET( "0.003 TESTS" ) );
+  BOOST_REQUIRE( get_balance( "dan" ) == ASSET( "0.004 TESTS" ) );
+  BOOST_REQUIRE( get_balance( "eric" ) == ASSET( "0.005 TESTS" ) );
+  BOOST_REQUIRE( get_balance( "frank" ) == ASSET( "0.006 TESTS" ) );
+  BOOST_REQUIRE( get_balance( "greg" ) == ASSET( "0.007 TESTS" ) );
+  BOOST_REQUIRE( get_balance( HIVE_TEMP_ACCOUNT ) == ASSET( "0.972 TESTS" ) );
 
   validate_database();
 }

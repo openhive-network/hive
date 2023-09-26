@@ -1,6 +1,7 @@
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
 #include <hive/plugins/witness/block_producer.hpp>
+#include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/witness_objects.hpp>
@@ -31,8 +32,9 @@ class debug_node_plugin_impl
     plugins::chain::chain_plugin&             _chain_plugin;
     chain::database&                          _db;
 
-    protocol::transaction_id_type             _current_debug_update_tx_id;
-    bool                                      _current_debug_update_tx_applied = false;
+    typedef std::vector< std::pair< protocol::transaction_id_type, bool> > current_debug_update_transactions;
+    current_debug_update_transactions         _current_debug_update_txs;
+    bool                                      _force_new_artificial_transaction_for_debug_update = true;
 
     boost::signals2::connection               _pre_apply_transaction_conn;
     boost::signals2::connection               _post_apply_block_conn;
@@ -103,12 +105,17 @@ const protocol::transaction_id_type& debug_node_plugin::make_artificial_transact
 {
   static size_t idx = 0;
 
-  FC_ASSERT( !my->_current_debug_update_tx_applied, "Internal debug_update transaction already applied, while not fully configured" );
-    // it will fail if debug_update tries to call another debug_update or if there was problem with applying previous block
-    // that contained debug_update (f.e. because witness key was updated for witness that was supposed to produce the block)
+  if( !my->_force_new_artificial_transaction_for_debug_update )
+  {
+    FC_ASSERT( !my->_current_debug_update_txs.empty(), "Internal error" ); // flag is only cleared by this routine after adding tx
+    FC_ASSERT( !my->_current_debug_update_txs.back().second, "Internal debug_update transaction already applied, while not fully configured" );
+      // it will fail if debug_update tries to call another debug_update or if there was problem with applying previous block
+      // that contained debug_update (f.e. because witness key was updated for witness that was supposed to produce the block)
+    return my->_current_debug_update_txs.back().first; // reuse last existing transaction
+  }
 
-  if( my->_current_debug_update_tx_id != protocol::transaction_id_type() )
-    return my->_current_debug_update_tx_id; // reuse existing transaction
+  FC_ASSERT( my->_current_debug_update_txs.size() < WITNESS_CUSTOM_OP_BLOCK_LIMIT, "Too many internal transactions." );
+    // witness plugin has limit on number of custom ops per user per block; you can increase it in testnet configuration
 
   ++idx;
   std::string idx_str( std::to_string( idx ) );
@@ -128,9 +135,14 @@ const protocol::transaction_id_type& debug_node_plugin::make_artificial_transact
   ftx->sign_transaction( std::vector<fc::ecc::private_key>{}, database().get_chain_id(), fc::ecc::fc_canonical, pack_type );
   database().push_transaction( ftx, 0 );
 
-  my->_current_debug_update_tx_id = ftx->get_transaction_id();
+  // if we have internal transaction(s) and are here it means there was regular transaction
+  // between last debug_update() and this one while there were no blocks;
+  // note that above push_transaction() always sets the force flag to true
+  my->_force_new_artificial_transaction_for_debug_update = false;
 
-  return my->_current_debug_update_tx_id;
+  my->_current_debug_update_txs.emplace_back( ftx->get_transaction_id(), false );
+
+  return my->_current_debug_update_txs.back().first;
 }
 
 
@@ -417,14 +429,26 @@ void debug_node_plugin::on_pre_apply_transaction( const chain::transaction_notif
   try
   {
     chain::database& db = database();
-    auto it = _debug_updates.find( note.transaction_id );
 
+    if( db.is_validating_one_tx() )
+      my->_force_new_artificial_transaction_for_debug_update = true;
+
+    auto it = _debug_updates.find( note.transaction_id );
     if( it != _debug_updates.end() )
     {
-      for( const auto& update : it->second )
+      for( const auto& update : it->second.callbacks )
         update(db);
-      if( db.is_validating_block() && note.transaction_id == my->_current_debug_update_tx_id )
-        my->_current_debug_update_tx_applied = true;
+      if( db.is_validating_block() && it->second.internal_tx )
+      {
+        // note: linear search - should be ok, since we are limited by witness on how many custom ops can be in block for single account
+        for( auto& internal_tx : my->_current_debug_update_txs )
+          if( note.transaction_id == internal_tx.first )
+          {
+            // mark internal transaction as successfully executed (on final application of block)
+            internal_tx.second = true;
+            break;
+          }
+      }
     }
   }
   catch (const fc::exception& e)
@@ -455,13 +479,14 @@ void debug_node_plugin::on_post_apply_block( const chain::block_notification& no
 { try {
   if( allow_throw_exception )
     HIVE_ASSERT( false, hive::chain::plugin_exception, "Artificial exception was thrown" );
-  if( my->_current_debug_update_tx_id != protocol::transaction_id_type() )
+  if( !my->_current_debug_update_txs.empty() )
   {
-    HIVE_ASSERT( my->_current_debug_update_tx_applied, hive::chain::plugin_exception, "Failed to apply debug_update transaction" );
+    for( const auto& internal_tx : my->_current_debug_update_txs )
+      HIVE_ASSERT( internal_tx.second, hive::chain::plugin_exception, "Failed to apply debug_update transaction" );
       // example source of above failing: debug_update changing timestamp of head block so internal transaction
       // is treated as expired when block is produced
-    my->_current_debug_update_tx_id = protocol::transaction_id_type();
-    my->_current_debug_update_tx_applied = false;
+    my->_current_debug_update_txs.clear();
+    my->_force_new_artificial_transaction_for_debug_update = true;
   }
 } FC_LOG_AND_RETHROW() }
 
