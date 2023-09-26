@@ -52,7 +52,8 @@ namespace appbase {
     private:
 
 
-      bool initialized = false;
+      bool initialized    = false;
+      bool thread_closed  = false;
 
       std::unique_ptr<std::thread>  handler_thread;
       signals_handler               handler;
@@ -67,6 +68,7 @@ namespace appbase {
 
       void init();
       void wait();
+      bool is_thread_closed();
 
       boost::asio::io_service& get_io_service();
   };

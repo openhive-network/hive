@@ -14,6 +14,10 @@ beekeeper_app::beekeeper_app()
 
 beekeeper_app::~beekeeper_app()
 {
+  if( !app.is_thread_closed() )
+    kill(getpid(), SIGINT);
+
+  app.wait();
 }
 
 std::string beekeeper_app::get_notifications_endpoint( const boost::program_options::variables_map& args )

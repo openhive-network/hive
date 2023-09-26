@@ -172,7 +172,7 @@ namespace detail {
     }
 
     if( !theApp.is_interrupt_request() )
-      theApp.generate_interrupt_request();
+      kill(getpid(), SIGINT);
   }
 
   void block_log_conversion_plugin_impl::close()

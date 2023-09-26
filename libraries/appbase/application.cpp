@@ -407,6 +407,11 @@ void application::wait()
   handler_wrapper.wait();
 }
 
+bool application::is_thread_closed()
+{
+  return handler_wrapper.is_thread_closed();
+}
+
 void application::write_default_config(const bfs::path& cfg_file)
 {
   if(!bfs::exists(cfg_file.parent_path()))

@@ -82,20 +82,19 @@ int main( int argc, char** argv )
 {
   try
   {
-    appbase::initialization_result initializationResult( appbase::initialization_result::ok, false);
     appbase::application theApp;
+
     theApp.init_signals_handler();
 
-    BOOST_SCOPE_EXIT(&theApp, &initializationResult)
+    BOOST_SCOPE_EXIT(&theApp)
     {
-      auto _should_start_loop = initializationResult.should_start_loop();
-      if( !_should_start_loop )
+      auto _is_thread_closed = theApp.is_thread_closed();
+      if( !_is_thread_closed )
         kill(getpid(), SIGINT);
 
       theApp.wait();
-      appbase::reset();
 
-      if( _should_start_loop )
+      if( _is_thread_closed )
         ilog("exited cleanly");
 
     } BOOST_SCOPE_EXIT_END
@@ -110,7 +109,7 @@ int main( int argc, char** argv )
 
     if( theApp.is_interrupt_request() ) return 0;
 
-    hive::plugins::register_plugins();
+    hive::plugins::register_plugins( theApp );
 
     if( theApp.is_interrupt_request() ) return 0;
 
@@ -128,7 +127,7 @@ int main( int argc, char** argv )
     if( theApp.is_interrupt_request() ) return 0;
 
     // These plugins are loaded regardless of the config
-    initializationResult = theApp.initialize<
+    auto initializationResult = theApp.initialize<
         hive::plugins::chain::chain_plugin,
         hive::plugins::p2p::p2p_plugin,
         hive::plugins::webserver::webserver_plugin >
@@ -153,10 +152,9 @@ int main( int argc, char** argv )
       if( theApp.is_interrupt_request() )
       {
         ilog("Error ${error} occured, but it's skipped because the application is closing",("error", e.what()));
-        std::cerr << e.what() << '\n';
       }
       else
-        throw e;
+        throw;
     }
 
     if( theApp.get_args().at( "backtrace" ).as< string >() == "yes" )
@@ -176,19 +174,19 @@ int main( int argc, char** argv )
   }
   catch ( const boost::exception& e )
   {
-    std::cerr << boost::diagnostic_information(e) << "\n";
+    ilog( boost::diagnostic_information(e) );
   }
   catch ( const fc::exception& e )
   {
-    std::cerr << e.to_detail_string() << "\n";
+    ilog( e.to_detail_string() );
   }
   catch ( const std::exception& e )
   {
-    std::cerr << e.what() << "\n";
+    ilog( e.what() );
   }
   catch ( ... )
   {
-    std::cerr << "unknown exception\n";
+    ilog( "unknown exception" );
   }
 
   return -1;
