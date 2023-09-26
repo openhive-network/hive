@@ -1,0 +1,35 @@
+syntax = "proto2";
+
+import "asset.proto";
+import "future_extensions.proto";
+
+package hive.protocol.buffers;
+
+/* There is a Decentralized Hive Fund (DHF) on the Hive.
+ * Users may submit proposals for funding and if the proposal receives enough votes, it will be funded.
+ * In order to create a proposal user should create a post first and then marked it as
+ * a proposal with the operation create_proposal_operation.
+ * User defines when the proposal starts and ends and how many funds need to realize it.
+ * The creating proposal costs 10 HBD and additionally 1 HBD for each day over 60 days. The fee goes back to DHF.
+ * Every hour all active proposals are processed and taking into consideration a current number of votes payments are done.
+ * Accounts can create/remove votes anytime.
+ *
+ * @param {string} creator
+ * @param {string} receiver
+ * @param {string} start_date
+ * @param {string} end_date
+ * @param {asset} daily_pay
+ * @param {string} subject
+ * @param {string} permlink
+ * @param {future_extensions} extensions
+ */
+message create_proposal {
+  required string            creator = 1;
+  required string            receiver = 2;
+  required string            start_date = 3 [json_name = "start_date"];
+  required string            end_date = 4 [json_name = "end_date"];
+  required asset             daily_pay = 5 [json_name = "daily_pay"];
+  required string            subject = 6;
+  required string            permlink = 7;
+  repeated future_extensions extensions = 8;
+}

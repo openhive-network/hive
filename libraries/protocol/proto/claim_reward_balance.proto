@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* An operation claim_reward_balance_operation is used to transfer previously collected
+ * author and/or curation rewards from sub balance for the reward to regular balances.
+ * Rewards expressed in Hive and HBD are transferred to liquid balances, rewards in HP increase vesting balance.
+ * When claimed, HP rewards are immediately active towards governance voting power (compare with transfer_to_vesting_operation).
+ *
+ * @param {string} account - Account name.
+ * @param {asset} reward_hive - The amount of Hive reward to be transferred to liquid balance.
+ * @param {asset} reward_hbd - The amount of HBD reward to be transferred to liquid balance
+ * @param {asset} reward_vests - The amount of HP reward to be transferred to vesting balance.
+ */
+message claim_reward_balance {
+  required string account = 1;
+  required asset  reward_hive = 2 [json_name = "reward_hive"];
+  required asset  reward_hbd = 3 [json_name = "reward_hbd"];
+  required asset  reward_vests = 4 [json_name = "reward_vests"];
+}

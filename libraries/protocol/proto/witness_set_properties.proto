@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+import "future_extensions.proto";
+
+package hive.protocol.buffers;
+
+/* This is an operation for witnesses.
+ * This is one of the two operations allowing to update witness properties (@see witness_update_operation).
+ * The whole list of properties is available here:
+ * https://gitlab.syncad.com/hive/hive/-/blob/master/doc/witness_parameters.md.
+ *
+ * @param {string} owner - Witness account name.
+ * @param {map<string, string>} props - There are the following properties available in the {props}: 
+ *                                      account_creation_fee, account_subsidy_budget, account_subsidy_decay,
+ *                                      maximum_block_size, hbd_interest_rate. hbd_exchange_rate, url and new_signing_key.
+ * @param {future_extensions} extensions
+ */
+message witness_set_properties {
+  required string            owner = 1;
+  map<string, string>        props = 2;
+  repeated future_extensions extensions = 3;
+}
