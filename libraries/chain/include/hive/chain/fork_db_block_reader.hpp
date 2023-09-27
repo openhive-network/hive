@@ -21,6 +21,10 @@ namespace hive { namespace chain {
 
     virtual block_id_type find_block_id_for_num( uint32_t block_num ) const override;
 
+    virtual std::vector<std::shared_ptr<full_block_type>> fetch_block_range( 
+      const uint32_t starting_block_num, const uint32_t count, 
+      fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
+
   private:
     const fork_database& _fork_db;
   };

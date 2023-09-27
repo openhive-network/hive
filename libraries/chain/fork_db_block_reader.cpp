@@ -67,4 +67,39 @@ block_id_type fork_db_block_reader::find_block_id_for_num( uint32_t block_num )c
   return result;
 }
 
+std::vector<std::shared_ptr<full_block_type>> fork_db_block_reader::fetch_block_range( 
+  const uint32_t starting_block_num, const uint32_t count, 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{ 
+  try {
+    // for debugging, put the head block back so it should straddle the last irreversible
+    // const uint32_t starting_block_num = head_block_num() - 30;
+    FC_ASSERT(starting_block_num > 0, "Invalid starting block number");
+    FC_ASSERT(count > 0, "Why ask for zero blocks?");
+    FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
+    idump((starting_block_num)(count));
+
+    vector<fork_item> fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count, wait_for_microseconds );
+    idump((fork_items.size()));
+    if (!fork_items.empty())
+      idump((fork_items.front().get_block_num()));
+
+    // if the fork database returns some blocks, it means:
+    // - that the last block in the range [starting_block_num, starting_block_num + count - 1]
+    // - any block before the first block it returned should be in the block log
+    uint32_t remaining_count = fork_items.empty() ? count : fork_items.front().get_block_num() - starting_block_num;
+    idump((remaining_count));
+    std::vector<std::shared_ptr<full_block_type>> result;
+
+    if (remaining_count)
+      result = block_log_reader::fetch_block_range(starting_block_num, remaining_count, wait_for_microseconds);
+
+    result.reserve(result.size() + fork_items.size());
+    for (fork_item& item : fork_items)
+      result.push_back(item.full_block);
+
+    return result;
+  } FC_LOG_AND_RETHROW()
+}
+
 } } //hive::chain

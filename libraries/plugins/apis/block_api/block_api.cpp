@@ -77,7 +77,8 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
     count = head - args.starting_block_num + 1;
   if( count )
   {
-    std::vector<std::shared_ptr<full_block_type>> full_blocks = _db.fetch_block_range(args.starting_block_num, count, fc::seconds(1));
+    std::vector<std::shared_ptr<full_block_type>> full_blocks = 
+      _db.block_reader().fetch_block_range(args.starting_block_num, count, fc::seconds(1));
     result.blocks.reserve(full_blocks.size());
     for (const std::shared_ptr<full_block_type>& full_block : full_blocks)
       result.blocks.push_back(full_block);
