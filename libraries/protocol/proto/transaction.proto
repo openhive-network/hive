@@ -55,6 +55,7 @@ import "liquidity_reward.proto";
 import "interest.proto";
 import "fill_vesting_withdraw.proto";
 import "fill_order.proto";
+import "shutdown_witness.proto";
 
 package hive.protocol.buffers;
 
@@ -117,6 +118,7 @@ message operation {
         interest interest = 105 [json_name = "interest"];
         fill_vesting_withdraw fill_vesting_withdraw = 106 [json_name = "fill_vesting_withdraw"];
         fill_order fill_order = 107 [json_name = "fill_order"];
+        shutdown_witness shutdown_witness = 108 [json_name = "shutdown_witness"];
     }
 }
 

@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+/* Related to block processing.
+ * Generated during block processing when witness is removed from active witnesses after it was detected he have missed
+ * all blocks scheduled for him for last day. No longer active after HF20.
+ * @see producer_missed_operation
+ *
+ * @param {string} owner - witness that was shut down
+ */
+message shutdown_witness {
+  required string owner = 1;
+}
