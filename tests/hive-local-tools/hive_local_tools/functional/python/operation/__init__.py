@@ -32,6 +32,10 @@ class Account:
         self._rc_manabar = _RcManabar(self._node, self._name)
 
     @property
+    def node(self):
+        return self._node
+
+    @property
     def name(self):
         return self._name
 
