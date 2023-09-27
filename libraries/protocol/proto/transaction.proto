@@ -46,6 +46,9 @@ import "update_proposal.proto";
 import "collateralized_convert.proto";
 import "recurrent_transfer.proto";
 
+// Virtual operations:
+import "fill_convert_request.proto";
+
 package hive.protocol.buffers;
 
 /* NOTE: do not change the order of any operations prior to the virtual operations
@@ -97,6 +100,9 @@ message operation {
         update_proposal update_proposal = 48 [json_name = "update_proposal"];
         collateralized_convert collateralized_convert = 49 [json_name = "collateralized_convert"];
         recurrent_transfer recurrent_transfer = 50 [json_name = "recurrent_transfer"];
+
+        // Virtual operations:
+        fill_convert_request fill_convert_request = 100 [json_name = "fill_convert_request"];
     }
 }
 
