@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Related to withdraw_vesting_operation and set_withdraw_vesting_route_operation.
+ * Generated during block processing in batches for each active withdraw route (including implied
+ * from_account(VESTS)->from_account(HIVE)) each time vesting withdrawal period passes.
+ * Note: not generated for implied route when all funds were already distributed along explicit routes
+ *
+ * @param {string} from_account - user that activated power down
+ * @param {string} to_account - target of vesting route (potentially the same as from_account - receiver of deposited)
+ * @param {asset} withdraw - (VESTS) source amount
+ * @param {asset} deposited - (HIVE or VESTS) [converted] target amount
+ */
+message fill_vesting_withdraw {
+  required string from_account = 1 [json_name = "from_account"];
+  required string to_account = 2 [json_name = "to_account"]; 
+  required asset  withdrawn = 3;
+  required asset  deposited = 4;
+}
