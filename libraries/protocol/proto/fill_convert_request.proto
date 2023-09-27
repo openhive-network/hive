@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Related to convert_operation.
+ * Generated during block processing after conversion delay passes and HBD is converted to HIVE.
+ *
+ * @param {string} owner - User that requested conversion (receiver of amount_out).
+ * @param {number} requestid - id of the request.
+ * @param {asset} amount_in - (HBD) source of conversion.
+ * @param {asset} amount_out - (HIVE) effect of conversion.
+ */
+message fill_convert_request {
+  required string owner = 1;
+  required uint32 requestid = 2;
+  required asset  amount_in = 3 [json_name = "amount_in"];
+  required asset  amount_out = 4 [json_name = "amount_out"];
+}
