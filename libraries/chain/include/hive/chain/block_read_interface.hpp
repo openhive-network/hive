@@ -6,6 +6,8 @@
 #include <fc/time.hpp>
 
 #include <deque>
+#include <memory>
+#include <vector>
 
 namespace hive { namespace chain {
 
@@ -28,12 +30,12 @@ namespace hive { namespace chain {
    *  from main branch. If found none check among irreversible blocks.
   */
 	/*virtual std::shared_ptr<full_block_type> fetch_block_by_number( 
-    uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
+    uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;*/
 	
 	/// Check among reversible blocks on main branch. Supplement with irreversible blocks when needed.
 	virtual std::vector<std::shared_ptr<full_block_type>> fetch_block_range( 
     const uint32_t starting_block_num, const uint32_t count, 
-    fc::microseconds wait_for_microseconds = fc::microseconds() ) = 0;*/
+    fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
 
 	/// Check among (linked & unlinked) reversible blocks then among irreversible if needed.
 	virtual bool is_known_block(const block_id_type& id) const = 0;
