@@ -59,7 +59,7 @@ class Account:
         self._hive = tt.Asset.from_(self._acc_info["balance"])
         self._hbd = tt.Asset.from_(self._acc_info["hbd_balance"])
         self._vest = tt.Asset.from_(self._acc_info["vesting_shares"])
-        self._rc_manabar.update(self._node, self._name)
+        self._rc_manabar.update()
 
 
 class _RcManabar:
@@ -69,7 +69,7 @@ class _RcManabar:
         self.current_rc_mana = None
         self.last_update_time = None
         self.max_rc = None
-        self.update(node, name)
+        self.update()
 
     def __str__(self):
         return f"max_rc: {self.max_rc}, current_mana: {self.current_rc_mana}, last_update_time: {datetime.fromtimestamp(self.last_update_time)}"
@@ -84,8 +84,8 @@ class _RcManabar:
             ).result
         )
 
-    def update(self, node, name):
-        rc_manabar = get_rc_manabar(node, name)
+    def update(self):
+        rc_manabar = get_rc_manabar(self._node, self._name)
         self.current_rc_mana = rc_manabar["current_mana"]
         self.last_update_time = rc_manabar["last_update_time"]
         self.max_rc = rc_manabar["max_rc"]
