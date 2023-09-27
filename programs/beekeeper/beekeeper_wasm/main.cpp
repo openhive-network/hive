@@ -1,5 +1,7 @@
 #include <beekeeper_wasm/beekeeper_wasm_api.hpp>
 
+#include <fc/log/logger_config.hpp>
+
 #include <iostream>
 
 #include <emscripten/bind.h>
@@ -245,6 +247,9 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
 int main() {
   // Main should not be run during TypeScript generation.
   //abort();
+
+  fc::configure_logging( fc::logging_config::default_config( "stdout" ) );
+
   elog( "This function does nothing... You have to instantiate beekeeper_api on JS side to play with..." );
   return 0;
 }

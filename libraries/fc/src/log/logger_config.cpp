@@ -53,7 +53,7 @@ namespace fc {
       return false;
    }
 
-   logging_config logging_config::default_config() {
+   logging_config logging_config::default_config( const std::string& default_stream ) {
       //slog( "default cfg" );
       logging_config cfg;
 
@@ -78,7 +78,7 @@ namespace fc {
       logger_config dlc;
       dlc.name = "default";
       dlc.level = log_level::debug;
-      dlc.appenders.push_back("stderr");
+      dlc.appenders.push_back( default_stream );
       cfg.loggers.push_back( dlc );
       return cfg;
    }

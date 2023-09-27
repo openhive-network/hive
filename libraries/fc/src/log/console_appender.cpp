@@ -117,7 +117,7 @@ namespace fc {
 
    void console_appender::print_new_line()const
    {
-      FILE* out = stream::std_error ? stderr : stdout;
+      FILE* out = ( my->cfg.stream == stream::std_error ) ? stderr : stdout;
 
       fprintf( out, "\n" );
 
@@ -126,7 +126,7 @@ namespace fc {
 
    void console_appender::print( const std::string& text, color::type text_color )
    {
-      FILE* out = stream::std_error ? stderr : stdout;
+      FILE* out = ( my->cfg.stream == stream::std_error ) ? stderr : stdout;
 
       #ifdef WIN32
          if (my->console_handle != INVALID_HANDLE_VALUE)
