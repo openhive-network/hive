@@ -52,6 +52,7 @@ import "author_reward.proto";
 import "curation_reward.proto";
 import "comment_reward.proto";
 import "liquidity_reward.proto";
+import "interest.proto";
 
 package hive.protocol.buffers;
 
@@ -111,6 +112,7 @@ message operation {
         curation_reward curation_reward = 102 [json_name = "curation_reward"];
         comment_reward comment_reward = 103 [json_name = "comment_reward"];
         liquidity_reward liquidity_reward = 104 [json_name = "liquidity_reward"];
+        interest interest = 105 [json_name = "interest"];
     }
 }
 
