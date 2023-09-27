@@ -132,9 +132,13 @@ std::string beekeeper_app_init::get_notifications_endpoint( const boost::program
 
 init_data beekeeper_app_init::initialize_program_options()
 {
-  ilog("initializing options");
   try {
       const boost::program_options::variables_map& _args = get_args();
+
+      setup_logger( _args );
+
+      ilog("initializing options");
+
       setup_notifications( _args );
 
       std::string _notification = get_notifications_endpoint( _args );
