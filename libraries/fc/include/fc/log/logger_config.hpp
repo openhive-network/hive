@@ -33,7 +33,7 @@ namespace fc {
    };
 
    struct logging_config {
-      static logging_config default_config();
+      static logging_config default_config( const std::string& default_stream = "stderr" );
       std::vector<string>          includes;
       std::vector<appender_config> appenders;
       std::vector<logger_config>   loggers;
