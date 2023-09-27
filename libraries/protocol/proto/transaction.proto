@@ -48,6 +48,7 @@ import "recurrent_transfer.proto";
 
 // Virtual operations:
 import "fill_convert_request.proto";
+import "author_reward.proto";
 
 package hive.protocol.buffers;
 
@@ -103,6 +104,7 @@ message operation {
 
         // Virtual operations:
         fill_convert_request fill_convert_request = 100 [json_name = "fill_convert_request"];
+        author_reward author_reward = 101 [json_name = "author_reward"];
     }
 }
 
