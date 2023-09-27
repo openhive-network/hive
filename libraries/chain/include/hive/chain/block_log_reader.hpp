@@ -32,6 +32,10 @@ namespace hive { namespace chain {
       const uint32_t starting_block_num, const uint32_t count, 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
 
+    virtual std::vector<block_id_type> get_blockchain_synopsis(
+      const block_id_type& reference_point, 
+      uint32_t number_of_blocks_after_reference_point ) const override;
+
   private:
     block_log&      _block_log;
   };

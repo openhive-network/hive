@@ -415,7 +415,7 @@ void fork_database::remove(block_id_type id)
 }
 
 std::vector<block_id_type> fork_database::get_blockchain_synopsis(block_id_type reference_point, uint32_t number_of_blocks_after_reference_point, 
-                                                                  /* out */ fc::optional<uint32_t>& block_number_needed_from_block_log)
+                                                                  /* out */ fc::optional<uint32_t>& block_number_needed_from_block_log)const
 { try {
   return with_read_lock([&]() {
     std::vector<block_id_type> synopsis;

@@ -214,7 +214,6 @@ namespace chain {
       void verify_match_of_state_objects_definitions_from_shm();
 
     public:
-      std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
       std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
