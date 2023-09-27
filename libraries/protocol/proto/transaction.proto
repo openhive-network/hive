@@ -57,6 +57,7 @@ import "fill_vesting_withdraw.proto";
 import "fill_order.proto";
 import "shutdown_witness.proto";
 import "fill_transfer_from_savings.proto";
+import "hardfork.proto";
 
 package hive.protocol.buffers;
 
@@ -121,6 +122,7 @@ message operation {
         fill_order fill_order = 107 [json_name = "fill_order"];
         shutdown_witness shutdown_witness = 108 [json_name = "shutdown_witness"];
         fill_transfer_from_savings fill_transfer_from_savings = 109 [json_name = "fill_transfer_from_savings"];
+        hardfork hardfork = 110;
     }
 }
 
