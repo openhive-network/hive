@@ -1,5 +1,6 @@
 import pytest
 import test_tools as tt
+from hive_local_tools.functional.python.operation import get_transaction_timestamp
 
 
 @pytest.mark.testnet
@@ -166,11 +167,19 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(a
                                                  alice.generate_new_key())
     new_weight = 2
     for key_type, key in zip(("active", "posting", "memo"), (current_active, current_posting, new_memo)):
-        rc_before_operation = alice.get_rc_current_mana()
-        alice.update_single_account_detail(key_type=key_type, key=key, weight=new_weight) if key_type is not "memo" \
+        transaction = alice.update_single_account_detail(key_type=key_type, key=key,
+                                                         weight=new_weight) if key_type is not "memo" \
             else alice.update_single_account_detail(key_type=key_type, key=key)
-        rc_after_operation = alice.get_rc_current_mana()
-        assert rc_before_operation > rc_after_operation, f"RC wasn't decreased after changing {key_type} key."
+
+        real_rc_before = alice.rc_manabar.calculate_current_value(
+            get_transaction_timestamp(alice.node, transaction) - tt.Time.seconds(3))
+
+        alice.rc_manabar.update()
+        real_rc_after = alice.rc_manabar.calculate_current_value(
+            get_transaction_timestamp(alice.node, transaction) - tt.Time.seconds(3))
+        assert real_rc_before == real_rc_after + transaction[
+            "rc_cost"], f"RC wasn't decreased after changing {key_type} key."
+
     rc_before_operation = alice.get_rc_current_mana()
     alice.update_single_account_detail(json_meta=new_json_meta)
     rc_after_operation = alice.get_rc_current_mana()
