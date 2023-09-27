@@ -72,5 +72,26 @@ block_id_type block_log_reader::find_block_id_for_num( uint32_t block_num )const
   return result;
 }
 
+std::vector<std::shared_ptr<full_block_type>> block_log_reader::fetch_block_range( 
+  const uint32_t starting_block_num, const uint32_t count, 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{ 
+  try {
+    FC_ASSERT(starting_block_num > 0, "Invalid starting block number");
+    FC_ASSERT(count > 0, "Why ask for zero blocks?");
+    FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
+    idump((starting_block_num)(count));
+
+    std::vector<std::shared_ptr<full_block_type>> result;
+    result = _block_log.read_block_range_by_num(starting_block_num, count);
+
+    idump((result.size()));
+    if (!result.empty())
+      idump((result.front()->get_block_num())(result.back()->get_block_num()));
+
+    return result;
+  } FC_LOG_AND_RETHROW()
+}
+
 } } //hive::chain
 
