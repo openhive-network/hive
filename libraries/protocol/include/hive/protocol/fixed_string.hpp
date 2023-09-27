@@ -116,7 +116,14 @@ class fixed_string_impl : public details::truncation_controller
 
     fixed_string_impl& operator = ( const fixed_string_impl& str )
     {
+      if ( str.length() > 6 ) {
+        throw std::runtime_error( "dupa" );
+      }
+
       data = str.data;
+      if ( str.length() > 6 ) {
+        throw std::runtime_error( "dupa" );
+      }
       return *this;
     }
 

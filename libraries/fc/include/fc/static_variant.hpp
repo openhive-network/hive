@@ -15,6 +15,8 @@
 #include <fc/exception/exception.hpp>
 #include <fc/uint128.hpp>
 
+#include <iostream>
+
 namespace fc {
 
 template< typename static_variant >
@@ -96,8 +98,16 @@ struct storage_ops<N, T&, Ts...> {
 template<int64_t N, typename T, typename... Ts>
 struct storage_ops<N, T, Ts...> {
     static void del(int64_t n, void *data) {
-        if(n == N) reinterpret_cast<T*>(data)->~T();
-        else storage_ops<N + 1, Ts...>::del(n, data);
+        std::cout << "(1) storage_ops<N, T, Ts...> "<< n <<"\n";
+        if(n == N) {
+          std::cout << "(2) storage_ops<N, T, Ts...> "<< n <<"\n";
+          reinterpret_cast<T *>(data)->~T();
+          return;
+        }
+        else {
+          std::cout << "(3) storage_ops<N, T, Ts...> "<< n <<"\n";
+          storage_ops<N + 1, Ts...>::del(n, data);
+        }
     }
     static void con(int64_t n, void *data) {
         if(n == N) new(reinterpret_cast<T*>(data)) T();
@@ -265,8 +275,8 @@ public:
     };
     static_variant()
     {
-       _tag = 0;
-       impl::storage_ops<0, Types...>::con(0, storage);
+       _tag = 28;
+       impl::storage_ops<0, Types...>::con(_tag, storage);
     }
 
     template<typename... Other>
@@ -293,6 +303,7 @@ public:
         init(v);
     }
     ~static_variant() {
+      std::cout << "~static_variant" << _tag << " " << this << "\n";
        impl::storage_ops<0, Types...>::del(_tag, storage);
     }
 

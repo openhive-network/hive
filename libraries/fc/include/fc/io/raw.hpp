@@ -325,7 +325,7 @@ namespace fc {
         inline void operator()( const char* name )const
         { try {
           fc::raw::unpack( s, c.*p );
-        } FC_RETHROW_EXCEPTIONS( warn, "Error unpacking field ${field}", ("field",name) ) }
+        } catch(...) { throw; }} //FC_RETHROW_EXCEPTIONS( warn, "Error unpacking field ${field}", ("field",name) ) }
         private:
           Class&  c;
           Stream& s;
@@ -609,7 +609,7 @@ namespace fc {
       depth++;
       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
       fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::unpack(s,v,depth);
-    } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
+    } catch(...){throw;}} //FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
 
     template<typename T>
     inline size_t pack_size(  const T& v )
@@ -708,7 +708,7 @@ namespace fc {
       datastream<const char*>  ds( d, s );
       fc::raw::unpack(ds,v,depth);
       return v;
-    } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
+    } catch(...) {}} //FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
 
     template<typename T>
     inline void unpack_from_char_array( const char* d, uint32_t s, T& v, uint32_t depth )
@@ -716,7 +716,7 @@ namespace fc {
       depth++;
       datastream<const char*>  ds( d, s );
       fc::raw::unpack(ds,v,depth);
-    } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
+    } catch(...){}} //FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
 
    template<typename Stream>
    struct pack_static_variant
