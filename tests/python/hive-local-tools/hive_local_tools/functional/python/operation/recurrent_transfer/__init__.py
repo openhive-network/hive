@@ -73,7 +73,7 @@ class RecurrentTransfer:
         )
 
         self._timestamp: datetime = get_transaction_timestamp(node, self._transaction)
-        self._current_schedule: list[datetime] = self.__get_transfer_schedule()
+        self._current_schedule: list[datetime] = self.__get_transfer_schedule(self._timestamp)
         self._executions_schedules: list = [self._current_schedule]
         self._last_execution_time: datetime = self._timestamp
         self._rc_cost: int = self._transaction["rc_cost"]
@@ -99,9 +99,9 @@ class RecurrentTransfer:
     def timestamp(self):
         return self._timestamp
 
-    def __get_transfer_schedule(self):
+    def __get_transfer_schedule(self, start_timestamp: datetime):
         return [
-            self._timestamp + tt.Time.hours(self._recurrence * execution_number)
+            start_timestamp + tt.Time.hours(self._recurrence * execution_number)
             for execution_number in range(self._executions)
         ]
 
