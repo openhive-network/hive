@@ -167,22 +167,28 @@ class UpdateAccount(Account):
         update_account anyway, so it's still being tested.
         """
         if json_meta is not None:
-            self._wallet.api.update_account_meta(self._name, json_meta, broadcast=True)
-            return
+            transaction = self._wallet.api.update_account_meta(self._name, json_meta, broadcast=True)
+            tt.logger.info(f"json meta RC COST {transaction['rc_cost']}")
+            return transaction
         assert key_type in ("owner", "active", "posting", "memo"), "Wrong authority type."
         if key_type == "memo":
-            self._wallet.api.update_account_memo_key(self._name, key, broadcast=True)
-            return
+            transaction = self._wallet.api.update_account_memo_key(self._name, key, broadcast=True)
+            tt.logger.info(f"change memo RC COST {transaction['rc_cost']}")
+            return transaction
         self.update_account_info()
         current_key = self._acc_info[key_type]["key_auths"][0][0]
         # add new / update weight of existing key
-        self._wallet.api.update_account_auth_key(self._name, key_type, key, weight, broadcast=True)
+        transaction = self._wallet.api.update_account_auth_key(self._name, key_type, key, weight, broadcast=True)
+        tt.logger.info(f"add new / update weight of existing key RC COST {transaction['rc_cost']}")
         if current_key != key:
             # generate private key corresponding given public key
             new_private = tt.Account(self._name, secret=f"other_than_previous_{self.__key_generation_counter}").private_key
             # delete old one - make weight equal to zero
-            self._wallet.api.update_account_auth_key(self._name, key_type, current_key, 0, broadcast=True)
+            transaction = self._wallet.api.update_account_auth_key(self._name, key_type, current_key, 0, broadcast=True)
+            tt.logger.info(f"delete old key RC COST {transaction['rc_cost']}")
             self._wallet.api.import_key(new_private)
+            return transaction
+        return transaction
 
     def use_authority(self, authority_type: str):
         self._wallet.api.use_authority(authority_type, self._name)
