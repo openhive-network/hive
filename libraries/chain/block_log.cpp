@@ -19,6 +19,7 @@
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/interprocess/sync/lock_options.hpp>
 #include <boost/scope_exit.hpp>
+#include <boost/filesystem.hpp>
 
 #include <unistd.h>
 
@@ -158,6 +159,11 @@ namespace hive { namespace chain {
       int flags = O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC;
       if (read_only)
         flags = O_RDONLY | O_CLOEXEC;
+      else
+      {
+        fc::path dir = my->block_file.parent_path();
+        boost::filesystem::create_directories( dir.generic_string() );
+      }
       ilog("Opening blocklog ${blocklog_filename}",("blocklog_filename",my->block_file.generic_string().c_str()));
       my->block_log_fd = ::open(my->block_file.generic_string().c_str(), flags, 0644);
       if (my->block_log_fd == -1)
