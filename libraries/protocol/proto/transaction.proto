@@ -50,6 +50,7 @@ import "recurrent_transfer.proto";
 import "fill_convert_request.proto";
 import "author_reward.proto";
 import "curation_reward.proto";
+import "comment_reward.proto";
 
 package hive.protocol.buffers;
 
@@ -107,6 +108,7 @@ message operation {
         fill_convert_request fill_convert_request = 100 [json_name = "fill_convert_request"];
         author_reward author_reward = 101 [json_name = "author_reward"];
         curation_reward curation_reward = 102 [json_name = "curation_reward"];
+        comment_reward comment_reward = 103 [json_name = "comment_reward"];
     }
 }
 
