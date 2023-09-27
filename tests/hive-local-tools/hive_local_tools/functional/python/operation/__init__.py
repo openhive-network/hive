@@ -67,6 +67,9 @@ class _RcManabar:
         self.max_rc = None
         self.update(node, name)
 
+    def __str__(self):
+        return f"max_rc: {self.max_rc}, current_mana: {self.current_rc_mana}, last_update_time: {datetime.fromtimestamp(self.last_update_time)}"
+
     def calculate_current_value(self, head_block_time):
         return int(
             wax.calculate_current_manabar_value(
