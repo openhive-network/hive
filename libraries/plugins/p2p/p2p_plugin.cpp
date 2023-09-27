@@ -296,7 +296,7 @@ hive::protocol::chain_id_type p2p_plugin_impl::get_chain_id() const
 
 std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synopsis( const graphene::net::item_hash_t& reference_point, uint32_t number_of_blocks_after_reference_point )
 { try {
-  return chain.db().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
+  return chain.db().block_reader().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
 } FC_LOG_AND_RETHROW() }
 
 void p2p_plugin_impl::sync_status( uint32_t item_type, uint32_t item_count )

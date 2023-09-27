@@ -57,10 +57,11 @@ namespace hive { namespace chain {
 	/** Needed by p2p plugin only.
    *  See implementations of database::get_blockchain_synopsis & fork_database::get_blockchain_synopsis
   */
-	/*virtual std::vector<block_id_type> get_blockchain_synopsis(
-    const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point) = 0;
+	virtual std::vector<block_id_type> get_blockchain_synopsis(
+    const block_id_type& reference_point,
+    uint32_t number_of_blocks_after_reference_point ) const = 0;
 	/// Needed by p2p plugin only.
-	virtual std::vector<block_id_type> get_block_ids(
+	/*virtual std::vector<block_id_type> get_block_ids(
     const std::vector<block_id_type>& blockchain_synopsis,
     uint32_t& remaining_item_count,
     uint32_t limit) = 0;*/

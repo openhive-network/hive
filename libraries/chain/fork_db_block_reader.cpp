@@ -102,4 +102,48 @@ std::vector<std::shared_ptr<full_block_type>> fork_db_block_reader::fetch_block_
   } FC_LOG_AND_RETHROW()
 }
 
+std::vector<block_id_type> fork_db_block_reader::get_blockchain_synopsis( 
+  const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
+{
+  fc::optional<uint32_t> block_number_needed_from_block_log;
+  std::vector<block_id_type> synopsis = 
+    _fork_db.get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point,
+                                     block_number_needed_from_block_log);
+
+  if (block_number_needed_from_block_log)
+  {
+    uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
+    block_id_type read_block_id;
+    try
+    {
+      read_block_id = block_log_reader::find_block_id_for_num(*block_number_needed_from_block_log);
+    }
+    catch (fc::key_not_found_exception&)
+    { /*leave read_block_id empty*/ }
+
+    if (reference_point_block_num == *block_number_needed_from_block_log)
+    {
+      // we're getting this block from the database because it's the reference point,
+      // not because it's the last irreversible.
+      // We can only do this if the reference point really is in the blockchain
+      if (read_block_id == reference_point)
+        synopsis.insert(synopsis.begin(), reference_point);
+      else
+      {
+        wlog("Unable to generate a usable synopsis because the peer we're generating it for forked too long ago "
+             "(our chains diverge before block #${reference_point_block_num}",
+             (reference_point_block_num));
+        // TODO: get the right type of exception here
+        //FC_THROW_EXCEPTION(graphene::net::block_older_than_undo_history, "Peer is on a fork I'm unable to switch to");
+        FC_THROW("Peer is on a fork I'm unable to switch to");
+      }
+    }
+    else
+    {
+      synopsis.insert(synopsis.begin(), read_block_id);
+    }
+  }
+  return synopsis;
+}
+
 } } //hive::chain
