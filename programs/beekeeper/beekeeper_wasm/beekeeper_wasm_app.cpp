@@ -1,5 +1,7 @@
 #include <beekeeper_wasm/beekeeper_wasm_app.hpp>
 
+#include <fc/log/logger_config.hpp>
+
 #include <boost/filesystem.hpp>
 
 #include <iostream>
@@ -18,6 +20,10 @@ beekeeper_wasm_app::~beekeeper_wasm_app()
 
 void beekeeper_wasm_app::set_program_options()
 {
+  options.add_options()
+    ("enable-logs", boost::program_options::value<bool>()->default_value( true ), "Whether logs can be written. By default logs are enabled" )
+    ;
+
   beekeeper_app_init::set_program_options();
 }
 
@@ -42,8 +48,14 @@ bfs::path beekeeper_wasm_app::get_data_dir() const
   return bfs::current_path();
 }
 
-void beekeeper_wasm_app::setup_notifications( const boost::program_options::variables_map& args )
+void beekeeper_wasm_app::setup_logger( const boost::program_options::variables_map& args )
 {
+  FC_ASSERT( args.count("enable-logs") );
+
+  if( args.at( "enable-logs" ).as<bool>() )
+    fc::configure_logging( fc::logging_config::default_config( "stdout" ) );
+  else
+    fc::configure_logging( fc::logging_config() );
 }
 
 std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_wasm_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit )
