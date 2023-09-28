@@ -735,14 +735,15 @@ namespace fc {
    struct unpack_static_variant
    {
       Stream& stream;
-      unpack_static_variant( Stream& s ):stream(s){}
+      uint32_t depth = 0;
+      unpack_static_variant( Stream& s, uint32_t d):stream(s), depth(d) {}
 
       typedef void result_type;
       template<typename T> void operator()( T& v )const
       {
          /// Here GCC 10.1 generates fake warning related to uninitialized variables.
          /// GCC 10.2 has fixed this problem
-         fc::raw::unpack( stream, v );
+         fc::raw::unpack( stream, v, depth );
       }
    };
 
@@ -754,14 +755,18 @@ namespace fc {
        sv.visit( pack_static_variant<Stream>(s) );
     }
 
-    template<typename Stream, typename... T> void unpack( Stream& s, static_variant<T...>& sv, uint32_t depth )
+    template<typename Stream, typename... T>
+    void unpack( Stream& s, static_variant<T...>& sv, uint32_t depth )
     {
        depth++;
        FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
        unsigned_int w;
        fc::raw::unpack( s, w, depth );
-       sv.set_which(w.value);
-       sv.visit( unpack_static_variant<Stream>(s) );
+       static_variant<T...> helper(static_cast<int64_t>(w.value));
+       unpack_static_variant<Stream> v(s, depth);
+       helper.visit( v );
+
+       sv = helper;
     }
 
 } } // namespace fc::raw
