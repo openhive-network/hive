@@ -82,6 +82,7 @@ import "fill_collateralized_convert_request.proto";
 import "system_warning.proto";
 import "fill_recurrent_transfer.proto";
 import "failed_recurrent_transfer.proto";
+import "limit_order_cancelled.proto";
 
 package hive.protocol.buffers;
 
@@ -171,6 +172,7 @@ message operation {
         system_warning system_warning = 132 [json_name = "system_warning"];
         fill_recurrent_transfer fill_recurrent_transfer = 133 [json_name = "fill_recurrent_transfer"];
         failed_recurrent_transfer failed_recurrent_transfer = 134 [json_name = "failed_recurrent_transfer"];
+        limit_order_cancelled limit_order_cancelled = 135 [json_name = "limit_order_cancelled"];
     }
 }
 

@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Related to limit_order_cancel_operation, limit_order_create_operation or limit_order_create2_operation.
+ * Generated every time existing limit order is cancelled. It happens on explicit call (first operation), or in rare case of
+ * filling limit order (second or third operation) when, after filling most of it, remaining funds are too small (would round
+ * to zero when sold). Finally also generated during block processing for orders that reached expiration time without being filled.
+ * @see fill_order
+ *
+ * @param {string} seller - user that placed an order (receiver of amount_back)
+ * @param {number} orderid - id of the order
+ * @param {asset} amount_back - (HIVE or HBD) remaining funds from original order that were not traded until cancellation
+ */
+message limit_order_cancelled {
+  required string seller = 1;
+  required uint32 orderid = 2;
+  required asset  amount_back = 3 [json_name = "amount_back"];
+}
