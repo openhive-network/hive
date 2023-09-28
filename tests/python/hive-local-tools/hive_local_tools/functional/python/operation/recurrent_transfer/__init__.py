@@ -42,7 +42,7 @@ class RecurrentTransferAccount(Account):
 
 
 class RecurrentTransfer:
-    def __init__(self, node, wallet, from_, to, amount, recurrence, executions):
+    def __init__(self, node, wallet, from_, to, amount, recurrence, executions, pair_id=None):
         self._wallet: tt.Wallet = wallet
         self._node: tt.InitNode = node
         self._from_: str = from_
@@ -51,14 +51,23 @@ class RecurrentTransfer:
         self._memo: str = "{}"
         self._recurrence: int = recurrence
         self._executions: int = executions
-        self._transaction: dict = wallet.api.recurrent_transfer(
+
+        if pair_id is not None:
+            self._operation_name = "recurrent_transfer_with_id"
+            self._pair_id_argument = {"pair_id": pair_id}
+        else:
+            self._operation_name = "recurrent_transfer"
+            self._pair_id_argument = {}
+        self._transaction = getattr(wallet.api, self._operation_name)(
             from_=self._from_,
             to=self._to,
             amount=self._amount,
             memo=self._memo,
             recurrence=self._recurrence,
             executions=self._executions,
+            **self._pair_id_argument
         )
+
         self._timestamp: datetime = get_transaction_timestamp(node, self._transaction)
         self._current_schedule: list[datetime] = self.__get_transfer_schedule()
         self._executions_schedules: list = [self._current_schedule]
@@ -148,13 +157,14 @@ class RecurrentTransfer:
         assert self._rc_cost > 0, "RC cost is less than or equal to zero."
 
     def update(self, amount: tt.Asset = None, new_executions_number: int = None, new_recurrence_time: int = None):
-        self._transaction = self._wallet.api.recurrent_transfer(
+        self._transaction = getattr(self._wallet.api, self._operation_name)(
             from_=self._from_,
             to=self._to,
             amount=amount if amount is not None else self._amount,
             memo=self._memo,
             recurrence=new_recurrence_time if new_recurrence_time is not None else self._recurrence,
             executions=new_executions_number if new_executions_number is not None else self._executions,
+            **self._pair_id_argument,
         )
         self._timestamp = get_transaction_timestamp(self._node, self._transaction)
         self._rc_cost = self._transaction["rc_cost"]
