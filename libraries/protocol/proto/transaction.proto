@@ -64,6 +64,7 @@ import "comment_benefactor_reward.proto";
 import "producer_reward.proto";
 import "clear_null_account_balance.proto";
 import "proposal_pay.proto";
+import "dhf_funding.proto";
 
 package hive.protocol.buffers;
 
@@ -135,6 +136,7 @@ message operation {
         producer_reward producer_reward = 114 [json_name = "producer_reward"];
         clear_null_account_balance clear_null_account_balance = 115 [json_name = "clear_null_account_balance"];
         proposal_pay proposal_pay = 116 [json_name = "proposal_pay"];
+        dhf_funding dhf_funding = 117 [json_name = "dhf_funding"];
     }
 }
 
