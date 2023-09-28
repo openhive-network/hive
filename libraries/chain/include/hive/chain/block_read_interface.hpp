@@ -15,6 +15,8 @@ namespace hive { namespace chain {
   {
   public:
     virtual ~block_read_i() = default;
+
+    virtual void close_reader() = 0;
   
     virtual std::shared_ptr<full_block_type> head() const = 0;
 
