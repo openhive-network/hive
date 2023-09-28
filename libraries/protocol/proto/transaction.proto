@@ -89,6 +89,7 @@ import "collateralized_convert_immediate_conversion.proto";
 import "escrow_approved.proto";
 import "escrow_rejected.proto";
 import "proxy_cleared.proto";
+import "declined_voting_rights.proto";
 
 package hive.protocol.buffers;
 
@@ -185,6 +186,7 @@ message operation {
         escrow_approved escrow_approved = 139 [json_name = "escrow_approved"];
         escrow_rejected escrow_rejected = 140 [json_name = "escrow_rejected"];
         proxy_cleared proxy_cleared = 141 [json_name = "proxy_cleared"];
+        declined_voting_rights declined_voting_rights = 142 [json_name = "declined_voting_rights"];
     }
 }
 
