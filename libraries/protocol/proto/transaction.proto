@@ -70,6 +70,7 @@ import "hardfork_hive_restore.proto";
 import "delayed_voting.proto";
 import "consolidate_treasury_balance.proto";
 import "effective_comment_vote.proto";
+import "ineffective_delete_comment.proto";
 
 package hive.protocol.buffers;
 
@@ -147,6 +148,7 @@ message operation {
         delayed_voting delayed_voting = 120 [json_name = "delayed_voting"];
         consolidate_treasury_balance consolidate_treasury_balance = 121 [json_name = "consolidate_treasury_balance"];
         effective_comment_vote effective_comment_vote = 122 [json_name = "effective_comment_vote"];
+        ineffective_delete_comment ineffective_delete_comment = 123 [json_name = "ineffective_delete_comment"];
     }
 }
 
