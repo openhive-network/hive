@@ -56,20 +56,19 @@ namespace hive { namespace chain {
 	/// Check among reversible blocks on main branch then among irreversible.
 	virtual block_id_type find_block_id_for_num( uint32_t block_num ) const = 0;
 	/** Needed by p2p plugin only.
-   *  Check among reversible blocks on main branch then among irreversible.
-  */
-	//virtual bool is_included_block_unlocked(const block_id_type& block_id) = 0;
-	/** Needed by p2p plugin only.
    *  See implementations of database::get_blockchain_synopsis & fork_database::get_blockchain_synopsis
   */
 	virtual std::vector<block_id_type> get_blockchain_synopsis(
     const block_id_type& reference_point,
     uint32_t number_of_blocks_after_reference_point ) const = 0;
-	/// Needed by p2p plugin only.
-	/*virtual std::vector<block_id_type> get_block_ids(
+	/** used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and
+   *  generates a sequential list of block ids that builds off of the last item in the synopsis
+   *  that we have in common
+   */
+	virtual std::vector<block_id_type> get_block_ids(
     const std::vector<block_id_type>& blockchain_synopsis,
     uint32_t& remaining_item_count,
-    uint32_t limit) = 0;*/
+    uint32_t limit) const = 0;
   };
 
 } }

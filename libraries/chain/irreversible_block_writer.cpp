@@ -8,7 +8,7 @@ namespace hive { namespace chain {
 
 irreversible_block_writer::irreversible_block_writer( 
   block_log& block_log, fork_database& fork_db )
-  : _reader( block_log ), _block_log( block_log ), _fork_db( fork_db )
+  : _reader( block_log ), _fork_db( fork_db )
 {}
 
 block_read_i& irreversible_block_writer::get_block_reader()

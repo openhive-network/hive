@@ -15,8 +15,6 @@ namespace hive { namespace chain {
   virtual ~block_write_i() = default;
 
   // Temporary, to be removed
-  virtual block_log& get_block_log() = 0;
-  // Temporary, to be removed
   virtual fork_database& get_fork_db() = 0;
 
   virtual block_read_i& get_block_reader() = 0;

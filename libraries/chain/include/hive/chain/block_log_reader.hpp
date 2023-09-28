@@ -41,6 +41,11 @@ namespace hive { namespace chain {
       const block_id_type& reference_point, 
       uint32_t number_of_blocks_after_reference_point ) const override;
 
+    virtual std::vector<block_id_type> get_block_ids(
+      const std::vector<block_id_type>& blockchain_synopsis,
+      uint32_t& remaining_item_count,
+      uint32_t limit) const override;
+
   private:
     block_log&      _block_log;
   };

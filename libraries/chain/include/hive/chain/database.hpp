@@ -207,15 +207,11 @@ namespace chain {
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
       void initialize_state_independent_data(const open_args& args);
 
-      bool is_included_block_unlocked(const block_id_type& block_id);
-
       void begin_type_register_process(util::abstract_type_registrar& r);
 
       void verify_match_of_state_objects_definitions_from_shm();
 
     public:
-      std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
-
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
       void load_state_initial_data(const open_args& args);
 
@@ -739,8 +735,6 @@ namespace chain {
       }
 
       // Temporary, to be removed
-      block_log&        _block_log();
-      const block_log&  _block_log() const;
       fork_database&        _fork_db();
       const fork_database&  _fork_db() const;
 
