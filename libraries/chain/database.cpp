@@ -3731,12 +3731,6 @@ std::string database::get_current_decoded_types_data_json()
   return decoded_types_data_json;
 }
 
-void database::resetState(const open_args& args)
-{
-  wipe(args.data_dir, args.shared_mem_dir, false);
-  open(args);
-}
-
 const std::string& database::get_json_schema()const
 {
   return _json_schema;

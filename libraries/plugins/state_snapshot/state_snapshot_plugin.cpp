@@ -1497,7 +1497,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   }
 
   auto last_irr_block = std::get<3>(snapshotManifest);
-  // set irreversible block number after database::resetState
+  
   _mainDb.set_last_irreversible_block_num(last_irr_block);
 
   auto blockNo = _mainDb.head_block_num();
