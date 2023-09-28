@@ -30,8 +30,6 @@ set(HIVE_BUILD_ON_MINIMAL_FC ON)
 
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../core beekeeper_core )
 add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/fc build_fc_minimal )
-add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/schema build_schema_minimal )
-add_subdirectory( ${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/protocol build_protocol_minimal )
 
 set( SOURCES
       main.cpp
@@ -45,7 +43,7 @@ set( INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include )
 
 target_include_directories( beekeeper_wasm PUBLIC ${INCLUDES} )
 target_compile_options( beekeeper_wasm PUBLIC -fexceptions )
-target_link_libraries( beekeeper_wasm PUBLIC embind hive_protocol beekeeper_core idbfs.js )
+target_link_libraries( beekeeper_wasm PUBLIC embind beekeeper_core idbfs.js )
 # add -sASSERTIONS to `target_link_options` if you want more information
 # INITIAL_MEMORY by default = 16777216
 target_link_options( beekeeper_wasm PUBLIC -fexceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864
@@ -58,7 +56,7 @@ ADD_EXECUTABLE( beekeeper_ts_gen ${SOURCES} )
 
 target_include_directories( beekeeper_ts_gen PUBLIC ${INCLUDES} )
 target_compile_options( beekeeper_ts_gen PUBLIC -fexceptions )
-target_link_libraries( beekeeper_ts_gen PUBLIC embind hive_protocol beekeeper_core idbfs.js )
+target_link_libraries( beekeeper_ts_gen PUBLIC embind beekeeper_core idbfs.js )
 
 target_link_options( beekeeper_ts_gen PUBLIC -fexceptions --embind-emit-tsd ${CMAKE_CURRENT_BINARY_DIR}/beekeeper_wasm.d.ts )
 set_target_properties( beekeeper_ts_gen PROPERTIES OUTPUT_NAME beekeeper_ts_gen.cjs )

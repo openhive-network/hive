@@ -1,8 +1,5 @@
 #include <core/beekeeper_wallet.hpp>
 
-#include <hive/protocol/misc_utilities.hpp>
-#include <hive/protocol/transaction.hpp>
-
 #include <fstream>
 
 #include <fc/io/json.hpp>
