@@ -74,6 +74,7 @@ import "ineffective_delete_comment.proto";
 import "dhf_conversion.proto";
 import "expired_account_notification.proto";
 import "changed_recovery_account.proto";
+import "transfer_to_vesting_completed.proto";
 
 package hive.protocol.buffers;
 
@@ -155,6 +156,7 @@ message operation {
         dhf_conversion dhf_conversion = 124 [json_name = "dhf_conversion"];
         expired_account_notification expired_account_notification = 125 [json_name = "expired_account_notification"];
         changed_recovery_account changed_recovery_account = 126 [json_name = "changed_recovery_account"];
+        transfer_to_vesting_completed transfer_to_vesting_completed = 127 [json_name = "transfer_to_vesting_completed"];
     }
 }
 
