@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Related to recurrent_transfer_operation.
+ * Generated during block processing instead of fill_recurrent_transfer_operation when there is not enought funds on from account.
+ * Note: failed transfers are not automatically repeated.
+ * Note: if too many consecutive transfers fail, whole recurrent transfer operation is discontinued.
+ * @see fill_recurrent_transfer
+ *
+ * @param {string} from_account - user that initiated the transfer (source of amount that has not enough balance to cover it)
+ * @param {string} to_account - user that is target of transfer (would be receiver of amount, but no transfer actually happened)
+ * @param {asset} amount - (HIVE of HBD) amount that was scheduled for transferred in current iteration but failed
+ * @param {string} memo - memo attached to the transfer
+ * @param {number} consecutive_failures - number of failed iterations
+ * @param {number} remaining_executions - number of remaining pending transfers
+ * @param {bool} deleted - true if whole recurrent transfer was discontinued due to too many consecutive failures
+ */
+message failed_recurrent_transfer {
+  required string from_account = 1 [json_name = "from"];
+  required string to_account = 2 [json_name = "to"];
+  required asset  amount = 3;
+  required string memo = 4;
+  required uint32 consecutive_failures = 5 [json_name = "consecutive_failures"];
+  required uint32 remaining_executions = 6 [json_name = "remaining_executions"];
+  required bool   deleted = 7;
+}
