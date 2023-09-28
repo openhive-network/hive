@@ -88,14 +88,6 @@ class beekeeper_wallet_base
       /** Returns a signature given the digest and public_key, if this wallet can sign via that public key
        */
       virtual std::optional<signature_type> try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key ) = 0;
-
-      /** Returns a signature using a binary transaction, a chain id and a public key. A parameter sig_digest is used for verification.
-       */
-      virtual std::optional<signature_type> try_sign_binary_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key ) = 0;
-
-      /** Returns a signature using a JSON transaction, a chain id and a public key. A parameter sig_digest is used for verification.
-       */
-      virtual std::optional<signature_type> try_sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key ) = 0;
 };
 
 }

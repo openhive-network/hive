@@ -258,26 +258,6 @@ namespace beekeeper {
     return exception_handler( _method );
   }
 
-  std::string beekeeper_api::sign_binary_transaction( const std::string& token, const std::string& transaction, const std::string& chain_id, const std::string& public_key )
-  {
-    auto _method = [&, this]()
-    {
-      signature_return _result = { _impl->app.get_wallet_manager()->sign_binary_transaction( token, transaction, chain_id_type( chain_id ), public_key ) };
-      return to_string( _result );
-    };
-    return exception_handler( _method );
-  }
-
-  std::string beekeeper_api::sign_transaction( const std::string& token, const std::string& transaction, const std::string& chain_id, const std::string& public_key )
-  {
-    auto _method = [&, this]()
-    {
-      signature_return _result = { _impl->app.get_wallet_manager()->sign_transaction( token, transaction, chain_id_type( chain_id ), public_key ) };
-      return to_string( _result );
-    };
-    return exception_handler( _method );
-  }
-
   std::string beekeeper_api::get_info( const std::string& token )
   {
     auto _method = [&, this]()
