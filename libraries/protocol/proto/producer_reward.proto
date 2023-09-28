@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Related to block processing.
+ * Generated during block processing every block for current witness.
+ *
+ * @param {string} producer - witness (receiver of vesting_shares)
+ * @param {asset} vesting_shares - (VESTS or HIVE) reward for block production (HIVE only during first 30 days after genesis)
+ */
+message producer_reward {
+  required string producer = 1;
+  required asset  vesting_shares = 2 [json_name = "vesting_shares"];
+}
