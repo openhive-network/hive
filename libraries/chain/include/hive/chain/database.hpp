@@ -233,15 +233,7 @@ namespace chain {
         * Will close the database before wiping. Database will be closed when this function returns.
         */
       void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
-      void close(bool rewind = true);
-
-      /**
-        * Derived classes can override this method to provide specific behavior during clos
-        * e.g. to close some external resources opened during database::open
-        * It's utilized by the main `close` method.      
-        */
-      virtual void close_chainbase(bool rewind);
-      void close_forkbase(bool rewind);
+      virtual void close(bool rewind = true);
 
       //////////////////// db_block.cpp ////////////////////
 
