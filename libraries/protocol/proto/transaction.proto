@@ -86,6 +86,7 @@ import "limit_order_cancelled.proto";
 import "producer_missed.proto";
 import "proposal_fee.proto";
 import "collateralized_convert_immediate_conversion.proto";
+import "escrow_approved.proto";
 
 package hive.protocol.buffers;
 
@@ -179,6 +180,7 @@ message operation {
         producer_missed producer_missed = 136 [json_name = "producer_missed"];
         proposal_fee proposal_fee = 137 [json_name = "proposal_fee"];
         collateralized_convert_immediate_conversion collateralized_convert_immediate_conversion = 138 [json_name = "collateralized_convert_immediate_conversion"];
+        escrow_approved escrow_approved = 139 [json_name = "escrow_approved"];
     }
 }
 
