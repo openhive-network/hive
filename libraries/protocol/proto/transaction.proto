@@ -84,6 +84,7 @@ import "fill_recurrent_transfer.proto";
 import "failed_recurrent_transfer.proto";
 import "limit_order_cancelled.proto";
 import "producer_missed.proto";
+import "proposal_fee.proto";
 
 package hive.protocol.buffers;
 
@@ -175,6 +176,7 @@ message operation {
         failed_recurrent_transfer failed_recurrent_transfer = 134 [json_name = "failed_recurrent_transfer"];
         limit_order_cancelled limit_order_cancelled = 135 [json_name = "limit_order_cancelled"];
         producer_missed producer_missed = 136 [json_name = "producer_missed"];
+        proposal_fee proposal_fee = 137 [json_name = "proposal_fee"];
     }
 }
 
