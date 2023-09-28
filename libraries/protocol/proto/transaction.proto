@@ -63,6 +63,7 @@ import "return_vesting_delegation.proto";
 import "comment_benefactor_reward.proto";
 import "producer_reward.proto";
 import "clear_null_account_balance.proto";
+import "proposal_pay.proto";
 
 package hive.protocol.buffers;
 
@@ -133,6 +134,7 @@ message operation {
         comment_benefactor_reward comment_benefactor_reward = 113 [json_name = "comment_benefactor_reward"];
         producer_reward producer_reward = 114 [json_name = "producer_reward"];
         clear_null_account_balance clear_null_account_balance = 115 [json_name = "clear_null_account_balance"];
+        proposal_pay proposal_pay = 116 [json_name = "proposal_pay"];
     }
 }
 
