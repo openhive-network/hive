@@ -1359,7 +1359,7 @@ void chain_plugin::plugin_shutdown()
   ilog("closing chain database");
   blockchain_worker_thread_pool::get_instance( get_app() ).shutdown();
   my->stop_write_processing();
-  my->db.close();
+  my->db.close_all();
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");
 }
