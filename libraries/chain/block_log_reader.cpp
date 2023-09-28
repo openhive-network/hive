@@ -8,6 +8,11 @@ block_log_reader::block_log_reader( block_log& block_log )
   : _block_log( block_log )
 {}
 
+void block_log_reader::close_reader()
+{
+  _block_log.close();
+}
+
 std::shared_ptr<full_block_type> block_log_reader::head() const
 {
   return _block_log.head();
