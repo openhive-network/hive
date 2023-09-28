@@ -9,8 +9,10 @@ namespace hive { namespace chain {
   class fork_db_block_reader : public block_log_reader
   {
   public:
-    fork_db_block_reader( const fork_database& fork_db, block_log& block_log );
+    fork_db_block_reader( fork_database& fork_db, block_log& block_log );
     virtual ~fork_db_block_reader() = default;
+
+    virtual void close_reader() override;
 
     virtual bool is_known_block( const block_id_type& id ) const override;
 
@@ -30,7 +32,7 @@ namespace hive { namespace chain {
       uint32_t number_of_blocks_after_reference_point ) const override;  
 
   private:
-    const fork_database& _fork_db;
+    fork_database& _fork_db;
   };
 
 } }

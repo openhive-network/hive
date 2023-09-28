@@ -4,9 +4,15 @@
 
 namespace hive { namespace chain {
 
-fork_db_block_reader::fork_db_block_reader( const fork_database& fork_db, block_log& the_log )
+fork_db_block_reader::fork_db_block_reader( fork_database& fork_db, block_log& the_log )
   : block_log_reader( the_log ), _fork_db( fork_db )
 {}
+
+void fork_db_block_reader::close_reader()
+{
+  _fork_db.reset();
+  block_log_reader::close_reader();
+}
 
 bool fork_db_block_reader::is_known_block( const block_id_type& id ) const
 {

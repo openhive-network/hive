@@ -321,9 +321,7 @@ void database::close_all()
 
     chainbase::database::close();
 
-    _block_log().close();
-
-    _fork_db().reset();
+    block_reader().close_reader();
 
     ilog( "Database is closed" );
   }
