@@ -109,7 +109,7 @@ int main( int argc, char** argv, char** envp )
 
   std::cout << fc::json::to_string( ss ) << std::endl;
 
-  db.close();
+  db.close_all();
 
   return 0;
 }
