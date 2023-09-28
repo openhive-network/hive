@@ -264,9 +264,9 @@ public:
        static const int64_t value = impl::position<X, Types...>::pos;
     };
     static_variant()
+      : _tag( 0 )
     {
-       _tag = 0;
-       impl::storage_ops<0, Types...>::con(0, storage);
+       impl::storage_ops<0, Types...>::con(_tag, storage);
     }
 
     template<typename... Other>
@@ -293,9 +293,8 @@ public:
         init(v);
     }
     ~static_variant() {
-       impl::storage_ops<0, Types...>::del(_tag, storage);
+      clear_storage();
     }
-
 
     template<typename X>
     static_variant& operator=(const X& v) {
@@ -303,21 +302,21 @@ public:
             impl::position<X, Types...>::pos != -1,
             "Type not in static_variant."
         );
-        this->~static_variant();
+        clear_storage();
         init(v);
         return *this;
     }
     static_variant& operator=( const static_variant& v )
     {
        if( this == &v ) return *this;
-       this->~static_variant();
+       clear_storage();
        v.visit( impl::copy_construct<static_variant>(*this) );
        return *this;
     }
     static_variant& operator=( static_variant&& v )
     {
        if( this == &v ) return *this;
-       this->~static_variant();
+       clear_storage();
        v.visit( impl::move_construct<static_variant>(*this) );
        return *this;
     }
@@ -381,12 +380,16 @@ public:
     static int64_t count() { return static_cast< int64_t >( impl::type_info<Types...>::count ); }
     void set_which( int64_t w ) {
       FC_ASSERT( w < count() && w >= 0 );
-      this->~static_variant();
+      clear_storage();
       _tag = w;
       impl::storage_ops<0, Types...>::con(_tag, storage);
     }
 
     int64_t which() const {return _tag;}
+private:
+    void clear_storage() {
+      impl::storage_ops<0, Types...>::del(_tag, storage);
+    }
 };
 
 template<typename Result>
