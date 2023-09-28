@@ -10,6 +10,7 @@
  *
  **/
 #pragma once
+#include <memory>
 #include <stdexcept>
 #include <typeinfo>
 #include <fc/exception/exception.hpp>
@@ -96,11 +97,18 @@ struct storage_ops<N, T&, Ts...> {
 template<int64_t N, typename T, typename... Ts>
 struct storage_ops<N, T, Ts...> {
     static void del(int64_t n, void *data) {
-        if(n == N) reinterpret_cast<T*>(data)->~T();
-        else storage_ops<N + 1, Ts...>::del(n, data);
+        if(n == N) 
+        {
+            auto ptr = std::launder(reinterpret_cast<T*>(data));
+            std::destroy_at(ptr);
+        }
+        else
+        {
+            storage_ops<N + 1, Ts...>::del(n, data);
+        }
     }
     static void con(int64_t n, void *data) {
-        if(n == N) new(reinterpret_cast<T*>(data)) T();
+        if(n == N) new(data) T();
         else storage_ops<N + 1, Ts...>::con(n, data);
     }
 
@@ -263,23 +271,26 @@ public:
        );
        static const int64_t value = impl::position<X, Types...>::pos;
     };
-    static_variant()
-      : _tag( 0 )
+    static_variant(int64_t t = 0)
+      : _tag( t )
     {
        impl::storage_ops<0, Types...>::con(_tag, storage);
     }
 
     template<typename... Other>
-    static_variant( const static_variant<Other...>& cpy )
+    static_variant( const static_variant<Other...>& cpy ) :
+      _tag(cpy.which())
     {
        cpy.visit( impl::copy_construct<static_variant>(*this) );
     }
-    static_variant( const static_variant& cpy )
+    static_variant( const static_variant& cpy ) :
+      _tag(cpy._tag)
     {
        cpy.visit( impl::copy_construct<static_variant>(*this) );
     }
 
-    static_variant( static_variant&& mv )
+    static_variant( static_variant&& mv ) :
+      _tag(mv._tag)
     {
        mv.visit( impl::move_construct<static_variant>(*this) );
     }
@@ -310,6 +321,7 @@ public:
     {
        if( this == &v ) return *this;
        clear_storage();
+       _tag = v._tag;
        v.visit( impl::copy_construct<static_variant>(*this) );
        return *this;
     }
@@ -317,6 +329,7 @@ public:
     {
        if( this == &v ) return *this;
        clear_storage();
+       _tag = v._tag;
        v.visit( impl::move_construct<static_variant>(*this) );
        return *this;
     }
