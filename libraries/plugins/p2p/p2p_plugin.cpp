@@ -265,7 +265,7 @@ std::vector<graphene::net::item_hash_t> p2p_plugin_impl::get_block_ids(const std
 { try {
   try
   {
-    return chain.db().get_block_ids(blockchain_synopsis, remaining_item_count, limit);
+    return chain.db().block_reader().get_block_ids(blockchain_synopsis, remaining_item_count, limit);
   }
   catch (const hive::chain::internal_peer_is_on_an_unreachable_fork&)
   {
