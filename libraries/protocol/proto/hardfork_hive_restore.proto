@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Related to hardfork 24.
+ * Generated for every account that was excluded from HF23 airdrop but won appeal.
+ * Note: the late airdrop did not apply properly since HIVE that the accounts should receive did not account for
+ * HIVE from converted VESTS. [how was it resolved?]
+ * @see hardfork_hive
+ *
+ * @param {string} account - account to receive late airdrop (receiver of funds)
+ * @param {string} treasury - treasury, source of late airdrop
+ * @param {asset} hbd_transferred - (HBD) part of airdrop (equals related hardfork_hive_operation.hbd_transferred)
+ * @param {asset} hive_transferred - (HIVE) part of airdrop (equals related hardfork_hive_operation.hive_transferred)
+ */
+message hardfork_hive_restore {
+  required string account = 1;
+  required string treasury = 2;
+  required asset  hbd_transferred = 3 [json_name = "hbd_transferred"];
+  required asset  hive_transferred = 4 [json_name = "hive_transferred"];
+}
