@@ -6,15 +6,13 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/signal_wrapper.hpp>
 
-
 namespace hive { namespace chain {
 
-void full_database::state_dependent_open( const open_args& args, get_block_by_num_function_type )
+void full_database::state_dependent_open( const open_args& args )
 {
   open_block_log(args);
-  database::state_dependent_open(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
+  load_state_initial_data(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
 }
-
 
 void full_database::open_block_log(const open_args& args)
 {
@@ -91,7 +89,6 @@ uint32_t full_database::reindex_internal( const open_args& args, const std::shar
   return last_applied_block->get_block_num();
 }
 
-
 bool full_database::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64_t* head_block_num_in_db ) const
 {
   std::shared_ptr<full_block_type> head = _block_log.head();
@@ -122,7 +119,6 @@ uint32_t full_database::reindex( const open_args& args )
   try
   {
     ilog( "Reindexing Blockchain" );
-
 
     if( appbase::app().is_interrupt_request() )
       return 0;
@@ -336,11 +332,10 @@ std::vector<std::shared_ptr<full_block_type>> full_database::fetch_block_range( 
   return result;
 } FC_LOG_AND_RETHROW() }
 
-
 boost::signals2::connection full_database::add_pre_reindex_handler(const reindex_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-    return connect_impl<true>(_pre_reindex_signal, func, plugin, group, "reindex");
+  return connect_impl<true>(_pre_reindex_signal, func, plugin, group, "reindex");
 }
 
 boost::signals2::connection full_database::add_post_reindex_handler(const reindex_handler_t& func,
@@ -349,43 +344,40 @@ boost::signals2::connection full_database::add_post_reindex_handler(const reinde
   return connect_impl<false>(_post_reindex_signal, func, plugin, group, "reindex");
 }
 
-
 void full_database::migrate_irreversible_state_perform(uint32_t old_last_irreversible)
 {
   migrate_irreversible_state_to_blocklog(old_last_irreversible);
   database::migrate_irreversible_state_perform(old_last_irreversible);
 }
 
-
 void full_database::migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible)
 {
-    if( !( get_node_skip_flags() & skip_block_log ) )
+  if( !( get_node_skip_flags() & skip_block_log ) )
+  {
+    // output to block log based on new last irreverisible block num
+    std::shared_ptr<full_block_type> tmp_head = _block_log.head();
+    uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
+    vector<item_ptr> blocks_to_write;
+
+    if( blocklog_head_num < get_last_irreversible_block_num() )
     {
-      // output to block log based on new last irreverisible block num
-      std::shared_ptr<full_block_type> tmp_head = _block_log.head();
-      uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
-      vector<item_ptr> blocks_to_write;
-
-      if( blocklog_head_num < get_last_irreversible_block_num() )
+      // Check for all blocks that we want to write out to the block log but don't write any
+      // unless we are certain they all exist in the fork db
+      while( blocklog_head_num < get_last_irreversible_block_num() )
       {
-        // Check for all blocks that we want to write out to the block log but don't write any
-        // unless we are certain they all exist in the fork db
-        while( blocklog_head_num < get_last_irreversible_block_num() )
-        {
-          item_ptr block_ptr = _fork_db.fetch_block_on_main_branch_by_number( blocklog_head_num + 1 );
-          FC_ASSERT( block_ptr, "Current fork in the fork database does not contain the last_irreversible_block" );
-          blocks_to_write.push_back( block_ptr );
-          blocklog_head_num++;
-        }
-
-        for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-            _block_log.append( block_itr->get()->full_block, _is_at_live_sync );
-
-          _block_log.flush();
+        item_ptr block_ptr = _fork_db.fetch_block_on_main_branch_by_number( blocklog_head_num + 1 );
+        FC_ASSERT( block_ptr, "Current fork in the fork database does not contain the last_irreversible_block" );
+        blocks_to_write.push_back( block_ptr );
+        blocklog_head_num++;
       }
-    }
-}
 
+      for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
+        _block_log.append( block_itr->get()->full_block, _is_at_live_sync );
+
+      _block_log.flush();
+    }
+  }
+}
 
 //safe to call without chainbase lock
 std::vector<block_id_type> full_database::get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point)
@@ -444,12 +436,10 @@ bool full_database::is_included_block_unlocked(const block_id_type& block_id)
   if (fitem)
     return block_id == fitem->get_block_id();
 
-
   // Next we check if block_log has it. Irreversible blocks are here.
   auto read_block_id = _block_log.read_block_id_by_num(block_num);
   return block_id == read_block_id;
 } FC_CAPTURE_AND_RETHROW() }
-
 
 // used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and generates
 // a sequential list of block ids that builds off of the last item in the synopsis that we have in

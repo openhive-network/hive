@@ -190,26 +190,24 @@ namespace chain {
         */
       void open( const open_args& args );
 
-    private:      
-      void state_independent_open( const open_args& args);
+    private:
+      void state_independent_open( const open_args& args );
 
     public: 
       /**
-         * @brief Opens a state with a block provided externally
-         *
-         * In derived classes, this function provides an interface to supply a block from the outside 
-         * (e.g., from an external system). Essential for initiating the fork database 
-         * when specific block data needs to be provided. This function is public because it is 
-         * used by the load snapshot plugin to inject block data. Takes part in normal open process.
-         *
-         * @param args Arguments required for the open operation
-         * @param get_block_by_num_function A function type to fetch the block by its number
-         */
-      virtual void state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function );
+        * @brief Opens a state with a block provided externally
+        *
+        * In derived classes, this function provides an interface to supply a block from the outside 
+        * (e.g., from an external system). Essential for initiating the fork database 
+        * when specific block data needs to be provided. This function is public because it is 
+        * used by the load snapshot plugin to inject block data. Takes part in normal open process.
+        */
+      virtual void state_dependent_open( const open_args& args );
 
     private:
 
       void remove_expired_governance_votes();
+
       //Remove proposal votes for accounts that declined voting rights during HF28.
       void remove_proposal_votes_for_accounts_without_voting_rights();
 
@@ -220,12 +218,12 @@ namespace chain {
 
       void verify_match_of_state_objects_definitions_from_shm();
 
-    public:
+    protected:
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
       void load_state_initial_data( const open_args& args, get_block_by_num_function_type get_block_by_num_function );
 
-
+    public:
       /**
         * @brief wipe Delete database from disk, and potentially the raw chain as well.
         * @param include_blocks If true, delete the raw chain as well as the database.
@@ -243,17 +241,12 @@ namespace chain {
       virtual void close_chainbase(bool rewind);
       void close_forkbase(bool rewind);
 
-
       //////////////////// db_block.cpp ////////////////////
 
-    private:
     public:
       bool                       is_known_transaction( const transaction_id_type& id )const;
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
-    public:
-
-
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
@@ -679,9 +672,9 @@ namespace chain {
 
     private:
       optional< chainbase::database::session > _pending_tx_session;
-    
+
     protected:
-      void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing, const block_flow_control* block_ctrl = nullptr ); 
+      void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing, const block_flow_control* block_ctrl = nullptr );
     private:
       void switch_forks(item_ptr new_head, const block_flow_control* pushed_block_ctrl = nullptr);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, const block_flow_control* block_ctrl = nullptr );
@@ -717,6 +710,7 @@ namespace chain {
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
       void migrate_irreversible_state(uint32_t old_last_irreversible);
+
     protected:
       /**
        * @brief Handle the proper execution of the irreversible state migration.
@@ -728,7 +722,8 @@ namespace chain {
        *
        * @param old_last_irreversible Represents the previous irreversible point before migration.
        */
-      virtual void migrate_irreversible_state_perform(uint32_t old_last_irreversible); 
+      virtual void migrate_irreversible_state_perform(uint32_t old_last_irreversible);
+
     private:
       void clear_expired_transactions();
       void clear_expired_orders();
@@ -821,7 +816,6 @@ namespace chain {
     private:
       hardfork_versions             _hardfork_versions;
 
-
       // this function needs access to _plugin_index_signal
       template< typename MultiIndexType >
       friend void add_plugin_index( database& db );
@@ -909,8 +903,6 @@ namespace chain {
         */
       fc::signal<void(const transaction_notification&)>     _post_apply_transaction_signal;
 
-  
-
       fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
 
       /// <summary>
@@ -950,8 +942,6 @@ namespace chain {
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
   };
 
-
-  
   struct reindex_notification
   {
     reindex_notification( const open_args& a ) : args( a ) {}
