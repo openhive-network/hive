@@ -65,6 +65,7 @@ namespace hive { namespace chain {
         ssize_t block_log_size;
 
         bool compression_enabled = true;
+        bool auto_fixing_enabled = true;
 
         // during testing (around block 63M) we found level 15 to be a good balance between ratio 
         // and compression/decompression times of ~3.5ms & 65μs, so we're making level 15 the default, and the 
@@ -516,6 +517,11 @@ namespace hive { namespace chain {
   void block_log::set_compression(bool enabled)
   {
     my->compression_enabled = enabled;
+  }
+
+  void block_log::set_auto_fixing_enabled(bool enabled)
+  {
+    my->auto_fixing_enabled = enabled;
   }
 
   void block_log::set_compression_level(int level)

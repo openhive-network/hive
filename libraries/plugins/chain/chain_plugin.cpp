@@ -173,6 +173,7 @@ class chain_plugin_impl
     bool                             replay_in_memory = false;
     std::vector< std::string >       replay_memory_indices{};
     bool                             enable_block_log_compression = true;
+    bool                             enable_block_log_auto_fixing = true;
     bool                             load_snapshot = false;
     int                              block_log_compression_level = 15;
     flat_map<uint32_t,block_id_type> loaded_checkpoints;
@@ -647,6 +648,7 @@ void chain_plugin_impl::initial_settings()
   db_open_args.replay_in_memory = replay_in_memory;
   db_open_args.replay_memory_indices = replay_memory_indices;
   db_open_args.enable_block_log_compression = enable_block_log_compression;
+  db_open_args.enable_block_log_auto_fixing = enable_block_log_auto_fixing;
   db_open_args.block_log_compression_level = block_log_compression_level;
   db_open_args.load_snapshot = load_snapshot;
 }
@@ -843,6 +845,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("flush-state-interval", bpo::value<uint32_t>(),
         "flush shared memory changes to disk every N blocks")
       ("enable-block-log-compression", boost::program_options::value<bool>()->default_value(true), "Compress blocks using zstd as they're added to the block log" )
+      ("enable-block-log-auto-fixing", boost::program_options::value<bool>()->default_value(true), "If enabled, corrupted block_log will try to fix itself automatically." )
       ("block-log-compression-level", bpo::value<int>()->default_value(15), "Block log zstd compression level 0 (fast, low compression) - 22 (slow, high compression)" )
       ("blockchain-thread-pool-size", bpo::value<uint32_t>()->default_value(8)->value_name("size"), "Number of worker threads used to pre-validate transactions and blocks")
       ("block-stats-report-type", bpo::value<string>()->default_value("FULL"), "Level of detail of block stat reports: NONE, MINIMAL, REGULAR, FULL. Default FULL (recommended for API nodes)." )
@@ -909,6 +912,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   my->validate_invariants = options.at( "validate-database-invariants" ).as<bool>();
   my->dump_memory_details = options.at( "dump-memory-details" ).as<bool>();
   my->enable_block_log_compression = options.at( "enable-block-log-compression" ).as<bool>();
+  my->enable_block_log_auto_fixing = options.at( "enable-block-log-auto-fixing" ).as<bool>();
   my->block_log_compression_level = options.at( "block-log-compression-level" ).as<int>();
 
   if (options.count("load-snapshot"))

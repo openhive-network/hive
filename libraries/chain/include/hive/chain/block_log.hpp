@@ -89,6 +89,7 @@ namespace hive { namespace chain {
       std::shared_ptr<full_block_type> read_head() const;
       std::shared_ptr<full_block_type> head() const;
       void set_compression(bool enabled);
+      void set_auto_fixing_enabled(bool enabled);
       void set_compression_level(int level);
 
       static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd(const char* uncompressed_block_data, size_t uncompressed_block_size, std::optional<uint8_t> dictionary_number, 
