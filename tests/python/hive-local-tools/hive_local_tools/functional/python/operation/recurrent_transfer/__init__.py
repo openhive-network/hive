@@ -76,6 +76,10 @@ class RecurrentTransfer:
         self.__assert_minimal_operation_rc_cost()
 
     @property
+    def amount(self):
+        return self._amount
+
+    @property
     def executions(self):
         return self._executions
 
