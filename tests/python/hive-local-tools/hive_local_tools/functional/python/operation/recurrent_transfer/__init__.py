@@ -174,8 +174,6 @@ class RecurrentTransfer:
         self._rc_cost = self._transaction["rc_cost"]
         self.__assert_minimal_operation_rc_cost()
 
-        if amount:
-            self._amount = amount
         if new_recurrence_time and not new_executions_number:
             self._current_schedule = [
                 self._timestamp + tt.Time.hours(new_recurrence_time * execution_number)
@@ -195,8 +193,12 @@ class RecurrentTransfer:
             ][1:]
             self._executions = new_executions_number
             self._recurrence = new_recurrence_time
-        else:
-            self._current_schedule = []
+        elif not new_executions_number and not new_recurrence_time and amount:
+            if amount == type(amount)(0):
+                self._current_schedule = []
+            else:
+                self._current_schedule = self.__get_transfer_schedule(self.get_next_execution_date())
+            self._amount = amount
         self._executions_schedules.append(self._current_schedule)
 
     def cancel(self):
