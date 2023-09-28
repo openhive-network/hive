@@ -276,7 +276,7 @@ std::vector<graphene::net::item_hash_t> p2p_plugin_impl::get_block_ids(const std
 std::shared_ptr<chain::full_block_type> p2p_plugin_impl::get_full_block(const block_id_type& id)
 { try {
   fc_dlog(fc::logger::get("chainlock"), "get_full_block will get forkdb read lock");
-  return chain.db().fetch_block_by_id(id);
+  return chain.db().block_reader().fetch_block_by_id(id);
 } FC_CAPTURE_AND_RETHROW((id)) }
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_old_chain_id() const
@@ -319,7 +319,8 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
 {
   try
   {
-    std::shared_ptr<hive::chain::full_block_type> block = chain.db().fetch_block_by_id(block_id);
+    std::shared_ptr<hive::chain::full_block_type> block = 
+      chain.db().block_reader().fetch_block_by_id(block_id);
     return block ? block->get_block_header().timestamp : fc::time_point_sec::min();
   } FC_CAPTURE_AND_RETHROW((block_id))
 }
