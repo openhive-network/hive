@@ -150,5 +150,13 @@ std::vector<block_id_type> block_log_reader::get_blockchain_synopsis(
   return synopsis;
 }
 
+std::vector<block_id_type> block_log_reader::get_block_ids(
+  const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
+  uint32_t limit) const
+{
+  remaining_item_count = 0;
+  return vector<block_id_type>();
+}
+
 } } //hive::chain
 

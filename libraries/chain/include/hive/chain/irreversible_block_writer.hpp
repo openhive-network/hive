@@ -15,7 +15,6 @@ namespace hive { namespace chain {
     irreversible_block_writer( block_log& block_log, fork_database& fork_db );
     virtual ~irreversible_block_writer() = default;
 
-    virtual block_log& get_block_log() override { return _block_log; };
     virtual fork_database& get_fork_db() override { return _fork_db; };
 
     virtual block_read_i& get_block_reader() override;
@@ -30,7 +29,6 @@ namespace hive { namespace chain {
 
   private:
     block_log_reader  _reader;
-    block_log&        _block_log;
     fork_database&    _fork_db;
   };
 

@@ -1,6 +1,9 @@
 #include <hive/chain/fork_db_block_reader.hpp>
 
+#include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/fork_database.hpp>
+
+#include <boost/range/adaptor/reversed.hpp>
 
 namespace hive { namespace chain {
 
@@ -124,13 +127,7 @@ std::vector<block_id_type> fork_db_block_reader::get_blockchain_synopsis(
   if (block_number_needed_from_block_log)
   {
     uint32_t reference_point_block_num = protocol::block_header::num_from_id(reference_point);
-    block_id_type read_block_id;
-    try
-    {
-      read_block_id = block_log_reader::find_block_id_for_num(*block_number_needed_from_block_log);
-    }
-    catch (fc::key_not_found_exception&)
-    { /*leave read_block_id empty*/ }
+    block_id_type read_block_id = get_block_id_for_num( *block_number_needed_from_block_log );
 
     if (reference_point_block_num == *block_number_needed_from_block_log)
     {
@@ -155,6 +152,133 @@ std::vector<block_id_type> fork_db_block_reader::get_blockchain_synopsis(
     }
   }
   return synopsis;
+}
+
+std::vector<block_id_type> fork_db_block_reader::get_block_ids(
+  const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
+  uint32_t limit) const
+{
+  uint32_t first_block_num_in_reply;
+  uint32_t last_block_num_in_reply;
+  uint32_t last_block_from_block_log_in_reply;
+  shared_ptr<fork_item> head;
+  uint32_t head_block_num;
+  vector<block_id_type> result;
+
+  // get and hold a fork database lock so a fork switch can't happen while we're in the middle of creating
+  // this list of block ids
+  _fork_db.with_read_lock([&]() {
+    remaining_item_count = 0;
+    head = _fork_db.head_unlocked();
+    if (!head)
+      return;
+    head_block_num = head->get_block_num();
+
+    block_id_type last_known_block_id;
+    if (blockchain_synopsis.empty() ||
+        (blockchain_synopsis.size() == 1 && blockchain_synopsis[0] == block_id_type()))
+    {
+      // peer has sent us an empty synopsis meaning they have no blocks.
+      // A bug in old versions would cause them to send a synopsis containing block 000000000
+      // when they had an empty blockchain, so pretend they sent the right thing here.
+      // do nothing, leave last_known_block_id set to zero
+    }
+    else
+    {
+      bool found_a_block_in_synopsis = false;
+      for (const block_id_type& block_id_in_synopsis : boost::adaptors::reverse(blockchain_synopsis))
+        if (block_id_in_synopsis == block_id_type() || is_included_block_unlocked(block_id_in_synopsis))
+        {
+          last_known_block_id = block_id_in_synopsis;
+          found_a_block_in_synopsis = true;
+          break;
+        }
+
+      if (!found_a_block_in_synopsis)
+        FC_THROW_EXCEPTION(internal_peer_is_on_an_unreachable_fork, "Unable to provide a list of blocks starting at any of the blocks in peer's synopsis");
+    }
+
+    // the list will be composed of block ids from the block_log first, followed by ones from the fork database.
+    // when building our reply, we'll fill in the ones from the fork_database first, so we can release the
+    // fork_db lock, then we'll grab the ids from the block_log at our leisure.
+    first_block_num_in_reply = block_header::num_from_id(last_known_block_id);
+    if (first_block_num_in_reply == 0)
+      ++first_block_num_in_reply;
+    last_block_num_in_reply = std::min(head_block_num, first_block_num_in_reply + limit - 1);
+    uint32_t result_size = last_block_num_in_reply - first_block_num_in_reply + 1;
+
+    result.resize(result_size);
+
+    uint32_t oldest_block_num_in_forkdb = _fork_db.get_oldest_block_num_unlocked();
+    last_block_from_block_log_in_reply = std::min(oldest_block_num_in_forkdb - 1, last_block_num_in_reply);
+
+    uint32_t first_block_num_from_fork_db_in_reply = std::max(oldest_block_num_in_forkdb, first_block_num_in_reply);
+    //idump((first_block_num_in_reply)(last_block_from_block_log_in_reply)(first_block_num_from_fork_db_in_reply)(last_block_num_in_reply));
+
+    for (uint32_t block_num = first_block_num_from_fork_db_in_reply;
+         block_num <= last_block_num_in_reply;
+         ++block_num)
+    {
+      shared_ptr<fork_item> item_from_forkdb = _fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
+      assert(item_from_forkdb);
+      uint32_t index_in_result = block_num - first_block_num_in_reply;
+      result[index_in_result] = item_from_forkdb->get_block_id();
+    }
+  }); // drop the forkdb lock
+
+  if (!head)
+  {
+    remaining_item_count = 0;
+    return result;
+  }
+
+  for (uint32_t block_num = first_block_num_in_reply;
+       block_num <= last_block_from_block_log_in_reply;
+       ++block_num)
+  {
+    uint32_t index_in_result = block_num - first_block_num_in_reply;
+    result[index_in_result] = get_block_id_for_num(block_num);
+  }
+
+  if (!result.empty() && block_header::num_from_id(result.back()) < head_block_num)
+    remaining_item_count = head_block_num - last_block_num_in_reply;
+  else
+    remaining_item_count = 0;
+
+  return result;
+}
+
+// requires forkdb read lock, does not require chainbase lock
+bool fork_db_block_reader::is_included_block_unlocked(const block_id_type& block_id) const
+{ 
+  try {
+    uint32_t block_num = block_header::num_from_id(block_id);
+    if (block_num == 0)
+      return block_id == block_id_type();
+
+    // See if fork DB has the item
+    shared_ptr<fork_item> fitem = _fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
+    if (fitem)
+      return block_id == fitem->get_block_id();
+
+
+    // Next we check if block_log has it. Irreversible blocks are here.
+    auto read_block_id = get_block_id_for_num(block_num);
+    return block_id == read_block_id;
+  } FC_CAPTURE_AND_RETHROW()
+}
+
+block_id_type fork_db_block_reader::get_block_id_for_num( uint32_t block_num ) const
+{
+  block_id_type read_block_id;
+  try
+  {
+    read_block_id = block_log_reader::find_block_id_for_num( block_num );
+  }
+  catch (fc::key_not_found_exception&)
+  { /*leave read_block_id empty*/ }
+
+  return read_block_id;
 }
 
 } } //hive::chain
