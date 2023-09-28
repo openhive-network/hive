@@ -49,24 +49,6 @@ public:
   /// @throws fc::exception if corresponding private keys not found in unlocked wallets
   signature_type sign_digest( const std::string& token, const digest_type& sig_digest, const std::string& public_key );
 
-  /// Sign a binary transaction with the private keys specified via their public keys.
-  /// @param token represents a session
-  /// @param transaction the transaction in binary form.
-  /// @param chain_id the chain_id to sign transaction with.
-  /// @param public_key the public key of the corresponding private key to sign the digest with
-  /// @return signature over the transaction
-  /// @throws fc::exception if corresponding private keys not found in unlocked wallets
-  signature_type sign_binary_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const std::string& public_key );
-
-  /// Sign a JSON transaction with the private keys specified via their public keys.
-  /// @param token represents a session
-  /// @param transaction the transaction in binary JSON.
-  /// @param chain_id the chain_id to sign transaction with.
-  /// @param public_key the public key of the corresponding private key to sign the digest with
-  /// @return signature over the transaction
-  /// @throws fc::exception if corresponding private keys not found in unlocked wallets
-  signature_type sign_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const std::string& public_key );
-
   /// Create a new wallet.
   /// A new wallet is created in file dir/{name}.wallet see set_dir.
   /// The new wallet is unlocked after creation.

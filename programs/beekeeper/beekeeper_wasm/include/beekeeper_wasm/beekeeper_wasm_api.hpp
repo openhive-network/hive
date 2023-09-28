@@ -63,8 +63,6 @@ class beekeeper_api final
     std::string get_public_keys( const std::string& token );
 
     std::string sign_digest( const std::string& token, const std::string& sig_digest, const std::string& public_key );
-    std::string sign_binary_transaction( const std::string& token, const std::string& transaction, const std::string& chain_id, const std::string& public_key );
-    std::string sign_transaction( const std::string& token, const std::string& transaction, const std::string& chain_id, const std::string& public_key );
 
     std::string get_info( const std::string& token );
 };

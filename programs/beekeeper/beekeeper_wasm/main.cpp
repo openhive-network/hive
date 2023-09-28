@@ -192,32 +192,6 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("sign_digest(token, public_key, sig_digest)", &beekeeper_api::sign_digest)
 
     /*
-      ****signing a transaction presented in a binary form (hex)****
-      params:
-        token:        a token representing a session
-        transaction:  a transaction in binary form (hex)
-        chain_id:     id of a blockchain
-        public_key:   a public key corresponding to a private key that is stored in a wallet. It will be used for creation of a signature
-      result:
-        { "signature":"1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340"}
-        signature: a signature of a transaction
-    */
-    .function("sign_binary_transaction", &beekeeper_api::sign_binary_transaction)
-
-    /*
-      ****signing a transaction presented in a JSON form****
-      params:
-        token:        a token representing a session
-        transaction:  a transaction in JSON form
-        chain_id:     id of a blockchain
-        public_key:   a public key corresponding to a private key that is stored in a wallet. It will be used for creation of a signature
-      result:
-        { "signature":"1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340"}
-        signature: a signature of a transaction
-    */
-    .function("sign_transaction", &beekeeper_api::sign_transaction)
-
-    /*
       ****information about a session****
       params:
         token:        a token representing a session

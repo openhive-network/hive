@@ -166,14 +166,6 @@ class beekeeper_wallet final : public beekeeper_wallet_base
       */
       std::optional<signature_type> try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key ) override;
 
-      /* Attempts to sign a binary transaction via the given public_key
-      */
-      std::optional<signature_type> try_sign_binary_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key ) override;
-
-      /* Attempts to sign a JSON transaction via the given public_key
-      */
-      std::optional<signature_type> try_sign_transaction( const string& transaction, const chain_id_type& chain_id, const public_key_type& public_key ) override;
-
       std::shared_ptr<detail::beekeeper_impl> my;
       void encrypt_keys();
 };

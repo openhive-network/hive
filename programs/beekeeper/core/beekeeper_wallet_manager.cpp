@@ -96,18 +96,6 @@ signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, 
   return sessions->get_wallet_manager( token )->sign_digest( sig_digest, create_public_key( public_key ) );
 }
 
-signature_type beekeeper_wallet_manager::sign_binary_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const std::string& public_key )
-{
-  sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->sign_binary_transaction( transaction, chain_id, create_public_key( public_key ) );
-}
-
-signature_type beekeeper_wallet_manager::sign_transaction( const std::string& token, const string& transaction, const chain_id_type& chain_id, const std::string& public_key )
-{
-  sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->sign_transaction( transaction, chain_id, create_public_key( public_key ) );
-}
-
 info beekeeper_wallet_manager::get_info( const std::string& token )
 {
   return sessions->get_info( token );

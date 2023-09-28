@@ -184,36 +184,6 @@ class BeekeeperInstanceHelper {
     }
   }
 
-  signBinaryTransaction(sessionToken, binaryTransactionBody, chainId, publicKey) {
-    const returnedValue = this.instance.sign_binary_transaction(sessionToken, binaryTransactionBody, chainId, publicKey);
-
-    if( this.#acceptError )
-    {
-      return this.#extract(returnedValue);
-    }
-    else
-    {
-      const value = this.#extract(returnedValue);
-
-      return value.signature;
-    }
-  }
-
-  signTransaction(sessionToken, transactionBody, chainId, publicKey) {
-    const returnedValue = this.instance.sign_transaction(sessionToken, transactionBody, chainId, publicKey);
-
-    if( this.#acceptError )
-    {
-      return this.#extract(returnedValue);
-    }
-    else
-    {
-      const value = this.#extract(returnedValue);
-
-      return value.signature;
-    }
-  }
-
   listWallets(sessionToken) {
     const returnedValue = this.instance.list_wallets(sessionToken);
 
