@@ -8935,7 +8935,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     // RC update at the end of the block
     get_subsidy_pools( c_subs, nc_subs );
     block_id_type hbid = db->head_block_id();
-    std::shared_ptr<full_block_type> block = db->fetch_block_by_id(hbid);
+    std::shared_ptr<full_block_type> block = db->block_reader().fetch_block_by_id(hbid);
     BOOST_REQUIRE( block );
     BOOST_CHECK_EQUAL( block->get_block().transactions.size(), 1u );
     BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 3 );

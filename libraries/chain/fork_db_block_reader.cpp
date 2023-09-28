@@ -22,6 +22,19 @@ void fork_db_block_reader::close_reader()
   block_log_reader::close_reader();
 }
 
+std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_id( 
+  const block_id_type& id ) const
+{
+  try {
+    shared_ptr<fork_item> fork_item = _fork_db.fetch_block( id );
+    if (fork_item)
+      return fork_item->full_block;
+
+    return block_log_reader::fetch_block_by_id( id );
+  } FC_CAPTURE_AND_RETHROW()
+}
+
+
 bool fork_db_block_reader::is_known_block( const block_id_type& id ) const
 {
   try {

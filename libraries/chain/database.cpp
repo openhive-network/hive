@@ -338,19 +338,6 @@ bool database::is_known_transaction( const transaction_id_type& id )const
 } FC_CAPTURE_AND_RETHROW() }
 
 //no chainbase lock required
-std::shared_ptr<full_block_type> database::fetch_block_by_id( const block_id_type& id )const
-{ try {
-  shared_ptr<fork_item> fork_item = _fork_db().fetch_block( id );
-  if (fork_item)
-    return fork_item->full_block;
-
-  std::shared_ptr<full_block_type> block_from_block_log = block_reader().read_block_by_num( protocol::block_header::num_from_id( id ) );
-  if( block_from_block_log && block_from_block_log->get_block_id() == id )
-    return block_from_block_log;
-  return std::shared_ptr<full_block_type>();
-} FC_CAPTURE_AND_RETHROW() }
-
-//no chainbase lock required
 std::shared_ptr<full_block_type> database::fetch_block_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds )const
 { try {
   shared_ptr<fork_item> forkdb_item = _fork_db().fetch_block_on_main_branch_by_number(block_num, wait_for_microseconds);
@@ -1089,7 +1076,7 @@ void database::pop_block()
     std::shared_ptr<full_block_type> full_head_block;
     try
     {
-      full_head_block = fetch_block_by_id(head_id);
+      full_head_block = block_reader().fetch_block_by_id(head_id);
     }
     FC_CAPTURE_AND_RETHROW()
 
