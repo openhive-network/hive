@@ -59,6 +59,7 @@ import "shutdown_witness.proto";
 import "fill_transfer_from_savings.proto";
 import "hardfork.proto";
 import "comment_payout_update.proto";
+import "return_vesting_delegation.proto";
 
 package hive.protocol.buffers;
 
@@ -125,6 +126,7 @@ message operation {
         fill_transfer_from_savings fill_transfer_from_savings = 109 [json_name = "fill_transfer_from_savings"];
         hardfork hardfork = 110;
         comment_payout_update comment_payout_update = 111 [json_name = "comment_payout_update"];
+        return_vesting_delegation return_vesting_delegation = 112 [json_name = "return_vesting_delegation"];
     }
 }
 
