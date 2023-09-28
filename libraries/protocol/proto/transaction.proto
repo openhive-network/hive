@@ -72,6 +72,7 @@ import "consolidate_treasury_balance.proto";
 import "effective_comment_vote.proto";
 import "ineffective_delete_comment.proto";
 import "dhf_conversion.proto";
+import "expired_account_notification.proto";
 
 package hive.protocol.buffers;
 
@@ -151,6 +152,7 @@ message operation {
         effective_comment_vote effective_comment_vote = 122 [json_name = "effective_comment_vote"];
         ineffective_delete_comment ineffective_delete_comment = 123 [json_name = "ineffective_delete_comment"];
         dhf_conversion dhf_conversion = 124 [json_name = "dhf_conversion"];
+        expired_account_notification expired_account_notification = 125 [json_name = "expired_account_notification"];
     }
 }
 
