@@ -2,18 +2,12 @@
 
 #include <hive/chain/database.hpp>
 
-
-
-
 namespace hive { namespace chain {
 
-  class database;
-  class block_log;
   class full_database : public database
   {
-    block_log _block_log;
+      block_log _block_log;
 
-    public:
       /**
         * Emitted when reindexing starts
         */
@@ -28,8 +22,7 @@ namespace hive { namespace chain {
       boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
-    private: 
-      void state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function ) override;
+      virtual void state_dependent_open( const open_args& args ) override;
 
     private:
       bool is_included_block_unlocked(const block_id_type& block_id);
@@ -50,7 +43,7 @@ namespace hive { namespace chain {
         * @return information if replaying was finished
         */
       bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
- 
+
       /**
         * @brief Rebuild object graph from block history and open detabase
         *
@@ -60,25 +53,24 @@ namespace hive { namespace chain {
         * @return the last replayed block number.
         */
       uint32_t reindex( const open_args& args );
-      void close_chainbase(bool rewind) override;
-    
+      virtual void close(bool rewind = true) override;
 
       /**
         *  @return true if the block is in our fork DB or saved to disk as
         *  part of the official chain, otherwise return false
         */
       bool is_known_block( const block_id_type& id )const;
-    private:  
+    private:
       bool is_known_block_unlocked(const block_id_type& id)const;
-    public:  
+    public:
       block_id_type              find_block_id_for_num( uint32_t block_num )const;
       block_id_type              get_block_id_for_num( uint32_t block_num )const;
       std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
       std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
-      std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
-    
+      std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() );
+
     private:
-      void migrate_irreversible_state_perform(uint32_t old_last_irreversible) override; 
+      virtual void migrate_irreversible_state_perform(uint32_t old_last_irreversible) override;
       void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
 
       void open_block_log(const open_args& args);
