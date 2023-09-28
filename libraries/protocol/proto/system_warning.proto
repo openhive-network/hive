@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+/* Related to block processing or selected operations.
+ * Generated every time something occurs that would normally be only visible to node operators in their logs
+ * but might be interesting to general HIVE community. Such vops can be observed on account history of 'initminer'.
+ * Currently the following generate system warnings:
+ *  - unknown type of witness during block processing [should probably be FC_ASSERT]
+ *    indicates some problem in the code
+ *  - shortfall of collateral during finalization of HIVE->HBD conversion (@see fill_collateralized_convert_request_operation)
+ *    the community covers the difference in form of tiny amount of extra inflation
+ *  - artificial correction of internal price of HIVE due to hitting of HBD hard cap limit
+ *    every operation that involves conversion from HBD to HIVE will give output amount that is smaller than real world value
+ *  - noncanonical fee symbol used by witness [should disappear if it never happened as suggested by TODO message]
+ *  - witnesses changed maximum block size
+ *
+ * @param {string} message - warning message
+ */
+message system_warning {
+  required string message = 1;
+}

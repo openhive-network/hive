@@ -79,6 +79,7 @@ import "pow_reward.proto";
 import "vesting_shares_split.proto";
 import "account_created.proto";
 import "fill_collateralized_convert_request.proto";
+import "system_warning.proto";
 
 package hive.protocol.buffers;
 
@@ -165,6 +166,7 @@ message operation {
         vesting_shares_split vesting_shares_split = 129 [json_name = "vesting_shares_split"];
         account_created account_created = 130 [json_name = "account_created"];
         fill_collateralized_convert_request fill_collateralized_convert_request = 131 [json_name = "fill_collateralized_convert_request"];
+        system_warning system_warning = 132 [json_name = "system_warning"];
     }
 }
 
