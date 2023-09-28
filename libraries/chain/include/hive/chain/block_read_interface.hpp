@@ -16,6 +16,9 @@ namespace hive { namespace chain {
   public:
     virtual ~block_read_i() = default;
 
+    virtual void open_reader( const fc::path& data_dir, bool enable_compression,
+                              int compression_level, bool enable_block_log_auto_fixing ) = 0;
+    virtual void start_reader( const std::shared_ptr<full_block_type>& head_block ) = 0;
     virtual void close_reader() = 0;
   
     virtual std::shared_ptr<full_block_type> head() const = 0;

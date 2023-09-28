@@ -207,10 +207,9 @@ void database::initialize_state_independent_data(const open_args& args)
 
   with_write_lock([&]()
   {
-    _block_log().set_auto_fixing_enabled(args.enable_block_log_auto_fixing);
-    _block_log().open(args.data_dir / "block_log");
-    _block_log().set_compression(args.enable_block_log_compression);
-    _block_log().set_compression_level(args.block_log_compression_level);
+    block_reader().open_reader( args.data_dir, args.enable_block_log_compression,
+                                args.block_log_compression_level,
+                                args.enable_block_log_auto_fixing );
   });
 
   _shared_file_full_threshold = args.shared_file_full_threshold;
@@ -262,7 +261,7 @@ void database::load_state_initial_data(const open_args& args)
     "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
     ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
 
-    _fork_db().start_block(head_block);
+    block_reader().start_reader( head_block );
   }
 
   with_read_lock([&]() {
