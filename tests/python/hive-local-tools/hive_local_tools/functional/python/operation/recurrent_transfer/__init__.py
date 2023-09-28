@@ -207,3 +207,27 @@ class RecurrentTransfer:
 
     def cancel(self):
         self.update(amount=tt.Asset.Test(0) if isinstance(self._amount, tt.Asset.Test) else tt.Asset.Tbd(0))
+
+
+class RecurrentTransferDefinition:
+    def __init__(self, amount, recurrence, executions, pair_id):
+        self._amount = amount
+        self._executions = executions
+        self._pair_id = pair_id
+        self._recurrence = recurrence
+
+    @property
+    def amount(self):
+        return self._amount
+
+    @property
+    def executions(self):
+        return self._executions
+
+    @property
+    def pair_id(self):
+        return self._pair_id
+
+    @property
+    def recurrence(self):
+        return self._recurrence
