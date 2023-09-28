@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Related to create_proposal_operation.
+ * Generated every time above operation is executed. Supplements it with paid fee.
+ *
+ * @param {string} creator - user that created proposal (source of fee)
+ * @param {string} treasury - treasury account (receiver of fee)
+ * @param {number} proposal_id - id of proposal
+ * @param {asset} fee - (HBD) amount paid for proposal [should actually be part of create_proposal_operation but it's too late now]
+ */
+message proposal_fee {
+  required string creator = 1;
+  required string treasury = 2;
+  required uint32 proposal_id = 3 [json_name = "proposal_id"];
+  required asset  fee = 4;
+}
