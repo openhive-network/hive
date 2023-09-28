@@ -66,6 +66,7 @@ import "clear_null_account_balance.proto";
 import "proposal_pay.proto";
 import "dhf_funding.proto";
 import "hardfork_hive.proto";
+import "hardfork_hive_restore.proto";
 
 package hive.protocol.buffers;
 
@@ -139,6 +140,7 @@ message operation {
         proposal_pay proposal_pay = 116 [json_name = "proposal_pay"];
         dhf_funding dhf_funding = 117 [json_name = "dhf_funding"];
         hardfork_hive hardfork_hive = 118 [json_name = "hardfork_hive"];
+        hardfork_hive_restore hardfork_hive_restore = 119 [json_name = "hardfork_hive_restore"];
     }
 }
 
