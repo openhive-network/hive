@@ -64,18 +64,12 @@ test.describe('WASM beekeeper_api tests', () => {
        * @param {string} sessionToken
        * @param {number} signDataIndex
        */
-      const signTransactionUsing3Methods = (beekeeperInstance, sessionToken, signDataIndex) => {
+      const signDigest = (beekeeperInstance, sessionToken, signDataIndex) => {
         const data = signData[signDataIndex];
         const expected = data.expected_signature;
 
         const signDigest = beekeeperInstance.signDigest(sessionToken, data.sig_digest, data.public_key);
         assert.equal(expected, signDigest);
-
-        const signBinaryTx = beekeeperInstance.signBinaryTransaction(sessionToken, data.binary_transaction_body, chainId, data.public_key);
-        assert.equal(expected, signBinaryTx);
-
-        const signTx = beekeeperInstance.signTransaction(sessionToken, data.transaction_body, chainId, data.public_key);
-        assert.equal(expected, signTx);
       };
 
       let testThrowId = 0;
@@ -239,8 +233,8 @@ test.describe('WASM beekeeper_api tests', () => {
           assert.ok(!Number.isNaN(now.getTime()));
           assert.ok(!Number.isNaN(timeoutTime.getTime()));
 
-          signTransactionUsing3Methods(api, sessionToken, 0);
-          signTransactionUsing3Methods(api, sessionToken, 1);
+          signDigest(api, sessionToken, 0);
+          signDigest(api, sessionToken, 1);
 
           await performWalletAutolockTest(api, sessionToken);
 
@@ -460,69 +454,6 @@ test.describe('WASM beekeeper_api tests', () => {
           '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
           '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
         );
-        testThrow(
-          api,
-          'signBinaryTransaction',
-          '000000000000000000000000',
-          chainId,
-          '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
-          '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
-        );
-        testThrow(
-          api,
-          'signBinaryTransaction',
-          '000000000000000000000000',
-          chainId,
-          '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
-          '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
-        );
-
-        {
-          api.unlock(api.implicitSessionToken, walletNames[0]);
-          api.importKey(api.implicitSessionToken, walletNames[0], keys[0][0]);
-          testThrow(
-            api,
-            'signBinaryTransaction',
-            'really! it means nothing!!!!! this is not a transaction body',
-            chainId,
-            keys[0][1],
-            '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
-          );
-          api.removeKey(api.implicitSessionToken, walletNames[0], keys[0][1]);
-        }
-
-        testThrow(
-          api,
-          'signTransaction',
-          '{}',
-          chainId,
-          '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
-          '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
-        );
-        testThrow(
-          api,
-          'signTransaction',
-          'a body of transaction without any sense',
-          chainId,
-          '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
-          '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
-        );
-        testThrow(
-          api,
-          'signTransaction',
-          'a body of transaction without any sense',
-          '+++++',
-          '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
-          '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
-        );
-        testThrow(
-          api,
-          'signTransaction',
-          'a body of transaction without any sense',
-          chainId,
-          '&&&&',
-          '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
-        );
       }
 
       {
@@ -610,8 +541,8 @@ test.describe('WASM beekeeper_api tests', () => {
         /** @type {BeekeeperInstanceHelper} */
         const api = new beekeper(args);
 
-        testThrow(() => { signTransactionUsing3Methods(api, api.implicitSessionToken, 0); });
-        testThrow(() => { signTransactionUsing3Methods(api, api.implicitSessionToken, 1); });
+        testThrow(() => { signDigest(api, api.implicitSessionToken, 0); });
+        testThrow(() => { signDigest(api, api.implicitSessionToken, 1); });
 
         const walletNo = 7;
         const keyNo = 3;
@@ -620,8 +551,8 @@ test.describe('WASM beekeeper_api tests', () => {
         api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][0]);
 
         // This should not throw now:
-        signTransactionUsing3Methods(api, api.implicitSessionToken, 0);
-        signTransactionUsing3Methods(api, api.implicitSessionToken, 1);
+        signDigest(api, api.implicitSessionToken, 0);
+        signDigest(api, api.implicitSessionToken, 1);
 
         api.deleteInstance();
 
@@ -631,14 +562,14 @@ test.describe('WASM beekeeper_api tests', () => {
 
           api.unlock(api.implicitSessionToken, walletNames[walletNo]);
 
-          signTransactionUsing3Methods(api, api.implicitSessionToken, 0);
-          signTransactionUsing3Methods(api, api.implicitSessionToken, 1);
+          signDigest(api, api.implicitSessionToken, 0);
+          signDigest(api, api.implicitSessionToken, 1);
 
           api.removeKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][1]);
 
           // Now this should throw
-          testThrow(() => { signTransactionUsing3Methods(api, api.implicitSessionToken, 0); });
-          testThrow(() => { signTransactionUsing3Methods(api, api.implicitSessionToken, 1); });
+          testThrow(() => { signDigest(api, api.implicitSessionToken, 0); });
+          testThrow(() => { signDigest(api, api.implicitSessionToken, 1); });
         }
       }
       {
@@ -663,7 +594,7 @@ test.describe('WASM beekeeper_api tests', () => {
           api.unlock(sessionTokens[i], walletNames[i]);
           api.importKey(sessionTokens[i], walletNames[i], keys[keyNo][0]);
 
-          signTransactionUsing3Methods(api, sessionTokens[i], 1);
+          signDigest(api, sessionTokens[i], 1);
         }
 
         for(let i = 0; i < noWallets; i += 2)
@@ -671,14 +602,14 @@ test.describe('WASM beekeeper_api tests', () => {
 
         for(let i = 0; i < noWallets; ++i)
           if(i % 2 == 0)
-            testThrow(() => { signTransactionUsing3Methods(api, sessionTokens[i], 1) });
+            testThrow(() => { signDigest(api, sessionTokens[i], 1) });
           else {
-            signTransactionUsing3Methods(api, sessionTokens[i], 1);
+            signDigest(api, sessionTokens[i], 1);
             api.lock(sessionTokens[i], walletNames[i]); // For the next stage
           }
 
         for(let i = 0; i < noWallets; ++i)
-          testThrow(() => { signTransactionUsing3Methods(api, sessionTokens[i], 1); });
+          testThrow(() => { signDigest(api, sessionTokens[i], 1); });
       }
       {
         console.log();
@@ -724,17 +655,6 @@ test.describe('WASM beekeeper_api tests', () => {
           const longStr = 'a'.repeat(length);
           // This should not throw as it is used only for signing (does not deserialize data)
           api.signDigest(api.implicitSessionToken, longStr, signData[1].public_key, signData[1].expected_signature);
-        }
-        {
-          const length = 50;
-          const longStr = '9'.repeat(length);
-          // These should fail as they do not contain valid data
-          testThrow(() => {
-            api.signBinaryTransaction(api.implicitSessionToken, longStr, signData[1].public_key, signData[1].expected_signature);
-          });
-          testThrow(() => {
-            api.signTransaction(api.implicitSessionToken, longStr, signData[1].public_key, signData[1].expected_signature);
-          });
         }
       }
 
@@ -989,42 +909,6 @@ test.describe('WASM beekeeper_api tests', () => {
           console.log(error_message);
           assert.equal(error_message.includes("Public key not found in unlocked wallets"), true);
           assert.equal(error_message.includes("6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"), true);
-        }
-        {
-          api.setAcceptError = true;
-
-          let error_message = api.signTransaction(api.implicitSessionToken, "+", chainId, "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
-          console.log(error_message);
-          assert.equal(error_message.includes("Unexpected char '43' in \"\""), true);
-
-          error_message = api.signTransaction(api.implicitSessionToken, "{}", "$", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
-          console.log(error_message);
-          assert.equal(error_message.includes("Invalid hex character '$'"), true);
-
-          error_message = api.signTransaction(api.implicitSessionToken, "{}", "6542634abcef", "444444444444");
-          console.log(error_message);
-          assert.equal(error_message.includes("public_key_size == public_key.size()"), true);
-
-          error_message = api.signTransaction(api.implicitSessionToken, "{}", "6542634abcef", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSXbtsxm");
-          console.log(error_message);
-          assert.equal(error_message.includes("memcmp( (char*)&check, data.data + sizeof(key), sizeof(check) ) == 0"), true);
-
-          error_message = api.signTransaction(api.implicitSessionToken, "{}", "6542634abcef", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
-          console.log(error_message);
-          assert.equal(error_message.includes("Public key not found in unlocked wallets"), true);
-          assert.equal(error_message.includes("6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"), true);
-        }
-        {
-          api.setAcceptError = true;
-
-          let error_message = api.signBinaryTransaction(api.implicitSessionToken, "+", chainId, "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
-          console.log(error_message);
-          assert.equal(error_message.includes("Public key not found in unlocked wallets"), true);
-          assert.equal(error_message.includes("6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"), true);
-
-          error_message = api.signBinaryTransaction(api.implicitSessionToken, "!@", chainId, "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
-          console.log(error_message);
-          assert.equal(error_message.includes("Invalid hex character '!'"), true);
         }
       }
       {

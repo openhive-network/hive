@@ -5,8 +5,6 @@
 
 #include <hive/plugins/json_rpc/utility.hpp>
 
-#include <hive/protocol/types.hpp>
-
 #include <fc/optional.hpp>
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>

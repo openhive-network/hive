@@ -1,6 +1,5 @@
 #pragma once
 
-#include <hive/protocol/fixed_string.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/container/flat.hpp>
 #include <fc/container/flat_fwd.hpp>
