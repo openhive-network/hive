@@ -172,6 +172,11 @@ void database::state_independent_open( const open_args& args )
   initialize_state_independent_data(args);
 }
 
+void database::state_dependent_open( const open_args& args )
+{
+  load_state_initial_data(args, {});
+}
+
 void database::open( const open_args& args )
 {
   try
