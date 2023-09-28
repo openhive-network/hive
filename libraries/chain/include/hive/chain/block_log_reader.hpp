@@ -24,6 +24,9 @@ namespace hive { namespace chain {
     virtual void process_blocks( uint32_t starting_block_number, uint32_t ending_block_number,
                                  block_processor_t processor ) override;
 
+    virtual std::shared_ptr<full_block_type> fetch_block_by_id( 
+      const block_id_type& id ) const override; 
+
     virtual bool is_known_block( const block_id_type& id ) const override;
 
     virtual bool is_known_block_unlocked( const block_id_type& id ) const override;

@@ -44,6 +44,18 @@ void block_log_reader::process_blocks(uint32_t starting_block_number, uint32_t e
                              block_log::for_each_purpose::replay );
 }
 
+std::shared_ptr<full_block_type> block_log_reader::fetch_block_by_id( 
+  const block_id_type& id ) const
+{
+  try {
+    std::shared_ptr<full_block_type> block = 
+      read_block_by_num( protocol::block_header::num_from_id( id ) );
+    if( block && block->get_block_id() == id )
+      return block;
+    return std::shared_ptr<full_block_type>();
+  } FC_CAPTURE_AND_RETHROW()
+}
+
 bool block_log_reader::is_known_block(const block_id_type& id) const
 {
   try {
