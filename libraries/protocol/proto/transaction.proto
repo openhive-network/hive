@@ -77,6 +77,7 @@ import "changed_recovery_account.proto";
 import "transfer_to_vesting_completed.proto";
 import "pow_reward.proto";
 import "vesting_shares_split.proto";
+import "account_created.proto";
 
 package hive.protocol.buffers;
 
@@ -161,6 +162,7 @@ message operation {
         transfer_to_vesting_completed transfer_to_vesting_completed = 127 [json_name = "transfer_to_vesting_completed"];
         pow_reward pow_reward = 128 [json_name = "pow_reward"];
         vesting_shares_split vesting_shares_split = 129 [json_name = "vesting_shares_split"];
+        account_created account_created = 130 [json_name = "account_created"];
     }
 }
 
