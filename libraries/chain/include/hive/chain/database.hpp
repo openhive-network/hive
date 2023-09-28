@@ -598,8 +598,6 @@ namespace chain {
       // For snapshot plugin. Decoded types data hold by database will be erased after using.
       std::string get_current_decoded_types_data_json();
 
-      void resetState(const open_args& args);
-
       void init_schema();
       void init_genesis();
 
