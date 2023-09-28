@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+import "asset.proto";
+
+package hive.protocol.buffers;
+
+/* Related to comment_operation and comment_options_operation.
+ * Generated during block processing after cashout time passes and comment is eligible for rewards (nonzero reward).
+ * Note: the reward is a fragment of the author portion of comment reward depending on share assigned to benefactor
+ * in comment options (can be zero due to rounding).
+ * @see author_reward
+ *
+ * @param {string} benefactor - user assigned to receive share of author reward (receiver of payouts)
+ * @param {string} author - author of the comment
+ * @param {string} permlink - permlink of the comment
+ * @param {asset} hbd_payout - (HBD) part of reward
+ * @param {asset} hive_payout - (HIVE) part of reward
+ * @param {asset} vesting_payout - (VESTS) part of reward
+ * @param {bool} payout_must_be_claimed - true if payouts require use of claim_reward_balance_operation
+ */
+message comment_benefactor_reward {
+  required string benefactor = 1;
+  required string author = 2;
+  required string permlink = 3;
+  required asset  hbd_payout = 4 [json_name = "hbd_payout"];
+  required asset  hive_payout = 5 [json_name = "hive_payout"];
+  required asset  vesting_payout = 6 [json_name = "vesting_payout"];
+  required bool   payout_must_be_claimed = 7 [json_name = "payout_must_be_claimed"];
+}

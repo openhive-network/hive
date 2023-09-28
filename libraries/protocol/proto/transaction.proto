@@ -60,6 +60,7 @@ import "fill_transfer_from_savings.proto";
 import "hardfork.proto";
 import "comment_payout_update.proto";
 import "return_vesting_delegation.proto";
+import "comment_benefactor_reward.proto";
 
 package hive.protocol.buffers;
 
@@ -127,6 +128,7 @@ message operation {
         hardfork hardfork = 110;
         comment_payout_update comment_payout_update = 111 [json_name = "comment_payout_update"];
         return_vesting_delegation return_vesting_delegation = 112 [json_name = "return_vesting_delegation"];
+        comment_benefactor_reward comment_benefactor_reward = 113 [json_name = "comment_benefactor_reward"];
     }
 }
 
