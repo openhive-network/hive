@@ -17,8 +17,18 @@ namespace beekeeper {
 
     beekeeper::beekeeper_wasm_app app;
 
+    std::string create_params_info() const;
     init_data init_impl();
   };
+
+  std::string beekeeper_api::impl::create_params_info() const
+  {
+    std::string _result = "parameters: (";
+
+    std::for_each( params.begin(), params.end(), [&_result]( const std::string& param ){ if( !param.empty() ) _result += param + " "; } );
+
+    return _result + ") ";
+  }
 
   void beekeeper_api::impl_deleter::operator()(beekeeper_api::impl* ptr) const
   {
@@ -29,7 +39,7 @@ namespace beekeeper {
   {
     _impl = std::unique_ptr<impl, impl_deleter>(new impl);
     _impl->params = _params;
-    _impl->params.insert( _impl->params.begin(), "path to exe" );
+    _impl->params.insert( _impl->params.begin(), "" );//a fake path to exe (not used, but it's necessary)
   }
 
   init_data beekeeper_api::impl::init_impl()
@@ -63,18 +73,25 @@ namespace beekeeper {
     return fc::json::to_string( fc::mutable_variant_object( _key_name, fc::json::to_string( _v ) ) );
   }
 
-  std::string beekeeper_api::exception_handler( std::function<std::string()>&& method, std::function<void(bool)>&& aux_method )
+  std::string beekeeper_api::exception_handler( std::function<std::string()>&& method, std::function<void(bool)>&& aux_init_method )
   {
-    if( !aux_method )
+    if( !aux_init_method )
     {
       if( !initialized )
         return to_string( std::string( "Initialization failed. API call aborted." ), initialized );
     }
 
-    auto _result = exception::exception_handler( std::move( method ) );
+    std::pair<std::string, bool> _result;
 
-    if( aux_method )
-      aux_method( _result.second );
+    if( aux_init_method )
+    {
+      _result = exception::exception_handler( std::move( method ), _impl->create_params_info() );
+      aux_init_method( _result.second );
+    }
+    else
+    {
+      _result = exception::exception_handler( std::move( method ) );
+    }
 
     if( _result.second )
       return _result.first;

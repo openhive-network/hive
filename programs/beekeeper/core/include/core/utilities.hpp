@@ -198,9 +198,9 @@ using close_session_return = void_type;
 
 struct exception
 {
-  static std::pair<std::string, bool> exception_handler( std::function<std::string()>&& method )
+  static std::pair<std::string, bool> exception_handler( std::function<std::string()>&& method, const std::string& additional_message = "" )
   {
-    std::string _error_message = "";
+    std::string _error_message = additional_message;
 
     try
     {
@@ -208,19 +208,19 @@ struct exception
     }
     catch (const boost::exception& e)
     {
-      _error_message = boost::diagnostic_information(e);
+      _error_message += boost::diagnostic_information(e);
     }
     catch (const fc::exception& e)
     {
-      _error_message = e.to_detail_string();
+      _error_message += e.to_detail_string();
     }
     catch (const std::exception& e)
     {
-      _error_message = e.what();
+      _error_message += e.what();
     }
     catch (...)
     {
-      _error_message = "unknown exception";
+      _error_message += "unknown exception";
     }
     elog( _error_message );
 
