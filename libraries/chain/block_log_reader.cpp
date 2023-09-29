@@ -44,6 +44,14 @@ void block_log_reader::process_blocks(uint32_t starting_block_number, uint32_t e
                              block_log::for_each_purpose::replay );
 }
 
+std::shared_ptr<full_block_type> block_log_reader::fetch_block_by_number( uint32_t block_num,
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{ 
+  try {
+    return read_block_by_num(block_num);
+  } FC_LOG_AND_RETHROW()
+}
+
 std::shared_ptr<full_block_type> block_log_reader::fetch_block_by_id( 
   const block_id_type& id ) const
 {
