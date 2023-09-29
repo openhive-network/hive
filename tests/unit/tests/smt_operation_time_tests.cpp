@@ -55,13 +55,17 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     auto exchange_rate = price( ASSET( "1.250 TESTS" ), asset( 1000, any_smt_symbol ) );
 
     const account_object& alice_account = db->get_account( "alice" );
-    FUND( "alice", asset( 25522, any_smt_symbol ) );
+    ISSUE_FUNDS( "alice", asset( 25522, any_smt_symbol ) );
     asset alice_smt = db->get_balance( alice_account, any_smt_symbol );
 
-    FUND( "alice", alice_smt.amount );
-    FUND( "bob", alice_smt.amount );
-    FUND( "sam", alice_smt.amount );
-    FUND( "dave", alice_smt.amount );
+    fund( "alice", alice_smt.amount );
+    generate_block();
+    fund( "bob", alice_smt.amount );
+    generate_block();
+    fund( "sam", alice_smt.amount );
+    generate_block();
+    fund( "dave", alice_smt.amount );
+    generate_block();
 
     int64_t alice_smt_volume = 0;
     int64_t alice_hive_volume = 0;

@@ -92,10 +92,10 @@ void condenser_api_fixture::hf8_scenario( check_point_tester_t check_point_teste
   ACTORS( (hf8alice)(hf8ben) );
   generate_block();
 
-  fund( "hf8alice", ASSET( "2000.000 TESTS" ) );
-  fund( "hf8ben", ASSET( "2000.000 TBD" ) );
-  fund( "hf8alice", ASSET( "2000.000 TBD" ) );
-  fund( "hf8ben", ASSET( "2000.000 TESTS" ) );
+  issue_funds( "hf8alice", ASSET( "2000.000 TESTS" ) );
+  issue_funds( "hf8ben", ASSET( "2000.000 TBD" ) );
+  issue_funds( "hf8alice", ASSET( "2000.000 TBD" ) );
+  issue_funds( "hf8ben", ASSET( "2000.000 TESTS" ) );
   generate_block();
 
   limit_order_create( "hf8alice", ASSET( "12.800 TESTS" ), ASSET( "13.300 TBD" ), false, fc::seconds( HIVE_MAX_LIMIT_ORDER_EXPIRATION ), 3, hf8alice_private_key );
@@ -175,7 +175,7 @@ void condenser_api_fixture::hf23_scenario( check_point_tester_t check_point_test
 
   ACTORS( (steemflower) );
   generate_block();
-  fund( "steemflower", ASSET( "123456789.012 TBD" ) );
+  issue_funds( "steemflower", ASSET( "123456789.012 TBD" ) );
   generate_block();
 
   // Trigger clear_null_account_balance_operation
@@ -235,8 +235,8 @@ void condenser_api_fixture::convert_and_limit_order_scenario( check_point_tester
   ACTORS( (edgar3ah)(carol3ah) );
   generate_block();
 
-  fund( "edgar3ah", ASSET( "300.000 TBD" ) );
-  fund( "carol3ah", ASSET( "300.000 TESTS" ) );
+  issue_funds( "edgar3ah", ASSET( "300.000 TBD" ) );
+  issue_funds( "carol3ah", ASSET( "300.000 TESTS" ) );
   generate_block();
 
   convert_hbd_to_hive( "edgar3ah", 0, ASSET( "11.201 TBD" ), edgar3ah_private_key );
@@ -261,7 +261,7 @@ void condenser_api_fixture::vesting_scenario( check_point_tester_t check_point_t
 
   ACTORS( (alice4ah)(ben4ah)(carol4ah) );
   generate_block();
-  fund( "alice4ah", ASSET( "2.900 TESTS" ) );
+  issue_funds( "alice4ah", ASSET( "2.900 TESTS" ) );
   generate_block();
 
   vest( "alice4ah", "alice4ah", asset(2000, HIVE_SYMBOL), alice4ah_private_key );
@@ -313,8 +313,8 @@ void condenser_api_fixture::escrow_and_savings_scenario( check_point_tester_t ch
 
   ACTORS( (alice6ah)(ben6ah)(carol6ah) );
   generate_block();
-  fund( "alice6ah", ASSET( "1.111 TESTS" ) );
-  fund( "alice6ah", ASSET( "2.121 TBD" ) );
+  issue_funds( "alice6ah", ASSET( "1.111 TESTS" ) );
+  issue_funds( "alice6ah", ASSET( "2.121 TBD" ) );
   generate_block();
   
   escrow_transfer( "alice6ah", "ben6ah", "carol6ah", ASSET( "0.071 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "0.001 TESTS" ), "",
@@ -347,8 +347,8 @@ void condenser_api_fixture::proposal_scenario( check_point_tester_t check_point_
 
   ACTORS( (alice7ah)(ben7ah)(carol7ah) );
   generate_block();
-  fund( "alice7ah", ASSET( "800.000 TBD" ) );
-  fund( "carol7ah", ASSET( "100000.000 TESTS") );
+  issue_funds( "alice7ah", ASSET( "800.000 TBD" ) );
+  issue_funds( "carol7ah", ASSET( "100000.000 TESTS") );
   generate_block();
 
   // Fill treasury handsomely so that the payout occurres early.
@@ -446,8 +446,8 @@ void condenser_api_fixture::recurrent_transfer_scenario( check_point_tester_t ch
 
   ACTORS( (alice10ah)(ben10ah) );
   generate_block();
-  fund( "alice10ah", ASSET("0.040 TESTS") );
-  fund( "ben10ah", ASSET("13.777 TBD") );
+  issue_funds( "alice10ah", ASSET("0.040 TESTS") );
+  issue_funds( "ben10ah", ASSET("13.777 TBD") );
   generate_block();
 
   recurrent_transfer( "alice10ah", "ben10ah", ASSET( "0.037 TESTS" ), "With love", 1, 2, alice10ah_private_key );

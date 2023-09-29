@@ -134,7 +134,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
 
     asset alice_0 = asset( 0, alice_symbol );
 
-    FUND( "bob", 1000000 );
+    fund( "bob", 1000000 );
+    generate_block();
     convert( "bob", ASSET("1000.000 TESTS" ) );
     generate_block();
 
@@ -145,8 +146,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
 
     asset bob_balance = bob_account.get_balance();
 
-    FUND( "alice", alice_smt_balance );
-    FUND( "bob", bob_smt_balance );
+    ISSUE_FUNDS( "alice", alice_smt_balance );
+    ISSUE_FUNDS( "bob", bob_smt_balance );
 
     tx.operations.clear();
 
@@ -445,7 +446,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_authorities )
     signed_transaction tx;
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
 
-    FUND( "alice", asset( 100000, alice_symbol ) );
+    ISSUE_FUNDS( "alice", asset( 100000, alice_symbol ) );
 
     tx.operations.clear();
 
@@ -508,7 +509,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_apply )
     asset alice_smt_balance = asset( 1000000, alice_symbol );
     asset alice_balance = alice_account.get_balance();
 
-    FUND( "alice", alice_smt_balance );
+    ISSUE_FUNDS( "alice", alice_smt_balance );
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
 
@@ -565,7 +566,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
 
     asset alice_0 = asset( 0, alice_symbol );
 
-    FUND( "bob", 1000000 );
+    fund( "bob", 1000000 );
+    generate_block();
     convert( "bob", ASSET("1000.000 TESTS" ) );
     generate_block();
 
@@ -576,8 +578,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
 
     asset bob_balance = bob_account.get_balance();
 
-    FUND( "alice", alice_smt_balance );
-    FUND( "bob", bob_smt_balance );
+    ISSUE_FUNDS( "alice", alice_smt_balance );
+    ISSUE_FUNDS( "bob", bob_smt_balance );
 
     tx.operations.clear();
 
@@ -1149,7 +1151,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_to_vesting_validate )
     auto smts = create_smt_3( "alice", alice_private_key );
     const auto& smt1 = smts[0];
     // Fund creator with SMTs
-    FUND( "alice", asset( 100, smt1 ) );
+    ISSUE_FUNDS( "alice", asset( 100, smt1 ) );
 
     transfer_to_vesting_operation op;
     op.from = "alice";
@@ -1198,7 +1200,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_to_vesting_apply )
     {
       asset_symbol_type vesting_smt = liquid_smt.get_paired_symbol();
       // Fund creator with SMTs
-      FUND( "alice", asset( 10000, liquid_smt ) );
+      ISSUE_FUNDS( "alice", asset( 10000, liquid_smt ) );
 
       const auto& smt_object = db->get< smt_token_object, by_symbol >( liquid_smt );
 
@@ -1437,7 +1439,7 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hive_funds )
 
     generate_block();
 
-    FUND( "alice", ASSET( "0.999 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "0.999 TESTS" ) );
 
     smt_create_operation op;
     op.control_account = "alice";
@@ -1451,7 +1453,7 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hive_funds )
 
     BOOST_REQUIRE( util::smt::find_token( *db, op.symbol, true ) == nullptr );
 
-    FUND( "alice", ASSET( "0.001 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "0.001 TESTS" ) );
 
     PUSH_OP( op, alice_private_key );
 
@@ -1478,7 +1480,7 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hbd_funds )
 
     generate_block();
 
-    FUND( "alice", ASSET( "0.999 TBD" ) );
+    ISSUE_FUNDS( "alice", ASSET( "0.999 TBD" ) );
 
     smt_create_operation op;
     op.control_account = "alice";
@@ -1492,7 +1494,7 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hbd_funds )
 
     BOOST_REQUIRE( util::smt::find_token( *db, op.symbol, true ) == nullptr );
 
-    FUND( "alice", ASSET( "0.001 TBD" ) );
+    ISSUE_FUNDS( "alice", ASSET( "0.001 TBD" ) );
 
     PUSH_OP( op, alice_private_key );
 
@@ -1545,8 +1547,8 @@ BOOST_AUTO_TEST_CASE( smt_creation_fee_test )
 
     for ( int i = 0; i < 2; i++ )
     {
-      FUND( "alice", ASSET( "2.000 TESTS" ) );
-      FUND( "alice", ASSET( "1.000 TBD" ) );
+      ISSUE_FUNDS( "alice", ASSET( "2.000 TESTS" ) );
+      ISSUE_FUNDS( "alice", ASSET( "1.000 TBD" ) );
 
       // These values should be equivilant as per our price feed and all tests here should work either way
       if ( !i ) // First pass
@@ -1620,7 +1622,7 @@ BOOST_AUTO_TEST_CASE( smt_create_reset )
     generate_block();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    fund( "alice", ASSET( "100.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "100.000 TESTS" ) );
 
       SMT_SYMBOL( alice, 3, db )
 
@@ -2152,8 +2154,10 @@ BOOST_AUTO_TEST_CASE( set_setup_parameters_apply )
 
     generate_block();
 
-    FUND( "alice", 5000000 );
-    FUND( "bob", 5000000 );
+    fund( "alice", 5000000 );
+    generate_block();
+    fund( "bob", 5000000 );
+    generate_block();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     convert( "alice", ASSET( "5000.000 TESTS" ) );
@@ -2686,7 +2690,7 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
     auto bob_contribution_counter = 0;
     auto sam_contribution_counter = 0;
 
-    FUND( "sam", ASSET( "1000.000 TESTS" ) );
+    ISSUE_FUNDS( "sam", ASSET( "1000.000 TESTS" ) );
 
     generate_block();
 
@@ -2744,8 +2748,8 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
     BOOST_TEST_MESSAGE( " -- Failure on insufficient funds" );
     FAIL_WITH_OP( alice_op, alice_private_key, fc::assert_exception );
 
-    FUND( "alice", ASSET( "1000.000 TESTS" ) );
-    FUND( "bob",   ASSET( "1000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "1000.000 TESTS" ) );
+    ISSUE_FUNDS( "bob",   ASSET( "1000.000 TESTS" ) );
 
     generate_block();
 
@@ -2954,7 +2958,7 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
 
     auto symbol = create_smt( "alice", alice_private_key, 3 );
 
-    fund( "alice", asset( 10000, symbol ) );
+    issue_funds( "alice", asset( 10000, symbol ) );
 
     BOOST_REQUIRE( db->get_balance( "alice", symbol ) == asset( 10000, symbol ) );
     BOOST_REQUIRE( db->get_balance( "bob", symbol ) == asset( 0, symbol ) );

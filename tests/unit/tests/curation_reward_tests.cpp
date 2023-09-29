@@ -369,7 +369,7 @@ struct curation_rewards_handler
     funds += prepare_funds( counter, mid );
     funds += prepare_funds( counter, late );
 
-    test_object.fund( HIVE_INIT_MINER_NAME, asset( funds, HIVE_SYMBOL ) );
+    test_object.issue_funds( HIVE_INIT_MINER_NAME, asset( funds, HIVE_SYMBOL ) );
   }
 
   void prepare_funds( uint32_t amount = curation_rewards_handler::default_amount )
@@ -379,7 +379,7 @@ struct curation_rewards_handler
     {
       funds += prepare_funds_impl( i, amount );
     }
-    test_object.fund( HIVE_INIT_MINER_NAME, asset( funds, HIVE_SYMBOL ) );
+    test_object.issue_funds( HIVE_INIT_MINER_NAME, asset( funds, HIVE_SYMBOL ) );
   }
 
   void prepare_comment( const std::string& permlink, uint32_t creator_number )

@@ -159,8 +159,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes )
 
       executor->fund( "alice", 100000 );
       executor->fund( "bob", 100000 );
-      executor->fund( "alice", ASSET( "200.000 TBD" ) );
-      executor->fund( "bob", ASSET( "200.000 TBD" ) );
+      executor->issue_funds( "alice", ASSET( "200.000 TBD" ) );
+      executor->issue_funds( "bob", ASSET( "200.000 TBD" ) );
       executor->vest( "alice", 100000 );
       executor->vest( "bob", 100000 );
 
@@ -226,8 +226,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
 
       executor->fund( "alice", 100000 );
       executor->fund( "bob", 100000 );
-      executor->fund( "alice", ASSET( "200.000 TBD" ) );
-      executor->fund( "bob", ASSET( "200.000 TBD" ) );
+      executor->issue_funds( "alice", ASSET( "200.000 TBD" ) );
+      executor->issue_funds( "bob", ASSET( "200.000 TBD" ) );
       executor->vest( "alice", 100000 );
       executor->vest( "bob", 100000 );
 
@@ -524,7 +524,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
       for( auto& actor : _actors )
       {
         executor->fund( actor.name, 100000 );
-        executor->fund( actor.name, ASSET( "200.000 TBD" ) );
+        executor->issue_funds( actor.name, ASSET( "200.000 TBD" ) );
         executor->vest( actor.name, 100000 );
       }
       executor->generate_block();

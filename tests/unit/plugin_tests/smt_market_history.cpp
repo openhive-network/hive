@@ -55,10 +55,10 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
     signed_transaction tx;
     asset_symbol_type any_smt_symbol = create_smt( "smtcreator", smtcreator_private_key, 3 );
 
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
-    fund( "bob", ASSET( "1000.000 TESTS" ) );
-    fund( "sam", ASSET( "1000.000 TESTS" ) );
-    fund( "alice", asset( 1000000, any_smt_symbol ) );
+    issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "bob", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "sam", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "alice", asset( 1000000, any_smt_symbol ) );
 
     tx.operations.clear();
     
