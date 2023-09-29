@@ -90,6 +90,13 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     hive_hf9_compromised_key = std::string(get_initminer_public_key());
   }
 
+  void configuration::set_hive_owner_update_limit ( uint16_t limit )
+  {
+    FC_ASSERT ( limit >= 6 && limit % 3 == 0, "A new `hive_owner_update_limit` must meet requirements: 'limit >= 6' and ` limit % 3 == 0`. Got ${limit}", ( "limit", limit )  );
+
+    hive_owner_update_limit = limit;
+  }
+
 } } }// hive::protocol::testnet_blockchain_configuration
 
 #endif // USE_ALTERNATE_CHAIN_ID
