@@ -337,16 +337,6 @@ bool database::is_known_transaction( const transaction_id_type& id )const
   return trx_idx.find( id ) != trx_idx.end();
 } FC_CAPTURE_AND_RETHROW() }
 
-//no chainbase lock required
-std::shared_ptr<full_block_type> database::fetch_block_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds )const
-{ try {
-  shared_ptr<fork_item> forkdb_item = _fork_db().fetch_block_on_main_branch_by_number(block_num, wait_for_microseconds);
-  if (forkdb_item)
-    return forkdb_item->full_block;
-
-  return block_reader().read_block_by_num(block_num);
-} FC_LOG_AND_RETHROW() }
-
 chain_id_type database::get_chain_id() const
 {
   return hive_chain_id;

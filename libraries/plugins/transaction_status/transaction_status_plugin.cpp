@@ -129,7 +129,8 @@ fc::optional< transaction_id_type > transaction_status_impl::get_earliest_transa
 {
   for (uint32_t block_num = first_block_num; block_num <= last_block_num; block_num++)
   {
-    std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
+    std::shared_ptr<full_block_type> full_block = 
+      _db.block_reader().fetch_block_by_number(block_num);
     FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
     if( !full_block->get_full_transactions().empty() )
       return full_block->get_full_transactions().front()->get_transaction_id();
@@ -148,7 +149,8 @@ fc::optional< transaction_id_type > transaction_status_impl::get_latest_transact
 {
   for (uint32_t block_num = last_block_num; block_num >= first_block_num; block_num--)
   {
-    std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
+    std::shared_ptr<full_block_type> full_block = 
+      _db.block_reader().fetch_block_by_number(block_num);
     FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
     if( !full_block->get_full_transactions().empty() )
       return full_block->get_full_transactions().back()->get_transaction_id();
@@ -208,7 +210,8 @@ void transaction_status_impl::rebuild_state()
   uint32_t earliest_tracked_block_num = get_earliest_tracked_block_num();
   for (uint32_t block_num = earliest_tracked_block_num; block_num <= head_block_num; block_num++)
   {
-    std::shared_ptr<full_block_type> full_block = _db.fetch_block_by_number(block_num);
+    std::shared_ptr<full_block_type> full_block = 
+      _db.block_reader().fetch_block_by_number(block_num);
     FC_ASSERT(full_block, "Could not read block ${block_num}", (block_num));
     for (const auto& transaction : full_block->get_full_transactions())
       _db.create< transaction_status_object >( [&]( transaction_status_object& obj )

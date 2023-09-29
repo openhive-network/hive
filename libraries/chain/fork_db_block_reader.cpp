@@ -22,6 +22,19 @@ void fork_db_block_reader::close_reader()
   block_log_reader::close_reader();
 }
 
+std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_number( uint32_t block_num,
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{ 
+  try {
+    shared_ptr<fork_item> forkdb_item = 
+      _fork_db.fetch_block_on_main_branch_by_number(block_num, wait_for_microseconds);
+    if (forkdb_item)
+      return forkdb_item->full_block;
+
+    return read_block_by_num(block_num);
+  } FC_LOG_AND_RETHROW()
+}
+
 std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_id( 
   const block_id_type& id ) const
 {

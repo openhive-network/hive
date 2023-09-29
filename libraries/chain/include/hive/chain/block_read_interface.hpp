@@ -34,8 +34,8 @@ namespace hive { namespace chain {
     /** Check among reversible blocks. If found 1 return it, if found more return the one
      *  from main branch. If found none check among irreversible blocks.
     */
-    /*virtual std::shared_ptr<full_block_type> fetch_block_by_number( 
-      uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;*/
+    virtual std::shared_ptr<full_block_type> fetch_block_by_number( 
+      uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
     
     /// Check among reversible blocks on main branch. Supplement with irreversible blocks when needed.
     virtual std::vector<std::shared_ptr<full_block_type>> fetch_block_range( 
