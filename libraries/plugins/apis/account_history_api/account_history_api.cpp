@@ -205,7 +205,8 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
 
   if(_dataSource.find_transaction_info(id, include_reversible, &blockNo, &txInBlock))
   {
-    std::shared_ptr<hive::chain::full_block_type> blk = _db.fetch_block_by_number(blockNo, fc::seconds(1));
+    std::shared_ptr<hive::chain::full_block_type> blk = 
+      _db.block_reader().fetch_block_by_number(blockNo, fc::seconds(1));
     FC_ASSERT(blk);
     
     const auto& full_txs = blk->get_full_transactions();
