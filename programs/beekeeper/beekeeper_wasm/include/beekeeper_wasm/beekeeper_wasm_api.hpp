@@ -31,7 +31,7 @@ class beekeeper_api final
     std::string to_string( const T& src, bool valid = true );
     std::string extend_json( const std::string& src );
 
-    std::string exception_handler( std::function<std::string()>&& method, std::function<void(bool)>&& aux_method = std::function<void(bool)>() );
+    std::string exception_handler( std::function<std::string()>&& method, std::function<void(bool)>&& aux_init_method = std::function<void(bool)>() );
 
     std::string create_impl( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password );
 
