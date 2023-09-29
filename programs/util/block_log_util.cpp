@@ -354,7 +354,11 @@ bool truncate_block_log(const fc::path& block_log_filename, uint32_t new_head_bl
     }
     hive::chain::block_log log( app );
     log.open(block_log_filename, false);
+    const uint32_t head_block_num = log.read_head()->get_block_num();
+    FC_ASSERT(head_block_num > new_head_block_num);
+    std::cout << "\nOriginal block_log head_block_num: " << head_block_num << "\n";
     log.truncate(new_head_block_num);
+    std::cout << "Truncating finished.\n";
     return true;
   }
   FC_CAPTURE_AND_RETHROW()
@@ -535,14 +539,16 @@ bool get_block_ids(const fc::path& block_log_filename, uint32_t starting_block_n
 
 bool get_block(const fc::path& block_log_filename, uint32_t block_number, bool header_only, bool pretty_print, bool binary, appbase::application& app)
 {
+  FC_ASSERT(block_number, "Block number must be a positive number");
+
   try
   {
     hive::chain::block_log log( app );
     log.open(block_log_filename, true);
     const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
-    if (block_number < head_block_num)
+    if (block_number > head_block_num)
     {
-      std::cerr << "Block log only has " << head_block_num << " blocks\n";
+      std::cerr << "Block log only has " << head_block_num << " blocks. Requested block: " << block_number << "\n";
       return false;
     }
     std::shared_ptr<hive::chain::full_block_type> full_block = log.read_block_by_num(block_number);
@@ -819,6 +825,8 @@ int main(int argc, char** argv)
         positional(truncate_positional_options).
         run();
       boost::program_options::store(parsed_truncate_options, options_map);
+      FC_ASSERT(options_map.count("block-log"), "\"--block_log\" is mandatory");
+      FC_ASSERT(options_map.count("block-number"), "\"--block-number\" is mandatory");
 
       return truncate_block_log(options_map["block-log"].as<std::string>(), options_map["block-number"].as<uint32_t>(), options_map.count("force"), theApp) ? 0 : 1;
     }
@@ -832,6 +840,8 @@ int main(int argc, char** argv)
         positional(find_end_positional_options).
         run();
       boost::program_options::store(parsed_find_end_options, options_map);
+
+      FC_ASSERT(options_map.count("block-log"), "\"--block_log\" is mandatory");
 
       return find_end(options_map["block-log"].as<std::string>()) ? 0 : 1;
     }
@@ -860,6 +870,9 @@ int main(int argc, char** argv)
         run();
       boost::program_options::store(parsed_get_block_ids_options, options_map);
 
+      FC_ASSERT(options_map.count("block-log"), "\"--block_log\" is mandatory");
+      FC_ASSERT(options_map.count("starting-block-number"), "\"--starting-block-number\" is mandatory");
+
       const uint32_t starting_block_number = options_map["starting-block-number"].as<uint32_t>();
       std::optional<uint32_t> ending_block_number;
       if (options_map.count("ending-block-number"))
@@ -880,6 +893,9 @@ int main(int argc, char** argv)
         run();
       boost::program_options::store(parsed_get_block_options, options_map);
 
+      FC_ASSERT(options_map.count("block-log"), "\"--block_log\" is mandatory");
+      FC_ASSERT(options_map.count("block-number"), "\"--block-number\" is mandatory");
+
       const uint32_t block_number = options_map["block-number"].as<uint32_t>();
       const bool header_only = options_map.count("header") != 0;
       const bool pretty = options_map.count("pretty") != 0;
@@ -898,6 +914,7 @@ int main(int argc, char** argv)
         run();
       boost::program_options::store(parsed_get_block_artifacts_options, options_map);
 
+      FC_ASSERT(options_map.count("block-log"), "\"--block_log\" is mandatory");
       const bool header_only = options_map.count("header-only") != 0;
       const bool full_match_verification = options_map.count("do-full-artifacts-verification-match-check") != 0;
       std::optional<uint32_t> starting_block_number, ending_block_number;
