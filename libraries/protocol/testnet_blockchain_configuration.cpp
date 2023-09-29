@@ -4,6 +4,8 @@
 
 #include <hive/protocol/config.hpp>
 
+#include <fc/exception/exception.hpp>
+
 namespace hive { namespace protocol { namespace testnet_blockchain_configuration {
 
   configuration configuration_data;
@@ -88,6 +90,14 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
   {
     hive_initminer_key = private_key;
     hive_hf9_compromised_key = std::string(get_initminer_public_key());
+  }
+
+  void configuration::set_hive_owner_update_limit ( uint16_t limit )
+  {
+    FC_ASSERT ( limit >= 6 );
+    FC_ASSERT ( limit % 3 == 0 );
+
+    hive_owner_update_limit = limit;
   }
 
 } } }// hive::protocol::testnet_blockchain_configuration

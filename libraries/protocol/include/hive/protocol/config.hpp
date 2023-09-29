@@ -85,7 +85,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_OWNER_AUTH_RECOVERY_PERIOD                   fc::seconds(60)
 #define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::seconds(12)
-#define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(6)
+#define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(configuration_data.get_hive_owner_update_limit())
 #define HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM  1
 
 #define HIVE_PROPOSAL_MAINTENANCE_PERIOD          (configuration_data.get_hive_proposal_maintenance_period())

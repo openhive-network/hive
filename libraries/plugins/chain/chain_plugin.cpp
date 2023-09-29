@@ -1009,6 +1009,9 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     if( alternate_chain_spec.get_object().contains( "generate_missed_block_operations" ) )
       configuration_data.set_generate_missed_block_operations( alternate_chain_spec[ "generate_missed_block_operations" ].as< bool >() );
 
+    if ( alternate_chain_spec.get_object().contains( "hive_owner_update_limit" ))
+      configuration_data.set_hive_owner_update_limit( alternate_chain_spec["hive_owner_update_limit"].as< uint16_t >() );
+
     std::vector< string > init_witnesses;
     if( alternate_chain_spec.get_object().contains("init_witnesses") )
       init_witnesses = alternate_chain_spec["init_witnesses"].as< std::vector< string > >();

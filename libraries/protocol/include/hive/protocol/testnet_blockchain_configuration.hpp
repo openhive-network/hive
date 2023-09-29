@@ -53,6 +53,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     int64_t hive_governance_vote_expiration_period = 60*60*24*5; // seconds, originally 5 days
     // How often proposals are taken care of.
     uint32_t hive_proposal_maintenance_period = 60*60; // 1 hour
+    // Time in which you can change the owner key twice, orginally 60 min
+    uint16_t hive_owner_update_limit = 6;
     
     std::string hive_hf9_compromised_key;
     hive::protocol::private_key_type hive_initminer_key;
@@ -105,6 +107,7 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       uint32_t get_hive_delayed_voting_total_interval_seconds() const { return hive_delayed_voting_total_interval_seconds; }
       uint32_t get_hive_delayed_voting_interval_seconds() const { return get_hive_delayed_voting_total_interval_seconds() / 30; }
       int64_t  get_hive_governance_vote_expiration_period() const { return hive_governance_vote_expiration_period; }
+      uint16_t get_hive_owner_update_limit() const { return hive_owner_update_limit; }
 
       uint32_t get_hive_proposal_maintenance_period() const { return hive_proposal_maintenance_period; }
 
@@ -231,6 +234,8 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
       {
          witness_shutdown_threshold = threshold;
       }
+
+      void set_hive_owner_update_limit ( uint16_t limit );
 
 #ifdef IS_TEST_NET
       uint64_t init_supply = int64_t( 243 ) * int64_t( 1000000 ) * int64_t( 1000 );
