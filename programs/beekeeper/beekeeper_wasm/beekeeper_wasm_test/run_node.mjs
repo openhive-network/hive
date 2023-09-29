@@ -1024,6 +1024,28 @@ const my_entrypoint = async() => {
       assert.equal(error_message.includes("Invalid hex character '!'"), true);
     }
   }
+  {
+    console.log();
+    console.log("**************************************************************************************");
+    console.log("An incorrect initialization should block all API calls.");
+    console.log("**************************************************************************************");
+
+    {
+      const params = new provider.StringList();
+      params.push_back("--invalid-param");
+      params.push_back("true");
+  
+      let instance = new provider.beekeeper_api(params)
+  
+      let error_message = instance.init();
+      console.log(error_message)
+      assert.equal(error_message.includes("unrecognised option"), true);
+
+      error_message = instance.create_session('xyz');
+      console.log(error_message)
+      assert.equal(error_message.includes("Initialization failed. API call aborted."), true);
+    }
+  }
 
   console.log('##########################################################################################');
   console.log('##                             ALL TESTS PASSED                                         ##');
