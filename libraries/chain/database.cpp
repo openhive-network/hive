@@ -1074,7 +1074,7 @@ void database::pop_block()
 
     try
     {
-      _fork_db().pop_block();
+      _block_writer->pop_block();
     }
     FC_CAPTURE_AND_RETHROW()
     try

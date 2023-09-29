@@ -27,6 +27,8 @@ namespace hive { namespace chain {
     virtual void store_block( uint32_t current_irreversible_block_num,
                               uint32_t state_head_block_number ) override;
 
+    virtual void pop_block() override { FC_ASSERT( false, "Wrong writer bro" ); }
+
   private:
     block_log_reader  _reader;
     fork_database&    _fork_db;
