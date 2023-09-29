@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     const int cycle = 24;
     const int time_offset = HIVE_DELAYED_VOTING_INTERVAL_SECONDS / cycle;
     // check
-    for(int i = 0; i < (cycle*nr_intervals_in_delayed_voting()) - 1; i++)
+    for( uint32_t i = 0; i < (cycle*nr_intervals_in_delayed_voting()) - 1; ++i )
     {
       generate_blocks( db->head_block_time() + fc::seconds( time_offset ).to_seconds());
       auto * ptr = find_proposal(proposal_1);
@@ -185,9 +185,9 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     auto * ptr = find_proposal(proposal_1); //<- just init
 
     // check
-    const int cycle = 24;
-    const int time_offset = HIVE_DELAYED_VOTING_INTERVAL_SECONDS / cycle;
-    for(int i = 0; i < (cycle*nr_intervals_in_delayed_voting()) - 1; i++)
+    const uint32_t cycle = 24;
+    const uint32_t time_offset = HIVE_DELAYED_VOTING_INTERVAL_SECONDS / cycle;
+    for( uint32_t i = 0; i < (cycle*nr_intervals_in_delayed_voting()) - 1; ++i )
     {
       generate_blocks( db->head_block_time() + fc::seconds(time_offset).to_seconds());
       ptr = find_proposal(proposal_1);
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     BOOST_REQUIRE( ptr != nullptr );
     BOOST_REQUIRE( static_cast<long>(ptr->total_votes) == carol_power_1 );
 
-    for(int i = 0; i < ( 12 * ( nr_intervals_in_delayed_voting() / 2 ) ) - 1; i++)
+    for( uint32_t i = 0; i < ( 12 * ( nr_intervals_in_delayed_voting() / 2 ) ) - 1; ++i )
     {
       generate_blocks( db->head_block_time() + fc::seconds(time_offset).to_seconds());
       ptr = find_proposal(proposal_2);
@@ -1154,7 +1154,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
     generate_block();
 
     BOOST_REQUIRE( basic_votes == get_votes( "witness" ) );
-    for(int i = 1; i < (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS) - 1; i++)
+    for( uint32_t i = 1; i < (HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS) - 1; ++i )
     {
       generate_blocks( start_time + (i * HIVE_DELAYED_VOTING_INTERVAL_SECONDS) , true );
       BOOST_REQUIRE( get_votes( "witness" ) == basic_votes );
@@ -1209,10 +1209,10 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
     BOOST_REQUIRE( basic_votes_1 == votes_01_1 );
     BOOST_REQUIRE( basic_votes_2 == votes_01_2 );
 
-    for(int i = 1; i < nr_intervals_in_delayed_voting() - 1; i++)
+    for( uint32_t i = 1; i < nr_intervals_in_delayed_voting() - 1; ++i )
     {
       generate_blocks( start_time + (i * HIVE_DELAYED_VOTING_INTERVAL_SECONDS) , true );
-      if( i == static_cast<int>( nr_intervals_in_delayed_voting()/2 )) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
+      if( i == nr_intervals_in_delayed_voting()/2 ) witness_vote( "bob", "witness2", true/*approve*/, bob_private_key );
       BOOST_REQUIRE( get_votes( "witness1" ) == votes_01_1 );
       BOOST_REQUIRE( get_votes( "witness2" ) == votes_01_2 );
     }
@@ -1469,7 +1469,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
 
     // check everyday for month
     bool s = false;
-    for(int i = 1; i < nr_intervals_in_delayed_voting() - 1; i++)
+    for( uint32_t i = 1; i < nr_intervals_in_delayed_voting() - 1; ++i )
     {
       // 1 day
       generate_blocks( start_time + (i * HIVE_DELAYED_VOTING_INTERVAL_SECONDS) , true );
