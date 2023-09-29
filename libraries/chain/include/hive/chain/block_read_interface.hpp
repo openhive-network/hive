@@ -21,7 +21,7 @@ namespace hive { namespace chain {
     virtual void start_reader( const std::shared_ptr<full_block_type>& head_block ) = 0;
     virtual void close_reader() = 0;
   
-    virtual std::shared_ptr<full_block_type> head() const = 0;
+    virtual std::shared_ptr<full_block_type> head_block() const = 0;
 
     virtual uint32_t head_block_num( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;

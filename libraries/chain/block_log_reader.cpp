@@ -27,7 +27,7 @@ void block_log_reader::close_reader()
   _block_log.close();
 }
 
-std::shared_ptr<full_block_type> block_log_reader::head() const
+std::shared_ptr<full_block_type> block_log_reader::head_block() const
 {
   return _block_log.head();
 }
