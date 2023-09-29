@@ -29,6 +29,8 @@ namespace hive { namespace chain {
    */
   virtual void store_block( uint32_t current_irreversible_block_num,
                             uint32_t state_head_block_number ) = 0;
+
+  virtual void pop_block() = 0;  
   };
 
 } }

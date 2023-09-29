@@ -52,4 +52,9 @@ void sync_block_writer::store_block( uint32_t current_irreversible_block_num,
   _fork_db.set_max_size( state_head_block_number - current_irreversible_block_num + 1 );
 }
 
+void sync_block_writer::pop_block()
+{
+  _fork_db.pop_block();
+}
+
 } } //hive::chain
