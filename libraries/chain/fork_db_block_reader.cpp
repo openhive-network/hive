@@ -22,7 +22,13 @@ void fork_db_block_reader::close_reader()
   block_log_reader::close_reader();
 }
 
-uint32_t fork_db_block_reader::head_block_num( 
+std::shared_ptr<full_block_type> fork_db_block_reader::head_block() const
+{
+  auto head = _fork_db.head();
+  return head ? head->full_block : block_log_reader::head_block();
+}
+
+uint32_t fork_db_block_reader::head_block_num(
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
   auto head = _fork_db.head();

@@ -752,7 +752,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
 
     uint32_t _head_block_num = db.head_block_num();
 
-    std::shared_ptr<full_block_type> _head = db.block_reader().head();
+    std::shared_ptr<full_block_type> _head = db.block_reader().head_block();
     if( _head )
     {
       if( args.stop_replay_at == 0 )
@@ -817,8 +817,8 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
       //get_index< account_index >().indices().print_stats();
     });
 
-    FC_ASSERT( db.block_reader().head()->get_block_num(), "this should never happen" );
-    fork_db.start_block( db.block_reader().head() );
+    FC_ASSERT( db.block_reader().head_block()->get_block_num(), "this should never happen" );
+    fork_db.start_block( db.block_reader().head_block() );
 
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
@@ -848,7 +848,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args, const std::
       chain::database::skip_validate; /// no need to validate operations
   }
 
-  uint32_t last_block_num = db.block_reader().head()->get_block_num();
+  uint32_t last_block_num = db.block_reader().head_block()->get_block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
     last_block_num = args.stop_replay_at;
 
@@ -898,7 +898,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args, const std::
 
 bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64_t* head_block_num_in_db ) const
 {
-  std::shared_ptr<full_block_type> head = db.block_reader().head();
+  std::shared_ptr<full_block_type> head = db.block_reader().head_block();
   uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
   uint32_t head_block_num_state = db.head_block_num();
 
