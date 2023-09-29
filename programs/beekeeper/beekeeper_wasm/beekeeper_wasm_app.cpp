@@ -52,4 +52,9 @@ std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_wasm_app::create_
                                                                       cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit );
 }
 
+init_data beekeeper_wasm_app::init( int argc, char** argv )
+{
+  return run( argc, argv );
+}
+
 }

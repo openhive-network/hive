@@ -6,6 +6,8 @@
 #include <fc/io/json.hpp>
 #include <fc/optional.hpp>
 
+#include <boost/scope_exit.hpp>
+
 namespace beekeeper {
 
   class beekeeper_api::impl
@@ -35,22 +37,17 @@ namespace beekeeper {
     char** _params = nullptr;
     init_data _result;
 
-    try
-    {
-      _params = new char*[ params.size() ];
-      for( size_t i = 0; i < params.size(); ++i )
-        _params[i] = static_cast<char*>( params[i].data() );
-
-      _result = app.init( params.size(), _params );
-
-      if( _params )
-        delete[] _params;
-    }
-    catch(...)
+    BOOST_SCOPE_EXIT(&_params)
     {
       if( _params )
         delete[] _params;
-    }
+    } BOOST_SCOPE_EXIT_END
+
+    _params = new char*[ params.size() ];
+    for( size_t i = 0; i < params.size(); ++i )
+      _params[i] = static_cast<char*>( params[i].data() );
+
+    _result = app.init( params.size(), _params );
 
     return _result;
   }
@@ -66,9 +63,19 @@ namespace beekeeper {
     return fc::json::to_string( fc::mutable_variant_object( _key_name, fc::json::to_string( _v ) ) );
   }
 
-  std::string beekeeper_api::exception_handler( std::function<std::string()>&& method )
+  std::string beekeeper_api::exception_handler( std::function<std::string()>&& method, std::function<void(bool)>&& aux_method )
   {
+    if( !aux_method )
+    {
+      if( !initialized )
+        return to_string( std::string( "Initialization failed. API call aborted." ), initialized );
+    }
+
     auto _result = exception::exception_handler( std::move( method ) );
+
+    if( aux_method )
+      aux_method( _result.second );
+
     if( _result.second )
       return _result.first;
     else
@@ -81,7 +88,7 @@ namespace beekeeper {
     {
       return to_string( _impl->init_impl() );
     };
-    return exception_handler( _method );
+    return exception_handler( _method, [this]( bool result ){ initialized = result; } );
   }
 
   std::string beekeeper_api::create_session( const std::string& salt )
