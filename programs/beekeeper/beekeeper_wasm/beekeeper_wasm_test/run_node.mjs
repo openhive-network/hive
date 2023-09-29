@@ -1034,12 +1034,18 @@ const my_entrypoint = async() => {
       const params = new provider.StringList();
       params.push_back("--invalid-param");
       params.push_back("true");
+      params.push_back("--something-else");
+      params.push_back("667");
   
       let instance = new provider.beekeeper_api(params)
   
       let error_message = instance.init();
       console.log(error_message)
       assert.equal(error_message.includes("unrecognised option"), true);
+      assert.equal(error_message.includes("--invalid-param"), true);
+      assert.equal(error_message.includes("true"), true);
+      assert.equal(error_message.includes("--something-else"), true);
+      assert.equal(error_message.includes("667"), true);
 
       error_message = instance.create_session('xyz');
       console.log(error_message)

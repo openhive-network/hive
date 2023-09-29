@@ -849,6 +849,8 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper_false)
 
     auto _init_error_msg = extract_json( _obj.init() );
     BOOST_REQUIRE( _init_error_msg.find( "unrecognised option" ) != std::string::npos );
+    BOOST_REQUIRE( _init_error_msg.find( "--unknown-parameter" ) != std::string::npos );
+    BOOST_REQUIRE( _init_error_msg.find( "value_without_sense" ) != std::string::npos );
 
     auto _create_session_error_msg = extract_json( _obj.create_session( "banana" ) );
     BOOST_REQUIRE( _create_session_error_msg.find( "Initialization failed. API call aborted." ) != std::string::npos );
