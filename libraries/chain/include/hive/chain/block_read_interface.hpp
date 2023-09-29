@@ -23,6 +23,11 @@ namespace hive { namespace chain {
   
     virtual std::shared_ptr<full_block_type> head() const = 0;
 
+    virtual uint32_t head_block_num( 
+      fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
+    virtual block_id_type head_block_id( 
+      fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
+
     virtual std::shared_ptr<full_block_type> read_block_by_num( uint32_t block_num ) const = 0;
 
     using block_processor_t = std::function<bool( const std::shared_ptr<full_block_type>& )>;

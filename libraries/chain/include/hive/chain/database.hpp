@@ -567,10 +567,6 @@ namespace chain {
       uint32_t         head_block_num()const;
       block_id_type    head_block_id()const;
 
-      time_point_sec   head_block_time_from_fork_db(fc::microseconds wait_for_microseconds = fc::microseconds())const;
-      uint32_t         head_block_num_from_fork_db(fc::microseconds wait_for_microseconds = fc::microseconds())const;
-      block_id_type    head_block_id_from_fork_db(fc::microseconds wait_for_microseconds = fc::microseconds())const;
-
       uint32_t get_last_irreversible_block_num()const;
       void set_last_irreversible_block_num(uint32_t block_num);
       struct irreversible_object_type

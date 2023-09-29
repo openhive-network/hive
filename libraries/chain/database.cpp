@@ -3524,24 +3524,6 @@ block_id_type database::head_block_id()const
   return get_dynamic_global_properties().head_block_id;
 }
 
-//safe to call without chainbase lock
-time_point_sec database::head_block_time_from_fork_db(fc::microseconds wait_for_microseconds)const
-{
-  return _fork_db().head_block_time(wait_for_microseconds);
-}
-
-//safe to call without chainbase lock
-uint32_t database::head_block_num_from_fork_db(fc::microseconds wait_for_microseconds)const
-{
-  return _fork_db().head_block_num(wait_for_microseconds);
-}
-
-//safe to call without chainbase lock
-block_id_type database::head_block_id_from_fork_db(fc::microseconds wait_for_microseconds)const
-{
-  return _fork_db().head_block_id(wait_for_microseconds);
-}
-
 uint32_t database::get_last_irreversible_block_num() const
 {
   //ilog("getting last_irreversible_block_num irreversible is ${l}", ("l", irreversible_object->last_irreversible_block_num));
