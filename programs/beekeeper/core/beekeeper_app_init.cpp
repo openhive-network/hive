@@ -178,29 +178,4 @@ std::string beekeeper_app_init::check_version()
   return _version;
 }
 
-init_data beekeeper_app_init::init( int argc, char** argv )
-{
-  try
-  {
-    return run( argc, argv );
-  }
-  catch ( const boost::exception& e )
-  {
-    elog(boost::diagnostic_information(e));
-  }
-  catch ( const fc::exception& e )
-  {
-    elog(e.to_detail_string());
-  }
-  catch ( const std::exception& e )
-  {
-    elog(e.what());
-  }
-  catch ( ... )
-  {
-    elog("unknown exception");
-  }
-
-  return init_data();
-}
 }

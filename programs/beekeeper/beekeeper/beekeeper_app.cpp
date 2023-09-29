@@ -97,4 +97,30 @@ std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_walle
                                                                        [this]() { std::raise(SIGINT); } );
 }
 
+init_data beekeeper_app::init( int argc, char** argv )
+{
+  try
+  {
+    return run( argc, argv );
+  }
+  catch ( const boost::exception& e )
+  {
+    elog(boost::diagnostic_information(e));
+  }
+  catch ( const fc::exception& e )
+  {
+    elog(e.to_detail_string());
+  }
+  catch ( const std::exception& e )
+  {
+    elog(e.what());
+  }
+  catch ( ... )
+  {
+    elog("unknown exception");
+  }
+
+  return init_data();
+}
+
 }

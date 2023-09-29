@@ -23,13 +23,15 @@ class beekeeper_api final
 
     const std::string empty_response;
 
+    bool initialized = false;
+
     std::unique_ptr<impl, impl_deleter> _impl;
 
     template<typename T>
     std::string to_string( const T& src, bool valid = true );
     std::string extend_json( const std::string& src );
 
-    std::string exception_handler( std::function<std::string()>&& method );
+    std::string exception_handler( std::function<std::string()>&& method, std::function<void(bool)>&& aux_method = std::function<void(bool)>() );
 
     std::string create_impl( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password );
 
