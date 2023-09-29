@@ -161,7 +161,7 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
   {
     action_catcher ac( shutdown_helper, hive_p2p_handler_type::HIVE_P2P_BLOCK_HANDLER );
 
-    uint32_t head_block_num = chain.db().head_block_num_from_fork_db();
+    uint32_t head_block_num = chain.db().block_reader().head_block_num();
     if (sync_mode)
       fc_ilog(fc::logger::get("sync"),
           "chain pushing sync block #${block_num} ${block_hash}, head is ${head_block_num}",
@@ -327,7 +327,7 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
 
 graphene::net::item_hash_t p2p_plugin_impl::get_head_block_id() const
 { try {
-  return chain.db().head_block_id_from_fork_db();
+  return chain.db().block_reader().head_block_id();
 } FC_CAPTURE_AND_RETHROW() }
 
 uint32_t p2p_plugin_impl::estimate_last_known_fork_from_git_revision_timestamp(uint32_t) const
