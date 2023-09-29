@@ -502,6 +502,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
 void account_update_evaluator::do_apply( const account_update_operation& o )
 {
+  ilog( "mario: do_apply - 0" );
   if( _db.has_hardfork( HIVE_HARDFORK_0_1 ) ) FC_ASSERT( o.account != HIVE_TEMP_ACCOUNT, "Cannot update temp account." );
 
   if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) && o.posting )
@@ -522,6 +523,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 
   if( o.owner )
   {
+  ilog( "mario: do_apply - 1" );
 // Blockchain converter uses the `account_update` operation to change the private keys of the pow-mined accounts within the same transaction
 // Due to that the value of `last_owner_update` is (in a standard environment) less than `HIVE_OWNER_UPDATE_LIMIT`
 // (see the blockchain converter `post_convert_transaction` function to understand the actual reason for this directive here)
@@ -534,6 +536,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
                                                       account_auth.previous_owner_update, account_auth.last_owner_update ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )) );
 # endif
 
+  ilog( "mario: do_apply - 2" );
     if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
       verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
 
@@ -575,6 +578,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     });
   }
 
+  ilog( "mario: do_apply - 3" );
 }
 
 void account_update2_evaluator::do_apply( const account_update2_operation& o )
