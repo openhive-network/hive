@@ -80,9 +80,9 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     ACTORS( (alice)(bob) );
     generate_block();
 
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
-    fund( "alice", ASSET( "1000.000 TBD" ) );
-    fund( "bob", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "1000.000 TBD" ) );
+    issue_funds( "bob", ASSET( "1000.000 TESTS" ) );
 
     generate_block();
 

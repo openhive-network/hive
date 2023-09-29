@@ -39,8 +39,8 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
 
     ACTORS( ( alice ) )
     generate_block();
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    fund( "alice", ASSET( "10.000 TBD" ) );
+    issue_funds( "alice", ASSET( "10.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "10.000 TBD" ) );
     generate_block();
 
     signed_transaction tx;
@@ -147,8 +147,8 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
         gpo.proposal_fund_percent = 0;
       } );
     } );
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    fund( "alice", ASSET( "10.000 TBD" ) );
+    issue_funds( "alice", ASSET( "10.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "10.000 TBD" ) );
     generate_block();
 
     signed_transaction tx;
@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE( treasury_debt_ratio )
     auto& dgpo = db->get_dynamic_global_properties();
     const auto before_hbd_print_rate = dgpo.hbd_print_rate;
 
-    FUND("alice", ASSET( "1000000.000 TBD" ));
+    ISSUE_FUNDS("alice", ASSET( "1000000.000 TBD" ));
     const auto during_hbd_print_rate = dgpo.hbd_print_rate;
 
     transfer( "alice", db->get_treasury_name(), asset( 1000000000, HBD_SYMBOL ) );

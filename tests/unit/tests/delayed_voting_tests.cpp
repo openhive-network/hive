@@ -83,13 +83,13 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
 
-    FUND( "alice", TESTS_1000 );
-    FUND( "bob",   TESTS_1000 );
-    FUND( "carol", TESTS_1000 );
+    ISSUE_FUNDS( "alice", TESTS_1000 );
+    ISSUE_FUNDS( "bob",   TESTS_1000 );
+    ISSUE_FUNDS( "carol", TESTS_1000 );
 
-    FUND( "alice", TBD_100 );
-    FUND( "bob", TBD_100 );
-    FUND( "carol", TBD_100 );
+    ISSUE_FUNDS( "alice", TBD_100 );
+    ISSUE_FUNDS( "bob", TBD_100 );
+    ISSUE_FUNDS( "carol", TBD_100 );
     generate_block();
     
     // create one proposal
@@ -152,13 +152,13 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
 
-    FUND( "alice", TESTS_1000 );
-    FUND( "bob",   TESTS_1000 );
-    FUND( "carol", TESTS_1000 );
+    ISSUE_FUNDS( "alice", TESTS_1000 );
+    ISSUE_FUNDS( "bob",   TESTS_1000 );
+    ISSUE_FUNDS( "carol", TESTS_1000 );
 
-    FUND( "alice", TBD_100 );
-    FUND( "bob", TBD_100 );
-    FUND( "carol", TBD_100 );
+    ISSUE_FUNDS( "alice", TBD_100 );
+    ISSUE_FUNDS( "bob", TBD_100 );
+    ISSUE_FUNDS( "carol", TBD_100 );
     generate_block();
     
     // create one proposal
@@ -337,11 +337,11 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
     {
       BOOST_TEST_MESSAGE( "Preparing accounts..." );
 
-      FUND( "alice", ASSET( "10000.000 TESTS" ) );
-      FUND( "bob", ASSET( "10000.000 TESTS" ) );
-      FUND( "celine", ASSET( "10000.000 TESTS" ) );
-      FUND( "witness1", ASSET( "10000.000 TESTS" ) );
-      FUND( "witness2", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "celine", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "witness1", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "witness2", ASSET( "10000.000 TESTS" ) );
 
       witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
       witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
@@ -848,10 +848,10 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
       set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
       generate_block();
 
-      FUND( "alice", ASSET( "10000.000 TESTS" ) );
-      FUND( "bob", ASSET( "10000.000 TESTS" ) );
-      FUND( "celine", ASSET( "10000.000 TESTS" ) );
-      FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "celine", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "witness", ASSET( "10000.000 TESTS" ) );
     }
     {
       BOOST_TEST_MESSAGE( "Preparing witnesses..." );
@@ -989,9 +989,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
       set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
       generate_block();
 
-      FUND( "alice", ASSET( "10000.000 TESTS" ) );
-      FUND( "bob", ASSET( "10000.000 TESTS" ) );
-      FUND( "witness", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+      ISSUE_FUNDS( "witness", ASSET( "10000.000 TESTS" ) );
     }
     {
       BOOST_TEST_MESSAGE( "Preparing witnesses..." );
@@ -1089,9 +1089,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
 
     //auto start_time = db->head_block_time();
 
-    FUND( "alice", ASSET( "10000.000 TESTS" ) );
-    FUND( "bob", ASSET( "10000.000 TESTS" ) );
-    FUND( "witness", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness", ASSET( "10000.000 TESTS" ) );
     //Prepare witnesses
     
     witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
@@ -1136,8 +1136,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
 
     //auto start_time = db->head_block_time();
 
-    FUND( "bob", ASSET( "10000.000 TESTS" ) );
-    FUND( "witness", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness", ASSET( "10000.000 TESTS" ) );
     
     //Prepare witnesses
     witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
@@ -1184,9 +1184,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
 
     //auto start_time = db->head_block_time();
 
-    FUND( "bob", ASSET( "10000.000 TESTS" ) );
-    FUND( "witness1", ASSET( "10000.000 TESTS" ) );
-    FUND( "witness2", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness1", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness2", ASSET( "10000.000 TESTS" ) );
     
     //Prepare witnesses
     witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
@@ -1242,8 +1242,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
 
     //auto start_time = db->head_block_time();
 
-    FUND( "bob", ASSET( "10000.000 TESTS" ) );
-    FUND( "witness", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness", ASSET( "10000.000 TESTS" ) );
     
     //Prepare witnesses
     const auto start_time = db->head_block_time();
@@ -1436,10 +1436,10 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
     const auto start_time = db->head_block_time();
     ACTORS( (alice)(celine)(bob)(witness) )
     generate_block();
-    FUND( "bob", ASSET( "100000.000 TESTS" ) );
-    FUND( "celine", ASSET( "100000.000 TESTS" ) );
-    FUND( "alice", ASSET( "100000.000 TESTS" ) );
-    FUND( "witness", ASSET( "100000.000 TESTS" ) );
+    ISSUE_FUNDS( "bob", ASSET( "100000.000 TESTS" ) );
+    ISSUE_FUNDS( "celine", ASSET( "100000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "100000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness", ASSET( "100000.000 TESTS" ) );
     
     //Prepare witnesses
     witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
@@ -1606,8 +1606,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
   ACTORS( (alice)(bob) )
   generate_block();
 
-  FUND( "alice", ASSET( "10000.000 TESTS" ) );
-  FUND( "bob", ASSET( "10000.000 TESTS" ) );
+  ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
+  ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
 
   generate_block();
 
@@ -2017,9 +2017,9 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
     generate_block();
 
     // auto start_time = db->head_block_time();
-    FUND( "bob", ASSET( "10000.000 TESTS" ) );
-    FUND( "alice", ASSET( "10000.000 TESTS" ) );
-    FUND( "witness", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness", ASSET( "10000.000 TESTS" ) );
     
     //Prepare witnesses
     witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
@@ -2066,9 +2066,9 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     generate_block();
 
-    FUND( "bob", ASSET( "10000.000 TESTS" ) );
-    FUND( "alice", ASSET( "10000.000 TESTS" ) );
-    FUND( "witness", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness", ASSET( "10000.000 TESTS" ) );
     
     //Prepare witnesses
     witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
@@ -2135,10 +2135,10 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
     generate_block();
 
     // auto start_time = db->head_block_time();
-    FUND( "bob", ASSET( "10000.000 TESTS" ) );
-    FUND( "alice", ASSET( "10000.000 TESTS" ) );
-    FUND( "witness", ASSET( "10000.000 TESTS" ) );
-    FUND( "witness2", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness2", ASSET( "10000.000 TESTS" ) );
     
     //Prepare witnesses
     witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
@@ -2211,9 +2211,9 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
     generate_block();
 
     // auto start_time = db->head_block_time();
-    FUND( "bob", ASSET( "10000.000 TESTS" ) );
-    FUND( "alice", ASSET( "10000.000 TESTS" ) );
-    FUND( "witness", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "witness", ASSET( "10000.000 TESTS" ) );
     
     //Prepare witnesses
     witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
@@ -2268,8 +2268,8 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
 
     //auto start_time = db->head_block_time();
 
-    FUND( "alice", ASSET( "1000000.001 TESTS" ) );
-    FUND( "witness", ASSET( "10000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", ASSET( "1000000.001 TESTS" ) );
+    ISSUE_FUNDS( "witness", ASSET( "10000.000 TESTS" ) );
     //Prepare witnesses
     
     witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
@@ -2424,7 +2424,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   leaving remaining 25% for herself in liquid form.
 */
   signed_transaction tx;
-  fund( "alice", ASSET( "1300.000 TESTS" ) );
+  issue_funds( "alice", ASSET( "1300.000 TESTS" ) );
 
   {
   BOOST_TEST_MESSAGE( "[scenario_01]: Setting up alice destination" );

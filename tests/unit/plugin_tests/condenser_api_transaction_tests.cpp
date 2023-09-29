@@ -133,8 +133,8 @@ BOOST_AUTO_TEST_CASE( get_transaction_0234 )
 
   ACTORS( (alice2trx)(bob2trx) );
   generate_block();
-  fund( "alice2trx", ASSET( "300.000 TESTS" ) );
-  fund( "alice2trx", ASSET( "300.000 TBD" ) );
+  issue_funds( "alice2trx", ASSET( "300.000 TESTS" ) );
+  issue_funds( "alice2trx", ASSET( "300.000 TBD" ) );
   generate_block();
 
   // Check transaction with no operation.

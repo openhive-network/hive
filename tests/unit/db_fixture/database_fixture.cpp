@@ -367,7 +367,7 @@ void database_fixture::fund(
   } FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
 }
 
-void database_fixture::fund(
+void database_fixture::issue_funds(
   const string& account_name,
   const asset& amount,
   bool update_print_rate

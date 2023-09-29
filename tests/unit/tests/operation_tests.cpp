@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, init_account_priv_key ), fc::exception );
     validate_database();
 
-    fund( HIVE_TEMP_ACCOUNT, ASSET( "10.000 TESTS" ) );
+    issue_funds( HIVE_TEMP_ACCOUNT, ASSET( "10.000 TESTS" ) );
     vest( HIVE_INIT_MINER_NAME, HIVE_TEMP_ACCOUNT, ASSET( "10.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "--- Test account creation with temp account does not set recovery account" );
@@ -1507,7 +1507,7 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     ACTORS( (alice)(bob) )
     generate_block();
     fund( "alice", 10000 );
-    fund( "bob", ASSET( "1.000 TBD" ) );
+    issue_funds( "bob", ASSET( "1.000 TBD" ) );
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
     BOOST_REQUIRE( get_balance( "bob" ).amount.value == ASSET(" 0.000 TESTS" ).amount.value );
@@ -3435,8 +3435,8 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_authorities )
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "4.000 TESTS" ) ) );
 
-    fund( "alice", ASSET( "300.000 TBD" ) );
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "300.000 TBD" ) );
+    issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
 
     collateralized_convert_operation op;
     op.owner = "alice";
@@ -3509,9 +3509,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
     set_witness_props( props );
 
-    fund( "alice", ASSET( "100.000 TBD" ) );
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
-    fund( "bob", ASSET( "100.000 TBD" ) );
+    issue_funds( "alice", ASSET( "100.000 TBD" ) );
+    issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "bob", ASSET( "100.000 TBD" ) );
 
     BOOST_TEST_MESSAGE( "--- Test failure sending non-HIVE collateral" );
     collateralized_convert_operation op;
@@ -3673,7 +3673,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       amount = ( amount * limit2 ) / ( 2 * HIVE_100_PERCENT - limit2 );
       auto new_hbd = asset( fc::uint128_to_uint64(amount), HIVE_SYMBOL ) * feed.current_median_history;
       new_hbd -= dgpo.get_current_hbd_supply() - db->get_treasury().get_hbd_balance();
-      fund( "alice", new_hbd, false );
+      issue_funds( "alice", new_hbd, false );
       uint16_t percent = db->calculate_HBD_percent();
       BOOST_REQUIRE_EQUAL( percent, dgpo.hbd_stop_percent );
     }
@@ -3721,7 +3721,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       extra_hbd.amount *= diff;
       extra_hbd.amount /= dgpo.hbd_stop_percent; //HBD supply multiplied by the same factor as a difference between hard and upper soft limit
       extra_hbd += dgpo.get_current_hbd_supply(); //to always have some value above hard limit
-      fund( "bob", extra_hbd );
+      issue_funds( "bob", extra_hbd );
 
       generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.head_block_number % HIVE_FEED_INTERVAL_BLOCKS ) );
       //last feed update should've put up artificial price of HIVE
@@ -3818,7 +3818,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_narrow_price )
     props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
     set_witness_props( props );
 
-    fund( "alice", ASSET( "0.042 TESTS" ) );
+    issue_funds( "alice", ASSET( "0.042 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 50 cents per HIVE, both initial and actual" );
     auto conversion_time = db->head_block_time();
@@ -3862,7 +3862,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_wide_price )
     props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
     set_witness_props( props );
 
-    fund( "alice", ASSET( "50000000.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "50000000.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "--- Test failure on too many HBD in the system" );
     collateralized_convert_operation op;
@@ -6625,8 +6625,8 @@ BOOST_AUTO_TEST_CASE( transfer_to_savings_apply )
     ACTORS( (alice)(bob) );
     generate_block();
 
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    fund( "alice", ASSET( "10.000 TBD" ) );
+    issue_funds( "alice", ASSET( "10.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "10.000 TBD" ) );
 
     BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "10.000 TESTS" ) );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "10.000 TBD" ) );
@@ -6811,8 +6811,8 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     ACTORS( (alice)(bob) );
     generate_block();
 
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    fund( "alice", ASSET( "10.000 TBD" ) );
+    issue_funds( "alice", ASSET( "10.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "10.000 TBD" ) );
 
     transfer_to_savings_operation save;
     save.from = "alice";
@@ -7067,7 +7067,7 @@ BOOST_AUTO_TEST_CASE( cancel_transfer_from_savings_apply )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    fund( "alice", ASSET( "10.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "10.000 TESTS" ) );
 
     transfer_to_savings_operation save;
     save.from = "alice";
@@ -7403,7 +7403,7 @@ BOOST_AUTO_TEST_CASE( account_create_with_delegation_apply )
     // 150 * fee = ( 5 * HIVE ) + SP
     //auto& gpo = db->get_dynamic_global_properties();
     generate_blocks(1);
-    fund( "alice", ASSET("1510.000 TESTS") );
+    issue_funds( "alice", ASSET("1510.000 TESTS") );
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET("1000.000 TESTS") );
 
     private_key_type priv_key = generate_private_key( "temp_key" );
@@ -8804,7 +8804,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     ACTORS( (alice) )
     generate_block();
 
-    fund( "alice", ASSET( "20.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "20.000 TESTS" ) );
     generate_block();
 
     auto set_subsidy_budget = [&]( int32_t budget, uint32_t decay )
@@ -9188,9 +9188,9 @@ BOOST_AUTO_TEST_CASE( account_auth_tests )
     ACTORS( (alice)(bob)(charlie) )
     generate_block();
 
-    fund( "alice", ASSET( "20.000 TESTS" ) );
-    fund( "bob", ASSET( "20.000 TESTS" ) );
-    fund( "charlie", ASSET( "20.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "20.000 TESTS" ) );
+    issue_funds( "bob", ASSET( "20.000 TESTS" ) );
+    issue_funds( "charlie", ASSET( "20.000 TESTS" ) );
     vest( HIVE_INIT_MINER_NAME, "alice" , ASSET( "10.000 TESTS" ) );
     vest( HIVE_INIT_MINER_NAME, "bob" , ASSET( "10.000 TESTS" ) );
     vest( HIVE_INIT_MINER_NAME, "charlie" , ASSET( "10.000 TESTS" ) );
@@ -9692,7 +9692,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
 
     fund( "alice", 10000 );
-    fund( "alice", ASSET("100.000 TBD") );
+    issue_funds( "alice", ASSET("100.000 TBD") );
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
 
@@ -9816,7 +9816,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_hbd )
 
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
 
-    fund( "alice", ASSET("100.000 TBD") );
+    issue_funds( "alice", ASSET("100.000 TBD") );
 
     recurrent_transfer_operation op;
     op.from = "alice";
@@ -9862,7 +9862,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
 
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
 
-    fund( "alice", ASSET("10000.000 TESTS") );
+    issue_funds( "alice", ASSET("10000.000 TESTS") );
 
     recurrent_transfer_operation op;
     op.from = "alice";
@@ -9943,10 +9943,10 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
     const char *senders[4] = { "alice", "bob", "eve", "martin" };
     const fc::ecc::private_key senders_keys[4] = { alice_private_key, bob_private_key, eve_private_key, martin_private_key };
 
-    fund( "alice", ASSET("1000.000 TESTS") );
-    fund( "bob", ASSET("1000.000 TESTS") );
-    fund( "eve", ASSET("1000.000 TESTS") );
-    fund( "martin", ASSET("1000.000 TESTS") );
+    issue_funds( "alice", ASSET("1000.000 TESTS") );
+    issue_funds( "bob", ASSET("1000.000 TESTS") );
+    issue_funds( "eve", ASSET("1000.000 TESTS") );
+    issue_funds( "martin", ASSET("1000.000 TESTS") );
 
     recurrent_transfer_operation op;
     op.memo = "test";
@@ -10040,7 +10040,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_pair_id_basic )
 
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
 
-    fund( "alice", ASSET("200.000 TBD") );
+    issue_funds( "alice", ASSET("200.000 TBD") );
 
     // First recurrent transfer operation
     recurrent_transfer_operation op1;
@@ -10104,7 +10104,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_pair_id_crud )
 
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
 
-    fund( "alice", ASSET("200.000 TBD") );
+    issue_funds( "alice", ASSET("200.000 TBD") );
 
     // First recurrent transfer operation
     recurrent_transfer_operation op1;
@@ -10206,7 +10206,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_same_pair_id_different_receivers )
 
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
 
-    fund( "alice", ASSET("300.000 TBD") );
+    issue_funds( "alice", ASSET("300.000 TBD") );
 
     // Recurrent transfer operation from Alice to Bob
     recurrent_transfer_operation op1;
@@ -10267,8 +10267,8 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_exact_max )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    fund( "alice", ASSET( "200.000 TBD" ) );
-    fund( "bob", ASSET( "200.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "200.000 TBD" ) );
+    issue_funds( "bob", ASSET( "200.000 TESTS" ) );
 
     recurrent_transfer_operation op;
     op.from = "alice";
@@ -10313,7 +10313,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_edit_overextended )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    fund( "alice", ASSET( "200.000 TBD" ) );
+    issue_funds( "alice", ASSET( "200.000 TBD" ) );
 
     // make the same r.transfer as in previous test
     recurrent_transfer_operation op;
@@ -10356,7 +10356,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_full_edit_overextended )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    fund( "alice", ASSET( "200.000 TBD" ) );
+    issue_funds( "alice", ASSET( "200.000 TBD" ) );
 
     // make short duration r.transfer
     recurrent_transfer_operation op;

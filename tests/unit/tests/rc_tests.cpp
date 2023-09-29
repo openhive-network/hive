@@ -330,7 +330,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     ACTORS( (agent)(victim)(thief) )
     generate_block(); 
     vest( "initminer", "agent", ASSET( "1000.000 TESTS" ) );
-    fund( "victim", ASSET( "1.000 TESTS" ) );
+    issue_funds( "victim", ASSET( "1.000 TESTS" ) );
 
     const auto& agent_rc = db->get_account( "agent" );
     const auto& victim_rc = db->get_account( "victim" );
@@ -445,7 +445,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     ACTORS( (agent)(victim1)(victim2)(victim3)(thief1)(thief2)(thief3) )
     generate_block();
     vest( "initminer", "agent", ASSET( "1000.000 TESTS" ) );
-    fund( "victim1", ASSET( "1.000 TESTS" ) );
+    issue_funds( "victim1", ASSET( "1.000 TESTS" ) );
 
     const auto& agent_rc = db->get_account( "agent" );
     const auto& victim1_rc = db->get_account( "victim1" );
@@ -607,7 +607,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
     generate_block();
     vest( "initminer", "agent", ASSET( "1000.000 TESTS" ) );
     vest( "initminer", "thief", ASSET( "1000.000 TESTS" ) );
-    fund( "agent", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "agent", ASSET( "1000.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "create signer accounts and victim account (with agent as recovery)" );
 
@@ -790,7 +790,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     ACTORS( (alice)(bob) )
     generate_block();
     vest( "initminer", "bob", ASSET( "35000.000 TESTS" ) ); //<- change that amount to tune RC cost
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
 
     const auto& alice_rc = db->get_account( "alice" );
 
@@ -895,7 +895,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
 
     ACTORS( (alice)(bob) )
     generate_block();
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
     generate_block();
 
     const auto& pending_data = db->get< rc_pending_data >();
@@ -1022,7 +1022,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     ACTORS( (alice)(bob)(sam) )
     generate_block();
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
     vest( "initminer", "alice", ASSET( "10.000 TESTS" ) );
     vest( "initminer", "bob", ASSET( "10.000 TESTS" ) );
     generate_block();
@@ -1557,7 +1557,7 @@ BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
     ACTORS((dave))
     generate_block();
     vest("initminer", "dave", ASSET("70000.000 TESTS")); //<- change that amount to tune RC cost
-    fund("dave", ASSET("1000.000 TESTS"));
+    issue_funds("dave", ASSET("1000.000 TESTS"));
 
     generate_block();
 

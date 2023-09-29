@@ -178,8 +178,8 @@ do {                                                              \
 #define ASSET( s ) \
   hive::protocol::legacy_asset::from_string( s ).to_asset()
 
-#define FUND( account_name, amount ) \
-  fund( account_name, amount ); \
+#define ISSUE_FUNDS( account_name, _asset ) \
+  issue_funds( account_name, _asset ); \
   generate_block();
 
 // To be incorporated into fund() method if deemed appropriate.
@@ -359,8 +359,8 @@ struct database_fixture {
 
   bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 
-  void fund( const string& account_name, const share_type& amount = 500000 );
-  void fund( const string& account_name, const asset& amount, bool update_print_rate = true );
+  void fund( const string& account_name, const share_type& amount );
+  void issue_funds( const string& account_name, const asset& amount, bool update_print_rate = true );
   void transfer( const string& from, const string& to, const asset& amount );
   void transfer( const string& from, const string& to, const asset& amount, const std::string& memo, const fc::ecc::private_key& key );
   void recurrent_transfer( const string& from, const string& to, const asset& amount, const string& memo, uint16_t recurrence,
