@@ -32,6 +32,18 @@ std::shared_ptr<full_block_type> block_log_reader::head() const
   return _block_log.head();
 }
 
+uint32_t block_log_reader::head_block_num( 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{
+  return _block_log.head() ? _block_log.head()->get_block_num() : 0;
+}
+
+block_id_type block_log_reader::head_block_id( 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{
+  return _block_log.head() ? _block_log.head()->get_block_id() : block_id_type();
+}
+
 std::shared_ptr<full_block_type> block_log_reader::read_block_by_num( uint32_t block_num ) const
 {
   return _block_log.read_block_by_num( block_num );

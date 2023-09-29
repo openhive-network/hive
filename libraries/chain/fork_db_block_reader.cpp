@@ -22,6 +22,20 @@ void fork_db_block_reader::close_reader()
   block_log_reader::close_reader();
 }
 
+uint32_t fork_db_block_reader::head_block_num( 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{
+  auto head = _fork_db.head();
+  return head ? head->get_block_num() : block_log_reader::head_block_num( wait_for_microseconds );
+}
+
+block_id_type fork_db_block_reader::head_block_id( 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{
+  auto head = _fork_db.head();
+  return head ? head->get_block_id() : block_log_reader::head_block_id( wait_for_microseconds );
+}
+
 std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_number( uint32_t block_num,
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 { 
