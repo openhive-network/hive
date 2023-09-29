@@ -841,6 +841,21 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(wasm_beekeeper_false)
+{
+  try {
+
+    beekeeper::beekeeper_api _obj( { "--unknown-parameter", "value_without_sense" } );
+
+    auto _init_error_msg = extract_json( _obj.init() );
+    BOOST_REQUIRE( _init_error_msg.find( "unrecognised option" ) != std::string::npos );
+
+    auto _create_session_error_msg = extract_json( _obj.create_session( "banana" ) );
+    BOOST_REQUIRE( _create_session_error_msg.find( "Initialization failed. API call aborted." ) != std::string::npos );
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE(wallet_manager_brute_force_protection_test)
 {
   try {
