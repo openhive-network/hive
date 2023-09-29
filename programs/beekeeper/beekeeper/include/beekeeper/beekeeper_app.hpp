@@ -42,6 +42,8 @@ class beekeeper_app: public beekeeper_app_init
 
     beekeeper_app();
     ~beekeeper_app() override;
+
+    init_data init( int argc, char** argv ) override;
 };
 
 }

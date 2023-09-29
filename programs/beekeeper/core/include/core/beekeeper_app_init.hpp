@@ -42,8 +42,6 @@ class beekeeper_app_init : public beekeeper_app_base
     beekeeper_app_init();
     ~beekeeper_app_init() override;
 
-    init_data init( int argc, char** argv ) override;
-
     std::shared_ptr<beekeeper::beekeeper_wallet_manager> get_wallet_manager()
     {
       return wallet_manager_ptr;

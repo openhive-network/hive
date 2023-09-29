@@ -26,6 +26,8 @@ class beekeeper_wasm_app: public beekeeper_app_init
 
     beekeeper_wasm_app();
     ~beekeeper_wasm_app() override;
+
+    init_data init( int argc, char** argv ) override;
 };
 
 }
