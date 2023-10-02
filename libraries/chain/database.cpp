@@ -827,17 +827,14 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
     std::shared_ptr<fc::exception> delayed_exception_to_avoid_yield_in_catch;
     try
     {
-      BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-      // we have to treat blocks from fork as not validated
-      set_tx_status(database::TX_STATUS_P2P_BLOCK);
-      _fork_db().set_head(*ritr);
-      auto session = start_undo_session();
       // when we are handling block that triggered fork switch, we want to release related promise so P2P
       // can broadcast the block; it should happen even if some other block later causes reversal of the
       // fork switch (the block was good after all)
       bool is_pushed_block = ( pushed_block_ctrl != nullptr ) && ( ( *ritr )->full_block->get_block_id() == pushed_block_ctrl->get_full_block()->get_block_id() );
-      apply_block( ( *ritr )->full_block, skip, is_pushed_block ? pushed_block_ctrl : nullptr );
-      session.push();
+      apply_block_extended( *ritr,
+                            ( *ritr )->full_block,
+                            skip,
+                            is_pushed_block ? pushed_block_ctrl : nullptr );
     }
     catch (const fc::exception& e)
     {
@@ -881,15 +878,9 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
           for (auto ritr = old_branch.crbegin(); ritr != old_branch.crend(); ++ritr)
           {
             ilog(" - restoring block ${id}", ("id", (*ritr)->get_block_id()));
-            BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-            // even though those blocks were already processed before, it is safer to treat them as completely new,
-            // especially since alternative would be to treat them as replayed blocks, but that would be misleading
-            // since replayed blocks are already irreversible, while these are clearly reversible
-            set_tx_status(database::TX_STATUS_P2P_BLOCK);
-            _fork_db().set_head(*ritr);
-            auto session = start_undo_session();
-            apply_block((*ritr)->full_block, skip);
-            session.push();
+            apply_block_extended( *ritr,
+                                  (*ritr)->full_block,
+                                  skip );
           }
           ilog("done restoring blocks from original fork");
         }
@@ -954,19 +945,15 @@ bool database::_push_block(const block_flow_control& block_ctrl)
   {
     try
     {
-      BOOST_SCOPE_EXIT(this_) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END;
-      set_tx_status(database::TX_STATUS_P2P_BLOCK);
-
-      // if we've linked in a chain of multiple blocks, we need to keep the fork_db's head block in sync
-      // with what we're applying.  If we're only appending a single block, the forkdb's head block
-      // should already be correct
-      if (blocks.size() > 1)
-        _fork_db().set_head(_fork_db().fetch_block((*iter)->get_block_id(), true));
-
-      auto session = start_undo_session();
       bool is_pushed_block = (*iter)->get_block_id() == block_ctrl.get_full_block()->get_block_id();
-      apply_block(*iter, skip, is_pushed_block ? &block_ctrl : nullptr);
-      session.push();
+      apply_block_extended( 
+        // if we've linked in a chain of multiple blocks, we need to keep the fork_db's head block in sync
+        // with what we're applying.  If we're only appending a single block, the forkdb's head block
+        // should already be correct
+        blocks.size() > 1 ? _fork_db().fetch_block((*iter)->get_block_id(), true) : shared_ptr<fork_item>(),
+        *iter,
+        skip,
+        is_pushed_block ? &block_ctrl : nullptr);
     }
     catch (const fc::exception& e)
     {
@@ -4010,6 +3997,24 @@ void database::apply_block( const std::shared_ptr<full_block_type>& full_block, 
   }
 
 } FC_CAPTURE_AND_RETHROW((full_block->get_block())) }
+
+void database::apply_block_extended(
+  shared_ptr<fork_item> h,
+  const std::shared_ptr<full_block_type>& full_block,
+  uint32_t skip /*= skip_nothing*/,
+  const block_flow_control* block_ctrl /*= nullptr*/ )
+{
+  // Note that we're treating the block as completely new.
+  BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
+  set_tx_status( database::TX_STATUS_P2P_BLOCK );
+
+  if( h )
+    _fork_db().set_head( h );
+
+  auto session = start_undo_session();
+  apply_block( full_block, skip, block_ctrl );
+  session.push();
+}
 
 void database::check_free_memory( bool force_print, uint32_t current_block_num )
 {
