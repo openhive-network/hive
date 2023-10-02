@@ -4,8 +4,6 @@
 
 #include <hive/protocol/config.hpp>
 
-#include <fc/exception/exception.hpp>
-
 namespace hive { namespace protocol { namespace testnet_blockchain_configuration {
 
   configuration configuration_data;

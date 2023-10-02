@@ -53,7 +53,7 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
     int64_t hive_governance_vote_expiration_period = 60*60*24*5; // seconds, originally 5 days
     // How often proposals are taken care of.
     uint32_t hive_proposal_maintenance_period = 60*60; // 1 hour
-    // Time in which you can change the owner key twice, orginally 60 min
+    // Time in which you can change the owner key twice, originally 60 min (in mainnet)
     uint16_t hive_owner_update_limit = 6;
     
     std::string hive_hf9_compromised_key;
