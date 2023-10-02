@@ -1,10 +1,14 @@
-from typing import Dict, Optional
+from datetime import datetime
+import json
+from typing import Dict, Final, Optional
 
 import pytest
 
 import test_tools as tt
 
 from shared_tools.complex_networks import init_network
+
+ALTERNATE_CHAIN_JSON_FILENAME: Final[str] = "alternate-chain-spec.json"
 
 def run_with_faketime(node, time):
     #time example: '2020-01-01T00:00:00'
@@ -20,8 +24,12 @@ def node_hf25() -> tt.InitNode:
 
 @pytest.fixture
 def node_hf26() -> tt.InitNode:
+    change_hive_owner_update_limit(seconds_limit=60)
+
     node = tt.InitNode()
-    node.run()
+    node.run(
+        arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
+
     return node
 
 
@@ -142,3 +150,17 @@ def network_after_hf26_without_majority():
         'alpha': alpha_net,
         'beta': beta_net,
     }
+
+
+def change_hive_owner_update_limit(seconds_limit: int) -> None:
+    current_time = datetime.now()
+    alternate_chain_spec_content = {
+        "genesis_time": int(current_time.timestamp()),
+        "hardfork_schedule": [{"hardfork": 26, "block_num": 1}],
+        "hive_owner_update_limit": seconds_limit
+    }
+
+    directory = tt.context.get_current_directory()
+    directory.mkdir(parents=True, exist_ok=True)
+    with open(directory / ALTERNATE_CHAIN_JSON_FILENAME, 'w') as json_file:
+        json.dump(alternate_chain_spec_content, json_file)
