@@ -18,6 +18,8 @@ private:
 
   using close_all_sessions_action_method = std::function<void()>;
 
+  void set_timeout_impl( const std::string& token, seconds_type seconds );
+
 public:
 
   /// Set the path for location of wallet files.

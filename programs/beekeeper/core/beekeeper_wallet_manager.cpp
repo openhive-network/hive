@@ -19,6 +19,11 @@ bool beekeeper_wallet_manager::start()
 
 void beekeeper_wallet_manager::set_timeout( const std::string& token, seconds_type seconds )
 {
+  set_timeout_impl( token, seconds );
+}
+
+void beekeeper_wallet_manager::set_timeout_impl( const std::string& token, seconds_type seconds )
+{
   sessions->set_timeout( token, std::chrono::seconds( seconds ) );
 }
 
@@ -106,7 +111,7 @@ string beekeeper_wallet_manager::create_session( const string& salt, const strin
   FC_ASSERT( session_cnt < session_limit, "Number of concurrent sessions reached a limit ==`${session_limit}`. Close previous sessions so as to open the new one.", (session_limit) );
 
   auto _token = sessions->create_session( salt, notifications_endpoint );
-  set_timeout( _token, unlock_timeout );
+  set_timeout_impl( _token, unlock_timeout );
 
   ++session_cnt;
 
