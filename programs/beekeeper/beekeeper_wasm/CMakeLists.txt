@@ -49,7 +49,7 @@ target_link_libraries( beekeeper_wasm PUBLIC embind hive_protocol beekeeper_core
 # add -sASSERTIONS to `target_link_options` if you want more information
 # INITIAL_MEMORY by default = 16777216
 target_link_options( beekeeper_wasm PUBLIC -fexceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864
-                                           -sSINGLE_FILE=1 -sENVIRONMENT="web" -sUSE_ES6_IMPORT_META=0 
+                                           -sSINGLE_FILE=1 -sENVIRONMENT="web" -sUSE_ES6_IMPORT_META=0 -sEXPORTED_RUNTIME_METHODS=["FS"]
 )
 set_target_properties( beekeeper_wasm PROPERTIES OUTPUT_NAME beekeeper_wasm.mjs )
 
