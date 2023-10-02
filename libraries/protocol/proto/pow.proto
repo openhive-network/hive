@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+import "asset.proto";
+import "legacy_chain_properties.proto";
+
+package hive.protocol.buffers;
+
+message pow_work {
+  required string worker = 1;
+  required string input = 2;
+  required string signature = 3;
+  required string work = 4;
+}
+
+message pow {
+  required string                  worker_account = 1 [json_name = "worker_account"];
+  required string                  block_id = 2 [json_name = "block_id"];
+  required uint64                  nonce = 3;
+  required pow_work                work = 4;
+  required legacy_chain_properties props = 5;
+}
