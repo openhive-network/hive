@@ -192,6 +192,7 @@ namespace hive { namespace chain {
         */
       if (block_log_size)
       {
+        sanity_check(read_only);
         idump((block_log_size));
         std::atomic_store(&my->head, read_head());
       }
@@ -922,6 +923,130 @@ namespace hive { namespace chain {
               "failed to truncate block log, ${error}", ("error", strerror(errno)));
     my->_artifacts->truncate(new_head_block_num);
     std::atomic_store(&my->head, read_head());
+  }
+
+  void block_log::sanity_check(const bool read_only)
+  {
+    // read the last int64 of the block log into `head_block_offset`,
+    // that's the index of the start of the head block
+    const ssize_t block_log_size = my->block_log_size;
+
+    FC_ASSERT(block_log_size >= (ssize_t)sizeof(uint64_t));
+    uint64_t head_block_offset_with_flags;
+    detail::block_log_impl::pread_with_retry(my->block_log_fd, &head_block_offset_with_flags, sizeof(head_block_offset_with_flags), block_log_size - sizeof(head_block_offset_with_flags));
+    uint64_t head_block_offset;
+
+    block_attributes_t attributes;
+    std::tie(head_block_offset, attributes) = detail::split_block_start_pos_with_flags(head_block_offset_with_flags);
+    size_t raw_data_size = block_log_size - head_block_offset - sizeof(head_block_offset);
+    if (read_only)
+      FC_ASSERT(raw_data_size <= HIVE_MAX_BLOCK_SIZE, "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes. Cannot modify block_log, opened in read_only mode.", (raw_data_size));
+    else
+    {
+      if (my->auto_fixing_enabled && raw_data_size > HIVE_MAX_BLOCK_SIZE)
+      {
+        try
+        {
+          elog("block log file is corrupted, head block has invalid size: ${raw_data_size} bytes. block_log-auto-fixing enabled, trying to find place where head block should start.", (raw_data_size));
+
+          // Reads the 8 bytes at the given location, and determines whether they "look like" the flags/offset byte that's written at the end of each block.
+          // if it looked reasonable, returns the start of the block it would point at.
+          auto is_data_at_file_position_a_plausible_offset_and_flags = [&my = my](const uint64_t offset_of_pos_and_flags_to_test) -> std::optional<uint64_t>
+          {
+            uint64_t block_offset_with_flags = 0;
+            hive::utilities::perform_read(my->block_log_fd, (char*)&block_offset_with_flags, sizeof(block_offset_with_flags), offset_of_pos_and_flags_to_test, "read block offset");
+            const auto [offset, flags] = hive::chain::detail::split_block_start_pos_with_flags(block_offset_with_flags);
+
+            // check that the offset of the start of the block wouldn't mean that it's impossibly large
+            const bool offset_is_plausible = offset < offset_of_pos_and_flags_to_test && offset >= offset_of_pos_and_flags_to_test - HIVE_MAX_BLOCK_SIZE;
+
+            // check that no reserved flags are set, only "zstd/uncompressed" and "has dictionary" are permitted
+            const bool flags_are_plausible = (block_offset_with_flags & 0x7e00000000000000ull) == 0;
+
+            bool dictionary_is_plausible;
+            // if the dictionary flag bit is set, verify that the dictionary number is one that we have.
+            if (block_offset_with_flags & 0x0100000000000000ull)
+              dictionary_is_plausible = *flags.dictionary_number <= hive::chain::get_last_available_zstd_compression_dictionary_number().value_or(0);
+            // if the dictionary flag bit is not set, expect the dictionary number to be zeroed
+            else
+              dictionary_is_plausible = (block_offset_with_flags & 0x00ff000000000000ull) == 0;
+
+            return offset_is_plausible && flags_are_plausible && dictionary_is_plausible ? offset : std::optional<uint64_t>();
+          };
+
+          uint64_t offset_of_pos_and_flags_to_test = block_log_size - sizeof(uint64_t);
+          bool block_log_has_been_truncated = false;
+
+          for (size_t i = 0; i < HIVE_MAX_BLOCK_SIZE; ++i)
+          {
+            std::optional<uint64_t> possible_start_of_block = is_data_at_file_position_a_plausible_offset_and_flags(offset_of_pos_and_flags_to_test);
+
+            if (possible_start_of_block)
+            {
+              // double check if start of block is really found. Go backward for 10 blocks.
+              bool verification_successfull = true;
+              try
+              {
+                uint64_t block_position = *possible_start_of_block - sizeof(uint64_t);
+                uint32_t expected_block_num = 0;
+
+                for (uint8_t j = 0; j < 10; ++j)
+                {
+                  const uint64_t higher_block_position = block_position;
+                  uint64_t block_position_with_flags = 0;
+                  hive::utilities::perform_read(my->block_log_fd, (char*)&block_position_with_flags, sizeof(block_position_with_flags), block_position, "read block pos and flags");
+                  block_attributes_t attributes;
+                  std::tie(block_position, attributes) = detail::split_block_start_pos_with_flags(block_position_with_flags);
+
+                  if (higher_block_position <= block_position)
+                  {
+                    verification_successfull = false;
+                    break;
+                  }
+
+                  const uint32_t block_serialized_data_size = higher_block_position - block_position;
+                  const uint32_t created_block_num = read_block_by_offset(block_position, block_serialized_data_size, attributes)->get_block_num();
+
+                  if (expected_block_num && created_block_num != expected_block_num)
+                    FC_THROW("Created block number has other block number than expected.");
+
+                  expected_block_num = created_block_num - 1;
+                  block_position -= sizeof(uint64_t);
+                  FC_ASSERT(block_position < *possible_start_of_block, "Should never happen, block_log has less than 10 blocks or is heavy corrupted.");
+                }
+              }
+              catch(...)
+              {
+                verification_successfull = false;
+              }
+
+              if (verification_successfull)
+              {
+                block_log_has_been_truncated = true;
+                const uint64_t new_block_log_size = offset_of_pos_and_flags_to_test + sizeof(uint64_t);
+                wlog("Found end of last completed block in block_log. Truncating block_log to: ${new_block_log_size} bytes. Original block_log size: ${block_log_size}. Diff: ${diff}",
+                    (new_block_log_size)(block_log_size)("diff", (block_log_size - new_block_log_size)));
+                FC_ASSERT(ftruncate(my->block_log_fd, new_block_log_size) == 0, "failed to truncate block log, ${error}", ("error", strerror(errno)));
+                wlog("block_log file has been truncated. Replay blockchain may be needed.");
+                my->block_log_size = get_file_size(my->block_log_fd);
+                break;
+              }
+            }
+
+            --offset_of_pos_and_flags_to_test;
+            if (offset_of_pos_and_flags_to_test == 0 || offset_of_pos_and_flags_to_test > uint64_t(block_log_size))
+              break;
+          }
+
+          if (!block_log_has_been_truncated)
+            FC_THROW("Could not find last completed block in block_log. Autofixing failed, try manually repair block_log or delete it.");
+        }
+        FC_CAPTURE_AND_RETHROW()
+      }
+      else
+        FC_ASSERT(raw_data_size <= HIVE_MAX_BLOCK_SIZE, "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes. "
+                                                        "Use --enable-block-log-auto-fixing, manually truncate block_log or delete block_log", (raw_data_size));
+    }
   }
 
 } } // hive::chain

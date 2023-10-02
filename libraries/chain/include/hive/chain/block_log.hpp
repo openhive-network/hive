@@ -123,6 +123,7 @@ namespace hive { namespace chain {
       // shorten the block log & artifacts file
       void truncate(uint32_t new_head_block_num);
     private:
+      void sanity_check(const bool read_only);
       std::unique_ptr<detail::block_log_impl> my;
 
       appbase::application& theApp;
