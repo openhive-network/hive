@@ -657,6 +657,10 @@ namespace chain {
       const witness_schedule_object& get_witness_schedule_object_for_irreversibility() const;
 
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing, const block_flow_control* block_ctrl = nullptr );
+      void apply_block_extended(  shared_ptr<fork_item> h,
+                                  const std::shared_ptr<full_block_type>& full_block,
+                                  uint32_t skip = skip_nothing,
+                                  const block_flow_control* block_ctrl = nullptr );
     protected:
       //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
       //void pop_undo() { object_database::pop_undo(); }
