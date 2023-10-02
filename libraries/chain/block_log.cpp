@@ -329,11 +329,7 @@ namespace hive { namespace chain {
         FC_THROW("Unrecognized block_flags in block log");
       }
     }
-    catch (const fc::exception& e)
-    {
-      elog("Fatal error decompressing block from block log: ${e}", (e));
-      exit(1);
-    }
+    FC_LOG_AND_RETHROW()
   }
 
   /* static */ std::tuple<std::unique_ptr<char[]>, size_t> block_log::decompress_raw_block(std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t>&& raw_block_data_tuple)
