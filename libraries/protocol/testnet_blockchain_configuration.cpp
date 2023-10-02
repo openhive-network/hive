@@ -92,10 +92,10 @@ namespace hive { namespace protocol { namespace testnet_blockchain_configuration
 
   void configuration::set_hive_owner_update_limit ( uint16_t limit )
   {
-    FC_ASSERT ( limit >= 6 );
-    FC_ASSERT ( limit % 3 == 0 );
-
-    hive_owner_update_limit = limit;
+    if( limit >= 6 && limit % 3 == 0 )
+      hive_owner_update_limit = limit;
+    else
+      wlog("A new limit must meet requirements: 'limit >= 6 && limit % 3'. Got ${limit}", (limit));
   }
 
 } } }// hive::protocol::testnet_blockchain_configuration
