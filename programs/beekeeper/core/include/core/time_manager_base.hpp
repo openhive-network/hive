@@ -3,7 +3,6 @@
 #include <core/utilities.hpp>
 
 #include <string>
-#include <mutex>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
@@ -43,8 +42,6 @@ class time_manager_base
           member< session_data, std::string, &session_data::token > >
       >
     > session_data_index;
-
-    std::mutex methods_mutex;
 
     session_data_index items;
 

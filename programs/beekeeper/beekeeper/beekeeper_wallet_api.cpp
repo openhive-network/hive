@@ -21,6 +21,8 @@ class beekeeper_api_impl
   
     extended_api ex_api;
 
+    std::mutex mtx;
+
   public:
     beekeeper_api_impl( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr ): _wallet_mgr( wallet_mgr ) {}
 
@@ -48,41 +50,55 @@ class beekeeper_api_impl
 
 DEFINE_API_IMPL( beekeeper_api_impl, create )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   return { _wallet_mgr->create( args.token, args.wallet_name, args.password ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, open )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   _wallet_mgr->open( args.token, args.wallet_name );
   return open_return();
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, close )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   _wallet_mgr->close( args.token, args.wallet_name );
   return close_return();
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, set_timeout )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   _wallet_mgr->set_timeout( args.token, args.seconds );
   return set_timeout_return();
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, lock_all )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   _wallet_mgr->lock_all( args.token );
   return lock_all_return();
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, lock )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   _wallet_mgr->lock( args.token, args.wallet_name );
   return lock_return();
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, unlock )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   if( ex_api.enabled() )
     _wallet_mgr->unlock( args.token, args.wallet_name, args.password );
   else
@@ -93,44 +109,60 @@ DEFINE_API_IMPL( beekeeper_api_impl, unlock )
 
 DEFINE_API_IMPL( beekeeper_api_impl, import_key )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   return { _wallet_mgr->import_key( args.token, args.wallet_name, args.wif_key ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, remove_key )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   _wallet_mgr->remove_key( args.token, args.wallet_name, args.password, args.public_key );
   return remove_key_return();
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, list_wallets )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   return { _wallet_mgr->list_wallets( args.token ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, get_public_keys )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   auto _keys = _wallet_mgr->get_public_keys( args.token );
   return { utility::get_public_keys( _keys ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, sign_digest )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   using namespace beekeeper;
   return { _wallet_mgr->sign_digest( args.token, digest_type( args.sig_digest ), args.public_key ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, get_info )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   return _wallet_mgr->get_info( args.token );
 } 
 
 DEFINE_API_IMPL( beekeeper_api_impl, create_session )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   return { _wallet_mgr->create_session( args.salt, args.notifications_endpoint ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, close_session )
 {
+  std::lock_guard<std::mutex> guard( mtx );
+
   _wallet_mgr->close_session( args.token );
   return close_session_return();
 }

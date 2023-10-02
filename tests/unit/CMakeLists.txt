@@ -11,16 +11,12 @@ INCLUDE(CTest)
 
 ENABLE_TESTING()
 
-file(GLOB UNIT_TESTS
-   "tests/*.cpp"
+set(BEEKEEPER_SOURCES
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/session.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/session_manager.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/beekeeper_instance.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/time_manager.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/extended_api.cpp
-
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper_wasm/beekeeper_wasm_api.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper_wasm/beekeeper_wasm_app.cpp
 
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_wallet.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_wallet_manager.cpp
@@ -32,6 +28,15 @@ file(GLOB UNIT_TESTS
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/utilities.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_app_init.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/beekeeper_app_base.cpp
+)
+
+file(GLOB UNIT_TESTS
+   "tests/*.cpp"
+
+   ${BEEKEEPER_SOURCES}
+
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper_wasm/beekeeper_wasm_api.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper_wasm/beekeeper_wasm_app.cpp
 )
 
 include(BoostTestTargets.cmake)
@@ -294,7 +299,11 @@ target_include_directories( chain_test PUBLIC
                            "${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper_wasm/include"
                            )
 
-file(GLOB PLUGIN_TESTS "plugin_tests/*.cpp")
+file(GLOB PLUGIN_TESTS
+      "plugin_tests/*.cpp"
+      ${BEEKEEPER_SOURCES}
+      ${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/beekeeper_wallet_api.cpp
+)
 
 parse_unit_tests(TEST_CASES ${PLUGIN_TESTS})
 
@@ -316,6 +325,11 @@ add_boost_test( plugin_test
 set_target_properties(plugin_test PROPERTIES ENABLE_EXPORTS true)
 
 target_link_libraries( plugin_test db_fixture hive_chain hive_protocol account_history_rocksdb_plugin market_history_plugin witness_plugin debug_node_plugin condenser_api_plugin database_api_plugin transaction_status_plugin transaction_status_api_plugin fc ${PLATFORM_SPECIFIC_LIBS} block_log_info_plugin tags_plugin follow_plugin hive_plugins )
+
+target_include_directories( plugin_test PUBLIC
+                           "${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/core/include"
+                           "${CMAKE_CURRENT_SOURCE_DIR}/../../programs/beekeeper/beekeeper/include"
+                           )
 
 if(MSVC)
   set_source_files_properties( tests/serialization_tests.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
