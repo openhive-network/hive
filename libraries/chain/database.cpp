@@ -776,16 +776,25 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
   }
 }
 
-void database::switch_forks( const item_ptr new_head, const block_flow_control* pushed_block_ctrl )
-{
-  uint32_t skip = get_node_skip_flags();
+using apply_block_t = std::function<
+  void ( shared_ptr< fork_item >, const std::shared_ptr< full_block_type >&,
+        uint32_t skip, const block_flow_control* block_ctrl )
+  >;
 
+/// Returns number of block on head after popping.
+using pop_block_t = std::function< uint32_t ( const block_id_type end_block ) >;
+
+using notify_switch_fork_t = std::function< void ( uint32_t head_block_num ) >;
+
+void global_switch_forks( const item_ptr new_head, uint32_t skip, const block_flow_control* pushed_block_ctrl,
+  const block_id_type original_head_block_id, const uint32_t original_head_block_number,
+  apply_block_t apply_block_extended, pop_block_t pop_block_extended, notify_switch_fork_t notify_switch_fork,
+  fork_database& _fork_db )
+{
   BOOST_SCOPE_EXIT(void) { ilog("Done fork switch"); } BOOST_SCOPE_EXIT_END
   ilog("Switching to fork: ${id}", ("id", new_head->get_block_id()));
-  const block_id_type original_head_block_id = head_block_id();
-  const uint32_t original_head_block_number = head_block_num();
   ilog("Before switching, head_block_id is ${original_head_block_id} head_block_number ${original_head_block_number}", (original_head_block_id)(original_head_block_number));
-  const auto [new_branch, old_branch] = _fork_db().fetch_branch_from(new_head->get_block_id(), original_head_block_id);
+  const auto [new_branch, old_branch] = _fork_db.fetch_branch_from(new_head->get_block_id(), original_head_block_id);
 
   ilog("Destination branch block ids:");
   std::for_each(new_branch.begin(), new_branch.end(), [](const item_ptr& item) {
@@ -796,6 +805,7 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
 
   ilog(" - common_block_id ${common_block_id} common_block_number ${common_block_number} (block before first block in branch, should be common)", (common_block_id)(common_block_number));
 
+  uint32_t current_head_block_num = original_head_block_number;
   if (old_branch.size())
   {
     ilog("Source branch block ids:");
@@ -803,22 +813,12 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
       ilog(" - ${id}", ("id", item->get_block_id()));
     });
 
-    try
-    {
-      // pop blocks until we hit the common ancestor block
-      while (head_block_id() != old_branch.back()->previous_id())
-      {
-        const block_id_type id_being_popped = head_block_id();
-        ilog(" - Popping block ${id_being_popped}", (id_being_popped));
-        pop_block();
-        ilog(" - Popped block ${id_being_popped}", (id_being_popped));
-      }
-      ilog("Done popping blocks");
-    }
-    FC_LOG_AND_RETHROW()
+    // pop blocks until we hit the common ancestor block
+    current_head_block_num = pop_block_extended( old_branch.back()->previous_id() );
+    ilog("Done popping blocks");
   }
 
-  notify_switch_fork(head_block_num());
+  notify_switch_fork( current_head_block_num );
 
   // push all blocks on the new fork
   for (auto ritr = new_branch.crbegin(); ritr != new_branch.crend(); ++ritr)
@@ -847,7 +847,7 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
       // remove the rest of new_branch from the fork_db, those blocks are invalid
       while (ritr != new_branch.rend())
       {
-        _fork_db().remove((*ritr)->get_block_id());
+        _fork_db.remove((*ritr)->get_block_id());
         ++ritr;
       }
 
@@ -856,20 +856,16 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
       // the bad block was late in the fork, and even without the bad blocks the new fork is longer so we
       // should stay.  And a third possibility is that the fork is shorter, but one of the blocks on the fork
       // became irreversible, so switching back is no longer an option.
-      if (get_last_irreversible_block_num() < common_block_number && head_block_num() < original_head_block_number)
+      // Note: database method calls to get_last_irreversible_block_num & head_block_num have been replaced by
+      //       the ones from fork_db below:
+      //if (get_last_irreversible_block_num() < common_block_number && head_block_num() < original_head_block_number)
+      if( _fork_db.get_last_irreversible_block_num() < common_block_number &&
+          _fork_db.get_head()->get_block_num() < original_head_block_number )
       {
-        try
-        {
-          // pop all blocks from the bad fork
-          while (head_block_id() != common_block_id)
-          {
-            ilog(" - reverting to previous chain, popping block ${id}", ("id", head_block_id()));
-            pop_block();
-          }
-          ilog(" - reverting to previous chain, done popping blocks");
-        }
-        FC_LOG_AND_RETHROW()
-        notify_switch_fork(head_block_num());
+        // pop all blocks from the bad fork
+        uint32_t new_head_block_num = pop_block_extended( common_block_id );
+        ilog(" - reverting to previous chain, done popping blocks");
+        notify_switch_fork( new_head_block_num );
 
         // restore any popped blocks from the good fork
         if (old_branch.size())
@@ -880,7 +876,8 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
             ilog(" - restoring block ${id}", ("id", (*ritr)->get_block_id()));
             apply_block_extended( *ritr,
                                   (*ritr)->full_block,
-                                  skip );
+                                  skip,
+                                  nullptr );
           }
           ilog("done restoring blocks from original fork");
         }
@@ -892,22 +889,54 @@ void database::switch_forks( const item_ptr new_head, const block_flow_control* 
   theApp.notify("switching forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
 }
 
-bool database::_push_block(const block_flow_control& block_ctrl)
-{ try {
-  const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
+void database::switch_forks( const item_ptr new_head, const block_flow_control* pushed_block_ctrl )
+{
+  uint32_t skip = get_node_skip_flags();
+  global_switch_forks( new_head, skip, pushed_block_ctrl, head_block_id(), head_block_num(), 
+    [&] ( shared_ptr< fork_item > h, const std::shared_ptr< full_block_type >& fb,
+          uint32_t skip, const block_flow_control* block_ctrl )
+      { this->apply_block_extended(h,fb,skip,block_ctrl); },
+    [&] ( const block_id_type end_block ) -> uint32_t
+      { return this->pop_block_extended( end_block ); },
+    [&] ( uint32_t head_block_num )
+      { this->notify_switch_fork( head_block_num ); },
+    _fork_db() );
+}
 
-  const uint32_t skip = get_node_skip_flags();
+bool global_push_block(const std::shared_ptr<full_block_type>& full_block, 
+  const block_flow_control& block_ctrl,
+  uint32_t state_head_block_num,
+  block_id_type state_head_block_id,
+  const uint32_t skip,
+  apply_block_t apply_block_extended,
+  pop_block_t pop_block_extended,
+  notify_switch_fork_t notify_switch_fork,
+  fork_database& _fork_db )
+{
   std::vector<std::shared_ptr<full_block_type>> blocks;
 
-  if (!(skip & skip_fork_db)) //if fork checking enabled
+  if (true) //if fork checking enabled
   {
-    const item_ptr new_head = _fork_db().push_block(full_block);
+    const item_ptr new_head = _fork_db.push_block(full_block);
     block_ctrl.on_fork_db_insert();
-    _maybe_warn_multiple_production( new_head->get_block_num() );
+    //_maybe_warn_multiple_production( new_head->get_block_num() );
+    {
+      uint32_t height = new_head->get_block_num();
+      const auto blocks = _fork_db.fetch_block_by_number(height);
+      if (blocks.size() > 1)
+      {
+        vector<std::pair<account_name_type, fc::time_point_sec>> witness_time_pairs;
+        witness_time_pairs.reserve(blocks.size());
+        for (const auto& b : blocks)
+          witness_time_pairs.push_back(std::make_pair(b->get_block_header().witness, b->get_block_header().timestamp));
 
-    // if the new head block is at a lower height than our head block,
-    // it is on a shorter fork, so don't validate it
-    if (new_head->get_block_num() <= head_block_num())
+        ilog("Encountered block num collision at block ${height} due to a fork, witnesses are: ${witness_time_pairs}", (height)(witness_time_pairs));
+      }
+    }
+
+    // If the new head block is actually older one, the new block is on a shorter fork
+    // (or duplicate), so don't validate it.
+    if (new_head->get_block_num() <= state_head_block_num)
     {
       block_ctrl.on_fork_ignore();
       return false;
@@ -916,7 +945,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
     //if new_head indirectly builds off the current head_block
     // then there's no fork switch, we're just linking in previously unlinked blocks to the main branch
     for (item_ptr block = new_head;
-         block->get_block_num() > head_block_num();
+         block->get_block_num() > state_head_block_num;
          block = block->prev.lock())
     {
       blocks.push_back(block->full_block);
@@ -924,11 +953,12 @@ bool database::_push_block(const block_flow_control& block_ctrl)
         break;
     }
     //we've found a longer fork, so do a fork switch to pop back to the common block of the two forks
-    if (blocks.back()->get_block_header().previous != head_block_id())
+    if (blocks.back()->get_block_header().previous != state_head_block_id)
     {
       block_ctrl.on_fork_apply();
       ilog("calling switch_forks() from _push_block()");
-      switch_forks(new_head,&block_ctrl);
+      global_switch_forks( new_head, skip, &block_ctrl, state_head_block_id, state_head_block_num,
+                           apply_block_extended, pop_block_extended, notify_switch_fork, _fork_db );
       return true;
     }
   }
@@ -950,7 +980,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
         // if we've linked in a chain of multiple blocks, we need to keep the fork_db's head block in sync
         // with what we're applying.  If we're only appending a single block, the forkdb's head block
         // should already be correct
-        blocks.size() > 1 ? _fork_db().fetch_block((*iter)->get_block_id(), true) : shared_ptr<fork_item>(),
+        blocks.size() > 1 ? _fork_db.fetch_block((*iter)->get_block_id(), true) : shared_ptr<fork_item>(),
         *iter,
         skip,
         is_pushed_block ? &block_ctrl : nullptr);
@@ -960,11 +990,27 @@ bool database::_push_block(const block_flow_control& block_ctrl)
       elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
       // remove failed block, and all blocks on the fork after it, from the fork database
       for (; iter != blocks.crend(); ++iter)
-        _fork_db().remove((*iter)->get_block_id());
+        _fork_db.remove((*iter)->get_block_id());
       throw;
     }
   }
   return false;
+}
+
+bool database::_push_block(const block_flow_control& block_ctrl)
+{ try {
+  const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
+  const uint32_t skip = get_node_skip_flags();
+
+  return global_push_block( full_block, block_ctrl, head_block_num(), head_block_id(), skip,
+    [&] ( shared_ptr< fork_item > h, const std::shared_ptr< full_block_type >& fb,
+          uint32_t skip, const block_flow_control* block_ctrl )
+      { this->apply_block_extended(h,fb,skip,block_ctrl); },
+    [&] ( const block_id_type end_block ) -> uint32_t
+      { return this->pop_block_extended( end_block ); },
+    [&] ( uint32_t head_block_num )
+      { this->notify_switch_fork( head_block_num ); },
+    _fork_db() );
 } FC_CAPTURE_AND_RETHROW() }
 
 bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
@@ -1077,6 +1123,23 @@ void database::pop_block()
     FC_CAPTURE_AND_RETHROW()
   }
   FC_CAPTURE_AND_RETHROW()
+}
+
+uint32_t database::pop_block_extended( const block_id_type end_block )
+{
+  try
+  {
+    while( head_block_id() != end_block )
+    {
+      const block_id_type id_being_popped = head_block_id();
+      ilog(" - Popping block ${id_being_popped}", (id_being_popped));
+      pop_block();
+      ilog(" - Popped block ${id_being_popped}", (id_being_popped));
+    }
+
+    return head_block_num();
+  }
+  FC_LOG_AND_RETHROW()
 }
 
 void database::clear_pending()

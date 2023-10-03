@@ -342,6 +342,8 @@ namespace chain {
       void _push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction );
 
       void pop_block();
+      /// Returns number of block on head after popping.
+      uint32_t pop_block_extended( const block_id_type end_block );
       void clear_pending();
 
       void push_virtual_operation( const operation& op );
