@@ -1,12 +1,10 @@
 import json
 import time
-from typing import Final
 
 import pytest
 
 import test_tools as tt
-
-ALTERNATE_CHAIN_JSON_FILENAME: Final[str] = "alternate-chain-spec.json"
+from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 
 
 def test_simply_hardfork_schedule():

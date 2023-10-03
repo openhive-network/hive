@@ -1,13 +1,12 @@
-import json
 from datetime import datetime
-from typing import Dict, Final, Optional
+import json
+from typing import Dict, Optional
 
 import pytest
 
 import test_tools as tt
+from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 from shared_tools.complex_networks import init_network
-
-ALTERNATE_CHAIN_JSON_FILENAME: Final[str] = "alternate-chain-spec.json"
 
 
 def run_with_faketime(node, time):
