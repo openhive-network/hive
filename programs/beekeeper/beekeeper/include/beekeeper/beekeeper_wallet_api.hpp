@@ -1,7 +1,5 @@
 #pragma once
 
-#include <appbase/application.hpp>
-
 #include <core/beekeeper_wallet_manager.hpp>
 #include <core/utilities.hpp>
 
@@ -12,6 +10,11 @@
 #include <fc/optional.hpp>
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
+
+namespace appbase
+{
+  class application;
+}
 
 namespace beekeeper {
 

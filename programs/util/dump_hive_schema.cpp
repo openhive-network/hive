@@ -1,3 +1,5 @@
+#include <appbase/application.hpp>
+
 #include <hive/protocol/types_fwd.hpp>
 #include <hive/chain/hive_fwd.hpp>
 

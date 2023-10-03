@@ -1,3 +1,5 @@
+#include <appbase/application.hpp>
+
 #include <fc/log/logger.hpp>
 #include <fc/log/logger_config.hpp>
 #include <fc/log/console_appender.hpp>

@@ -1,3 +1,5 @@
+#include <appbase/application.hpp>
+
 #include <hive/chain/database.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/protocol/block.hpp>

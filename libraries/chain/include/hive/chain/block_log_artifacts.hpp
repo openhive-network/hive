@@ -1,7 +1,5 @@
 #pragma once
 
-#include <appbase/application.hpp>
-
 #include <hive/protocol/types.hpp>
 
 #include <hive/chain/detail/block_attributes.hpp>
@@ -12,6 +10,11 @@
 #include <memory>
 #include <utility>
 #include <vector>
+
+namespace appbase
+{
+  class application;
+}
 
 namespace hive { namespace chain {
 
