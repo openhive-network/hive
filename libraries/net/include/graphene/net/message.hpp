@@ -29,9 +29,9 @@
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/reflect/variant.hpp>
 
-#include <appbase/application.hpp>
 namespace hive { namespace chain {
   struct compressed_block_data;
+  class blockchain_worker_thread_pool;
 } }
 
 namespace graphene { namespace net {
@@ -120,9 +120,9 @@ namespace graphene { namespace net {
               );
      }
      
-     block_message as_block_message( appbase::application& app ) const;
-     compressed_block_message as_compressed_block_message( appbase::application& app ) const;
-     trx_message as_trx_message( appbase::application& app ) const;
+     block_message as_block_message( hive::chain::blockchain_worker_thread_pool& thread_pool ) const;
+     compressed_block_message as_compressed_block_message( hive::chain::blockchain_worker_thread_pool& thread_pool ) const;
+     trx_message as_trx_message( hive::chain::blockchain_worker_thread_pool& thread_pool ) const;
   };
 
 
