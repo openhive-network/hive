@@ -204,7 +204,7 @@ namespace chain {
         * when specific block data needs to be provided. This function is public because it is 
         * used by the load snapshot plugin to inject block data. Takes part in normal open process.
         */
-      virtual void state_dependent_open( const open_args& args );
+      virtual void state_dependent_open( const open_args& args ) = 0;
 
     private:
 
