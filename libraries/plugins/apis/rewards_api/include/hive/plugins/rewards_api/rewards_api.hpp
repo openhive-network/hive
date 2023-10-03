@@ -1,9 +1,12 @@
 #pragma once
 
-#include <appbase/application.hpp>
-
 #include <hive/plugins/rewards_api/rewards_api_args.hpp>
 #include <hive/plugins/json_rpc/utility.hpp>
+
+namespace appbase
+{
+  class application;
+}
 
 namespace hive { namespace plugins { namespace rewards_api {
 

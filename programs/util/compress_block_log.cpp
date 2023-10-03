@@ -1,3 +1,5 @@
+#include <appbase/application.hpp>
+
 #include <fc/log/logger.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/filesystem.hpp>

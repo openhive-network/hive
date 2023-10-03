@@ -1,7 +1,5 @@
 #pragma once
 
-#include <appbase/application.hpp>
-
 #include <hive/plugins/json_rpc/utility.hpp>
 
 #include <hive/protocol/types.hpp>
@@ -9,6 +7,11 @@
 #include <fc/optional.hpp>
 #include <fc/variant.hpp>
 #include <fc/vector.hpp>
+
+namespace appbase
+{
+  class application;
+}
 
 namespace hive { namespace plugins { namespace account_by_key {
 
