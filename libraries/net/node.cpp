@@ -607,6 +607,7 @@ namespace graphene { namespace net {
       fc::promise<void>::ptr _shutdownNotifier;
 
       appbase::application& theApp;
+      hive::chain::blockchain_worker_thread_pool& _thread_pool;
 
       node_impl(const std::string& user_agent, appbase::application& app);
       virtual ~node_impl();
@@ -905,7 +906,8 @@ namespace graphene { namespace net {
       _average_network_usage_minute_counter(0),
       _node_is_shutting_down(false),
       _activeCalls(0),
-      theApp( app )
+      theApp( app ),
+      _thread_pool( hive::chain::blockchain_worker_thread_pool::get_instance( app ) )
     {
       _rate_limiter.set_actual_rate_time_constant(fc::seconds(2));
       fc::rand_bytes(&_node_id.data[0], (int)_node_id.size());
@@ -1973,7 +1975,7 @@ namespace graphene { namespace net {
         fc::async( [=]() { process_block_message(originating_peer, received_message, message_hash); }, "process_block_msg");
         break;
       case core_message_type_enum::trx_message_type:
-        process_trx_message(originating_peer, received_message.as_trx_message( theApp ));
+        process_trx_message(originating_peer, received_message.as_trx_message( _thread_pool ));
         break;
       case core_message_type_enum::current_time_request_message_type:
         on_current_time_request_message(originating_peer, received_message.as<current_time_request_message>());
@@ -2973,12 +2975,12 @@ namespace graphene { namespace net {
           if (originating_peer->supports_compressed_blocks())
           {
             if (originating_peer->requires_alternate_compression_for_block(full_block))
-              hive::chain::blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed); // trigger alternate compression
+              _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed); // trigger alternate compression
             else
-              hive::chain::blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed); // trigger default compression
+              _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed); // trigger default compression
           }
           else
-            hive::chain::blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed); // decompress if necessary
+            _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed); // decompress if necessary
 
           reply_blocks.push_back(std::move(full_block));
         }
@@ -3848,7 +3850,7 @@ namespace graphene { namespace net {
       {
       case core_message_type_enum::block_message_type:
         {
-          graphene::net::block_message message(message_to_process.as_block_message( theApp ));
+          graphene::net::block_message message(message_to_process.as_block_message( _thread_pool ));
           full_block = message.full_block;
           legacy_message_hash = actual_message_hash;
           // remove this check, just needed during initial development
@@ -3857,7 +3859,7 @@ namespace graphene { namespace net {
         }
       case core_message_type_enum::compressed_block_message_type:
         {
-          graphene::net::compressed_block_message message(message_to_process.as_compressed_block_message( theApp ));
+          graphene::net::compressed_block_message message(message_to_process.as_compressed_block_message( _thread_pool ));
           full_block = message.full_block;
           ++originating_peer->compressed_blocks_received_from_peer;
           break;
