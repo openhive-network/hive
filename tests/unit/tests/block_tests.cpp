@@ -1520,7 +1520,6 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     full_database db;
     db._log_hardforks = false;
-    database db;
     open_test_database( db, data_dir.path() );
 
     auto report_block = []( const database& db, const std::shared_ptr<full_block_type>& block, const char* suffix )
