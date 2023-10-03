@@ -170,7 +170,6 @@ namespace hive { namespace chain {
       if (my->block_log_fd == -1)
         FC_THROW("Error opening block log file ${filename}: ${error}", ("filename", my->block_file)("error", strerror(errno)));
       my->block_log_size = get_file_size(my->block_log_fd);
-      const ssize_t block_log_size = my->block_log_size;
 
       /* On startup of the block log, there are several states the log file and the index file can be
         * in relation to eachother.
@@ -190,10 +189,10 @@ namespace hive { namespace chain {
         *  - If the index file head is not in the log file, delete the index and replay.
         *  - If the index file head is in the log, but not up to date, replay from index head.
         */
-      if (block_log_size)
+      if (my->block_log_size)
       {
         sanity_check(read_only);
-        idump((block_log_size));
+        idump((my->block_log_size));
         std::atomic_store(&my->head, read_head());
       }
 
