@@ -72,12 +72,14 @@ namespace hive { namespace chain {
       void                             start_block(const std::shared_ptr<full_block_type>& full_block);
       void                             remove(block_id_type b);
       void                             set_head(item_ptr h);
+      const item_ptr                   get_head() const;
       bool                             is_known_block(const block_id_type& id)const;
       item_ptr                         fetch_block_unlocked(const block_id_type& id, bool search_linked_blocks_only = false)const;
       item_ptr                         fetch_block(const block_id_type& id, bool search_linked_blocks_only = false) const;
       vector<item_ptr>                 fetch_block_by_number_unlocked(uint32_t num) const;
       vector<item_ptr>                 fetch_block_by_number(uint32_t n)const;
       vector<item_ptr>                 fetch_heads() const;
+      uint32_t                         get_last_irreversible_block_num() const;
       std::map<account_name_type, block_id_type> get_last_block_generated_by_each_witness() const;
 
       // These functions are similar to the corresponding versions in `database`,

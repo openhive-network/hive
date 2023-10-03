@@ -405,12 +405,28 @@ void fork_database::set_head(shared_ptr<fork_item> h)
   });
 }
 
+const item_ptr fork_database::get_head() const
+{
+  return with_read_lock( [&]() {
+    return _head;
+  });
+}
+
 void fork_database::remove(block_id_type id)
 {
   with_write_lock( [&]() {
     if (_head && _head->get_block_id() == id)
       _head = _head->prev.lock();
     _index.get<block_id>().erase(id);
+  });
+}
+
+uint32_t fork_database::get_last_irreversible_block_num() const
+{
+  return with_read_lock([&]() {
+    const auto& block_num_idx = _index.get<block_num>();
+    // The oldest block in the fork database is always the last irreversible block
+    return (*block_num_idx.begin())->get_block_num();
   });
 }
 
