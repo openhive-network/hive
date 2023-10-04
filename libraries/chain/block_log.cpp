@@ -994,10 +994,7 @@ namespace hive { namespace chain {
                   std::tie(block_position, attributes) = detail::split_block_start_pos_with_flags(block_position_with_flags);
 
                   if (higher_block_position <= block_position)
-                  {
-                    verification_successfull = false;
-                    break;
-                  }
+                    FC_THROW("new block position: ${block_position} is higher then previous block position: ${higher_block_position}", (block_position)(higher_block_position));
 
                   const uint32_t block_serialized_data_size = higher_block_position - block_position;
                   const uint32_t created_block_num = read_block_by_offset(block_position, block_serialized_data_size, attributes)->get_block_num();
@@ -1010,8 +1007,19 @@ namespace hive { namespace chain {
                   FC_ASSERT(block_position < *possible_start_of_block, "Should never happen, block_log has less than 10 blocks or is heavy corrupted.");
                 }
               }
+              catch (const fc::exception& e)
+              {
+                wlog("Tested possible start of block at pos: ${position} turns out to be incorrect. FC error occured: ${error}.", ("position", *possible_start_of_block)("error", e.to_detail_string()));
+                verification_successfull = false;
+              }
+              catch( const std::exception& e )
+              {
+                wlog("Tested possible start of block at pos: ${position} turns out to be incorrect. std error occured: ${error}.", ("position", *possible_start_of_block)("error", e.what()));
+                verification_successfull = false;
+              }
               catch(...)
               {
+                wlog("Tested possible start of block at pos: ${position} turns out to be incorrect. Unknown error occured.", ("position", *possible_start_of_block));
                 verification_successfull = false;
               }
 
