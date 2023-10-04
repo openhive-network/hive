@@ -1125,8 +1125,15 @@ void chain_plugin::plugin_startup()
       }
       else
       {
-        ilog("P2P enabling...");
-        my->work( on_sync );
+        if( my->is_p2p_enabled )
+        {
+          ilog("P2P enabling...");
+          my->work( on_sync );
+        }
+        else
+        {
+          ilog("P2P is disabled.");
+        }
       }
     }
   }
