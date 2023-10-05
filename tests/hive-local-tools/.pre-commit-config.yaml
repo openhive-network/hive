@@ -10,3 +10,5 @@ repos:
       - id: check-merge-conflict
       - id: check-yaml
         args: [ "--unsafe" ]
+      - id: check-json
+        exclude: ^tests/unit/|^tests/api_tests/pattern_tests/tavern/
