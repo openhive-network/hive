@@ -8,7 +8,7 @@ def test_account_creation_in_different_ways(node, wallet):
 
     tt.logger.info('Waiting...')
     node.wait_number_of_blocks(18)
-    
+
     wallet.api.claim_account_creation('initminer', tt.Asset.Test(0))
 
     wallet.api.claim_account_creation_nonblocking('initminer', tt.Asset.Test(0))

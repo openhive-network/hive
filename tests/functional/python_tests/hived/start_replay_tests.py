@@ -36,8 +36,8 @@ config.webserver_http_endpoint = "127.0.0.1:8100"
 config.exclude_plugins(["witness"])
 config.update_plugins([
 
-	"account_by_key", "account_by_key_api", "condenser_api", 
-	"account_history_rocksdb", "account_history_api", "block_api", 
+	"account_by_key", "account_by_key_api", "condenser_api",
+	"account_history_rocksdb", "account_history_api", "block_api",
 	"chain_api"
 
 ])
@@ -105,7 +105,7 @@ try:
 
 		# gather required info[]
 		PID = node.hived_process.pid
-		
+
 		# start tests
 		for test in tests:
 
@@ -123,7 +123,7 @@ try:
 				print(f"[FAILED] {test}")
 			else:
 				print(f"[OK] {test}")
-			
+
 			if output is not sub.DEVNULL:
 				# output.flush()
 				output.close()

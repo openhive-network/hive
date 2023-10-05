@@ -92,8 +92,8 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path, overwrite 
 def perform_replay(node_bin_path, node_work_dir_path):
   logger.info("Performing replay with {}".format(node_bin_path))
   node = hive_utils.hive_node.HiveNodeInScreen(
-    node_bin_path, 
-    node_work_dir_path, 
+    node_bin_path,
+    node_work_dir_path,
     None,
     True
   )
@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     if args.replay_reference_node:
       prepare_work_dir(args.reference_node_work_dir, args.block_log_path, "./resources/config.ini")
-    
+
     prepare_work_dir(args.test_node_work_dir, args.block_log_path, "./resources/config.ini")
 
     if args.replay_reference_node:
