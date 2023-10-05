@@ -4,7 +4,7 @@ from typing import List, NoReturn, Optional, Union, TYPE_CHECKING
 
 import pytest
 import test_tools as tt
-from test_tools.__private.scope.scope_fixtures import *  # pylint: disable=wildcard-import, unused-wildcard-import
+from test_tools.__private.scope.scope_fixtures import *  # noqa: F401, F403
 
 if TYPE_CHECKING:
     from _pytest.mark import Mark
