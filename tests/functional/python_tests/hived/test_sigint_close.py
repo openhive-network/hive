@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import argparse
 import os
 import os.path

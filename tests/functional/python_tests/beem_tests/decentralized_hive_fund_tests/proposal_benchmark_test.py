@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 # example A:
 # "/home/a/hived" Path to hived exe
 # "/home/a/data"  Path to blockchain directory
