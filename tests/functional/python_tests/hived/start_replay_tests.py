@@ -1,13 +1,11 @@
-#!/usr/bin/python3
-
-import sys
 import os
 import tempfile
 import argparse
 import subprocess as sub
+from os import walk
 
-sys.path.append("../../")
-
+from uuid import uuid5, NAMESPACE_URL
+from random import randint
 from hive_utils.hive_node import HiveNode
 from hive_utils.resources.configini import config as configuration
 
@@ -55,8 +53,7 @@ config.update_plugins(
 )
 
 # creating working dir
-from uuid import uuid5, NAMESPACE_URL
-from random import randint
+
 
 work_dir = os.path.join(
     tempfile.gettempdir(), uuid5(NAMESPACE_URL, str(randint(0, 1000000))).__str__().replace("-", "")
@@ -102,7 +99,6 @@ assert node.last_returncode == 0
 
 # gather aviable tests
 os.chdir(args.test_dir)
-from os import walk
 
 (_, _, filenames) = next(walk(args.test_dir))
 tests = [x for x in filenames if x.endswith(".py")]

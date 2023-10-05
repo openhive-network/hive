@@ -1,6 +1,3 @@
-import sys
-
-sys.path.append("../../")
 import hive_utils
 
 import logging
