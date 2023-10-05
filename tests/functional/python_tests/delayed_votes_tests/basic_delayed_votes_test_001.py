@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-import requests, sys
+import requests
+import sys
 
 # HIVE node must work
 url = "http://127.0.0.1:8090"
@@ -23,7 +24,7 @@ def query(payload, positive):
     result = requests.post(url, data=payload)
     content = result.json()["result"]
 
-    if type(content) == list:
+    if isinstance(content, list):
         check_in_array(content, positive)
     else:
         assert "accounts" in content

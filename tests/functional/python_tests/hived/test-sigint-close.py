@@ -51,8 +51,6 @@ def try_generate_crash(command_line, dump_file_str, crash_time, wait_time, exec_
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser()
 
     # Example
