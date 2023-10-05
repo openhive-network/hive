@@ -16,6 +16,3 @@ def test_find_vesting_delegations(node, should_prepare):
                                                          order='by_delegation')['delegations'][0]['delegator']
     delegations = node.api.database.find_vesting_delegations(account=account)['delegations']
     assert len(delegations) != 0
-
-
-
