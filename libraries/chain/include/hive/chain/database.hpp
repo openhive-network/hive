@@ -337,7 +337,6 @@ namespace chain {
 
       bool push_block( const block_flow_control& block_ctrl, uint32_t skip = skip_nothing );
       void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = skip_nothing );
-      void _maybe_warn_multiple_production( uint32_t height )const;
       bool _push_block( const block_flow_control& block_ctrl );
       void _push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction );
 
@@ -659,8 +658,7 @@ namespace chain {
       const witness_schedule_object& get_witness_schedule_object_for_irreversibility() const;
 
       void apply_block(const std::shared_ptr<full_block_type>& full_block, uint32_t skip = skip_nothing, const block_flow_control* block_ctrl = nullptr );
-      void apply_block_extended(  shared_ptr<fork_item> h,
-                                  const std::shared_ptr<full_block_type>& full_block,
+      void apply_block_extended(  const std::shared_ptr<full_block_type>& full_block,
                                   uint32_t skip = skip_nothing,
                                   const block_flow_control* block_ctrl = nullptr );
     protected:
@@ -671,7 +669,8 @@ namespace chain {
     private:
       optional< chainbase::database::session > _pending_tx_session;
 
-      void switch_forks(item_ptr new_head, const block_flow_control* pushed_block_ctrl = nullptr);
+      void switch_forks(const block_id_type& new_head_block_id, uint32_t new_head_block_num,
+                        const block_flow_control* pushed_block_ctrl = nullptr);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, const block_flow_control* block_ctrl = nullptr );
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
