@@ -75,7 +75,7 @@ class decoded_types_data_storage final
     bool add_type_to_decoded_types_set(const std::string_view type_id);
     void add_decoded_type_data_to_map(decoded_type_data&& decoded_type);
 
-    template <typename T> friend class decoders::main_decoder;
+    template <typename T, bool> friend class decoders::main_decoder;
     template <typename ...Args> friend class decoders::non_reflected_types::specific_type_decoder;
 
   public:
