@@ -3,12 +3,12 @@ from datetime import datetime as dt
 import test_tools as tt
 from hive_local_tools.functional.python.cli_wallet import (
     FundedAccountInfo,
+    PreparedProposalDataWithId,
     create_funded_account,
     format_datetime,
     get_list_proposal_args,
     get_list_proposal_votes_args,
     prepare_proposal,
-    prepared_proposal_data_with_id,
 )
 
 active_values = ["all", "inactive", "active", "expired", "votable"]
@@ -17,7 +17,7 @@ votes_order_by_values = ["by_voter_proposal"]
 order_type_values = ["ascending", "descending"]
 
 
-def test_list_proposals(wallet: tt.Wallet, creator_proposal_id: prepared_proposal_data_with_id, creator: tt.Account):
+def test_list_proposals(wallet: tt.Wallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account):
     start_point_before_test = format_datetime(dt.now())
 
     [proposals_order_by_values[0]]
@@ -39,9 +39,7 @@ def test_list_proposals(wallet: tt.Wallet, creator_proposal_id: prepared_proposa
                 )
 
 
-def test_list_voter_proposal(
-    wallet: tt.Wallet, creator_proposal_id: prepared_proposal_data_with_id, creator: tt.Account
-):
+def test_list_voter_proposal(wallet: tt.Wallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account):
     wallet.api.update_proposal_votes(voter=creator.name, proposals=[creator_proposal_id.id], approve=True)
 
     for active in active_values:

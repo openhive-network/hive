@@ -3,9 +3,9 @@ import pytest
 import test_tools as tt
 from hive_local_tools.functional.python.cli_wallet import (
     FundedAccountInfo,
+    PreparedProposalDataWithId,
     create_funded_account,
     prepare_proposal,
-    prepared_proposal_data_with_id,
 )
 
 
@@ -33,16 +33,16 @@ def create_proposal(wallet: tt.Wallet, funded_account: FundedAccountInfo, creato
     )
     for prop in response:
         if prop["permlink"] == prepared_proposal.permlink:
-            return prepared_proposal_data_with_id(base=prepared_proposal, id=prop["id"])
+            return PreparedProposalDataWithId(base=prepared_proposal, id=prop["id"])
 
     assert False, "proposal not found"
 
 
 @pytest.fixture
-def creator_proposal_id(wallet: tt.Wallet, funded_account: FundedAccountInfo) -> prepared_proposal_data_with_id:
+def creator_proposal_id(wallet: tt.Wallet, funded_account: FundedAccountInfo) -> PreparedProposalDataWithId:
     return create_proposal(wallet=wallet, funded_account=funded_account, creator_is_propsal_creator=True)
 
 
 @pytest.fixture
-def account_proposal_id(wallet: tt.Wallet, funded_account: FundedAccountInfo) -> prepared_proposal_data_with_id:
+def account_proposal_id(wallet: tt.Wallet, funded_account: FundedAccountInfo) -> PreparedProposalDataWithId:
     return create_proposal(wallet=wallet, funded_account=funded_account, creator_is_propsal_creator=False)

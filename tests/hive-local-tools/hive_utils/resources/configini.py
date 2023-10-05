@@ -3,7 +3,7 @@
 # Easier way to generate configs
 
 
-class config:
+class config:  # noqa: N801
     def __init__(self, check_is_arg_exists: bool = True, **kwargs):
         self.log_appender = (
             '{"appender":"stderr","stream":"std_error"}'

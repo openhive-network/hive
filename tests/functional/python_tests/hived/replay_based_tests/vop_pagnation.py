@@ -29,7 +29,7 @@ assert "account_history_api" in plugins
 
 
 # class that compressing vop
-class compressed_vop:
+class CompressedVop:
     def __init__(self, vop):
         from hashlib import sha512
         from json import dumps
@@ -46,7 +46,7 @@ class compressed_vop:
 def compress_vops(data: list) -> list:
     ret = []
     for vop in data:
-        ret.append(compressed_vop(vop).get())
+        ret.append(CompressedVop(vop).get())
     return ret
 
 
