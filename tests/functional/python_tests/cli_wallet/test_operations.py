@@ -18,21 +18,21 @@ def test_delayed_voting(wallet: tt.Wallet, funded_account: funded_account_info, 
 
 def test_get_open_orders(wallet: tt.Wallet, funded_account: funded_account_info):
     user = funded_account.account
-    AMOUNT_TO_SELL_1 = tt.Asset.Test(10)
-    MIN_TO_RECEIVE_1 = tt.Asset.Tbd(1000)
+    amount_to_sell_1 = tt.Asset.Test(10)
+    min_to_receive_1 = tt.Asset.Tbd(1000)
 
-    AMOUNT_TO_SELL_2 = tt.Asset.Tbd(10)
-    MIN_TO_RECEIVE_2 = tt.Asset.Test(1000)
+    amount_to_sell_2 = tt.Asset.Tbd(10)
+    min_to_receive_2 = tt.Asset.Test(1000)
 
     result_before = wallet.api.get_open_orders(accountname=user.name)
     assert len(result_before) == 0
 
-    tt.logger.info(f"testing buy order: {AMOUNT_TO_SELL_1} for {MIN_TO_RECEIVE_1} created by user {user.name}")
+    tt.logger.info(f"testing buy order: {amount_to_sell_1} for {min_to_receive_1} created by user {user.name}")
     wallet.api.create_order(
         owner=user.name,
         order_id=1,
-        amount_to_sell=AMOUNT_TO_SELL_1,
-        min_to_receive=MIN_TO_RECEIVE_1,
+        amount_to_sell=amount_to_sell_1,
+        min_to_receive=min_to_receive_1,
         fill_or_kill=False,
         expiration=9999,
     )
@@ -40,16 +40,16 @@ def test_get_open_orders(wallet: tt.Wallet, funded_account: funded_account_info)
     assert len(result_sell) == 1
     assert result_sell[0]["orderid"] == 1
     assert result_sell[0]["seller"] == user.name
-    assert result_sell[0]["for_sale"] == AMOUNT_TO_SELL_1.amount
-    assert result_sell[0]["sell_price"]["base"] == AMOUNT_TO_SELL_1
-    assert result_sell[0]["sell_price"]["quote"] == MIN_TO_RECEIVE_1
+    assert result_sell[0]["for_sale"] == amount_to_sell_1.amount
+    assert result_sell[0]["sell_price"]["base"] == amount_to_sell_1
+    assert result_sell[0]["sell_price"]["quote"] == min_to_receive_1
 
-    tt.logger.info(f"testing buy order: {AMOUNT_TO_SELL_2} for {MIN_TO_RECEIVE_2} created by user {user.name}")
+    tt.logger.info(f"testing buy order: {amount_to_sell_2} for {min_to_receive_2} created by user {user.name}")
     wallet.api.create_order(
         owner=user.name,
         order_id=2,
-        amount_to_sell=AMOUNT_TO_SELL_2,
-        min_to_receive=MIN_TO_RECEIVE_2,
+        amount_to_sell=amount_to_sell_2,
+        min_to_receive=min_to_receive_2,
         fill_or_kill=False,
         expiration=9999,
     )
@@ -57,18 +57,18 @@ def test_get_open_orders(wallet: tt.Wallet, funded_account: funded_account_info)
     assert len(result_buy) == 2
     assert result_buy[1]["orderid"] == 2
     assert result_buy[1]["seller"] == user.name
-    assert result_buy[1]["for_sale"] == AMOUNT_TO_SELL_2.amount
-    assert result_buy[1]["sell_price"]["base"] == AMOUNT_TO_SELL_2
-    assert result_buy[1]["sell_price"]["quote"] == MIN_TO_RECEIVE_2
+    assert result_buy[1]["for_sale"] == amount_to_sell_2.amount
+    assert result_buy[1]["sell_price"]["base"] == amount_to_sell_2
+    assert result_buy[1]["sell_price"]["quote"] == min_to_receive_2
 
 
 def test_create_recurent_transfer(wallet: tt.Wallet, funded_account: funded_account_info, creator: tt.Account):
     receiver = funded_account.account
-    MEMO = "This is a memo"
-    AMOUNT = tt.Asset.Tbd(10)
-    RECURRENCE = 24
-    EXECUTIONS = 6
-    PAIR_ID = 0
+    memo = "This is a memo"
+    amount = tt.Asset.Tbd(10)
+    recurrence = 24
+    executions = 6
+    pair_id = 0
 
     recurrent_transfers_before_count = len(wallet.api.find_recurrent_transfers(from_=creator.name))
     tt.logger.info(f"recurrent_transfers: {recurrent_transfers_before_count}")
@@ -76,10 +76,10 @@ def test_create_recurent_transfer(wallet: tt.Wallet, funded_account: funded_acco
     wallet.api.recurrent_transfer(
         from_=creator.name,
         to=receiver.name,
-        amount=AMOUNT,
-        memo=MEMO,
-        recurrence=RECURRENCE,
-        executions=EXECUTIONS,
+        amount=amount,
+        memo=memo,
+        recurrence=recurrence,
+        executions=executions,
     )
 
     recurrent_transfers = wallet.api.find_recurrent_transfers(from_=creator.name)
@@ -90,9 +90,9 @@ def test_create_recurent_transfer(wallet: tt.Wallet, funded_account: funded_acco
     assert recurrent_transfers_before_count + 1 == recurrent_transfers_after_count
     assert recurrent_transfer["from"] == creator.name
     assert recurrent_transfer["to"] == receiver.name
-    assert recurrent_transfer["amount"] == AMOUNT
-    assert recurrent_transfer["memo"] == MEMO
-    assert recurrent_transfer["recurrence"] == RECURRENCE
+    assert recurrent_transfer["amount"] == amount
+    assert recurrent_transfer["memo"] == memo
+    assert recurrent_transfer["recurrence"] == recurrence
     assert recurrent_transfer["consecutive_failures"] == 0
-    assert recurrent_transfer["remaining_executions"] == EXECUTIONS - 1
-    assert recurrent_transfer["pair_id"] == PAIR_ID
+    assert recurrent_transfer["remaining_executions"] == executions - 1
+    assert recurrent_transfer["pair_id"] == pair_id

@@ -31,7 +31,7 @@ def test_snapshots_existing_dir(block_log: Path, block_log_length: int):
 
         rmtree(join_paths(str(node.directory), "blockchain", "shared_memory.bin"), ignore_errors=True)
 
-    ERROR_MESSAGE = "is not empty. Creating snapshot rejected."
+    error_message = "is not empty. Creating snapshot rejected."
 
     node = tt.InitNode()
     node.config.plugin.append("state_snapshot")
@@ -48,7 +48,7 @@ def test_snapshots_existing_dir(block_log: Path, block_log_length: int):
     node.dump_snapshot(close=True)
     node.close()
     with open(node.directory / "stderr.txt", "r") as file:
-        assert ERROR_MESSAGE in file.read(999999)
+        assert error_message in file.read(999999)
         """
     for line in file:
       if ERROR_MESSAGE in line:

@@ -91,10 +91,10 @@ def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: funded_account_i
         if not isinstance(end_date, str):
             end_date = format_datetime(end_date)
 
-        TIME_TO_MAKE_BLOCKS_IRREVERRSIBBLE = 3 * 22
+        time_to_make_blocks_irreverrsibble = 3 * 22
 
-        tt.logger.info(f"Awaiting for making current reversible - irreversible: {TIME_TO_MAKE_BLOCKS_IRREVERRSIBBLE} s")
-        sleep(TIME_TO_MAKE_BLOCKS_IRREVERRSIBBLE)
+        tt.logger.info(f"Awaiting for making current reversible - irreversible: {time_to_make_blocks_irreverrsibble} s")
+        sleep(time_to_make_blocks_irreverrsibble)
         tt.logger.info("End of waiting")
 
         for bn in range(block_number, block_number + 5):
