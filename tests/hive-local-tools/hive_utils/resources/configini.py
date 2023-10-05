@@ -114,12 +114,12 @@ def validate_address(val: str) -> bool:
 
         try:
             validate_address(address)
-        except:
+        except Exception:
             from socket import gethostbyname as get_ip
 
             validate_address(get_ip(address))
 
         return True
 
-    except:
+    except Exception:
         return False
