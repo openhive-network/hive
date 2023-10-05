@@ -388,13 +388,13 @@ namespace detail {
         
         break;
       case block_production_condition::not_synced:
-  //         ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
+           ilog("Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)");
         break;
       case block_production_condition::not_my_turn:
-  //         ilog("Not producing block because it isn't my turn");
+           ilog("Not producing block because it isn't my turn");
         break;
       case block_production_condition::not_time_yet:
-  //         ilog("Not producing block because slot has not yet arrived");
+           ilog("Not producing block because slot has not yet arrived");
         break;
       case block_production_condition::no_private_key:
         ilog("Not producing block because I don't have the private key for ${scheduled_key}", ("scheduled_key", capture["scheduled_key"]) );
@@ -430,7 +430,10 @@ namespace detail {
       if( _db.get_slot_time(1) >= now )
         _production_enabled = true;
       else
+      {
+        ilog("TIME: ${time}, WITNESS: ${wit}", ("time", _db.get_slot_time(1)) ("wit", _db.get_scheduled_witness( 1 )));
         return block_production_condition::not_synced;
+      }
     }
 
     // is anyone scheduled to produce now or one second in the future?
