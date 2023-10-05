@@ -37,7 +37,7 @@ def test_reporting_exception_when_database_api_is_missing(node, wallet_bridge_ap
     ],
 )
 @pytest.mark.enabled_plugins("witness", "wallet_bridge_api")
-def test_reporting_exception_when_database_api_is_missing(node, wallet_bridge_api_command):
+def test_reporting_exception_when_database_api_is_missing_2(node, wallet_bridge_api_command):
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
