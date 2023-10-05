@@ -51,7 +51,11 @@ line-length = 120
 select = [  # https://docs.astral.sh/ruff/rules/
     "F",
     "E",
+    "I",
 ]
 ignore = [
     "E501", # line too long, handled by black
 ]
+
+[tool.ruff.isort]
+known-first-party = ["hive_local_tools", "test_tools", "shared_tools", "hive_utils"]
