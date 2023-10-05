@@ -762,10 +762,8 @@ namespace fc {
        FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
        unsigned_int w;
        fc::raw::unpack( s, w, depth );
-       static_variant<T...> helper(static_cast<int64_t>(w.value));
        unpack_static_variant<Stream> v(s, depth);
-       helper.visit( v );
-
+       static_variant<T...> helper(static_cast<int64_t>(w.value), v);
        sv = helper;
     }
 
