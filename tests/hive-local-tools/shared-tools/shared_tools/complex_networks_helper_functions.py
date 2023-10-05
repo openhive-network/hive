@@ -203,12 +203,12 @@ def calculate_transformed_witnesses(wallet, node):
 
 
 def is_witness_in_given_patterns(witness, witness_name_patterns):
-    return any([re.match(pattern, witness) is not None for pattern in witness_name_patterns])
+    return any(re.match(pattern, witness) is not None for pattern in witness_name_patterns)
 
 
 def are_witnesses_match_patterns(witnesses, witness_name_patterns):
     return all(
-        [is_witness_in_given_patterns(witness, pattern) for pattern, witness in zip(witness_name_patterns, witnesses)]
+        is_witness_in_given_patterns(witness, pattern) for pattern, witness in zip(witness_name_patterns, witnesses)
     )
 
 

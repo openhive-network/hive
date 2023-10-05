@@ -17,7 +17,7 @@ def test_block_race_and_producer_missed_operation(
 
     def is_producer_missed_operation_appear() -> bool:
         vops = api_node.api.account_history.enum_virtual_ops(block_range_begin=0, block_range_end=1000)["ops"]
-        operation_types = map(lambda vop: vop["op"]["type"], vops)
+        operation_types = (vop["op"]["type"] for vop in vops)
         return "producer_missed_operation" in operation_types
 
     tt.Time.wait_for(

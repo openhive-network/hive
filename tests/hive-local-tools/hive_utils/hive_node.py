@@ -26,7 +26,7 @@ class HiveNode(object):
     hived_process = None
     hived_lock = Lock()
     hived_data_dir = None
-    hived_args = list()
+    hived_args = []
 
     def __init__(
         self, binary_path: str, working_dir: str, binary_args: list, stdout_stream=subprocess.PIPE, stderr_stream=None
@@ -144,7 +144,7 @@ class HiveNodeInScreen(object):
         return self.node_running
 
     def parse_node_config_file(self, config_file_name):
-        ret = dict()
+        ret = {}
         lines = None
         with open(config_file_name, "r") as f:
             lines = f.readlines()

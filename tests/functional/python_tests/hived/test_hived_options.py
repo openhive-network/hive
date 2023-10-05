@@ -9,7 +9,7 @@ import test_tools as tt
 
 def test_dump_config():
     node = tt.InitNode()
-    old_config = dict()
+    old_config = {}
     for key, value in node.config.__dict__.items():
         old_config[key] = value
     node.run()
