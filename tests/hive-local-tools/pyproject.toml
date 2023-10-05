@@ -38,3 +38,4 @@ wax = "0.0.1a4+277cf4f"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "3.4.0"
 black = "23.9.1"
+ruff = "0.0.292"
