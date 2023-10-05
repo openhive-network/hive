@@ -8,13 +8,13 @@ import test_tools as tt
 
 @fixture
 def block_log_helper() -> Tuple[tt.BlockLog, int]:
-    BLOCK_COUNT = 30
+    block_count = 30
 
-    tt.logger.info(f"preparing block log with {BLOCK_COUNT} blocks")
+    tt.logger.info(f"preparing block log with {block_count} blocks")
     node = tt.InitNode()
     node.run(wait_for_live=True)
 
-    node.wait_for_block_with_number(BLOCK_COUNT)
+    node.wait_for_block_with_number(block_count)
     block_log_length = node.get_last_block_number()
 
     node.close()

@@ -50,12 +50,12 @@ def is_negative(loaded_yaml: dict) -> bool:
 
 
 def create_pattern(url: str, tav_file: str, directory: str):
-    PATTERN_FILE = tav_file.split(".")[0] + ".pat.json" + SUFIX
-    TAVERN_FILE = join(directory, tav_file)
-    OUTPUT_PATTERN_FILE = join(directory, f"{PATTERN_FILE}")
-    print(f"processing: {TAVERN_FILE}")
+    pattern_file = tav_file.split(".")[0] + ".pat.json" + SUFIX
+    tavern_file = join(directory, tav_file)
+    output_pattern_file = join(directory, f"{pattern_file}")
+    print(f"processing: {tavern_file}")
 
-    test_options = load_yaml(TAVERN_FILE)
+    test_options = load_yaml(tavern_file)
     request = test_options["stages"][0]["request"]
     output = post(url, json=request["json"], headers=request["headers"])
     assert output.status_code == 200
@@ -63,18 +63,18 @@ def create_pattern(url: str, tav_file: str, directory: str):
 
     if is_negative(test_options):
         assert "error" in parsed, (
-            f'while processing {TAVERN_FILE}, no "error" found in result: {parsed}' + "\n" + f"{request}"
+            f'while processing {tavern_file}, no "error" found in result: {parsed}' + "\n" + f"{request}"
         )
         parsed = parsed["error"]
         if "data" in parsed:
             parsed.pop("data")
     else:
         assert "result" in parsed, (
-            f'while processing {TAVERN_FILE}, no "result" found in result: {parsed}' + "\n" + f"{request}"
+            f'while processing {tavern_file}, no "result" found in result: {parsed}' + "\n" + f"{request}"
         )
         parsed = parsed["result"]
 
-    with open(OUTPUT_PATTERN_FILE, "wt") as file:
+    with open(output_pattern_file, "wt") as file:
         dump(parsed, file, indent=2, sort_keys=True)
         file.write("\n")
 

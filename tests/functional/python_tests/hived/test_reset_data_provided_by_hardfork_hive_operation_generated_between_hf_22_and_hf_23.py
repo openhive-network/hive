@@ -11,11 +11,11 @@ from hive_local_tools import run_for
 @pytest.fixture()
 def node() -> tt.InitNode:
     node = tt.InitNode()
-    TIME_OF_HF_23 = "2020-03-20T14:00:00"
+    time_of_hf_23 = "2020-03-20T14:00:00"
     # run with a date earlier than the start date of hardfork 23
     node.run(
         time_offset=tt.Time.serialize(
-            tt.Time.parse(TIME_OF_HF_23) - tt.Time.seconds(10),
+            tt.Time.parse(time_of_hf_23) - tt.Time.seconds(10),
             format_=tt.Time.TIME_OFFSET_FORMAT,
         )
     )

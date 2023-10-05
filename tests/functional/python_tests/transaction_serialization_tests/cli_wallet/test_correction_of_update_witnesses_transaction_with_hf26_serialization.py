@@ -3,7 +3,9 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet")
-def test_is_legacy_keyword_TESTS_is_not_in_hf26_transaction(node, wallet_with_hf26_serialization, request):
+def test_is_legacy_keyword_TESTS_is_not_in_hf26_transaction(  # noqa: N802
+    node, wallet_with_hf26_serialization, request
+):
     create_and_power_account_and_update_witness(wallet_with_hf26_serialization)
 
     path = get_path_to_binary_transaction_stored_from_wallet(wallet_with_hf26_serialization, request)
@@ -14,7 +16,9 @@ def test_is_legacy_keyword_TESTS_is_not_in_hf26_transaction(node, wallet_with_hf
 
 
 @run_for("testnet")
-def test_is_legacy_keyword_TESTS_is_in_legacy_transaction(node, wallet_with_legacy_serialization, request):
+def test_is_legacy_keyword_TESTS_is_in_legacy_transaction(  # noqa: N802
+    node, wallet_with_legacy_serialization, request
+):
     create_and_power_account_and_update_witness(wallet_with_legacy_serialization)
 
     path = get_path_to_binary_transaction_stored_from_wallet(wallet_with_legacy_serialization, request)

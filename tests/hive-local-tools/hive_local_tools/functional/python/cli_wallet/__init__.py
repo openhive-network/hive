@@ -82,12 +82,12 @@ def prepare_proposal(
 
     creator: tt.Account = input.creator if author_is_creator else input.account
     hash_input = f"{randint(0, 9999)}{prefix}{creator.private_key}{creator.public_key}{creator.name}"
-    PERMLINK = md5(hash_input.encode("utf-8")).hexdigest()
+    permlink = md5(hash_input.encode("utf-8")).hexdigest()
     result = prepared_proposal_data()
 
     result.post_comment_arguments = {
         "author": creator.name,
-        "permlink": PERMLINK,
+        "permlink": permlink,
         "parent_author": "",
         "parent_permlink": f"{prefix}post-parent-permlink",
         "title": f"{prefix}post-title",
@@ -105,10 +105,10 @@ def prepare_proposal(
         "end_date": format_datetime(result.end_date),
         "daily_pay": tt.Asset.Tbd(1),
         "subject": f"{prefix}-create-proposal-subject",
-        "permlink": PERMLINK,
+        "permlink": permlink,
     }
 
-    result.permlink = PERMLINK
+    result.permlink = permlink
     return result
 
 

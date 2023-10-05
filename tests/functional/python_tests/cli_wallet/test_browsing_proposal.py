@@ -55,8 +55,8 @@ def test_list_voter_proposal(
 
 
 def test_find_proposals(wallet: tt.Wallet, creator: tt.Account):
-    ACCOUNTS_COUNT = 8
-    PROPOSAL_ID_TEST_SCHEME = [[1], [2], [3], [1, 2], [1, 2, 3], [2, 3], [3, 4], [4, 5], [1, 2, 3, 4, 5, 6, 7]]
+    accounts_count = 8
+    proposal_id_test_scheme = [[1], [2], [3], [1, 2], [1, 2, 3], [2, 3], [3, 4], [4, 5], [1, 2, 3, 4, 5, 6, 7]]
 
     def inline_create_proposal(input_account: funded_account_info):
         data = prepare_proposal(input=input_account, author_is_creator=False)
@@ -65,10 +65,10 @@ def test_find_proposals(wallet: tt.Wallet, creator: tt.Account):
         wallet.api.create_proposal(**data.create_proposal_arguments)
 
     # create proposal for each account
-    accounts = [create_funded_account(creator=creator, wallet=wallet, id=i) for i in range(ACCOUNTS_COUNT)]
+    accounts = [create_funded_account(creator=creator, wallet=wallet, id=i) for i in range(accounts_count)]
     [inline_create_proposal(input_account=acc) for acc in accounts]
 
-    for proposal_test_case in PROPOSAL_ID_TEST_SCHEME:
+    for proposal_test_case in proposal_id_test_scheme:
         result = wallet.api.find_proposals(proposal_ids=proposal_test_case)
         assert len(result) == len(proposal_test_case), f"result: {result}"
         result_ids = [item["id"] for item in result]
