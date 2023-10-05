@@ -48,6 +48,10 @@ preview = true
 
 [tool.ruff]
 line-length = 120
+select = [  # https://docs.astral.sh/ruff/rules/
+    "F",
+    "E",
+]
 ignore = [
     "E501", # line too long, handled by black
 ]
