@@ -277,6 +277,14 @@ public:
        impl::storage_ops<0, Types...>::con(_tag, storage);
     }
 
+    template<typename visitor>
+    static_variant(int64_t t, visitor& v)
+      : _tag(t)
+    {
+      impl::storage_ops<0, Types...>::con(_tag, storage);
+      visit(v);
+    }
+
     template<typename... Other>
     static_variant( const static_variant<Other...>& cpy ) :
       _tag(cpy.which())
@@ -461,10 +469,9 @@ struct visitor {
          std::map< string, int64_t > name_map;
          for( int i = 0; i < fc::static_variant<T...>::count(); ++i )
          {
-            fc::static_variant<T...> tmp;
-            tmp.set_which(i);
             string n;
-            tmp.visit( get_static_variant_name( n ) );
+            get_static_variant_name visitor(n);
+            fc::static_variant<T...> tmp(static_cast<int64_t>(i), visitor);
             name_map[n] = i;
          }
          return name_map;
@@ -494,8 +501,9 @@ struct visitor {
          which = itr->second;
       }
 
-      s.set_which( which );
-      s.visit( fc::to_static_variant( v_object[ "value" ] ) );
+      fc::to_static_variant visitor(v_object["value"]);
+      fc::static_variant<T...> tmp(which, visitor);
+      s = tmp;
    }
 
    template< typename... T > struct get_comma_separated_typenames;
