@@ -7,9 +7,10 @@ from .block_log.generate_block_log import AMOUNT_OF_ALL_COMMENTS
 @pytest.mark.parametrize("network_type", ["bastion", "complete_graph"])
 def test_cumulative_payout_for_comments(prepare_environment, network_type) -> None:
     networks_builder = prepare_environment
-    api_node = networks_builder.networks[0].node('FullApiNode0')
+    api_node = networks_builder.networks[0].node("FullApiNode0")
     cashout_time = tt.Time.parse(
-        api_node.api.database.find_comments(comments=[["creator-0", "post-creator-0"]])["comments"][0]["cashout_time"])
+        api_node.api.database.find_comments(comments=[["creator-0", "post-creator-0"]])["comments"][0]["cashout_time"]
+    )
     tt.logger.info(f"Cashout time: {cashout_time}")
 
     if network_type == "bastion":
@@ -20,7 +21,10 @@ def test_cumulative_payout_for_comments(prepare_environment, network_type) -> No
     last_block_number = api_node.get_last_block_number()
     tt.logger.info(f"Head block number: {last_block_number}")
 
-    error_message = f"Cashout_time: {cashout_time} is already in the past. Actual head_block time: {ht} should be before cashout_time."
+    error_message = (
+        f"Cashout_time: {cashout_time} is already in the past. Actual head_block time: {ht} should be before"
+        " cashout_time."
+    )
     assert api_node.get_head_block_time() < cashout_time, error_message
 
     wait_for_comment_payout(api_node, cashout_time)
@@ -28,10 +32,17 @@ def test_cumulative_payout_for_comments(prepare_environment, network_type) -> No
     wait_for_irreversible_head_block(api_node)
 
     err_msg = "Not all comment rewards have been paid out."
-    assert len(api_node.api.account_history.enum_virtual_ops(block_range_begin=last_block_number,
-                                                             block_range_end=last_block_number + 1000,
-                                                             include_reversible=True,
-                                                             filter=0x000800)["ops"]) == AMOUNT_OF_ALL_COMMENTS, err_msg
+    assert (
+        len(
+            api_node.api.account_history.enum_virtual_ops(
+                block_range_begin=last_block_number,
+                block_range_end=last_block_number + 1000,
+                include_reversible=True,
+                filter=0x000800,
+            )["ops"]
+        )
+        == AMOUNT_OF_ALL_COMMENTS
+    ), err_msg
 
 
 def build_fortress(network) -> None:
@@ -69,11 +80,13 @@ def wait_for_irreversible_head_block(node) -> None:
     """
     Function waiting for network stabilization. Quits when forking is complete.
     """
+
     def check_if_head_block_is_last_irreversible() -> bool:
         return node.get_last_block_number() == node.get_last_irreversible_block_number()
 
-    tt.Time.wait_for(check_if_head_block_is_last_irreversible,
-                     timeout=tt.Time.seconds(120),
-                     timeout_error_message="The time limit for establishing a common fork has been exceeded."
-                     )
+    tt.Time.wait_for(
+        check_if_head_block_is_last_irreversible,
+        timeout=tt.Time.seconds(120),
+        timeout_error_message="The time limit for establishing a common fork has been exceeded.",
+    )
     tt.logger.info(f"Forking finished at block: {node.get_last_irreversible_block_number()}")

@@ -2,7 +2,11 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools import run_for
-from hive_local_tools.constants import ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD, OWNER_AUTH_RECOVERY_PERIOD, OWNER_UPDATE_LIMIT
+from hive_local_tools.constants import (
+    ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD,
+    OWNER_AUTH_RECOVERY_PERIOD,
+    OWNER_UPDATE_LIMIT,
+)
 from hive_local_tools.functional.python.recovery import get_authority, get_owner_key, get_recovery_agent
 
 

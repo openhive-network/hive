@@ -17,7 +17,8 @@ def test_power_down(prepared_node, wallet, alice):
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1)
+        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1
+    )
     alice.update_account_info()
 
     for week_number in range(1, VESTING_WITHDRAW_INTERVALS):  # check weekly vests/ hives changes (from week 1 to 12)
@@ -49,7 +50,8 @@ def test_cancel_power_down(prepared_node, wallet, alice):
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1)
+        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1
+    )
     alice.update_account_info()
 
     for week_number in range(1, 3):  # check weekly vests/ hives changes (from week 1 to 3)
@@ -77,7 +79,7 @@ def test_cancel_power_down(prepared_node, wallet, alice):
     [
         (tt.Asset.Test(3_000), tt.Asset.Test(10_000)),  # User wants to increase the amount of Power down.
         (tt.Asset.Test(10_000), tt.Asset.Test(3_000)),  # User wants to decrease the amount of Power down.
-    ]
+    ],
 )
 def test_modify_power_down_amount(prepared_node, wallet, alice, first_pd_amount, second_pd_amount):
     first_pd_vest_amount = PowerDown.convert_to_vest(prepared_node, first_pd_amount)
@@ -86,7 +88,8 @@ def test_modify_power_down_amount(prepared_node, wallet, alice, first_pd_amount,
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1)
+        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1
+    )
     alice.update_account_info()
 
     for week_number in range(1, 3):  # check weekly vests/ hives changes from week 1 to 2 (first power down)

@@ -29,12 +29,14 @@ def test_account_theft_after_user_overlooked_change_of_recovery_agent(prepare_en
 
     # alice understands the situation and changes owner key
     alice_new_owner_key = tt.Account("alice_new_owner_key").public_key
-    wallet_alice.api.update_account("alice", "{}",
-                                    alice_new_owner_key,
-                                    alice_new_owner_key,
-                                    alice_new_owner_key,
-                                    alice_new_owner_key,
-                                    )
+    wallet_alice.api.update_account(
+        "alice",
+        "{}",
+        alice_new_owner_key,
+        alice_new_owner_key,
+        alice_new_owner_key,
+        alice_new_owner_key,
+    )
 
     # alice isn't aware that in 15 more days thief will become her account recovery agent (after 30 days overall)
     get_recovery_agent(node, "alice", wait_for_agent="thief")
@@ -66,13 +68,13 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_0(prep
     # thief changes alice recovery agent
     wallet_thief.api.change_recovery_account("alice", "thief")
 
-    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD//2)
+    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD // 2)
 
     # alice understands the situation and removes the recovery agent change request
     wallet_alice.api.change_recovery_account("alice", "alice.agent")
     assert len(node.api.database.find_account_recovery_requests(accounts=["alice"])["requests"]) == 0
 
-    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD//2)
+    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD // 2)
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         # thief tries to recover "alice" account
@@ -104,16 +106,18 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_1(prep
     # thief changes alice recovery agent
     wallet_thief.api.change_recovery_account("alice", "thief")
 
-    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD//2)
+    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD // 2)
 
     # the thief changes the owner key of alice's account
     thief_owner_key_to_alice_account = tt.Account("thief_key").public_key
-    wallet_thief.api.update_account("alice", "{}",
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    )
+    wallet_thief.api.update_account(
+        "alice",
+        "{}",
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+    )
     assert get_owner_key(node, "alice") == thief_owner_key_to_alice_account
 
     # alice doesn't notice the recovery agent change, day 45 passes
@@ -125,7 +129,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_1(prep
     # alice is trying to change the owner authority
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_alice.api.update_account("alice", "{}", alice_new_key, alice_new_key, alice_new_key, alice_new_key)
-    assert "Missing Owner Authority"  in exception.value.response["error"]["message"]
+    assert "Missing Owner Authority" in exception.value.response["error"]["message"]
 
     # alice tries to change the recovery agent
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
@@ -136,7 +140,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_1(prep
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
     error_message = "Cannot recover an account that does not have you as their recovery partner."
-    assert error_message  in exception.value.response["error"]["message"]
+    assert error_message in exception.value.response["error"]["message"]
 
 
 def test_account_recovery_after_the_thief_changed_the_key_but_before_changing_the_recovery_agent(prepare_environment):
@@ -161,12 +165,14 @@ def test_account_recovery_after_the_thief_changed_the_key_but_before_changing_th
 
     # the thief changes the owner key of alice's account
     thief_owner_key_to_alice_account = tt.Account("thief_key").public_key
-    wallet_thief.api.update_account("alice", "{}",
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    )
+    wallet_thief.api.update_account(
+        "alice",
+        "{}",
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+    )
     assert get_owner_key(node, "alice") == thief_owner_key_to_alice_account
 
     # alice doesn't notice the recovery agent change, day 45 passes. Thief becomes alice account recovery agent
@@ -178,7 +184,7 @@ def test_account_recovery_after_the_thief_changed_the_key_but_before_changing_th
     # alice is trying to change the owner authority
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_alice.api.update_account("alice", "{}", alice_new_key, alice_new_key, alice_new_key, alice_new_key)
-    assert "Missing Owner Authority"  in exception.value.response["error"]["message"]
+    assert "Missing Owner Authority" in exception.value.response["error"]["message"]
 
     # alice tries to change the recovery agent
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
@@ -189,7 +195,7 @@ def test_account_recovery_after_the_thief_changed_the_key_but_before_changing_th
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
     error_message = "Cannot recover an account that does not have you as their recovery partner."
-    assert error_message  in exception.value.response["error"]["message"]
+    assert error_message in exception.value.response["error"]["message"]
 
 
 def test_account_recovery_after_the_key_and_agent_was_changed_by_the_thief(prepare_environment):
@@ -210,28 +216,32 @@ def test_account_recovery_after_the_key_and_agent_was_changed_by_the_thief(prepa
 
     # thief changes alice recovery agent
     wallet_thief.api.change_recovery_account("alice", "thief")
-    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD//2)
+    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD // 2)
 
     # the thief changes the owner key of alice's account
     thief_owner_key_to_alice_account = tt.Account("thief_key").public_key
-    wallet_thief.api.update_account("alice", "{}",
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    )
+    wallet_thief.api.update_account(
+        "alice",
+        "{}",
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+    )
     assert get_owner_key(node, "alice") == thief_owner_key_to_alice_account
 
     alice_new_key = tt.Account("alice", secret="new_key").public_key
     alice_new_authority = get_authority(alice_new_key)
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
-        wallet_alice.api.update_account("alice", "{}",
-                                        alice_new_key,
-                                        alice_new_key,
-                                        alice_new_key,
-                                        alice_new_key,
-                                        )
+        wallet_alice.api.update_account(
+            "alice",
+            "{}",
+            alice_new_key,
+            alice_new_key,
+            alice_new_key,
+            alice_new_key,
+        )
     assert "Missing Owner Authority" in exception.value.response["error"]["message"]
 
     get_recovery_agent(node, "alice", wait_for_agent="thief")
@@ -271,12 +281,14 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_2(prep
     thief_owner_key_to_alice_account = tt.Account("thief", secret="thief's_key_to_alice's_account").public_key
     wallet_thief.api.import_key(tt.Account("thief", secret="thief's_key_to_alice's_account").private_key)
     thief_owner_authority_to_alice_account = get_authority(thief_owner_key_to_alice_account)
-    wallet_thief.api.update_account("alice", "{}",
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    )
+    wallet_thief.api.update_account(
+        "alice",
+        "{}",
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+    )
     assert get_owner_key(node, "alice") == thief_owner_key_to_alice_account
 
     alice_new_key = tt.Account("alice", secret="new_key").public_key
@@ -286,7 +298,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_2(prep
 
     assert get_recovery_agent(node, "alice", wait_for_agent="thief") == "thief"
     wallet_alice.api.recover_account("alice", alice_original_authority, alice_new_authority)
-    node.wait_number_of_blocks(2) # the minimum time between two `recover_account` is in mainnet is 1h/ testnet 6s
+    node.wait_number_of_blocks(2)  # the minimum time between two `recover_account` is in mainnet is 1h/ testnet 6s
 
     thief_key = tt.Account("thief", secret="it_is_thief").public_key
     wallet_thief.api.import_key(tt.Account("thief", secret="it_is_thief").private_key)
@@ -318,17 +330,19 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_3(prep
     # thief changes alice recovery agent
     wallet_thief.api.change_recovery_account("alice", "thief")
 
-    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD//2)
+    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD // 2)
 
     # the thief changes the owner key of alice's account
     thief_owner_key_to_alice_account = tt.Account("thief").public_key
     thief_owner_authority_to_alice_account = get_authority(thief_owner_key_to_alice_account)
-    wallet_thief.api.update_account("alice", "{}",
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    )
+    wallet_thief.api.update_account(
+        "alice",
+        "{}",
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+    )
     assert get_owner_key(node, "alice") == thief_owner_key_to_alice_account
 
     # alice realizes she has lost the key and uses her recovery agent to change the owner key
@@ -339,7 +353,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_3(prep
     wallet_alice.api.recover_account("alice", alice_original_authority, alice_new_authority)
     assert get_owner_key(node, "alice") == alice_new_key
 
-    get_recovery_agent(node, "alice", wait_for_agent="thief") # wait for the recovery agent to change
+    get_recovery_agent(node, "alice", wait_for_agent="thief")  # wait for the recovery agent to change
 
     # thief recovers the alice account
     thief_key = tt.Account("thief", secret="it_is_thief").public_key
@@ -373,16 +387,18 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_4(prep
     # thief changes alice recovery agent
     wallet_thief.api.change_recovery_account("alice", "thief")
 
-    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD//2)
+    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD // 2)
 
     # the thief changes the owner key of alice's account
     thief_owner_key_to_alice_account = tt.Account("thief").public_key
-    wallet_thief.api.update_account("alice", "{}",
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    )
+    wallet_thief.api.update_account(
+        "alice",
+        "{}",
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+    )
     assert get_owner_key(node, "alice") == thief_owner_key_to_alice_account
 
     # alice realizes she has lost the key and uses her recovery agent to change the owner key

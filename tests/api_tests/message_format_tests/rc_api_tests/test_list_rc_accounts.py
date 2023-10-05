@@ -8,17 +8,16 @@ from hive_local_tools.api.message_format import as_string
 ACCOUNT = "alice"
 
 CORRECT_VALUES = [
-        # RC ACCOUNT
-        (ACCOUNT, 100),
-        ("non-exist-acc", 100),
-        ("true", 100),
-        ("", 100),
-        (100, 100),
-        (True, 100),
-
-        # LIMIT
-        (ACCOUNT, 1),
-        (ACCOUNT, 1000),
+    # RC ACCOUNT
+    (ACCOUNT, 100),
+    ("non-exist-acc", 100),
+    ("true", 100),
+    ("", 100),
+    (100, 100),
+    (True, 100),
+    # LIMIT
+    (ACCOUNT, 1),
+    (ACCOUNT, 1000),
 ]
 
 
@@ -31,11 +30,12 @@ def ready_node(node, should_prepare):
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit", [
+    "rc_account, limit",
+    [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
         (ACCOUNT, True),  # bool is treated like numeric (0:1)
-    ]
+    ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_accounts_with_correct_values(ready_node, rc_account, limit):
@@ -43,12 +43,13 @@ def test_list_rc_accounts_with_correct_values(ready_node, rc_account, limit):
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit", [
+    "rc_account, limit",
+    [
         # LIMIT
         (ACCOUNT, -1),
         (ACCOUNT, 0),
         (ACCOUNT, 1001),
-    ]
+    ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_accounts_with_incorrect_values(ready_node, rc_account, limit):
@@ -57,15 +58,15 @@ def test_list_rc_accounts_with_incorrect_values(ready_node, rc_account, limit):
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit", [
+    "rc_account, limit",
+    [
         # WITNESS
         (["example-array"], 100),
-
         # LIMIT
         (ACCOUNT, "incorrect_string_argument"),
         (ACCOUNT, [100]),
         (ACCOUNT, "true"),
-    ]
+    ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_accounts_with_incorrect_type_of_arguments(ready_node, rc_account, limit):

@@ -13,5 +13,5 @@ def prepare_block_log() -> None:
     init_node.block_log.copy_to(Path(__file__).parent.absolute())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     prepare_block_log()

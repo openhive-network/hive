@@ -18,7 +18,7 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights(prepare_en
     wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])['accounts'][0]["can_vote"] == False
+    assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])["accounts"][0]["can_vote"] == False
     assert len(get_virtual_operations(node, "declined_voting_rights_operation")) == 1
     assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 0
 

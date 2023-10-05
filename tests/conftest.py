@@ -42,11 +42,14 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
          def test_marked_with_run_for_decorator(node: Union[tt.InitNode, tt.RemoteNode]):
              node.api.some_api.some_method()
     """
+
     def __create_init_node() -> tt.InitNode:
         init_node = tt.InitNode()
         init_node.config.plugin.extend([plugin for plugin in __get_plugins() if plugin not in ["condenser_api"]])
         # init_node.config.plugin.extend(__get_plugins())
-        init_node.config.plugin.append("condenser_api")  # FIXME eliminate condenser_api usage from other tests than this API specific
+        init_node.config.plugin.append(
+            "condenser_api"
+        )  # FIXME eliminate condenser_api usage from other tests than this API specific
         init_node.run()
         return init_node
 
@@ -56,10 +59,10 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
             raise ValueError("Please specify the http_endpoint of remote node!")
         return tt.RemoteNode(http_endpoint=http_endpoint)
 
-
     def __get_all_supported_marks() -> list[Mark]:
         return list(filter(lambda mark: mark.name in create_node, all_marks)) + list(
-            mark for mark in all_marks if mark.name=="enable_plugins")
+            mark for mark in all_marks if mark.name == "enable_plugins"
+        )
 
     def __get_mark_set_by_run_for() -> Mark:
         return next(filter(lambda mark: mark.name == "parametrize" and mark.args[0] == "node", all_marks))
@@ -79,8 +82,8 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
         for mark in all_supported_marks:
             if all_supported_marks.count(mark) > 1:
                 raise AssertionError(
-                    f"Duplicated mark: `{mark.name}`.\n"
-                    f"Must be specified only once in the `@run_for()` decorator.\n" + hint_message
+                    f"Duplicated mark: `{mark.name}`.\nMust be specified only once in the `@run_for()` decorator.\n"
+                    + hint_message
                 )
 
     def __assert_no_duplicated_node_in_run_for_params() -> Optional[NoReturn]:
@@ -104,7 +107,8 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
             if mark not in __get_marks_created_by_run_for_only():
                 raise AssertionError(
                     f"Unallowed usage of a mark: `{mark}`.\n"
-                    f"Please use the `@run_for()` decorator to mark test instead.\n" + hint_message
+                    "Please use the `@run_for()` decorator to mark test instead.\n"
+                    + hint_message
                 )
 
     all_marks = request.node.own_markers

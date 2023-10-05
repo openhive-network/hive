@@ -23,7 +23,8 @@ def test_appoint_a_proxy(node):
 
     # restart node with future date. The approval process takes 24 hours.
     node.restart(
-        time_offset=tt.Time.serialize(tt.Time.parse(timestamp) + tt.Time.hours(24), format_=tt.Time.TIME_OFFSET_FORMAT))
+        time_offset=tt.Time.serialize(tt.Time.parse(timestamp) + tt.Time.hours(24), format_=tt.Time.TIME_OFFSET_FORMAT)
+    )
 
     assert any(node.api.wallet_bridge.get_account("bob")["proxied_vsf_votes"])
 
@@ -34,7 +35,7 @@ def test_vote_power_value_after_proxy_removal(node):
 
     with wallet.in_single_transaction():
         for number in range(4):
-            wallet.api.create_account('initminer', f"account-layer-{number}", '{}')
+            wallet.api.create_account("initminer", f"account-layer-{number}", "{}")
             wallet.api.transfer_to_vesting("initminer", f"account-layer-{number}", tt.Asset.Test(10 + number))
 
     with wallet.in_single_transaction():
@@ -67,7 +68,9 @@ def test_sum_of_vesting_shares_on_first_layer_of_proxy(node):
     bob_vesting_shares = int(node.api.wallet_bridge.get_account("bob")["vesting_shares"]["amount"])
     carol_vesting_shares = int(node.api.wallet_bridge.get_account("carol")["vesting_shares"]["amount"])
 
-    assert node.api.wallet_bridge.get_account("alice")["proxied_vsf_votes"][0] == bob_vesting_shares + carol_vesting_shares
+    assert (
+        node.api.wallet_bridge.get_account("alice")["proxied_vsf_votes"][0] == bob_vesting_shares + carol_vesting_shares
+    )
 
 
 @run_for("testnet")
@@ -76,9 +79,8 @@ def test_too_long_proxy_chain(node):
 
     with wallet.in_single_transaction():
         for i in range(5):
-            wallet.api.create_account('initminer', f"account-layer-{i}", '{}')
-            wallet.api.transfer_to_vesting("initminer", f"account-layer-{i}", tt.Asset.Test(10+i))
-
+            wallet.api.create_account("initminer", f"account-layer-{i}", "{}")
+            wallet.api.transfer_to_vesting("initminer", f"account-layer-{i}", tt.Asset.Test(10 + i))
 
     with wallet.in_single_transaction():
         for i in range(3):
@@ -86,7 +88,7 @@ def test_too_long_proxy_chain(node):
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.set_voting_proxy(f"account-layer-4", f"account-layer-3")
-    error_response = exception.value.response['error']['message']
+    error_response = exception.value.response["error"]["message"]
     assert "Proxy chain is too long." in error_response
 
 
@@ -122,7 +124,7 @@ def test_set_the_proxy_on_the_same_account_twice(node):
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.set_voting_proxy("alice", "bob")
 
-    error_response = exception.value.response['error']['message']
+    error_response = exception.value.response["error"]["message"]
     assert "Proxy must change." in error_response
 
 
@@ -137,10 +139,10 @@ def test_long_single_layer_proxy_chain(node):
 
     for num in range(0, len(accounts), step):
         with wallet.in_single_transaction():
-            for account in accounts[num: num + step]:
+            for account in accounts[num : num + step]:
                 wallet.api.transfer_to_vesting("initminer", account.name, tt.Asset.Test(10))
         with wallet.in_single_transaction():
-            for n, account in enumerate(accounts[num: num + step]):
+            for n, account in enumerate(accounts[num : num + step]):
                 if account != accounts[-1]:
                     wallet.api.set_voting_proxy(accounts[n + num].name, accounts[n + num + 1].name)
 
@@ -148,8 +150,10 @@ def test_long_single_layer_proxy_chain(node):
     node.restart(time_offset="+25h")
 
     for account_number, account in enumerate(accounts[:-1]):
-        assert node.api.wallet_bridge.get_account(accounts[account_number].name)["proxy"]\
-               == node.api.wallet_bridge.get_account(accounts[account_number + 1].name)["name"]
+        assert (
+            node.api.wallet_bridge.get_account(accounts[account_number].name)["proxy"]
+            == node.api.wallet_bridge.get_account(accounts[account_number + 1].name)["name"]
+        )
 
 
 @run_for("testnet")
@@ -173,7 +177,9 @@ def test_vesting_shares_values_on_four_proxy_layers(node):
     vesting_shares = []
     for account_number in range(len(accounts) - 1):
         vs_amount = int(node.api.wallet_bridge.get_account(f"account-{account_number}")["vesting_shares"]["amount"])
-        vs_value_on_position = node.api.wallet_bridge.get_account(f"account-{account_number + 1}")["proxied_vsf_votes"][0]
+        vs_value_on_position = node.api.wallet_bridge.get_account(f"account-{account_number + 1}")["proxied_vsf_votes"][
+            0
+        ]
         assert vs_amount == vs_value_on_position
         vesting_shares.insert(0, vs_amount)
 

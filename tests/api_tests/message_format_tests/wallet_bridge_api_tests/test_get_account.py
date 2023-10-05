@@ -9,18 +9,19 @@ from hive_local_tools.api.message_format.wallet_bridge_api.constants import ACCO
 CORRECT_VALUES = [
     ACCOUNTS[0],
     MAINNET_ACCOUNT,
-    'non-exist-acc',
-    '',
+    "non-exist-acc",
+    "",
     100,
     True,
 ]
 
 
 @pytest.mark.parametrize(
-    'account', [
+    "account",
+    [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
-    ]
+    ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_account_with_correct_value(node, should_prepare, account):
@@ -30,11 +31,7 @@ def test_get_account_with_correct_value(node, should_prepare, account):
     node.api.wallet_bridge.get_account(account)
 
 
-@pytest.mark.parametrize(
-    'account', [
-        ['example_array']
-    ]
-)
+@pytest.mark.parametrize("account", [["example_array"]])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_account_incorrect_type_of_argument(node, account):
     with pytest.raises(tt.exceptions.CommunicationError):

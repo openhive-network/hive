@@ -34,7 +34,7 @@ def test_set_proxy_after_waiving_voting_rights(prepare_environment):
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.set_voting_proxy(VOTER_ACCOUNT, PROXY_ACCOUNT)
 
-    response = exception.value.response['error']['message']
+    response = exception.value.response["error"]["message"]
     assert "Account has declined the ability to vote and cannot proxy votes." in response
 
 

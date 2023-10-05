@@ -21,9 +21,9 @@ def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker):
 
     replayed_node.wait_number_of_blocks(math.ceil(bl.NUMBER_OF_SENDER_ACCOUNTS / MAX_RECURRENT_TRANSFERS_PER_BLOCK))
 
-    receiver_balance_after_the_second_top_up = (
-        replayed_node.api.wallet_bridge.get_accounts([bl.RECEIVER_ACCOUNT_NAME])[0]["balance"]
-    )
+    receiver_balance_after_the_second_top_up = replayed_node.api.wallet_bridge.get_accounts([bl.RECEIVER_ACCOUNT_NAME])[
+        0
+    ]["balance"]
 
     expected_balance = bl.NUMBER_OF_SENDER_ACCOUNTS * bl.SINGLE_TRANSFER_AMOUNT * 2
     assert receiver_balance_after_the_second_top_up == expected_balance

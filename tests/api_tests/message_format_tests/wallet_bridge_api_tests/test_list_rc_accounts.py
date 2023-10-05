@@ -7,28 +7,28 @@ from hive_local_tools.api.message_format.wallet_bridge_api.constants import ACCO
 
 
 CORRECT_VALUES = [
-        # RC ACCOUNT
-        (ACCOUNTS[0], 100),
-        (MAINNET_ACCOUNT, 100),
-        (ACCOUNTS[-1], 100),
-        ('non-exist-acc', 100),
-        ('true', 100),
-        ('', 100),
-        (100, 100),
-        (True, 100),
-
-        # LIMIT
-        (ACCOUNTS[0], 1),
-        (ACCOUNTS[0], 1000),
+    # RC ACCOUNT
+    (ACCOUNTS[0], 100),
+    (MAINNET_ACCOUNT, 100),
+    (ACCOUNTS[-1], 100),
+    ("non-exist-acc", 100),
+    ("true", 100),
+    ("", 100),
+    (100, 100),
+    (True, 100),
+    # LIMIT
+    (ACCOUNTS[0], 1),
+    (ACCOUNTS[0], 1000),
 ]
 
 
 @pytest.mark.parametrize(
-    'rc_account, limit', [
+    "rc_account, limit",
+    [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
         (ACCOUNTS[0], True),  # bool is treated like numeric (0:1)
-    ]
+    ],
 )
 @run_for("testnet", "live_mainnet")
 def test_list_rc_accounts_with_correct_values(node, should_prepare, rc_account, limit):
@@ -46,11 +46,12 @@ def test_list_rc_accounts_with_correct_values(node, should_prepare, rc_account, 
 
 
 @pytest.mark.parametrize(
-    'rc_account, limit', [
+    "rc_account, limit",
+    [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
         (ACCOUNTS[0], True),  # bool is treated like numeric (0:1)
-    ]
+    ],
 )
 @run_for("mainnet_5m")
 def test_list_rc_account_with_correct_values_in_mainnet_5m(node, rc_account, limit):
@@ -60,12 +61,13 @@ def test_list_rc_account_with_correct_values_in_mainnet_5m(node, rc_account, lim
 
 
 @pytest.mark.parametrize(
-    'rc_account, limit', [
+    "rc_account, limit",
+    [
         # LIMIT
         (ACCOUNTS[0], -1),
         (ACCOUNTS[0], 0),
         (ACCOUNTS[0], 1001),
-    ]
+    ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_accounts_with_incorrect_values(node, should_prepare, rc_account, limit):
@@ -78,15 +80,15 @@ def test_list_rc_accounts_with_incorrect_values(node, should_prepare, rc_account
 
 
 @pytest.mark.parametrize(
-    'rc_account, limit', [
+    "rc_account, limit",
+    [
         # WITNESS
-        (['example-array'], 100),
-
+        (["example-array"], 100),
         # LIMIT
-        (ACCOUNTS[0], 'incorrect_string_argument'),
+        (ACCOUNTS[0], "incorrect_string_argument"),
         (ACCOUNTS[0], [100]),
-        (ACCOUNTS[0], 'true'),
-    ]
+        (ACCOUNTS[0], "true"),
+    ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_accounts_with_incorrect_type_of_arguments(node, should_prepare, rc_account, limit):

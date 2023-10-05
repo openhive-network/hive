@@ -4,9 +4,9 @@ import test_tools as tt
 
 
 def create_account_and_create_order(wallet, account_name):
-    wallet.api.create_account('initminer', account_name, '{}')
-    wallet.api.transfer('initminer', account_name, tt.Asset.Test(100), 'memo')
-    wallet.api.transfer_to_vesting('initminer', account_name, tt.Asset.Test(100))
+    wallet.api.create_account("initminer", account_name, "{}")
+    wallet.api.transfer("initminer", account_name, tt.Asset.Test(100), "memo")
+    wallet.api.transfer_to_vesting("initminer", account_name, tt.Asset.Test(100))
     wallet.api.create_order(account_name, 1000, tt.Asset.Test(1), tt.Asset.Tbd(1), False, 1000)
 
 
@@ -16,11 +16,11 @@ def create_accounts_with_vests_and_tbd(wallet, accounts):
 
     with wallet.in_single_transaction():
         for account in accounts:
-            wallet.api.transfer_to_vesting('initminer', account, tt.Asset.Test(10000))
+            wallet.api.transfer_to_vesting("initminer", account, tt.Asset.Test(10000))
 
     with wallet.in_single_transaction():
         for account in accounts:
-            wallet.api.transfer('initminer', account, tt.Asset.Tbd(10000), 'memo')
+            wallet.api.transfer("initminer", account, tt.Asset.Tbd(10000), "memo")
 
 
 def get_accounts_name(accounts):
@@ -30,17 +30,19 @@ def get_accounts_name(accounts):
 def prepare_proposals(wallet, accounts):
     with wallet.in_single_transaction():
         for account in accounts:
-            wallet.api.post_comment(account, 'permlink', '', 'parent-permlink', 'title', 'body', '{}')
+            wallet.api.post_comment(account, "permlink", "", "parent-permlink", "title", "body", "{}")
 
     with wallet.in_single_transaction():
         for account_number in range(len(accounts)):
-            wallet.api.create_proposal(accounts[account_number],
-                                       accounts[account_number],
-                                       tt.Time.from_now(weeks=10),
-                                       tt.Time.from_now(weeks=15),
-                                       tt.Asset.Tbd(account_number * 100),
-                                       f'subject-{account_number}',
-                                       'permlink')
+            wallet.api.create_proposal(
+                accounts[account_number],
+                accounts[account_number],
+                tt.Time.from_now(weeks=10),
+                tt.Time.from_now(weeks=15),
+                tt.Asset.Tbd(account_number * 100),
+                f"subject-{account_number}",
+                "permlink",
+            )
 
 
 def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: List[str]) -> tt.InitNode:
@@ -54,7 +56,7 @@ def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: List[str]) -
 
     with wallet.in_single_transaction():
         for name in witnesses_names:
-            wallet.api.create_account('initminer', name, '')
+            wallet.api.create_account("initminer", name, "")
 
     with wallet.in_single_transaction():
         for name in witnesses_names:
@@ -63,14 +65,15 @@ def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: List[str]) -
     with wallet.in_single_transaction():
         for name in witnesses_names:
             wallet.api.update_witness(
-                name, "https://" + name,
+                name,
+                "https://" + name,
                 tt.Account(name).public_key,
-                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0}
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 65536, "sbd_interest_rate": 0},
             )
     wallet.close()
-    tt.logger.info('Waiting for next witness schedule...')
-    node.wait_for_block_with_number(22+21) # activation of HF26 makes current schedule also a future one,
-                                           # so we have to wait two terms for the witnesses to activate
+    tt.logger.info("Waiting for next witness schedule...")
+    node.wait_for_block_with_number(22 + 21)  # activation of HF26 makes current schedule also a future one,
+    # so we have to wait two terms for the witnesses to activate
 
     return node
 

@@ -3,20 +3,22 @@ import test_tools as tt
 
 
 @pytest.mark.parametrize(
-    "receiver, currency, check_savings_balance, check_balance", (
-            # transfer to savings in HIVES, receiver is the same person as sender
-            ("alice", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
-            # transfer to savings in HIVES, receiver is other account
-            ("bob", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
-            # transfer to savings in HBDS, receiver is the same person as sender
-            ("alice", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
-            # transfer to savings in HBDS, receiver is other account
-            ("bob", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance")
-    )
+    "receiver, currency, check_savings_balance, check_balance",
+    (
+        # transfer to savings in HIVES, receiver is the same person as sender
+        ("alice", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        # transfer to savings in HIVES, receiver is other account
+        ("bob", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        # transfer to savings in HBDS, receiver is the same person as sender
+        ("alice", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        # transfer to savings in HBDS, receiver is other account
+        ("bob", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+    ),
 )
 @pytest.mark.testnet
-def test_transfer_to_savings_account(prepared_node, wallet, alice, bob, receiver, currency, check_savings_balance,
-                                     check_balance):
+def test_transfer_to_savings_account(
+    prepared_node, wallet, alice, bob, receiver, currency, check_savings_balance, check_balance
+):
     receiver_account_object = alice if receiver == "alice" else bob
     rc_amount_before_sending_op = alice.get_rc_current_mana()
     sender_balance_before_transfer = getattr(alice, check_balance)()
@@ -45,15 +47,19 @@ def test_transfer_to_savings_account(prepared_node, wallet, alice, bob, receiver
 
     if currency.token == "TBD":
         assert len(interests) == 1, "interest_operation wasn't generated."
-        assert receiver_savings_balance_before_transfer == receiver_savings_balance_after_transfer - \
-               currency(10) - interests[0]["op"]["value"]["interest"], "Receiver savings balance wasn't increased by " \
-                                                                       "transfers and one interest."
+        assert (
+            receiver_savings_balance_before_transfer
+            == receiver_savings_balance_after_transfer - currency(10) - interests[0]["op"]["value"]["interest"]
+        ), "Receiver savings balance wasn't increased by transfers and one interest."
     else:
         assert len(interests) == 0, "interest_operation was generated (it shouldn't be)"
-        assert receiver_savings_balance_before_transfer == receiver_savings_balance_after_transfer - currency(10), \
-            "Receiver savings balance wasn't increased by transfers."
+        assert receiver_savings_balance_before_transfer == receiver_savings_balance_after_transfer - currency(
+            10
+        ), "Receiver savings balance wasn't increased by transfers."
 
-    assert sender_balance_before_transfer - currency(10) == sender_balance_after_transfer, \
-        f"{currency.token} balance of sender wasn't decreased."
-    assert rc_amount_before_sending_op > rc_amount_after_sending_op, "RC amount after sending transfers wasn't " \
-                                                                     "decreased."
+    assert (
+        sender_balance_before_transfer - currency(10) == sender_balance_after_transfer
+    ), f"{currency.token} balance of sender wasn't decreased."
+    assert (
+        rc_amount_before_sending_op > rc_amount_after_sending_op
+    ), "RC amount after sending transfers wasn't decreased."

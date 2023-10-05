@@ -8,6 +8,7 @@ import test_tools as tt
 
 from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
+
 @pytest.fixture
 def replayed_node() -> ReplayedNodeMaker:
     def _replayed_node(
@@ -18,7 +19,7 @@ def replayed_node() -> ReplayedNodeMaker:
         timeout: float = tt.InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
     ) -> tt.InitNode:
         if absolute_start_time is None:
-            with open(block_log_directory / "timestamp", encoding='utf-8') as file:
+            with open(block_log_directory / "timestamp", encoding="utf-8") as file:
                 absolute_start_time = tt.Time.parse(file.read())
 
         absolute_start_time -= tt.Time.seconds(5)
@@ -29,11 +30,8 @@ def replayed_node() -> ReplayedNodeMaker:
 
         node = tt.InitNode()
         node.config.shared_file_size = "16G"
-        node.run(
-            time_offset=time_offset,
-            replay_from=block_log_directory / "block_log",
-            timeout=timeout
-        )
+        node.run(time_offset=time_offset, replay_from=block_log_directory / "block_log", timeout=timeout)
 
         return node
+
     return _replayed_node

@@ -8,6 +8,7 @@ from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREA
 
 # Greedy baby scenario
 
+
 # 0. In this scenario we have one proposal with huge daily pay and couple with low daily pay
 #    all proposals have the same number of votes, greedy proposal is last
 # 1. create few proposals - in this scenario proposals have different starting and ending dates
@@ -164,9 +165,10 @@ def test_proposal_payment_006(node_client: NodeClientMaker):
         for acc, ret in accnts.items():
             if acc in expected_results.keys():
                 # because of rounding mechanism
-                assert (
-                    abs((int(previous_balances[acc]) + expected_results[acc]) - int(ret)) < 2
-                ), f"too big missmatch, prev: {previous_balances[acc]}, budget: {budget}, now: {ret}, expected: {expected_results[acc]}, account: {acc}"
+                assert abs((int(previous_balances[acc]) + expected_results[acc]) - int(ret)) < 2, (
+                    f"too big missmatch, prev: {previous_balances[acc]}, budget: {budget}, now: {ret}, expected:"
+                    f" {expected_results[acc]}, account: {acc}"
+                )
 
         previous_balances = accnts
 

@@ -9,7 +9,7 @@ from shared_tools.complex_networks_helper_functions import (
     get_last_head_block_number,
     get_last_irreversible_block_num,
     wait_for_specific_witnesses,
-    NodeLog
+    NodeLog,
 )
 
 
@@ -20,7 +20,7 @@ def test_obi_throw_exception_01(prepare_obi_throw_exception_01):
     # A witness from the `A` network has an exception - during 'sleep_time_in_sec' seconds this sub network can't produce.
     # After production resuming, both sub networks can't link together and LIB is still the same.
 
-    #=====================================================================================================================================
+    # =====================================================================================================================================
     # **********witness 'w0' ('A' network)**********
 
     # {"num":120,"lib":119,"type":"p2p","id":"00000078631a5ea8153e9d04f6dabd5f436272e5","bp":"witness-1-2"}
@@ -36,7 +36,7 @@ def test_obi_throw_exception_01(prepare_obi_throw_exception_01):
     # {"num":123,"lib":121,"type":"p2p","id":"0000007b93955ddcaec73914246283bc930c85e1","bp":"witness-1-1"}
 
     # block does not link to known chain
-    #=====================================================================================================================================
+    # =====================================================================================================================================
     # **********witness 'w1' ('B' network)**********
 
     # {"num":120,"lib":119,"type":"gen","id":"00000078631a5ea8153e9d04f6dabd5f436272e5","bp":"witness-1-2"}
@@ -47,39 +47,41 @@ def test_obi_throw_exception_01(prepare_obi_throw_exception_01):
 
     # {"num":122,"lib":121,"type":"ignored","id":"0000007aa16fbde9a5a046e718f83115e0899841","bp":"witness-0-7"}
     # {"num":123,"lib":121,"type":"gen","id":"0000007b93955ddcaec73914246283bc930c85e1","bp":"witness-1-1"}
-    #=====================================================================================================================================
+    # =====================================================================================================================================
 
     networks_builder = prepare_obi_throw_exception_01
 
-    api_node_0      = networks_builder.networks[0].node('ApiNode0')
-    witness_node_0  = networks_builder.networks[0].node('WitnessNode0')
+    api_node_0 = networks_builder.networks[0].node("ApiNode0")
+    witness_node_0 = networks_builder.networks[0].node("WitnessNode0")
 
-    api_node_1      = networks_builder.networks[1].node('ApiNode1')
-    witness_node_1  = networks_builder.networks[1].node('WitnessNode1')
+    api_node_1 = networks_builder.networks[1].node("ApiNode1")
+    witness_node_1 = networks_builder.networks[1].node("WitnessNode1")
 
     logs = []
 
-    logs.append(NodeLog("a0", tt.Wallet(attach_to = api_node_0)))
-    logs.append(NodeLog("w0", tt.Wallet(attach_to = witness_node_0)))
+    logs.append(NodeLog("a0", tt.Wallet(attach_to=api_node_0)))
+    logs.append(NodeLog("w0", tt.Wallet(attach_to=witness_node_0)))
 
-    logs.append(NodeLog("a1", tt.Wallet(attach_to = api_node_1)))
-    logs.append(NodeLog("w1", tt.Wallet(attach_to = witness_node_1)))
+    logs.append(NodeLog("a1", tt.Wallet(attach_to=api_node_1)))
+    logs.append(NodeLog("w1", tt.Wallet(attach_to=witness_node_1)))
 
-    blocks_after_exception      = 20
-    delay_seconds               = 5
+    blocks_after_exception = 20
+    delay_seconds = 5
 
     _a0 = logs[0].collector
 
-    tt.logger.info(f'Before an exception - waiting for specific witnesses')
-    wait_for_specific_witnesses(witness_node_0, logs, [['witness-0'], ['witness-1', 'initminer'], ['witness-1', 'initminer']])
+    tt.logger.info(f"Before an exception - waiting for specific witnesses")
+    wait_for_specific_witnesses(
+        witness_node_0, logs, [["witness-0"], ["witness-1", "initminer"], ["witness-1", "initminer"]]
+    )
 
-    tt.logger.info(f'Artificial exception is thrown during {delay_seconds} seconds')
-    witness_node_0.api.debug_node.debug_throw_exception(throw_exception = True)
+    tt.logger.info(f"Artificial exception is thrown during {delay_seconds} seconds")
+    witness_node_0.api.debug_node.debug_throw_exception(throw_exception=True)
 
     time.sleep(delay_seconds)
 
-    tt.logger.info(f'Artificial exception is disabled')
-    witness_node_0.api.debug_node.debug_throw_exception(throw_exception = False)
+    tt.logger.info(f"Artificial exception is disabled")
+    witness_node_0.api.debug_node.debug_throw_exception(throw_exception=False)
 
     wait(blocks_after_exception, logs, witness_node_0)
 

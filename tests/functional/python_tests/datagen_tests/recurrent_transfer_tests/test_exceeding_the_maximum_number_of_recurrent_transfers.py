@@ -13,9 +13,9 @@ def test_try_to_send_more_than_the_maximum_limit_of_recurrent_transfers_from_one
 
     wallet = tt.Wallet(attach_to=node)
 
-    wallet.create_account(account_that_sends_all_recurrent_transfers,
-                          hives=tt.Asset.Test(100),
-                          vests=tt.Asset.Test(100))
+    wallet.create_account(
+        account_that_sends_all_recurrent_transfers, hives=tt.Asset.Test(100), vests=tt.Asset.Test(100)
+    )
 
     wallet.create_account(account_that_exceed_transfers_limit)
 
@@ -24,22 +24,28 @@ def test_try_to_send_more_than_the_maximum_limit_of_recurrent_transfers_from_one
     # Send 255 recurrent transfers from one account
     with wallet.in_single_transaction():
         for account in receiver_accounts:
-            wallet.api.recurrent_transfer(account_that_sends_all_recurrent_transfers,
-                                          account.name,
-                                          tt.Asset.Test(0.001),
-                                          f"recurrent transfer to {account.name}",
-                                          24,
-                                          2)
+            wallet.api.recurrent_transfer(
+                account_that_sends_all_recurrent_transfers,
+                account.name,
+                tt.Asset.Test(0.001),
+                f"recurrent transfer to {account.name}",
+                24,
+                2,
+            )
 
     # Validate that "sender" sends 255 recurrent transfers
-    assert len(wallet.api.find_recurrent_transfers(account_that_sends_all_recurrent_transfers)) == \
-           amount_of_receiver_accounts
+    assert (
+        len(wallet.api.find_recurrent_transfers(account_that_sends_all_recurrent_transfers))
+        == amount_of_receiver_accounts
+    )
 
     # Validate there is exception after sending 256th recurrent transfer from the same sender
     with pytest.raises(tt.exceptions.CommunicationError):
-        wallet.api.recurrent_transfer(account_that_sends_all_recurrent_transfers,
-                                      account_that_exceed_transfers_limit,
-                                      tt.Asset.Test(0.001),
-                                      f"recurrent transfer to {account_that_exceed_transfers_limit}",
-                                      24,
-                                      2)
+        wallet.api.recurrent_transfer(
+            account_that_sends_all_recurrent_transfers,
+            account_that_exceed_transfers_limit,
+            tt.Asset.Test(0.001),
+            f"recurrent transfer to {account_that_exceed_transfers_limit}",
+            24,
+            2,
+        )

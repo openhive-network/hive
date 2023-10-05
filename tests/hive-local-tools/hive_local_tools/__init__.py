@@ -6,7 +6,7 @@ import pytest
 TESTS_DIR: Final[Path] = Path(__file__).parent.parent.parent
 
 
-def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'live_mainnet'], enable_plugins: list=[]):
+def run_for(*node_names: Literal["testnet", "mainnet_5m", "live_mainnet"], enable_plugins: list = []):
     """
     Runs decorated test for each node specified as parameter.
 
@@ -15,24 +15,27 @@ def run_for(*node_names: Literal['testnet', 'mainnet_5m', 'live_mainnet'], enabl
 
     Allows to perform optional, additional preparations. See `should_prepare` fixture for details.
     """
+
     def __assert_node_is_specified():
         if not node_names:
-            raise AssertionError("The @run_for decorator requires at least one argument. "
-                                 "Use at least one of the supported nodes, to mark test.")
+            raise AssertionError(
+                "The @run_for decorator requires at least one argument. "
+                "Use at least one of the supported nodes, to mark test."
+            )
 
     __assert_node_is_specified()
     return pytest.mark.parametrize(
-        'node',
+        "node",
         [
             pytest.param(
                 (name,),
                 marks=[
                     getattr(pytest.mark, name),
                     pytest.mark.decorated_with_run_for,
-                    pytest.mark.enable_plugins(enable_plugins)
+                    pytest.mark.enable_plugins(enable_plugins),
                 ],
             )
             for name in node_names
         ],
-        indirect=['node'],
+        indirect=["node"],
     )

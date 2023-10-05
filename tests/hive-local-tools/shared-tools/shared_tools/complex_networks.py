@@ -9,6 +9,7 @@ import test_tools as tt
 from .complex_networks_helper_functions import connect_sub_networks
 import shared_tools.networks_architecture as networks
 
+
 class NodesPreparer:
     def prepare(self, _: networks.NetworksBuilder) -> None:
         pass
@@ -25,7 +26,13 @@ def get_relative_time_offset_from_timestamp(timestamp: str) -> str:
     return f"-{delta.total_seconds():.3f}s"
 
 
-def init_network(init_node, all_witness_names: List[str], key: Optional[str] = None, block_log_directory_name: Optional[Path] = None, desired_blocklog_length: Optional[int] = None) -> None:
+def init_network(
+    init_node,
+    all_witness_names: List[str],
+    key: Optional[str] = None,
+    block_log_directory_name: Optional[Path] = None,
+    desired_blocklog_length: Optional[int] = None,
+) -> None:
     tt.logger.info("Attaching wallets...")
     tt.logger.info(f"Witnesses: {', '.join(all_witness_names)}")
     wallet = tt.Wallet(attach_to=init_node)
@@ -120,14 +127,18 @@ def modify_time_offset(old_iso_date: str, offset_in_seconds: int) -> str:
     return time_offset
 
 
-def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_offsets: Optional[Iterable[str]] = None) -> None:
+def run_networks(
+    networks: Iterable[tt.Network], blocklog_directory: Path, time_offsets: Optional[Iterable[str]] = None
+) -> None:
     if blocklog_directory is not None:
         timestamp = get_time_offset_from_file((blocklog_directory / "timestamp"))
         time_offset = get_relative_time_offset_from_timestamp(timestamp)
         block_log = tt.BlockLog(blocklog_directory / "block_log")
         tt.logger.info(f"'block_log' directory: {blocklog_directory} timestamp: {timestamp} time_offset: {time_offset}")
         alternate_chain_spec_path = blocklog_directory / "alternate-chain-spec.json"
-        arguments = ["--alternate-chain-spec", str(alternate_chain_spec_path)] if alternate_chain_spec_path.is_file() else []
+        arguments = (
+            ["--alternate-chain-spec", str(alternate_chain_spec_path)] if alternate_chain_spec_path.is_file() else []
+        )
     else:
         tt.logger.info(f"'block_log' directory hasn't been defined")
         arguments = []
@@ -148,7 +159,11 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
     cnt_node = 1
     for iteration, node in enumerate(nodes):
         node.config.p2p_endpoint = assigned_addresses[iteration]
-        [node.config.p2p_seed_node.append(address) for address in assigned_addresses if address != assigned_addresses[iteration]]
+        [
+            node.config.p2p_seed_node.append(address)
+            for address in assigned_addresses
+            if address != assigned_addresses[iteration]
+        ]
 
         if blocklog_directory is not None:
             node.config.shared_file_size = "1G"
@@ -162,10 +177,18 @@ def run_networks(networks: Iterable[tt.Network], blocklog_directory: Path, time_
         tasks = []
         for node_num, node in enumerate(nodes):
             if blocklog_directory:
-                tasks.append(executor.submit(lambda: node.run(
-                    time_offset=modify_time_offset(timestamp, time_offsets[node_num]) if allow_external_time_offsets
-                    else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S"),
-                    arguments=arguments)))
+                tasks.append(
+                    executor.submit(
+                        lambda: node.run(
+                            time_offset=(
+                                modify_time_offset(timestamp, time_offsets[node_num])
+                                if allow_external_time_offsets
+                                else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S")
+                            ),
+                            arguments=arguments,
+                        )
+                    )
+                )
             else:
                 tasks.append(executor.submit(lambda: node.run(arguments=arguments)))
 
@@ -207,7 +230,12 @@ def prepare_nodes(sub_networks_sizes: list) -> list:
     return sub_networks, init_node, all_witness_names
 
 
-def generate_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, preparer: NodesPreparer = None, desired_blocklog_length: Optional[int] = None) -> Dict:
+def generate_networks(
+    architecture: networks.NetworksArchitecture,
+    block_log_directory_name: Optional[Path] = None,
+    preparer: NodesPreparer = None,
+    desired_blocklog_length: Optional[int] = None,
+) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
@@ -217,12 +245,23 @@ def generate_networks(architecture: networks.NetworksArchitecture, block_log_dir
     run_networks(builder.networks, None)
 
     initminer_public_key = "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
-    init_network(builder.init_node, builder.witness_names, initminer_public_key, block_log_directory_name, desired_blocklog_length)
+    init_network(
+        builder.init_node,
+        builder.witness_names,
+        initminer_public_key,
+        block_log_directory_name,
+        desired_blocklog_length,
+    )
 
     return None
 
 
-def launch_networks(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, preparer: NodesPreparer = None) -> Dict:
+def launch_networks(
+    architecture: networks.NetworksArchitecture,
+    block_log_directory_name: Optional[Path] = None,
+    time_offsets: Optional[Iterable[int]] = None,
+    preparer: NodesPreparer = None,
+) -> Dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
@@ -238,7 +277,12 @@ def launch_networks(architecture: networks.NetworksArchitecture, block_log_direc
     return builder
 
 
-def generate_or_launch(architecture: networks.NetworksArchitecture, block_log_directory_name: Optional[Path] = None, time_offsets: Optional[Iterable[int]] = None, preparer: NodesPreparer = None) -> Dict:
+def generate_or_launch(
+    architecture: networks.NetworksArchitecture,
+    block_log_directory_name: Optional[Path] = None,
+    time_offsets: Optional[Iterable[int]] = None,
+    preparer: NodesPreparer = None,
+) -> Dict:
     if allow_generate_block_log():
         assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
         tt.logger.info(f"New `block_log` generation: {block_log_directory_name}")
@@ -253,7 +297,13 @@ def allow_generate_block_log() -> bool:
         return False
     return int(status) == 1
 
-def run_whole_network(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None, preparer: NodesPreparer = None) -> Tuple[networks.NetworksBuilder, Any]:
+
+def run_whole_network(
+    architecture: networks.NetworksArchitecture,
+    block_log_directory_name: Path = None,
+    time_offsets: Iterable[int] = None,
+    preparer: NodesPreparer = None,
+) -> Tuple[networks.NetworksBuilder, Any]:
     builder = generate_or_launch(architecture, block_log_directory_name, time_offsets, preparer)
 
     if builder is None:
@@ -263,8 +313,13 @@ def run_whole_network(architecture: networks.NetworksArchitecture, block_log_dir
     return builder
 
 
-def prepare_network(architecture: networks.NetworksArchitecture, block_log_directory_name: Path = None, time_offsets: Iterable[int] = None) -> networks.NetworksBuilder:
+def prepare_network(
+    architecture: networks.NetworksArchitecture,
+    block_log_directory_name: Path = None,
+    time_offsets: Iterable[int] = None,
+) -> networks.NetworksBuilder:
     return run_whole_network(architecture, block_log_directory_name, time_offsets)
+
 
 def prepare_time_offsets(limit: int):
     time_offsets: int = []
@@ -275,7 +330,7 @@ def prepare_time_offsets(limit: int):
         cnt += 1
 
     result = ",".join(str(time_offset) for time_offset in time_offsets)
-    tt.logger.info( f"Generated: {result}" )
+    tt.logger.info(f"Generated: {result}")
 
     return time_offsets
 
@@ -300,5 +355,5 @@ def generate_free_addresses(number_of_nodes: int) -> List[str]:
         free_ports = ports_range[:number_of_nodes]
         addresses = ["127.0.0.1:" + str(port) for port in free_ports]
     else:
-        addresses = ["127.0.0.1:" + str(port) for port in range(2000, 2000+number_of_nodes)]
+        addresses = ["127.0.0.1:" + str(port) for port in range(2000, 2000 + number_of_nodes)]
     return addresses

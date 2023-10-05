@@ -94,21 +94,18 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node):
     accounts = wallet.create_accounts(number_of_accounts=3, name_base="creator")
     with wallet.in_single_transaction():
         for account in accounts:
-            wallet.api.transfer_to_vesting('initminer', account.name, tt.Asset.Test(1))
+            wallet.api.transfer_to_vesting("initminer", account.name, tt.Asset.Test(1))
 
     # Create first comment - +0s
-    wallet.api.post_comment(f"creator-0", f"comment-of-creator-0", "", "someone0",
-                            "test-title", "this is a body", "{}")
+    wallet.api.post_comment(f"creator-0", f"comment-of-creator-0", "", "someone0", "test-title", "this is a body", "{}")
 
     # Create second comment - +15s
     node.wait_number_of_blocks(5)
-    wallet.api.post_comment(f"creator-1", f"comment-of-creator-1", "", "someone1",
-                            "test-title", "this is a body", "{}")
+    wallet.api.post_comment(f"creator-1", f"comment-of-creator-1", "", "someone1", "test-title", "this is a body", "{}")
 
     # Create second comment - +30s
     node.wait_number_of_blocks(5)
-    wallet.api.post_comment(f"creator-2", f"comment-of-creator-2", "", "someone2",
-                            "test-title", "this is a body", "{}")
+    wallet.api.post_comment(f"creator-2", f"comment-of-creator-2", "", "someone2", "test-title", "this is a body", "{}")
 
     node.wait_for_irreversible_block()
     node.restart(time_offset="+58m")
@@ -125,10 +122,14 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node):
     wallet.api.vote("alice", "creator-2", "comment-of-creator-2", 100)
     node.wait_number_of_blocks(21)
 
-    vops = node.api.account_history.enum_virtual_ops(block_range_begin=0, block_range_end=2000, limit=2000,
-                                                     include_reversible=True,
-                                                     # filter only comment_payout_update and declined_voting_rights op
-                                                     filter=int("0x000800", base=16) + int("0x40000000000", base=16))
+    vops = node.api.account_history.enum_virtual_ops(
+        block_range_begin=0,
+        block_range_end=2000,
+        limit=2000,
+        include_reversible=True,
+        # filter only comment_payout_update and declined_voting_rights op
+        filter=int("0x000800", base=16) + int("0x40000000000", base=16),
+    )
 
     # The virtual operation confirms that decline_voting_rights_operation was done.
     assert vops["ops"][2]["op"]["type"] == "declined_voting_rights_operation"

@@ -11,19 +11,31 @@ from hive_local_tools.functional.python.operation import (
 class RecurrentTransferAccount(Account):
     def assert_balance_is_reduced_by_transfer(self, amount):
         if isinstance(amount, tt.Asset.Test):
-            assert self._hive - amount == get_hive_balance(self._node, self._name), f"The `{self._name}` account balance has not been reduced."
+            assert self._hive - amount == get_hive_balance(
+                self._node, self._name
+            ), f"The `{self._name}` account balance has not been reduced."
         if isinstance(amount, tt.Asset.Tbd):
-            assert self._hbd - amount == get_hbd_balance(self._node, self._name), f"The {self._name}` account hbd_balance has not been reduced."
+            assert self._hbd - amount == get_hbd_balance(
+                self._node, self._name
+            ), f"The {self._name}` account hbd_balance has not been reduced."
 
     def assert_balance_is_increased_by_transfer(self, amount):
         if isinstance(amount, tt.Asset.Test):
-            assert self._hive + amount == get_hive_balance(self._node, self._name), f"The {self._name}` account balance has not been increased."
+            assert self._hive + amount == get_hive_balance(
+                self._node, self._name
+            ), f"The {self._name}` account balance has not been increased."
         if isinstance(amount, tt.Asset.Tbd):
-            assert self._hbd + amount == get_hbd_balance(self._node, self._name), f"The {self._name}` account hbd_balance has not been increased."
+            assert self._hbd + amount == get_hbd_balance(
+                self._node, self._name
+            ), f"The {self._name}` account hbd_balance has not been increased."
 
     def assert_hives_and_hbds_are_not_changed(self):
-        assert self._hive == get_hive_balance(self._node, self._name), f"The {self._name}` account balance has been changed."
-        assert self._hbd == get_hbd_balance(self._node, self._name),  f"The {self._name}` account hbd_balance has been changed."
+        assert self._hive == get_hive_balance(
+            self._node, self._name
+        ), f"The {self._name}` account balance has been changed."
+        assert self._hbd == get_hbd_balance(
+            self._node, self._name
+        ), f"The {self._name}` account hbd_balance has been changed."
 
 
 class RecurrentTransfer:
@@ -36,12 +48,14 @@ class RecurrentTransfer:
         self._memo = "{}"
         self._recurrence = recurrence
         self._executions = executions
-        self._transaction = wallet.api.recurrent_transfer(from_=self._from_,
-                                                          to=self._to,
-                                                          amount=self._amount,
-                                                          memo=self._memo,
-                                                          recurrence=self._recurrence,
-                                                          executions=self._executions)
+        self._transaction = wallet.api.recurrent_transfer(
+            from_=self._from_,
+            to=self._to,
+            amount=self._amount,
+            memo=self._memo,
+            recurrence=self._recurrence,
+            executions=self._executions,
+        )
         self._timestamp = get_transaction_timestamp(node, self._transaction)
         self._current_schedule = self.__get_transfer_schedule()
         self._executions_schedules: list = [self._current_schedule]
@@ -66,23 +80,33 @@ class RecurrentTransfer:
         return self._timestamp
 
     def __get_transfer_schedule(self):
-        return [self._timestamp + tt.Time.hours(self._recurrence * execution_number) for execution_number in
-                range(self._executions)]
+        return [
+            self._timestamp + tt.Time.hours(self._recurrence * execution_number)
+            for execution_number in range(self._executions)
+        ]
 
     def move_after_last_transfer(self):
         """
         Move forward by {recurrence} time from the last scheduled recurring transfer.
         """
-        self._node.restart(time_offset=tt.Time.serialize(self._current_schedule[-1] + tt.Time.hours(self._recurrence),
-                                                         format_=tt.Time.TIME_OFFSET_FORMAT, ))
+        self._node.restart(
+            time_offset=tt.Time.serialize(
+                self._current_schedule[-1] + tt.Time.hours(self._recurrence),
+                format_=tt.Time.TIME_OFFSET_FORMAT,
+            )
+        )
 
     def execute_future_transfer(self, execution_date=None):
         actual_head_block_time = self._node.get_head_block_time()
         if not execution_date:
             for num, t in enumerate(self._current_schedule):
                 if t > actual_head_block_time:
-                    self._node.restart(time_offset=tt.Time.serialize(self._current_schedule[num],
-                                                                     format_=tt.Time.TIME_OFFSET_FORMAT, ))
+                    self._node.restart(
+                        time_offset=tt.Time.serialize(
+                            self._current_schedule[num],
+                            format_=tt.Time.TIME_OFFSET_FORMAT,
+                        )
+                    )
                     time_after_restart = self._node.get_head_block_time()
                     self._last_execution_time = self._current_schedule[num]
                     assert time_after_restart >= self._current_schedule[num]
@@ -97,7 +121,11 @@ class RecurrentTransfer:
 
     def execute_last_transfer(self):
         self._node.restart(
-            time_offset=tt.Time.serialize(self._current_schedule[-1], format_=tt.Time.TIME_OFFSET_FORMAT, ))
+            time_offset=tt.Time.serialize(
+                self._current_schedule[-1],
+                format_=tt.Time.TIME_OFFSET_FORMAT,
+            )
+        )
         self._node.wait_number_of_blocks(1)
         assert self._node.get_head_block_time() > self._current_schedule[-1]
         self._last_execution_time = self._current_schedule[-1]
@@ -123,7 +151,7 @@ class RecurrentTransfer:
             amount=amount if amount is not None else self._amount,
             memo=self._memo,
             recurrence=new_recurrence_time if new_recurrence_time is not None else self._recurrence,
-            executions=new_executions_number if new_executions_number is not None else self._executions
+            executions=new_executions_number if new_executions_number is not None else self._executions,
         )
         self._timestamp = get_transaction_timestamp(self._node, self._transaction)
         self._rc_cost = self._transaction["rc_cost"]
@@ -132,17 +160,22 @@ class RecurrentTransfer:
         if amount:
             self._amount = amount
         if new_recurrence_time and not new_executions_number:
-            self._current_schedule = [self._timestamp + tt.Time.hours(new_recurrence_time * execution_number) for
-                                      execution_number in range(self._executions + 1)][1:]
+            self._current_schedule = [
+                self._timestamp + tt.Time.hours(new_recurrence_time * execution_number)
+                for execution_number in range(self._executions + 1)
+            ][1:]
             self._recurrence = new_recurrence_time
         elif new_executions_number and not new_recurrence_time:
             self._current_schedule = [
                 self.get_next_execution_date() + tt.Time.hours(self._recurrence * execution_number)
-                for execution_number in range(new_executions_number)]
+                for execution_number in range(new_executions_number)
+            ]
             self._executions = new_executions_number
         elif new_executions_number and new_recurrence_time:
-            self._current_schedule = [self._timestamp + tt.Time.hours(new_recurrence_time * execution_number) for
-                                      execution_number in range(new_executions_number + 1)][1:]
+            self._current_schedule = [
+                self._timestamp + tt.Time.hours(new_recurrence_time * execution_number)
+                for execution_number in range(new_executions_number + 1)
+            ][1:]
             self._executions = new_executions_number
             self._recurrence = new_recurrence_time
         else:

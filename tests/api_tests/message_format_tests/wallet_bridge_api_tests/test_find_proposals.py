@@ -5,7 +5,7 @@ from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 from hive_local_tools.api.message_format.wallet_bridge_api import create_accounts_with_vests_and_tbd, prepare_proposals
 
-ACCOUNTS = [f'account-{i}' for i in range(5)]
+ACCOUNTS = [f"account-{i}" for i in range(5)]
 
 CORRECT_VALUES = [
     [0],
@@ -15,11 +15,12 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    'proposal_ids', [
+    "proposal_ids",
+    [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
         [True],
-    ]
+    ],
 )
 # proposals system was introduced after the 5 millionth block, it is only tested on  live node
 @run_for("testnet", "live_mainnet")
@@ -32,10 +33,11 @@ def test_find_proposals_with_correct_values(node, proposal_ids, should_prepare):
 
 
 @pytest.mark.parametrize(
-    'proposal_id', [
+    "proposal_id",
+    [
         [-1],  # OUT OFF LIMITS: too low id
-        ['true'],
-    ]
+        ["true"],
+    ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_find_proposals_with_incorrect_values(node, proposal_id, should_prepare):
@@ -48,10 +50,11 @@ def test_find_proposals_with_incorrect_values(node, proposal_id, should_prepare)
 
 
 @pytest.mark.parametrize(
-    'proposal_id', [
-        ['invalid-argument'],
+    "proposal_id",
+    [
+        ["invalid-argument"],
         "[1,2,3,4,5]",
-    ]
+    ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_find_proposals_with_incorrect_type_of_argument(node, proposal_id):

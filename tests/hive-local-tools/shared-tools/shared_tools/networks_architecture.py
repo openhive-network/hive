@@ -40,38 +40,55 @@ from dataclasses import dataclass, field
 
 import test_tools as tt
 
+
 @dataclass
 class NodeWrapper:
-    name    : str
-    prepare : bool
+    name: str
+    prepare: bool
+
     def show(self, offset: str = "") -> str:
         return f"{offset}({self.name}({'P' if self.prepare else ''}))"
+
 
 @dataclass
 class InitNodeWrapper(NodeWrapper):
     def show(self) -> str:
         return NodeWrapper.show(self, " ")
 
+
 @dataclass
 class ApiWrapper(NodeWrapper):
     def show(self) -> str:
         return NodeWrapper.show(self, " ")
+
 
 @dataclass
 class FullApiWrapper(NodeWrapper):
     def show(self) -> str:
         return NodeWrapper.show(self, " ")
 
+
 @dataclass
 class WitnessWrapper(NodeWrapper):
-    witnesses : list = field(default_factory = list)
+    witnesses: list = field(default_factory=list)
 
-    def create_witnesses(self, cnt_witness_start: int, witnesses_number: int, network_number: int, processor: Callable[[str],int], legacy_witness_name: bool) -> None:
+    def create_witnesses(
+        self,
+        cnt_witness_start: int,
+        witnesses_number: int,
+        network_number: int,
+        processor: Callable[[str], int],
+        legacy_witness_name: bool,
+    ) -> None:
         for i in range(cnt_witness_start, witnesses_number):
             if legacy_witness_name:
-                self.witnesses.append( f"witness-{network_number}-{i - cnt_witness_start}" ) #"witness-0-0", "witness-0-1", "witness-0-2"
+                self.witnesses.append(
+                    f"witness-{network_number}-{i - cnt_witness_start}"
+                )  # "witness-0-0", "witness-0-1", "witness-0-2"
             else:
-                self.witnesses.append( f"witness{i}-{processor(network_number)}" ) #"witness0-alpha", "witness1-alpha", "witness2-alpha"
+                self.witnesses.append(
+                    f"witness{i}-{processor(network_number)}"
+                )  # "witness0-alpha", "witness1-alpha", "witness2-alpha"
 
     def show(self) -> str:
         details = []
@@ -79,16 +96,17 @@ class WitnessWrapper(NodeWrapper):
         for witness in self.witnesses:
             details.append(witness)
 
-        return NodeWrapper.show(self, " ") + " (" + ", ".join( detail for detail in details) + ")"
+        return NodeWrapper.show(self, " ") + " (" + ", ".join(detail for detail in details) + ")"
+
 
 class NetworkWrapper:
     def __init__(self, name) -> None:
-        self.name           = name
+        self.name = name
 
-        self.init_node: InitNodeWrapper | None      = None
-        self.api_node:      list[ApiWrapper]        = []
-        self.full_api_node: list[FullApiWrapper]    = []
-        self.witness_nodes: list[WitnessWrapper]    = []
+        self.init_node: InitNodeWrapper | None = None
+        self.api_node: list[ApiWrapper] = []
+        self.full_api_node: list[FullApiWrapper] = []
+        self.witness_nodes: list[WitnessWrapper] = []
 
     def show(self) -> str:
         details = []
@@ -105,28 +123,49 @@ class NetworkWrapper:
         for witness_node in self.witness_nodes:
             details.append(witness_node.show())
 
-        return f"[{self.name}]" + "\n" + "\n".join( detail for detail in details)
+        return f"[{self.name}]" + "\n" + "\n".join(detail for detail in details)
+
 
 @dataclass
 class NetworksArchitecture:
-    legacy_witness_name : bool = False
-    networks            : list = field(default_factory = list)
-    nodes_number        : int = 0
+    legacy_witness_name: bool = False
+    networks: list = field(default_factory=list)
+    nodes_number: int = 0
 
     def greek(self, idx: int) -> str:
-        greek_alphabet = ["alpha",      "beta",     "gamma",    "delta",
-                          "epsi",       "zeta",     "eta",      "theta",
-                          "iota",       "kappa",    "lambda",   "mu",
-                          "nu",         "xi",       "omi",      "pi",
-                          "rho",        "sigma",    "tau",      "upsi",
-                          "phi",        "chi",      "psi",      "omega" ]
+        greek_alphabet = [
+            "alpha",
+            "beta",
+            "gamma",
+            "delta",
+            "epsi",
+            "zeta",
+            "eta",
+            "theta",
+            "iota",
+            "kappa",
+            "lambda",
+            "mu",
+            "nu",
+            "xi",
+            "omi",
+            "pi",
+            "rho",
+            "sigma",
+            "tau",
+            "upsi",
+            "phi",
+            "chi",
+            "psi",
+            "omega",
+        ]
         return greek_alphabet[idx % len(greek_alphabet)]
 
     def get_key_information(self, key_name: str, current_dict: dict, default: Any = False) -> Any:
         return current_dict.get(key_name, default)
 
     def get_api_init(self, node_name: str, current_dict: dict) -> Tuple[bool, bool]:
-        #returns statuses: [active, prepare]
+        # returns statuses: [active, prepare]
         node = self.get_key_information(node_name, current_dict)
         if isinstance(node, dict):
             return self.get_key_information("Active", node), self.get_key_information("Prepare", node)
@@ -134,7 +173,7 @@ class NetworksArchitecture:
             return node, False
 
     def get_witness(self, data: Any) -> Tuple[int, bool]:
-        #returns statuses: [witnesses' number, prepare]
+        # returns statuses: [witnesses' number, prepare]
         if isinstance(data, dict):
             return self.get_key_information("Witnesses", data, -1), self.get_key_information("Prepare", data, -1)
         else:
@@ -144,7 +183,7 @@ class NetworksArchitecture:
         assert "networks" in config
         _networks = config["networks"]
 
-        cnt_witness_start   = 0
+        cnt_witness_start = 0
         for cnt_network, network in enumerate(_networks):
             current_net = NetworkWrapper(f"Network-{self.greek(cnt_network)}")
 
@@ -166,7 +205,9 @@ class NetworksArchitecture:
                 assert full_api_node_active > 0, "The number of FullApiNodes to be created cannot be less than 1"
                 self.nodes_number += full_api_node_active
                 for cnt_full_api_node in range(full_api_node_active):
-                    current_net.full_api_node.append(FullApiWrapper(f"FullApiNode-{cnt_full_api_node}", full_api_node_prepare))
+                    current_net.full_api_node.append(
+                        FullApiWrapper(f"FullApiNode-{cnt_full_api_node}", full_api_node_prepare)
+                    )
 
             if witness_nodes := network.get("WitnessNodes", False):
                 self.nodes_number += len(witness_nodes)
@@ -177,7 +218,13 @@ class NetworksArchitecture:
                     assert witness_node_number >= 0, "Expected number of witnesses >= 0"
 
                     current_witness = WitnessWrapper(f"WitnessNode-{cnt_witness_node}", witness_node_prepare)
-                    current_witness.create_witnesses(cnt_witness_start, cnt_witness_start + witness_node_number, cnt_network, self.greek, self.legacy_witness_name)
+                    current_witness.create_witnesses(
+                        cnt_witness_start,
+                        cnt_witness_start + witness_node_number,
+                        cnt_network,
+                        self.greek,
+                        self.legacy_witness_name,
+                    )
                     cnt_witness_start += witness_node_number
 
                     current_net.witness_nodes.append(current_witness)
@@ -188,16 +235,17 @@ class NetworksArchitecture:
         details = []
         for network in self.networks:
             details.append(network.show())
-        return "\n".join( detail for detail in details)
+        return "\n".join(detail for detail in details)
+
 
 class NetworksBuilder:
     def __init__(self) -> None:
-        self.init_node: tt.InitNode | None      = None
-        self.witness_names: list[str]           = []
-        self.networks: list[tt.Network]         = []
-        self.nodes: list[tt.AnyNode]            = []
-        self.prepare_nodes: list[tt.AnyNode]    = []
-        self.init_wallet: tt.Wallet | None      = None
+        self.init_node: tt.InitNode | None = None
+        self.witness_names: list[str] = []
+        self.networks: list[tt.Network] = []
+        self.nodes: list[tt.AnyNode] = []
+        self.prepare_nodes: list[tt.AnyNode] = []
+        self.init_wallet: tt.Wallet | None = None
 
     def build(self, architecture: NetworksArchitecture, init_node_can_be_empty: bool = False) -> None:
         for network in architecture.networks:

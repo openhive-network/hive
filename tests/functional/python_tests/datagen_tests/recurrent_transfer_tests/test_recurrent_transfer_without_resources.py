@@ -14,12 +14,9 @@ def test_recurrent_transfer_without_resources(node):
     wallet.create_account("sender")
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
-        wallet.api.recurrent_transfer("sender",
-                                      "initminer",
-                                      tt.Asset.Test(100),
-                                      f"recurrent transfer to receiver",
-                                      24,
-                                      executions)
+        wallet.api.recurrent_transfer(
+            "sender", "initminer", tt.Asset.Test(100), f"recurrent transfer to receiver", 24, executions
+        )
 
     expected_error_message = f"Account does not have enough tokens for the first transfer, has"
     assert expected_error_message in str(exception.value)
