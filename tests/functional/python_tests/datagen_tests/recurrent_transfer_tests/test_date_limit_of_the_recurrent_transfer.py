@@ -7,12 +7,10 @@ from hive_local_tools import run_for
 from hive_local_tools.constants import MAX_RECURRENT_TRANSFER_END_DATE
 
 
-@pytest.mark.parametrize("executions", [
-    2,
-    3,
-    4,
-    730  # The maximum number of executions where the minimal time between recurrences is not less than 24h
-])
+@pytest.mark.parametrize(
+    "executions",
+    [2, 3, 4, 730],  # The maximum number of executions where the minimal time between recurrences is not less than 24h
+)
 @run_for("testnet")
 def test_exceed_date_limit_of_recurrent_transfers(node, executions):
     """
@@ -29,20 +27,22 @@ def test_exceed_date_limit_of_recurrent_transfers(node, executions):
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("receiver")
-    wallet.create_account("sender",
-                          hives=tt.Asset.Test(100),
-                          vests=tt.Asset.Test(100))
+    wallet.create_account("sender", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
-        wallet.api.recurrent_transfer("sender",
-                                      "receiver",
-                                      tt.Asset.Test(0.001),
-                                      f"recurrent transfer to receiver",
-                                      math.ceil(MAX_RECURRENT_TRANSFER_END_DATE * 24 / (executions - 1)) + 1, # 730 * 24 / 729 yields sub-hour results, so we increase it to the nearest higher
-                                      executions)
+        wallet.api.recurrent_transfer(
+            "sender",
+            "receiver",
+            tt.Asset.Test(0.001),
+            f"recurrent transfer to receiver",
+            math.ceil(MAX_RECURRENT_TRANSFER_END_DATE * 24 / (executions - 1))
+            + 1,  # 730 * 24 / 729 yields sub-hour results, so we increase it to the nearest higher
+            executions,
+        )
 
-    expected_error_message = f"Cannot set a transfer that would last for longer than " \
-                             f"{MAX_RECURRENT_TRANSFER_END_DATE} days"
+    expected_error_message = (
+        f"Cannot set a transfer that would last for longer than {MAX_RECURRENT_TRANSFER_END_DATE} days"
+    )
     assert expected_error_message in str(exception.value)
 
 
@@ -59,23 +59,23 @@ def test_last_execution_of_recurrent_transfer_close_to_date_limit(node, executio
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("receiver")
-    wallet.create_account("sender",
-                          hives=tt.Asset.Test(100),
-                          vests=tt.Asset.Test(100))
+    wallet.create_account("sender", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
     # Validate that sender's balance is equal 100 Tests
-    assert node.api.condenser.get_accounts(['sender'])[0]["balance"] == '100.000 TESTS'
+    assert node.api.condenser.get_accounts(["sender"])[0]["balance"] == "100.000 TESTS"
     # Validate that receiver's balance is equal 0 Tests
-    assert node.api.condenser.get_accounts(['receiver'])[0]["balance"] == '0.000 TESTS'
+    assert node.api.condenser.get_accounts(["receiver"])[0]["balance"] == "0.000 TESTS"
 
-    wallet.api.recurrent_transfer("sender",
-                                  "receiver",
-                                  tt.Asset.Test(10),
-                                  f"recurrent transfer to receiver",
-                                  (MAX_RECURRENT_TRANSFER_END_DATE * 24 / executions) - 1,
-                                  executions)
+    wallet.api.recurrent_transfer(
+        "sender",
+        "receiver",
+        tt.Asset.Test(10),
+        f"recurrent transfer to receiver",
+        (MAX_RECURRENT_TRANSFER_END_DATE * 24 / executions) - 1,
+        executions,
+    )
 
     # Validate that sender's balance is equal 90 Tests
-    assert node.api.condenser.get_accounts(['sender'])[0]["balance"] == '90.000 TESTS'
+    assert node.api.condenser.get_accounts(["sender"])[0]["balance"] == "90.000 TESTS"
     # Validate that receiver's balance is equal 10 Tests
-    assert node.api.condenser.get_accounts(['receiver'])[0]["balance"] == '10.000 TESTS'
+    assert node.api.condenser.get_accounts(["receiver"])[0]["balance"] == "10.000 TESTS"

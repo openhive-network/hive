@@ -131,7 +131,7 @@ def test_change_recovery_agent_twice_while_the_request_is_in_progress(node):
     wallet.api.change_recovery_account("alice", "bob")
     first_request = node.api.database.find_change_recovery_account_requests(accounts=["alice"])["requests"]
 
-    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD//2)
+    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD // 2)
 
     wallet.api.change_recovery_account("alice", "bob")
     second_request = node.api.database.find_change_recovery_account_requests(accounts=["alice"])["requests"]

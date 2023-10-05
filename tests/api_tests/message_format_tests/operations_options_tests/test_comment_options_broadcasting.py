@@ -2,10 +2,10 @@ import test_tools as tt
 
 
 def test_nai_format_comment_options_with_beneficiaries(node):
-    wallet = tt.Wallet(attach_to=node, additional_arguments=['--transaction-serialization=hf26'])
-    wallet.api.create_account('initminer', 'alice', '{}')
-    wallet.api.create_account('initminer', 'bob', '{}')
-    wallet.api.post_comment('initminer', 'test-post', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
+    wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
+    wallet.api.create_account("initminer", "alice", "{}")
+    wallet.api.create_account("initminer", "bob", "{}")
+    wallet.api.post_comment("initminer", "test-post", "", "test-parent-permlink", "test-title", "test-body", "{}")
 
     trx = {
         "ref_block_num": 34005,
@@ -17,11 +17,7 @@ def test_nai_format_comment_options_with_beneficiaries(node):
                 "value": {
                     "author": "initminer",
                     "permlink": "test-post",
-                    "max_accepted_payout": {
-                        "amount": "100000000",
-                        "precision": 3,
-                        "nai": "@@000000013"
-                    },
+                    "max_accepted_payout": {"amount": "100000000", "precision": 3, "nai": "@@000000013"},
                     "percent_hbd": 10000,
                     "allow_votes": True,
                     "allow_curation_rewards": True,
@@ -30,23 +26,17 @@ def test_nai_format_comment_options_with_beneficiaries(node):
                             "type": "comment_payout_beneficiaries",
                             "value": {
                                 "beneficiaries": [
-                                    {
-                                        "account": "alice",
-                                        "weight": 1000
-                                    },
-                                    {
-                                        "account": "bob",
-                                        "weight": 100
-                                    }
+                                    {"account": "alice", "weight": 1000},
+                                    {"account": "bob", "weight": 100},
                                 ]
-                            }
+                            },
                         }
-                    ]
-                }
+                    ],
+                },
             },
         ],
         "extensions": [],
-        "signatures": []
+        "signatures": [],
     }
 
     transaction = wallet.api.sign_transaction(trx, broadcast=False)
@@ -55,9 +45,9 @@ def test_nai_format_comment_options_with_beneficiaries(node):
 
 def test_legacy_format_comment_options_with_beneficiaries(node):
     wallet = tt.Wallet(attach_to=node)
-    wallet.api.create_account('initminer', 'alice', '{}')
-    wallet.api.create_account('initminer', 'bob', '{}')
-    wallet.api.post_comment('initminer', 'test-post', '', 'test-parent-permlink', 'test-title', 'test-body', '{}')
+    wallet.api.create_account("initminer", "alice", "{}")
+    wallet.api.create_account("initminer", "bob", "{}")
+    wallet.api.post_comment("initminer", "test-post", "", "test-parent-permlink", "test-title", "test-body", "{}")
 
     trx = {
         "ref_block_num": 34005,
@@ -76,28 +66,17 @@ def test_legacy_format_comment_options_with_beneficiaries(node):
                     "extensions": [
                         [
                             "comment_payout_beneficiaries",
-                            {
-                                "beneficiaries": [
-                                    {
-                                        "account": "alice",
-                                        "weight": 100
-                                    },
-                                    {
-                                        "account": "bob",
-                                        "weight": 100
-                                    }
-                                ]
-                            }
+                            {"beneficiaries": [{"account": "alice", "weight": 100}, {"account": "bob", "weight": 100}]},
                         ]
-                    ]
-                }
+                    ],
+                },
             ]
         ],
         "extensions": [],
         "signatures": [],
         "transaction_id": "9c8455cdf0e3ab1ab9a54ce3301848fed27bc820",
         "block_num": 0,
-        "transaction_num": 0
+        "transaction_num": 0,
     }
 
     transaction = wallet.api.sign_transaction(trx, broadcast=False)

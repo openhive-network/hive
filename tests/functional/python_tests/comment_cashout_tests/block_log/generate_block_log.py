@@ -17,11 +17,7 @@ MAX_WORKERS: Final[int] = 2048
 
 CONFIG = {
     "networks": [
-        {
-            "InitNode": True,
-            "FullApiNode": 4,
-            "WitnessNodes": [1, 1, 1]
-        },
+        {"InitNode": True, "FullApiNode": 4, "WitnessNodes": [1, 1, 1]},
     ]
 }
 
@@ -38,7 +34,7 @@ def prepare_blocklog_network():
     architecture.load(CONFIG)
 
     tt.logger.info(architecture)
-    generate_networks(architecture, Path('fortress_network_block_log'))
+    generate_networks(architecture, Path("fortress_network_block_log"))
 
 
 def prepare_blocklog_with_comments_and_votes():
@@ -56,8 +52,8 @@ def prepare_blocklog_with_comments_and_votes():
     block_log = Path(__file__).with_name("fortress_network_block_log")
     network = prepare_network(architecture, block_log)
 
-    init_node = network.networks[0].node('InitNode0')
-    api_node = network.networks[0].node('FullApiNode0')
+    init_node = network.networks[0].node("InitNode0")
+    api_node = network.networks[0].node("FullApiNode0")
 
     init_wallet = tt.Wallet(attach_to=init_node)
     init_wallet.api.set_transaction_expiration(1000)
@@ -68,9 +64,12 @@ def prepare_blocklog_with_comments_and_votes():
     # change block size to 2 mb
     with init_wallet.in_single_transaction():
         for witness_name in witnesses:
-            init_wallet.api.update_witness(witness_name, 'http://url.html', tt.Account(witness_name).public_key,
-                                           {'account_creation_fee': tt.Asset.Test(0), 'maximum_block_size': 2097152,
-                                            'hbd_interest_rate': 1000})
+            init_wallet.api.update_witness(
+                witness_name,
+                "http://url.html",
+                tt.Account(witness_name).public_key,
+                {"account_creation_fee": tt.Asset.Test(0), "maximum_block_size": 2097152, "hbd_interest_rate": 1000},
+            )
     tt.logger.info("Wait 43 blocks...")
     init_node.wait_number_of_blocks(43)  # wait for the block size to change to 2mb
 
@@ -117,7 +116,8 @@ def prepare_blocklog_with_comments_and_votes():
 
 def wait_for_comment_payment(node):
     cashout_time = tt.Time.parse(
-        node.api.database.find_comments(comments=[["creator-0", "post-creator-0"]])["comments"][0]["cashout_time"])
+        node.api.database.find_comments(comments=[["creator-0", "post-creator-0"]])["comments"][0]["cashout_time"]
+    )
     tt.logger.info(f"Cashout time: {cashout_time}")
 
     while True:
@@ -163,7 +163,9 @@ def __vote_for_comment(voter: str, creator_number: str) -> list:
     ]
 
 
-def __generate_and_broadcast_transaction(wallet: tt.Wallet, func, comment_number: int | None, account_names: List[str]) -> None:
+def __generate_and_broadcast_transaction(
+    wallet: tt.Wallet, func, comment_number: int | None, account_names: List[str]
+) -> None:
     transaction = deepcopy(TRANSACTION_TEMPLATE)
 
     for name in account_names:

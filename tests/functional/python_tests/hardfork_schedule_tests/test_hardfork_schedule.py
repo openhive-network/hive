@@ -23,18 +23,21 @@ def test_simply_hardfork_schedule():
     hardfork_schedule = [
         {"hardfork": 2, "block_num": 0},
         {"hardfork": 20, "block_num": 20},
-        {"hardfork": 27, "block_num": 380}
+        {"hardfork": 27, "block_num": 380},
     ]
-    witnesses_required_for_hf06_and_later = [f'witness-{witness_num}' for witness_num in range(16)]
-    alternate_chain_spec = build_alternate_chain_spec(hardfork_schedule, witnesses_required_for_hf06_and_later,
-                                                      init_supply, hbd_init_supply)
+    witnesses_required_for_hf06_and_later = [f"witness-{witness_num}" for witness_num in range(16)]
+    alternate_chain_spec = build_alternate_chain_spec(
+        hardfork_schedule, witnesses_required_for_hf06_and_later, init_supply, hbd_init_supply
+    )
 
     init_node = tt.InitNode()
     for witness in witnesses_required_for_hf06_and_later:
         init_node.config.witness.append(witness)
     write_to_json(alternate_chain_spec)
-    init_node.run(time_offset="+0 x20", arguments=['--alternate-chain-spec',
-                                                   str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
+    init_node.run(
+        time_offset="+0 x20",
+        arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)],
+    )
 
     # verify are hardforks 0-2 were applied correctly
     assert is_hardfork_applied(init_node, hf_number=2)
@@ -57,7 +60,7 @@ def test_simply_hardfork_schedule():
 
 
 @pytest.mark.parametrize(
-    'hardfork_schedule',
+    "hardfork_schedule",
     [
         pytest.param(
             [
@@ -65,45 +68,28 @@ def test_simply_hardfork_schedule():
                 {"hardfork": 27, "block_num": 380},
                 {"hardfork": 20, "block_num": 20},
             ],
-            id='wrong order'
+            id="wrong order",
         ),
-
         pytest.param(
-            [
-                {"hardfork": 20, "block_num": 0},
-                {"hardfork": 2, "block_num": 1},
-                {"hardfork": 27, "block_num": 25}
-            ],
-            id='wrong order of hardforks'
+            [{"hardfork": 20, "block_num": 0}, {"hardfork": 2, "block_num": 1}, {"hardfork": 27, "block_num": 25}],
+            id="wrong order of hardforks",
         ),
-
         pytest.param(
-            [
-                {"hardfork": 2, "block_num": 1},
-                {"hardfork": 20, "block_num": 0},
-                {"hardfork": 27, "block_num": 380}
-            ],
-            id='blocks are not constantly growing'
+            [{"hardfork": 2, "block_num": 1}, {"hardfork": 20, "block_num": 0}, {"hardfork": 27, "block_num": 380}],
+            id="blocks are not constantly growing",
         ),
-
-        pytest.param(
-            [
-            ],
-            id='empty hardfork schedule'
-        ),
-
+        pytest.param([], id="empty hardfork schedule"),
         pytest.param(
             [
                 {"hardfork": 50, "block_num": 0},
             ],
-            id='nonexistent hardfork'
+            id="nonexistent hardfork",
         ),
-
         pytest.param(
             [
                 {"hardfork": 0, "block_num": 0},
             ],
-            id='hf_00 is forbidden in hardfork schedule'
+            id="hf_00 is forbidden in hardfork schedule",
         ),
     ],
 )
@@ -114,15 +100,19 @@ def test_incorrect_hardfork_schedules(hardfork_schedule):
     write_to_json(alternate_chain_spec)
     with pytest.raises(TimeoutError):
         init_node.run(
-            arguments=['--alternate-chain-spec',
-                       str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
+            arguments=[
+                "--alternate-chain-spec",
+                str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME),
+            ]
+        )
 
 
 @pytest.mark.parametrize(
-    'keys_to_drop', [
-        ['hardfork_schedule'],
-        ['genesis_time'],
-    ]
+    "keys_to_drop",
+    [
+        ["hardfork_schedule"],
+        ["genesis_time"],
+    ],
 )
 def test_alternate_chain_spec_necessary_keys(keys_to_drop):
     hardfork_schedule = [
@@ -136,20 +126,24 @@ def test_alternate_chain_spec_necessary_keys(keys_to_drop):
     write_to_json(alternate_chain_spec)
     with pytest.raises(TimeoutError):
         init_node.run(
-            arguments=['--alternate-chain-spec',
-                       str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
+            arguments=[
+                "--alternate-chain-spec",
+                str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME),
+            ]
+        )
 
 
 @pytest.mark.parametrize(
-    'keys_to_drop', [
-        ['init_witnesses', 'hbd_init_supply', 'init_supply'],
-        ['hbd_init_supply', 'init_supply'],
-        ['init_witnesses', 'init_supply'],
-        ['init_witnesses', 'hbd_init_supply'],
-        ['init_witnesses'],
-        ['init_supply'],
-        ['hbd_init_supply']
-    ]
+    "keys_to_drop",
+    [
+        ["init_witnesses", "hbd_init_supply", "init_supply"],
+        ["hbd_init_supply", "init_supply"],
+        ["init_witnesses", "init_supply"],
+        ["init_witnesses", "hbd_init_supply"],
+        ["init_witnesses"],
+        ["init_supply"],
+        ["hbd_init_supply"],
+    ],
 )
 def test_alternate_chain_spec_optional_keys(keys_to_drop):
     init_supply = 1000000
@@ -157,24 +151,27 @@ def test_alternate_chain_spec_optional_keys(keys_to_drop):
     hardfork_schedule = [
         {"hardfork": 2, "block_num": 0},
     ]
-    witnesses_required_for_hf06_and_later = [f'witness-{witness_num}' for witness_num in range(16)]
-    alternate_chain_spec = build_alternate_chain_spec(hardfork_schedule, witnesses_required_for_hf06_and_later,
-                                                      init_supply, hbd_init_supply)
+    witnesses_required_for_hf06_and_later = [f"witness-{witness_num}" for witness_num in range(16)]
+    alternate_chain_spec = build_alternate_chain_spec(
+        hardfork_schedule, witnesses_required_for_hf06_and_later, init_supply, hbd_init_supply
+    )
     drop_keys_from(alternate_chain_spec, *keys_to_drop)
 
     init_node = tt.InitNode()
     write_to_json(alternate_chain_spec)
     init_node.run(
-        arguments=['--alternate-chain-spec', str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
+        arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)]
+    )
 
 
 @pytest.mark.parametrize(
-    'witnesses', [
+    "witnesses",
+    [
         [1324, 123456],
-        ['1234', '123456'],
-        ['ABC', '.abcde'],
-        ['a', 'ab'],
-    ]
+        ["1234", "123456"],
+        ["ABC", ".abcde"],
+        ["a", "ab"],
+    ],
 )
 def test_invalid_witness_names(witnesses):
     hardfork_schedule = [
@@ -185,8 +182,11 @@ def test_invalid_witness_names(witnesses):
     write_to_json(alternate_chain_spec)
     with pytest.raises(TimeoutError):
         init_node.run(
-            arguments=['--alternate-chain-spec',
-                       str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)])
+            arguments=[
+                "--alternate-chain-spec",
+                str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME),
+            ]
+        )
 
 
 def drop_keys_from(container: dict, *keys_to_drop) -> None:
@@ -194,8 +194,9 @@ def drop_keys_from(container: dict, *keys_to_drop) -> None:
         del container[key]
 
 
-def build_alternate_chain_spec(hardfork_schedule: list, init_witnesses: list = None, init_supply: int = None,
-                               hbd_init_supply: int = None) -> dict:
+def build_alternate_chain_spec(
+    hardfork_schedule: list, init_witnesses: list = None, init_supply: int = None, hbd_init_supply: int = None
+) -> dict:
     return {
         "genesis_time": int(time.time()),
         "hardfork_schedule": hardfork_schedule,
@@ -208,7 +209,7 @@ def build_alternate_chain_spec(hardfork_schedule: list, init_witnesses: list = N
 def write_to_json(alternate_chain_spec_content: dict) -> None:
     directory = tt.context.get_current_directory()
     directory.mkdir(parents=True, exist_ok=True)
-    with open(directory / ALTERNATE_CHAIN_JSON_FILENAME, 'w') as json_file:
+    with open(directory / ALTERNATE_CHAIN_JSON_FILENAME, "w") as json_file:
         json.dump(alternate_chain_spec_content, json_file)
 
 

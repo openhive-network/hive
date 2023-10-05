@@ -13,18 +13,15 @@ CORRECT_VALUES = [
     [True],  # in mainnet it corresponds to an account named 'true'
 ]
 
-VALUES_THAT_TRIGGER_EMPTY_RESPONSES = [
-    [''],
-    ['non-exist-acc'],
-    [100]
-]
+VALUES_THAT_TRIGGER_EMPTY_RESPONSES = [[""], ["non-exist-acc"], [100]]
 
 
 @pytest.mark.parametrize(
-    'rc_accounts', [
+    "rc_accounts",
+    [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
-    ]
+    ],
 )
 @run_for("testnet", "live_mainnet")
 def test_find_rc_accounts_with_correct_value(node, should_prepare, rc_accounts):
@@ -36,10 +33,11 @@ def test_find_rc_accounts_with_correct_value(node, should_prepare, rc_accounts):
 
 
 @pytest.mark.parametrize(
-    'rc_accounts', [
+    "rc_accounts",
+    [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
-    ]
+    ],
 )
 @run_for("mainnet_5m")
 def test_find_rc_accounts_with_correct_values_and_existing_accounts_in_mainnet_5m(node, should_prepare, rc_accounts):
@@ -49,10 +47,11 @@ def test_find_rc_accounts_with_correct_values_and_existing_accounts_in_mainnet_5
 
 
 @pytest.mark.parametrize(
-    'rc_accounts', [
+    "rc_accounts",
+    [
         *VALUES_THAT_TRIGGER_EMPTY_RESPONSES,
         *as_string(VALUES_THAT_TRIGGER_EMPTY_RESPONSES),
-    ]
+    ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_find_rc_accounts_with_correct_values_and_non_existing_accounts(node, should_prepare, rc_accounts):
@@ -64,13 +63,14 @@ def test_find_rc_accounts_with_correct_values_and_non_existing_accounts(node, sh
 
 
 @pytest.mark.parametrize(
-    'rc_accounts', [
+    "rc_accounts",
+    [
         "['non-exist-acc']",
         True,
         100,
-        '100',
-        'incorrect_string_argument',
-    ]
+        "100",
+        "incorrect_string_argument",
+    ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_find_rc_accounts_with_incorrect_type_of_argument(node, rc_accounts):

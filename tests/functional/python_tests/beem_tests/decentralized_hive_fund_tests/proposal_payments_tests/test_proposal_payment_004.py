@@ -153,9 +153,10 @@ def test_proposal_payment_004(node_client: NodeClientMaker):
 
         for acc, ret in accnts.items():
             # because of rounding mechanism
-            assert (
-                abs((int(previous_balances[acc]) + expected_results[acc]) - int(ret)) < 2
-            ), f"too big missmatch, prev: {previous_balances[acc]}, budget: {budget}, now: {ret}, expected: {expected_results[acc]}, account: {acc}"
+            assert abs((int(previous_balances[acc]) + expected_results[acc]) - int(ret)) < 2, (
+                f"too big missmatch, prev: {previous_balances[acc]}, budget: {budget}, now: {ret}, expected:"
+                f" {expected_results[acc]}, account: {acc}"
+            )
 
         previous_balances = accnts
 

@@ -10,15 +10,16 @@ from hive_local_tools.api.message_format.wallet_bridge_api import prepare_node_w
 CORRECT_VALUES = [
     WITNESSES_NAMES[0],
     WITNESSES_NAMES[-1],
-    'non-exist-acc',
-    '',
+    "non-exist-acc",
+    "",
     100,
     True,
 ]
 
 
 @pytest.mark.parametrize(
-    'witness_account', [
+    "witness_account",
+    [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
     ],
@@ -30,11 +31,7 @@ def test_get_witness_with_correct_value(node, witness_account, should_prepare):
     node.api.wallet_bridge.get_witness(witness_account)
 
 
-@pytest.mark.parametrize(
-    'witness_account', [
-        ['example-array']
-    ]
-)
+@pytest.mark.parametrize("witness_account", [["example-array"]])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_witness_with_incorrect_type_of_argument(node, witness_account):
     with pytest.raises(tt.exceptions.CommunicationError):

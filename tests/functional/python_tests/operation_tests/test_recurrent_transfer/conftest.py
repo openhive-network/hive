@@ -37,7 +37,7 @@ def sender(request, node, wallet):
         name="sender",
         hives=top_up_sum if isinstance(top_up_sum, tt.Asset.Test) else None,
         hbds=top_up_sum if isinstance(top_up_sum, tt.Asset.Tbd) else None,
-        vests=tt.Asset.Test(1)
+        vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)
     sender.update_account_info()

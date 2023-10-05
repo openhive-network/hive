@@ -25,14 +25,17 @@ class PowerDown(Operation):
         self._weekly_vest_reduction = self._vests_to_power_down / VESTING_WITHDRAW_INTERVALS
         self._remaining_executions = 13
         self._update_timestamp = get_transaction_timestamp(self._node, self._transaction) if update else None
-        self._tranche_schedule = self.__get_tranche_schedule(
-            self._update_timestamp) if update else self.__get_tranche_schedule(self._timestamp)
+        self._tranche_schedule = (
+            self.__get_tranche_schedule(self._update_timestamp)
+            if update
+            else self.__get_tranche_schedule(self._timestamp)
+        )
         self._virtual_operation_counter = 0
         self._weekly_hive_income = tt.Asset.from_(
             {
                 "amount": self._weekly_vest_reduction.amount / get_vesting_price(self._node),
                 "precision": 3,
-                "nai": "@@000000021"
+                "nai": "@@000000021",
             }
         )
 
@@ -57,13 +60,14 @@ class PowerDown(Operation):
         return self._update_timestamp
 
     @staticmethod
-    def convert_to_vest(node,  hive: tt.Asset.Test) -> tt.Asset.Vest:
+    def convert_to_vest(node, hive: tt.Asset.Test) -> tt.Asset.Vest:
         return tt.Asset.from_({"amount": hive.amount * get_vesting_price(node), "precision": 6, "nai": "@@000000037"})
 
     @staticmethod
     def __get_tranche_schedule(operation_timestamp: datetime) -> list[datetime]:
-        return [operation_timestamp + tt.Time.hours(1 * interval) for interval in
-                range(1, VESTING_WITHDRAW_INTERVALS + 1)]
+        return [
+            operation_timestamp + tt.Time.hours(1 * interval) for interval in range(1, VESTING_WITHDRAW_INTERVALS + 1)
+        ]
 
     def cancel(self) -> None:
         self._wallet.api.withdraw_vesting(self._name, tt.Asset.Vest(0))
@@ -75,15 +79,23 @@ class PowerDown(Operation):
         actual_head_block_time = self._node.get_head_block_time()
         for num, t in enumerate(self._tranche_schedule):
             if t > actual_head_block_time:
-                self._node.restart(time_offset=tt.Time.serialize(self._tranche_schedule[num],
-                                                                 format_=tt.Time.TIME_OFFSET_FORMAT, ))
+                self._node.restart(
+                    time_offset=tt.Time.serialize(
+                        self._tranche_schedule[num],
+                        format_=tt.Time.TIME_OFFSET_FORMAT,
+                    )
+                )
                 self._remaining_executions -= 1
                 self._node.wait_for_irreversible_block()
                 break
 
     def execute_last_withdraw(self) -> None:
-        self._node.restart(time_offset=tt.Time.serialize(self._tranche_schedule[-1],
-                                                         format_=tt.Time.TIME_OFFSET_FORMAT, ))
+        self._node.restart(
+            time_offset=tt.Time.serialize(
+                self._tranche_schedule[-1],
+                format_=tt.Time.TIME_OFFSET_FORMAT,
+            )
+        )
         self._remaining_executions = 0
         self._node.wait_for_irreversible_block()
         assert self._node.get_head_block_time() >= self._tranche_schedule[-1]
@@ -91,8 +103,7 @@ class PowerDown(Operation):
     def assert_virtual_operation_fill_vesting_withdraw_operation_was_generated(self, start_block: int = None) -> None:
         week = 13 - self._remaining_executions
         assert (
-                len(get_virtual_operations(self._node, "fill_vesting_withdraw_operation",
-                                           start_block=start_block)) == week
+            len(get_virtual_operations(self._node, "fill_vesting_withdraw_operation", start_block=start_block)) == week
         ), "The virtual operation: fill_vesting_withdraw_operation is not generated."
 
 

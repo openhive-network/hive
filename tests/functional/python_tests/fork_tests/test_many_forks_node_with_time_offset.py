@@ -7,10 +7,11 @@ import test_tools as tt
 
 import shared_tools.complex_networks_helper_functions as sh
 
-memo_cnt            = 0
+memo_cnt = 0
 
-break_cnt           = 0
-break_limit         = 250
+break_cnt = 0
+break_limit = 250
+
 
 def generate_break(wallet: tt.Wallet, node: tt.ApiNode, identifier: int):
     global break_cnt
@@ -20,7 +21,8 @@ def generate_break(wallet: tt.Wallet, node: tt.ApiNode, identifier: int):
         sh.info("m4", wallet)
         node.wait_number_of_blocks(1)
         break_cnt += 1
-    return f'[break {identifier}] Breaking activated...'
+    return f"[break {identifier}] Breaking activated..."
+
 
 def trx_creator(wallet: tt.Wallet, identifier: int):
     global memo_cnt
@@ -29,9 +31,9 @@ def trx_creator(wallet: tt.Wallet, identifier: int):
     global break_limit
 
     while break_cnt < break_limit:
-        wallet.api.transfer_nonblocking('initminer', 'null', tt.Asset.Test(1), str(memo_cnt))
+        wallet.api.transfer_nonblocking("initminer", "null", tt.Asset.Test(1), str(memo_cnt))
         memo_cnt += 1
-    return f'[break {identifier}] Creating transactions finished...'
+    return f"[break {identifier}] Creating transactions finished..."
 
 
 @pytest.mark.fork_tests_group_2
@@ -39,20 +41,20 @@ def test_many_forks_node_with_time_offset(prepare_4_4_4_4_4):
     global break_cnt
     global break_limit
 
-    tt.logger.info(f'Start test_many_forks_node_with_time_offset')
+    tt.logger.info(f"Start test_many_forks_node_with_time_offset")
 
     networks_builder = prepare_4_4_4_4_4
 
-    node_under_test = networks_builder.networks[1].node('ApiNode0')
-    beta_wallet = tt.Wallet(attach_to = node_under_test)
+    node_under_test = networks_builder.networks[1].node("ApiNode0")
+    beta_wallet = tt.Wallet(attach_to=node_under_test)
 
-    _, break_cnt = sh.info('m4', beta_wallet)
-    tt.logger.info(f'initial break_cnt: {break_cnt}')
+    _, break_cnt = sh.info("m4", beta_wallet)
+    tt.logger.info(f"initial break_cnt: {break_cnt}")
 
-    _futures                = []
-    _push_threads           = 2
+    _futures = []
+    _push_threads = 2
     _generate_break_threads = 1
-    with ThreadPoolExecutor(max_workers = _push_threads + _generate_break_threads) as executor:
+    with ThreadPoolExecutor(max_workers=_push_threads + _generate_break_threads) as executor:
         for i in range(_push_threads):
             _futures.append(executor.submit(trx_creator, beta_wallet, i))
 
@@ -60,4 +62,4 @@ def test_many_forks_node_with_time_offset(prepare_4_4_4_4_4):
 
     tt.logger.info("results:")
     for future in _futures:
-        tt.logger.info(f'{future.result()}')
+        tt.logger.info(f"{future.result()}")

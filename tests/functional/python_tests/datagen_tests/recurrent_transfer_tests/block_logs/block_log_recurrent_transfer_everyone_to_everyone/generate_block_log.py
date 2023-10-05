@@ -8,7 +8,11 @@ from typing import Final, List
 
 import test_tools as tt
 
-from hive_local_tools.constants import TRANSACTION_TEMPLATE, MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
+from hive_local_tools.constants import (
+    TRANSACTION_TEMPLATE,
+    MAX_OPEN_RECURRENT_TRANSFERS,
+    MAX_RECURRENT_TRANSFERS_PER_BLOCK,
+)
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 
 AMOUNT_OF_ALL_ACCOUNTS: Final[int] = 30_000
@@ -31,17 +35,15 @@ def prepare_block_log():
     wallet = tt.Wallet(attach_to=node)
 
     # this is required to minimanize inflation impact on vest price
-    wallet.api.transfer_to_vesting(
-        from_='initminer',
-        to='initminer',
-        amount=tt.Asset.Test(10_000)
-    )
+    wallet.api.transfer_to_vesting(from_="initminer", to="initminer", amount=tt.Asset.Test(10_000))
 
     # change maximum block size limit to 2 mb
-    wallet.api.update_witness('initminer', 'http://url.html',
-                              tt.Account('initminer').public_key,
-                              {'account_creation_fee': tt.Asset.Test(0), 'maximum_block_size': 2097152,
-                               'hbd_interest_rate': 1000})
+    wallet.api.update_witness(
+        "initminer",
+        "http://url.html",
+        tt.Account("initminer").public_key,
+        {"account_creation_fee": tt.Asset.Test(0), "maximum_block_size": 2097152, "hbd_interest_rate": 1000},
+    )
 
     node.set_vest_price(tt.Asset.Vest(1800))
 
@@ -58,7 +60,9 @@ def prepare_block_log():
     tt.logger.info("All accounts founded")
 
     tt.logger.info(f"created accounts: {node.api.condenser.get_account_count()}")
-    tt.logger.info(f"maximum_block_size: {node.api.database.get_witness_schedule()['median_props']['maximum_block_size']}")
+    tt.logger.info(
+        f"maximum_block_size: {node.api.database.get_witness_schedule()['median_props']['maximum_block_size']}"
+    )
 
     time_before_operations = __get_head_block_time(node)
 
@@ -71,15 +75,19 @@ def prepare_block_log():
         max_workers=MAX_WORKERS,
     )
 
-    tt.logger.info(f'resource_pool: {node.api.rc.get_resource_pool()}')
+    tt.logger.info(f"resource_pool: {node.api.rc.get_resource_pool()}")
     assert __get_head_block_time(node) - time_before_operations < tt.Time.hours(24)
 
     tt.logger.info("Waiting for the block with the last transaction to become irreversible...")
     node.wait_for_irreversible_block()
     tt.logger.info(f"Last block number after apply all rt: {node.get_last_block_number()}")
 
-    waiting_to_block_with_number = math.ceil(AMOUNT_OF_ALL_ACCOUNTS * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK)
-    tt.logger.info(f"Waiting till block {waiting_to_block_with_number} for pending recurrent transfers to be processed...")
+    waiting_to_block_with_number = math.ceil(
+        AMOUNT_OF_ALL_ACCOUNTS * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK
+    )
+    tt.logger.info(
+        f"Waiting till block {waiting_to_block_with_number} for pending recurrent transfers to be processed..."
+    )
     node.wait_for_block_with_number(waiting_to_block_with_number)
 
     head_block_num = node.get_last_block_number()
@@ -94,22 +102,26 @@ def prepare_block_log():
     node.block_log.copy_to(Path(__file__).parent)
 
 
-def __generate_recurrent_transfers_for_sender(sender: str, all_accounts: List[str], amount: tt.Asset.Test = tt.Asset.Test(0.001)) -> list:
-    operations=[]
+def __generate_recurrent_transfers_for_sender(
+    sender: str, all_accounts: List[str], amount: tt.Asset.Test = tt.Asset.Test(0.001)
+) -> list:
+    operations = []
     for receiver in all_accounts:
         if sender != receiver:
-            operations.append([
-                "recurrent_transfer",
-                {
-                    "from": sender,
-                    "to": receiver,
-                    "amount": str(amount),
-                    "memo": f"rec_transfer-{sender}",
-                    "recurrence": 24,
-                    "executions": 2,
-                    "extensions": [],
-                },
-            ])
+            operations.append(
+                [
+                    "recurrent_transfer",
+                    {
+                        "from": sender,
+                        "to": receiver,
+                        "amount": str(amount),
+                        "memo": f"rec_transfer-{sender}",
+                        "recurrence": 24,
+                        "executions": 2,
+                        "extensions": [],
+                    },
+                ]
+            )
     return operations
 
 
@@ -131,8 +143,11 @@ def __fund_account_and_broadcast(wallet: tt.Wallet, account_names: List[str]) ->
 def __fund_account(account_names):
     operations = []
     for account in account_names:
-        transfer = ['transfer', {'from': 'initminer', 'to': account, 'amount': tt.Asset.Test(300), 'memo': '{}'}]
-        transfer_to_vesting = ['transfer_to_vesting', {'from': "initminer", 'to': account, 'amount': tt.Asset.Test(4600)}]
+        transfer = ["transfer", {"from": "initminer", "to": account, "amount": tt.Asset.Test(300), "memo": "{}"}]
+        transfer_to_vesting = [
+            "transfer_to_vesting",
+            {"from": "initminer", "to": account, "amount": tt.Asset.Test(4600)},
+        ]
         operations.append(transfer)
         operations.append(transfer_to_vesting)
     return operations

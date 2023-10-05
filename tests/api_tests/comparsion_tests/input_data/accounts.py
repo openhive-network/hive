@@ -98,5 +98,5 @@ ACCOUNTS = [
     "leylar",
     "akareyon",
     "always1success",
-    "jparty"
+    "jparty",
 ]

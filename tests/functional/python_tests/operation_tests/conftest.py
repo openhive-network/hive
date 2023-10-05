@@ -9,9 +9,13 @@ from hive_local_tools.functional.python.operation import create_transaction_with
 
 @dataclass
 class LimitOrderAccount(Account):
-
-    def assert_balance(self, *, amount: int | float, check_hbd: bool, message: Literal["expiration", "creation",
-                                                                                       "order_match", "no_match"]):
+    def assert_balance(
+        self,
+        *,
+        amount: int | float,
+        check_hbd: bool,
+        message: Literal["expiration", "creation", "order_match", "no_match"],
+    ):
         super().update_account_info()
         get_balance = self.get_hbd_balance if check_hbd else self.get_hive_balance
         currency = tt.Asset.Tbd if check_hbd else tt.Asset.Test
@@ -44,14 +48,14 @@ class LimitOrderAccount(Account):
         )
 
     def create_order(
-            self,
-            amount_to_sell: int,
-            min_to_receive: int,
-            *,
-            order_id: int = 0,
-            fill_or_kill: bool = False,
-            expiration: int = 60,
-            buy_hbd: bool = None
+        self,
+        amount_to_sell: int,
+        min_to_receive: int,
+        *,
+        order_id: int = 0,
+        fill_or_kill: bool = False,
+        expiration: int = 60,
+        buy_hbd: bool = None,
     ):
         return self._wallet.api.create_order(
             self._name,
@@ -59,21 +63,22 @@ class LimitOrderAccount(Account):
             tt.Asset.Test(amount_to_sell) if buy_hbd else tt.Asset.Tbd(amount_to_sell),
             tt.Asset.Tbd(min_to_receive) if buy_hbd else tt.Asset.Test(min_to_receive),
             fill_or_kill,
-            expiration
+            expiration,
         )
 
     def create_order_2(
-            self,
-            amount_to_sell: int,
-            min_to_receive: int,
-            *,
-            order_id: int = 0,
-            fill_or_kill: bool = False,
-            expiration: int = 60,
-            buy_hbd: bool = None):
-
-        expiration_time = tt.Time.serialize(self._node.get_head_block_time() + tt.Time.seconds(expiration),
-                                            format_=tt.Time.DEFAULT_FORMAT)
+        self,
+        amount_to_sell: int,
+        min_to_receive: int,
+        *,
+        order_id: int = 0,
+        fill_or_kill: bool = False,
+        expiration: int = 60,
+        buy_hbd: bool = None,
+    ):
+        expiration_time = tt.Time.serialize(
+            self._node.get_head_block_time() + tt.Time.seconds(expiration), format_=tt.Time.DEFAULT_FORMAT
+        )
         create_transaction_with_any_operation(
             self._wallet,
             "limit_order_create2",
@@ -82,10 +87,10 @@ class LimitOrderAccount(Account):
             amount_to_sell=tt.Asset.Test(amount_to_sell) if buy_hbd else tt.Asset.Tbd(amount_to_sell),
             exchange_rate={
                 "base": tt.Asset.Test(amount_to_sell) if buy_hbd else tt.Asset.Tbd(amount_to_sell),
-                "quote": tt.Asset.Tbd(min_to_receive) if buy_hbd else tt.Asset.Test(min_to_receive)
+                "quote": tt.Asset.Tbd(min_to_receive) if buy_hbd else tt.Asset.Test(min_to_receive),
             },
             fill_or_kill=fill_or_kill,
-            expiration=expiration_time
+            expiration=expiration_time,
         )
 
 
@@ -105,36 +110,53 @@ class TransferAccount(Account):
         self._wallet.api.cancel_transfer_from_savings(self._wallet, transfer_id)
 
     def get_hbd_savings_balance(self) -> tt.Asset.Tbd:
-        return tt.Asset.from_(self._node.api.database.find_accounts(accounts=[self._name])[
-                                  'accounts'][0]['savings_hbd_balance'])
+        return tt.Asset.from_(
+            self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]["savings_hbd_balance"]
+        )
 
     def get_hive_savings_balance(self) -> tt.Asset.Test:
-        return tt.Asset.from_(self._node.api.database.find_accounts(accounts=[self._name])[
-                                  'accounts'][0]['savings_balance'])
+        return tt.Asset.from_(
+            self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]["savings_balance"]
+        )
 
 
 @dataclass
 class UpdateAccount(Account):
     __key_generation_counter = 0
 
-    def assert_account_details_were_changed(self, *, new_json_meta: str = None, new_owner: Union[str, list] = None,
-                                            new_active: Union[str, list] = None,  new_posting: Union[str, list] = None,
-                                            new_memo: str = None):
+    def assert_account_details_were_changed(
+        self,
+        *,
+        new_json_meta: str = None,
+        new_owner: Union[str, list] = None,
+        new_active: Union[str, list] = None,
+        new_posting: Union[str, list] = None,
+        new_memo: str = None,
+    ):
         # for owner/active/posting argument method accepts both the authority (list - [key, weight]) and key as string
         self.update_account_info()
         if new_owner is not None:
-            to_compare = list(self._acc_info["owner"]["key_auths"][0]) if isinstance(new_owner, list) else (
-                self._acc_info)["owner"]["key_auths"][0][0]
+            to_compare = (
+                list(self._acc_info["owner"]["key_auths"][0])
+                if isinstance(new_owner, list)
+                else (self._acc_info)["owner"]["key_auths"][0][0]
+            )
             assert new_owner == to_compare, f"Owner authority of account {self._name} wasn't changed."
 
         if new_active is not None:
-            to_compare = list(self._acc_info["active"]["key_auths"][0]) if isinstance(new_active, list) else (
-                self._acc_info)["active"]["key_auths"][0][0]
+            to_compare = (
+                list(self._acc_info["active"]["key_auths"][0])
+                if isinstance(new_active, list)
+                else (self._acc_info)["active"]["key_auths"][0][0]
+            )
             assert new_active == to_compare, f"Active authority of account {self._name} wasn't changed."
 
         if new_posting is not None:
-            to_compare = list(self._acc_info["posting"]["key_auths"][0]) if isinstance(new_posting, list) else (
-                self._acc_info)["posting"]["key_auths"][0][0]
+            to_compare = (
+                list(self._acc_info["posting"]["key_auths"][0])
+                if isinstance(new_posting, list)
+                else (self._acc_info)["posting"]["key_auths"][0][0]
+            )
             assert new_posting == to_compare, f"Posting authority of account {self._name} wasn't changed."
 
         if new_memo is not None:
@@ -152,14 +174,16 @@ class UpdateAccount(Account):
     def get_current_key(self, type_: str):
         assert type_ in ("owner", "active", "posting", "memo"), "Wrong key type."
         self.update_account_info()
-        return self._acc_info[type_]["key_auths"][0][0] if type_ is not "memo" else self._acc_info[type_+"_key"]
+        return self._acc_info[type_]["key_auths"][0][0] if type_ is not "memo" else self._acc_info[type_ + "_key"]
 
     def update_all_account_details(self, *, json_meta: str, owner: str, active: str, posting: str, memo: str):
-        self._wallet.api.update_account(self._name, json_meta=json_meta, owner=owner, active=active, posting=posting,
-                                        memo=memo, broadcast=True)
+        self._wallet.api.update_account(
+            self._name, json_meta=json_meta, owner=owner, active=active, posting=posting, memo=memo, broadcast=True
+        )
 
-    def update_single_account_detail(self, *, json_meta: str = None, key_type: str = None, key: tt.PublicKey = None,
-                                     weight: Optional[int] = 1):
+    def update_single_account_detail(
+        self, *, json_meta: str = None, key_type: str = None, key: tt.PublicKey = None, weight: Optional[int] = 1
+    ):
         """
         Swapping only one key owner/active/posting require firstly adding new key and then deleting old one
         (setting weight equal to zero). This has to be done because update account requires all 5 arguments. Methods
@@ -182,7 +206,9 @@ class UpdateAccount(Account):
         tt.logger.info(f"add new / update weight of existing key RC COST {transaction['rc_cost']}")
         if current_key != key:
             # generate private key corresponding given public key
-            new_private = tt.Account(self._name, secret=f"other_than_previous_{self.__key_generation_counter}").private_key
+            new_private = tt.Account(
+                self._name, secret=f"other_than_previous_{self.__key_generation_counter}"
+            ).private_key
             # delete old one - make weight equal to zero
             transaction = self._wallet.api.update_account_auth_key(self._name, key_type, current_key, 0, broadcast=True)
             tt.logger.info(f"delete old key RC COST {transaction['rc_cost']}")
@@ -251,10 +277,9 @@ def wallet(speed_up_node: tt.InitNode) -> tt.Wallet:
 def prepared_node(speed_up_node: tt.InitNode, wallet: tt.Wallet) -> tt.InitNode:
     speed_up_node.set_vest_price(quote=tt.Asset.Vest(1800), invest=tt.Asset.Test(10_000_000))
 
-    wallet.api.update_witness('initminer', 'http://url.html',
-                              tt.Account('initminer').public_key,
-                              {'account_creation_fee': tt.Asset.Test(3)}
-                              )
+    wallet.api.update_witness(
+        "initminer", "http://url.html", tt.Account("initminer").public_key, {"account_creation_fee": tt.Asset.Test(3)}
+    )
 
     speed_up_node.wait_number_of_blocks(43)
 

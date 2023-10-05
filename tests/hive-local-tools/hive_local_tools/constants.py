@@ -26,7 +26,7 @@ TRANSACTION_TEMPLATE: Final[dict] = {
     "transaction_num": 0,
 }
 
-BASE_ACCOUNTS: Final[list] = ['hive.fund', 'initminer', 'miners', 'null', 'steem', 'steem.dao', 'temp']
+BASE_ACCOUNTS: Final[list] = ["hive.fund", "initminer", "miners", "null", "steem", "steem.dao", "temp"]
 
 MAX_RECURRENT_TRANSFERS_PER_BLOCK: Final[int] = 1000
 
@@ -47,9 +47,11 @@ OWNER_AUTH_RECOVERY_PERIOD: Final[int] = 21
 # minimum time to reconfirm recovery account operation (6 seconds on testnet /  60 minutes on the mainnet)
 OWNER_UPDATE_LIMIT: Final[int] = 2
 
-DELAYED_VOTING_TOTAL_INTERVAL_SECONDS: Final[int] = 60 * 60 * 24 * 1 # 1 day in testnet / 30 days on mainnet
+DELAYED_VOTING_TOTAL_INTERVAL_SECONDS: Final[int] = 60 * 60 * 24 * 1  # 1 day in testnet / 30 days on mainnet
 
-DELAYED_VOTING_INTERVAL_SECONDS: Final[int] = DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / 30 # 48 min in testnet / 1 day on mainnet
+DELAYED_VOTING_INTERVAL_SECONDS: Final[int] = (
+    DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / 30
+)  # 48 min in testnet / 1 day on mainnet
 
 filters_enum_virtual_ops = {
     "fill_convert_request_operation": 0x000001,

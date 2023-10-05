@@ -13,6 +13,7 @@ MAX_WORKERS: Final[int] = 6
 RECEIVER_ACCOUNT_NAME: Final[str] = "receiver"
 SINGLE_TRANSFER_AMOUNT: Final[tt.Asset.Test] = tt.Asset.Test(1)
 
+
 def prepare_block_log_with_many_to_one_recurrent_transfers() -> None:
     """
     This script generate block_log with specific conditions:

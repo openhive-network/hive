@@ -14,7 +14,9 @@ ALICE_MASTER_PASSWORD = "Alice has a cat"
 @pytest.mark.parametrize("broadcast_way", ["api", "wallet"])
 @pytest.mark.parametrize("memo_type", ["private_key", "master_password", "extended_private_key"])
 @pytest.mark.parametrize("role", ["owner", "active", "posting", "memo"])
-@pytest.mark.parametrize("operation", ["transfer", "recurrent_transfer", "transfer_to_savings", "transfer_from_savings"])
+@pytest.mark.parametrize(
+    "operation", ["transfer", "recurrent_transfer", "transfer_to_savings", "transfer_from_savings"]
+)
 def test_handling_sensitive_data_in_the_memo_field(node, wallet, broadcast_way, memo_type, operation, role):
     keys = {
         "owner": tt.PublicKey("alice", secret="owner"),
@@ -60,7 +62,9 @@ def test_handling_sensitive_data_in_the_memo_field(node, wallet, broadcast_way, 
 
 
 @run_for("testnet")
-@pytest.mark.parametrize("operation", ["transfer", "recurrent_transfer", "transfer_to_savings", "transfer_from_savings"])
+@pytest.mark.parametrize(
+    "operation", ["transfer", "recurrent_transfer", "transfer_to_savings", "transfer_from_savings"]
+)
 def test_handle_by_wallet_additional_private_key_in_memo_field(node, wallet, operation):
     extra_private_key = tt.PrivateKey("alice", secret="extra_key")
     wallet.api.import_key(extra_private_key)

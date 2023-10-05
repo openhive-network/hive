@@ -4,7 +4,7 @@ import test_tools as tt
 
 
 def pytest_configure(config):
-    config.addinivalue_line('markers', 'enabled_plugins: Enabled plugins in node from `node` fixture')
+    config.addinivalue_line("markers", "enabled_plugins: Enabled plugins in node from `node` fixture")
 
 
 @pytest.fixture

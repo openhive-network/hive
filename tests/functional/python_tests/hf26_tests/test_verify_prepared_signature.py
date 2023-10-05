@@ -5,26 +5,39 @@ import subprocess
 
 import test_tools as tt
 
-def sign_transaction(transaction: dict, private_key: str, serialization_type: str = ''):
+
+def sign_transaction(transaction: dict, private_key: str, serialization_type: str = ""):
     # run sign_transaction executable file
     input = f'{{ "tx": {json.dumps(transaction)}, "wif": "{private_key}" '
     if serialization_type:
         input += f', "serialization_type": "{serialization_type}" '
-    input += f'}}'
+    input += f"}}"
 
-    output = subprocess.check_output([os.environ['SIGN_TRANSACTION_PATH']],
-                                     input=input.encode(encoding='utf-8')).decode('utf-8')
-    return json.loads(output)['result']
+    output = subprocess.check_output(
+        [os.environ["SIGN_TRANSACTION_PATH"]], input=input.encode(encoding="utf-8")
+    ).decode("utf-8")
+    return json.loads(output)["result"]
+
 
 @pytest.mark.parametrize(
-    'serialization_type,expected_signature', [
-        (None,'1f6392e3c5fd8a13d0979a37deb68e8141f54365ffc2941dea4dfe95d848fb79a43644bf471f40891c487de3bdf24c772e3cc8ffc852e9b494fbd40c8e34ea7411'),
-        ('legacy','1f6392e3c5fd8a13d0979a37deb68e8141f54365ffc2941dea4dfe95d848fb79a43644bf471f40891c487de3bdf24c772e3cc8ffc852e9b494fbd40c8e34ea7411'),
-        ('hf26','1f33646fe77e92ead2a1738493a14070603cb363520d877e0021edfda3513b04c710f6e8817017e723473f3dff8c7f36ea48e2fdf6aefe306c1e1422c98d09d842'),
-    ]
+    "serialization_type,expected_signature",
+    [
+        (
+            None,
+            "1f6392e3c5fd8a13d0979a37deb68e8141f54365ffc2941dea4dfe95d848fb79a43644bf471f40891c487de3bdf24c772e3cc8ffc852e9b494fbd40c8e34ea7411",
+        ),
+        (
+            "legacy",
+            "1f6392e3c5fd8a13d0979a37deb68e8141f54365ffc2941dea4dfe95d848fb79a43644bf471f40891c487de3bdf24c772e3cc8ffc852e9b494fbd40c8e34ea7411",
+        ),
+        (
+            "hf26",
+            "1f33646fe77e92ead2a1738493a14070603cb363520d877e0021edfda3513b04c710f6e8817017e723473f3dff8c7f36ea48e2fdf6aefe306c1e1422c98d09d842",
+        ),
+    ],
 )
 def test_verify_prepared_signature(serialization_type, expected_signature):
-    prepared_transaction = '''
+    prepared_transaction = """
 {
   "ref_block_num": 2,
   "ref_block_prefix": 1106878340,
@@ -79,10 +92,10 @@ def test_verify_prepared_signature(serialization_type, expected_signature):
   "block_num": 3,
   "transaction_num": 0
 }
-'''
+"""
     sign_transaction_result = sign_transaction(
-        json.loads(prepared_transaction), tt.Account('initminer').private_key, serialization_type
+        json.loads(prepared_transaction), tt.Account("initminer").private_key, serialization_type
     )
-    tt.logger.info(f'sign_transaction_result: {json.dumps(sign_transaction_result)}')
+    tt.logger.info(f"sign_transaction_result: {json.dumps(sign_transaction_result)}")
 
-    assert sign_transaction_result['sig'] == expected_signature
+    assert sign_transaction_result["sig"] == expected_signature

@@ -28,15 +28,17 @@ def test_steal_account_scenario_0(prepare_environment):
     thief_owner_key_to_alice_account = tt.Account("thief", secret="thief_key").public_key
     wallet_thief.api.import_key(tt.Account("thief", secret="thief_key").private_key)
     thief_owner_authority_to_alice_account = get_authority(thief_owner_key_to_alice_account)
-    wallet_thief.api.update_account("alice", "{}",
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    )
+    wallet_thief.api.update_account(
+        "alice",
+        "{}",
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+    )
     assert get_owner_key(node, "alice") == thief_owner_key_to_alice_account
 
-    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD//2)
+    node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD // 2)
 
     # alice realizes she has lost the key and uses her recovery agent to change the owner key
     alice_new_key = tt.Account("alice", secret="new_key").public_key
@@ -85,12 +87,14 @@ def test_steal_account_scenario_1(prepare_environment):
     # the thief changes the owner key of alice's account
     thief_owner_key_to_alice_account = tt.Account("thief", secret="thief_key").public_key
     wallet_thief.api.import_key(tt.Account("thief", secret="thief_key").private_key)
-    wallet_thief.api.update_account("alice", "{}",
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    )
+    wallet_thief.api.update_account(
+        "alice",
+        "{}",
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+    )
     assert get_owner_key(node, "alice") == thief_owner_key_to_alice_account
 
     # alice realizes she has lost the key and uses her recovery agent to change the owner key
@@ -114,8 +118,8 @@ def test_steal_account_scenario_1(prepare_environment):
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_thief.api.request_account_recovery("thief", "alice", get_authority(tt.Account("thief").public_key))
     assert (
-            "Cannot recover an account that does not have you as their recovery partner."
-            in exception.value.response["error"]["message"]
+        "Cannot recover an account that does not have you as their recovery partner."
+        in exception.value.response["error"]["message"]
     )
 
 
@@ -140,12 +144,14 @@ def test_steal_account_scenario_2(prepare_environment):
     # the thief changes the owner key of alice's account
     thief_owner_key_to_alice_account = tt.Account("thief", secret="thief_key").public_key
     wallet_thief.api.import_key(tt.Account("thief", secret="thief_key").private_key)
-    wallet_thief.api.update_account("alice", "{}",
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    thief_owner_key_to_alice_account,
-                                    )
+    wallet_thief.api.update_account(
+        "alice",
+        "{}",
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+        thief_owner_key_to_alice_account,
+    )
     assert get_owner_key(node, "alice") == thief_owner_key_to_alice_account
 
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD - 3)

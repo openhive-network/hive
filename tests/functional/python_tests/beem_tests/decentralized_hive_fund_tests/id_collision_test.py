@@ -220,7 +220,8 @@ if __name__ == "__main__":
             logger.info(msg)
 
     logger.info(
-        "Checking for all transaction IDs by querying all nodes, IDs should match those gathered from nodes where we send the transactions"
+        "Checking for all transaction IDs by querying all nodes, IDs should match those gathered from nodes where we"
+        " send the transactions"
     )
     list_proposals_by_node(args.creator, args.wif, args.nodes_url, only_subjects)
 

@@ -32,8 +32,8 @@ def test_reset_data_provided_by_hardfork_hive_operation_generated_between_hf_22_
     """
     wallet = tt.Wallet(attach_to=node)
 
-    wallet.create_account("goku1", hives=tt.Asset.Test(50) , hbds=tt.Asset.Tbd(50), vests=tt.Asset.Test(50))
-    wallet.create_account("steem", hives=tt.Asset.Test(100) , hbds=tt.Asset.Tbd(100) , vests=tt.Asset.Test(100))
+    wallet.create_account("goku1", hives=tt.Asset.Test(50), hbds=tt.Asset.Tbd(50), vests=tt.Asset.Test(50))
+    wallet.create_account("steem", hives=tt.Asset.Test(100), hbds=tt.Asset.Tbd(100), vests=tt.Asset.Test(100))
 
     with wallet.in_single_transaction():
         wallet.api.delegate_vesting_shares("goku1", "steem", tt.Asset.Vest(5))
@@ -57,7 +57,7 @@ def get_hardfork_version(node: tt.InitNode) -> str:
     return node.api.wallet_bridge.get_hardfork_version()
 
 
-def __wait_for_hardfork_23_application(node: tt.InitNode, timeout: int=60) -> None:
+def __wait_for_hardfork_23_application(node: tt.InitNode, timeout: int = 60) -> None:
     tt.logger.info("Waiting for application hardfork 23")
     timeout = time.time() + timeout
     while True:

@@ -18,9 +18,11 @@ def test_decline_voting_rights_more_than_once_on_hf_27(prepare_environment_on_hf
 
     wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
-    assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])['accounts'][0]["can_vote"] == False
+    assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])["accounts"][0]["can_vote"] == False
 
-    error_message = "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden."
+    error_message = (
+        "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden."
+    )
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_27:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
@@ -44,13 +46,25 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights_on_hf_27(p
     wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
     wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
-    assert len(node.api.database.list_proposal_votes(start=[""], limit=1000, order="by_voter_proposal",
-                                                     order_direction="ascending", status="all")['proposal_votes']) == 1
+    assert (
+        len(
+            node.api.database.list_proposal_votes(
+                start=[""], limit=1000, order="by_voter_proposal", order_direction="ascending", status="all"
+            )["proposal_votes"]
+        )
+        == 1
+    )
 
     wait_for_hardfork_28_application(node)
 
-    assert len(node.api.database.list_proposal_votes(start=[""], limit=1000, order="by_voter_proposal",
-                                                     order_direction="ascending", status="all")['proposal_votes']) == 0
+    assert (
+        len(
+            node.api.database.list_proposal_votes(
+                start=[""], limit=1000, order="by_voter_proposal", order_direction="ascending", status="all"
+            )["proposal_votes"]
+        )
+        == 0
+    )
 
 
 @run_for("testnet")
@@ -88,19 +102,27 @@ def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed_
     node.wait_for_block_with_number(head_block_number + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert (
-            len(node.api.wallet_bridge.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")
-                ['proposal_votes']) == 1
+        len(
+            node.api.wallet_bridge.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")[
+                "proposal_votes"
+            ]
+        )
+        == 1
     )
 
     wait_for_hardfork_28_application(node)
 
     assert (
-            len(node.api.wallet_bridge.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")
-                ['proposal_votes']) == 0
+        len(
+            node.api.wallet_bridge.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")[
+                "proposal_votes"
+            ]
+        )
+        == 0
     )
 
 
-def wait_for_hardfork_28_application(node: tt.InitNode, timeout: int=240) -> None:
+def wait_for_hardfork_28_application(node: tt.InitNode, timeout: int = 240) -> None:
     tt.logger.info("Waiting for application hardfork 28")
     timeout = time.time() + timeout
     while True:

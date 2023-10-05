@@ -50,7 +50,8 @@ def create_posts(node, account):
     tt.logger.info("Creating posts...")
 
     tt.logger.info(
-        f"New post ==> (Hivepy proposal title [{account['name']}],Hivepy proposal body [{account['name']}],{account['name']},{get_permlink(account['name'])},proposals)"
+        f"New post ==> (Hivepy proposal title [{account['name']}],Hivepy proposal body"
+        f" [{account['name']}],{account['name']},{get_permlink(account['name'])},proposals)"
     )
     node.post(
         f"Hivepy proposal title [{account['name']}]",
@@ -67,7 +68,8 @@ def create_proposals(node, account, start_date, end_date, proposal_count):
 
     for idx in range(0, proposal_count):
         tt.logger.info(
-            f"New proposal ==> ({account['name']},{account['name']},{start_date},{end_date},24.000 TBD,Proposal from account {account['name']} {idx}/{proposal_count},{get_permlink(account['name'])})"
+            f"New proposal ==> ({account['name']},{account['name']},{start_date},{end_date},24.000 TBD,Proposal from"
+            f" account {account['name']} {idx}/{proposal_count},{get_permlink(account['name'])})"
         )
         op = Create_proposal(
             **{

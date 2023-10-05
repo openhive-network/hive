@@ -16,12 +16,17 @@ def alice(prepared_node, wallet):
         tt.Account("alice", secret="active_key").public_key,
         tt.Account("alice", secret="posting_key").public_key,
         tt.Account("alice", secret="memo_key").public_key,
-        broadcast=True)
+        broadcast=True,
+    )
 
-    wallet.api.import_keys([tt.Account("alice", secret="owner_key").private_key,
-                            tt.Account("alice", secret="active_key").private_key,
-                            tt.Account("alice", secret="posting_key").private_key,
-                            tt.Account("alice", secret="memo_key").private_key])
+    wallet.api.import_keys(
+        [
+            tt.Account("alice", secret="owner_key").private_key,
+            tt.Account("alice", secret="active_key").private_key,
+            tt.Account("alice", secret="posting_key").private_key,
+            tt.Account("alice", secret="memo_key").private_key,
+        ]
+    )
 
     wallet.api.transfer_to_vesting("initminer", "alice", tt.Asset.Test(50), broadcast=True)
     return UpdateAccount("alice", prepared_node, wallet)

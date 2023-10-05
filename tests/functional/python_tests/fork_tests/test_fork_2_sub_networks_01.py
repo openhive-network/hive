@@ -23,35 +23,35 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
 
     networks_builder = prepare_fork_2_sub_networks_01
 
-    witness_details_part  = sh.get_part_of_witness_details(networks_builder.witness_names, 6, 14)
+    witness_details_part = sh.get_part_of_witness_details(networks_builder.witness_names, 6, 14)
 
-    minority_api_node   = networks_builder.networks[0].node('FullApiNode0')
-    majority_api_node   = networks_builder.networks[1].node('FullApiNode1')
-    minority_witness_node   = networks_builder.networks[0].node('WitnessNode0')
+    minority_api_node = networks_builder.networks[0].node("FullApiNode0")
+    majority_api_node = networks_builder.networks[1].node("FullApiNode1")
+    minority_witness_node = networks_builder.networks[0].node("WitnessNode0")
 
-    minority_witness_wallet = tt.Wallet(attach_to = minority_witness_node)
+    minority_witness_wallet = tt.Wallet(attach_to=minority_witness_node)
 
-    initminer_private_key = '5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n'
+    initminer_private_key = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
     minority_witness_wallet.api.import_key(initminer_private_key)
 
     logs = []
 
-    logs.append(sh.NodeLog("M", tt.Wallet(attach_to = majority_api_node)))
-    logs.append(sh.NodeLog("m", tt.Wallet(attach_to = minority_api_node)))
+    logs.append(sh.NodeLog("M", tt.Wallet(attach_to=majority_api_node)))
+    logs.append(sh.NodeLog("m", tt.Wallet(attach_to=minority_api_node)))
 
     _M = logs[0].collector
     _m = logs[1].collector
 
-    blocks_before_disconnect        = 10
+    blocks_before_disconnect = 10
 
-    blocks_after_disable_witness    = 5
-    blocks_after_disable_witness_2  = 10
+    blocks_after_disable_witness = 5
+    blocks_after_disable_witness_2 = 10
 
-    blocks_after_disconnect         = 20
+    blocks_after_disconnect = 20
 
-    blocks_after_enable_witness     = 5
+    blocks_after_enable_witness = 5
 
-    tt.logger.info(f'Before disconnecting')
+    tt.logger.info(f"Before disconnecting")
     cnt = 0
     while True:
         sh.wait(1, logs, majority_api_node)
@@ -61,52 +61,54 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
             if sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m):
                 break
 
-    assert sh.get_last_head_block_number(_M)        == sh.get_last_head_block_number(_m)
-    assert sh.get_last_irreversible_block_num(_M)   == sh.get_last_irreversible_block_num(_m)
-    last_lib_01                                     = sh.get_last_irreversible_block_num(_m)
+    assert sh.get_last_head_block_number(_M) == sh.get_last_head_block_number(_m)
+    assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
+    last_lib_01 = sh.get_last_irreversible_block_num(_m)
 
-    tt.logger.info(f'Disable {len(witness_details_part)} witnesses - start')
+    tt.logger.info(f"Disable {len(witness_details_part)} witnesses - start")
     sh.disable_witnesses(minority_witness_wallet, witness_details_part)
 
     sh.wait(blocks_after_disable_witness, logs, minority_api_node)
 
-    assert sh.get_last_head_block_number(_M)        == sh.get_last_head_block_number(_m)
-    assert sh.get_last_irreversible_block_num(_M)   == sh.get_last_irreversible_block_num(_m)
-    last_lib_01                                     = sh.get_last_irreversible_block_num(_m)
+    assert sh.get_last_head_block_number(_M) == sh.get_last_head_block_number(_m)
+    assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
+    last_lib_01 = sh.get_last_irreversible_block_num(_m)
 
     sh.wait(blocks_after_disable_witness_2, logs, minority_api_node)
 
-    assert sh.get_last_head_block_number(_M)        == sh.get_last_head_block_number(_m)
-    assert sh.get_last_irreversible_block_num(_M)   == sh.get_last_irreversible_block_num(_m)
-    last_lib_02                                     = sh.get_last_irreversible_block_num(_m)
+    assert sh.get_last_head_block_number(_M) == sh.get_last_head_block_number(_m)
+    assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
+    last_lib_02 = sh.get_last_irreversible_block_num(_m)
 
     assert last_lib_01 == last_lib_02
 
-    tt.logger.info(f'Disconnect sub networks - start')
+    tt.logger.info(f"Disconnect sub networks - start")
     sh.disconnect_sub_networks(networks_builder.networks)
 
     sh.wait(blocks_after_disconnect, logs, minority_api_node)
 
-    assert sh.get_last_head_block_number(_M)      <  sh.get_last_head_block_number(_m)
+    assert sh.get_last_head_block_number(_M) < sh.get_last_head_block_number(_m)
     assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
-    last_lib_03                                 = sh.get_last_irreversible_block_num(_m)
+    last_lib_03 = sh.get_last_irreversible_block_num(_m)
 
     assert last_lib_01 == last_lib_03
 
-    tt.logger.info(f'Enable {len(witness_details_part)} witnesses')
+    tt.logger.info(f"Enable {len(witness_details_part)} witnesses")
     sh.enable_witnesses(minority_witness_wallet, witness_details_part)
 
     sh.wait(blocks_after_enable_witness, logs, minority_api_node)
 
-    assert sh.get_last_head_block_number(_M)        <   sh.get_last_head_block_number(_m)
-    assert sh.get_last_irreversible_block_num(_M)   ==  sh.get_last_irreversible_block_num(_m)
-    last_lib_04                                     =   sh.get_last_irreversible_block_num(_m)
+    assert sh.get_last_head_block_number(_M) < sh.get_last_head_block_number(_m)
+    assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
+    last_lib_04 = sh.get_last_irreversible_block_num(_m)
 
     assert last_lib_01 == last_lib_04
 
-    tt.logger.info(f'Reconnect sub networks')
+    tt.logger.info(f"Reconnect sub networks")
     sh.connect_sub_networks(networks_builder.networks)
 
-    sh.wait_for_final_block(minority_api_node, logs, [_m, _M], True, partial(sh.lib_custom_condition, _M, last_lib_04), False)
+    sh.wait_for_final_block(
+        minority_api_node, logs, [_m, _M], True, partial(sh.lib_custom_condition, _M, last_lib_04), False
+    )
 
     sh.assert_no_duplicates(minority_api_node, majority_api_node)
