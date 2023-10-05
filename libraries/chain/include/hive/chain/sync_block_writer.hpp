@@ -29,6 +29,12 @@ namespace hive { namespace chain {
 
     virtual void pop_block() override;  
 
+    virtual void switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
+      uint32_t skip, const block_flow_control* pushed_block_ctrl,
+      const block_id_type original_head_block_id, const uint32_t original_head_block_number,
+      apply_block_t apply_block_extended, pop_block_t pop_block_extended, 
+      notify_switch_fork_t notify_switch_fork ) override;
+
   private:
     fork_db_block_reader  _reader;
     block_log&            _block_log;
