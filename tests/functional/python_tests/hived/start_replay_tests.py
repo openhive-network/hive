@@ -164,7 +164,7 @@ finally:
             print(f"[{timeout} seconds] Trying to kill process PID: {PID}")
             proc.kill()
             proc.wait(timeout)
-        except:
+        except Exception:
             pass
         finally:
             if pid_exists(PID):
@@ -172,7 +172,7 @@ finally:
                     print(f"[{timeout} seconds] Trying to kill process PID: {PID}")
                     proc.terminate()
                     proc.wait(timeout)
-                except:
+                except Exception:
                     print(f"Process is out of controll PID: {PID}")
 
     if stderr is not None:
