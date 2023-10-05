@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 # Easier way to generate configs
 
 
