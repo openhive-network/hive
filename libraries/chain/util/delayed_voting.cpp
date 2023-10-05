@@ -3,6 +3,8 @@
 
 namespace hive { namespace chain {
 
+using hive::protocol::delayed_voting_operation;
+
 void delayed_voting::add_delayed_value( const account_object& account, const time_point_sec& head_time, const ushare_type val )
 {
   db.modify( account, [&]( account_object& a )

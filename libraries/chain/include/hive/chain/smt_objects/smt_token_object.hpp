@@ -9,6 +9,7 @@
 namespace hive { namespace chain {
 
 using protocol::curve_id;
+using protocol::HIVE_asset;
 
 enum class smt_phase : uint8_t
 {
