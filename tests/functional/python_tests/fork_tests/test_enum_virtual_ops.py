@@ -43,7 +43,7 @@ def assert_only_virtual_operations(node, block_to_check, expected_results):
     tt.logger.info(f"expected results for block: {block_to_check}: {expected_results}")
 
     results = [op["op"]["type"] for op in ops]
-    assert all([op_type in expected_results for op_type in results])
+    assert all(op_type in expected_results for op_type in results)
 
     for op in ops:
         virtual_op = op["virtual_op"]

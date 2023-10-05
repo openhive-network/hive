@@ -345,7 +345,7 @@ def generate_port_ranges(worker: str, number_of_nodes: int) -> List[int]:
     worker_id = int(match.group(1))
     start = 2000 + worker_id * 1000
     end = start + number_of_nodes
-    ports = [port for port in range(start, end)]
+    ports = list(range(start, end))
     return ports
 
 

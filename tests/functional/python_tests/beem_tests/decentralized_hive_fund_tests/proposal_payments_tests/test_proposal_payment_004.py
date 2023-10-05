@@ -76,7 +76,7 @@ def test_proposal_payment_004(node_client: NodeClientMaker):
         ["tester003", 1 + 0, 3, 24.000],  # starts 1 days from now and lasts 3 day
         ["tester004", 1 + 0, 3, 240000.000],  # starts 1 day from now and lasts 3 days
     ]
-    proposals_daily_pay = dict([(prop[0], prop[3]) for prop in proposal_data])
+    proposals_daily_pay = {prop[0]: prop[3] for prop in proposal_data}
 
     proposals = [
         # pace proposals here in the format: {'creator' : creator, 'receiver' : receiver, 'start_date' : start-date, 'end_date' : end_date}

@@ -61,9 +61,9 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
         return tt.RemoteNode(http_endpoint=http_endpoint)
 
     def __get_all_supported_marks() -> list[Mark]:
-        return list(filter(lambda mark: mark.name in create_node, all_marks)) + list(
+        return list(filter(lambda mark: mark.name in create_node, all_marks)) + [
             mark for mark in all_marks if mark.name == "enable_plugins"
-        )
+        ]
 
     def __get_mark_set_by_run_for() -> Mark:
         return next(filter(lambda mark: mark.name == "parametrize" and mark.args[0] == "node", all_marks))
@@ -122,7 +122,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
     hint_message = (
         f"You can use nodes: {list(create_node)}. Each value can be used only once.\n"
         f"To correctly mark your test, please use the following syntax:\n\n"
-        f"""@run_for({", ".join(map(lambda node: f"'{node}'", create_node))})\n"""
+        f"""@run_for({", ".join((f"'{node}'" for node in create_node))})\n"""
         f"def {request.node.originalname}(node):\n"
         f"    <do something>"
     )

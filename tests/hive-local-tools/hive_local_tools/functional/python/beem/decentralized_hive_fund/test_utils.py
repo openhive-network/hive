@@ -138,7 +138,7 @@ def vote_proposals(node, accounts, wif=None):
     from beembase.operations import Update_proposal_votes
 
     for acnt in accounts:
-        proposal_set = [x for x in range(0, len(accounts))]
+        proposal_set = list(range(0, len(accounts)))
         tt.logger.info(
             f"Account {acnt['name']} voted for proposals: {','.join(str(x) for x in proposal_set)}",
             stacklevel=STACK_LEVEL,
@@ -227,7 +227,7 @@ def calculate_hourly_pay(budget: int, daily_pay: int) -> int:
 
 # proposals format: { "acc_name": daily_pay }
 def calculate_expected_hourly_payout(proposals: dict, budget: int) -> dict:
-    ret = dict()
+    ret = {}
     for acc, dpay in proposals.items():
         dpay = int(dpay * 1000.0)
         payout = calculate_hourly_pay(budget, dpay)

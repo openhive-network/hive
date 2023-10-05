@@ -154,7 +154,7 @@ def test_proposal_payment_006(node_client: NodeClientMaker):
 
         tt.logger.info("Balances for accounts at time: {}".format(current_date_iso))
         accnts = dict(zip(account_names, test_utils.print_balance(node_client, accounts)))
-        expected_results = dict()
+        expected_results = {}
         for acc, payout in proposals_daily_pay:
             date_ranges = proposals_datetime_ranges[acc]
             if current_date >= date_ranges["start"] and current_date < date_ranges["end"]:
