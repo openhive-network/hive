@@ -1,10 +1,6 @@
-#!/usr/bin/python3
-
-import sys
 import argparse
 from threading import Thread
 
-sys.path.append("../../../")
 
 from hive_utils.resources.configini import config as configuration
 

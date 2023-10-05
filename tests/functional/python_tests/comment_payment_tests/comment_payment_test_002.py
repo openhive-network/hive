@@ -1,8 +1,5 @@
-#!/usr/bin/python3
-
 import sys
 
-sys.path.append("../../")
 import hive_utils
 
 import logging

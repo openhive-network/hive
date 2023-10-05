@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+from concurrent.futures import ProcessPoolExecutor
 
 import os
 import re
@@ -79,8 +79,6 @@ def create_pattern(url: str, tav_file: str, directory: str):
         dump(parsed, file, indent=2, sort_keys=True)
         file.write("\n")
 
-
-from concurrent.futures import ProcessPoolExecutor
 
 futures = []
 with ProcessPoolExecutor(max_workers=6) as exec:
