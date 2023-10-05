@@ -16,7 +16,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture
-def node(request) -> Union[tt.InitNode, tt.RemoteNode]:
+def node(request) -> Union[tt.InitNode, tt.RemoteNode]:  # noqa: C901
     """
     This fixture returns a node depending on the arguments passed to the @run_for decorator.
     Tests marking is described in the @run_for definition (located in `tests/local_tools.py`).

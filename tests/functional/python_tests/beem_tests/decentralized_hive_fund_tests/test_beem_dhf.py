@@ -190,7 +190,7 @@ def remove_proposal(node, account, wif, subject):
     assert found is None, "Not found"
 
 
-def iterate_results_test(node, creator_account, receiver_account, wif, subject, remove):
+def iterate_results_test(node, creator_account, receiver_account, wif, subject, remove):  # noqa: C901
     tt.logger.info("Testing: test_iterate_results_test")
     # test for iterate prosals
     # 1 we will create n proposals of which k proposal will have the same value in one of the fields

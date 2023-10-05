@@ -15,7 +15,7 @@ from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREA
 # 3. wait for proposal payment phase
 # 4. verify (using account history and by checking regular account balance) that given accounts have been correctly paid
 # Expected result: all got paid.
-def test_proposal_payment_006(node_client: NodeClientMaker):
+def test_proposal_payment_006(node_client: NodeClientMaker):  # noqa: C901
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
         {

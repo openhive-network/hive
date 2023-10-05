@@ -246,7 +246,7 @@ class NetworksBuilder:
         self.prepare_nodes: list[tt.AnyNode] = []
         self.init_wallet: tt.Wallet | None = None
 
-    def build(self, architecture: NetworksArchitecture, init_node_can_be_empty: bool = False) -> None:
+    def build(self, architecture: NetworksArchitecture, init_node_can_be_empty: bool = False) -> None:  # noqa: C901
         for network in architecture.networks:
             tt_network = tt.Network()
 
