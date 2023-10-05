@@ -1,1 +1,10 @@
-{"genesis_time": 1458835200, "hardfork_schedule": [{"hardfork": 28, "block_num": 1}], "generate_missed_block_operations": true}
+{
+  "generate_missed_block_operations": true,
+  "genesis_time": 1458835200,
+  "hardfork_schedule": [
+    {
+      "block_num": 1,
+      "hardfork": 28
+    }
+  ]
+}
