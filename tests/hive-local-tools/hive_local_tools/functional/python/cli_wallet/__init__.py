@@ -33,7 +33,7 @@ def find_proposals_by_voter_name(_voter, _proposal_list):
     return proposals
 
 
-class prepared_proposal_data:
+class PreparedProposalData:
     def __init__(self):
         self.post_comment_arguments: dict = None
         self.create_proposal_arguments: dict = None
@@ -42,8 +42,8 @@ class prepared_proposal_data:
         self.end_date: datetime = None
 
 
-class prepared_proposal_data_with_id(prepared_proposal_data):
-    def __init__(self, base: prepared_proposal_data, id: int = None):
+class PreparedProposalDataWithId(PreparedProposalData):
+    def __init__(self, base: PreparedProposalData, id: int = None):
         super().__init__()
         self.id: int = id
         self.permlink = base.permlink
@@ -77,13 +77,13 @@ def get_list_proposal_votes_args(start: list, **kwargs):
 
 def prepare_proposal(
     input: FundedAccountInfo, prefix: str = "test-", author_is_creator: bool = True
-) -> prepared_proposal_data:
+) -> PreparedProposalData:
     from hashlib import md5
 
     creator: tt.Account = input.creator if author_is_creator else input.account
     hash_input = f"{randint(0, 9999)}{prefix}{creator.private_key}{creator.public_key}{creator.name}"
     permlink = md5(hash_input.encode("utf-8")).hexdigest()
-    result = prepared_proposal_data()
+    result = PreparedProposalData()
 
     result.post_comment_arguments = {
         "author": creator.name,

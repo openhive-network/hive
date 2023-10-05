@@ -6,13 +6,13 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.functional.python.cli_wallet import (
     FundedAccountInfo,
+    PreparedProposalDataWithId,
     find_proposals_by_creator_name,
     find_proposals_by_voter_name,
     format_datetime,
     get_list_proposal_args,
     get_list_proposal_votes_args,
     prepare_proposal,
-    prepared_proposal_data_with_id,
 )
 
 
@@ -34,8 +34,8 @@ def test_create_proposal(wallet: tt.Wallet, creator: tt.Account, creator_proposa
 def test_remove_proposal(
     wallet: tt.Wallet,
     funded_account: FundedAccountInfo,
-    creator_proposal_id: prepared_proposal_data_with_id,
-    account_proposal_id: prepared_proposal_data_with_id,
+    creator_proposal_id: PreparedProposalDataWithId,
+    account_proposal_id: PreparedProposalDataWithId,
 ):
     wallet.api.remove_proposal(deleter=funded_account.creator.name, ids=[creator_proposal_id.id])
 
@@ -51,9 +51,7 @@ def test_remove_proposal(
     ), "removed invalid proposal"
 
 
-def test_update_proposal_votes(
-    wallet: tt.Wallet, creator_proposal_id: prepared_proposal_data_with_id, creator: tt.Account
-):
+def test_update_proposal_votes(wallet: tt.Wallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account):
     voter_proposals_before_count = len(list_proposal_votes_by_voter(wallet, creator.name))
 
     wallet.api.update_proposal_votes(voter=creator.name, proposals=[creator_proposal_id.id], approve=True)
