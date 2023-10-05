@@ -15,6 +15,8 @@
 
 namespace hive { namespace plugins { namespace database_api {
 
+using hive::protocol::transfer_operation;
+
 api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_object& cc, const database&)
 {
   total_vote_weight = cc.get_total_vote_weight();

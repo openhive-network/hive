@@ -13,6 +13,7 @@
 namespace hive { namespace plugins { namespace database_api {
 
 using protocol::account_name_type;
+using protocol::signature_type;
 using protocol::signed_transaction;
 using protocol::transaction_id_type;
 using protocol::public_key_type;

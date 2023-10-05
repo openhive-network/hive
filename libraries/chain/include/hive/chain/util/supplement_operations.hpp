@@ -14,7 +14,7 @@ namespace hive
     namespace
     {
       using hive::protocol::asset;
-      using hive::chain::effective_comment_vote_operation;
+      using hive::protocol::effective_comment_vote_operation;
 
       struct supplement_operations_visitor
       {

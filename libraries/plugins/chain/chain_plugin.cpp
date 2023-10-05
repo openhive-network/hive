@@ -1,4 +1,5 @@
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/block_log.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>

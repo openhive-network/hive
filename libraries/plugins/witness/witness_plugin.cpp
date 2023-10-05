@@ -32,6 +32,7 @@
 namespace hive { namespace plugins { namespace witness {
 
 using namespace hive::chain;
+using namespace hive::protocol;
 
 using std::string;
 using std::vector;
