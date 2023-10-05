@@ -44,3 +44,10 @@ ruff = "0.0.292"
 [tool.black]
 line-length = 120
 preview = true
+
+
+[tool.ruff]
+line-length = 120
+ignore = [
+    "E501", # line too long, handled by black
+]
