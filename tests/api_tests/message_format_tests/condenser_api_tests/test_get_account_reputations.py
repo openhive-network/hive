@@ -9,5 +9,3 @@ def test_get_account_reputations(node):
 @run_for('testnet', 'mainnet_5m', 'live_mainnet', enable_plugins=['reputation_api'])
 def test_get_account_reputations_with_default_second_argument(node):
     node.api.condenser.get_account_reputations('')
-
-

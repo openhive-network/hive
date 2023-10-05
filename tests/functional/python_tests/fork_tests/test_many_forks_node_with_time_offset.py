@@ -61,4 +61,3 @@ def test_many_forks_node_with_time_offset(prepare_4_4_4_4_4):
     tt.logger.info("results:")
     for future in _futures:
         tt.logger.info(f'{future.result()}')
-

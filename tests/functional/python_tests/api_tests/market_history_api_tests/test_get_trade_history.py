@@ -75,4 +75,3 @@ def test_trade_history_limit(node, limit):
     node.api.market_history.get_trade_history(start=tt.Time.from_now(weeks=-1), end=tt.Time.from_now(weeks=1),
                                               limit=limit)['trades']
     assert len(response) == limit
-

@@ -47,4 +47,3 @@ def test_recovery(wallet):
     _ops = response['operations']
     assert _ops[0][0] == 'recover_account'
     assert _ops[0][1]['account_to_recover'] == 'bob'
-
