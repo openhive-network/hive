@@ -24,3 +24,5 @@ repos:
         exclude: ^tests/unit/|^tests/api_tests/pattern_tests/tavern/
       - id: trailing-whitespace
         exclude: *excluded_files_regex
+      - id: end-of-file-fixer
+        exclude: *excluded_files_regex
