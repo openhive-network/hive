@@ -24,6 +24,7 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
+#include <hive/chain/block_log.hpp>
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/sync_block_writer.hpp>
