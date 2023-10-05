@@ -5,10 +5,10 @@ import pytest
 import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.functional.python.cli_wallet import (
+    FundedAccountInfo,
     find_proposals_by_creator_name,
     find_proposals_by_voter_name,
     format_datetime,
-    funded_account_info,
     get_list_proposal_args,
     get_list_proposal_votes_args,
     prepare_proposal,
@@ -33,7 +33,7 @@ def test_create_proposal(wallet: tt.Wallet, creator: tt.Account, creator_proposa
 
 def test_remove_proposal(
     wallet: tt.Wallet,
-    funded_account: funded_account_info,
+    funded_account: FundedAccountInfo,
     creator_proposal_id: prepared_proposal_data_with_id,
     account_proposal_id: prepared_proposal_data_with_id,
 ):
@@ -63,7 +63,7 @@ def test_update_proposal_votes(
 
 
 def test_create_proposal_fail_negative_payment(
-    wallet: tt.Wallet, funded_account: funded_account_info, creator: tt.Account
+    wallet: tt.Wallet, funded_account: FundedAccountInfo, creator: tt.Account
 ):
     assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
@@ -82,7 +82,7 @@ def test_create_proposal_fail_negative_payment(
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: funded_account_info):
+def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInfo):
     from datetime import datetime as date_type
 
     def check_is_proposal_update_exists(block_number: int, end_date: date_type) -> bool:
