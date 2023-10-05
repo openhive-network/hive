@@ -29,3 +29,9 @@ repos:
         exclude: *excluded_files_regex
       - id: end-of-file-fixer
         exclude: *excluded_files_regex
+  - repo: https://github.com/python-poetry/poetry
+    rev: 1.6.1
+    hooks:
+      - id: poetry-lock
+        name: checking if poetry.lock is consistent with pyproject.toml
+        args: [ "--directory", "tests/hive-local-tools", "--no-update" ]
