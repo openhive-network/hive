@@ -8,8 +8,8 @@ from hive_local_tools.functional.python.datagen.api.transaction_status_api impor
 __PATTERNS_DIRECTORY = Path(__file__).with_name('block_log')
 
 """
-Real transaction_status_block_depth = transaction_status_block_depth + HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL 
-Real transaction_status_track_after_block = transaction_status_track_after_block - HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL 
+Real transaction_status_block_depth = transaction_status_block_depth + HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL
+Real transaction_status_track_after_block = transaction_status_track_after_block - HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL
 """
 
 

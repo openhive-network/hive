@@ -87,17 +87,17 @@ if __name__ == '__main__':
     node = None
 
     if args.hived_path:
-        logger.info("Running hived via {} in {} with config {}".format(args.hived_path, 
-            args.hived_working_dir, 
+        logger.info("Running hived via {} in {} with config {}".format(args.hived_path,
+            args.hived_working_dir,
             args.hived_config_path)
         )
-        
+
         node = hive_utils.hive_node.HiveNodeInScreen(
-            args.hived_path, 
-            args.hived_working_dir, 
+            args.hived_path,
+            args.hived_working_dir,
             args.hived_config_path
         )
-    
+
     node_url = args.node_url
     wif = args.wif
 
@@ -130,13 +130,13 @@ if __name__ == '__main__':
     keys = [wif]
     for account in accounts:
         keys.append(account["private_key"])
-    
+
     if node is not None:
         node.run_hive_node(["--enable-stale-production"])
     try:
         if node is not None and node.is_running():
             logger.info("Connecting to testnet...")
-            node_client = Hive(node = [node_url], no_broadcast = False, 
+            node_client = Hive(node = [node_url], no_broadcast = False,
                 keys = keys
             )
 
@@ -184,14 +184,14 @@ if __name__ == '__main__':
 
         logger.info("Attempting replay!!!")
         if args.replay_hived_path:
-            logger.info("Replaying with hived via {} in {} with config {}".format(args.replay_hived_path, 
-                args.hived_working_dir, 
+            logger.info("Replaying with hived via {} in {} with config {}".format(args.replay_hived_path,
+                args.hived_working_dir,
                 args.hived_working_dir + "/config.ini")
             )
-            
+
             node = hive_utils.hive_node.HiveNodeInScreen(
-                args.replay_hived_path, 
-                args.hived_working_dir, 
+                args.replay_hived_path,
+                args.hived_working_dir,
                 args.hived_working_dir + "/config.ini",
                 True
             )
@@ -199,7 +199,7 @@ if __name__ == '__main__':
             node.run_hive_node(["--enable-stale-production","--replay-blockchain"])
         if node is not None and node.is_running():
             logger.info("Connecting to testnet...")
-            node_client = Hive(node = [node_url], no_broadcast = False, 
+            node_client = Hive(node = [node_url], no_broadcast = False,
                 keys = keys
             )
             _, after = print_comment_rewards(node_client, accounts)
@@ -215,6 +215,6 @@ if __name__ == '__main__':
                 node.stop_hive_node()
     except Exception as ex:
         logger.error("Exception: {}".format(ex))
-        if node is not None: 
+        if node is not None:
             node.stop_hive_node()
         sys.exit(1)

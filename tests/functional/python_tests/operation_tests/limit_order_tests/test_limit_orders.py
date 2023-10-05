@@ -5,11 +5,11 @@ from hive_local_tools.functional.python.operation import get_number_of_fill_orde
 """
 All test cases are from spreadsheet: https://gitlab.syncad.com/hive/hive/-/issues/485#note_123196
 Every test is executed with following parametrization variables:
-- use_hbd_in_matching_order - boolean variable that determine whether matching order (purple one) buys HBDS 
+- use_hbd_in_matching_order - boolean variable that determine whether matching order (purple one) buys HBDS
 - create_main_order - function that will be used for creating matching order marked as purple
 - create_normal_order - function that will be used for creating all orders (without color) except main
 
-In both cases - create_main_order and create_normal_order operation limit_order_create_operation or 
+In both cases - create_main_order and create_normal_order operation limit_order_create_operation or
 limit_order_create2_operation may be used.
 """
 parametrize_variables = "use_hbd_in_matching_order, create_main_order, create_normal_order"

@@ -22,12 +22,12 @@ def block_log_helper() -> Tuple[tt.BlockLog, int]:
     return node.block_log, block_log_length
 
 
-@fixture 
+@fixture
 def block_log(block_log_helper) -> Path:
     return block_log_helper[0].path
 
 
-@fixture 
+@fixture
 def block_log_length(block_log_helper) -> int:
     return block_log_helper[1]
 

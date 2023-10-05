@@ -106,7 +106,7 @@ def test_bucket_output_parameters(node, tbds, hive_high, hive_low, non_hive_high
 
     start_block = node.get_last_block_number()
     tt.logger.info(f"Starting order creation at block: {start_block}") # Usually starts at block #3
-    
+
     wallet.api.create_order('alice', 0, tt.Asset.Test(100), tt.Asset.Tbd(10), False, 3600)
     wallet.api.create_order('initminer', 1, tt.Asset.Tbd(10), tt.Asset.Test(100), False, 3600)
 

@@ -16,7 +16,7 @@ def test_irreversible_block_while_sync():
     init_node.wait_for_block_with_number(23)
 
     # TRIGGER
-    # Node restart at block n, HIVE_MAX_WITNESSES < n < HIVE_START_MINER_VOTING_BLOCK.    
+    # Node restart at block n, HIVE_MAX_WITNESSES < n < HIVE_START_MINER_VOTING_BLOCK.
     tt.logger.info('Restarting api node...')
     api_node.restart(timeout=90)
 

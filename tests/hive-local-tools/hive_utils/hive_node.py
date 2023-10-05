@@ -69,7 +69,7 @@ class HiveNode(object):
 
     if self.hived_process.returncode:
       raise Exception("Error during starting node")
-    
+
     self.last_returncode = None
 
   def get_output(self):
@@ -178,7 +178,7 @@ class HiveNodeInScreen(object):
     ]
 
     parameters = parameters + additional_params
-    
+
     self.pid_file_name = "{0}/run_hive-{1}.pid".format(self.working_dir, self.port)
     current_time_str = datetime.datetime.now().strftime("%Y-%m-%d")
     log_file_name = "{0}/{1}-{2}-{3}.log".format(self.working_dir, "hive", self.port, current_time_str)
@@ -198,7 +198,7 @@ class HiveNodeInScreen(object):
 
     parameters = screen_params + parameters
     logger.info("Running hived with command: {0}".format(" ".join(parameters)))
-      
+
     try:
       subprocess.Popen(parameters)
       save_pid_file(self.pid_file_name, "hive", self.port, current_time_str)
@@ -288,7 +288,7 @@ if __name__ == "__main__":
     except Exception as ex:
       logger.exception("Exception: {}".format(ex))
       sys.exit(1)
-  
+
   main()
 
 

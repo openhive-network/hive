@@ -5,7 +5,7 @@ REQUIRMENTS:
 2. Replay HIVED with enabled API plugins in config.ini file.
 
 
-RUN TESTS in HIVE folder. 
+RUN TESTS in HIVE folder.
 
 1. Run bash script "run_tests.sh"
 bash [path_to_run_tests.sh] [port] [path_to_hive_folder]
