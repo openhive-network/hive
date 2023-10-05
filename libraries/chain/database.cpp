@@ -762,134 +762,24 @@ bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
   return result;
 }
 
-using apply_block_t = std::function<
-  void ( const std::shared_ptr< full_block_type >& full_block,
-         uint32_t skip, const block_flow_control* block_ctrl )
-  >;
-
-/// Returns number of block on head after popping.
-using pop_block_t = std::function< uint32_t ( const block_id_type end_block ) >;
-
-using notify_switch_fork_t = std::function< void ( uint32_t head_block_num ) >;
-
-void global_switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
-  uint32_t skip, const block_flow_control* pushed_block_ctrl,
-  const block_id_type original_head_block_id, const uint32_t original_head_block_number,
-  apply_block_t apply_block_extended, pop_block_t pop_block_extended, notify_switch_fork_t notify_switch_fork,
-  fork_database& _fork_db )
-{
-  BOOST_SCOPE_EXIT(void) { ilog("Done fork switch"); } BOOST_SCOPE_EXIT_END
-  ilog("Switching to fork: ${id}", ("id", new_head_block_id));
-  ilog("Before switching, head_block_id is ${original_head_block_id} head_block_number ${original_head_block_number}", (original_head_block_id)(original_head_block_number));
-  const auto [new_branch, old_branch] = _fork_db.fetch_branch_from(new_head_block_id, original_head_block_id);
-
-  ilog("Destination branch block ids:");
-  std::for_each(new_branch.begin(), new_branch.end(), [](const item_ptr& item) {
-    ilog(" - ${id}", ("id", item->get_block_id()));
-  });
-  const block_id_type common_block_id = new_branch.back()->previous_id();
-  const uint32_t common_block_number = new_branch.back()->get_block_num() - 1;
-
-  ilog(" - common_block_id ${common_block_id} common_block_number ${common_block_number} (block before first block in branch, should be common)", (common_block_id)(common_block_number));
-
-  uint32_t current_head_block_num = original_head_block_number;
-  if (old_branch.size())
-  {
-    ilog("Source branch block ids:");
-    std::for_each(old_branch.begin(), old_branch.end(), [](const item_ptr& item) {
-      ilog(" - ${id}", ("id", item->get_block_id()));
-    });
-
-    // pop blocks until we hit the common ancestor block
-    current_head_block_num = pop_block_extended( old_branch.back()->previous_id() );
-    ilog("Done popping blocks");
-  }
-
-  notify_switch_fork( current_head_block_num );
-
-  // push all blocks on the new fork
-  for (auto ritr = new_branch.crbegin(); ritr != new_branch.crend(); ++ritr)
-  {
-    ilog("pushing block #${block_num} from new fork, id ${id}", ("block_num", (*ritr)->get_block_num())("id", (*ritr)->get_block_id()));
-    std::shared_ptr<fc::exception> delayed_exception_to_avoid_yield_in_catch;
-    try
-    {
-      // when we are handling block that triggered fork switch, we want to release related promise so P2P
-      // can broadcast the block; it should happen even if some other block later causes reversal of the
-      // fork switch (the block was good after all)
-      bool is_pushed_block = ( pushed_block_ctrl != nullptr ) && ( ( *ritr )->full_block->get_block_id() == pushed_block_ctrl->get_full_block()->get_block_id() );
-      if( *ritr )
-        _fork_db.set_head( *ritr );
-      apply_block_extended( ( *ritr )->full_block,
-                            skip,
-                            is_pushed_block ? pushed_block_ctrl : nullptr );
-    }
-    catch (const fc::exception& e)
-    {
-      delayed_exception_to_avoid_yield_in_catch = e.dynamic_copy_exception();
-    }
-    if (delayed_exception_to_avoid_yield_in_catch)
-    {
-      wlog("exception thrown while switching forks ${e}", ("e", delayed_exception_to_avoid_yield_in_catch->to_detail_string()));
-
-      // remove the rest of new_branch from the fork_db, those blocks are invalid
-      while (ritr != new_branch.rend())
-      {
-        _fork_db.remove((*ritr)->get_block_id());
-        ++ritr;
-      }
-
-      // our fork switch has failed.  That could mean that we are now on a shorter fork than we started on,
-      // and we should switch back to the original fork because longer == good.  But it's also possible that
-      // the bad block was late in the fork, and even without the bad blocks the new fork is longer so we
-      // should stay.  And a third possibility is that the fork is shorter, but one of the blocks on the fork
-      // became irreversible, so switching back is no longer an option.
-      // Note: database method calls to get_last_irreversible_block_num & head_block_num have been replaced by
-      //       the ones from fork_db below:
-      //if (get_last_irreversible_block_num() < common_block_number && head_block_num() < original_head_block_number)
-      if( _fork_db.get_last_irreversible_block_num() < common_block_number &&
-          _fork_db.get_head()->get_block_num() < original_head_block_number )
-      {
-        // pop all blocks from the bad fork
-        uint32_t new_head_block_num = pop_block_extended( common_block_id );
-        ilog(" - reverting to previous chain, done popping blocks");
-        notify_switch_fork( new_head_block_num );
-
-        // restore any popped blocks from the good fork
-        if (old_branch.size())
-        {
-          ilog("restoring blocks from original fork");
-          for (auto ritr = old_branch.crbegin(); ritr != old_branch.crend(); ++ritr)
-          {
-            ilog(" - restoring block ${id}", ("id", (*ritr)->get_block_id()));
-            if( *ritr )
-              _fork_db.set_head( *ritr );
-            apply_block_extended( (*ritr)->full_block,
-                                  skip,
-                                  nullptr );
-          }
-          ilog("done restoring blocks from original fork");
-        }
-      }
-      delayed_exception_to_avoid_yield_in_catch->dynamic_rethrow_exception();
-    }
-  }
-  ilog("done pushing blocks from new fork");
-  theApp.notify("switching forks", "id", new_head_block_id.str(), "num", new_head_block_num);
-}
-
 void database::switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num, const block_flow_control* pushed_block_ctrl )
 {
   uint32_t skip = get_node_skip_flags();
-  global_switch_forks( new_head_block_id, new_head_block_num, skip, pushed_block_ctrl, head_block_id(), head_block_num(), 
+  _block_writer->switch_forks( 
+    new_head_block_id,
+    new_head_block_num,
+    skip,
+    pushed_block_ctrl,
+    head_block_id(), head_block_num(), 
     [&] ( const std::shared_ptr< full_block_type >& fb,
           uint32_t skip, const block_flow_control* block_ctrl )
       { this->apply_block_extended(fb,skip,block_ctrl); },
     [&] ( const block_id_type end_block ) -> uint32_t
       { return this->pop_block_extended( end_block ); },
     [&] ( uint32_t head_block_num )
-      { this->notify_switch_fork( head_block_num ); },
-    _fork_db() );
+      { this->notify_switch_fork( head_block_num ); }
+    );
+  theApp.notify("switching forks", "id", new_head_block_id.str(), "num", new_head_block_num);
 }
 
 bool global_push_block(const std::shared_ptr<full_block_type>& full_block, 
@@ -897,10 +787,11 @@ bool global_push_block(const std::shared_ptr<full_block_type>& full_block,
   uint32_t state_head_block_num,
   block_id_type state_head_block_id,
   const uint32_t skip,
-  apply_block_t apply_block_extended,
-  pop_block_t pop_block_extended,
-  notify_switch_fork_t notify_switch_fork,
-  fork_database& _fork_db )
+  block_write_i::apply_block_t apply_block_extended,
+  block_write_i::pop_block_t pop_block_extended,
+  block_write_i::notify_switch_fork_t notify_switch_fork,
+  fork_database& _fork_db,
+  std::unique_ptr< block_write_i >& block_writer )
 {
   std::vector<std::shared_ptr<full_block_type>> blocks;
 
@@ -946,9 +837,10 @@ bool global_push_block(const std::shared_ptr<full_block_type>& full_block,
     {
       block_ctrl.on_fork_apply();
       ilog("calling switch_forks() from _push_block()");
-      global_switch_forks( new_head->get_block_id(), new_head->get_block_num(),
+      block_writer->switch_forks( new_head->get_block_id(), new_head->get_block_num(),
                            skip, &block_ctrl, state_head_block_id, state_head_block_num,
-                           apply_block_extended, pop_block_extended, notify_switch_fork, _fork_db );
+                           apply_block_extended, pop_block_extended, notify_switch_fork );
+      theApp.notify("switching forks", "id", new_head->get_block_id().str(), "num", new_head->get_block_num());
       return true;
     }
   }
@@ -1001,7 +893,8 @@ bool database::_push_block(const block_flow_control& block_ctrl)
       { return this->pop_block_extended( end_block ); },
     [&] ( uint32_t head_block_num )
       { this->notify_switch_fork( head_block_num ); },
-    _fork_db() );
+    _fork_db(),
+    _block_writer );
 } FC_CAPTURE_AND_RETHROW() }
 
 bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
