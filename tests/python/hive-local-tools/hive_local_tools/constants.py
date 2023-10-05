@@ -125,3 +125,5 @@ HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS: Final[int] = 60 * 60 * 24 * 1  # 1 d
 HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD: Final[int] = 60 * 60  # 1 hour in testnet and 1 day in mainnet
 
 HIVE_TREASURY_FEE = 10
+
+HIVE_CASHOUT_WINDOW_SECONDS: Final[int] = 60 * 60  # 60 min in testnet / 7 days on mainnet
