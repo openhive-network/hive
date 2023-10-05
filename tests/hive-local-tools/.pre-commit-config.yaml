@@ -2,6 +2,16 @@
 files: ^tests/
 exclude: ^tests/unit/
 
+define: &excluded_files_regex
+  "\
+  ^tests/api_tests/pattern_tests/tavern|\
+  ^tests/api_tests/python_patterns_tests/cli_wallet_tests/response_patterns|\
+  ^tests/api_tests/message_format_tests/cli_wallet_tests/output_formatter_tests/response_patterns|\
+  transaction_pattern_tests/dumped_files_legacy_wallet|\
+  transaction_pattern_tests/dumped_files_hf26|\
+  timestamp\
+  "
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
@@ -12,3 +22,5 @@ repos:
         args: [ "--unsafe" ]
       - id: check-json
         exclude: ^tests/unit/|^tests/api_tests/pattern_tests/tavern/
+      - id: trailing-whitespace
+        exclude: *excluded_files_regex
