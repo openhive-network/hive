@@ -52,6 +52,7 @@ select = [  # https://docs.astral.sh/ruff/rules/
     "F",
     "E",
     "W",
+    "C",
     "I",
 ]
 ignore = [
