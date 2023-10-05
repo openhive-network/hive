@@ -41,7 +41,7 @@ def test_reporting_exception_when_database_api_is_missing(node, wallet_bridge_ap
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
-    assert not "Assert Exception:_database_api: database_api_plugin not enabled." in str(exception.value)
+    assert "Assert Exception:_database_api: database_api_plugin not enabled." not in str(exception.value)
 
 
 @pytest.mark.parametrize(
@@ -56,7 +56,7 @@ def test_reporting_exception_when_rc_api_is_missing(node, wallet_bridge_api_comm
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
-    assert not "Assert Exception:_rc_api: rc_api_plugin not enabled." in str(exception.value)
+    assert "Assert Exception:_rc_api: rc_api_plugin not enabled." not in str(exception.value)
 
 
 @pytest.mark.parametrize("wallet_bridge_api_command", ["get_block"])
@@ -65,7 +65,7 @@ def test_reporting_exception_when_block_api_is_missing(node, wallet_bridge_api_c
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
-    assert not "Assert Exception:_block_api: block_api_plugin not enabled." in str(exception.value)
+    assert "Assert Exception:_block_api: block_api_plugin not enabled." not in str(exception.value)
 
 
 @pytest.mark.parametrize(
@@ -95,7 +95,7 @@ def test_reporting_exception_when_account_by_key_api_is_missing(node, wallet_bri
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
-    assert not "Assert Exception:_account_by_key_api: account_by_key_api_plugin not enabled." in str(exception.value)
+    assert "Assert Exception:_account_by_key_api: account_by_key_api_plugin not enabled." not in str(exception.value)
 
 
 @pytest.mark.parametrize("wallet_bridge_api_command", ["get_order_book"])
@@ -104,7 +104,7 @@ def test_reporting_exception_when_market_history_api_is_missing(node, wallet_bri
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
-    assert not "Assert Exception:_market_history_api: market_history_api_plugin not enabled." in str(exception.value)
+    assert "Assert Exception:_market_history_api: market_history_api_plugin not enabled." not in str(exception.value)
 
 
 @pytest.mark.enabled_plugins("witness")

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import requests, sys, json
+import requests, sys
 
 # HIVE node must work
 url = "http://127.0.0.1:8090"

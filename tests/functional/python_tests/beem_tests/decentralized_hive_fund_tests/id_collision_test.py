@@ -35,7 +35,7 @@ if not logger.hasHandlers():
 
 try:
     from beem import Hive
-except Exception as ex:
+except Exception:
     logger.error("beem library is not installed.")
     sys.exit(1)
 

@@ -56,7 +56,7 @@ def test_witness(wallet):
 
     assert _ops[0][1]["account"] == "initminer"
     assert _ops[0][1]["witness"] == "alice"
-    assert _ops[0][1]["approve"] == True
+    assert _ops[0][1]["approve"] is True
 
     response = wallet.api.set_voting_proxy("alice", "initminer")
 

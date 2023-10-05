@@ -2,7 +2,6 @@ import datetime
 from datetime import timedelta
 from uuid import uuid4
 
-from beem import Hive
 from beem.account import Account
 from beembase.operations import Create_proposal
 from beembase.operations import Remove_proposal
@@ -143,7 +142,7 @@ def vote_proposal(node, account, wif, subject):
 
     assert ret["operations"][0][1]["voter"] == account
     assert ret["operations"][0][1]["proposal_ids"][0] == proposal_id
-    assert ret["operations"][0][1]["approve"] == True
+    assert ret["operations"][0][1]["approve"] is True
     hive_utils.common.wait_n_blocks(node.rpc.url, 2)
 
 

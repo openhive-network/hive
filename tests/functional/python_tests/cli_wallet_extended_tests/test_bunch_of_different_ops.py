@@ -21,13 +21,13 @@ key2 = "TST7QbuPFWyi7Kxtq6i1EaHNHZHEG2JyB61kPY1x7VvjxyHb7btfg"
 
 def test_different_false_cases(wallet):
     try:
-        response = wallet.api.get_account("not-exists")
+        wallet.api.get_account("not-exists")
     except Exception as e:
         message = str(e)
         assert message.find("Account does not exist") != -1
 
     try:
-        response = wallet.api.create_account("initminer")
+        wallet.api.create_account("initminer")
     except Exception as e:
         message = str(e)
         assert (
@@ -38,7 +38,7 @@ def test_different_false_cases(wallet):
     create_accounts(wallet, "initminer", ["alice", "bob"])
 
     try:
-        response = wallet.api.create_proposal(
+        wallet.api.create_proposal(
             "bob",
             "bob",
             "2031-01-01T00:00:00",
@@ -52,9 +52,7 @@ def test_different_false_cases(wallet):
         assert message.find("Proposal permlink must point to the article posted by creator or receiver") != -1
 
     try:
-        response = wallet.api.post_comment(
-            "bob", "hello-world", "", "xyz", "something bout world", "just nothing", "{}"
-        )
+        wallet.api.post_comment("bob", "hello-world", "", "xyz", "something bout world", "just nothing", "{}")
     except Exception as e:
         message = str(e)
         assert message.find("Account: bob has 0 RC") != -1
@@ -64,7 +62,7 @@ def test_different_false_cases(wallet):
     wallet.api.post_comment("bob", "hello-world", "", "xyz", "something about world", "just nothing", "{}")
 
     try:
-        response = wallet.api.create_proposal(
+        wallet.api.create_proposal(
             "bob",
             "bob",
             "2031-01-01T00:00:00",
@@ -78,19 +76,19 @@ def test_different_false_cases(wallet):
         assert message.find("Account bob does not have sufficient funds for balance adjustment") != -1
 
     try:
-        response = wallet.api.vote("bob", "bob", "hello-world", 101)
+        wallet.api.vote("bob", "bob", "hello-world", 101)
     except Exception as e:
         message = str(e)
         assert message.find("Weight must be between -100 and 100 and not 0") != -1
 
     try:
-        response = wallet.api.vote("alice", "bob", "hello-world", 99)
+        wallet.api.vote("alice", "bob", "hello-world", 99)
     except Exception as e:
         message = str(e)
         assert message.find("Account: alice has 0 RC, needs 1 RC") != -1
 
     try:
-        with wallet.in_single_transaction(broadcast=False) as transaction:
+        with wallet.in_single_transaction(broadcast=False):
             wallet.api.transfer("bob", "alice", tt.Asset.Tbd(199.148), "banana")
             wallet.api.post_comment(
                 "alice", "hello-world2", "", "xyz2", "something about world2", "just nothing2", "{}"

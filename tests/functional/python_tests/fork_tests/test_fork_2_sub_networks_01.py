@@ -51,7 +51,7 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
 
     blocks_after_enable_witness = 5
 
-    tt.logger.info(f"Before disconnecting")
+    tt.logger.info("Before disconnecting")
     cnt = 0
     while True:
         sh.wait(1, logs, majority_api_node)
@@ -82,7 +82,7 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
 
     assert last_lib_01 == last_lib_02
 
-    tt.logger.info(f"Disconnect sub networks - start")
+    tt.logger.info("Disconnect sub networks - start")
     sh.disconnect_sub_networks(networks_builder.networks)
 
     sh.wait(blocks_after_disconnect, logs, minority_api_node)
@@ -104,7 +104,7 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
 
     assert last_lib_01 == last_lib_04
 
-    tt.logger.info(f"Reconnect sub networks")
+    tt.logger.info("Reconnect sub networks")
     sh.connect_sub_networks(networks_builder.networks)
 
     sh.wait_for_final_block(

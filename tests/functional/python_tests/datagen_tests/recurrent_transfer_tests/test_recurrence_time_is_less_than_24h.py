@@ -16,10 +16,10 @@ def test_recurrence_time_is_less_than_24h(node):
             "sender",
             "receiver",
             tt.Asset.Test(0.001),
-            f"recurrent transfer to receiver",
+            "recurrent transfer to receiver",
             recurrence=20,  # recurrence is less than 24h
             executions=2,
         )
 
-    expected_error_message = f"Cannot set a transfer recurrence that is less than 24 hours"
+    expected_error_message = "Cannot set a transfer recurrence that is less than 24 hours"
     assert expected_error_message in str(exception.value)

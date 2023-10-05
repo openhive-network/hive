@@ -140,7 +140,7 @@ def run_networks(
             ["--alternate-chain-spec", str(alternate_chain_spec_path)] if alternate_chain_spec_path.is_file() else []
         )
     else:
-        tt.logger.info(f"'block_log' directory hasn't been defined")
+        tt.logger.info("'block_log' directory hasn't been defined")
         arguments = []
 
     tt.logger.info("Running nodes...")
@@ -307,7 +307,7 @@ def run_whole_network(
     builder = generate_or_launch(architecture, block_log_directory_name, time_offsets, preparer)
 
     if builder is None:
-        tt.logger.info(f"Generating 'block_log' enabled. Exiting...")
+        tt.logger.info("Generating 'block_log' enabled. Exiting...")
         sys.exit(1)
 
     return builder

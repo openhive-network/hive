@@ -11,7 +11,7 @@ def sign_transaction(transaction: dict, private_key: str, serialization_type: st
     input = f'{{ "tx": {json.dumps(transaction)}, "wif": "{private_key}" '
     if serialization_type:
         input += f', "serialization_type": "{serialization_type}" '
-    input += f"}}"
+    input += "}"
 
     output = subprocess.check_output(
         [os.environ["SIGN_TRANSACTION_PATH"]], input=input.encode(encoding="utf-8")

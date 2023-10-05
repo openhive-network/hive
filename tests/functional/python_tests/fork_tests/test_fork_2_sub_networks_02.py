@@ -52,7 +52,7 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
 
     blocks_after_reconnect = 5
 
-    tt.logger.info(f"Before disconnecting")
+    tt.logger.info("Before disconnecting")
     cnt = 0
     while True:
         sh.wait(1, logs, majority_api_node)
@@ -74,12 +74,12 @@ def test_fork_2_sub_networks_02(prepare_fork_2_sub_networks_02):
     last_lib_m = sh.get_last_irreversible_block_num(_m)
     last_lib_M = sh.get_last_irreversible_block_num(_M)
 
-    tt.logger.info(f"Disconnect sub networks")
+    tt.logger.info("Disconnect sub networks")
     sh.disconnect_sub_networks(networks_builder.networks)
 
     sh.wait(blocks_after_disconnect, logs, minority_api_node)
 
-    tt.logger.info(f"Reconnect sub networks")
+    tt.logger.info("Reconnect sub networks")
     sh.connect_sub_networks(networks_builder.networks)
 
     sh.wait(blocks_after_reconnect, logs, minority_api_node)

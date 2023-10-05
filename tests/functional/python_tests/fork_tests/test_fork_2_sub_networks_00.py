@@ -30,7 +30,7 @@ def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
 
     blocks_before_disconnect = 10
 
-    tt.logger.info(f"Before disconnecting")
+    tt.logger.info("Before disconnecting")
     cnt = 0
     while True:
         sh.wait(1, logs, majority_api_node)
@@ -43,7 +43,7 @@ def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
     assert sh.get_last_head_block_number(_M) == sh.get_last_head_block_number(_m)
     assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
 
-    tt.logger.info(f"Disconnect sub networks - start")
+    tt.logger.info("Disconnect sub networks - start")
     sh.disconnect_sub_networks(networks_builder.networks)
 
     sh.wait(10, logs, majority_api_node)
@@ -51,8 +51,8 @@ def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
     assert sh.get_last_head_block_number(_M) > sh.get_last_head_block_number(_m)
     assert sh.get_last_irreversible_block_num(_M) > sh.get_last_irreversible_block_num(_m)
 
-    old_majority_last_lib = sh.get_last_irreversible_block_num(_M)
-    tt.logger.info(f"Reconnect sub networks - start")
+    sh.get_last_irreversible_block_num(_M)
+    tt.logger.info("Reconnect sub networks - start")
     sh.connect_sub_networks(networks_builder.networks)
 
     sh.wait_for_final_block(majority_api_node, logs, [_m, _M], True, sh.lib_true_condition, False)

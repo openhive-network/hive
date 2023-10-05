@@ -1,7 +1,6 @@
 # this test checks implementation of last_id field in list_voter_proposal arguments
 import datetime
 
-from beem import Hive
 from beem.account import Account
 from beembase.operations import Create_proposal
 from beembase.operations import Update_proposal_votes
@@ -159,7 +158,7 @@ def test_list_voter_proposal(node_client: NodeClientMaker):
     start_date_str = start_date.replace(microsecond=0).isoformat()
     end_date_str = end_date.replace(microsecond=0).isoformat()
 
-    end_date_blocks_str = end_date_blocks.replace(microsecond=0).isoformat()
+    end_date_blocks.replace(microsecond=0).isoformat()
 
     # create proposals - each account creates one proposal
     create_proposals(node_client, account, start_date_str, end_date_str, 5)

@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Iterable
 
 from functools import partial
@@ -78,7 +77,7 @@ def test_many_forks_many_ops(prepare_17_3):
     global break_cnt
     global break_limit
 
-    tt.logger.info(f"Start test_many_forks_many_ops")
+    tt.logger.info("Start test_many_forks_many_ops")
 
     networks_builder = prepare_17_3
 
@@ -99,7 +98,7 @@ def test_many_forks_many_ops(prepare_17_3):
 
     blocks_before_disconnect = 5
 
-    tt.logger.info(f"Before disconnecting...")
+    tt.logger.info("Before disconnecting...")
     cnt = 0
     while not (
         cnt > blocks_before_disconnect

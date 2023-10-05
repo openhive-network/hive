@@ -14,7 +14,7 @@ def test_overwrite_recurrent_transfer(node):
     with wallet.in_single_transaction():
         for i in range(2):
             wallet.api.recurrent_transfer(
-                "sender", "receiver", tt.Asset.Test(0.001), f"recurrent transfer to receiver", 24 + i, 2
+                "sender", "receiver", tt.Asset.Test(0.001), "recurrent transfer to receiver", 24 + i, 2
             )
 
     assert len(wallet.api.find_recurrent_transfers("sender")) == 1

@@ -1,5 +1,4 @@
-from datetime import datetime, timezone, timedelta
-import re
+from datetime import timedelta
 
 import pytest
 
@@ -154,7 +153,6 @@ def test_set_transaction_expiration():
     )
 
     response = node.api.block.get_block(block_num=23)["block"]
-    time_format = "%Y-%m-%dT%H:%M:%S"
     last_block_time_point = tt.Time.parse(response["timestamp"])
 
     wallet = tt.Wallet(attach_to=node)

@@ -29,9 +29,7 @@ def test_cancel_transfer_from_savings_simplest_scenario(
     assert balance_before_withdrawal == balance_after_withdrawal + currency(
         50
     ), f"{currency.token} savings balance wasn't decreased after withdrawal"
-    assert (
-        rc_amount_before_sending_op > rc_amount_after_sending_op
-    ), f"RC amount after hive withdrawal wasn't decreased."
+    assert rc_amount_before_sending_op > rc_amount_after_sending_op, "RC amount after hive withdrawal wasn't decreased."
     prepared_node.wait_for_irreversible_block()
 
     prepared_node.restart(
@@ -126,9 +124,8 @@ def test_cancel_all_transfers_from_savings_except_one(
     )
 
     assert (
-        check_if_fill_transfer_from_savings_vop_was_generated(prepared_node, f"transfer from savings with id: 1")
-        is True
-    ), f"fill_transfer_from_savings from transfer with id 1 wasn't generated"
+        check_if_fill_transfer_from_savings_vop_was_generated(prepared_node, "transfer from savings with id: 1") is True
+    ), "fill_transfer_from_savings from transfer with id 1 wasn't generated"
 
 
 def create_three_savings_withdrawals_from_fresh_account(node, currency, account, check_savings_balance, token):

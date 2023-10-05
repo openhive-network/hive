@@ -39,12 +39,12 @@ def test_vote_power_value_after_proxy_removal(node):
             wallet.api.transfer_to_vesting("initminer", f"account-layer-{number}", tt.Asset.Test(10 + number))
 
     with wallet.in_single_transaction():
-        wallet.api.set_voting_proxy(f"account-layer-1", f"account-layer-0")
-        wallet.api.set_voting_proxy(f"account-layer-2", f"account-layer-1")
-        wallet.api.set_voting_proxy(f"account-layer-3", f"account-layer-2")
+        wallet.api.set_voting_proxy("account-layer-1", "account-layer-0")
+        wallet.api.set_voting_proxy("account-layer-2", "account-layer-1")
+        wallet.api.set_voting_proxy("account-layer-3", "account-layer-2")
 
     # unbound the top of the proxy chain
-    wallet.api.set_voting_proxy(f"account-layer-1", "")
+    wallet.api.set_voting_proxy("account-layer-1", "")
 
     node.wait_for_irreversible_block()
     node.restart(time_offset="+25h")
@@ -87,7 +87,7 @@ def test_too_long_proxy_chain(node):
             wallet.api.set_voting_proxy(f"account-layer-{i+1}", f"account-layer-{i}")
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
-        wallet.api.set_voting_proxy(f"account-layer-4", f"account-layer-3")
+        wallet.api.set_voting_proxy("account-layer-4", "account-layer-3")
     error_response = exception.value.response["error"]["message"]
     assert "Proxy chain is too long." in error_response
 

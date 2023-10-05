@@ -68,7 +68,7 @@ def get_list_proposal_args(start: list, **kwargs):
 
 
 def get_list_proposal_votes_args(start: list, **kwargs):
-    if not "order_by" in kwargs:
+    if "order_by" not in kwargs:
         kwargs["order_by"] = "by_voter_proposal"
     result = get_listing_args(**kwargs)
     result["start"] = argument_as_list(start)

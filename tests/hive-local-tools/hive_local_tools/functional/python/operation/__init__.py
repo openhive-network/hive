@@ -426,8 +426,8 @@ class Comment:
             vote_send = False
 
         if mode == "deleted":
-            assert vote_send == False, "Vote send. Comment is not deleted"
+            assert vote_send is False, "Vote send. Comment is not deleted"
         elif mode == "not_deleted":
-            assert vote_send == True, "Vote not send. Comment is deleted"
+            assert vote_send is True, "Vote not send. Comment is deleted"
         else:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")

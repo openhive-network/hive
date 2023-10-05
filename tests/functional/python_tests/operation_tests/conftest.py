@@ -174,7 +174,7 @@ class UpdateAccount(Account):
     def get_current_key(self, type_: str):
         assert type_ in ("owner", "active", "posting", "memo"), "Wrong key type."
         self.update_account_info()
-        return self._acc_info[type_]["key_auths"][0][0] if type_ is not "memo" else self._acc_info[type_ + "_key"]
+        return self._acc_info[type_]["key_auths"][0][0] if type_ != "memo" else self._acc_info[type_ + "_key"]
 
     def update_all_account_details(self, *, json_meta: str, owner: str, active: str, posting: str, memo: str):
         self._wallet.api.update_account(

@@ -1,16 +1,12 @@
 #!/usr/bin/python3
 
 import sys
-import os
-import tempfile
 import argparse
 from threading import Thread
 
 sys.path.append("../../../")
 
-import hive_utils
 from hive_utils.resources.configini import config as configuration
-from hive_utils.resources.configini import validate_address
 
 
 # https://developers.hive.io/tutorials-recipes/paginated-api-methods.html#account_history_apiget_account_history
@@ -42,7 +38,6 @@ assert "account_history_api" in plugins
 class compressed_vop:
     def __init__(self, vop):
         from hashlib import sha512
-        from random import randint
         from json import dumps
 
         self.id = "{}_{}_{}".format((~0x8000000000000000) & int(vop["operation_id"]), vop["block"], vop["trx_in_block"])
@@ -141,9 +136,6 @@ def get_vops_one_by_one(range_begin: int, range_end: int) -> list:
 
 # get same data in given range with diffrent step
 def check_range(range_begin: int, blocks: int):
-    from operator import itemgetter
-    from json import dump
-
     range_end = range_begin + blocks + 1
 
     print(f"gathering blocks in range [ {range_begin} ; {range_end} )")

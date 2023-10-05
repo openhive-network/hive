@@ -3,8 +3,6 @@ import sys
 sys.path.append("../../")
 import hive_utils
 
-from uuid import uuid4
-from time import sleep
 import logging
 
 LOG_LEVEL = logging.INFO

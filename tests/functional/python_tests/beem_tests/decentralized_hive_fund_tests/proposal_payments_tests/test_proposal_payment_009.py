@@ -93,7 +93,7 @@ def test_proposal_payment_009(node_client: NodeClientMaker):
     test_start_date = now + datetime.timedelta(days=1)
     test_start_date_iso = test_utils.date_to_iso(test_start_date)
 
-    test_mid_date = test_start_date + datetime.timedelta(days=3, hours=1)
+    test_start_date + datetime.timedelta(days=3, hours=1)
 
     test_end_date = test_start_date + datetime.timedelta(days=5, hours=1)
     test_end_date_iso = test_utils.date_to_iso(test_end_date)

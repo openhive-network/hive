@@ -47,7 +47,7 @@ def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
     blocks_after_exception = 10
     delay_seconds = 5
 
-    tt.logger.info(f"Before an exception - waiting for specific witnesses")
+    tt.logger.info("Before an exception - waiting for specific witnesses")
     wait_for_specific_witnesses(witness_node_0, logs, [["witness-0"]])
 
     last_lib_01 = get_last_irreversible_block_num(_a0)
@@ -59,7 +59,7 @@ def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
 
     time.sleep(delay_seconds)
 
-    tt.logger.info(f"Artificial exception is disabled")
+    tt.logger.info("Artificial exception is disabled")
     witness_node_0.api.debug_node.debug_throw_exception(throw_exception=False)
     witness_node_1.api.debug_node.debug_throw_exception(throw_exception=False)
     init_node_0.api.debug_node.debug_throw_exception(throw_exception=False)

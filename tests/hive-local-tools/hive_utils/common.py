@@ -50,7 +50,7 @@ def get_current_block_number(source_node) -> int:
     }
 
     from requests import post
-    from json import dumps, loads
+    from json import dumps
 
     try:
         resp = post(source_node, data=dumps(payload, cls=CustomJsonEncoder))
@@ -58,7 +58,7 @@ def get_current_block_number(source_node) -> int:
             return -1
         data = resp.json()["result"]
         return int(data["head_block_number"])
-    except Exception as ex:
+    except Exception:
         return -1
 
 
@@ -381,7 +381,7 @@ def junit_test_case(method):
         start_time = time.time()
         error = None
         try:
-            result = method(*args, **kw)
+            method(*args, **kw)
         except:
             e = sys.exc_info()
             error = traceback.format_exception(e[0], e[1], e[2])

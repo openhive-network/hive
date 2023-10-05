@@ -49,7 +49,7 @@ def wallet_hf26(node_hf26) -> tt.Wallet:
 def prepare_network(
     witnesses_number: int, network_name: str, allow_create_init_node: bool, allow_create_api_node: bool
 ):
-    tt.logger.info(f"Prototypes of nodes(init, witness, api) are created...")
+    tt.logger.info("Prototypes of nodes(init, witness, api) are created...")
 
     witness_names = [f"wit{i}-{network_name}" for i in range(witnesses_number)]
 

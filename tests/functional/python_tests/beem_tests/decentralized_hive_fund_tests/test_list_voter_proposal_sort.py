@@ -1,7 +1,6 @@
 import datetime
 from json import dumps
 
-from beem import Hive
 import dateutil.parser
 from requests import post
 

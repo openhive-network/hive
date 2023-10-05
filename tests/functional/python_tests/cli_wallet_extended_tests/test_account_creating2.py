@@ -33,9 +33,7 @@ def test_account_creation_in_different_ways(node, wallet):
 
 def test_account_creation_with_exception(wallet):
     try:
-        response = wallet.api.create_account_delegated(
-            "initminer", tt.Asset.Test(3), tt.Asset.Vest(6.123456), "alicex", "{}"
-        )
+        wallet.api.create_account_delegated("initminer", tt.Asset.Test(3), tt.Asset.Vest(6.123456), "alicex", "{}")
     except Exception as e:
         message = str(e)
         found = message.find("Account creation with delegation is deprecated as of Hardfork 20")
@@ -43,7 +41,7 @@ def test_account_creation_with_exception(wallet):
 
     try:
         key = "TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
-        response = wallet.api.create_account_with_keys_delegated(
+        wallet.api.create_account_with_keys_delegated(
             "initminer", tt.Asset.Test(4), tt.Asset.Vest(6.123456), "alicey", "{}", key, key, key, key
         )
     except Exception as e:

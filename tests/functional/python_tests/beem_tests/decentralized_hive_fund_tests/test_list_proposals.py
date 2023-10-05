@@ -1,6 +1,5 @@
 import datetime
 
-from beem import Hive
 from beem.account import Account
 from beembase.operations import Create_proposal
 
