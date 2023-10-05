@@ -1,4 +1,3 @@
-from beem import Hive
 from beem.account import Account
 from beem.transactionbuilder import TransactionBuilder
 import beemapi

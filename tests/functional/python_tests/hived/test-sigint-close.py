@@ -7,7 +7,6 @@ import subprocess
 import random
 import os.path
 from subprocess import check_output
-from datetime import datetime
 
 cnt = 0
 

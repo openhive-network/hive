@@ -21,7 +21,7 @@ order_type_values = ["ascending", "descending"]
 def test_list_proposals(wallet: tt.Wallet, creator_proposal_id: prepared_proposal_data_with_id, creator: tt.Account):
     start_point_before_test = format_datetime(dt.now())
 
-    name_order_by = [proposals_order_by_values[0]]
+    [proposals_order_by_values[0]]
     date_order_by = [proposals_order_by_values[1], proposals_order_by_values[2]]
     value_order_by = [proposals_order_by_values[3]]
 

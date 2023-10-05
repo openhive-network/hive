@@ -12,8 +12,8 @@ def test_cancel_recurrent_transfer(node):
 
     wallet.create_account("receiver")
 
-    wallet.api.recurrent_transfer("sender", "receiver", tt.Asset.Test(0.001), f"recurrent transfer to receiver", 24, 2)
+    wallet.api.recurrent_transfer("sender", "receiver", tt.Asset.Test(0.001), "recurrent transfer to receiver", 24, 2)
     assert len(wallet.api.find_recurrent_transfers("sender")) == 1
 
-    wallet.api.recurrent_transfer("sender", "receiver", tt.Asset.Test(0), f"recurrent transfer to receiver", 24, 2)
+    wallet.api.recurrent_transfer("sender", "receiver", tt.Asset.Test(0), "recurrent transfer to receiver", 24, 2)
     assert len(wallet.api.find_recurrent_transfers("sender")) == 0

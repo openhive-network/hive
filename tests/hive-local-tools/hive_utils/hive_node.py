@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import json
 import logging
 import sys
 import os
@@ -21,8 +20,6 @@ ch.setLevel(DEFAULT_LOG_LEVEL)
 ch.setFormatter(logging.Formatter(DEFAULT_LOG_FORMAT))
 
 logger.addHandler(ch)
-
-from typing import NamedTuple
 
 
 class HiveNode(object):
@@ -57,7 +54,7 @@ class HiveNode(object):
     def __enter__(self):
         self.hived_lock.acquire()
 
-        from subprocess import Popen, PIPE, DEVNULL
+        from subprocess import Popen
         from time import sleep
 
         hived_command = [self.hived_binary, "--data-dir={}".format(self.hived_data_dir)]

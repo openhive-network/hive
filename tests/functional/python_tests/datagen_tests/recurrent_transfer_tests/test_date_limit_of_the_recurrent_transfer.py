@@ -34,7 +34,7 @@ def test_exceed_date_limit_of_recurrent_transfers(node, executions):
             "sender",
             "receiver",
             tt.Asset.Test(0.001),
-            f"recurrent transfer to receiver",
+            "recurrent transfer to receiver",
             math.ceil(MAX_RECURRENT_TRANSFER_END_DATE * 24 / (executions - 1))
             + 1,  # 730 * 24 / 729 yields sub-hour results, so we increase it to the nearest higher
             executions,
@@ -70,7 +70,7 @@ def test_last_execution_of_recurrent_transfer_close_to_date_limit(node, executio
         "sender",
         "receiver",
         tt.Asset.Test(10),
-        f"recurrent transfer to receiver",
+        "recurrent transfer to receiver",
         (MAX_RECURRENT_TRANSFER_END_DATE * 24 / executions) - 1,
         executions,
     )

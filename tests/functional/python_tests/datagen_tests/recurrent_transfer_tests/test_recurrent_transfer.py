@@ -18,7 +18,7 @@ def test_recurrent_transfer(node):
     assert node.api.wallet_bridge.get_accounts(["receiver"])[0]["balance"] == tt.Asset.Test(0)
 
     # Set up and send recurrent transfer
-    wallet.api.recurrent_transfer("sender", "receiver", tt.Asset.Test(50), f"recurrent transfer to receiver", 24, 2)
+    wallet.api.recurrent_transfer("sender", "receiver", tt.Asset.Test(50), "recurrent transfer to receiver", 24, 2)
 
     # Wait 24h
     node.wait_for_irreversible_block()

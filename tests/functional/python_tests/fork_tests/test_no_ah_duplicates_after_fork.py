@@ -41,7 +41,7 @@ def trigger_fork(alpha_net, beta_net):
     beta_node = beta_net.node("FullApiNode1")
 
     witness_node = alpha_net.node("WitnessNode0")
-    tt.logger.info(f"Correct witnesses detection")
+    tt.logger.info("Correct witnesses detection")
     sh.wait_for_specific_witnesses(witness_node, [], [["witness[0-9]+-alpha"], ["witness[0-9]+-beta"]])
 
     head_blocks = display_current_head_block_number_in_both_networks(

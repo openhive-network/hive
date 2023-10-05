@@ -1,10 +1,5 @@
-import sys
-from pathlib import Path
-from typing import Dict
-
 import pytest
 
-import test_tools as tt
 from shared_tools.complex_networks import create_block_log_directory_name, prepare_time_offsets, prepare_network
 
 import shared_tools.networks_architecture as networks

@@ -1,4 +1,3 @@
-from pathlib import Path
 import pytest
 
 from concurrent.futures import ThreadPoolExecutor
@@ -41,7 +40,7 @@ def test_many_forks_node_with_time_offset(prepare_4_4_4_4_4):
     global break_cnt
     global break_limit
 
-    tt.logger.info(f"Start test_many_forks_node_with_time_offset")
+    tt.logger.info("Start test_many_forks_node_with_time_offset")
 
     networks_builder = prepare_4_4_4_4_4
 

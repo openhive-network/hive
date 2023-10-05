@@ -49,7 +49,7 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     blocks_after_disconnect = 2
     blocks_after_disable_witness = 10
 
-    tt.logger.info(f"Before disconnecting")
+    tt.logger.info("Before disconnecting")
     cnt = 0
     while True:
         sh.wait(1, logs, majority_api_node)
@@ -59,7 +59,7 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
             if sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m):
                 break
 
-    tt.logger.info(f"Disconnect sub networks")
+    tt.logger.info("Disconnect sub networks")
     sh.disconnect_sub_networks(networks_builder.networks)
 
     sh.wait(blocks_after_disconnect, logs, majority_api_node)
@@ -67,11 +67,11 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     tt.logger.info(f"Disable {len(witness_details_part)} witnesses")
     tt.logger.info(f"{witness_details_part}")
     sh.disable_witnesses(majority_witness_wallet, witness_details_part)
-    tt.logger.info(f"Witnesses are disabled")
+    tt.logger.info("Witnesses are disabled")
 
     sh.wait(blocks_after_disable_witness, logs, minority_api_node)
 
-    tt.logger.info(f"Reconnect sub networks")
+    tt.logger.info("Reconnect sub networks")
     sh.connect_sub_networks(networks_builder.networks)
 
     sleep_seconds = 20

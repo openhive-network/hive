@@ -5,10 +5,7 @@ import sys
 sys.path.append("../../")
 import hive_utils
 
-from uuid import uuid4
-from time import sleep
 import logging
-import test_utils
 import os
 
 
@@ -38,8 +35,8 @@ if not logger.hasHandlers():
     logger.addHandler(fh)
 
 try:
-    from beem import Hive
-except Exception as ex:
+    pass
+except Exception:
     logger.error("beem library is not installed.")
     sys.exit(1)
 

@@ -67,7 +67,7 @@ if not logger.hasHandlers():
 
 try:
     from beem import Hive
-except Exception as ex:
+except Exception:
     logger.error("beem library is not installed.")
     sys.exit(1)
 
@@ -171,7 +171,7 @@ def create_proposals(node, accounts, start_date, end_date, nr_proposals):
     i = 0
     for cnt in range(nr_proposals):
         for acnt in accounts:
-            ret = node.commit.create_proposal(
+            node.commit.create_proposal(
                 acnt["name"],
                 acnt["name"],
                 start_date,
@@ -242,7 +242,7 @@ def vote_proposals(node, ids, accounts):
         cnt += 1
         if len(proposal_set) == proposal_limit or cnt == array_length:
             for acnt in accounts:
-                ret = node.commit.update_proposal_votes(acnt["name"], proposal_set, True)
+                node.commit.update_proposal_votes(acnt["name"], proposal_set, True)
                 i += 1
                 i_real += len(proposal_set)
                 if (i % data_size) == 0:

@@ -346,7 +346,7 @@ def test_use_account_recovery_system_twice_within_a_short_period_of_time(node):
     wallet.api.import_key(tt.PrivateKey("alice", secret="alice_second_key"))
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
+    with pytest.raises(tt.exceptions.CommunicationError):
         wallet.api.recover_account("alice", alice_original_authority, new_authority)
     # FIXME: After repair (https://gitlab.syncad.com/hive/hive/-/issues/469) uncomment assert and change error message
     # assert "EXPECTED ERROR MESSAGE" in exception.value.response["error"]["message"]

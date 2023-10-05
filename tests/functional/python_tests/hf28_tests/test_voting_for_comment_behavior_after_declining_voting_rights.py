@@ -97,15 +97,15 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node):
             wallet.api.transfer_to_vesting("initminer", account.name, tt.Asset.Test(1))
 
     # Create first comment - +0s
-    wallet.api.post_comment(f"creator-0", f"comment-of-creator-0", "", "someone0", "test-title", "this is a body", "{}")
+    wallet.api.post_comment("creator-0", "comment-of-creator-0", "", "someone0", "test-title", "this is a body", "{}")
 
     # Create second comment - +15s
     node.wait_number_of_blocks(5)
-    wallet.api.post_comment(f"creator-1", f"comment-of-creator-1", "", "someone1", "test-title", "this is a body", "{}")
+    wallet.api.post_comment("creator-1", "comment-of-creator-1", "", "someone1", "test-title", "this is a body", "{}")
 
     # Create second comment - +30s
     node.wait_number_of_blocks(5)
-    wallet.api.post_comment(f"creator-2", f"comment-of-creator-2", "", "someone2", "test-title", "this is a body", "{}")
+    wallet.api.post_comment("creator-2", "comment-of-creator-2", "", "someone2", "test-title", "this is a body", "{}")
 
     node.wait_for_irreversible_block()
     node.restart(time_offset="+58m")

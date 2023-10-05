@@ -70,7 +70,7 @@ def test_obi_throw_exception_01(prepare_obi_throw_exception_01):
 
     _a0 = logs[0].collector
 
-    tt.logger.info(f"Before an exception - waiting for specific witnesses")
+    tt.logger.info("Before an exception - waiting for specific witnesses")
     wait_for_specific_witnesses(
         witness_node_0, logs, [["witness-0"], ["witness-1", "initminer"], ["witness-1", "initminer"]]
     )
@@ -80,7 +80,7 @@ def test_obi_throw_exception_01(prepare_obi_throw_exception_01):
 
     time.sleep(delay_seconds)
 
-    tt.logger.info(f"Artificial exception is disabled")
+    tt.logger.info("Artificial exception is disabled")
     witness_node_0.api.debug_node.debug_throw_exception(throw_exception=False)
 
     wait(blocks_after_exception, logs, witness_node_0)

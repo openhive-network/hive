@@ -8,7 +8,6 @@ import subprocess as sub
 
 sys.path.append("../../")
 
-import hive_utils
 from hive_utils.hive_node import HiveNode
 from hive_utils.resources.configini import config as configuration
 

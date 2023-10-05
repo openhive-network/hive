@@ -15,7 +15,7 @@ def test_exceed_max_consecutive_recurrent_transfer_failures(node):
         "sender",
         "initminer",
         tt.Asset.Test(10),
-        f"recurrent transfer to receiver",
+        "recurrent transfer to receiver",
         24,
         MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES + 1,
     )

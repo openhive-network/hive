@@ -197,7 +197,7 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(a
     for key_type, key in zip(("active", "posting", "memo"), (current_active, current_posting, new_memo)):
         transaction = (
             alice.update_single_account_detail(key_type=key_type, key=key, weight=new_weight)
-            if key_type is not "memo"
+            if key_type != "memo"
             else alice.update_single_account_detail(key_type=key_type, key=key)
         )
 
