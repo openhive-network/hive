@@ -60,6 +60,103 @@ void sync_block_writer::pop_block()
   _fork_db.pop_block();
 }
 
+bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_block, 
+  const block_flow_control& block_ctrl,
+  uint32_t state_head_block_num,
+  block_id_type state_head_block_id,
+  const uint32_t skip,
+  apply_block_t apply_block_extended,
+  pop_block_t pop_block_extended,
+  notify_switch_fork_t notify_switch_fork,
+  external_notify_switch_fork_t external_notify_switch_fork )
+{
+  std::vector<std::shared_ptr<full_block_type>> blocks;
+
+  if (true) //if fork checking enabled
+  {
+    const item_ptr new_head = _fork_db.push_block(full_block);
+    block_ctrl.on_fork_db_insert();
+    // Inlined here former _maybe_warn_multiple_production( new_head->get_block_num() );
+    {
+      uint32_t height = new_head->get_block_num();
+      const auto blocks = _fork_db.fetch_block_by_number(height);
+      if (blocks.size() > 1)
+      {
+        vector<std::pair<account_name_type, fc::time_point_sec>> witness_time_pairs;
+        witness_time_pairs.reserve(blocks.size());
+        for (const auto& b : blocks)
+          witness_time_pairs.push_back(std::make_pair(b->get_block_header().witness, b->get_block_header().timestamp));
+
+        ilog("Encountered block num collision at block ${height} due to a fork, witnesses are: ${witness_time_pairs}", (height)(witness_time_pairs));
+      }
+    }
+
+    // If the new head block is actually older one, the new block is on a shorter fork
+    // (or duplicate), so don't validate it.
+    if (new_head->get_block_num() <= state_head_block_num)
+    {
+      block_ctrl.on_fork_ignore();
+      return false;
+    }
+
+    //if new_head indirectly builds off the current head_block
+    // then there's no fork switch, we're just linking in previously unlinked blocks to the main branch
+    for (item_ptr block = new_head;
+         block->get_block_num() > state_head_block_num;
+         block = block->prev.lock())
+    {
+      blocks.push_back(block->full_block);
+      if (block->get_block_num() == 1) //prevent crash backing up to null in for-loop
+        break;
+    }
+    //we've found a longer fork, so do a fork switch to pop back to the common block of the two forks
+    if (blocks.back()->get_block_header().previous != state_head_block_id)
+    {
+      block_ctrl.on_fork_apply();
+      ilog("calling switch_forks() from push_block()");
+      switch_forks( new_head->get_block_id(), new_head->get_block_num(),
+                    skip, &block_ctrl, state_head_block_id, state_head_block_num,
+                    apply_block_extended, pop_block_extended, notify_switch_fork );
+      external_notify_switch_fork( new_head->get_block_id().str(), new_head->get_block_num() );
+      return true;
+    }
+  }
+  else //fork checking not enabled, just try to push the new block
+  {
+    blocks.push_back(full_block);
+    // even though we've skipped fork db, we still need to notify flow control in proper order
+    block_ctrl.on_fork_db_insert();
+  }
+
+  //we are building off our head block, try to add the block(s)
+  block_ctrl.on_fork_normal();
+  for (auto iter = blocks.crbegin(); iter != blocks.crend(); ++iter)
+  {
+    try
+    {
+      bool is_pushed_block = (*iter)->get_block_id() == block_ctrl.get_full_block()->get_block_id();
+      if( blocks.size() > 1 )
+        _fork_db.set_head( _fork_db.fetch_block((*iter)->get_block_id(), true) );
+      apply_block_extended( 
+        // if we've linked in a chain of multiple blocks, we need to keep the fork_db's head block in sync
+        // with what we're applying.  If we're only appending a single block, the forkdb's head block
+        // should already be correct
+        *iter,
+        skip,
+        is_pushed_block ? &block_ctrl : nullptr);
+    }
+    catch (const fc::exception& e)
+    {
+      elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
+      // remove failed block, and all blocks on the fork after it, from the fork database
+      for (; iter != blocks.crend(); ++iter)
+        _fork_db.remove((*iter)->get_block_id());
+      throw;
+    }
+  }
+  return false;
+}
+
 void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
   uint32_t skip, const block_flow_control* pushed_block_ctrl,
   const block_id_type original_head_block_id, const uint32_t original_head_block_number,
