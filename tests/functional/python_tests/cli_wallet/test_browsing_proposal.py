@@ -2,9 +2,9 @@ from datetime import datetime as dt
 
 import test_tools as tt
 from hive_local_tools.functional.python.cli_wallet import (
+    FundedAccountInfo,
     create_funded_account,
     format_datetime,
-    funded_account_info,
     get_list_proposal_args,
     get_list_proposal_votes_args,
     prepare_proposal,
@@ -58,7 +58,7 @@ def test_find_proposals(wallet: tt.Wallet, creator: tt.Account):
     accounts_count = 8
     proposal_id_test_scheme = [[1], [2], [3], [1, 2], [1, 2, 3], [2, 3], [3, 4], [4, 5], [1, 2, 3, 4, 5, 6, 7]]
 
-    def inline_create_proposal(input_account: funded_account_info):
+    def inline_create_proposal(input_account: FundedAccountInfo):
         data = prepare_proposal(input=input_account, author_is_creator=False)
         # with wallet.in_single_transaction():
         wallet.api.post_comment(**data.post_comment_arguments)

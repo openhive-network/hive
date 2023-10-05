@@ -4,7 +4,7 @@ from random import randint
 import test_tools as tt
 
 
-class funded_account_info:
+class FundedAccountInfo:
     def __init__(self):
         self.creator: tt.Account = None
         self.account: tt.Account = None
@@ -76,7 +76,7 @@ def get_list_proposal_votes_args(start: list, **kwargs):
 
 
 def prepare_proposal(
-    input: funded_account_info, prefix: str = "test-", author_is_creator: bool = True
+    input: FundedAccountInfo, prefix: str = "test-", author_is_creator: bool = True
 ) -> prepared_proposal_data:
     from hashlib import md5
 
@@ -120,8 +120,8 @@ def print_test_name(fun, *args, **kwargs):
     return print_test_name_impl
 
 
-def create_funded_account(creator: tt.Account, wallet: tt.Wallet, id: int = 0) -> funded_account_info:
-    result = funded_account_info()
+def create_funded_account(creator: tt.Account, wallet: tt.Wallet, id: int = 0) -> FundedAccountInfo:
+    result = FundedAccountInfo()
 
     result.creator = creator
 

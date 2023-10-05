@@ -1,8 +1,8 @@
 import test_tools as tt
-from hive_local_tools.functional.python.cli_wallet import funded_account_info
+from hive_local_tools.functional.python.cli_wallet import FundedAccountInfo
 
 
-def test_delayed_voting(wallet: tt.Wallet, funded_account: funded_account_info, creator: tt.Account):
+def test_delayed_voting(wallet: tt.Wallet, funded_account: FundedAccountInfo, creator: tt.Account):
     account = funded_account.account
 
     def count_votes():
@@ -16,7 +16,7 @@ def test_delayed_voting(wallet: tt.Wallet, funded_account: funded_account_info, 
     assert votes_after > votes_before
 
 
-def test_get_open_orders(wallet: tt.Wallet, funded_account: funded_account_info):
+def test_get_open_orders(wallet: tt.Wallet, funded_account: FundedAccountInfo):
     user = funded_account.account
     amount_to_sell_1 = tt.Asset.Test(10)
     min_to_receive_1 = tt.Asset.Tbd(1000)
@@ -62,7 +62,7 @@ def test_get_open_orders(wallet: tt.Wallet, funded_account: funded_account_info)
     assert result_buy[1]["sell_price"]["quote"] == min_to_receive_2
 
 
-def test_create_recurent_transfer(wallet: tt.Wallet, funded_account: funded_account_info, creator: tt.Account):
+def test_create_recurent_transfer(wallet: tt.Wallet, funded_account: FundedAccountInfo, creator: tt.Account):
     receiver = funded_account.account
     memo = "This is a memo"
     amount = tt.Asset.Tbd(10)
