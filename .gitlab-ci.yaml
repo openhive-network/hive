@@ -318,7 +318,7 @@ plugin_test:
   before_script:
     - python3 -m venv venv/
     - . venv/bin/activate
-    - (cd $CI_PROJECT_DIR/tests/hive-local-tools && poetry install)
+    - (cd $CI_PROJECT_DIR/tests/python/hive-local-tools && poetry install)
   artifacts:
     reports:
       junit: $JUNIT_REPORT
@@ -351,7 +351,7 @@ plugin_test:
     - python3 setup.py install
     - cd ..
     - mkdir -p build/tests/hive-node-data
-    - cd tests/functional/python_tests/beem_tests
+    - cd tests/python/functional/beem_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -364,7 +364,7 @@ beem_testnet_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 18
     PYTEST_ARGS: "-m not mirrornet"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/beem_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
 
 beem_mirrornet_tests:
   extends: .beem_tests_base
@@ -376,7 +376,7 @@ beem_mirrornet_tests:
     HIVED_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/hived"
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/cli_wallet"
     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/get_dev_key"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/beem_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
 
   before_script:
     - !reference [.beem_tests_base, before_script]
@@ -387,11 +387,11 @@ cli_wallet_tests:
   extends: .test_tools_based
 
   variables:
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/cli_wallet/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet/report.xml
     PYTEST_TIMEOUT_MINUTES: 30
 
   script:
-    - cd tests/functional/python_tests/cli_wallet
+    - cd tests/python/functional/cli_wallet
     - *run-pytest
   tags:
     - public-runner-docker
@@ -401,11 +401,11 @@ hived_tests:
   extends: .test_tools_based
 
   variables:
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/hived/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hived/report.xml
     PYTEST_TIMEOUT_MINUTES: 30
 
   script:
-    - cd tests/functional/python_tests/hived
+    - cd tests/python/functional/hived
     - *run-pytest
   tags:
     - public-runner-docker
@@ -416,10 +416,10 @@ cli_wallet_extended_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 14
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/cli_wallet_extended_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet_extended_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/cli_wallet_extended_tests
+    - cd tests/python/functional/cli_wallet_extended_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -432,7 +432,7 @@ cli_wallet_extended_tests:
     PYTEST_TIMEOUT_MINUTES: 20
     PYTEST_NUMBER_OF_PROCESSES: 3
   script:
-    - cd tests/functional/python_tests/fork_tests
+    - cd tests/python/functional/fork_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -443,19 +443,19 @@ fork_tests_1_of_3:
   extends: .fork_test_base
   variables:
     PYTEST_ARGS: "-m fork_tests_group_1"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/fork_tests/report_group_1.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_1.xml
 
 fork_tests_2_of_3:
   extends: .fork_test_base
   variables:
     PYTEST_ARGS: "-m fork_tests_group_2"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/fork_tests/report_group_2.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_2.xml
 
 fork_tests_3_of_3:
   extends: .fork_test_base
   variables:
     PYTEST_ARGS: "-m fork_tests_group_3"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/fork_tests/report_group_3.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_3.xml
 
 
 hf26_tests:
@@ -465,10 +465,10 @@ hf26_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/hf26_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf26_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/hf26_tests
+    - cd tests/python/functional/hf26_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -479,10 +479,10 @@ live_sync_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/live_sync_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/live_sync_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/live_sync_tests
+    - cd tests/python/functional/live_sync_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -493,10 +493,10 @@ broadcast_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/broadcast_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/broadcast_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/broadcast_tests
+    - cd tests/python/functional/broadcast_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -507,10 +507,10 @@ test_tools_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/hive-local-tools/test-tools/tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
 
   script:
-    - cd tests/hive-local-tools/test-tools/tests
+    - cd tests/python/hive-local-tools/test-tools/tests
     - pip install local-tools/
     - *run-pytest
   tags:
@@ -522,10 +522,10 @@ rc_direct_delegations_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 12
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/direct_rc_delegations_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/direct_rc_delegations_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/direct_rc_delegations_tests
+    - cd tests/python/functional/direct_rc_delegations_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -538,10 +538,10 @@ message_format_testnet_tests:
     PYTEST_TIMEOUT_MINUTES: 45
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     NODE_TYPE: "testnet"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/api_tests/message_format_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
 
   script:
-    - cd tests/api_tests/message_format_tests
+    - cd tests/python/api_tests/message_format_tests
     - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
     - *run-pytest
   tags:
@@ -554,10 +554,10 @@ datagen_api_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 25
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/datagen_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/datagen_tests/
+    - cd tests/python/functional/datagen_tests/
     - *run-pytest
   tags:
     - public-runner-docker
@@ -568,7 +568,7 @@ patterns_tests:
   extends: .pytest_based
   variables:
     FF_NETWORK_PER_BUILD: 1
-    PYTHONPATH: "$CI_PROJECT_DIR/tests/hive-local-tools/test-tools/package"
+    PYTHONPATH: "$CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/package"
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
     HIVED_UID: $HIVED_UID
   needs:
@@ -585,7 +585,7 @@ patterns_tests:
 
   script:
     # run pattern tests
-    - cd $CI_PROJECT_DIR/tests/api_tests/pattern_tests
+    - cd $CI_PROJECT_DIR/tests/python/api_tests/pattern_tests
     - timeout 33m ./run_tests.sh hived-instance:8091 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
   after_script:
@@ -594,13 +594,13 @@ patterns_tests:
 
   artifacts:
     reports:
-      junit: tests/api_tests/pattern_tests/results.xml
+      junit: tests/python/api_tests/pattern_tests/results.xml
     paths:
     - "$CI_JOB_NAME"
     - "**/from_node.log"
     - "**/ah.log"
     - "**/*.out.json"
-    - "$CI_PROJECT_DIR/tests/hive-local-tools/tests-api/hived/workdir_*"
+    - "$CI_PROJECT_DIR/tests/python/hive-local-tools/tests-api/hived/workdir_*"
     - docker_entrypoint.log
     when: always
     expire_in: 6 hours
@@ -614,10 +614,10 @@ transaction_serialization_testnet_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/transaction_serialization_tests/report.xml
 
   script:
-    - cd $CI_PROJECT_DIR/tests/functional/python_tests/transaction_serialization_tests
+    - cd $CI_PROJECT_DIR/tests/python/functional/transaction_serialization_tests
     - export PYTEST_ARGS=(-m testnet)
     - *run-pytest
   tags:
@@ -631,7 +631,7 @@ python_pattern_mainnet_tests:
   variables:
     PYTEST_TIMEOUT_MINUTES: 27
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/api_tests/python_patterns_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
     BINARY_CACHE_PATH: "hived-binaries"
     HIVED_UID: $HIVED_UID
   needs:
@@ -648,7 +648,7 @@ python_pattern_mainnet_tests:
     - !reference [.test_tools_based, before_script]
   script:
     # run pattern tests
-    - cd $CI_PROJECT_DIR/tests/api_tests/python_patterns_tests
+    - cd $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests
     - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8091 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/$BINARY_CACHE_PATH/cli_wallet)
     - *run-pytest
 
@@ -659,7 +659,7 @@ python_pattern_mainnet_tests:
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     reports:
-      junit: $CI_PROJECT_DIR/tests/api_tests/python_patterns_tests/report.xml
+      junit: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
     paths:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
@@ -675,10 +675,10 @@ python_pattern_mainnet_tests:
   extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 30
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/api_tests/message_format_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
 
   script:
-    - cd tests/api_tests/message_format_tests
+    - cd tests/python/api_tests/message_format_tests
     - export PYTEST_ARGS=(-m ${NODE_TYPE} --http-endpoint=${NODE_ADDRESS})
     - *run-pytest
   tags:
@@ -705,7 +705,7 @@ message_format_mainnet_5m_tests:
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     reports:
-      junit: $CI_PROJECT_DIR/tests/api_tests/message_format_tests/report.xml
+      junit: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
     paths:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
@@ -732,10 +732,10 @@ foundation_layer_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/foundation_layer_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/foundation_layer_tests
+    - cd tests/python/functional/foundation_layer_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -751,11 +751,11 @@ witness_tests:
   variables:
     NODE_ADDRESS: "hived-instance:8091"
     PYTEST_TIMEOUT_MINUTES: 5
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/witness_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/witness_tests/report.xml
     HIVED_UID: $HIVED_UID
   script:
     - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
-    - cd tests/functional/python_tests/witness_tests
+    - cd tests/python/functional/witness_tests
     - export PYTEST_ARGS=(--http-endpoint=${NODE_ADDRESS})
     - *run-pytest
   after_script:
@@ -771,10 +771,10 @@ hf28_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/hf28_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf28_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/hf28_tests
+    - cd tests/python/functional/hf28_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -785,10 +785,10 @@ functional_api_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 3
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/api_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/api_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/api_tests/
+    - cd tests/python/functional/api_tests/
     - *run-pytest
   tags:
     - public-runner-docker
@@ -807,10 +807,10 @@ hardfork_schedule_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 3
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/hardfork_schedule_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hardfork_schedule_tests/report.xml
 
   script:
-    - cd tests/functional/python_tests/hardfork_schedule_tests
+    - cd tests/python/functional/hardfork_schedule_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -853,9 +853,9 @@ recovery_tests:
   extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/recovery_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/recovery_tests/report.xml
   script:
-    - cd tests/functional/python_tests/recovery_tests
+    - cd tests/python/functional/recovery_tests
     - *run-pytest
   tags:
     - public-runner-docker
@@ -865,9 +865,9 @@ operation_tests:
   extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 15
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/operation_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/operation_tests/report.xml
   script:
-    - cd tests/functional/python_tests/operation_tests/$OPERATION
+    - cd tests/python/functional/operation_tests/$OPERATION
     - *run-pytest
   parallel:
     matrix:
@@ -890,9 +890,9 @@ comment_cashout_tests:
   variables:
     PYTEST_NUMBER_OF_PROCESSES: 1
     PYTEST_TIMEOUT_MINUTES: 30
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/functional/python_tests/comment_cashout_tests/report.xml
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
   script:
-    - cd tests/functional/python_tests/comment_cashout_tests
+    - cd tests/python/functional/comment_cashout_tests
     - *run-pytest
   allow_failure: true
   tags:
