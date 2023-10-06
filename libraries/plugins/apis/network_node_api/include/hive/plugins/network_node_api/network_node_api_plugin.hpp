@@ -20,7 +20,7 @@ public:
       (hive::plugins::p2p::p2p_plugin)
    )
 
-   network_node_api_plugin( appbase::application& app );
+   network_node_api_plugin();
    virtual ~network_node_api_plugin();
 
    static const std::string& name() { static std::string name = HIVE_NETWORK_NODE_API_PLUGIN_NAME; return name; }

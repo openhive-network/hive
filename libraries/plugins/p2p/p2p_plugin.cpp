@@ -375,7 +375,7 @@ bool p2p_plugin_impl::is_included_block(const block_id_type& block_id)
 
 } // detail
 
-p2p_plugin::p2p_plugin( appbase::application& app ): appbase::plugin<p2p_plugin>( app )
+p2p_plugin::p2p_plugin()
 {
   set_pre_shutdown_order( p2p_order );
 }
@@ -405,7 +405,7 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
 
 void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& options)
 {
-  my = std::make_unique<detail::p2p_plugin_impl>(theApp.get_plugin<plugins::chain::chain_plugin>(), theApp);
+  my = std::make_unique<detail::p2p_plugin_impl>(get_app().get_plugin<plugins::chain::chain_plugin>(), get_app());
 
   if( options.count( "p2p-endpoint" ) )
     my->endpoint = fc::ip::endpoint::from_string( options.at( "p2p-endpoint" ).as< string >() );
@@ -484,8 +484,8 @@ void p2p_plugin::plugin_startup()
 
   my->p2p_thread.async( [this]
   {
-    my->node.reset(new graphene::net::node(my->user_agent, theApp));
-    my->node->load_configuration(theApp.data_dir() / "p2p");
+    my->node.reset(new graphene::net::node(my->user_agent, get_app()));
+    my->node->load_configuration(get_app().data_dir() / "p2p");
     my->node->set_node_delegate( &(*my) );
 
     if( my->endpoint )
@@ -521,8 +521,8 @@ void p2p_plugin::plugin_startup()
     my->node->set_advanced_node_parameters( my->config );
 
     ilog("Listening to P2P network");
-    my->node->listen_to_p2p_network( [this](){ return theApp.is_interrupt_request(); } );
-    if( theApp.is_interrupt_request() )
+    my->node->listen_to_p2p_network( [this](){ return get_app().is_interrupt_request(); } );
+    if( get_app().is_interrupt_request() )
     {
       ilog("P2P plugin was manually closed. More details in p2p log.");
       return;
@@ -539,7 +539,7 @@ void p2p_plugin::plugin_startup()
     });
     my->node->sync_from(graphene::net::item_id(graphene::net::block_message_type, block_id), std::vector<uint32_t>());
     ilog("P2P node listening at ${ep}", ("ep", my->node->get_actual_listening_endpoint()));
-    theApp.notify( "P2P listening",
+    get_app().notify( "P2P listening",
     // {
         "type", "p2p",
         "address", static_cast<fc::string>(my->node->get_actual_listening_endpoint().get_address()),
@@ -548,7 +548,7 @@ void p2p_plugin::plugin_startup()
     );
   }).wait();
   ilog( "P2P Plugin started" );
-  theApp.notify_status("P2P started");
+  get_app().notify_status("P2P started");
 }
 
 void p2p_plugin::plugin_pre_shutdown() {

@@ -18,7 +18,7 @@ public:
     (hive::plugins::json_rpc::json_rpc_plugin)
   )
 
-  rc_api_plugin( appbase::application& app );
+  rc_api_plugin();
   virtual ~rc_api_plugin();
 
   static const std::string& name() { static std::string name = HIVE_RC_API_PLUGIN_NAME; return name; }

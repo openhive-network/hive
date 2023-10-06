@@ -194,7 +194,7 @@ namespace detail {
 
 } // detail
 
-  block_log_conversion_plugin::block_log_conversion_plugin( appbase::application& app ): appbase::plugin<block_log_conversion_plugin>( app ) {}
+  block_log_conversion_plugin::block_log_conversion_plugin(): appbase::plugin<block_log_conversion_plugin>() {}
   block_log_conversion_plugin::~block_log_conversion_plugin() {}
 
   void block_log_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg ) {}
@@ -232,7 +232,7 @@ namespace detail {
     const auto private_key = fc::ecc::private_key::wif_to_key( options["private-key"].as< std::string >() );
     FC_ASSERT( private_key.valid(), "unable to parse the private key" );
 
-    my = std::make_unique< detail::block_log_conversion_plugin_impl >( *private_key, _hive_chain_id, theApp, options.at( "jobs" ).as< size_t >() );
+    my = std::make_unique< detail::block_log_conversion_plugin_impl >( *private_key, _hive_chain_id, get_app(), options.at( "jobs" ).as< size_t >() );
 
     my->log_per_block = options["log-per-block"].as< uint32_t >();
     my->log_specific = options["log-specific"].as< uint32_t >();
@@ -246,14 +246,14 @@ namespace detail {
     try
     {
       my->convert(
-        theApp.get_args().at("resume-block").as< uint32_t >(),
-        theApp.get_args().at( "stop-block" ).as< uint32_t >()
+        get_app().get_args().at("resume-block").as< uint32_t >(),
+        get_app().get_args().at( "stop-block" ).as< uint32_t >()
       );
     }
     catch( const fc::exception& e )
     {
       elog( e.to_detail_string() );
-      theApp.generate_interrupt_request();
+      get_app().generate_interrupt_request();
     }
   }
   void block_log_conversion_plugin::plugin_shutdown()

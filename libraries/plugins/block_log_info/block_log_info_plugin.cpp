@@ -131,7 +131,7 @@ void block_log_info_plugin_impl::print_message( const block_log_message_data& da
 
 } // detail
 
-block_log_info_plugin::block_log_info_plugin( appbase::application& app ): appbase::plugin<block_log_info_plugin>( app ) {}
+block_log_info_plugin::block_log_info_plugin() {}
 block_log_info_plugin::~block_log_info_plugin() {}
 
 void block_log_info_plugin::set_program_options( options_description& cli, options_description& cfg )
@@ -145,11 +145,11 @@ void block_log_info_plugin::set_program_options( options_description& cli, optio
 
 void block_log_info_plugin::plugin_initialize( const boost::program_options::variables_map& options )
 {
-  my = std::make_unique< detail::block_log_info_plugin_impl >( *this, theApp );
+  my = std::make_unique< detail::block_log_info_plugin_impl >( *this, get_app() );
   try
   {
     ilog( "Initializing block_log_info plugin" );
-    chain::database& db = theApp.get_plugin< hive::plugins::chain::chain_plugin >().db();
+    chain::database& db = get_app().get_plugin< hive::plugins::chain::chain_plugin >().db();
 
     my->_post_apply_block_conn = db.add_post_apply_block_handler(
       [&]( const block_notification& note ){ my->on_post_apply_block( note ); }, *this );
@@ -166,7 +166,7 @@ void block_log_info_plugin::plugin_initialize( const boost::program_options::var
       wlog( "print_interval_seconds set to value <= 0, if you don't need printing, consider disabling block_log_info_plugin entirely to improve performance" );
     }
 
-    theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), fc::variant_object() );
+    get_app().get_plugin< chain::chain_plugin >().report_state_options( name(), fc::variant_object() );
   }
   FC_CAPTURE_AND_RETHROW()
 }

@@ -44,7 +44,7 @@ struct debug_generate_blocks_return
 class debug_node_plugin : public plugin< debug_node_plugin >
 {
   public:
-    debug_node_plugin( appbase::application& app );
+    debug_node_plugin();
     virtual ~debug_node_plugin();
 
     APPBASE_PLUGIN_REQUIRES( (chain::chain_plugin) )

@@ -44,7 +44,7 @@ tags_plugin_impl::~tags_plugin_impl() {}
 
 } /// end detail namespace
 
-tags_plugin::tags_plugin( appbase::application& app ): appbase::plugin<tags_plugin>( app ) {}
+tags_plugin::tags_plugin() {}
 tags_plugin::~tags_plugin() {}
 
 void tags_plugin::set_program_options(
@@ -65,7 +65,7 @@ void tags_plugin::plugin_initialize(const boost::program_options::variables_map&
 {
   FC_ASSERT( false, "A plugin `tags` is deprecated and is no longer supported.");
   ilog("Intializing tags plugin" );
-  my = std::make_unique< detail::tags_plugin_impl >( theApp );
+  my = std::make_unique< detail::tags_plugin_impl >( get_app() );
 
   fc::mutable_variant_object state_opts;
 
@@ -76,7 +76,7 @@ void tags_plugin::plugin_initialize(const boost::program_options::variables_map&
     idump( (my->_promoted_start_time) );
   }
 
-  theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+  get_app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 }
 
 

@@ -20,7 +20,7 @@ public:
     (hive::plugins::account_history_rocksdb::account_history_rocksdb_plugin)
   )
 
-  account_history_api_plugin( appbase::application& app );
+  account_history_api_plugin();
   virtual ~account_history_api_plugin();
 
   static const std::string& name() { static std::string name = HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME; return name; }

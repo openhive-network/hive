@@ -237,7 +237,7 @@ uint32_t transaction_status_impl::get_earliest_tracked_block_num()
 
 } // detail
 
-transaction_status_plugin::transaction_status_plugin( appbase::application& app ): appbase::plugin<transaction_status_plugin>( app ) {}
+transaction_status_plugin::transaction_status_plugin() {}
 transaction_status_plugin::~transaction_status_plugin() {}
 
 void transaction_status_plugin::set_program_options( boost::program_options::options_description& cli, boost::program_options::options_description& cfg )
@@ -256,7 +256,7 @@ void transaction_status_plugin::plugin_initialize( const boost::program_options:
   try
   {
     ilog( "transaction_status: plugin_initialize() begin" );
-    my = std::make_unique< detail::transaction_status_impl >( theApp );
+    my = std::make_unique< detail::transaction_status_impl >( get_app() );
 
     fc::mutable_variant_object state_opts;
 
@@ -296,7 +296,7 @@ void transaction_status_plugin::plugin_initialize( const boost::program_options:
 
     HIVE_ADD_PLUGIN_INDEX(my->_db, transaction_status_index);
 
-    theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+    get_app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 
     my->post_apply_transaction_connection = my->_db.add_post_apply_transaction_handler( [&]( const transaction_notification& note ) { try { my->on_post_apply_transaction( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );
     my->post_apply_block_connection = my->_db.add_post_apply_block_handler( [&]( const block_notification& note ) { try { my->on_post_apply_block( note ); } FC_LOG_AND_RETHROW() }, *this, 0 );

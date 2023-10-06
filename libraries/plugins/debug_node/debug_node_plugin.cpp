@@ -49,7 +49,7 @@ debug_node_plugin_impl::~debug_node_plugin_impl() {}
 
 }
 
-debug_node_plugin::debug_node_plugin( appbase::application& app ): appbase::plugin<debug_node_plugin>( app ) {}
+debug_node_plugin::debug_node_plugin() {}
 debug_node_plugin::~debug_node_plugin() {}
 
 void debug_node_plugin::set_program_options(
@@ -67,7 +67,7 @@ void debug_node_plugin::set_program_options(
 
 void debug_node_plugin::plugin_initialize( const variables_map& options )
 {
-  my = std::make_shared< detail::debug_node_plugin_impl >( theApp );
+  my = std::make_shared< detail::debug_node_plugin_impl >( get_app() );
 
   if( options.count( "debug-node-edit-script" ) > 0 )
   {
@@ -370,7 +370,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     }
 
     auto generate_block_ctrl = std::make_shared< hive::chain::generate_block_flow_control >(scheduled_time,
-      scheduled_witness_name, *debug_private_key, skip, theApp);
+      scheduled_witness_name, *debug_private_key, skip, get_app());
 
     if( immediate_generation )
     {

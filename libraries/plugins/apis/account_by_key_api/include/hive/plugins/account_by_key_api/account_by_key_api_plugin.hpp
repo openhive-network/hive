@@ -20,7 +20,7 @@ public:
     (hive::plugins::json_rpc::json_rpc_plugin)
   )
 
-  account_by_key_api_plugin( appbase::application& app );
+  account_by_key_api_plugin();
   virtual ~account_by_key_api_plugin();
 
   static const std::string& name() { static std::string name = HIVE_ACCOUNT_BY_KEY_API_PLUGIN_NAME; return name; }

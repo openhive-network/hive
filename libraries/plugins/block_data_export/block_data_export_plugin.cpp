@@ -277,7 +277,7 @@ void block_data_export_plugin_impl::on_post_apply_block( const block_notificatio
 
 } // detail
 
-block_data_export_plugin::block_data_export_plugin( appbase::application& app ): appbase::plugin<block_data_export_plugin>( app ) {}
+block_data_export_plugin::block_data_export_plugin() {}
 block_data_export_plugin::~block_data_export_plugin() {}
 
 void block_data_export_plugin::register_export_data_factory(
@@ -307,7 +307,7 @@ void block_data_export_plugin::set_program_options( options_description& cli, op
 
 void block_data_export_plugin::plugin_initialize( const boost::program_options::variables_map& options )
 {
-  my = std::make_unique< detail::block_data_export_plugin_impl >( *this, theApp );
+  my = std::make_unique< detail::block_data_export_plugin_impl >( *this,  get_app() );
   try
   {
     ilog( "Initializing block_data_export plugin" );

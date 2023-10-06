@@ -3,7 +3,7 @@
 
 namespace hive { namespace plugins { namespace database_api {
 
-database_api_plugin::database_api_plugin( appbase::application& app ): appbase::plugin<database_api_plugin>( app ) {}
+database_api_plugin::database_api_plugin() {}
 database_api_plugin::~database_api_plugin() {}
 
 void database_api_plugin::set_program_options(
@@ -12,7 +12,7 @@ void database_api_plugin::set_program_options(
 
 void database_api_plugin::plugin_initialize( const variables_map& options )
 {
-  api = std::make_shared< database_api >( theApp );
+  api = std::make_shared< database_api >( get_app() );
 }
 
 void database_api_plugin::plugin_startup() {}

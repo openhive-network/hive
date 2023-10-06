@@ -48,7 +48,7 @@ public:
     (hive::plugins::p2p::p2p_plugin)
   )
 
-  witness_plugin( appbase::application& app );
+  witness_plugin();
   virtual ~witness_plugin();
 
   void enable_fast_confirm();

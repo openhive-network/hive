@@ -561,7 +561,7 @@ boost::signals2::connection webserver_plugin_impl<websocket_server_type>::add_co
 
 } // detail
 
-webserver_plugin::webserver_plugin( appbase::application& app ): appbase::plugin<webserver_plugin>( app )
+webserver_plugin::webserver_plugin()
 {
   set_pre_shutdown_order(webserver_order);
 }
@@ -592,9 +592,9 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
   auto _ws_deflate_enabled = options.at( "webserver-ws-deflate" ).as< bool >();
   ilog("Compression in webserver is ${_ws_deflate_enabled}", ("_ws_deflate_enabled", _ws_deflate_enabled ? "enabled" : "disabled"));
   if( _ws_deflate_enabled )
-    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size, theApp ) );
+    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size, get_app() ) );
   else
-    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_nondeflate>( thread_pool_size, theApp ) );
+    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_nondeflate>( thread_pool_size, get_app() ) );
 
   if( options.count( "webserver-http-endpoint" ) )
   {

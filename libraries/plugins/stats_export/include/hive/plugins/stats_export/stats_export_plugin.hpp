@@ -16,7 +16,7 @@ using namespace appbase;
 class stats_export_plugin : public appbase::plugin< stats_export_plugin >
 {
   public:
-    stats_export_plugin( appbase::application& app );
+    stats_export_plugin();
     virtual ~stats_export_plugin();
 
     APPBASE_PLUGIN_REQUIRES(

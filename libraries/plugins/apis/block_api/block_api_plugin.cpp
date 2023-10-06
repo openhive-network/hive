@@ -3,7 +3,7 @@
 
 namespace hive { namespace plugins { namespace block_api {
 
-block_api_plugin::block_api_plugin( appbase::application& app ): appbase::plugin<block_api_plugin>( app ) {}
+block_api_plugin::block_api_plugin() {}
 block_api_plugin::~block_api_plugin() {}
 
 void block_api_plugin::set_program_options(
@@ -12,7 +12,7 @@ void block_api_plugin::set_program_options(
 
 void block_api_plugin::plugin_initialize( const variables_map& options )
 {
-  api = std::make_shared< block_api >( theApp );
+  api = std::make_shared< block_api >( get_app() );
 }
 
 void block_api_plugin::plugin_startup() {}

@@ -239,7 +239,7 @@ void comment_cashout_logging_plugin_impl::on_pre_apply_operation(const operation
 
 } // detail
 
-comment_cashout_logging_plugin::comment_cashout_logging_plugin( appbase::application& app ): appbase::plugin<comment_cashout_logging_plugin>( app ) {}
+comment_cashout_logging_plugin::comment_cashout_logging_plugin() {}
 comment_cashout_logging_plugin::~comment_cashout_logging_plugin() {}
 
 void comment_cashout_logging_plugin::set_program_options(options_description& cli, options_description& cfg)
@@ -265,11 +265,11 @@ void comment_cashout_logging_plugin::plugin_initialize( const boost::program_opt
     {
       throw std::runtime_error("Path is not directory");
     }
-    my = std::make_unique<detail::comment_cashout_logging_plugin_impl>(pth.string(), theApp);
+    my = std::make_unique<detail::comment_cashout_logging_plugin_impl>(pth.string(), get_app());
   }
   else
   {
-    my = std::make_unique<detail::comment_cashout_logging_plugin_impl>("./", theApp);
+    my = std::make_unique<detail::comment_cashout_logging_plugin_impl>("./", get_app());
   }
 
   my->_pre_apply_operation_conn = my->_db.add_pre_apply_operation_handler(

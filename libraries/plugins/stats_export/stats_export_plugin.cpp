@@ -121,7 +121,7 @@ void stats_export_plugin_impl::on_post_apply_block( const block_notification& no
 
 } // detail
 
-stats_export_plugin::stats_export_plugin( appbase::application& app ): appbase::plugin<stats_export_plugin>( app ) {}
+stats_export_plugin::stats_export_plugin() {}
 stats_export_plugin::~stats_export_plugin() {}
 
 void stats_export_plugin::set_program_options( options_description& cli, options_description& cfg )
@@ -137,7 +137,7 @@ void stats_export_plugin::set_program_options( options_description& cli, options
 
 void stats_export_plugin::plugin_initialize( const boost::program_options::variables_map& options )
 {
-  my = std::make_unique< detail::stats_export_plugin_impl >( *this, theApp );
+  my = std::make_unique< detail::stats_export_plugin_impl >( *this, get_app() );
   try
   {
     ilog( "Initializing stats_export plugin" );

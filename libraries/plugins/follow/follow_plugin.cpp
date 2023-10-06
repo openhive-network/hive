@@ -323,7 +323,7 @@ void follow_plugin_impl::post_operation( const operation_notification& note )
 
 } // detail
 
-follow_plugin::follow_plugin( appbase::application& app ): appbase::plugin<follow_plugin>( app ) {}
+follow_plugin::follow_plugin() {}
 
 follow_plugin::~follow_plugin() {}
 
@@ -345,7 +345,7 @@ void follow_plugin::plugin_initialize( const boost::program_options::variables_m
     FC_ASSERT( false, "A plugin `follow` is deprecated and is no longer supported.");
     ilog("Intializing follow plugin" );
 
-    my = std::make_unique< detail::follow_plugin_impl >( *this, theApp );
+    my = std::make_unique< detail::follow_plugin_impl >( *this, get_app() );
 
     // Each plugin needs its own evaluator registry.
     _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< hive::plugins::follow::follow_plugin_operation > >( my->_db, name() );
@@ -381,7 +381,7 @@ void follow_plugin::plugin_initialize( const boost::program_options::variables_m
       state_opts[ "follow-start-feeds" ] = start_feeds;
     }
 
-    theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+    get_app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
   }
   FC_CAPTURE_AND_RETHROW()
 }

@@ -1547,7 +1547,7 @@ void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive:
     }
   }
 
-state_snapshot_plugin::state_snapshot_plugin( appbase::application& app ): appbase::plugin<state_snapshot_plugin>( app )
+state_snapshot_plugin::state_snapshot_plugin()
   {
   }
 
@@ -1574,7 +1574,7 @@ void state_snapshot_plugin::set_program_options(
 void state_snapshot_plugin::plugin_initialize(const boost::program_options::variables_map& options)
   {
   ilog("Initializing state_snapshot_plugin...");
-  _my = std::make_unique<impl>(*this, options, theApp);
+  _my = std::make_unique<impl>(*this, options, get_app());
   }
 
 void state_snapshot_plugin::plugin_startup()

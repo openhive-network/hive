@@ -4,9 +4,9 @@
 
 namespace hive { namespace plugins { namespace test_api {
 
-test_api_plugin::test_api_plugin( appbase::application& app ): appbase::plugin<test_api_plugin>( app )
+test_api_plugin::test_api_plugin(): appbase::plugin<test_api_plugin>()
 {
-  JSON_RPC_REGISTER_API( name(), app );
+  JSON_RPC_REGISTER_API( name(), get_app() );
 }
 
 test_api_plugin::~test_api_plugin() {}

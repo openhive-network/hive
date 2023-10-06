@@ -80,7 +80,7 @@ struct expectation_set : appbase::plugin< expectation_set >
   std::vector< boost::signals2::connection > connections;
   bool failure = false;
 
-  expectation_set( appbase::application& app, database& db ) : appbase::plugin<expectation_set>( app ), _db( db )
+  expectation_set( appbase::application& app, database& db ) : appbase::plugin<expectation_set>(), _db( db )
   {
     connections.emplace_back( _db.add_pre_apply_block_handler(
       [this]( const block_notification& ){ verify( expectation::PRE_BLOCK); }, *this, 0 ) );

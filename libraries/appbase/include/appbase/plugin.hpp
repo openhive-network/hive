@@ -8,7 +8,7 @@
 #include <map>
 
 #define APPBASE_PLUGIN_REQUIRES_VISIT( r, visitor, elem ) \
-  visitor( theApp.register_plugin<elem>() );
+  visitor( get_app().register_plugin<elem>() );
 
 #define APPBASE_PLUGIN_REQUIRES( PLUGINS )                               \
   virtual void plugin_for_each_dependency( plugin_processor&& l ) override {  \

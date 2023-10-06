@@ -20,7 +20,7 @@ using hive::chain::generic_custom_operation_interpreter;
 class follow_plugin : public appbase::plugin< follow_plugin >
 {
   public:
-    follow_plugin( appbase::application& app );
+    follow_plugin();
     virtual ~follow_plugin();
 
     APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )
