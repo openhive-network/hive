@@ -1,7 +1,9 @@
+from json import dumps
+
 import pytest
+
 import test_tools as tt
 from hive_local_tools import run_for
-from json import dumps
 
 
 @pytest.mark.parametrize(

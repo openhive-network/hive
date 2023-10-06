@@ -4,7 +4,6 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 
-
 ACCOUNTS = ["initminer", "alice"]
 
 CORRECT_VALUES = [

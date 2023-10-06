@@ -5,7 +5,6 @@ from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 from hive_local_tools.api.message_format.wallet_bridge_api.constants import ACCOUNTS, MAINNET_ACCOUNT
 
-
 CORRECT_VALUES = [
     ACCOUNTS[0],
     MAINNET_ACCOUNT,

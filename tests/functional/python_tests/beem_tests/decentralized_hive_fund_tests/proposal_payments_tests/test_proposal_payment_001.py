@@ -2,13 +2,13 @@ import datetime
 
 import dateutil.parser
 
-import test_tools as tt
 import hive_utils
+import test_tools as tt
 from hive_local_tools.functional.python.beem import NodeClientMaker
 from hive_local_tools.functional.python.beem.decentralized_hive_fund import (
-    create_proposals,
     CREATOR,
     TREASURY,
+    create_proposals,
     test_utils,
 )
 

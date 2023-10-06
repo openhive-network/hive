@@ -2,8 +2,9 @@
 This file contains tests showing abnormalities on hardfork 27, and behavior after hardfork 28.
 Related issue: https://gitlab.syncad.com/hive/hive/-/issues/441
 """
-import pytest
 import time
+
+import pytest
 
 import test_tools as tt
 from hive_local_tools import run_for

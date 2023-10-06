@@ -6,7 +6,6 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TRANSACTION_TEMPLATE
 
-
 ALICE_MASTER_PASSWORD = "Alice has a cat"
 
 

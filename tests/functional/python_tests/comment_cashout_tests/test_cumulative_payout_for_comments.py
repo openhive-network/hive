@@ -1,6 +1,7 @@
 import pytest
 
 import test_tools as tt
+
 from .block_log.generate_block_log import AMOUNT_OF_ALL_COMMENTS
 
 

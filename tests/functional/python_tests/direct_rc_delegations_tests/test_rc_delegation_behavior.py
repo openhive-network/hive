@@ -1,5 +1,5 @@
-from concurrent.futures import ThreadPoolExecutor
 import math
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 

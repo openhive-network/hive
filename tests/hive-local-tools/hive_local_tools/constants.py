@@ -13,7 +13,6 @@ or package in which they will be used. e.g.:
 
 from typing import Final
 
-
 TRANSACTION_TEMPLATE: Final[dict] = {
     "ref_block_num": 0,
     "ref_block_prefix": 0,

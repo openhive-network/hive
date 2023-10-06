@@ -1,9 +1,7 @@
 import pytest
 
 import test_tools as tt
-
 from hive_local_tools import run_for
-
 
 PROPOSAL_START_DATE = tt.Time.from_now(weeks=16)
 PROPOSAL_END_DATE = tt.Time.from_now(weeks=20)

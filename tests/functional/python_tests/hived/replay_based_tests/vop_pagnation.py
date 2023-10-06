@@ -1,9 +1,7 @@
 import argparse
 from threading import Thread
 
-
 from hive_utils.resources.configini import config as configuration
-
 
 # https://developers.hive.io/tutorials-recipes/paginated-api-methods.html#account_history_apiget_account_history
 MAX_AT_ONCE = 10000
@@ -56,8 +54,9 @@ def compress_vops(data: list) -> list:
 def get_vops(range_begin: int, range_end: int, start_from_id: int, limit: int) -> dict:
     global config
 
-    from requests import post
     from json import dumps
+
+    from requests import post
 
     # from time import sleep
     # sleep(0.25)

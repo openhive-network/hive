@@ -3,7 +3,12 @@ from datetime import timedelta
 import pytest
 
 import test_tools as tt
+from hive_local_tools.constants import (
+    DELAYED_VOTING_INTERVAL_SECONDS,
+    DELAYED_VOTING_TOTAL_INTERVAL_SECONDS,
+)
 from hive_local_tools.functional.python.operation import (
+    convert_hive_to_vest_range,
     get_governance_voting_power,
     get_hive_balance,
     get_hive_power,
@@ -11,13 +16,7 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_vesting_price,
     get_virtual_operations,
-    convert_hive_to_vest_range,
     jump_to_date,
-)
-
-from hive_local_tools.constants import (
-    DELAYED_VOTING_INTERVAL_SECONDS,
-    DELAYED_VOTING_TOTAL_INTERVAL_SECONDS,
 )
 
 

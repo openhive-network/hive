@@ -1,6 +1,6 @@
 import test_tools as tt
 
-from .utilities import create_accounts, check_recurrent_transfer, check_recurrent_transfer_data
+from .utilities import check_recurrent_transfer, check_recurrent_transfer_data, create_accounts
 
 
 def test_recurrent_transfer(wallet):

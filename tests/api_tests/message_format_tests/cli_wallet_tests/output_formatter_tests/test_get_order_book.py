@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Dict, List, Literal, Union
 
 import test_tools as tt
-
 from hive_local_tools.api.message_format.cli_wallet import verify_json_patterns, verify_text_patterns
 from hive_local_tools.api.message_format.cli_wallet.output_formater import (
     are_close,

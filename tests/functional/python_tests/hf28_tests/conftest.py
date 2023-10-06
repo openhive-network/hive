@@ -1,8 +1,9 @@
 from pathlib import Path
+
 import pytest
 
 import test_tools as tt
-from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT, PROXY_ACCOUNT
+from hive_local_tools.functional.python.hf28.constants import PROXY_ACCOUNT, VOTER_ACCOUNT
 
 
 @pytest.fixture

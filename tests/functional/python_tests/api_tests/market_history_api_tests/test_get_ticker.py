@@ -3,7 +3,6 @@ import pytest
 import test_tools as tt
 from hive_local_tools import run_for
 
-
 HIVE_AND_HBD_AMOUNTS = (
     ([153, 241], [1095, 1331]),
     ([40, 50], [100, 200]),

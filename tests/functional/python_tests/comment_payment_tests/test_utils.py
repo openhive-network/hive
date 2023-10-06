@@ -1,6 +1,6 @@
-import hive_utils
-
 import logging
+
+import hive_utils
 
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"

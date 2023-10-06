@@ -2,7 +2,7 @@
 import pytest
 
 import test_tools as tt
-from hive_local_tools.constants import VESTING_WITHDRAW_INTERVALS, VESTING_WITHDRAW_INTERVAL_SECONDS
+from hive_local_tools.constants import VESTING_WITHDRAW_INTERVAL_SECONDS, VESTING_WITHDRAW_INTERVALS
 from hive_local_tools.functional.python.operation import jump_to_date
 from hive_local_tools.functional.python.operation.withdrawe_vesting import PowerDown
 

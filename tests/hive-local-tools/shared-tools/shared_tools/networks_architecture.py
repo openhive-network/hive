@@ -34,9 +34,8 @@ print(na.show())
  (WitnessNode-1()) (witness13-beta, witness14-beta, witness15-beta, witness16-beta, witness17-beta)
 """
 
-from typing import Callable, Tuple, Any
-
 from dataclasses import dataclass, field
+from typing import Any, Callable, Tuple
 
 import test_tools as tt
 

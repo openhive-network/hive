@@ -1,9 +1,8 @@
 from pathlib import Path
 
-import test_tools as tt
-
-from shared_tools.complex_networks import generate_networks
 import shared_tools.networks_architecture as networks
+import test_tools as tt
+from shared_tools.complex_networks import generate_networks
 
 
 def prepare_blocklog():

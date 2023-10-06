@@ -2,10 +2,11 @@ from pathlib import Path
 
 import pytest
 
-import test_tools as tt
-from .block_log.generate_block_log import CONFIG
-from shared_tools.complex_networks import prepare_network
 import shared_tools.networks_architecture as networks
+import test_tools as tt
+from shared_tools.complex_networks import prepare_network
+
+from .block_log.generate_block_log import CONFIG
 
 
 @pytest.fixture

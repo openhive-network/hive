@@ -1,8 +1,7 @@
 import pytest
 
-from shared_tools.complex_networks import create_block_log_directory_name, prepare_time_offsets, prepare_network
-
 import shared_tools.networks_architecture as networks
+from shared_tools.complex_networks import create_block_log_directory_name, prepare_network, prepare_time_offsets
 
 
 @pytest.fixture
