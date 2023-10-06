@@ -116,7 +116,12 @@ namespace detail {
 class chain_plugin_impl
 {
   public:
-    chain_plugin_impl( appbase::application& app ): db( app ), webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ), theApp( app )
+    chain_plugin_impl( appbase::application& app ):
+      db( app ),
+      default_block_writer( the_block_log ),
+      reindex_block_writer( the_block_log ),
+      webserver( appbase::app().get_plugin<hive::plugins::webserver::webserver_plugin>() ),
+      theApp( app )
     {
       theApp.get_plugin<hive::plugins::json_rpc::json_rpc_plugin>().add_serialization_status( [this](){ return db.has_hardfork( HIVE_HARDFORK_1_26 ); } );
     }
@@ -211,8 +216,9 @@ class chain_plugin_impl
     bfs::path                        database_cfg;
 
     database  db;
-    fork_database                    fork_db;
     block_log                        the_block_log;
+    sync_block_writer                default_block_writer;
+    irreversible_block_writer        reindex_block_writer;
 
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
@@ -585,10 +591,10 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing()
 {
-  db.set_block_writer( new irreversible_block_writer( the_block_log ) );
+  db.set_block_writer( &reindex_block_writer );
 
   BOOST_SCOPE_EXIT(this_) {
-    this_->db.set_block_writer( new sync_block_writer( this_->the_block_log, this_->fork_db ) );
+    this_->db.set_block_writer( &( this_->default_block_writer ) );
   } BOOST_SCOPE_EXIT_END
   
   theApp.notify_status("replaying");
@@ -769,7 +775,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
 
     HIVE_TRY_NOTIFY(db._pre_reindex_signal, note);
 
-    fork_db.reset();    // override effect of fork_db.start_block() call in open()
+    default_block_writer.on_reindex_start();
 
     auto start_time = fc::time_point::now();
     HIVE_ASSERT( _head, block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
@@ -819,7 +825,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
     });
 
     FC_ASSERT( db.block_reader().head_block()->get_block_num(), "this should never happen" );
-    fork_db.start_block( db.block_reader().head_block() );
+    default_block_writer.on_reindex_end( db.block_reader().head_block() );
 
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
@@ -1301,7 +1307,7 @@ void chain_plugin::plugin_startup()
 {
   ilog("Chain plugin initialization...");
 
-  my->db.set_block_writer( new sync_block_writer( my->the_block_log, my->fork_db ) );
+  my->db.set_block_writer( &( my->default_block_writer ) );
 
   my->initial_settings();
 
