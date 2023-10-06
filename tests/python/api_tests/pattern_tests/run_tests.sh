@@ -8,7 +8,7 @@ else
     export HIVEMIND_PORT=$1
 fi
 
-export TAVERN_DIR="$2/tests/api_tests/pattern_tests/"
+export TAVERN_DIR="$2/tests/python/api_tests/pattern_tests/"
 default_testsuite=${3:?"Test suite must be specified as 3-rd script argument"}
 export IS_DIRECT_CALL_HAFAH=${4:-FALSE}
 
