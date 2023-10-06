@@ -2,10 +2,10 @@ import math
 from pathlib import Path
 
 import test_tools as tt
-
-from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
-from .block_logs.block_log_containing_many_to_one_recurrent_transfers import generate_block_log as bl
 from hive_local_tools.constants import MAX_RECURRENT_TRANSFERS_PER_BLOCK
+from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
+
+from .block_logs.block_log_containing_many_to_one_recurrent_transfers import generate_block_log as bl
 
 
 def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker):

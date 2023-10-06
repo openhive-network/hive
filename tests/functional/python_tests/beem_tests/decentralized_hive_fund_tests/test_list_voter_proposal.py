@@ -1,13 +1,12 @@
 # this test checks implementation of last_id field in list_voter_proposal arguments
 import datetime
 
-from beem.account import Account
-from beembase.operations import Create_proposal
-from beembase.operations import Update_proposal_votes
 import dateutil.parser
+from beem.account import Account
+from beembase.operations import Create_proposal, Update_proposal_votes
 
-import test_tools as tt
 import hive_utils
+import test_tools as tt
 from hive_local_tools.functional.python.beem import NodeClientMaker
 from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR
 from hive_local_tools.functional.python.beem.decentralized_hive_fund.test_utils import get_permlink

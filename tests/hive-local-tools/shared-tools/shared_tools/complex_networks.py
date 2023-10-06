@@ -1,13 +1,14 @@
 import os
-import sys
 import re
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple, Any
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-import test_tools as tt
-from .complex_networks_helper_functions import connect_sub_networks
 import shared_tools.networks_architecture as networks
+import test_tools as tt
+
+from .complex_networks_helper_functions import connect_sub_networks
 
 
 class NodesPreparer:

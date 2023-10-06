@@ -1,15 +1,14 @@
 from datetime import datetime as dt
 
 import test_tools as tt
-
 from hive_local_tools.functional.python.cli_wallet import (
-    prepared_proposal_data_with_id,
     create_funded_account,
     format_datetime,
-    prepare_proposal,
     funded_account_info,
     get_list_proposal_args,
     get_list_proposal_votes_args,
+    prepare_proposal,
+    prepared_proposal_data_with_id,
 )
 
 active_values = ["all", "inactive", "active", "expired", "votable"]

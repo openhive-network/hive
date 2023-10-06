@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 
+import datetime
 import logging
-import sys
 import os
 import subprocess
-import datetime
+import sys
+from threading import Lock
 
 from .common import DEFAULT_LOG_FORMAT, DEFAULT_LOG_LEVEL
-
-from threading import Lock
 
 MODULE_NAME = "hive-utils.hive-node"
 
@@ -77,6 +76,7 @@ class HiveNode(object):
         logger.info("Closing node")
         from signal import SIGINT, SIGTERM
         from time import sleep
+
         from psutil import pid_exists
 
         if self.hived_process is not None:
@@ -101,7 +101,8 @@ class HiveNode(object):
         # assert "--exit-after-replay" in self.hived_args
 
         from time import sleep
-        from psutil import pid_exists, Process, STATUS_ZOMBIE
+
+        from psutil import STATUS_ZOMBIE, Process, pid_exists
 
         pid = self.hived_process.pid
         while pid_exists(pid) and Process(pid).status() != STATUS_ZOMBIE:
@@ -119,7 +120,7 @@ class HiveNodeInScreen(object):
 
         # usefull when we want to do a replay
         if not run_using_existing_data:
-            from shutil import rmtree, copy
+            from shutil import copy, rmtree
 
             # remove old data from node
             if os.path.exists(self.working_dir):
@@ -165,11 +166,11 @@ class HiveNodeInScreen(object):
     def run_hive_node(self, additional_params=[], wait_for_blocks=True):
         from .common import (
             detect_process_by_name,
-            save_screen_cfg,
-            save_pid_file,
-            wait_n_blocks,
-            wait_for_string_in_file,
             kill_process,
+            save_pid_file,
+            save_screen_cfg,
+            wait_for_string_in_file,
+            wait_n_blocks,
         )
 
         if detect_process_by_name("hived" if not self.node_is_steem else "steemd", self.hive_executable, self.port):
@@ -294,7 +295,8 @@ if __name__ == "__main__":
 
             node = HiveNode(binary_path, work_dir, [])
             from time import sleep
-            from .common import wait_n_blocks, debug_generate_blocks
+
+            from .common import debug_generate_blocks, wait_n_blocks
 
             with node:
                 print("Waiting 10 blocks")

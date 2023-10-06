@@ -1,11 +1,11 @@
-import os
-import tempfile
 import argparse
+import os
 import subprocess as sub
+import tempfile
 from os import walk
-
-from uuid import uuid5, NAMESPACE_URL
 from random import randint
+from uuid import NAMESPACE_URL, uuid5
+
 from hive_utils.hive_node import HiveNode
 from hive_utils.resources.configini import config as configuration
 
@@ -155,7 +155,7 @@ except Exception as exception:
     print(f"Exception occured:\n####\n\n{exception}\n\n####")
 
 finally:
-    from psutil import pid_exists, Process
+    from psutil import Process, pid_exists
 
     while pid_exists(PID):
         proc = Process(PID)

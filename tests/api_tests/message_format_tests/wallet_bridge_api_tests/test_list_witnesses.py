@@ -6,7 +6,6 @@ from hive_local_tools.api.message_format import as_string
 from hive_local_tools.api.message_format.wallet_bridge_api import prepare_node_with_witnesses
 from hive_local_tools.api.message_format.wallet_bridge_api.constants import WITNESSES_NAMES
 
-
 CORRECT_VALUES = [
     # WITNESS ACCOUNT
     (WITNESSES_NAMES[0], 100),

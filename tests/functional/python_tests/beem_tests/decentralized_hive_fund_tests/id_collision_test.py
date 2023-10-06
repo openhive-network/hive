@@ -154,6 +154,7 @@ if __name__ == "__main__":
     workers = []
 
     import datetime
+
     import dateutil.parser
 
     now = node_client.get_dynamic_global_properties().get("time", None)

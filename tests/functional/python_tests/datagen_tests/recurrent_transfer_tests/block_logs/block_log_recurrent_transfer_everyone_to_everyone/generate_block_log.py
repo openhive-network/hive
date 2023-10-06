@@ -1,17 +1,16 @@
 from __future__ import annotations
 
+import math
 from copy import deepcopy
 from datetime import datetime
-import math
 from pathlib import Path
 from typing import Final, List
 
 import test_tools as tt
-
 from hive_local_tools.constants import (
-    TRANSACTION_TEMPLATE,
     MAX_OPEN_RECURRENT_TRANSFERS,
     MAX_RECURRENT_TRANSFERS_PER_BLOCK,
+    TRANSACTION_TEMPLATE,
 )
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 

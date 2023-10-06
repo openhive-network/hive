@@ -1,7 +1,6 @@
 import pytest
 
 import test_tools as tt
-
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 
 

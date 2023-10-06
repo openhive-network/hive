@@ -1,5 +1,6 @@
 import re
-from subprocess import PIPE, run as run_executable
+from subprocess import PIPE
+from subprocess import run as run_executable
 
 import test_tools as tt
 

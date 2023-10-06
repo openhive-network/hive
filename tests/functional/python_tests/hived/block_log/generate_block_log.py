@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Final, List
 
 import test_tools as tt
-
 from hive_local_tools.constants import TRANSACTION_TEMPLATE
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 

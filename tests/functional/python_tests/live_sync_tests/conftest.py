@@ -1,10 +1,10 @@
 import pytest
 
+import shared_tools.networks_architecture as networks
 from shared_tools.complex_networks import (
     create_block_log_directory_name,
     prepare_network,
 )
-import shared_tools.networks_architecture as networks
 
 
 @pytest.fixture()

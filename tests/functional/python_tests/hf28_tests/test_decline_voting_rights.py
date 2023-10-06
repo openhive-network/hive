@@ -4,7 +4,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD, TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
-from hive_local_tools.functional.python.operation import get_virtual_operations, get_rc_current_mana
+from hive_local_tools.functional.python.operation import get_rc_current_mana, get_virtual_operations
 
 
 @run_for("testnet")

@@ -1,11 +1,10 @@
-from datetime import datetime
 import json
+from datetime import datetime
 from typing import Dict, Final, Optional
 
 import pytest
 
 import test_tools as tt
-
 from shared_tools.complex_networks import init_network
 
 ALTERNATE_CHAIN_JSON_FILENAME: Final[str] = "alternate-chain-spec.json"

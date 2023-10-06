@@ -5,7 +5,6 @@ from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 from hive_local_tools.api.message_format.wallet_bridge_api.constants import ACCOUNTS, MAINNET_ACCOUNT
 
-
 UINT64_MAX = 2**64 - 1
 
 CORRECT_VALUES = [

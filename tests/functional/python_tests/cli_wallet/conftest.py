@@ -1,12 +1,11 @@
 import pytest
 
 import test_tools as tt
-
 from hive_local_tools.functional.python.cli_wallet import (
     create_funded_account,
-    prepared_proposal_data_with_id,
     funded_account_info,
     prepare_proposal,
+    prepared_proposal_data_with_id,
 )
 
 

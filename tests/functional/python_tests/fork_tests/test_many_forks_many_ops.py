@@ -1,13 +1,11 @@
-from typing import Iterable
-
-from functools import partial
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+from typing import Iterable
 
 import pytest
 
-import test_tools as tt
-
 import shared_tools.complex_networks_helper_functions as sh
+import test_tools as tt
 
 START_TEST_BLOCK = 108
 memo_cnt = 0

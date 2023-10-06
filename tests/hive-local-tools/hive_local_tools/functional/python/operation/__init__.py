@@ -5,10 +5,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Literal
 
-import test_tools as tt
-from hive_local_tools.constants import filters_enum_virtual_ops, TRANSACTION_TEMPLATE
 from test_tools.__private.exceptions import CommunicationError
 import wax
+
+import test_tools as tt
+from hive_local_tools.constants import TRANSACTION_TEMPLATE, filters_enum_virtual_ops
 
 
 @dataclass

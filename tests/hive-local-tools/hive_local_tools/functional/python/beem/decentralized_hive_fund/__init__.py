@@ -1,10 +1,10 @@
 from typing import Final
 
-from beembase.operations import Create_proposal
 import pytest
+from beembase.operations import Create_proposal
 
-import test_tools as tt
 import hive_utils
+import test_tools as tt
 from hive_local_tools.functional.python.beem.decentralized_hive_fund import test_utils
 
 CREATOR: Final[str] = "initminer"

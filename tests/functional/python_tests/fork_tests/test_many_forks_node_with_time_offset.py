@@ -1,10 +1,9 @@
-import pytest
-
 from concurrent.futures import ThreadPoolExecutor
 
-import test_tools as tt
+import pytest
 
 import shared_tools.complex_networks_helper_functions as sh
+import test_tools as tt
 
 memo_cnt = 0
 

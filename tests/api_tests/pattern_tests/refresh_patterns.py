@@ -1,14 +1,13 @@
-from concurrent.futures import ProcessPoolExecutor
-
 import os
 import re
-
-from os.path import join
-from yaml import safe_load
-from json import dump
-from requests import post
-from sys import argv
 from argparse import ArgumentParser
+from concurrent.futures import ProcessPoolExecutor
+from json import dump
+from os.path import join
+from sys import argv
+
+from requests import post
+from yaml import safe_load
 
 ENDPOINTS = ["get_transaction", "get_account_history", "enum_virtual_ops", "get_ops_in_block"]
 DEFAULT_PATTERN = f'.*/({"|".join(ENDPOINTS)})'

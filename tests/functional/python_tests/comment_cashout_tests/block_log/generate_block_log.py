@@ -1,14 +1,13 @@
+import os
 from copy import deepcopy
 from pathlib import Path
 from typing import Final, List
-import os
 
+import shared_tools.networks_architecture as networks
 import test_tools as tt
-
 from hive_local_tools.constants import TRANSACTION_TEMPLATE
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from shared_tools.complex_networks import generate_networks, prepare_network
-import shared_tools.networks_architecture as networks
 
 AMOUNT_OF_ALL_COMMENTS: Final[int] = 60
 AMOUNT_OF_ALL_VOTERS: Final[int] = 50_000

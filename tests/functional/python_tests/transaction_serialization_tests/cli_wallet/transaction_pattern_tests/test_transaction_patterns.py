@@ -1,10 +1,9 @@
 import pytest
 
 import test_tools as tt
-
 from hive_local_tools.functional.python.transaction_serialization.cli_wallet.transaction_pattern import (
-    verify_generated_transaction_with_json_pattern,
     verify_generated_transaction_with_binary_pattern,
+    verify_generated_transaction_with_json_pattern,
 )
 
 WAYS_OF_PATTERN_VERIFICATION = [
