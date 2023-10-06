@@ -337,6 +337,18 @@ pre_commit_checks:
     - .pre_commit_checks_template
     - .python_static_analysis_configuration
 
+lint_code_with_ruff:
+  stage: static_code_analysis
+  extends:
+    - .lint_code_with_ruff_template
+    - .python_static_analysis_configuration
+
+formatting_with_black_check:
+  stage: static_code_analysis
+  extends:
+    - .formatting_with_black_check_template
+    - .python_static_analysis_configuration
+
 .pytest_based:
   extends: .python_based
   variables:
