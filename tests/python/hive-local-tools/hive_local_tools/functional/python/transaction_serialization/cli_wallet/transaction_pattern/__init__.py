@@ -6,10 +6,10 @@ from distutils.util import strtobool
 from pathlib import Path
 from typing import Final
 
-from hive_local_tools import TESTS_DIR
+from hive_local_tools import PYTHON_TESTS_DIR
 
 PATTERNS_DIR: Final[Path] = (
-    TESTS_DIR / "functional/python_tests/transaction_serialization_tests/cli_wallet/transaction_pattern_tests"
+    PYTHON_TESTS_DIR / "functional/transaction_serialization_tests/cli_wallet/transaction_pattern_tests"
 )
 
 
