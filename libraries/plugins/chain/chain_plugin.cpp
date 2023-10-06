@@ -585,7 +585,7 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing()
 {
-  db.set_block_writer( new irreversible_block_writer( the_block_log, fork_db ) );
+  db.set_block_writer( new irreversible_block_writer( the_block_log ) );
 
   BOOST_SCOPE_EXIT(this_) {
     this_->db.set_block_writer( new sync_block_writer( this_->the_block_log, this_->fork_db ) );

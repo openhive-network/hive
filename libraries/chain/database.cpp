@@ -6826,16 +6826,6 @@ const block_read_i& database::block_reader() const
   return _block_writer->get_block_reader();
 }
 
-fork_database& database::_fork_db()
-{
-  return _block_writer->get_fork_db();
-}
-
-const fork_database& database::_fork_db() const
-{
-  return _block_writer->get_fork_db();
-}
-
 void database::set_block_writer( block_write_i* writer )
 {
   _block_writer.reset( writer );
