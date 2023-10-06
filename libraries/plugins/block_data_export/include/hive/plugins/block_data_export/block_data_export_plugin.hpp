@@ -17,7 +17,7 @@ class exportable_block_data;
 class block_data_export_plugin : public appbase::plugin< block_data_export_plugin >
 {
   public:
-    block_data_export_plugin( appbase::application& app );
+    block_data_export_plugin();
     virtual ~block_data_export_plugin();
 
     APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )

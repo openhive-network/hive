@@ -3,14 +3,14 @@
 
 namespace hive { namespace plugins { namespace rewards_api {
 
-rewards_api_plugin::rewards_api_plugin( appbase::application& app ): appbase::plugin<rewards_api_plugin>( app ) {}
+rewards_api_plugin::rewards_api_plugin() {}
 rewards_api_plugin::~rewards_api_plugin() {}
 
 void rewards_api_plugin::set_program_options( boost::program_options::options_description& cli, boost::program_options::options_description& cfg ) {}
 
 void rewards_api_plugin::plugin_initialize( const boost::program_options::variables_map& options )
 {
-  api = std::make_unique< rewards_api >( theApp );
+  api = std::make_unique< rewards_api >( get_app() );
 }
 
 void rewards_api_plugin::plugin_startup()

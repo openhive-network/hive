@@ -3,14 +3,14 @@
 
 namespace hive { namespace plugins { namespace witness_api {
 
-witness_api_plugin::witness_api_plugin( appbase::application& app ): appbase::plugin<witness_api_plugin>( app ) {}
+witness_api_plugin::witness_api_plugin() {}
 witness_api_plugin::~witness_api_plugin() {}
 
 void witness_api_plugin::set_program_options( options_description& cli, options_description& cfg ) {}
 
 void witness_api_plugin::plugin_initialize( const variables_map& options )
 {
-   api = std::make_shared< witness_api >( theApp );
+   api = std::make_shared< witness_api >( get_app() );
 }
 
 void witness_api_plugin::plugin_startup() {}

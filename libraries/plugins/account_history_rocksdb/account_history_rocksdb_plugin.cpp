@@ -2140,7 +2140,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
   }
 }
 
-account_history_rocksdb_plugin::account_history_rocksdb_plugin( appbase::application& app ): appbase::plugin<account_history_rocksdb_plugin>( app )
+account_history_rocksdb_plugin::account_history_rocksdb_plugin()
 {
 }
 
@@ -2179,12 +2179,12 @@ void account_history_rocksdb_plugin::plugin_initialize(const boost::program_opti
 
   if(dbPath.is_absolute() == false)
   {
-    auto basePath = theApp.data_dir();
+    auto basePath = get_app().data_dir();
     auto actualPath = basePath / dbPath;
     dbPath = actualPath;
   }
 
-  _my = std::make_unique<impl>( *this, options, dbPath, theApp );
+  _my = std::make_unique<impl>( *this, options, dbPath, get_app() );
 
   _my->openDb(_destroyOnStartup);
 }

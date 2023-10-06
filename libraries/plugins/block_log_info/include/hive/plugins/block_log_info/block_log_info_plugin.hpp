@@ -15,7 +15,7 @@ using namespace appbase;
 class block_log_info_plugin : public appbase::plugin< block_log_info_plugin >
 {
   public:
-    block_log_info_plugin( appbase::application& app );
+    block_log_info_plugin();
     virtual ~block_log_info_plugin();
 
     APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )

@@ -145,7 +145,8 @@ namespace appbase {
         if( existing )
           return *dynamic_cast< Plugin* >( existing );
 
-        auto plug = std::make_shared< Plugin >( *this );
+        auto plug = std::make_shared< Plugin >();
+        plug->attach_application( this );
         plugins[Plugin::name()] = plug;
         plug->register_dependencies();
         return *plug;
@@ -295,8 +296,6 @@ namespace appbase {
   class plugin : public abstract_plugin
   {
     public:
-      plugin( application& app ): theApp( app ){}
-
       virtual ~plugin() {}
 
       virtual pre_shutdown_order get_pre_shutdown_order() const override { return _pre_shutdown_order; }
@@ -316,7 +315,7 @@ namespace appbase {
           this->plugin_for_each_dependency( [&]( abstract_plugin& plug ){ plug.initialize( options ); } );
           this->plugin_initialize( options );
           // std::cout << "Initializing plugin " << Impl::name() << std::endl;
-          theApp.plugin_initialized( *this );
+          get_app().plugin_initialized( *this );
         }
         if (_state != initialized)
           BOOST_THROW_EXCEPTION( std::runtime_error("Initial state was not registered, so final state cannot be initialized.") );
@@ -329,7 +328,7 @@ namespace appbase {
           _state = started;
           this->plugin_for_each_dependency( [&]( abstract_plugin& plug ){ plug.startup(); } );
           this->plugin_startup();
-          theApp.plugin_started( *this );
+          get_app().plugin_started( *this );
         }
         if (_state != started )
           BOOST_THROW_EXCEPTION( std::runtime_error("Initial state was not initialized, so final state cannot be started.") );
@@ -376,18 +375,25 @@ namespace appbase {
         }
       }
 
+    void attach_application( application* app )
+    {
+      theApp = app;
+    }
+
     application& get_app()
     {
-      return theApp;
+      FC_ASSERT( theApp );
+      return *theApp;
     }
 
     protected:
 
-      application& theApp;
-
       virtual void set_pre_shutdown_order( pre_shutdown_order val ) { _pre_shutdown_order = val; }
 
     private:
+
+      application* theApp = nullptr;
+
       pre_shutdown_order _pre_shutdown_order = abstract_plugin::basic_order;
       state _state = abstract_plugin::registered;
   };

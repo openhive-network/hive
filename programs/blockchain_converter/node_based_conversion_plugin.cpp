@@ -491,7 +491,7 @@ namespace detail {
 
 } // detail
 
-  node_based_conversion_plugin::node_based_conversion_plugin( appbase::application& app ): appbase::plugin<node_based_conversion_plugin>( app ) {}
+  node_based_conversion_plugin::node_based_conversion_plugin() {}
   node_based_conversion_plugin::~node_based_conversion_plugin() {}
 
   void node_based_conversion_plugin::set_program_options( bpo::options_description& cli, bpo::options_description& cfg )
@@ -535,7 +535,7 @@ namespace detail {
     my = std::make_unique< detail::node_based_conversion_plugin_impl >(
           input_v.at(0), output_v,
           *private_key, _hive_chain_id, options.at( "jobs" ).as< size_t >(),
-          options["block-buffer-size"].as< size_t >(), theApp
+          options["block-buffer-size"].as< size_t >(), get_app()
         );
 
     my->log_per_block = options["log-per-block"].as< uint32_t >();
@@ -548,14 +548,14 @@ namespace detail {
     try
     {
       my->convert(
-        theApp.get_args().at("resume-block").as< uint32_t >(),
-        theApp.get_args().at( "stop-block" ).as< uint32_t >()
+        get_app().get_args().at("resume-block").as< uint32_t >(),
+        get_app().get_args().at( "stop-block" ).as< uint32_t >()
       );
     }
     catch( const fc::exception& e )
     {
       elog( e.to_detail_string() );
-      theApp.generate_interrupt_request();
+      get_app().generate_interrupt_request();
     }
   }
   void node_based_conversion_plugin::plugin_shutdown()

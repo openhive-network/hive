@@ -53,7 +53,7 @@ struct trigger_bug : appbase::plugin< trigger_bug >
   boost::signals2::connection _post_apply_block;
   bool trigger = false;
 
-  trigger_bug( appbase::application& app, database& db ) : appbase::plugin<trigger_bug>( app ), _db( db )
+  trigger_bug( appbase::application& app, database& db ) : appbase::plugin<trigger_bug>(), _db( db )
   {
     _post_apply_block = _db.add_post_apply_block_handler( [this]( const block_notification& )
     {

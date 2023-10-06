@@ -497,7 +497,7 @@ using detail::json_rpc_error;
 using detail::json_rpc_response;
 using detail::json_rpc_logger;
 
-json_rpc_plugin::json_rpc_plugin( appbase::application& app ): appbase::plugin<json_rpc_plugin>( app ){}
+json_rpc_plugin::json_rpc_plugin(){}
 json_rpc_plugin::~json_rpc_plugin() {}
 
 void json_rpc_plugin::set_program_options( options_description& , options_description& cfg)
@@ -509,7 +509,7 @@ void json_rpc_plugin::set_program_options( options_description& , options_descri
 
 void json_rpc_plugin::plugin_initialize( const variables_map& options )
 {
-  my = std::make_unique< detail::json_rpc_plugin_impl >( theApp );
+  my = std::make_unique< detail::json_rpc_plugin_impl >( get_app() );
 
   my->initialize();
 
@@ -547,7 +547,7 @@ void json_rpc_plugin::add_api_method( const string& api_name, const string& meth
 
 string json_rpc_plugin::call( const string& message )
 {
-  STATSD_START_TIMER( "jsonrpc", "overhead", "call", 1.0f, theApp );
+  STATSD_START_TIMER( "jsonrpc", "overhead", "call", 1.0f, get_app() );
   try
   {
     fc::variant v = fc::json::from_string( message );

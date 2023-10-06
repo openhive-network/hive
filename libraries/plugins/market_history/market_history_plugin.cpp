@@ -152,7 +152,7 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
 
 } // detail
 
-market_history_plugin::market_history_plugin( appbase::application& app ): appbase::plugin<market_history_plugin>( app ) {}
+market_history_plugin::market_history_plugin() {}
 market_history_plugin::~market_history_plugin() {}
 
 void market_history_plugin::set_program_options(
@@ -173,7 +173,7 @@ void market_history_plugin::plugin_initialize( const boost::program_options::var
   try
   {
     ilog( "market_history: plugin_initialize() begin" );
-    my = std::make_unique< detail::market_history_plugin_impl >( theApp );
+    my = std::make_unique< detail::market_history_plugin_impl >( get_app() );
 
     my->_post_apply_operation_conn = my->_db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ my->on_post_apply_operation( note ); }, *this, 0 );
     HIVE_ADD_PLUGIN_INDEX(my->_db, bucket_index);
@@ -194,7 +194,7 @@ void market_history_plugin::plugin_initialize( const boost::program_options::var
       state_opts[MH_BUCKETS_PER_SIZE] = my->_maximum_history_per_bucket_size;
     }
 
-    theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
+    get_app().get_plugin< chain::chain_plugin >().report_state_options( name(), state_opts );
 
     ilog( "market_history: plugin_initialize() end" );
   } FC_CAPTURE_AND_RETHROW()

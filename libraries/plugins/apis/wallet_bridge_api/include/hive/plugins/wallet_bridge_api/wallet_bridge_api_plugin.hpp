@@ -18,7 +18,7 @@ using namespace appbase;
 class wallet_bridge_api_plugin : public plugin< wallet_bridge_api_plugin >
 {
   public:
-    wallet_bridge_api_plugin( appbase::application& app );
+    wallet_bridge_api_plugin();
     virtual ~wallet_bridge_api_plugin();
 
     APPBASE_PLUGIN_REQUIRES(

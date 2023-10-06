@@ -15,7 +15,7 @@ using namespace appbase;
 class account_by_key_plugin : public appbase::plugin< account_by_key_plugin >
 {
   public:
-    account_by_key_plugin( appbase::application& app );
+    account_by_key_plugin();
     virtual ~account_by_key_plugin();
 
     APPBASE_PLUGIN_REQUIRES( (hive::plugins::chain::chain_plugin) )

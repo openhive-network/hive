@@ -17,8 +17,8 @@ namespace detail {
 class account_by_key_plugin_impl
 {
   public:
-    account_by_key_plugin_impl( account_by_key_plugin& _plugin, appbase::application& app ) :
-      _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+    account_by_key_plugin_impl( account_by_key_plugin& _plugin ) :
+      _db( _plugin.get_app().get_plugin< hive::plugins::chain::chain_plugin >().db() ),
       _self( _plugin ) {}
 
     void on_pre_apply_operation( const operation_notification& note );
@@ -276,25 +276,25 @@ void account_by_key_plugin_impl::on_post_apply_operation( const operation_notifi
 
 } // detail
 
-account_by_key_plugin::account_by_key_plugin( appbase::application& app ): appbase::plugin<account_by_key_plugin>( app ) {}
+account_by_key_plugin::account_by_key_plugin() {}
 account_by_key_plugin::~account_by_key_plugin() {}
 
 void account_by_key_plugin::set_program_options( options_description& cli, options_description& cfg ){}
 
 void account_by_key_plugin::plugin_initialize( const boost::program_options::variables_map& options )
 {
-  my = std::make_unique< detail::account_by_key_plugin_impl >( *this, theApp );
+  my = std::make_unique< detail::account_by_key_plugin_impl >( *this );
   try
   {
     ilog( "Initializing account_by_key plugin" );
-    chain::database& db = theApp.get_plugin< hive::plugins::chain::chain_plugin >().db();
+    chain::database& db = get_app().get_plugin< hive::plugins::chain::chain_plugin >().db();
 
     my->_pre_apply_operation_conn = db.add_pre_apply_operation_handler( [&]( const operation_notification& note ){ my->on_pre_apply_operation( note ); }, *this, 0 );
     my->_post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ my->on_post_apply_operation( note ); }, *this, 0 );
 
     HIVE_ADD_PLUGIN_INDEX(db, key_lookup_index);
 
-    theApp.get_plugin< chain::chain_plugin >().report_state_options( name(), fc::variant_object() );
+    get_app().get_plugin< chain::chain_plugin >().report_state_options( name(), fc::variant_object() );
   }
   FC_CAPTURE_AND_RETHROW()
 }

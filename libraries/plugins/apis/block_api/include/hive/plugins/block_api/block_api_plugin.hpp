@@ -14,7 +14,7 @@ using namespace appbase;
 class block_api_plugin : public plugin< block_api_plugin >
 {
   public:
-    block_api_plugin( appbase::application& app );
+    block_api_plugin();
     virtual ~block_api_plugin();
 
     APPBASE_PLUGIN_REQUIRES(

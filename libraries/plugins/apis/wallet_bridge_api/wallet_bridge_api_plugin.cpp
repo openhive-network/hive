@@ -3,7 +3,7 @@
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
-wallet_bridge_api_plugin::wallet_bridge_api_plugin( appbase::application& app ): appbase::plugin<wallet_bridge_api_plugin>( app ) {}
+wallet_bridge_api_plugin::wallet_bridge_api_plugin() {}
 wallet_bridge_api_plugin::~wallet_bridge_api_plugin() {}
 
 void wallet_bridge_api_plugin::set_program_options(
@@ -12,7 +12,7 @@ void wallet_bridge_api_plugin::set_program_options(
 
 void wallet_bridge_api_plugin::plugin_initialize( const variables_map& options )
 {
-  api = std::make_shared< wallet_bridge_api >( theApp );
+  api = std::make_shared< wallet_bridge_api >( get_app() );
 }
 
 void wallet_bridge_api_plugin::plugin_startup() 

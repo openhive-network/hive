@@ -17,7 +17,7 @@ using namespace appbase;
 class comment_cashout_logging_plugin : public plugin<comment_cashout_logging_plugin>
 {
    public:
-      comment_cashout_logging_plugin( appbase::application& app );
+      comment_cashout_logging_plugin();
       virtual ~comment_cashout_logging_plugin();
 
       APPBASE_PLUGIN_REQUIRES((hive::plugins::chain::chain_plugin))

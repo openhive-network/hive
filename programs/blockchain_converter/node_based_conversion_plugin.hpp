@@ -20,7 +20,7 @@ namespace detail { class node_based_conversion_plugin_impl; }
   public:
     APPBASE_PLUGIN_REQUIRES()
 
-    node_based_conversion_plugin( appbase::application& app );
+    node_based_conversion_plugin();
     virtual ~node_based_conversion_plugin();
 
     static const std::string& name() { static std::string name = HIVE_NODE_BASED_CONVERSION_PLUGIN_NAME; return name; }

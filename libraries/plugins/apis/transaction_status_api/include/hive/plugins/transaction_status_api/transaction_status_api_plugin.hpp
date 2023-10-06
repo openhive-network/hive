@@ -12,7 +12,7 @@ namespace hive { namespace plugins { namespace transaction_status_api {
 class transaction_status_api_plugin : public appbase::plugin< transaction_status_api_plugin >
 {
   public:
-    transaction_status_api_plugin( appbase::application& app );
+    transaction_status_api_plugin();
     virtual ~transaction_status_api_plugin();
 
     APPBASE_PLUGIN_REQUIRES(

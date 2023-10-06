@@ -812,7 +812,7 @@ void chain_plugin_impl_deleter::operator()( chain_plugin_impl* impl ) const
 } // detail
 
 
-chain_plugin::chain_plugin( appbase::application& app ): appbase::plugin<chain_plugin>( app ){}
+chain_plugin::chain_plugin(){}
 chain_plugin::~chain_plugin(){}
 
 database& chain_plugin::db() { return my->db; }
@@ -874,16 +874,16 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
 }
 
 void chain_plugin::plugin_initialize(const variables_map& options) {
-  my.reset( new detail::chain_plugin_impl( theApp ) );
+  my.reset( new detail::chain_plugin_impl( get_app() ) );
 
-  theApp.setup_notifications(options);
-  my->shared_memory_dir = theApp.data_dir() / "blockchain";
+  get_app().setup_notifications(options);
+  my->shared_memory_dir = get_app().data_dir() / "blockchain";
 
   if( options.count("shared-file-dir") )
   {
     auto sfd = options.at("shared-file-dir").as<bfs::path>();
     if(sfd.is_relative())
-      my->shared_memory_dir = theApp.data_dir() / sfd;
+      my->shared_memory_dir = get_app().data_dir() / sfd;
     else
       my->shared_memory_dir = sfd;
   }
@@ -1057,7 +1057,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
   blockchain_worker_thread_pool::set_thread_pool_size(blockchain_thread_pool_size);
 
   if (my->validate_during_replay)
-    blockchain_worker_thread_pool::get_instance( theApp ).set_validate_during_replay();
+    blockchain_worker_thread_pool::get_instance( get_app() ).set_validate_during_replay();
 
 
   block_flow_control::set_auto_report(options.at("block-stats-report-type").as<std::string>(),
@@ -1081,7 +1081,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
           ("cm", measure.current_mem)
           ("pm", measure.peak_mem) );
 
-        theApp.notify("hived_benchmark", "multiindex_stats", fc::variant{measure});
+        get_app().notify("hived_benchmark", "multiindex_stats", fc::variant{measure});
       }
     }, *this, 0);
   }
@@ -1146,11 +1146,11 @@ void chain_plugin::plugin_startup()
 void chain_plugin::plugin_shutdown()
 {
   ilog("closing chain database");
-  blockchain_worker_thread_pool::get_instance( theApp ).shutdown();
+  blockchain_worker_thread_pool::get_instance( get_app() ).shutdown();
   my->stop_write_processing();
   my->db.close();
   ilog("database closed successfully");
-  theApp.notify_status("finished syncing");
+  get_app().notify_status("finished syncing");
 }
 
 void chain_plugin::register_snapshot_provider(state_snapshot_provider& provider)
@@ -1278,7 +1278,7 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
   result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::hf26, true /* cache this transaction */);
   on_full_trx( false );
   // the only reason we'd be getting something in singed_transaction form is from the API, coming in as json
-  blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
+  blockchain_worker_thread_pool::get_instance( get_app() ).enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
   try
   {
     accept_transaction(result, lock);
@@ -1288,7 +1288,7 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
     on_full_trx( true );
     result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::legacy, true /* cache this transaction */);
     on_full_trx( false );
-    blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
+    blockchain_worker_thread_pool::get_instance( get_app() ).enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
     try
     {
       accept_transaction(result, lock);

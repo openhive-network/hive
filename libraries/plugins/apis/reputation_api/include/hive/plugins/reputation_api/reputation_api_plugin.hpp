@@ -21,7 +21,7 @@ public:
     (hive::plugins::json_rpc::json_rpc_plugin)
   )
 
-  reputation_api_plugin( appbase::application& app );
+  reputation_api_plugin();
   virtual ~reputation_api_plugin();
 
   static const std::string& name() { static std::string name = HIVE_REPUTATION_API_PLUGIN_NAME; return name; }

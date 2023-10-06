@@ -24,7 +24,7 @@ class account_history_rocksdb_plugin final : public appbase::plugin< account_his
 public:
   APPBASE_PLUGIN_REQUIRES((hive::plugins::chain::chain_plugin))
 
-  account_history_rocksdb_plugin( appbase::application& app );
+  account_history_rocksdb_plugin();
   virtual ~account_history_rocksdb_plugin();
 
   static const std::string& name() { static std::string name = HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME; return name; }

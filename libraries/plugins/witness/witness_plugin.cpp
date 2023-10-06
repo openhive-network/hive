@@ -497,7 +497,7 @@ namespace detail {
 } // detail
 
 
-witness_plugin::witness_plugin( appbase::application& app ): appbase::plugin<witness_plugin>( app ) {}
+witness_plugin::witness_plugin() {}
 witness_plugin::~witness_plugin() {}
 
 void witness_plugin::enable_fast_confirm()
@@ -535,7 +535,7 @@ void witness_plugin::set_program_options(
 void witness_plugin::plugin_initialize(const boost::program_options::variables_map& options)
 { try {
   ilog( "Initializing witness plugin" );
-  my = std::make_unique< detail::witness_plugin_impl >( theApp.get_io_service(), theApp );
+  my = std::make_unique< detail::witness_plugin_impl >( get_app().get_io_service(), get_app() );
 
   my->_chain_plugin.register_block_generator( get_name(), my->_block_producer );
 
@@ -581,7 +581,7 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 void witness_plugin::plugin_startup()
 { try {
   ilog("witness plugin:  plugin_startup() begin" );
-  auto& _chain_plugin = theApp.get_plugin< hive::plugins::chain::chain_plugin >();
+  auto& _chain_plugin = get_app().get_plugin< hive::plugins::chain::chain_plugin >();
   my->_is_p2p_enabled = _chain_plugin.is_p2p_enabled();
   chain::database& d  = _chain_plugin.db();
 
@@ -594,7 +594,7 @@ void witness_plugin::plugin_startup()
   if( !my->_witnesses.empty() )
   {
     ilog( "Launching block production for ${n} witnesses.", ("n", my->_witnesses.size()) );
-    theApp.get_plugin< hive::plugins::p2p::p2p_plugin >().set_block_production( true );
+    get_app().get_plugin< hive::plugins::p2p::p2p_plugin >().set_block_production( true );
     if( my->_production_enabled )
     {
       if( d.head_block_num() == 0 )

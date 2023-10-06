@@ -18,7 +18,7 @@ class witness_api_plugin : public appbase::plugin< witness_api_plugin >
                             (hive::plugins::chain::chain_plugin)
                             (hive::plugins::witness::witness_plugin))
 
-    witness_api_plugin( appbase::application& app );
+    witness_api_plugin();
     virtual ~witness_api_plugin();
 
     static const std::string& name()

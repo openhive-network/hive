@@ -166,7 +166,7 @@ namespace detail
   }
 }
 
-statsd_plugin::statsd_plugin( appbase::application& app ) : appbase::plugin<statsd_plugin>( app ), my( new detail::statsd_plugin_impl() ) {}
+statsd_plugin::statsd_plugin() : my( new detail::statsd_plugin_impl() ) {}
 statsd_plugin::~statsd_plugin() {}
 
 void statsd_plugin::set_program_options( options_description& cli, options_description& cfg )

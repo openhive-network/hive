@@ -34,7 +34,7 @@ namespace hive { namespace example_api_plugin {
   class example_api_plugin : public appbase::plugin< example_api_plugin >
   {
     public:
-      example_api_plugin( appbase::application& app );
+      example_api_plugin();
       virtual ~example_api_plugin();
 
       // This defines what plugins are required to run this plugin.
@@ -60,10 +60,10 @@ namespace hive { namespace example_api_plugin {
       echo_return echo( const echo_args& args );
   };
 
-  example_api_plugin::example_api_plugin( appbase::application& app ): appbase::plugin<example_api_plugin>( app )
+  example_api_plugin::example_api_plugin() {}
   {
     // This registers the API with the json rpc plugin
-    JSON_RPC_REGISTER_API( name(), app );
+    JSON_RPC_REGISTER_API( name(), get_app() );
   }
 
   example_api_plugin::~example_api_plugin() {}

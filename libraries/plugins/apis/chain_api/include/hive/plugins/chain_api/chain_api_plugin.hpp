@@ -20,7 +20,7 @@ public:
     (hive::plugins::json_rpc::json_rpc_plugin)
   )
 
-  chain_api_plugin( appbase::application& app );
+  chain_api_plugin();
   virtual ~chain_api_plugin();
 
   static const std::string& name()
