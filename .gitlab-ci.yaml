@@ -39,7 +39,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: b5202fecccf40845099da351cbc0c38a6205339c
+    ref: dd5a7fb401b572c8d64ab700980ba943d33506ef
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
@@ -325,6 +325,7 @@ plugin_test:
   needs: []  # to run immediately without waiting for previous jobs
   variables:
     PACKAGES_TO_CHECK: "$CI_PROJECT_DIR/tests/python/"
+    PYPROJECT_CONFIG_PATH: "$CI_PROJECT_DIR/tests/python/hive-local-tools/pyproject.toml"
   before_script:
     - !reference [.python_based, before_script]
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
