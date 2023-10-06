@@ -3,7 +3,7 @@ from typing import Final, Literal
 
 import pytest
 
-TESTS_DIR: Final[Path] = Path(__file__).parent.parent.parent
+PYTHON_TESTS_DIR: Final[Path] = Path(__file__).parent.parent.parent
 
 
 def run_for(*node_names: Literal["testnet", "mainnet_5m", "live_mainnet"], enable_plugins: list = []):
