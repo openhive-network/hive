@@ -349,7 +349,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, enum_virtual_ops)
 account_history_api::account_history_api( appbase::application& app )
 {
   my = std::make_unique< detail::account_history_api_rocksdb_impl >( app );
-  JSON_RPC_REGISTER_API( HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME, app );
+  JSON_RPC_REGISTER_API( HIVE_ACCOUNT_HISTORY_API_PLUGIN_NAME );
 }
 
 account_history_api::~account_history_api() {}

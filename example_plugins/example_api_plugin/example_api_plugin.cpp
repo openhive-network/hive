@@ -63,7 +63,7 @@ namespace hive { namespace example_api_plugin {
   example_api_plugin::example_api_plugin() {}
   {
     // This registers the API with the json rpc plugin
-    JSON_RPC_REGISTER_API( name(), get_app() );
+    JSON_RPC_REGISTER_API( name() );
   }
 
   example_api_plugin::~example_api_plugin() {}

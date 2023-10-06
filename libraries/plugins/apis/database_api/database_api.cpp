@@ -243,7 +243,7 @@ class database_api_impl
 database_api::database_api( appbase::application& app )
   : my( new database_api_impl( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_DATABASE_API_PLUGIN_NAME, app );
+  JSON_RPC_REGISTER_API( HIVE_DATABASE_API_PLUGIN_NAME );
 }
 
 database_api::~database_api() {}

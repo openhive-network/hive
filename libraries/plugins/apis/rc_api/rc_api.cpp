@@ -261,7 +261,7 @@ DEFINE_API_IMPL( rc_api_impl, get_rc_operation_stats )
 
 rc_api::rc_api( appbase::application& app ): my( new detail::rc_api_impl( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_RC_API_PLUGIN_NAME, app );
+  JSON_RPC_REGISTER_API( HIVE_RC_API_PLUGIN_NAME );
 }
 
 rc_api::~rc_api() {}

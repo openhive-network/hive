@@ -37,7 +37,7 @@
 
 #define HIVE_JSON_RPC_PLUGIN_NAME "json_rpc"
 
-#define JSON_RPC_REGISTER_API( API_NAME, app )                                                       \
+#define JSON_RPC_REGISTER_API( API_NAME )                                                       \
 {                                                                                               \
   hive::plugins::json_rpc::detail::register_api_method_visitor vtor( API_NAME, app );              \
   for_each_api( vtor );                                                                        \

@@ -50,7 +50,7 @@ DEFINE_API_IMPL( reputation_api_impl, get_account_reputations )
 
 reputation_api::reputation_api( appbase::application& app ): my( new detail::reputation_api_impl( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_REPUTATION_API_PLUGIN_NAME, app );
+  JSON_RPC_REGISTER_API( HIVE_REPUTATION_API_PLUGIN_NAME );
 }
 
 reputation_api::~reputation_api() {}

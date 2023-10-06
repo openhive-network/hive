@@ -94,7 +94,7 @@ class wallet_bridge_api_impl
 wallet_bridge_api::wallet_bridge_api( appbase::application& app )
   : my( new wallet_bridge_api_impl( app ) ), theApp( app )
 {
-  JSON_RPC_REGISTER_API( HIVE_WALLET_BRIDGE_API_PLUGIN_NAME, app );
+  JSON_RPC_REGISTER_API( HIVE_WALLET_BRIDGE_API_PLUGIN_NAME );
 }
 
 wallet_bridge_api::~wallet_bridge_api() {}
