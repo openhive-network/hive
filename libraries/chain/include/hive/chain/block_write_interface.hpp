@@ -7,7 +7,6 @@
 namespace hive { namespace chain {
 
   class block_flow_control;
-  class fork_database;
   class witness_object;
 
   using hive::protocol::account_name_type;
@@ -16,9 +15,6 @@ namespace hive { namespace chain {
   {
   public:
     virtual ~block_write_i() = default;
-
-    // Temporary, to be removed
-    virtual fork_database& get_fork_db() = 0;
 
     virtual block_read_i& get_block_reader() = 0;
 
