@@ -44,6 +44,7 @@ ruff = "0.0.292"
 [tool.black]
 line-length = 120
 preview = true
+exclude = "test-tools|tests_api"
 
 
 [tool.ruff]
