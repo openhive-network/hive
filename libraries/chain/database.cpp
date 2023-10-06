@@ -6828,7 +6828,7 @@ const block_read_i& database::block_reader() const
 
 void database::set_block_writer( block_write_i* writer )
 {
-  _block_writer.reset( writer );
+  _block_writer = writer;
 }
 
 } } //hive::chain

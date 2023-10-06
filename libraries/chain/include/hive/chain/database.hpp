@@ -791,7 +791,7 @@ namespace chain {
 
       hardfork_versions             _hardfork_versions;
 
-      std::unique_ptr< block_write_i > _block_writer;
+      block_write_i*                _block_writer;
 
       // this function needs access to _plugin_index_signal
       template< typename MultiIndexType >
