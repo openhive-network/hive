@@ -1,7 +1,6 @@
 import pytest
 
-from test_tools.__private.exceptions import CommunicationError
-
+import test_tools as tt
 from hive_local_tools.functional.python.operation import Comment
 
 
@@ -50,7 +49,7 @@ def test_try_to_delete_comment_with_votes(prepared_node, wallet, reply_type):
     comment_0.send(reply_type=reply_type)
     comment_0.vote()
 
-    with pytest.raises(CommunicationError) as error:
+    with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment_0.delete()
 
     assert "Cannot delete a comment with net positive votes" in error.value.response["error"]["message"]
@@ -68,7 +67,7 @@ def test_try_to_delete_comment_with_top_comment(prepared_node, wallet, reply_typ
 
     comment_0.send(reply_type=reply_type)
     comment_0.send_top_comment(reply_type="reply_another_comment")
-    with pytest.raises(CommunicationError) as error:
+    with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment_0.delete()
 
     assert "Cannot delete a comment with replies" in error.value.response["error"]["message"]
@@ -88,7 +87,7 @@ def test_try_to_delete_comment_after_payout(prepared_node, wallet, reply_type):
     # waiting for payout 7 days
     prepared_node.restart(time_offset="+7d")
 
-    with pytest.raises(CommunicationError) as error:
+    with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment_0.delete()
 
     assert "Cannot delete comment after payout" in error.value.response["error"]["message"]

@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Literal
 
-from test_tools.__private.exceptions import CommunicationError
 import wax
 
 import test_tools as tt
@@ -423,7 +422,7 @@ class Comment:
         try:
             self.__wallet.api.vote(voter.name, self.__comment_author_obj.name, self.__comment_permlink, 1)
             vote_send = True
-        except CommunicationError:
+        except tt.exceptions.CommunicationError:
             vote_send = False
 
         if mode == "deleted":
