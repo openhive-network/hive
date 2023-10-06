@@ -775,9 +775,7 @@ void database::switch_forks( const block_id_type& new_head_block_id, uint32_t ne
           uint32_t skip, const block_flow_control* block_ctrl )
       { this->apply_block_extended(fb,skip,block_ctrl); },
     [&] ( const block_id_type end_block ) -> uint32_t
-      { return this->pop_block_extended( end_block ); },
-    [&] ( uint32_t head_block_num )
-      { this->notify_switch_fork( head_block_num ); }
+      { return this->pop_block_extended( end_block ); }
     );
   theApp.notify("switching forks", "id", new_head_block_id.str(), "num", new_head_block_num);
 }
@@ -798,10 +796,6 @@ bool database::_push_block(const block_flow_control& block_ctrl)
       { this->apply_block_extended(fb,skip,block_ctrl); },
     [&] ( const block_id_type end_block ) -> uint32_t
       { return this->pop_block_extended( end_block ); },
-    [&] ( uint32_t head_block_num )
-      { this->notify_switch_fork( head_block_num ); },
-    [&] ( fc::string new_head_block_id, uint32_t new_head_block_num )
-      { theApp.notify("switching forks", "id", new_head_block_id, "num", new_head_block_num); }
     );
 } FC_CAPTURE_AND_RETHROW() }
 
