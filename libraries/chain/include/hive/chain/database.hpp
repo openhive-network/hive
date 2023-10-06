@@ -4,7 +4,6 @@
 #pragma once
 #include <hive/chain/block_flow_control.hpp>
 #include <hive/chain/block_write_interface.hpp>
-#include <hive/chain/fork_database.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/node_property_object.hpp>
@@ -732,10 +731,6 @@ namespace chain {
         note.virtual_op   = hive::protocol::is_virtual_operation(op);
         return note;
       }
-
-      // Temporary, to be removed
-      fork_database&        _fork_db();
-      const fork_database&  _fork_db() const;
 
     public:
 
