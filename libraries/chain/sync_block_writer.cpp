@@ -10,8 +10,8 @@
 
 namespace hive { namespace chain {
 
-sync_block_writer::sync_block_writer( block_log& block_log )
-  : _reader( _fork_db, block_log ), _block_log( block_log )
+sync_block_writer::sync_block_writer( block_log& block_log, database& db, application& app )
+  : _reader( _fork_db, block_log ), _block_log( block_log ), _db(db), _app(app)
 {}
 
 block_read_i& sync_block_writer::get_block_reader()
@@ -66,9 +66,7 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
   block_id_type state_head_block_id,
   const uint32_t skip,
   apply_block_t apply_block_extended,
-  pop_block_t pop_block_extended,
-  notify_switch_fork_t notify_switch_fork,
-  external_notify_switch_fork_t external_notify_switch_fork )
+  pop_block_t pop_block_extended )
 {
   std::vector<std::shared_ptr<full_block_type>> blocks;
 
@@ -116,8 +114,9 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
       ilog("calling switch_forks() from push_block()");
       switch_forks( new_head->get_block_id(), new_head->get_block_num(),
                     skip, &block_ctrl, state_head_block_id, state_head_block_num,
-                    apply_block_extended, pop_block_extended, notify_switch_fork );
-      external_notify_switch_fork( new_head->get_block_id().str(), new_head->get_block_num() );
+                    apply_block_extended, pop_block_extended );
+      _app.notify( "switching forks", "id", 
+                   new_head->get_block_id().str(), "num", new_head->get_block_num() );
       return true;
     }
   }
@@ -160,7 +159,7 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
 void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
   uint32_t skip, const block_flow_control* pushed_block_ctrl,
   const block_id_type original_head_block_id, const uint32_t original_head_block_number,
-  apply_block_t apply_block_extended, pop_block_t pop_block_extended, notify_switch_fork_t notify_switch_fork )
+  apply_block_t apply_block_extended, pop_block_t pop_block_extended )
 {
   BOOST_SCOPE_EXIT(void) { ilog("Done fork switch"); } BOOST_SCOPE_EXIT_END
   ilog("Switching to fork: ${id}", ("id", new_head_block_id));
@@ -189,7 +188,7 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
     ilog("Done popping blocks");
   }
 
-  notify_switch_fork( current_head_block_num );
+  _db.notify_switch_fork( current_head_block_num );
 
   // push all blocks on the new fork
   for (auto ritr = new_branch.crbegin(); ritr != new_branch.crend(); ++ritr)
@@ -237,7 +236,7 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
         // pop all blocks from the bad fork
         uint32_t new_head_block_num = pop_block_extended( common_block_id );
         ilog(" - reverting to previous chain, done popping blocks");
-        notify_switch_fork( new_head_block_num );
+        _db.notify_switch_fork( new_head_block_num );
 
         // restore any popped blocks from the good fork
         if (old_branch.size())

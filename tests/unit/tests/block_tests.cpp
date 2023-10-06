@@ -126,9 +126,9 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
     std::shared_ptr<full_block_type> cutoff_block;
     {
       block_log bl;
-      sync_block_writer sbw( bl );
       appbase::application app;
       database db( app );
+      sync_block_writer sbw( bl, db, appbase::app() );
       db.set_block_writer( &sbw );
       witness::block_producer bp( db );
       open_test_database( db, data_dir.path() );
@@ -157,9 +157,9 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
     }
     {
       block_log bl;
-      sync_block_writer sbw( bl );
       appbase::application app;
       database db( app );
+      sync_block_writer sbw( bl, db, appbase::app() );
       db.set_block_writer( &sbw );
       witness::block_producer bp( db );
       open_test_database( db, data_dir.path() );
@@ -189,9 +189,9 @@ BOOST_AUTO_TEST_CASE( undo_block )
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     {
       block_log bl;
-      sync_block_writer sbw( bl );
       appbase::application app;
       database db( app );
+      sync_block_writer sbw( bl, db, appbase::app() );
       db.set_block_writer( &sbw );
       witness::block_producer bp( db );
       open_test_database( db, data_dir.path() );
@@ -247,15 +247,15 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     //TODO This test needs 6-7 ish witnesses prior to fork
 
     block_log bl1;
-    sync_block_writer sbw1( bl1 );
     appbase::application app;
     database db1( app );
+    sync_block_writer sbw1( bl1, db1, appbase::app() );
     db1.set_block_writer( &sbw1 );
     witness::block_producer bp1( db1 );
     open_test_database( db1, data_dir1.path() );
     block_log bl2;
-    sync_block_writer sbw2( bl2 );
     database db2( app );
+    sync_block_writer sbw2( bl2, db2, appbase::app() );
     db2.set_block_writer( &sbw2 );
     witness::block_producer bp2( db2 );
     open_test_database( db2, data_dir2.path() );
@@ -326,13 +326,13 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     fc::temp_directory dir1( hive::utilities::temp_directory_path() ),
                   dir2( hive::utilities::temp_directory_path() );
     block_log bl1;
-    sync_block_writer sbw1( bl1 );
     appbase::application app;
     database db1( app );
+    sync_block_writer sbw1( bl1, db1, appbase::app() );
     db1.set_block_writer( &sbw1 );
     block_log bl2;
-    sync_block_writer sbw2( bl2 );
     database db2( app );
+    sync_block_writer sbw2( bl2, db2, appbase::app() );
     db2.set_block_writer( &sbw2 );
     witness::block_producer bp1( db1 ),
                     bp2( db2 );
@@ -451,8 +451,8 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
     // fixture's database, then we will trigger a fork and test how it resolves.
     // we'll call the fixture's database "db1"
     block_log bl2;
-    sync_block_writer sbw2( bl2 );
     database db2( theApp );
+    sync_block_writer sbw2( bl2, db2, appbase::app() );
     db2.set_block_writer( &sbw2 );
     fc::temp_directory dir2(hive::utilities::temp_directory_path());
     open_test_database(db2, dir2.path(), true);
@@ -611,8 +611,8 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
     // fixture's database, then we will trigger a fork and test how it resolves.
     // we'll call the fixture's database "db1"
     block_log bl2;
-    sync_block_writer sbw2( bl2 );
     database db2( theApp );
+    sync_block_writer sbw2( bl2, db2, appbase::app() );
     db2.set_block_writer( &sbw2 );
 
     fc::temp_directory dir2(hive::utilities::temp_directory_path());
@@ -737,12 +737,12 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
 
     appbase::application app;
     block_log bl1;
-    sync_block_writer sbw1( bl1 );
     database db1( app );
+    sync_block_writer sbw1( bl1, db1, appbase::app() );
     db1.set_block_writer( &sbw1 );
     block_log bl2;
-    sync_block_writer sbw2( bl2 );
     database db2( app );
+    sync_block_writer sbw2( bl2, db2, appbase::app() );
     db2.set_block_writer( &sbw2 );
     witness::block_producer bp1( db1 );
     open_test_database( db1, dir1.path() );
@@ -795,8 +795,8 @@ BOOST_AUTO_TEST_CASE( tapos )
     fc::temp_directory dir1( hive::utilities::temp_directory_path() );
     appbase::application app;
     block_log bl1;
-    sync_block_writer sbw1( bl1 );
     database db1( app );
+    sync_block_writer sbw1( bl1, db1, appbase::app() );
     db1.set_block_writer( &sbw1 );
     witness::block_producer bp1( db1 );
     open_test_database( db1, dir1.path() );
@@ -1316,8 +1316,8 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     appbase::application app;
     block_log bl;
-    sync_block_writer sbw( bl );
     database db( app );
+    sync_block_writer sbw( bl, db, appbase::app() );
     db.set_block_writer( &sbw );
     witness::block_producer bp( db );
     open_test_database( db, data_dir.path() );
@@ -1370,8 +1370,8 @@ BOOST_AUTO_TEST_CASE( safe_closing_database )
   try {
     appbase::application app;
     block_log bl;
-    sync_block_writer sbw( bl );
     database db( app );
+    sync_block_writer sbw( bl, db, appbase::app() );
     db.set_block_writer( &sbw );
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     db.wipe( data_dir.path(), data_dir.path(), true );
@@ -1508,8 +1508,8 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_generation, clean_database_fixture )
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     block_log bl;
-    sync_block_writer sbw( bl );
     database db( theApp );
+    sync_block_writer sbw( bl, db, appbase::app() );
     db.set_block_writer( &sbw );
     witness::block_producer bp( db );
     open_test_database( db, data_dir.path() );
@@ -1567,24 +1567,24 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
 
     fc::temp_directory data_dir_bp1( hive::utilities::temp_directory_path() );
       block_log bl_bp1;
-      sync_block_writer sbw1( bl_bp1 );
     database db_bp1( theApp );
+      sync_block_writer sbw1( bl_bp1, db_bp1, appbase::app() );
       db_bp1.set_block_writer( &sbw1 );
     witness::block_producer bp1( db_bp1 );
     open_test_database( db_bp1, data_dir_bp1.path() );
 
     fc::temp_directory data_dir_bp2( hive::utilities::temp_directory_path() );
       block_log bl_bp2;
-      sync_block_writer sbw2( bl_bp2 );
     database db_bp2( theApp );
+      sync_block_writer sbw2( bl_bp2, db_bp2, appbase::app() );
       db_bp2.set_block_writer( &sbw2 );
     witness::block_producer bp2( db_bp2 );
     open_test_database( db_bp2, data_dir_bp2.path() );
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     block_log bl;
-    sync_block_writer sbw( bl );
     database db( theApp );
+    sync_block_writer sbw( bl, db, appbase::app() );
     db.set_block_writer( &sbw );
     open_test_database( db, data_dir.path() );
 

@@ -118,7 +118,7 @@ class chain_plugin_impl
   public:
     chain_plugin_impl( appbase::application& app ):
       db( app ),
-      default_block_writer( the_block_log ),
+      default_block_writer( the_block_log, db, appbase::application& app ),
       reindex_block_writer( the_block_log ),
       webserver( appbase::app().get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
