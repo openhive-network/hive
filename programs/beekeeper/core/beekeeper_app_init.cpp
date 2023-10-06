@@ -41,6 +41,12 @@ void beekeeper_app_init::set_program_options()
     ;
 }
 
+struct keys_container
+{
+  std::string public_key;
+  std::string private_key;
+};
+
 bool beekeeper_app_init::save_keys( const std::string& notification, const std::string& wallet_name, const std::string& wallet_password )
 {
   bool _result = true;
@@ -48,33 +54,39 @@ bool beekeeper_app_init::save_keys( const std::string& notification, const std::
   if( wallet_name.empty() || wallet_password.empty() )
     return _result;
 
-  std::string _token = wallet_manager_ptr->create_session( "salt", notification );
-
   const std::string _filename = wallet_name + ".keys";
 
-  ilog("Try to save keys into `${_filename}` file.", (_filename));
+  ilog( "*****Saving keys into `${_filename}` file*****", (_filename) );
+
+  ilog( "Create a session" );
+  std::string _token = wallet_manager_ptr->create_session( "salt", notification );
 
   auto _save_keys = [&]()
   {
+    ilog( "Unlock the wallet" );
     wallet_manager_ptr->unlock( _token, wallet_name, wallet_password );
+
+    ilog( "Get keys" );
     auto _keys = wallet_manager_ptr->list_keys( _token, wallet_name, wallet_password );
 
-    map<std::string, std::string> _result;
-    std::transform( _keys.begin(), _keys.end(), std::inserter( _result, _result.end() ),
+    std::vector<keys_container> _v;
+    std::transform( _keys.begin(), _keys.end(), std::back_inserter( _v ),
     []( const std::pair<beekeeper::public_key_type, beekeeper::private_key_type>& item )
     {
-      return std::make_pair( beekeeper::utility::public_key::to_string( item.first ), item.second.key_to_wif() );
+      return keys_container{ beekeeper::utility::public_key::to_string( item.first ), item.second.key_to_wif() };
     } );
     
+    ilog( "Save keys into `${_filename}` file", (_filename) );
     fc::path _file( _filename );
-    fc::json::save_to_file( _result, _file );
-
-    ilog( "Keys have been saved.", (_filename) );
+    fc::json::save_to_file( _v, _file );
   };
 
   auto _finish = [this, &_token, &wallet_name]()
   {
+    ilog( "Lock the wallet" );
     wallet_manager_ptr->lock( _token, wallet_name );
+
+    ilog( "Close a session" );
     wallet_manager_ptr->close_session( _token, false/*allow_close_all_sessions_action*/ );
   };
 
@@ -87,28 +99,34 @@ bool beekeeper_app_init::save_keys( const std::string& notification, const std::
     catch ( const boost::exception& e )
     {
       _result = false;
-      wlog( boost::diagnostic_information(e) );
+      elog( boost::diagnostic_information(e) );
     }
     catch ( const fc::exception& e )
     {
       _result = false;
-      wlog( e.to_detail_string() );
+      elog( e.to_detail_string() );
     }
     catch ( const std::exception& e )
     {
       _result = false;
-      wlog( e.what() );
+      elog( e.what() );
     }
     catch ( ... )
     {
       _result = false;
-      wlog( "Unknown error. Saving keys into a `${_filename}` file failed.",(_filename) );
+      elog( "Unknown error" );
     }
   };
 
-  BOOST_SCOPE_EXIT(&wallet_manager_ptr, &_exec_action, &_finish)
+  BOOST_SCOPE_EXIT(&wallet_manager_ptr, &_exec_action, &_finish, &_result)
   {
     _exec_action( _finish );
+
+    if ( _result )
+      ilog( "*****Keys have been saved*****" );
+    else
+      elog( "*****Saving keys failed*****" );
+
   } BOOST_SCOPE_EXIT_END
 
   _exec_action( _save_keys );
@@ -183,3 +201,13 @@ std::string beekeeper_app_init::check_version()
 }
 
 }
+namespace fc
+{
+  void to_variant( const beekeeper::keys_container& var, fc::variant& vo )
+  {
+    variant v = mutable_variant_object( "public_key", var.public_key )( "private_key", var.private_key );
+    vo = v;
+  }
+}
+
+FC_REFLECT( beekeeper::keys_container, (public_key)(private_key) )
