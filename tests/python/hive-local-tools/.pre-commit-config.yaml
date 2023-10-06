@@ -34,6 +34,20 @@ repos:
       - id: poetry-lock
         name: checking if poetry.lock is consistent with pyproject.toml
         args: [ "--directory", "tests/python/hive-local-tools", "--no-update" ]
+  - repo: https://github.com/lk16/detect-missing-init
+    rev: v0.1.6
+    hooks:
+      - id: detect-missing-init
+        args:
+          - "--create"
+          - "--python-folders"
+          - "\
+          tests/python/api_tests/,\
+          tests/python/functional/,\
+          tests/python/hive-local-tools/hive_local_tools/,\
+          tests/python/hive-local-tools/hive_utils/,\
+          tests/python/hive-local-tools/shared-tools/shared_tools/
+          "
   - repo: https://github.com/psf/black
     rev: 23.9.1
     hooks:
