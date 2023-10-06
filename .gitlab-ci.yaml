@@ -1,6 +1,5 @@
 stages:
 - build
-- replay
 - test
 - cleanup
 - publish
