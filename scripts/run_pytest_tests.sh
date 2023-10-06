@@ -29,7 +29,7 @@ export PROCESSES=" --numprocesses=${PYTEST_NUMBER_OF_PROCESSES} "
 python3 -m venv "${HIVE_BIN_ROOT_PATH}venv/"
 source "${HIVE_BIN_ROOT_PATH}venv/bin/activate"
 
-(pushd "${SRCDIR}/tests/hive-local-tools" && poetry install && popd)
+(pushd "${SRCDIR}/tests/python/hive-local-tools" && poetry install && popd)
 
 echo "Launching pytest
   - timeout (minutes): ${PYTEST_TIMEOUT_MINUTES}
