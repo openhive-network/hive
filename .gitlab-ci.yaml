@@ -1,5 +1,6 @@
 stages:
 - build
+- static_code_analysis
 - test
 - cleanup
 - publish
@@ -38,8 +39,10 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: b5202fecccf40845099da351cbc0c38a6205339c # develop
-    file: '/templates/wasm_build.gitlab-ci.yml'
+    ref: b5202fecccf40845099da351cbc0c38a6205339c
+    file:
+    - '/templates/wasm_build.gitlab-ci.yml'
+    - '/templates/python_projects.gitlab-ci.yml'
 
 prepare_hived_image:
   extends: .prepare_hived_image
@@ -307,18 +310,37 @@ plugin_test:
      - additional arguments: ${PYTEST_ARGS[@]}"
   - timeout $((($PYTEST_TIMEOUT_MINUTES + 2) * 60)) pytest --timeout=$(($PYTEST_TIMEOUT_MINUTES * 60)) --junitxml="$JUNIT_REPORT" "${PROCESSES}" "${DURATIONS}" "${PYTEST_ARGS[@]}"
 
+.python_based:
+  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  extends:
+    - .job-defaults
+    - .project_develop_configuration_template
+  before_script:
+    - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
+    - !reference [.project_develop_configuration_template, before_script]
+    - cd $CI_PROJECT_DIR
+
+.python_static_analysis_configuration:
+  extends: .python_based
+  needs: []  # to run immediately without waiting for previous jobs
+  variables:
+    PACKAGES_TO_CHECK: "$CI_PROJECT_DIR/tests/python/"
+  before_script:
+    - !reference [.python_based, before_script]
+    - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
+  tags:
+    - public-runner-docker
+
+pre_commit_checks:
+  stage: static_code_analysis
+  extends:
+    - .pre_commit_checks_template
+    - .python_static_analysis_configuration
+
 .pytest_based:
-  extends: .job-defaults
+  extends: .python_based
   variables:
     JUNIT_REPORT: "report.xml" # should be ovverided by derived jobs
-
-  interruptible: true
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-
-  before_script:
-    - python3 -m venv venv/
-    - . venv/bin/activate
-    - (cd $CI_PROJECT_DIR/tests/python/hive-local-tools && poetry install)
   artifacts:
     reports:
       junit: $JUNIT_REPORT
