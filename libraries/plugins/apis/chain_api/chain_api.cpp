@@ -49,7 +49,7 @@ DEFINE_API_IMPL( chain_api_impl, push_transaction )
 
 chain_api::chain_api( appbase::application& app ): my( new detail::chain_api_impl( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_CHAIN_API_PLUGIN_NAME, app );
+  JSON_RPC_REGISTER_API( HIVE_CHAIN_API_PLUGIN_NAME );
 }
 
 chain_api::~chain_api() {}

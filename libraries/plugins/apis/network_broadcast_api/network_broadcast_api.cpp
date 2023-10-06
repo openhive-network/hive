@@ -54,7 +54,7 @@ namespace detail
 
 network_broadcast_api::network_broadcast_api( appbase::application& app ) : my( new detail::network_broadcast_api_impl( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_NETWORK_BROADCAST_API_PLUGIN_NAME, app );
+  JSON_RPC_REGISTER_API( HIVE_NETWORK_BROADCAST_API_PLUGIN_NAME );
 }
 
 network_broadcast_api::~network_broadcast_api() {}

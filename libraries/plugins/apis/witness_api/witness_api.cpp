@@ -41,7 +41,7 @@ namespace detail
 
 witness_api::witness_api( appbase::application& app ) : my(new detail::witness_api_impl( app ))
 {
-  JSON_RPC_REGISTER_API(HIVE_WITNESS_API_PLUGIN_NAME, app);
+  JSON_RPC_REGISTER_API(HIVE_WITNESS_API_PLUGIN_NAME);
 }
 
 witness_api::~witness_api() {}

@@ -173,7 +173,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_throw_exception )
 
 debug_node_api::debug_node_api( appbase::application& app): my( new detail::debug_node_api_impl( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_DEBUG_NODE_API_PLUGIN_NAME, app );
+  JSON_RPC_REGISTER_API( HIVE_DEBUG_NODE_API_PLUGIN_NAME );
 }
 
 debug_node_api::~debug_node_api() {}

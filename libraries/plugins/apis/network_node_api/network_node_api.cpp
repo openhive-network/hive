@@ -56,7 +56,7 @@ namespace detail
 
 network_node_api::network_node_api( appbase::application& app ) : my( new detail::network_node_api_impl( app ) )
 {
-   JSON_RPC_REGISTER_API( HIVE_NETWORK_NODE_API_PLUGIN_NAME, app );
+   JSON_RPC_REGISTER_API( HIVE_NETWORK_NODE_API_PLUGIN_NAME );
 }
 
 network_node_api::~network_node_api() {}

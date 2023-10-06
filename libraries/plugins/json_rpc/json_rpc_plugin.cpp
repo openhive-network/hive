@@ -223,7 +223,8 @@ namespace detail
   void json_rpc_plugin_impl::initialize()
   {
     ilog("initializing JSON RPC plugin");
-    JSON_RPC_REGISTER_API( "jsonrpc", theApp );
+    auto& app = theApp;
+    JSON_RPC_REGISTER_API( "jsonrpc" );
   }
 
   get_methods_return json_rpc_plugin_impl::get_methods( const get_methods_args& args, bool lock )

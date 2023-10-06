@@ -6,7 +6,8 @@ namespace hive { namespace plugins { namespace test_api {
 
 test_api_plugin::test_api_plugin(): appbase::plugin<test_api_plugin>()
 {
-  JSON_RPC_REGISTER_API( name(), get_app() );
+  auto& app = get_app();
+  JSON_RPC_REGISTER_API( name() );
 }
 
 test_api_plugin::~test_api_plugin() {}

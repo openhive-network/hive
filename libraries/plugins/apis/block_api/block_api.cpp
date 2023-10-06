@@ -32,7 +32,7 @@ class block_api_impl
 block_api::block_api( appbase::application& app )
   : my( new block_api_impl( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_BLOCK_API_PLUGIN_NAME, app );
+  JSON_RPC_REGISTER_API( HIVE_BLOCK_API_PLUGIN_NAME );
 }
 
 block_api::~block_api() {}

@@ -30,7 +30,7 @@ DEFINE_API_IMPL( rewards_api_impl, simulate_curve_payouts )
 
 rewards_api::rewards_api( appbase::application& app ) : my( std::make_unique< detail::rewards_api_impl >( app ) )
 {
-  JSON_RPC_REGISTER_API( HIVE_REWARDS_API_PLUGIN_NAME, app );
+  JSON_RPC_REGISTER_API( HIVE_REWARDS_API_PLUGIN_NAME );
 }
 
 rewards_api::~rewards_api() {}
