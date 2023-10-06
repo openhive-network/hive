@@ -12,7 +12,7 @@ namespace hive { namespace chain {
   class sync_block_writer : public block_write_i
   {
   public:
-    sync_block_writer( block_log& block_log, fork_database& fork_db );
+    sync_block_writer( block_log& block_log );
     virtual ~sync_block_writer() = default;
 
     virtual block_read_i& get_block_reader() override;
@@ -45,10 +45,13 @@ namespace hive { namespace chain {
       const unsigned witnesses_required_for_irreversiblity,
       const uint32_t old_last_irreversible ) const override;
 
+    void on_reindex_start();
+    void on_reindex_end( const std::shared_ptr<full_block_type>& end_block );
+
   private:
     fork_db_block_reader  _reader;
     block_log&            _block_log;
-    fork_database&        _fork_db;
+    fork_database         _fork_db;
     bool                  _is_at_live_sync = false;
   };
 
