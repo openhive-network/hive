@@ -41,6 +41,12 @@ namespace hive { namespace chain {
       apply_block_t apply_block_extended, pop_block_t pop_block_extended, 
       notify_switch_fork_t notify_switch_fork ) override;
 
+    virtual std::optional<new_last_irreversible_block_t> find_new_last_irreversible_block(
+      const std::vector<const witness_object*>& scheduled_witness_objects,
+      const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
+      const unsigned witnesses_required_for_irreversiblity,
+      const uint32_t old_last_irreversible ) const override;
+
   private:
     fork_db_block_reader  _reader;
     block_log&            _block_log;

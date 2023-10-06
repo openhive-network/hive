@@ -4,6 +4,7 @@
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/fork_database.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/witness_objects.hpp>
 
 #include <boost/scope_exit.hpp>
 
@@ -260,5 +261,108 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
   }
   ilog("done pushing blocks from new fork");
 } // switch_forks
+
+std::optional<block_write_i::new_last_irreversible_block_t> 
+sync_block_writer::find_new_last_irreversible_block(
+  const std::vector<const witness_object*>& scheduled_witness_objects,
+  const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
+  const unsigned witnesses_required_for_irreversiblity,
+  const uint32_t old_last_irreversible ) const
+{
+  new_last_irreversible_block_t result;
+  // during our search for a new irreversible block, if we find a
+  // candidate better than the current last_irreversible_block,
+  // store it here:
+  item_ptr new_last_irreversible_block;
+  item_ptr new_head_block;
+
+  // for each witness in the upcoming schedule, they may (and likely will) have voted on blocks
+  // both by sending fast-confirm transactions and by generating blocks that implicitly vote on
+  // other blocks by building off of them.  we only care about the highest block number they
+  // have "voted" for, regardless of method.  If they fast-confirm one block, then generate
+  // a block with a higher block_num, we'll say they voted for the higher block number; the one
+  // they generated.
+  // create a map of each block_id that was the best vote for at least one witness, mapped
+  // to the number of witnesses directly voting for it
+  // start with the fast-confirms broadcast by each witness
+  const std::map<account_name_type, block_id_type> last_block_generated_by_witness = 
+    _fork_db.get_last_block_generated_by_each_witness();
+  std::map<block_id_type, uint32_t> number_of_approvals_by_block_id;
+  for (const witness_object* witness_obj : scheduled_witness_objects)
+  {
+    const auto fast_approval_iter = last_fast_approved_block_by_witness.find(witness_obj->owner);
+    const auto last_block_iter = last_block_generated_by_witness.find(witness_obj->owner);
+    std::optional<block_id_type> best_block_id_for_this_witness;
+    if (fast_approval_iter != last_fast_approved_block_by_witness.end())
+    {
+      if (last_block_iter != last_block_generated_by_witness.end()) // they have cast a fast-confirm vote and produced a block, choose the most recent
+        best_block_id_for_this_witness = block_header::num_from_id(fast_approval_iter->second) > block_header::num_from_id(last_block_iter->second) ?
+                                         fast_approval_iter->second : last_block_iter->second;
+      else // no generated blocks, but they have cast votes
+        best_block_id_for_this_witness = fast_approval_iter->second;
+    }
+    else if (last_block_iter != last_block_generated_by_witness.end()) // they produced a block, but have not cast any votes
+      best_block_id_for_this_witness = last_block_iter->second;
+    if (best_block_id_for_this_witness)
+      ++number_of_approvals_by_block_id[*best_block_id_for_this_witness];
+  }
+
+  // walk over each fork in the forkdb
+  std::vector<item_ptr> heads = _fork_db.fetch_heads();
+  for (const item_ptr& possible_head : heads)
+  {
+    // dlog("Considering possible head ${block_id}", ("block_id", possible_head->get_block_id()));
+    // keep track of all witnesses approving this block
+    uint32_t number_of_witnesses_approving_this_block = 0;
+    item_ptr this_block = possible_head;
+
+    // walk backwards over blocks on this fork
+    while (this_block &&
+           this_block->get_block_num() > old_last_irreversible &&
+           (!new_last_irreversible_block || // we don't yet have a candidate
+            this_block == new_last_irreversible_block || // this is our candidate, but we're coming at it from a different fork
+            this_block->get_block_num() > new_last_irreversible_block->get_block_num())) // it's a higher block number than our current candidate
+    {
+      // dlog("Considering block ${block_id}", ("block_id", this_block->get_block_id()));
+      number_of_witnesses_approving_this_block += number_of_approvals_by_block_id[this_block->get_block_id()];
+      // dlog("Has ${number_of_witnesses_approving_this_block} witnesses approving", (number_of_witnesses_approving_this_block));
+
+      if (number_of_witnesses_approving_this_block >= witnesses_required_for_irreversiblity)
+      {
+        // dlog("Block ${num} can be made irreversible, ${number_of_witnesses_approving_this_block} witnesses approve it",
+        //      ("num", this_block->get_block_num())(number_of_witnesses_approving_this_block));
+        if (!new_last_irreversible_block ||
+            possible_head->get_block_num() > new_head_block->get_block_num())
+        {
+          new_head_block = possible_head;
+          new_last_irreversible_block = this_block;
+          result.new_head_block = possible_head->full_block;
+          result.new_last_irreversible_block_num = new_last_irreversible_block->get_block_num();
+        }
+        break;
+      }
+      else
+      {
+        // dlog("Can't make block ${num} irreversible, only ${witnesses_approving_this_block} out of a required ${witnesses_required_for_irreversiblity} approve it",
+        //      ("num", this_block->get_block_num())(number_of_witnesses_approving_this_block)(witnesses_required_for_irreversiblity));
+      }
+      this_block = this_block->prev.lock();
+    }
+  }
+
+  if (!new_last_irreversible_block)
+  {
+    // dlog("Leaving update_last_irreversible_block without making any new blocks irreversible");
+    return std::optional<new_last_irreversible_block_t>();
+  }
+
+  // dlog("Found a new last irreversible block: ${new_last_irreversible_block_num}", ("new_last_irreversible_block_num", new_last_irreversible_block->get_block_num()));
+  const item_ptr main_branch_block = 
+    _fork_db.fetch_block_on_main_branch_by_number(new_last_irreversible_block->get_block_num());
+
+  result.found_on_another_fork = ( new_last_irreversible_block != main_branch_block );
+
+  return std::optional< new_last_irreversible_block_t >( result );
+} // find_new_last_irreversible_block
 
 } } //hive::chain
