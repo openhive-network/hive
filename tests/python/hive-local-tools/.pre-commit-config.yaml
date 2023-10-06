@@ -1,12 +1,11 @@
 # this configuration should be used for linting and formatting a python tests-related code
-files: ^tests/
-exclude: ^tests/unit/
+files: ^tests/python
 
 define: &excluded_files_regex
   "\
-  ^tests/api_tests/pattern_tests/tavern|\
-  ^tests/api_tests/python_patterns_tests/cli_wallet_tests/response_patterns|\
-  ^tests/api_tests/message_format_tests/cli_wallet_tests/output_formatter_tests/response_patterns|\
+  ^tests/python/api_tests/pattern_tests/tavern|\
+  ^tests/python/api_tests/python_patterns_tests/cli_wallet_tests/response_patterns|\
+  ^tests/python/api_tests/message_format_tests/cli_wallet_tests/output_formatter_tests/response_patterns|\
   transaction_pattern_tests/dumped_files_legacy_wallet|\
   transaction_pattern_tests/dumped_files_hf26|\
   timestamp\
@@ -21,7 +20,7 @@ repos:
       - id: check-yaml
         args: [ "--unsafe" ]
       - id: check-json
-        exclude: ^tests/unit/|^tests/api_tests/pattern_tests/tavern/
+        exclude: ^tests/python/api_tests/pattern_tests/tavern/
       - id: pretty-format-json
         args: [ "--autofix" ]
         exclude: *excluded_files_regex
@@ -34,16 +33,16 @@ repos:
     hooks:
       - id: poetry-lock
         name: checking if poetry.lock is consistent with pyproject.toml
-        args: [ "--directory", "tests/hive-local-tools", "--no-update" ]
+        args: [ "--directory", "tests/python/hive-local-tools", "--no-update" ]
   - repo: https://github.com/psf/black
     rev: 23.9.1
     hooks:
       - id: black
         name: format code using black
-        args: [ "--config", "tests/hive-local-tools/pyproject.toml" ]
+        args: [ "--config", "tests/python/hive-local-tools/pyproject.toml" ]
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: 'v0.0.292'
     hooks:
       - id: ruff
         name: linting code with Ruff
-        args: [ "--config", "tests/hive-local-tools/pyproject.toml", "--fix" ]
+        args: [ "--config", "tests/python/hive-local-tools/pyproject.toml", "--fix" ]
