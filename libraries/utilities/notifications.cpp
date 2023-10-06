@@ -42,7 +42,7 @@ bool error_handler(const std::function<void ()> &foo)
   auto handle_exception = [&is_exception_occured](const fc::string &ex)
   {
     is_exception_occured = true;
-    wlog("caught exception! details:\n${details}", ("details", ex));
+    wlog("notification error: `${details}`", ("details", ex));
   };
 
   try { foo(); }
@@ -109,10 +109,15 @@ void notification_handler::network_broadcaster::broadcast(const notification_t &
       }
     });
 
-    if (is_exception_occured && ++address.second == MAX_RETRIES)
-      wlog("address ${addr} exceeded max amount of failures, no future requests will be sent there",
-            ("addr", address.first));
-    else address.second = 0;
+    if( is_exception_occured )
+    {
+      wlog("Establishing a connection with an address ${addr} failed", ("addr", address.first));
+
+      if( ++address.second == MAX_RETRIES )
+        wlog("Address ${addr} exceeded max amount of failures, no future requests will be sent there", ("addr", address.first));
+      else
+        address.second = 0;
+    }
   }
 }
 
