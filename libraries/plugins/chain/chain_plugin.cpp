@@ -1,3 +1,7 @@
+#include <hive/plugins/chain/chain_plugin.hpp>
+
+#include <appbase/application.hpp>
+
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
@@ -6,7 +10,6 @@
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
-#include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/statsd/utility.hpp>
 
 #include <hive/utilities/notifications.hpp>
@@ -118,9 +121,10 @@ class chain_plugin_impl
   public:
     chain_plugin_impl( appbase::application& app ):
       db( app ),
-      default_block_writer( the_block_log, db, appbase::application& app ),
+      the_block_log( app ),
+      default_block_writer( the_block_log, db, app ),
       reindex_block_writer( the_block_log ),
-      webserver( appbase::app().get_plugin<hive::plugins::webserver::webserver_plugin>() ),
+      webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
     {
       theApp.get_plugin<hive::plugins::json_rpc::json_rpc_plugin>().add_serialization_status( [this](){ return db.has_hardfork( HIVE_HARDFORK_1_26 ); } );

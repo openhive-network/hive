@@ -16,13 +16,15 @@ namespace hive { namespace chain {
   public:
     virtual ~block_read_i() = default;
 
-    virtual void open_reader( const fc::path& data_dir, bool enable_compression,
+    /// Use provided data for reader initialization if needed.
+    virtual void init_reader( const fc::path& data_dir, bool enable_compression,
                               int compression_level, bool enable_block_log_auto_fixing ) = 0;
+    /// Called when state initial data has been loaded and provided head block set.
     virtual void start_reader( const std::shared_ptr<full_block_type>& head_block ) = 0;
+    /// Close whatever needs to be closed.
     virtual void close_reader() = 0;
   
     virtual std::shared_ptr<full_block_type> head_block() const = 0;
-
     virtual uint32_t head_block_num( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
     virtual block_id_type head_block_id( 
@@ -31,6 +33,7 @@ namespace hive { namespace chain {
     virtual std::shared_ptr<full_block_type> read_block_by_num( uint32_t block_num ) const = 0;
 
     using block_processor_t = std::function<bool( const std::shared_ptr<full_block_type>& )>;
+    /// Let provided processor walk over provided block range.
     virtual void process_blocks( uint32_t starting_block_number, uint32_t ending_block_number,
                                  block_processor_t processor ) = 0;
 

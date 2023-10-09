@@ -206,7 +206,7 @@ void database::initialize_state_independent_data(const open_args& args)
 
   with_write_lock([&]()
   {
-    block_reader().open_reader( args.data_dir, args.enable_block_log_compression,
+    block_reader().init_reader( args.data_dir, args.enable_block_log_compression,
                                 args.block_log_compression_level,
                                 args.enable_block_log_auto_fixing );
   });
@@ -795,7 +795,7 @@ bool database::_push_block(const block_flow_control& block_ctrl)
           uint32_t skip, const block_flow_control* block_ctrl )
       { this->apply_block_extended(fb,skip,block_ctrl); },
     [&] ( const block_id_type end_block ) -> uint32_t
-      { return this->pop_block_extended( end_block ); },
+      { return this->pop_block_extended( end_block ); }
     );
 } FC_CAPTURE_AND_RETHROW() }
 

@@ -32,6 +32,10 @@
 
 #include <list>
 
+namespace appbase {
+  class application;
+}
+
 namespace graphene { namespace net {
 
   using fc::variant_object;
