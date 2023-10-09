@@ -179,7 +179,7 @@ public:
 
   impl( appbase::application& app );
 
-  void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification);
+  void open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool);
 
   uint32_t read_head_block_num() const
   {
@@ -238,7 +238,7 @@ public:
 private:
   bool load_header();
 
-  void generate_artifacts_file(const block_log& source_block_provider);
+  void generate_artifacts_file(const block_log& source_block_provider, hive::chain::blockchain_worker_thread_pool& thread_pool);
   void verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool full_match_verification, const bool use_block_log_head_num) const;
   
   void write_data(const std::vector<char>& buffer, off_t offset, const std::string& description) const
@@ -296,7 +296,7 @@ block_log_artifacts::impl::impl( appbase::application& app ): theApp( app )
 
 }
 
-void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification)
+void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   try {
   _artifact_file_name = fc::path(block_log_file_path.generic_string() + ".artifacts");
@@ -349,7 +349,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
           _header.tail_block_num = 1;
           _header.head_block_num = block_log_head_block_num;
           flush_header();
-          generate_artifacts_file(source_block_provider);
+          generate_artifacts_file(source_block_provider, thread_pool);
         }
       }
       else
@@ -375,14 +375,14 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
           truncate_file(block_log_head_block_num);
 
           if (_header.generating_interrupted_at_block)
-            generate_artifacts_file(source_block_provider);
+            generate_artifacts_file(source_block_provider, thread_pool);
         }
         else
         {
           verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, full_match_verification, false);
 
           if (_header.generating_interrupted_at_block)
-            generate_artifacts_file(source_block_provider);
+            generate_artifacts_file(source_block_provider, thread_pool);
 
           if (block_log_head_block_num > _header.head_block_num && !_header.generating_interrupted_at_block && !theApp.is_interrupt_request())
           {
@@ -392,7 +392,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
             _header.tail_block_num = _header.head_block_num ? _header.head_block_num : 1;
             _header.head_block_num = block_log_head_block_num;
             flush_header();
-            generate_artifacts_file(source_block_provider);
+            generate_artifacts_file(source_block_provider, thread_pool);
           }
         }
       }
@@ -416,7 +416,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path, const 
             _header.tail_block_num = 1;
             _header.head_block_num = block_log_head_block_num;
             flush_header();
-            generate_artifacts_file(source_block_provider);
+            generate_artifacts_file(source_block_provider, thread_pool);
           }
         }
       }
@@ -464,7 +464,7 @@ void block_log_artifacts::impl::flush_header() const
   //  ("gr", _h2.git_version)("major", _h2.format_major_version)("minor", _h2.format_minor_version)("hb", _h2.head_block_num)("d", _h2.dirty_close));
 } FC_CAPTURE_AND_RETHROW() }
 
-void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_block_provider)
+void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_block_provider, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   const uint32_t starting_block_num = _header.generating_interrupted_at_block ? _header.generating_interrupted_at_block : _header.head_block_num;
   const uint32_t target_block_num = _header.tail_block_num;
@@ -547,7 +547,7 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
     std::shared_ptr<full_block_with_artifacts> block_with_artifacts(new full_block_with_artifacts{full_block, block_pos, attributes});
     full_block_queue.push(block_with_artifacts);
     queue_size.fetch_add(1, std::memory_order_relaxed);
-    blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block, blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation);
+    thread_pool.enqueue_work(full_block, blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation);
     queue_condition.notify_one();
     return true;
   };
@@ -733,10 +733,10 @@ block_log_artifacts::~block_log_artifacts()
     _impl->close();
 }
 
-block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, appbase::application& app)
+block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts( app ));
-  block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only, full_match_verification);
+  block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only, full_match_verification, thread_pool );
   return block_artifacts;
 }
 

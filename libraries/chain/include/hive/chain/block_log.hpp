@@ -63,11 +63,12 @@ namespace hive { namespace chain {
       block_log( appbase::application& app );
       ~block_log();
 
-      void open( const fc::path& file, bool read_only = false, bool auto_open_artifacts = true );
+      void open( const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool, bool read_only = false, bool auto_open_artifacts = true );
       void open_and_init( const fc::path& file,
                           bool enable_compression,
                           int compression_level,
-                          bool enable_block_log_auto_fixing );
+                          bool enable_block_log_auto_fixing, 
+                          hive::chain::blockchain_worker_thread_pool& thread_pool );
       void close();
       bool is_open()const;
 
@@ -118,7 +119,8 @@ namespace hive { namespace chain {
       // process blocks in forward order, [starting_block_number, ending_block_number]
       void for_each_block(uint32_t starting_block_number, uint32_t ending_block_number,
                           block_processor_t processor,
-                          for_each_purpose purpose) const;
+                          for_each_purpose purpose,
+                          hive::chain::blockchain_worker_thread_pool& thread_pool) const;
 
       // shorten the block log & artifacts file
       void truncate(uint32_t new_head_block_num);

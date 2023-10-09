@@ -47,7 +47,8 @@ namespace hive { namespace chain {
     void on_reindex_start();
     void on_reindex_end( const std::shared_ptr<full_block_type>& end_block );
     void open(  const fc::path& file, bool enable_compression,
-                int compression_level, bool enable_block_log_auto_fixing );
+                int compression_level, bool enable_block_log_auto_fixing,
+                hive::chain::blockchain_worker_thread_pool& thread_pool );
     void close();
     const block_log& get_block_log() const { return _block_log; }
 

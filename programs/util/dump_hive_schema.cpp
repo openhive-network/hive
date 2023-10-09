@@ -1,15 +1,12 @@
 #include <appbase/application.hpp>
 
 #include <hive/protocol/types_fwd.hpp>
-#include <hive/chain/hive_fwd.hpp>
+#include <hive/protocol/schema_types/account_name_type.hpp>
+#include <hive/protocol/schema_types/asset_symbol_type.hpp>
 
 #include <hive/schema/schema.hpp>
 #include <hive/schema/schema_impl.hpp>
 #include <hive/schema/schema_types.hpp>
-
-#include <hive/chain/schema_types/oid.hpp>
-#include <hive/protocol/schema_types/account_name_type.hpp>
-#include <hive/protocol/schema_types/asset_symbol_type.hpp>
 
 #include <iostream>
 #include <map>
@@ -22,6 +19,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/sync_block_writer.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 using hive::schema::abstract_schema;
 
@@ -79,6 +77,7 @@ FC_REFLECT( hive_schema, (schema_map)(chain_object_types) )
 int main( int argc, char** argv, char** envp )
 {
   appbase::application app;
+  hive::chain::blockchain_worker_thread_pool& thread_pool = hive::chain::blockchain_worker_thread_pool::get_instance( app );
 
   hive::chain::database db( app );
   hive::chain::sync_block_writer block_writer( db, app );
@@ -95,8 +94,9 @@ int main( int argc, char** argv, char** envp )
   block_writer.open(  db_args.data_dir / "block_log",
                       db_args.enable_block_log_compression,
                       db_args.block_log_compression_level,
-                      db_args.enable_block_log_auto_fixing );
-  db.open( db_args );
+                      db_args.enable_block_log_auto_fixing,
+                      thread_pool );
+  db.open( db_args, thread_pool );
 
   hive_schema ss;
 

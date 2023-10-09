@@ -9,7 +9,14 @@
 
 #define HIVE_BLOCK_LOG_CONVERSION_PLUGIN_NAME "block_log_conversion"
 
-namespace hive { namespace converter { namespace plugins { namespace block_log_conversion {
+namespace hive {
+
+namespace chain
+{
+  class blockchain_worker_thread_pool;
+}
+
+namespace converter { namespace plugins { namespace block_log_conversion {
 
   namespace bpo = boost::program_options;
 
@@ -29,6 +36,8 @@ namespace detail { class block_log_conversion_plugin_impl; }
     virtual void plugin_initialize( const bpo::variables_map& options ) override;
     virtual void plugin_startup() override;
     virtual void plugin_shutdown() override;
+
+    void set_thread_pool( hive::chain::blockchain_worker_thread_pool* thread_pool );
 
   private:
     std::unique_ptr< detail::block_log_conversion_plugin_impl > my;

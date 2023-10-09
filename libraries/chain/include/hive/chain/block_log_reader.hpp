@@ -22,7 +22,7 @@ namespace hive { namespace chain {
     virtual std::shared_ptr<full_block_type> read_block_by_num( uint32_t block_num ) const override;
 
     virtual void process_blocks( uint32_t starting_block_number, uint32_t ending_block_number,
-                                 block_processor_t processor ) const override;
+                                 block_processor_t processor, hive::chain::blockchain_worker_thread_pool& thread_pool ) const override;
 
     virtual std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t block_num,
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;

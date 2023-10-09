@@ -120,7 +120,7 @@ class chain_plugin_impl
 {
   public:
     chain_plugin_impl( appbase::application& app ):
-      thread_pool( blockchain_worker_thread_pool::get_instance( app ) ),
+      thread_pool( app ),
       db( app ),
       default_block_writer( db, app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
@@ -147,11 +147,11 @@ class chain_plugin_impl
     void start_write_processing();
     void stop_write_processing();
 
-    bool start_replay_processing();
+    bool start_replay_processing( hive::chain::blockchain_worker_thread_pool& thread_pool );
 
     void initial_settings();
     void open();
-    bool replay_blockchain( const block_read_i& block_reader );
+    bool replay_blockchain( const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
     void process_snapshot();
     bool check_data_consistency( const block_read_i& block_reader );
 
@@ -205,7 +205,8 @@ class chain_plugin_impl
     fc::mutable_variant_object       plugin_state_opts;
     bfs::path                        database_cfg;
 
-    hive::chain::blockchain_worker_thread_pool& thread_pool;
+    hive::chain::blockchain_worker_thread_pool thread_pool;
+
     database                         db;
     sync_block_writer                default_block_writer;
 
@@ -243,9 +244,9 @@ class chain_plugin_impl
     appbase::application& theApp;
 
   private:
-    uint32_t reindex( const open_args& args, const block_read_i& block_reader );
+    uint32_t reindex( const open_args& args, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
     uint32_t reindex_internal( const open_args& args, 
-      const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader );
+      const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
     /**
       * @brief Check if replaying was finished and all blocks from `block_reader` were processed.
       *
@@ -595,7 +596,7 @@ void chain_plugin_impl::stop_write_processing()
   write_processor_thread.reset();
 }
 
-bool chain_plugin_impl::start_replay_processing()
+bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   irreversible_block_writer reindex_block_writer( default_block_writer.get_block_log() );
   db.set_block_writer( &reindex_block_writer );
@@ -605,7 +606,7 @@ bool chain_plugin_impl::start_replay_processing()
   } BOOST_SCOPE_EXIT_END
   
   theApp.notify_status("replaying");
-  bool replay_is_last_operation = replay_blockchain( default_block_writer.get_block_reader() );
+  bool replay_is_last_operation = replay_blockchain( default_block_writer.get_block_reader(), thread_pool );
   theApp.notify_status("finished replaying");
 
   if( replay_is_last_operation )
@@ -733,8 +734,9 @@ void chain_plugin_impl::open()
     default_block_writer.open(  db_open_args.data_dir / "block_log",
                                 db_open_args.enable_block_log_compression,
                                 db_open_args.block_log_compression_level,
-                                db_open_args.enable_block_log_auto_fixing );
-    db.open( db_open_args );
+                                db_open_args.enable_block_log_auto_fixing,
+                                thread_pool );
+    db.open( db_open_args, thread_pool );
 
     if( dump_memory_details )
     {
@@ -756,7 +758,7 @@ void chain_plugin_impl::open()
   }
 }
 
-uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& block_reader )
+uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   reindex_notification note( args );
 
@@ -827,7 +829,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
         if( _last_block_number && !args.force_replay )
           ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
 
-        note.last_block_number = reindex_internal( args, start_block, block_reader );
+        note.last_block_number = reindex_internal( args, start_block, block_reader, thread_pool );
       }
       else
       {
@@ -854,7 +856,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
 }
 
 uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
-  const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader )
+  const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   uint64_t skip_flags = chain::database::skip_validate_invariants | chain::database::skip_block_log;
   if (args.validate_during_replay)
@@ -907,7 +909,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
   process_block(start_block);
 
   if (start_block_number < last_block_num)
-    block_reader.process_blocks(start_block_number + 1, last_block_num, process_block);
+    block_reader.process_blocks(start_block_number + 1, last_block_num, process_block, thread_pool);
 
   if (theApp.is_interrupt_request())
     ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})",
@@ -941,13 +943,13 @@ bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklo
   return head_block_num_origin == head_block_num_state;
 }
 
-bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader )
+bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   try
   {
     ilog("Replaying blockchain on user request.");
     uint32_t last_block_number = 0;
-    last_block_number = reindex( db_open_args, block_reader );
+    last_block_number = reindex( db_open_args, block_reader, thread_pool );
 
     if( benchmark_interval > 0 )
     {
@@ -1393,7 +1395,7 @@ void chain_plugin::plugin_startup()
   if( my->replay )
   {
     ilog("Replaying...");
-    if( !my->start_replay_processing() )
+    if( !my->start_replay_processing( get_thread_pool() ) )
     {
       ilog("P2P enabling after replaying...");
       my->work( on_sync );
@@ -1408,7 +1410,7 @@ void chain_plugin::plugin_startup()
       {
         ilog("Replaying...");
         //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
-        if( !my->start_replay_processing() )
+        if( !my->start_replay_processing( get_thread_pool() ) )
         {
           ilog("P2P enabling after replaying...");
           my->work( on_sync );

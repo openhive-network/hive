@@ -193,18 +193,18 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      void open( const open_args& args );
+      void open( const open_args& args, hive::chain::blockchain_worker_thread_pool& thread_pool );
 
     private:
 
-      uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& full_block );
+      uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& full_block, hive::chain::blockchain_worker_thread_pool& thread_pool );
       void remove_expired_governance_votes();
 
       //Remove proposal votes for accounts that declined voting rights during HF28.
       void remove_proposal_votes_for_accounts_without_voting_rights();
 
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
-      void initialize_state_independent_data(const open_args& args);
+      void initialize_state_independent_data(const open_args& args, hive::chain::blockchain_worker_thread_pool& thread_pool);
 
       void begin_type_register_process(util::abstract_type_registrar& r);
 

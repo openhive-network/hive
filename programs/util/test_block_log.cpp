@@ -2,6 +2,8 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
+
 #include <hive/protocol/block.hpp>
 #include <fc/io/raw.hpp>
 
@@ -19,13 +21,14 @@ int main( int argc, char** argv, char** envp )
   try
   {
     appbase::application theApp;
+    hive::chain::blockchain_worker_thread_pool& thread_pool = hive::chain::blockchain_worker_thread_pool::get_instance( theApp );
     //hive::chain::database db;
     hive::chain::block_log log( theApp );
 
     fc::temp_directory temp_dir( "." );
 
     //db.open( temp_dir );
-    log.open( temp_dir.path() / "log" );
+    log.open( temp_dir.path() / "log", thread_pool );
  
     dump_head(log);
 

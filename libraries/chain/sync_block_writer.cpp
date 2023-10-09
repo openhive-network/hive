@@ -374,14 +374,15 @@ void sync_block_writer::on_reindex_end( const std::shared_ptr<full_block_type>& 
 }
 
 void sync_block_writer::open( const fc::path& file, bool enable_compression,
-  int compression_level, bool enable_block_log_auto_fixing )
+  int compression_level, bool enable_block_log_auto_fixing, hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   _db.with_write_lock([&]()
   {
     _block_log.open_and_init( file,
                               enable_compression,
                               compression_level,
-                              enable_block_log_auto_fixing );
+                              enable_block_log_auto_fixing,
+                              thread_pool );
   });
   
   // Get fork db in sync with block log.
