@@ -28,6 +28,10 @@
 
 #define HIVE_BC_TIME_BUFFER 10
 
+namespace appbase {
+  class application;
+}
+
 namespace hive { namespace converter {
 
   namespace hp = hive::protocol;

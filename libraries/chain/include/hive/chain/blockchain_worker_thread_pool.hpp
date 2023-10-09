@@ -3,6 +3,10 @@
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/full_transaction.hpp>
 
+namespace appbase {
+  class application;
+}
+
 namespace hive { namespace chain {
 
 // thread pool for offloading as much work as possible on blocks and transactions.
