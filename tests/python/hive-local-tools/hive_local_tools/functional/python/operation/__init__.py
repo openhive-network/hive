@@ -5,9 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Literal, Union
 
-import wax
-
 import test_tools as tt
+import wax
 from hive_local_tools.constants import TRANSACTION_TEMPLATE, filters_enum_virtual_ops
 
 
