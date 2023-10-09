@@ -213,7 +213,7 @@ namespace graphene { namespace net {
    class node : public std::enable_shared_from_this<node>
    {
       public:
-        node(const std::string& user_agent, appbase::application& app);
+        node(const std::string& user_agent, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool);
         virtual ~node();
 
         void close();
@@ -317,7 +317,7 @@ namespace graphene { namespace net {
     {
     public:
       ~simulated_network();
-      simulated_network(const std::string& user_agent, appbase::application& app) : node(user_agent, app) {}
+      simulated_network(const std::string& user_agent, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool) : node(user_agent, app, thread_pool) {}
       void listen_to_p2p_network(std::function<bool()> break_callback) override {}
       void connect_to_p2p_network() override {}
       void connect_to_endpoint(const fc::ip::endpoint& ep) override {}
