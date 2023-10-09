@@ -200,7 +200,7 @@ namespace chain {
         * when specific block data needs to be provided. This function is public because it is
         * used by the load snapshot plugin to inject block data. Takes part in normal open process.
         */
-      virtual void state_dependent_open( const open_args& args ) = 0;
+      //virtual void state_dependent_open( const open_args& args ) = 0;
 
     private:
 
@@ -216,10 +216,11 @@ namespace chain {
 
       void verify_match_of_state_objects_definitions_from_shm();
 
-    protected:
+    public:
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
       void load_state_initial_data( const open_args& args, get_block_by_num_function_type get_block_by_num_function );
+      virtual void load_state_initial_data_for_snaphot_plugin( const open_args& args ) = 0;
 
     public:
       /**

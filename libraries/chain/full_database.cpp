@@ -8,15 +8,16 @@
 
 namespace hive { namespace chain {
 
-void full_database::state_dependent_open( const open_args& args )
+void full_database::load_state_initial_data_for_snaphot_plugin( const open_args& args)
 {
-  load_state_initial_data(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
+  database::load_state_initial_data(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
 }
 
 void full_database::open( const open_args& args )
 {
   open_block_log(args);
   database::open(args);
+  load_state_initial_data(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
 }
 
 void full_database::open_block_log(const open_args& args)

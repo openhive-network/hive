@@ -22,7 +22,7 @@ namespace hive { namespace chain {
       boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
-      virtual void state_dependent_open( const open_args& args ) override;
+
 
     private:
       bool is_included_block_unlocked(const block_id_type& block_id);
@@ -76,6 +76,7 @@ namespace hive { namespace chain {
       void open_block_log(const open_args& args);
     public:
       void open( const open_args& args ) override;
+      void load_state_initial_data_for_snaphot_plugin( const open_args& args) override;
 
   };
 
