@@ -74,6 +74,8 @@ ignore = [
 known-first-party = [
     "hive_local_tools",
     "hive_utils",
+    "schemas",
     "shared_tools",
     "test_tools",
+    "wax",
 ]
