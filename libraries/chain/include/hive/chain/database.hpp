@@ -190,16 +190,16 @@ namespace chain {
         */
       void open( const open_args& args );
 
-    private:
-      void state_independent_open( const open_args& args );
+    protected:
+      virtual void state_independent_open( const open_args& args );
 
-    public: 
+    public:
       /**
         * @brief Opens a state with a block provided externally
         *
-        * In derived classes, this function provides an interface to supply a block from the outside 
-        * (e.g., from an external system). Essential for initiating the fork database 
-        * when specific block data needs to be provided. This function is public because it is 
+        * In derived classes, this function provides an interface to supply a block from the outside
+        * (e.g., from an external system). Essential for initiating the fork database
+        * when specific block data needs to be provided. This function is public because it is
         * used by the load snapshot plugin to inject block data. Takes part in normal open process.
         */
       virtual void state_dependent_open( const open_args& args ) = 0;
@@ -236,7 +236,7 @@ namespace chain {
       /**
         * Derived classes can override this method to provide specific behavior during clos
         * e.g. to close some external resources opened during database::open
-        * It's utilized by the main `close` method.      
+        * It's utilized by the main `close` method.
         */
       virtual void close_chainbase(bool rewind);
       void close_forkbase(bool rewind);
@@ -662,7 +662,7 @@ namespace chain {
       void clear_accounts( const std::set< std::string >& cleared_accounts );
       void clear_account( const account_object& account );
 
-      // return the witness schedule object whose current_shuffled_witnesses we use for computing irreversibility.  Roughly, before HF26, it's the 
+      // return the witness schedule object whose current_shuffled_witnesses we use for computing irreversibility.  Roughly, before HF26, it's the
       // current witnesses_schedule_object; after, it's future_witness_schedule_object
       const witness_schedule_object& get_witness_schedule_object_for_irreversibility() const;
     protected:
@@ -714,10 +714,10 @@ namespace chain {
     protected:
       /**
        * @brief Handle the proper execution of the irreversible state migration.
-       * 
-       * In derived implementations, this method can be overridden to manage 
-       * updates to external resources during the update irreversible state process. When overriding, 
-       * it's recommended to call the `database::migrate_irreversible_state_perform` 
+       *
+       * In derived implementations, this method can be overridden to manage
+       * updates to external resources during the update irreversible state process. When overriding,
+       * it's recommended to call the `database::migrate_irreversible_state_perform`
        * method to ensure proper base functionality.
        *
        * @param old_last_irreversible Represents the previous irreversible point before migration.

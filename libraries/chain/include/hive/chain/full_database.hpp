@@ -74,6 +74,7 @@ namespace hive { namespace chain {
       void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
 
       void open_block_log(const open_args& args);
+      void state_independent_open( const open_args& args ) override;
   };
 
 }}

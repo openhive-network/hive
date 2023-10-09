@@ -172,6 +172,7 @@ void database::state_independent_open( const open_args& args )
   initialize_state_independent_data(args);
 }
 
+
 void database::open( const open_args& args )
 {
   try
@@ -4858,12 +4859,12 @@ void database::update_global_dynamic_data( const signed_block& b )
         } );
       }
     }
-    
+
     if (missed_blocks != 0)
     {
       fc::microseconds loop_time = fc::time_point::now() - start_time;
       if( loop_time.count() > 1000000ll ) // Report delay longer than 1s.
-        ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)", 
+        ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)",
           (missed_blocks)("ms", loop_time.count()/1000)("us", loop_time) );
     }
   }
