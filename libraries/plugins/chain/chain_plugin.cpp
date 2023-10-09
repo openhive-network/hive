@@ -120,6 +120,7 @@ class chain_plugin_impl
 {
   public:
     chain_plugin_impl( appbase::application& app ):
+      thread_pool( blockchain_worker_thread_pool::get_instance( app ) ),
       db( app ),
       default_block_writer( db, app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
@@ -204,6 +205,7 @@ class chain_plugin_impl
     fc::mutable_variant_object       plugin_state_opts;
     bfs::path                        database_cfg;
 
+    hive::chain::blockchain_worker_thread_pool& thread_pool;
     database                         db;
     sync_block_writer                default_block_writer;
 
@@ -743,7 +745,7 @@ void chain_plugin_impl::open()
   catch( const fc::exception& e )
   {
     /// This is a hack - seems blockchain_worker_thread_pool is completely out of control in the errorneous cases and can lead to 2nd level crash
-    blockchain_worker_thread_pool::get_instance( theApp ).shutdown();
+    thread_pool.shutdown();
 
     wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
     wlog( " Error: ${e}", ("e", e) );
@@ -1056,6 +1058,11 @@ const block_read_i& chain_plugin::block_reader() const
   return my->default_block_writer.get_block_reader();
 }
 
+hive::chain::blockchain_worker_thread_pool& chain_plugin::get_thread_pool()
+{
+  return my->thread_pool;
+}
+
 bfs::path chain_plugin::state_storage_dir() const
 {
   return my->shared_memory_dir;
@@ -1339,7 +1346,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   blockchain_worker_thread_pool::set_thread_pool_size(blockchain_thread_pool_size);
 
   if (my->validate_during_replay)
-    blockchain_worker_thread_pool::get_instance( get_app() ).set_validate_during_replay();
+    get_thread_pool().set_validate_during_replay();
 
 
   block_flow_control::set_auto_report(options.at("block-stats-report-type").as<std::string>(),
@@ -1428,7 +1435,7 @@ void chain_plugin::plugin_startup()
 void chain_plugin::plugin_shutdown()
 {
   ilog("closing chain database");
-  blockchain_worker_thread_pool::get_instance( get_app() ).shutdown();
+  get_thread_pool().shutdown();
   my->stop_write_processing();
   my->db.close();
   my->default_block_writer.close();
@@ -1561,7 +1568,7 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
   result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::hf26, true /* cache this transaction */);
   on_full_trx( false );
   // the only reason we'd be getting something in singed_transaction form is from the API, coming in as json
-  blockchain_worker_thread_pool::get_instance( get_app() ).enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
+  get_thread_pool().enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
   try
   {
     accept_transaction(result, lock);
@@ -1571,7 +1578,7 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
     on_full_trx( true );
     result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::legacy, true /* cache this transaction */);
     on_full_trx( false );
-    blockchain_worker_thread_pool::get_instance( get_app() ).enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
+    get_thread_pool().enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
     try
     {
       accept_transaction(result, lock);

@@ -3,6 +3,7 @@
 #include <appbase/application.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 
@@ -126,6 +127,8 @@ public:
   const database& db() const;
 
   const block_read_i& block_reader() const;
+
+  hive::chain::blockchain_worker_thread_pool& get_thread_pool();
 
   // Emitted when the blockchain is syncing/live.
   // This is to synchronize plugins that have the chain plugin as an optional dependency.

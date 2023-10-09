@@ -348,9 +348,9 @@ std::deque<block_id_type>::const_iterator p2p_plugin_impl::find_first_item_not_i
 void p2p_plugin_impl::request_precomputing_transaction_signatures_if_useful()
 {
   if (force_validate)
-    chain::blockchain_worker_thread_pool::get_instance( theApp ).set_p2p_force_validate();
+    chain.get_thread_pool().set_p2p_force_validate();
   if (block_producer)
-    chain::blockchain_worker_thread_pool::get_instance( theApp ).set_is_block_producer();
+    chain.get_thread_pool().set_is_block_producer();
 }
 
 fc::time_point_sec p2p_plugin_impl::get_blockchain_now()
