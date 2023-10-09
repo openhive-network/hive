@@ -486,7 +486,7 @@ void p2p_plugin::plugin_startup()
 
   my->p2p_thread.async( [this]
   {
-    my->node.reset(new graphene::net::node(my->user_agent, get_app()));
+    my->node.reset(new graphene::net::node(my->user_agent, get_app(), my->chain.get_thread_pool()));
     my->node->load_configuration(get_app().data_dir() / "p2p");
     my->node->set_node_delegate( &(*my) );
 

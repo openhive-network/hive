@@ -609,7 +609,7 @@ namespace graphene { namespace net {
       appbase::application& theApp;
       hive::chain::blockchain_worker_thread_pool& _thread_pool;
 
-      node_impl(const std::string& user_agent, appbase::application& app);
+      node_impl(const std::string& user_agent, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool);
       virtual ~node_impl();
       void save_active_peers_to_peer_database();
 
@@ -879,7 +879,7 @@ namespace graphene { namespace net {
 #endif // P2P_IN_DEDICATED_THREAD
     }
 
-    node_impl::node_impl(const std::string& user_agent, appbase::application& app) :
+    node_impl::node_impl(const std::string& user_agent, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool ) :
 #ifdef P2P_IN_DEDICATED_THREAD
       _thread(std::make_shared<fc::thread>("p2p")),
 #endif // P2P_IN_DEDICATED_THREAD
@@ -907,7 +907,7 @@ namespace graphene { namespace net {
       _node_is_shutting_down(false),
       _activeCalls(0),
       theApp( app ),
-      _thread_pool( hive::chain::blockchain_worker_thread_pool::get_instance( app ) )
+      _thread_pool( thread_pool )
     {
       _rate_limiter.set_actual_rate_time_constant(fc::seconds(2));
       fc::rand_bytes(&_node_id.data[0], (int)_node_id.size());
@@ -5808,8 +5808,8 @@ namespace graphene { namespace net {
     return my->method_name(__VA_ARGS__)
 #endif // P2P_IN_DEDICATED_THREAD
 
-  node::node(const std::string& user_agent, appbase::application& app) :
-    my(new detail::node_impl(user_agent, app))
+  node::node(const std::string& user_agent, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool) :
+    my(new detail::node_impl(user_agent, app, thread_pool))
   {
   }
 
