@@ -102,7 +102,7 @@ std::ostream& operator<<( std::ostream& o, const block_flow_control::phase& p )
 BOOST_AUTO_TEST_SUITE(block_tests)
 
 #define SET_UP_DATABASE( NAME, APP ) \
-  block_log bl_ ## NAME; \
+  block_log bl_ ## NAME( APP ); \
   database NAME( APP ); \
   sync_block_writer sbw_ ## NAME ( bl_ ## NAME, NAME, APP ); \
   NAME.set_block_writer( &sbw_ ## NAME );

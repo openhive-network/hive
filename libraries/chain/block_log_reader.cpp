@@ -8,7 +8,7 @@ block_log_reader::block_log_reader( block_log& block_log )
   : _block_log( block_log )
 {}
 
-void block_log_reader::open_reader( const fc::path& data_dir, bool enable_compression,
+void block_log_reader::init_reader( const fc::path& data_dir, bool enable_compression,
   int compression_level, bool enable_block_log_auto_fixing )
 {
   _block_log.set_auto_fixing_enabled( enable_block_log_auto_fixing );

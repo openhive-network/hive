@@ -6,6 +6,10 @@
 
 #include <boost/thread/future.hpp>
 
+namespace appbase {
+  class application;
+}
+
 namespace hive { namespace chain {
 
 /**
