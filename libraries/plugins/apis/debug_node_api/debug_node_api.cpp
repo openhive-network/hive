@@ -63,7 +63,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
     ilog( "Loading ${n} from block_log ${fn}", ("n", count)("fn", src_filename) );
     idump( (src_filename)(count)(skip_validate_invariants) );
     chain::block_log log( theApp );
-    log.open( src_path );
+    log.open( src_path, theApp.get_plugin< chain::chain_plugin >().get_thread_pool() );
     uint32_t first_block = _db.head_block_num()+1;
     uint32_t skip_flags = chain::database::skip_nothing;
     if( skip_validate_invariants )

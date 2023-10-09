@@ -151,7 +151,7 @@ namespace hive { namespace chain {
     }
   }
 
-  void block_log::open(const fc::path& file, bool read_only /* = false */, bool auto_open_artifacts /*= true*/ )
+  void block_log::open(const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool, bool read_only /* = false */, bool auto_open_artifacts /*= true*/ )
   {
       close();
 
@@ -197,7 +197,7 @@ namespace hive { namespace chain {
       }
 
       if (auto_open_artifacts)
-          my->_artifacts = block_log_artifacts::open(file, *this, read_only, false, theApp );
+          my->_artifacts = block_log_artifacts::open(file, *this, read_only, false, theApp, thread_pool );
   }
 
   void block_log::close()
@@ -511,10 +511,10 @@ namespace hive { namespace chain {
   }
 
   void block_log::open_and_init( const fc::path& file, bool enable_compression,
-    int compression_level, bool enable_block_log_auto_fixing )
+    int compression_level, bool enable_block_log_auto_fixing, hive::chain::blockchain_worker_thread_pool& thread_pool )
   {
     my->auto_fixing_enabled = enable_block_log_auto_fixing;
-    open( file );
+    open( file, thread_pool );
     my->compression_enabled = enable_compression;
     my->zstd_level = compression_level;
   }
@@ -793,7 +793,8 @@ namespace hive { namespace chain {
 
   void block_log::for_each_block(uint32_t starting_block_number, uint32_t ending_block_number,
                                  block_processor_t processor,
-                                 block_log::for_each_purpose purpose) const
+                                 block_log::for_each_purpose purpose,
+                                 hive::chain::blockchain_worker_thread_pool& thread_pool) const
   {
     constexpr uint32_t max_blocks_to_prefetch = 1000;
 
@@ -833,7 +834,7 @@ namespace hive { namespace chain {
           block_queue.push(full_block);
           block_queue_condition.notify_one();
         }
-        hive::chain::blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block, worker_thread_processing);
+        thread_pool.enqueue_work(full_block, worker_thread_processing);
       }
     
       ilog("Exiting the queue thread");
@@ -872,7 +873,7 @@ namespace hive { namespace chain {
       }
       FC_CAPTURE_CALL_LOG_AND_RETHROW(([&, this]()
         {
-          blockchain_worker_thread_pool::get_instance( theApp ).shutdown();
+          thread_pool.shutdown();
 
           {
             std::unique_lock<std::mutex> lock(block_queue_mutex);

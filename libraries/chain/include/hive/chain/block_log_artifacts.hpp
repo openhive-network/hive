@@ -31,6 +31,9 @@ class block_log;
 *   Any file having no valid header will be considered as broken one and regenerated if possible. 
 *
 */
+
+class blockchain_worker_thread_pool;
+
 class block_log_artifacts final
 {
 public:
@@ -69,7 +72,7 @@ public:
   * 
   *   Function throws on any error f.e. related to IO.
   */
-  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, appbase::application& app);
+  static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path, const block_log& source_block_provider, const bool read_only, const bool full_match_verification, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool);
 
   /// Allows to read a number of last block the artifacts are stored for.
   uint32_t read_head_block_num() const;

@@ -6,6 +6,7 @@
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 #include <boost/thread/future.hpp>
 #include <boost/program_options.hpp>
@@ -196,10 +197,10 @@ void compress_blocks(uint32_t& current_block_num)
   }
 }
 
-void drain_completed_queue(const fc::path &block_log, uint32_t &current_block_number, appbase::application& app)
+void drain_completed_queue(const fc::path &block_log, uint32_t &current_block_number, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   hive::chain::block_log log( app );
-  log.open(block_log);
+  log.open(block_log, thread_pool);
   ilog("Opened output block log");
   if (log.head())
     FC_THROW("output block log is not empty");
@@ -272,12 +273,12 @@ void drain_completed_queue(const fc::path &block_log, uint32_t &current_block_nu
   log.close();
 }
 
-void fill_pending_queue(const fc::path &block_log, const bool read_only, uint32_t &current_block_number, appbase::application& app)
+void fill_pending_queue(const fc::path &block_log, const bool read_only, uint32_t &current_block_number, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   ilog("Starting fill_pending_queue");
   hive::chain::block_log log( app );
 
-  log.open(block_log, read_only);
+  log.open(block_log, thread_pool, read_only);
 
   ilog("Opened source block log. Readonly: ${read_only}", (read_only));
 
@@ -396,12 +397,12 @@ void function_wrapper(const Func& function, const std::string function_name)
   }
 }
 
-void do_job(const fc::path& input_block_log_path, const fc::path& output_block_log_path, const unsigned compress_jobs, const bool input_read_only, appbase::application& app)
+void do_job(const fc::path& input_block_log_path, const fc::path& output_block_log_path, const unsigned compress_jobs, const bool input_read_only, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   FC_ASSERT(compress_jobs);
 
-  auto fpq = [&input_block_log_path, input_read_only, &app](uint32_t& block_number) {fill_pending_queue((input_block_log_path / "block_log"), input_read_only, block_number, app);};
-  auto dcq = [&output_block_log_path, &app](uint32_t& block_number) { drain_completed_queue((output_block_log_path / "block_log"), block_number, app); };
+  auto fpq = [&input_block_log_path, input_read_only, &app, &thread_pool](uint32_t& block_number) {fill_pending_queue((input_block_log_path / "block_log"), input_read_only, block_number, app, thread_pool);};
+  auto dcq = [&output_block_log_path, &app, &thread_pool](uint32_t& block_number) { drain_completed_queue((output_block_log_path / "block_log"), block_number, app, thread_pool); };
   auto cb = [](uint32_t& block_number) {compress_blocks(block_number);};
 
   std::vector<std::thread> workers;
@@ -424,6 +425,7 @@ int main(int argc, char** argv)
   try
   {
     appbase::application theApp;
+    hive::chain::blockchain_worker_thread_pool& thread_pool = hive::chain::blockchain_worker_thread_pool::get_instance( theApp );
     // zstd doesn't have well-defined levels, so we get these at runtime
     std::ostringstream zstd_levels_description_stream;
     zstd_levels_description_stream << "The zstd compression level to use";
@@ -512,7 +514,7 @@ int main(int argc, char** argv)
     // we would have to attempt to compress the blocks each time we sent them to a peer.
     use_compressed_even_when_larger = options_map["use-compressed-even-when-larger"].as<bool>();
 
-    do_job(input_block_log_path, output_block_log_path, jobs, input_readonly, theApp);
+    do_job(input_block_log_path, output_block_log_path, jobs, input_readonly, theApp, thread_pool);
 
     if (error_detected.load())
     {

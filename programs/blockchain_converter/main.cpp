@@ -10,6 +10,8 @@
 #include <hive/utilities/git_revision.hpp>
 #include <hive/protocol/config.hpp>
 
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
+
 #include <fc/exception/exception.hpp>
 
 #include "block_log_conversion_plugin.hpp"
@@ -39,6 +41,7 @@ int main( int argc, char** argv )
   try
   {
     appbase::application bc_converter_app;
+    hive::chain::blockchain_worker_thread_pool& thread_pool = hive::chain::blockchain_worker_thread_pool::get_instance( bc_converter_app );
 
     // Setup converter options
     bpo::options_description logging_opts{"Logging options"};
@@ -74,6 +77,8 @@ int main( int argc, char** argv )
     auto initResult = bc_converter_app.initialize( argc, argv );
     if( !initResult.should_start_loop() )
       return initResult.get_result_code();
+
+    bc_converter_app.get_plugin<block_log_conversion_plugin>().set_thread_pool( &thread_pool );
 
     bc_converter_app.startup();
     bc_converter_app.exec();

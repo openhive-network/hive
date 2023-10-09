@@ -31,10 +31,10 @@ std::shared_ptr<full_block_type> block_log_reader::read_block_by_num( uint32_t b
 }
 
 void block_log_reader::process_blocks(uint32_t starting_block_number, uint32_t ending_block_number,
-  block_processor_t processor) const
+  block_processor_t processor, hive::chain::blockchain_worker_thread_pool& thread_pool) const
 {
   _block_log.for_each_block( starting_block_number, ending_block_number, processor, 
-                             block_log::for_each_purpose::replay );
+                             block_log::for_each_purpose::replay, thread_pool );
 }
 
 std::shared_ptr<full_block_type> block_log_reader::fetch_block_by_number( uint32_t block_num,

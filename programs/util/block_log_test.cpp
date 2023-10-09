@@ -6,6 +6,7 @@
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/block_log_artifacts.hpp>
+#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 #include <boost/program_options.hpp>
 
@@ -15,23 +16,23 @@
 
 using namespace hive::chain;
 
-void generate_artifacts(const fc::path& block_log_path, appbase::application& app)
+void generate_artifacts(const fc::path& block_log_path, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   block_log bl( app );
 
-  bl.open(block_log_path, true, false);
-  auto bla = block_log_artifacts::open(block_log_path, bl, false, false, app);
+  bl.open(block_log_path, thread_pool, true, false);
+  auto bla = block_log_artifacts::open(block_log_path, bl, false, false, app, thread_pool);
   bla.reset();
   ilog("open and generation finished...");
 }
 
-void generate_from_scratch(const fc::path& block_log_path, appbase::application& app)
+void generate_from_scratch(const fc::path& block_log_path, appbase::application& app, hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   fc::path artifact_file_path = block_log_path.generic_string() + ".artifacts";
 
   fc::remove_all(artifact_file_path);
 
-  generate_artifacts(block_log_path, app);
+  generate_artifacts(block_log_path, app, thread_pool);
 }
 
 int main(int argc, char** argv)
@@ -39,6 +40,8 @@ int main(int argc, char** argv)
   try
   {
     appbase::application theApp;
+    hive::chain::blockchain_worker_thread_pool& thread_pool = hive::chain::blockchain_worker_thread_pool::get_instance( theApp );
+
     boost::program_options::options_description options("Allowed options");
     options.add_options()("input-block-log,i", boost::program_options::value<std::string>()->required(), "The path pointing the input block log file");
     options.add_options()("help,h", "Print usage instructions");
@@ -59,7 +62,7 @@ int main(int argc, char** argv)
     fc::path input_block_log_path = options_map["input-block-log"].as<std::string>();
 
     ilog("Trying to perform full block log generation ...");
-    generate_from_scratch(input_block_log_path, theApp);
+    generate_from_scratch(input_block_log_path, theApp, thread_pool);
   }
   catch(const fc::exception& e)
   {
