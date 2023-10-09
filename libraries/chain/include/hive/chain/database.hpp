@@ -65,6 +65,8 @@ namespace chain {
   class custom_operation_interpreter;
   class custom_operation_notification;
 
+  class blockchain_worker_thread_pool;
+
   namespace util {
     struct comment_reward_context;
   }
@@ -319,7 +321,7 @@ namespace chain {
         */
       uint32_t witness_participation_rate()const;
 
-      void                                   add_checkpoints( const flat_map<uint32_t,block_id_type>& checkpts );
+      void                                   add_checkpoints( const flat_map<uint32_t,block_id_type>& checkpts, hive::chain::blockchain_worker_thread_pool& thread_pool );
       const flat_map<uint32_t,block_id_type> get_checkpoints()const { return _checkpoints; }
       bool                                   before_last_checkpoint()const;
 

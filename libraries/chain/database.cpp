@@ -667,12 +667,12 @@ uint32_t database::witness_participation_rate()const
   return uint64_t(HIVE_100_PERCENT) * fc::uint128_popcount(dpo.recent_slots_filled) / 128;
 }
 
-void database::add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts )
+void database::add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts, hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   for( const auto& i : checkpts )
     _checkpoints[i.first] = i.second;
   if (!_checkpoints.empty())
-    blockchain_worker_thread_pool::get_instance( theApp ).set_last_checkpoint(_checkpoints.rbegin()->first);
+    thread_pool.set_last_checkpoint(_checkpoints.rbegin()->first);
 }
 
 bool database::before_last_checkpoint()const

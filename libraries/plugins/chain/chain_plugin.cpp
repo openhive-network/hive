@@ -655,7 +655,7 @@ void chain_plugin_impl::initial_settings()
   }
 
   db.set_flush_interval( flush_interval );
-  db.add_checkpoints( loaded_checkpoints );
+  db.add_checkpoints( loaded_checkpoints, thread_pool );
   db.set_require_locking( check_locks );
 
   const auto& abstract_index_cntr = db.get_abstract_index_cntr();
