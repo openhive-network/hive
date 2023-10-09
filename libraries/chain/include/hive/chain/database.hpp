@@ -188,7 +188,7 @@ namespace chain {
         *
         * @param data_dir Path to open or create database in
         */
-      void open( const open_args& args );
+      virtual void open( const open_args& args );
 
     protected:
       virtual void state_independent_open( const open_args& args );

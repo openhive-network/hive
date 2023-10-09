@@ -75,6 +75,9 @@ namespace hive { namespace chain {
 
       void open_block_log(const open_args& args);
       void state_independent_open( const open_args& args ) override;
+    public:
+      void open( const open_args& args ) override;
+
   };
 
 }}
