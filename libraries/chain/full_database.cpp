@@ -13,12 +13,6 @@ void full_database::state_dependent_open( const open_args& args )
   load_state_initial_data(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
 }
 
-void full_database::state_independent_open( const open_args& args )
-{
-  database::state_independent_open( args );
-}
-
-
 void full_database::open( const open_args& args )
 {
   open_block_log(args);

@@ -190,8 +190,6 @@ namespace chain {
         */
       virtual void open( const open_args& args );
 
-    protected:
-      virtual void state_independent_open( const open_args& args );
 
     public:
       /**
