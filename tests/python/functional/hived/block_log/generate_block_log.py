@@ -57,7 +57,8 @@ def __create_proposal(wallet: tt.Wallet) -> None:
     )
 
 
-def __generate_operations_for_receiver(receiver: str, amount: tt.Asset.Test = tt.Asset.Test(0.1)) -> list:
+def __generate_operations_for_receiver(receiver: str) -> list:
+    amount = tt.Asset.Test(0.1)
     return [
         ["transfer_to_vesting", {"from": "initminer", "to": receiver, "amount": str(amount)}],
         ["update_proposal_votes", {"voter": receiver, "proposal_ids": [0], "approve": True, "extensions": []}],
