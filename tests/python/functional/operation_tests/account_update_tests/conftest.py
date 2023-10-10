@@ -3,8 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
-
-from ..conftest import UpdateAccount
+from python.functional.operation_tests.conftest import UpdateAccount
 
 
 @pytest.fixture()

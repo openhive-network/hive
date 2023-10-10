@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ..conftest import LimitOrderAccount
+from python.functional.operation_tests.conftest import LimitOrderAccount
 
 
 @pytest.fixture()
