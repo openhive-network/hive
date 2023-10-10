@@ -13,9 +13,10 @@ namespace hive { namespace chain {
 
   class block_read_i
   {
-  public:
+  protected:
     virtual ~block_read_i() = default;
 
+  public:
     /// Called when state initial data has been loaded and provided head block set.
     virtual void start_reader( const std::shared_ptr<full_block_type>& head_block ) = 0;
     /// Close whatever needs to be closed.
