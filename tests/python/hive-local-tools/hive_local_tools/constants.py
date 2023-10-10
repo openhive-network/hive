@@ -109,4 +109,6 @@ VESTING_WITHDRAW_INTERVAL_SECONDS: Final[int] = 60 * 60  # 60 min in testnet / 7
 
 ALTERNATE_CHAIN_JSON_FILENAME: Final[str] = "alternate-chain-spec.json"
 
-HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD = 5  # 5 days in testnet / 365 days in mainnet
+HIVE_MIN_ROOT_COMMENT_INTERVAL: Final[int] = 5  # 5 min - minimum time between creating comments ( posts )
+
+HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD: Final[int] = 60 * 60 * 24 * 5  # // seconds, originally 5 days
