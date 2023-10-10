@@ -71,6 +71,7 @@ select = [  # https://docs.astral.sh/ruff/rules/
     "PYI",
     "PT",
     "RSE",
+    "RET",
 ]
 ignore = [
     "E501", # line too long, handled by black
