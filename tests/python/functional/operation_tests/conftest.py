@@ -223,6 +223,26 @@ class UpdateAccount(Account):
             return transaction
         return transaction
 
+    def update_account(
+        self,
+        *,
+        use_account_update2: bool = False,
+        json_metadata: str | None = None,
+        owner: str | None = None,
+        active: str | None = None,
+        posting: str | None = None,
+        memo_key: str | None = None,
+        posting_json_metadata: str | None = None,
+    ) -> dict:
+        arguments = locals()
+        to_pass = {
+            element: arguments[element]
+            for element in arguments
+            if arguments[element] is not None and element not in ("arguments", "self", "use_account_update2")
+        }
+        operation_name = "account_update2" if use_account_update2 else "account_update"
+        return create_transaction_with_any_operation(self._wallet, operation_name, account=self._name, **to_pass)
+
     def use_authority(self, authority_type: str):
         self._wallet.api.use_authority(authority_type, self._name)
 
