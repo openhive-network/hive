@@ -156,7 +156,7 @@ database::~database()
   clear_pending();
 }
 
-void database::open( const open_args& args, hive::chain::blockchain_worker_thread_pool& thread_pool )
+void database::open( const open_args& args )
 {
   try
   {
@@ -169,14 +169,14 @@ void database::open( const open_args& args, hive::chain::blockchain_worker_threa
                                               );
     const bool wipe_shared_file = args.force_replay || args.load_snapshot;
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, wipe_shared_file );
-    initialize_state_independent_data(args, thread_pool);
+    initialize_state_independent_data(args);
     load_state_initial_data(args);
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
-void database::initialize_state_independent_data(const open_args& args, hive::chain::blockchain_worker_thread_pool& thread_pool)
+void database::initialize_state_independent_data(const open_args& args)
 {
   _my->create_new_decoded_types_data_storage();
   _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();

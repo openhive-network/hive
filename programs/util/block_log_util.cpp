@@ -620,7 +620,7 @@ bool get_block_artifacts(const fc::path& block_log_path, const std::optional<uin
 int main(int argc, char** argv)
 {
   appbase::application theApp;
-  hive::chain::blockchain_worker_thread_pool& thread_pool = hive::chain::blockchain_worker_thread_pool::get_instance( theApp );
+  hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( theApp );
 
   boost::program_options::options_description global_options("Global options");
   global_options.add_options()("jobs,j", boost::program_options::value<int>()->default_value(4), "The number of worker threads to spawn");

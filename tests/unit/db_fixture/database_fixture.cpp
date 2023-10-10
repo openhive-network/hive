@@ -97,10 +97,6 @@ fc::path common_init( appbase::application& app, const std::function< void( appb
   return _data_dir;
 }
 
-database_fixture::database_fixture(): thread_pool( hive::chain::blockchain_worker_thread_pool::get_instance( theApp ) )
-{
-}
-
 fc::ecc::private_key database_fixture::generate_private_key(string seed)
 {
   static const fc::ecc::private_key committee = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );

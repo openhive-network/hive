@@ -77,7 +77,7 @@ FC_REFLECT( hive_schema, (schema_map)(chain_object_types) )
 int main( int argc, char** argv, char** envp )
 {
   appbase::application app;
-  hive::chain::blockchain_worker_thread_pool& thread_pool = hive::chain::blockchain_worker_thread_pool::get_instance( app );
+  hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
 
   hive::chain::database db( app );
   hive::chain::sync_block_writer block_writer( db, app );
@@ -96,7 +96,7 @@ int main( int argc, char** argv, char** envp )
                       db_args.block_log_compression_level,
                       db_args.enable_block_log_auto_fixing,
                       thread_pool );
-  db.open( db_args, thread_pool );
+  db.open( db_args );
 
   hive_schema ss;
 

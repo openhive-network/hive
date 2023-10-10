@@ -425,7 +425,7 @@ int main(int argc, char** argv)
   try
   {
     appbase::application theApp;
-    hive::chain::blockchain_worker_thread_pool& thread_pool = hive::chain::blockchain_worker_thread_pool::get_instance( theApp );
+    hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( theApp );
     // zstd doesn't have well-defined levels, so we get these at runtime
     std::ostringstream zstd_levels_description_stream;
     zstd_levels_description_stream << "The zstd compression level to use";
