@@ -13,9 +13,10 @@ namespace hive { namespace chain {
 
   class block_write_i
   {
-  public:
+  protected:
     virtual ~block_write_i() = default;
 
+  public:
     virtual block_read_i& get_block_reader() = 0;
 
     /// Call on interested writer when hived goes into live sync.
