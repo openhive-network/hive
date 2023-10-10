@@ -66,6 +66,4 @@ def get_path_to_binary_transaction_stored_from_wallet(wallet, request):
 
 def read_binary_file_from_store(path):
     with open(path, "rb") as file:
-        bin_transaction = file.read()
-
-    return bin_transaction
+        return file.read()

@@ -36,6 +36,7 @@ def __able_to_generate_pattern(validate_function):
                 wallet.directory / f"{pattern_name}.{file_extension}",
                 __get_path_of_pattern_file(file_extension, wallet.transaction_serialization, pattern_name),
             )
+        return None
 
     return impl
 

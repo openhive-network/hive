@@ -56,6 +56,7 @@ def run_for_all_cases(**assets: tt.AnyAsset):
 
             with pytest.raises(tt.exceptions.CommunicationError):
                 test(**kwargs)
+                return None
 
         return __decorated_test
 
