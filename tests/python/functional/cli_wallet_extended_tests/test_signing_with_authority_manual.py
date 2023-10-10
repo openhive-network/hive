@@ -53,7 +53,7 @@ def test_signing_with_authority(node):
         tt.logger.info("try signing with not available keys")
         wallet2.api.use_authority("active", "tst-alice")
         wallet2.api.transfer(alice.name, "initminer", "0.001 TESTS", "this will NOT work")
-        assert False
+        raise AssertionError()
     except tt.exceptions.CommunicationError as e:
         assert "Missing Active Authority" in str(e)
         tt.logger.info("couldn't sign transaction with invalid authority")

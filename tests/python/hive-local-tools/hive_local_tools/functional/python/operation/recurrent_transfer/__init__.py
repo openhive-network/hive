@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Union
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
@@ -12,7 +11,7 @@ from hive_local_tools.functional.python.operation import (
 
 
 class RecurrentTransferAccount(Account):
-    def assert_balance_is_reduced_by_transfer(self, amount: Union[tt.Asset.Test, tt.Asset.Tbd]) -> None:
+    def assert_balance_is_reduced_by_transfer(self, amount: tt.Asset.Test | tt.Asset.Tbd) -> None:
         if isinstance(amount, tt.Asset.Test):
             assert self._hive - amount == get_hive_balance(
                 self._node, self._name
@@ -24,7 +23,7 @@ class RecurrentTransferAccount(Account):
         else:
             raise TypeError("Invalid argument type.")
 
-    def assert_balance_is_increased_by_transfer(self, amount: Union[tt.Asset.Test, tt.Asset.Tbd]) -> None:
+    def assert_balance_is_increased_by_transfer(self, amount: tt.Asset.Test | tt.Asset.Tbd) -> None:
         if isinstance(amount, tt.Asset.Test):
             assert self._hive + amount == get_hive_balance(
                 self._node, self._name
@@ -51,7 +50,7 @@ class RecurrentTransfer:
         self._node: tt.InitNode = node
         self._from_: str = from_
         self._to: str = to
-        self._amount: Union[tt.Asset.Test, tt.Asset.Tbd] = amount
+        self._amount: tt.Asset.Test | tt.Asset.Tbd = amount
         self._memo: str = "{}"
         self._recurrence: int = recurrence
         self._executions: int = executions

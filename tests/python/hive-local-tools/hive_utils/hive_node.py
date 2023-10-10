@@ -161,7 +161,7 @@ class HiveNodeInScreen:
                     ret[k] = [v]
         return ret
 
-    def run_hive_node(self, additional_params=[], wait_for_blocks=True):
+    def run_hive_node(self, additional_params=None, wait_for_blocks=True):
         from .common import (
             detect_process_by_name,
             kill_process,
@@ -171,6 +171,8 @@ class HiveNodeInScreen:
             wait_n_blocks,
         )
 
+        if additional_params is None:
+            additional_params = []
         if detect_process_by_name("hived" if not self.node_is_steem else "steemd", self.hive_executable, self.port):
             msg = "{} process is running on {}:{}. Please terminate that process and try again.".format(
                 "hive", self.ip_address, self.port
