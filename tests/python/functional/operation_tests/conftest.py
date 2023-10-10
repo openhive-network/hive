@@ -14,7 +14,7 @@ class LimitOrderAccount(Account):
     def assert_balance(
         self,
         *,
-        amount: int | float,
+        amount: float,
         check_hbd: bool,
         message: Literal["expiration", "creation", "order_match", "no_match"],
     ):
