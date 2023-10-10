@@ -96,7 +96,7 @@ def test_proposal_payment_005(node_client: NodeClientMaker):  # noqa: C901
             "receiver": pd[0],
             "start_date": start_date,
             "end_date": end_date,
-            "daily_pay": f"{pd[3] :.3f} TBD",
+            "daily_pay": f"{pd[3]:.3f} TBD",
         }
         proposals.append(proposal)
 

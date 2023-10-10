@@ -148,8 +148,7 @@ def __fund_account(account_names):
             "transfer_to_vesting",
             {"from": "initminer", "to": account, "amount": tt.Asset.Test(4600)},
         ]
-        operations.append(transfer)
-        operations.append(transfer_to_vesting)
+        operations.extend((transfer, transfer_to_vesting))
     return operations
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+import operator
 from typing import TYPE_CHECKING, NoReturn
 
 import pytest
@@ -101,7 +103,9 @@ def node(request) -> tt.InitNode | tt.RemoteNode:  # noqa: C901
     def __assert_supported_nodes_used_only_in_run_for() -> NoReturn | None:
         def __get_marks_created_by_run_for_only() -> list[Mark]:
             parametrize_mark = __get_mark_set_by_run_for()
-            mark_decorators = sum([mark_decorator.marks for mark_decorator in parametrize_mark.args[1]], [])
+            mark_decorators = functools.reduce(
+                operator.iadd, [mark_decorator.marks for mark_decorator in parametrize_mark.args[1]], []
+            )
             return [mark_decorator.mark for mark_decorator in mark_decorators]
 
         for mark in __get_all_supported_marks():

@@ -90,8 +90,7 @@ def test_many_forks_many_ops(prepare_17_3):
 
     majority_wallet = tt.Wallet(attach_to=majority_api_node)
     minority_wallet = tt.Wallet(attach_to=minority_api_node)
-    logs.append(sh.NodeLog("M", majority_wallet))
-    logs.append(sh.NodeLog("m", minority_wallet))
+    logs.extend((sh.NodeLog("M", majority_wallet), sh.NodeLog("m", minority_wallet)))
 
     _M = logs[0].collector
     _m = logs[1].collector
