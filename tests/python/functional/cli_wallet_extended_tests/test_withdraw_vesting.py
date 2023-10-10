@@ -11,7 +11,7 @@ def test_withdraw_vesting(wallet):
     def check_route_data(node):
         _ops = node["operations"]
 
-        _ops[0][0] == "set_withdraw_vesting_route"
+        assert _ops[0][0] == "set_withdraw_vesting_route"
 
         return _ops[0][1]
 
