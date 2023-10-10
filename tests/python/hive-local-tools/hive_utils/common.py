@@ -30,7 +30,7 @@ def send_rpc_query(target_node: str, payload: dict) -> dict:
     resp = post(target_node, data=dumps(payload, cls=CustomJsonEncoder))
     if resp.status_code != 200:
         print(resp.json())
-        raise Exception("{} returned non 200 code".format(payload["method"]))
+        raise Exception("{} returned non 200 code".format(payload["method"]))  # noqa: TRY002
     return resp.json()
 
 

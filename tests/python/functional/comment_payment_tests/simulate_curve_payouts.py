@@ -181,8 +181,8 @@ if __name__ == "__main__":
                     )
                     sys.exit(1)
 
-    except Exception as ex:
-        logger.exception(f"Exception: {ex}")
+    except Exception:
+        logger.exception("Exception occurred")
         if node is not None:
             node.stop_hive_node()
         sys.exit(1)

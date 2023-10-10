@@ -45,10 +45,10 @@ def compare_files_by_line(file1, file2):
                 assert src_line == dst_line, f"On line: {line_cnt} --> {src_line} != {dst_line}"
                 line_cnt += 1
         logger.info(f"OK. Compared {line_cnt} lines.")
-        return True
     except Exception as ex:
         logger.info(f"Exception: {ex}")
         return False
+    return True
 
 
 def prepare_work_dir(work_dir_path, block_log_path, config_file_path, overwrite=False):
@@ -140,8 +140,8 @@ if __name__ == "__main__":
             if not compare_files_by_line(f, args.reference_node_work_dir + "/" + file_name):
                 sys.exit(1)
         sys.exit(0)
-    except Exception as ex:
-        logger.exception(f"Exception: {ex}")
+    except Exception:
+        logger.exception("Exception occurred")
         if node is not None:
             node.stop_hive_node()
         sys.exit(1)
