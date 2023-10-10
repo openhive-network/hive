@@ -169,15 +169,13 @@ class NetworksArchitecture:
         node = self.get_key_information(node_name, current_dict)
         if isinstance(node, dict):
             return self.get_key_information("Active", node), self.get_key_information("Prepare", node)
-        else:
-            return node, False
+        return node, False
 
     def get_witness(self, data: Any) -> tuple[int, bool]:
         # returns statuses: [witnesses' number, prepare]
         if isinstance(data, dict):
             return self.get_key_information("Witnesses", data, -1), self.get_key_information("Prepare", data, -1)
-        else:
-            return data, False
+        return data, False
 
     def load(self, config: dict) -> None:
         assert "networks" in config

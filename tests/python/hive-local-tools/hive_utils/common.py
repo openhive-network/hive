@@ -146,8 +146,7 @@ def debug_quick_block_skip_with_step(
             else:
                 debug_quick_block_skip(node, debug_key, currently_processed, safe_block_offset)
             return
-        else:
-            debug_quick_block_skip(node, debug_key, block_step, safe_block_offset)
+        debug_quick_block_skip(node, debug_key, block_step, safe_block_offset)
         currently_processed -= block_step
 
 
