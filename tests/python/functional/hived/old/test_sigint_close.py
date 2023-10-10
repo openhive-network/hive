@@ -36,7 +36,7 @@ def try_generate_crash(command_line, dump_file_str, crash_time, wait_time, exec_
         time.sleep(wait_time)
 
     with open(dump_file_str) as f:
-        for line in f:
+        for line in f:  # noqa: B007
             pass
         last_line = line
 

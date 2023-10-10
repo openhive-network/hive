@@ -32,7 +32,7 @@ assert args.blocks <= 5000000, "cannot replay more than 5 million blocks"
 if args.blocks < 1000000:
     from warnings import warn
 
-    warn("replay under 1 million blocks can be unreliable")
+    warn("replay under 1 million blocks can be unreliable", stacklevel=1)
 
 # config setup
 config = configuration()
