@@ -101,9 +101,8 @@ def prepare_block_log():
     node.block_log.copy_to(Path(__file__).parent)
 
 
-def __generate_recurrent_transfers_for_sender(
-    sender: str, all_accounts: list[str], amount: tt.Asset.Test = tt.Asset.Test(0.001)
-) -> list:
+def __generate_recurrent_transfers_for_sender(sender: str, all_accounts: list[str]) -> list:
+    amount = tt.Asset.Test(0.001)
     operations = []
     for receiver in all_accounts:
         if sender != receiver:

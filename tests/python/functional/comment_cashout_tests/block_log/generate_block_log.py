@@ -178,7 +178,8 @@ def __generate_and_broadcast_transaction(
     tt.logger.info(f"Finished: {account_names[-1]}")
 
 
-def __create_and_fund_voter(voter: str, vest_amount: tt.Asset.Test = tt.Asset.Test(0.1)) -> list:
+def __create_and_fund_voter(voter: str) -> list:
+    vest_amount = tt.Asset.Test(0.1)
     key = tt.PublicKey("voter")
     return [
         [
