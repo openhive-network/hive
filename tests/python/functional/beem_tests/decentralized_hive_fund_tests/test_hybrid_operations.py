@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import beemapi
 import pytest
 from beem.account import Account
@@ -8,8 +10,10 @@ from beembase import operations
 
 import hive_utils
 import test_tools as tt
-from hive_local_tools.functional.python.beem import NodeClientMaker
 from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR
+
+if TYPE_CHECKING:
+    from hive_local_tools.functional.python.beem import NodeClientMaker
 
 
 def transfer_assets_to_accounts(node, from_account, accounts, amount, asset, wif=None):

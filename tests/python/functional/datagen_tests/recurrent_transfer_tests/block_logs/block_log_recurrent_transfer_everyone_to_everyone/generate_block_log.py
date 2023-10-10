@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import math
 from copy import deepcopy
-from datetime import datetime
 from pathlib import Path
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 import test_tools as tt
 from hive_local_tools.constants import (
@@ -13,6 +12,9 @@ from hive_local_tools.constants import (
     TRANSACTION_TEMPLATE,
 )
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 AMOUNT_OF_ALL_ACCOUNTS: Final[int] = 30_000
 ACCOUNTS_PER_CHUNK: Final[int] = 256

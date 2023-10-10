@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-import test_tools as tt
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 
 def test_info_function(wallet: tt.Wallet):

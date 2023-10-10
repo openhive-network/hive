@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import os
 from distutils.util import strtobool
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from hive_local_tools.api import read_from_json_pattern, write_to_json_pattern
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def __read_from_text_pattern(directory: Path, method_name: str) -> str:

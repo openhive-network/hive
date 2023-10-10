@@ -5,10 +5,12 @@ import json
 import os
 import shutil
 from distutils.util import strtobool
-from pathlib import Path
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from hive_local_tools import PYTHON_TESTS_DIR
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 PATTERNS_DIR: Final[Path] = (
     PYTHON_TESTS_DIR / "functional/transaction_serialization_tests/cli_wallet/transaction_pattern_tests"

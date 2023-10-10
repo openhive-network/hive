@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import math
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
-from pathlib import Path
-from typing import Callable, Iterable, Protocol, Sequence
+from typing import TYPE_CHECKING, Callable, Iterable, Protocol, Sequence
 
 import test_tools as tt
+
+if TYPE_CHECKING:
+    from datetime import datetime
+    from pathlib import Path
 
 
 class ReplayedNodeMaker(Protocol):

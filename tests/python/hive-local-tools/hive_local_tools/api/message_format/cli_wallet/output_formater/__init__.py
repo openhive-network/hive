@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from math import isclose
+from typing import TYPE_CHECKING
 
-import test_tools as tt
+if TYPE_CHECKING:
+    import test_tools as tt
 
 
 def are_close(first: float, second: float) -> bool:

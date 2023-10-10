@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import datetime
+from typing import TYPE_CHECKING
 
 import hive_utils
 import test_tools as tt
-from hive_local_tools.functional.python.beem import NodeClientMaker
 from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR, TREASURY, test_utils
+
+if TYPE_CHECKING:
+    from hive_local_tools.functional.python.beem import NodeClientMaker
 
 
 # Greedy baby scenario

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime as dt
+from typing import TYPE_CHECKING
 
-import test_tools as tt
 from hive_local_tools.functional.python.cli_wallet import (
     FundedAccountInfo,
     PreparedProposalDataWithId,
@@ -12,6 +12,9 @@ from hive_local_tools.functional.python.cli_wallet import (
     get_list_proposal_votes_args,
     prepare_proposal,
 )
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 active_values = ["all", "inactive", "active", "expired", "votable"]
 proposals_order_by_values = ["by_creator", "by_start_date", "by_end_date", "by_total_votes"]

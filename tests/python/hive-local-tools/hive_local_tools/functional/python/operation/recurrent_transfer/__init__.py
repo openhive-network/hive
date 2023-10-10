@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
@@ -10,6 +10,9 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_virtual_operations,
 )
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 class RecurrentTransferAccount(Account):

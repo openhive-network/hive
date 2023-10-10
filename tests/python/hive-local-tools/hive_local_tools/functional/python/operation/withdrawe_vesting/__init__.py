@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+from typing import TYPE_CHECKING
 
 import test_tools as tt
 from hive_local_tools.constants import VESTING_WITHDRAW_INTERVALS
@@ -11,6 +11,9 @@ from hive_local_tools.functional.python.operation import (
     get_vesting_price,
     get_virtual_operations,
 )
+
+if TYPE_CHECKING:
+    import datetime
 
 
 class PowerDown(Operation):

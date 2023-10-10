@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import test_tools as tt
-from hive_local_tools.functional.python.cli_wallet import FundedAccountInfo
+
+if TYPE_CHECKING:
+    from hive_local_tools.functional.python.cli_wallet import FundedAccountInfo
 
 
 def test_delayed_voting(wallet: tt.Wallet, funded_account: FundedAccountInfo, creator: tt.Account):
