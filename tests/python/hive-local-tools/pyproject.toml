@@ -48,6 +48,7 @@ exclude = "test-tools|tests_api"
 
 
 [tool.ruff]
+preview = true
 line-length = 120
 select = [  # https://docs.astral.sh/ruff/rules/
     "F",
@@ -86,6 +87,7 @@ select = [  # https://docs.astral.sh/ruff/rules/
     "RUF",
 ]
 ignore = [
+    "E203", # whitespace before punctuation, handled by black
     "E501", # line too long, handled by black
     "PT004", # fixture does not return anything, add leading underscore;  issue: pytest seems to ignore (not launch) auto-use fixtures with leading underscode
     "TRY003", # too restrictive
