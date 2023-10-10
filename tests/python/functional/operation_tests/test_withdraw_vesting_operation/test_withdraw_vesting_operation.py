@@ -106,7 +106,11 @@ def test_modify_power_down_amount(prepared_node, wallet, alice, first_pd_amount,
     # Jump to 2.5 hours after first power down operation (in mainnet its 2.5 week).
     jump_to_date(prepared_node, power_down.timestamp + tt.Time.seconds(2.5 * VESTING_WITHDRAW_INTERVAL_SECONDS))
     err = "The headblock timing is not between the 2nd and 3rd week of power down."
-    assert power_down._tranche_schedule[1] < prepared_node.get_head_block_time() < power_down._tranche_schedule[2], err
+    assert (
+        power_down._tranche_schedule[1]  # noqa: SLF001
+        < prepared_node.get_head_block_time()
+        < power_down._tranche_schedule[2]  # noqa: SLF001
+    ), err
     second_pd_vest_amount = PowerDown.convert_to_vest(prepared_node, second_pd_amount)
     power_down.update(second_pd_vest_amount)
 
