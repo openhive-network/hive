@@ -1,6 +1,5 @@
 syntax = "proto2";
 
-import "asset.proto";
 import "legacy_chain_properties.proto";
 
 package hive.protocol.buffers;
