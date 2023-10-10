@@ -273,16 +273,16 @@ if __name__ == "__main__":
             plugins = ["chain", "p2p", "webserver", "json_rpc", "debug_node"]
             config = (
                 "# Simple config file\n"
-                + "shared-file-size = 1G\n"
-                + "enable-stale-production = true\n"
-                + "p2p-endpoint = 127.0.0.1:2001\n"
-                + "webserver-http-endpoint = 127.0.0.1:8095\n"
-                + "webserver-ws-endpoint = 127.0.0.1:8096\n"
-                + "plugin = witness debug_node {}\n".format(" ".join(plugins))
-                + "plugin = database_api debug_node_api block_api\n"
-                + 'witness = "initminer"\n'
-                + "private-key = 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n\n"
-                + "required-participation = 0"
+                "shared-file-size = 1G\n"
+                "enable-stale-production = true\n"
+                "p2p-endpoint = 127.0.0.1:2001\n"
+                "webserver-http-endpoint = 127.0.0.1:8095\n"
+                "webserver-ws-endpoint = 127.0.0.1:8096\n"
+                f"plugin = witness debug_node {' '.join(plugins)}\n"
+                "plugin = database_api debug_node_api block_api\n"
+                'witness = "initminer"\n'
+                "private-key = 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n\n"
+                "required-participation = 0"
             )
 
             binary_path = "/home/dariusz-work/Builds/hive/programs/hived/hived"
