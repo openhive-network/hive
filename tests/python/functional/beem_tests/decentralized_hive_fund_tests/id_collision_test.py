@@ -175,7 +175,7 @@ if __name__ == "__main__":
     for idx in range(0, len(args.nodes_url)):
         proposals = []
         subjects = []
-        for _i in range(0, args.proposal_count):
+        for _ in range(0, args.proposal_count):
             subject = str(uuid4())
             proposal = {
                 "creator": args.creator,
