@@ -16,6 +16,10 @@ class Operation:
     _wallet: tt.Wallet
     _rc_cost: int = field(init=False, default=None)
 
+    @property
+    def rc_cost(self):
+        return self._rc_cost
+
     def assert_minimal_operation_rc_cost(self):
         assert self._rc_cost > 0, "RC cost is less than or equal to zero."
 
