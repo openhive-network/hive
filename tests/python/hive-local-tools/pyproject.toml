@@ -78,6 +78,7 @@ select = [  # https://docs.astral.sh/ruff/rules/
     "TCH",
     "INT",
 #    "PTH",  # TODO: Consider enabling this
+#    "PL",  # TODO: Consider enabling this
 ]
 ignore = [
     "E501", # line too long, handled by black
