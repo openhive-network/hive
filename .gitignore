@@ -113,7 +113,7 @@ build_*/
 /.vs
 /out/isenseconfig/Linux-Release
 .npmrc
-package.json
+node_modules
 
 # various log and benchmark files
 advanced_benchmark.json

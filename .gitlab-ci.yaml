@@ -39,10 +39,25 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: dd5a7fb401b572c8d64ab700980ba943d33506ef
+    ref: ba9d240a5d338120d3ad537d14f22c65f43a7103
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
+
+.wasm_beekeeper_test_base:
+  stage: test
+  # emscripten image can be used as it contains all needed tools (node and npm).
+  image: ${EMSCRIPTEN_IMAGE}
+  variables:
+    FF_NETWORK_PER_BUILD: 1
+
+  interruptible: true
+
+  before_script:
+    - pnpm install
+
+  tags:
+    - public-runner-docker
 
 prepare_hived_image:
   extends: .prepare_hived_image
@@ -100,7 +115,7 @@ beekeeper_wasm_build:
   stage: build
   variables:
     SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/"
-    BINARIES_DIR: "${CI_PROJECT_DIR}/build_wasm"
+    BINARIES_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/build"
 
   tags:
     - public-runner-docker
@@ -160,18 +175,14 @@ mirrornet_node_build:
     - hived-for-tests
 
 test_beekeeper_wasm:
-  stage: test
-  # emscripten image can be used as it contains all needed tools (node and npm).
-  image: ${EMSCRIPTEN_IMAGE}
+  extends:
+    - .wasm_beekeeper_test_base
 
-  interruptible: true
   needs:
     - job: beekeeper_wasm_build
       artifacts: true
     - job: beekeeper_wasm_package_generation
       artifacts: true
-  tags:
-    - public-runner-docker
 
   script:
     - npm run test
