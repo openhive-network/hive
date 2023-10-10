@@ -90,7 +90,7 @@ int main( int argc, char** argv )
     {
       auto _is_thread_closed = theApp.is_thread_closed();
       if( !_is_thread_closed )
-        kill(getpid(), SIGINT);
+        appbase::application::kill();
 
       theApp.wait();
 
