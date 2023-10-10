@@ -8,11 +8,11 @@ from hive_local_tools import run_for
 
 @pytest.mark.parametrize(
     ("number_of_transactions", "tests_volume", "tbds_volume"),
-    (
+    [
         (1, 100, 10),
         (2, 300, 60),
         (3, 600, 100),
-    ),
+    ],
 )
 @run_for("testnet")
 def test_check_if_get_volume_returns_correct_values(node, number_of_transactions, tests_volume, tbds_volume):
@@ -36,11 +36,11 @@ def test_check_if_get_volume_returns_correct_values(node, number_of_transactions
 @pytest.mark.parametrize(
     # every offer - amount_to_sell, min_to_receive
     ("operations", "first_order", "second_order"),
-    (
+    [
         ("only_asks", [tt.Asset.Test(100), tt.Asset.Tbd(100)], [tt.Asset.Test(200), tt.Asset.Tbd(200)]),
         ("only_bids", [tt.Asset.Tbd(30), tt.Asset.Test(100)], [tt.Asset.Tbd(40), tt.Asset.Test(200)]),
         ("nothing", "empty value", "empty value"),
-    ),
+    ],
 )
 @run_for("testnet")
 def test_get_zero_volume(node, operations, first_order, second_order):

@@ -13,18 +13,18 @@ def test_account_creation(wallet):
 @pytest.mark.parametrize(
     ("account_name", "expected_error_message"),
     [
-        [
+        (
             "too-long-account-name",
             "Account name 'too-long-account-name' is too long. Use maximum of 16 characters.",
-        ],
-        [
+        ),
+        (
             "to",
             "Account name 'to' is too short. Use at least 3 characters.",
-        ],
-        [
+        ),
+        (
             "...",
             "Account name '...' is not valid. Please follow the RFC 1035 rules.",
-        ],
+        ),
     ],
 )
 def test_creation_of_account_with_invalid_name(wallet, account_name, expected_error_message):

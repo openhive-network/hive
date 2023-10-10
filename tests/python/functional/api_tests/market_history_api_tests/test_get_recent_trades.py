@@ -8,7 +8,7 @@ from hive_local_tools import run_for
 
 @pytest.mark.parametrize(
     "limit_orders",
-    (
+    [
         # lowest price first, last highest
         (
             {
@@ -33,7 +33,7 @@ from hive_local_tools import run_for
                 "order_2": {"tests": 100, "tbds": 10},
             }
         ),
-    ),
+    ],
 )
 @run_for("testnet")
 def test_recent_trades_output_parameters(node, limit_orders):
@@ -66,7 +66,7 @@ def test_recent_trades_output_parameters(node, limit_orders):
         assert tt.Asset.Test(limit_orders["order_" + str(x)]["tests"]) == response[len(response) - x - 1]["open_pays"]
 
 
-@pytest.mark.parametrize("limit", (1, 2))
+@pytest.mark.parametrize("limit", [1, 2])
 @run_for("testnet")
 def test_limit(node, limit):
     wallet = tt.Wallet(attach_to=node)

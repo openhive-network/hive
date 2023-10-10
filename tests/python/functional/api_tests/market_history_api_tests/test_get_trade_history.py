@@ -21,11 +21,11 @@ def test_exceed_time_range(node):
 
 @pytest.mark.parametrize(
     ("tests_amount", "tbds_amount"),
-    (
+    [
         (100, 10),
         (10, 100),
         (85, 30),
-    ),
+    ],
 )
 @run_for("testnet")
 def test_trade_history_with_different_values(node, tests_amount, tbds_amount):
@@ -61,7 +61,7 @@ def test_get_empty_trade_history(node):
     assert len(response) == 0
 
 
-@pytest.mark.parametrize("limit", (1, 2))
+@pytest.mark.parametrize("limit", [1, 2])
 @run_for("testnet")
 def test_trade_history_limit(node, limit):
     wallet = tt.Wallet(attach_to=node)

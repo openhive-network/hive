@@ -8,12 +8,12 @@ from hive_local_tools.functional.python.operation import check_if_fill_transfer_
 
 @pytest.mark.parametrize(
     ("currency", "check_savings_balance", "check_balance"),
-    (
+    [
         # transfers from savings in HIVES
         (tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
         (tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
-    ),
+    ],
 )
 @pytest.mark.testnet()
 def test_cancel_transfer_from_savings_simplest_scenario(
@@ -63,12 +63,12 @@ def test_cancel_transfer_from_savings_simplest_scenario(
 
 @pytest.mark.parametrize(
     ("currency", "check_savings_balance", "check_balance"),
-    (
+    [
         # transfers from savings in HIVES
         (tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
         (tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
-    ),
+    ],
 )
 @pytest.mark.testnet()
 def test_cancel_all_transfers_from_savings(
@@ -95,12 +95,12 @@ def test_cancel_all_transfers_from_savings(
 
 @pytest.mark.parametrize(
     ("currency", "check_savings_balance", "check_balance"),
-    (
+    [
         # transfers from savings in HIVES
         (tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
         (tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
-    ),
+    ],
 )
 @pytest.mark.testnet()
 def test_cancel_all_transfers_from_savings_except_one(

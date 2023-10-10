@@ -14,7 +14,7 @@ HIVE_AND_HBD_AMOUNTS = (
 
 @pytest.mark.parametrize(
     "limit_orders",
-    (
+    [
         # lowest price first, last highest
         (
             {
@@ -39,7 +39,7 @@ HIVE_AND_HBD_AMOUNTS = (
                 "order_2": {"tests": 100, "tbds": 10},
             }
         ),
-    ),
+    ],
 )
 @run_for("testnet")
 def test_ticker_output_parameters(node, limit_orders):

@@ -7,7 +7,7 @@ from hive_local_tools import run_for
 
 
 @pytest.mark.parametrize(
-    ("ask_hbd_amount", "ask_hive_amount", "bid_hbd_amount", "bid_hive_amount"), ((50, 300, 30, 200), (25, 250, 20, 300))
+    ("ask_hbd_amount", "ask_hive_amount", "bid_hbd_amount", "bid_hive_amount"), [(50, 300, 30, 200), (25, 250, 20, 300)]
 )
 @run_for("testnet")
 def test_get_order_book_with_different_values(node, ask_hbd_amount, ask_hive_amount, bid_hbd_amount, bid_hive_amount):
@@ -49,7 +49,7 @@ def test_exceed_limit_parameter(node):
         node.api.market_history.get_order_book(limit=501)
 
 
-@pytest.mark.parametrize("limit", (1, 2))
+@pytest.mark.parametrize("limit", [1, 2])
 @run_for("testnet")
 def test_limit(node, limit):
     wallet = tt.Wallet(attach_to=node)

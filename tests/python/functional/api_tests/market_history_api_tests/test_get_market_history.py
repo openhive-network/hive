@@ -23,7 +23,7 @@ def test_exceed_time_range(node):
         )
 
 
-@pytest.mark.parametrize("bucket_seconds", (1, 14, 32, 59, 61, 299, 301, 3599, 86405))
+@pytest.mark.parametrize("bucket_seconds", [1, 14, 32, 59, 61, 299, 301, 3599, 86405])
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/450")
 @run_for("testnet")
 def test_get_market_history_with_wrong_bucket_seconds_value(node, bucket_seconds):
@@ -73,10 +73,10 @@ def test_get_empty_market_history(node):
 @pytest.mark.parametrize(
     # 6, 22 blocks - more than 15 and 60 seconds - to exceed bucket time.
     ("bucket_seconds", "blocks_to_wait"),
-    (
+    [
         (15, 6),
         (60, 22),
-    ),
+    ],
 )
 @run_for("testnet")
 def test_get_two_buckets(node, bucket_seconds, blocks_to_wait):
@@ -97,11 +97,11 @@ def test_get_two_buckets(node, bucket_seconds, blocks_to_wait):
 
 @pytest.mark.parametrize(
     ("tbds", "hive_high", "non_hive_high", "hive_low", "non_hive_low", "non_hive_volume"),
-    (
+    [
         (40, 200_000, 40_000, 100_000, 10_000, 90_000),
         (25, 300_000, 40_000, 100_000, 10_000, 75_000),
         (8, 300_000, 40_000, 200_000, 8_000, 58_000),
-    ),
+    ],
 )
 @run_for("testnet")
 def test_bucket_output_parameters(node, tbds, hive_high, hive_low, non_hive_high, non_hive_low, non_hive_volume):
