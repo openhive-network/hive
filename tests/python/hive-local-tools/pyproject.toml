@@ -78,6 +78,9 @@ ignore = [
     "N803", # TODO: Make these names more descriptive
     "N806", # TODO: Make these names more descriptive
 ]
+"/**/tests/python/**/decentralized_hive_fund*/**" = [
+    "PIE804", # TODO: Consider fixing
+]
 # ignore submodules:
 "/**/test-tools/**" = ["ALL"]
 "/**/tests_api/**" = ["ALL"]
