@@ -169,6 +169,9 @@ class UpdateAccount(Account):
             to_compare = self._acc_info["json_metadata"]
             assert new_json_meta == to_compare, f"Json metadata of account {self._name} wasn't changed."
 
+    def generate_new_authority(self) -> dict:
+        return {"account_auths": [], "key_auths": [(self.generate_new_key(), 1)], "weight_threshold": 1}
+
     def generate_new_key(self):
         self.__key_generation_counter += 1
         return tt.Account(self._name, secret=f"other_than_previous_{self.__key_generation_counter}").public_key
