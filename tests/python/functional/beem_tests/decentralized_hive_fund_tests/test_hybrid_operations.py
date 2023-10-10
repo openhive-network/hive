@@ -102,7 +102,7 @@ def test_hybrid_operations(node_client: NodeClientMaker):
 
     # use hybrid op with old keys
     tt.logger.info("Using hybrid op with old keys")
-    with pytest.raises(beemapi.exceptions.UnhandledRPCError) as exception:
+    with pytest.raises(beemapi.exceptions.UnhandledRPCError) as exception:  # noqa: PT012
         tx = TransactionBuilder(hive_instance=node_client)
         ops = []
         op = operations.Comment_options(

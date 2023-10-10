@@ -50,7 +50,7 @@ def test_handling_sensitive_data_in_the_memo_field(node, wallet, broadcast_way, 
 
     memo_message = get_memo_message(memo_type, role, private_key)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as error:
+    with pytest.raises(tt.exceptions.CommunicationError) as error:  # noqa: PT012
         match broadcast_way:
             case "api":
                 error_message = f"Detected private {role} key in memo field. You should change your {role} key"
