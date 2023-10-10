@@ -64,6 +64,7 @@ select = [  # https://docs.astral.sh/ruff/rules/
     "B",
 #    "A",  # TODO: Consider enabling this
     "C4",
+    "FA",
 ]
 ignore = [
     "E501", # line too long, handled by black
