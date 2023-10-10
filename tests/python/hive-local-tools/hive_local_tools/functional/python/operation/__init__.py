@@ -158,8 +158,11 @@ def create_transaction_with_any_operation(wallet, operation_name, **kwargs):
 def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_name: str) -> int:
     try:
         wallet.api.set_voting_proxy(account_name, "initminer")
-    finally:
-        return int(node.api.database.find_accounts(accounts=["initminer"])["accounts"][0]["proxied_vsf_votes"][0])
+    except tt.exceptions.CommunicationError as error:
+        if "Proxy must change" not in str(error):
+            raise
+
+    return int(node.api.database.find_accounts(accounts=["initminer"])["accounts"][0]["proxied_vsf_votes"][0])
 
 
 def get_hbd_balance(node: tt.InitNode, account_name: str) -> tt.Asset.Tbd:
