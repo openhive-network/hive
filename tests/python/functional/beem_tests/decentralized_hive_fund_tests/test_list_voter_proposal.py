@@ -89,7 +89,7 @@ def create_proposals(node, account, start_date, end_date, proposal_count):
             node.finalizeOp(op, account["name"], "active")
         except Exception as ex:
             tt.logger.error(f"Exception: {ex}")
-            raise ex
+            raise
         hive_utils.common.wait_n_blocks(node.rpc.url, 1)
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
@@ -111,7 +111,7 @@ def vote_proposals(node, account, ids):
         node.finalizeOp(op, account["name"], "active")
     except Exception as ex:
         tt.logger.error(f"Exception: {ex}")
-        raise ex
+        raise
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 

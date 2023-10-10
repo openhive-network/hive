@@ -33,13 +33,13 @@ def create_proposals(node_client, creator_account, receiver_account):
         creator = Account(creator_account, hive_instance=node_client)
     except Exception as ex:
         tt.logger.error(f"Account: {creator_account} not found. {ex}")
-        raise ex
+        raise
 
     try:
         receiver = Account(receiver_account, hive_instance=node_client)
     except Exception as ex:
         tt.logger.error(f"Account: {receiver_account} not found. {ex}")
-        raise ex
+        raise
 
     tt.logger.info("Creating initial post...")
     node_client.post(
@@ -71,7 +71,7 @@ def create_proposals(node_client, creator_account, receiver_account):
             node_client.finalizeOp(op, creator["name"], "active")
         except Exception as ex:
             tt.logger.exception(f"Exception: {ex}")
-            raise ex
+            raise
 
         hive_utils.common.wait_n_blocks(node_client.rpc.url, 1)
     hive_utils.common.wait_n_blocks(node_client.rpc.url, 2)

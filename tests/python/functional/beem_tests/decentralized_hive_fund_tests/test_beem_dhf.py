@@ -27,13 +27,13 @@ def create_proposal(node, creator_account, receiver_account, wif, subject):
         creator = Account(creator_account, hive_instance=node)
     except Exception as ex:
         tt.logger.error(f"Account: {creator_account} not found. {ex}")
-        raise ex
+        raise
 
     try:
         receiver = Account(receiver_account, hive_instance=node)
     except Exception as ex:
         tt.logger.error(f"Account: {receiver_account} not found. {ex}")
-        raise ex
+        raise
 
     ret = node.post(
         "Hivepy proposal title",
@@ -59,7 +59,7 @@ def create_proposal(node, creator_account, receiver_account, wif, subject):
         ret = node.finalizeOp(op, creator["name"], "active")
     except Exception as ex:
         tt.logger.error(f"Exception: {ex}")
-        raise ex
+        raise
 
     assert ret["operations"][0][1]["creator"] == creator["name"]
     assert ret["operations"][0][1]["receiver"] == receiver["name"]
@@ -140,7 +140,7 @@ def vote_proposal(node, account, wif, subject):
         ret = node.finalizeOp(op, account, "active")
     except Exception as ex:
         tt.logger.error(f"Exception: {ex}")
-        raise ex
+        raise
 
     assert ret["operations"][0][1]["voter"] == account
     assert ret["operations"][0][1]["proposal_ids"][0] == proposal_id
@@ -182,7 +182,7 @@ def remove_proposal(node, account, wif, subject):
         node.finalizeOp(op, account, "active")
     except Exception as ex:
         tt.logger.error(f"Exception: {ex}")
-        raise ex
+        raise
 
     # try to find our special proposal
     proposals = node.rpc.list_proposals([account], 1000, "by_creator", "ascending", "inactive")
@@ -208,13 +208,13 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
         creator = Account(creator_account, hive_instance=node)
     except Exception as ex:
         tt.logger.error(f"Account: {creator_account} not found. {ex}")
-        raise ex
+        raise
 
     try:
         receiver = Account(receiver_account, hive_instance=node)
     except Exception as ex:
         tt.logger.error(f"Account: {receiver_account} not found. {ex}")
-        raise ex
+        raise
 
     now = datetime.datetime.now()
 
@@ -239,7 +239,7 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
             node.finalizeOp(op, creator["name"], "active")
         except Exception as ex:
             tt.logger.error(f"Exception: {ex}")
-            raise ex
+            raise
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
     start_date = test_utils.date_to_iso(now + datetime.timedelta(days=5))
@@ -297,7 +297,7 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
                 node.finalizeOp(op, creator["name"], "active")
             except Exception as ex:
                 tt.logger.error(f"Exception: {ex}")
-                raise ex
+                raise
             hive_utils.common.wait_n_blocks(node.rpc.url, 3)
 
 
@@ -320,7 +320,7 @@ def update_proposal(node, creator, wif):
         node.finalizeOp(op, creator, "active")
     except Exception as ex:
         tt.logger.error(f"Exception: {ex}")
-        raise ex
+        raise
     hive_utils.common.wait_n_blocks(node.rpc.url, 3)
 
     proposals = node.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
@@ -346,7 +346,7 @@ def update_proposal(node, creator, wif):
         node.finalizeOp(op, creator, "active")
     except Exception as ex:
         tt.logger.error(f"Exception: {ex}")
-        raise ex
+        raise
     hive_utils.common.wait_n_blocks(node.rpc.url, 3)
 
     proposals = node.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
