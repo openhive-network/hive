@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 import test_tools as tt
-from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
+
+if TYPE_CHECKING:
+    from datetime import datetime
+    from pathlib import Path
+
+    from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 
 @pytest.fixture()

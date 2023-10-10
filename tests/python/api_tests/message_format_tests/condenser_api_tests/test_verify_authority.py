@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-import test_tools as tt
+from typing import TYPE_CHECKING
+
 from hive_local_tools import run_for
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 
 @run_for("testnet")

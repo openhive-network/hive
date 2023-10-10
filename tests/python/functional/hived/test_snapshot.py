@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import test_tools as tt
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_snapshots_content_binary(block_log: Path):

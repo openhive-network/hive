@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import test_tools as tt
 from hive_local_tools.constants import MAX_RECURRENT_TRANSFERS_PER_BLOCK
-from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 from .block_logs.block_log_containing_many_to_one_recurrent_transfers import generate_block_log as bl
+
+if TYPE_CHECKING:
+    from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 
 def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker):

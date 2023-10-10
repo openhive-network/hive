@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+from typing import TYPE_CHECKING
 
 import dateutil.parser
 from beem.account import Account
@@ -9,9 +10,11 @@ from beembase.operations import Create_proposal, Update_proposal_votes
 
 import hive_utils
 import test_tools as tt
-from hive_local_tools.functional.python.beem import NodeClientMaker
 from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR
 from hive_local_tools.functional.python.beem.decentralized_hive_fund.test_utils import get_permlink
+
+if TYPE_CHECKING:
+    from hive_local_tools.functional.python.beem import NodeClientMaker
 
 
 def create_accounts(node, creator, account):

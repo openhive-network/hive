@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 from beem import Hive
 
-from hive_local_tools.functional.python.beem import NodeClientMaker
+if TYPE_CHECKING:
+    from hive_local_tools.functional.python.beem import NodeClientMaker
 
 
 def pytest_addoption(parser):

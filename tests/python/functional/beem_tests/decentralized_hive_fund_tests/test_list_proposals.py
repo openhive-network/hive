@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import datetime
+from typing import TYPE_CHECKING
 
 from beem.account import Account
 from beembase.operations import Create_proposal
 
 import hive_utils
 import test_tools as tt
-from hive_local_tools.functional.python.beem import NodeClientMaker
 from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR, TREASURY
+
+if TYPE_CHECKING:
+    from hive_local_tools.functional.python.beem import NodeClientMaker
 
 START_END_SUBJECTS = [
     [1, 3, "Subject001"],

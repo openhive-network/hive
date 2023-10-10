@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import time
+from typing import TYPE_CHECKING
 
-import test_tools as tt
+if TYPE_CHECKING:
+    import test_tools as tt
 
 
 def get_recovery_agent(node: tt.InitNode, account_name: str, wait_for_agent=None) -> str:

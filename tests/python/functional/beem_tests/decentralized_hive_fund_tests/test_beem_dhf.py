@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 from datetime import timedelta
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import dateutil.parser
@@ -10,8 +11,10 @@ from beembase.operations import Create_proposal, Remove_proposal, Update_proposa
 
 import hive_utils
 import test_tools as tt
-from hive_local_tools.functional.python.beem import NodeClientMaker
 from hive_local_tools.functional.python.beem.decentralized_hive_fund import CREATOR, TREASURY, test_utils
+
+if TYPE_CHECKING:
+    from hive_local_tools.functional.python.beem import NodeClientMaker
 
 
 def create_proposal(node, creator_account, receiver_account, wif, subject):
