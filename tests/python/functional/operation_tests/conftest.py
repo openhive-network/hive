@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Literal
 
@@ -134,40 +135,32 @@ class UpdateAccount(Account):
         new_active: str | list | None = None,
         new_posting: str | list | None = None,
         new_memo: str | None = None,
+        new_posting_json_meta: str | None = None,
     ):
-        # for owner/active/posting argument method accepts both the authority (list - [key, weight]) and key as string
         self.update_account_info()
         if new_owner is not None:
-            to_compare = (
-                list(self._acc_info["owner"]["key_auths"][0])
-                if isinstance(new_owner, list)
-                else (self._acc_info)["owner"]["key_auths"][0][0]
-            )
-            assert new_owner == to_compare, f"Owner authority of account {self._name} wasn't changed."
+            assert new_owner == self._acc_info["owner"], f"Owner authority of account {self._name} wasn't changed."
 
         if new_active is not None:
-            to_compare = (
-                list(self._acc_info["active"]["key_auths"][0])
-                if isinstance(new_active, list)
-                else (self._acc_info)["active"]["key_auths"][0][0]
-            )
-            assert new_active == to_compare, f"Active authority of account {self._name} wasn't changed."
+            assert new_active == self._acc_info["active"], f"Active authority of account {self._name} wasn't changed."
 
         if new_posting is not None:
-            to_compare = (
-                list(self._acc_info["posting"]["key_auths"][0])
-                if isinstance(new_posting, list)
-                else (self._acc_info)["posting"]["key_auths"][0][0]
-            )
-            assert new_posting == to_compare, f"Posting authority of account {self._name} wasn't changed."
+            assert (
+                new_posting == self._acc_info["posting"]
+            ), f"Posting authority of account {self._name} wasn't changed."
 
         if new_memo is not None:
-            to_compare = self._acc_info["memo_key"]
-            assert new_memo == to_compare, f"Memo key of account {self._name} wasn't changed."
+            assert new_memo == self._acc_info["memo_key"], f"Memo key of account {self._name} wasn't changed."
 
         if new_json_meta is not None:
             to_compare = self._acc_info["json_metadata"]
             assert new_json_meta == to_compare, f"Json metadata of account {self._name} wasn't changed."
+
+        if new_posting_json_meta is not None:
+            to_compare = self._acc_info["posting_json_metadata"]
+            assert (
+                json.loads(new_posting_json_meta) == to_compare
+            ), f"Posting json metadata of account {self._name} wasn't changed."
 
     def generate_new_authority(self) -> dict:
         return {"account_auths": [], "key_auths": [(self.generate_new_key(), 1)], "weight_threshold": 1}
