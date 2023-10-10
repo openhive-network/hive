@@ -21,7 +21,7 @@ def test_power_down(prepared_node, wallet, alice):
     )
     alice.update_account_info()
 
-    for week_number in range(1, VESTING_WITHDRAW_INTERVALS):  # check weekly vests/ hives changes (from week 1 to 12)
+    for _week_number in range(1, VESTING_WITHDRAW_INTERVALS):  # check weekly vests/ hives changes (from week 1 to 12)
         power_down.execute_next_withdraw()
 
         alice.assert_hive_power_balance_is_reduced_by_weekly_amount(power_down.weekly_vest_reduction)
@@ -54,7 +54,7 @@ def test_cancel_power_down(prepared_node, wallet, alice):
     )
     alice.update_account_info()
 
-    for week_number in range(1, 3):  # check weekly vests/ hives changes (from week 1 to 3)
+    for _week_number in range(1, 3):  # check weekly vests/ hives changes (from week 1 to 3)
         power_down.execute_next_withdraw()
 
         alice.assert_hive_power_balance_is_reduced_by_weekly_amount(power_down.weekly_vest_reduction)

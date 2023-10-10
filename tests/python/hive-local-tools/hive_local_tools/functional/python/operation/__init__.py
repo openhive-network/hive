@@ -397,7 +397,7 @@ class Comment:
         for operation in ops_in_block["ops"]:
             if operation["op"]["type"] == "comment_operation" and operation["op"]["value"] == comment_operation:
                 return
-        assert False
+        raise AssertionError()
 
     def assert_is_rc_mana_decreased_after_post_or_update(self):
         if not self.__comment_exist:

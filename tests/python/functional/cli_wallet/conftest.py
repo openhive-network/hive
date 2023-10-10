@@ -35,7 +35,7 @@ def create_proposal(wallet: tt.Wallet, funded_account: FundedAccountInfo, creato
         if prop["permlink"] == prepared_proposal.permlink:
             return PreparedProposalDataWithId(base=prepared_proposal, id=prop["id"])
 
-    assert False, "proposal not found"
+    raise AssertionError("proposal not found")
 
 
 @pytest.fixture
