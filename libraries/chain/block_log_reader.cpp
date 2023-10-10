@@ -8,15 +8,6 @@ block_log_reader::block_log_reader( block_log& block_log )
   : _block_log( block_log )
 {}
 
-void block_log_reader::init_reader( const fc::path& data_dir, bool enable_compression,
-  int compression_level, bool enable_block_log_auto_fixing )
-{
-  _block_log.set_auto_fixing_enabled( enable_block_log_auto_fixing );
-  _block_log.open( data_dir / "block_log" );
-  _block_log.set_compression( enable_compression );
-  _block_log.set_compression_level( compression_level );
-}
-
 void block_log_reader::start_reader( const std::shared_ptr<full_block_type>& head_block )
 {
   // nothing to do with block log at this stage.

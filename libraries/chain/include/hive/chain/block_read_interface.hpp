@@ -16,9 +16,6 @@ namespace hive { namespace chain {
   public:
     virtual ~block_read_i() = default;
 
-    /// Use provided data for reader initialization if needed.
-    virtual void init_reader( const fc::path& data_dir, bool enable_compression,
-                              int compression_level, bool enable_block_log_auto_fixing ) = 0;
     /// Called when state initial data has been loaded and provided head block set.
     virtual void start_reader( const std::shared_ptr<full_block_type>& head_block ) = 0;
     /// Close whatever needs to be closed.
