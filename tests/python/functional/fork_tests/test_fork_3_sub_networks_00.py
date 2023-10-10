@@ -8,7 +8,7 @@ import shared_tools.complex_networks_helper_functions as sh
 import test_tools as tt
 
 
-@pytest.mark.fork_tests_group_2
+@pytest.mark.fork_tests_group_2()
 def test_fork_3_sub_networks_00(prepare_fork_3_sub_networks_00):
     # start - A network consists of a 'minority_3' network(3 witnesses), a 'minority_4' network(4 witnesses), a 'majority' network(14 witnesses).
 

@@ -7,7 +7,7 @@ from hive_local_tools import run_for
 
 
 @pytest.mark.parametrize(
-    "block_num, virtual_operation, include_reversible",
+    ("block_num", "virtual_operation", "include_reversible"),
     [
         # Valid block num
         (1, True, True),
@@ -42,7 +42,7 @@ def test_get_ops_in_block_with_correct_values(node, block_num, virtual_operation
 
 
 @pytest.mark.parametrize(
-    "block_num, virtual_operation, include_reversible",
+    ("block_num", "virtual_operation", "include_reversible"),
     [
         # Invalid block number
         ("incorrect_string_argument", True, True),

@@ -24,7 +24,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit",
+    ("rc_account", "limit"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -47,7 +47,7 @@ def test_list_rc_accounts_with_correct_values(node, should_prepare, rc_account, 
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit",
+    ("rc_account", "limit"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -62,7 +62,7 @@ def test_list_rc_account_with_correct_values_in_mainnet_5m(node, rc_account, lim
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit",
+    ("rc_account", "limit"),
     [
         # LIMIT
         (ACCOUNTS[0], -1),
@@ -81,7 +81,7 @@ def test_list_rc_accounts_with_incorrect_values(node, should_prepare, rc_account
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit",
+    ("rc_account", "limit"),
     [
         # WITNESS
         (["example-array"], 100),

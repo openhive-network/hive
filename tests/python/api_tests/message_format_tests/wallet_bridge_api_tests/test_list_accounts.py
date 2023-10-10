@@ -22,7 +22,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "lowerbound_account, limit",
+    ("lowerbound_account", "limit"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -39,7 +39,7 @@ def test_list_accounts_with_correct_values(node, should_prepare, lowerbound_acco
 
 
 @pytest.mark.parametrize(
-    "lowerbound_account, limit",
+    ("lowerbound_account", "limit"),
     [
         # LIMIT
         (ACCOUNTS[0], -1),
@@ -57,7 +57,7 @@ def test_list_accounts_with_incorrect_values(node, should_prepare, lowerbound_ac
 
 
 @pytest.mark.parametrize(
-    "lowerbound_account, limit",
+    ("lowerbound_account", "limit"),
     [
         # LOWERBOUND ACCOUNT
         (["example-array"], 100),

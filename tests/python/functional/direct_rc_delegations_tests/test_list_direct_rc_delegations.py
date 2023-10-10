@@ -6,7 +6,7 @@ import test_tools as tt
 
 
 @pytest.mark.parametrize(
-    "from_, to, , expected_delegations",
+    ("from_", "to", "expected_delegations"),
     [
         (
             "alice",

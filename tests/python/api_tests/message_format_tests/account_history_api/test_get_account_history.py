@@ -9,7 +9,7 @@ ACCOUNT = "initminer"
 
 
 @pytest.mark.parametrize(
-    "start, limit",
+    ("start", "limit"),
     [
         (0, 1),
         (1.1, 1),
@@ -34,7 +34,7 @@ def test_get_account_history_with_correct_values(node, start, limit):
 
 
 @pytest.mark.parametrize(
-    "account_name, start, limit",
+    ("account_name", "start", "limit"),
     [
         # Invalid account name
         (None, 0, 100),

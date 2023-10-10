@@ -7,17 +7,17 @@ import pytest
 import test_tools as tt
 
 
-@pytest.fixture
+@pytest.fixture()
 def unconfigured_offline_wallet():
     return tt.Wallet(preconfigure=False)
 
 
-@pytest.fixture
+@pytest.fixture()
 def unconfigured_online_wallet(node):
     return tt.Wallet(attach_to=node, preconfigure=False)
 
 
-@pytest.fixture
+@pytest.fixture()
 def configured_offline_wallet():
     return tt.Wallet()
 

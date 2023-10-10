@@ -25,7 +25,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "witness_account, limit",
+    ("witness_account", "limit"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -40,7 +40,7 @@ def test_list_witnesses_with_correct_value(node, witness_account, limit, should_
 
 
 @pytest.mark.parametrize(
-    "witness_account, limit",
+    ("witness_account", "limit"),
     [
         # LIMIT
         (WITNESSES_NAMES[0], 0),
@@ -56,7 +56,7 @@ def test_list_witnesses_with_incorrect_value(node, witness_account, limit, shoul
 
 
 @pytest.mark.parametrize(
-    "witness_account, limit",
+    ("witness_account", "limit"),
     [
         # WITNESS ACCOUNT
         ([WITNESSES_NAMES[0]], 100),

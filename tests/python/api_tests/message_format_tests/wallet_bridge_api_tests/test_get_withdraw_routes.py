@@ -23,7 +23,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "account_name, withdraw_route_type",
+    ("account_name", "withdraw_route_type"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -40,7 +40,7 @@ def test_get_withdraw_routes_with_correct_value(node, should_prepare, account_na
 
 
 @pytest.mark.parametrize(
-    "account_name, withdraw_route_type",
+    ("account_name", "withdraw_route_type"),
     [
         #  WITHDRAW ROUTE TYPE
         ("alice", "non-exist-argument"),
@@ -62,7 +62,7 @@ def test_get_withdraw_routes_with_incorrect_value(node, should_prepare, account_
 
 
 @pytest.mark.parametrize(
-    "account_name, withdraw_route_type",
+    ("account_name", "withdraw_route_type"),
     [
         #  ACCOUNT NAME
         (["alice"], "all"),

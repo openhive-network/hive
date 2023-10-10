@@ -14,14 +14,14 @@ def run_with_faketime(node, time):
     node.run(time_offset=f'{tt.Time.serialize(requested_start_time, format_="@%Y-%m-%d %H:%M:%S")}')
 
 
-@pytest.fixture
+@pytest.fixture()
 def node_hf25() -> tt.InitNode:
     node = tt.InitNode()
     run_with_faketime(node, "2022-10-10T10:10:10")
     return node
 
 
-@pytest.fixture
+@pytest.fixture()
 def node_hf26() -> tt.InitNode:
     change_hive_owner_update_limit(seconds_limit=60)
 
@@ -33,12 +33,12 @@ def node_hf26() -> tt.InitNode:
     return node
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet_hf25(node_hf25) -> tt.Wallet:
     return tt.Wallet(attach_to=node_hf25)
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet_hf26(node_hf26) -> tt.Wallet:
     return tt.Wallet(attach_to=node_hf26)
 
@@ -118,31 +118,31 @@ def calculate_epoch_time(date):
     return int(tt.Time.parse(date).timestamp())
 
 
-@pytest.fixture
+@pytest.fixture()
 def network_before_hf26():
     tt.logger.info("Preparing fixture network_before_hf26")
 
     alpha_net = prepare_environment("2023-11-08T07:41:40")
 
-    yield {"alpha": alpha_net}
+    return {"alpha": alpha_net}
 
 
-@pytest.fixture
+@pytest.fixture()
 def network_after_hf26():
     tt.logger.info("Preparing fixture network_after_hf26")
 
     alpha_net = prepare_environment("2022-06-01T07:41:41")
 
-    yield {"alpha": alpha_net}
+    return {"alpha": alpha_net}
 
 
-@pytest.fixture
+@pytest.fixture()
 def network_after_hf26_without_majority():
     tt.logger.info("Preparing fixture network_after_hf26_without_majority")
 
     alpha_net, beta_net = prepare_environment_with_2_sub_networks("2032-06-20T09:45:38", "2022-06-01T07:41:41")
 
-    yield {
+    return {
         "alpha": alpha_net,
         "beta": beta_net,
     }

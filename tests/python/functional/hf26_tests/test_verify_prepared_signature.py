@@ -23,7 +23,7 @@ def sign_transaction(transaction: dict, private_key: str, serialization_type: st
 
 
 @pytest.mark.parametrize(
-    "serialization_type,expected_signature",
+    ("serialization_type", "expected_signature"),
     [
         (
             None,

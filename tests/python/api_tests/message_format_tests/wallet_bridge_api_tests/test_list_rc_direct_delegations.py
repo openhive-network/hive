@@ -23,7 +23,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -43,7 +43,7 @@ def test_list_rc_direct_delegations_with_correct_value(node, should_prepare, fro
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         # FROM_
         ("", "", 100),
@@ -68,7 +68,7 @@ def test_list_rc_direct_delegations_with_incorrect_value_in_testnet(node, from_,
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         # FROM_
         ("", "", 100),
@@ -88,7 +88,7 @@ def test_list_rc_direct_delegations_with_incorrect_value_in_mainnet(node, from_,
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         # FROM_
         ("100", ACCOUNTS[1], 100),
@@ -117,7 +117,7 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments_in_testnet(
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         # FROM_
         ("100", MAINNET_ACCOUNTS[1], 100),

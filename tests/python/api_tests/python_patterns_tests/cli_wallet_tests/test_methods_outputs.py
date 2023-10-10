@@ -12,22 +12,22 @@ STORE_PATTERNS = False
 __PATTERNS_DIRECTORY = pathlib.Path(__file__).with_name("response_patterns")
 
 
-@pytest.fixture
+@pytest.fixture()
 def http_endpoint(request):
     return request.config.getoption("--http-endpoint")
 
 
-@pytest.fixture
+@pytest.fixture()
 def ws_endpoint(request):
     return request.config.getoption("--ws-endpoint")
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet_path(request):
     return request.config.getoption("--wallet-path")
 
 
-@pytest.fixture
+@pytest.fixture()
 def remote_node_wallet(http_endpoint, ws_endpoint, wallet_path):
     # To allow working on CI, change remote node http_endpoint, ws_endpoint and path to mainnet wallet.
     tt.paths_to_executables.set_path_of("cli_wallet", wallet_path)
@@ -70,8 +70,8 @@ WALLET_API_METHODS = [
 ]
 
 
-@pytest.mark.mainnet_5m
-@pytest.mark.parametrize("cli_wallet_method, arguments", WALLET_API_METHODS)
+@pytest.mark.mainnet_5m()
+@pytest.mark.parametrize(("cli_wallet_method", "arguments"), WALLET_API_METHODS)
 def test_or_dump_methods_outputs(remote_node_wallet, cli_wallet_method, arguments):
     response = getattr(remote_node_wallet.api, cli_wallet_method)(*arguments)
 

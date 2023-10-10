@@ -18,7 +18,7 @@ CORRECT_VALUES = [
 ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def ready_node(node, should_prepare):
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
@@ -27,7 +27,7 @@ def ready_node(node, should_prepare):
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -40,7 +40,7 @@ def test_list_rc_direct_delegations_with_correct_value(ready_node, from_, to, li
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         # FROM_
         ("", "", 100),
@@ -69,7 +69,7 @@ def test_list_rc_direct_delegations_with_additional_argument(ready_node):
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         # FROM_
         ("100", ACCOUNTS[1], 100),

@@ -5,6 +5,6 @@ import pytest
 from ..conftest import LimitOrderAccount
 
 
-@pytest.fixture
+@pytest.fixture()
 def create_account_object():
     return LimitOrderAccount

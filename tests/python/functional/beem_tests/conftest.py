@@ -11,17 +11,17 @@ def pytest_addoption(parser):
     parser.addoption("--skeleton-key", type=str, help="skeleton-key used for converting and running node")
 
 
-@pytest.fixture
+@pytest.fixture()
 def chain_id(request):
     return request.config.getoption("--chain-id") or 42
 
 
-@pytest.fixture
+@pytest.fixture()
 def skeleton_key(request):
     return request.config.getoption("--skeleton-key") or "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
 
 
-@pytest.fixture
+@pytest.fixture()
 def node_client(node, worker_id) -> NodeClientMaker:
     def _node_client(accounts: list[dict] = None) -> Hive:
         accounts = accounts or []

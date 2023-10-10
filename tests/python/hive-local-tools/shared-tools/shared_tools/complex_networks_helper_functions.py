@@ -103,7 +103,8 @@ def get_last_irreversible_block_num(blocks: list):
 
 
 def get_part_of_witness_details(witness_details: list, start, length: int):
-    assert start >= 0 and start + length <= len(witness_details)
+    assert start >= 0
+    assert start + length <= len(witness_details)
     new_witness_details = []
     for i in range(start, start + length):
         new_witness_details.append(witness_details[i])

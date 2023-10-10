@@ -79,7 +79,7 @@ def test_ticker_output_parameters(node, limit_orders):
     assert float(response["latest"]) == latest
 
 
-@pytest.mark.parametrize("hive_amount, hbd_amount", HIVE_AND_HBD_AMOUNTS)
+@pytest.mark.parametrize(("hive_amount", "hbd_amount"), HIVE_AND_HBD_AMOUNTS)
 @run_for("testnet")
 def test_lowest_ask_in_ticker(node, hive_amount, hbd_amount):
     wallet = tt.Wallet(attach_to=node)
@@ -91,7 +91,7 @@ def test_lowest_ask_in_ticker(node, hive_amount, hbd_amount):
     assert float(response["lowest_ask"]) == min(hbd_amount[0] / hive_amount[0], hbd_amount[1] / hive_amount[1])
 
 
-@pytest.mark.parametrize("hive_amount, hbd_amount", HIVE_AND_HBD_AMOUNTS)
+@pytest.mark.parametrize(("hive_amount", "hbd_amount"), HIVE_AND_HBD_AMOUNTS)
 @run_for("testnet")
 def test_highest_bid_in_ticker(node, hive_amount, hbd_amount):
     wallet = tt.Wallet(attach_to=node)

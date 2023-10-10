@@ -72,7 +72,7 @@ def test_get_empty_market_history(node):
 
 @pytest.mark.parametrize(
     # 6, 22 blocks - more than 15 and 60 seconds - to exceed bucket time.
-    "bucket_seconds, blocks_to_wait",
+    ("bucket_seconds", "blocks_to_wait"),
     (
         (15, 6),
         (60, 22),
@@ -96,7 +96,7 @@ def test_get_two_buckets(node, bucket_seconds, blocks_to_wait):
 
 
 @pytest.mark.parametrize(
-    "tbds, hive_high, non_hive_high, hive_low, non_hive_low, non_hive_volume",
+    ("tbds", "hive_high", "non_hive_high", "hive_low", "non_hive_low", "non_hive_volume"),
     (
         (40, 200_000, 40_000, 100_000, 10_000, 90_000),
         (25, 300_000, 40_000, 100_000, 10_000, 75_000),

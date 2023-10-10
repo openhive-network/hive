@@ -19,7 +19,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -33,7 +33,7 @@ def test_list_rc_direct_delegations_with_correct_value(node, wallet, from_, to, 
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         # FROM_
         ("", "", 100),
@@ -65,7 +65,7 @@ def test_list_rc_direct_delegations_with_additional_argument(node, wallet):
 
 
 @pytest.mark.parametrize(
-    "from_, to, limit",
+    ("from_", "to", "limit"),
     [
         # FROM_
         ("100", ACCOUNTS[1], 100),

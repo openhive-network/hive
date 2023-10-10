@@ -7,7 +7,7 @@ from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 from hive_local_tools.functional.python import change_hive_owner_update_limit
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("limit", [6, 15, 30, 45, 90, 180, 360, 720])
 def test_modify_hive_owner_update_limit(limit):
     change_hive_owner_update_limit(seconds_limit=limit)
@@ -21,7 +21,7 @@ def test_modify_hive_owner_update_limit(limit):
     assert limit_in_microseconds / 1_000_000 == limit, "The `HIVE_OWNER_UPDATE_LIMIT` was not updated correctly."
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
     "limit",
     [

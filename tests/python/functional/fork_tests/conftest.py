@@ -6,7 +6,7 @@ import shared_tools.networks_architecture as networks
 from shared_tools.complex_networks import create_block_log_directory_name, prepare_network, prepare_time_offsets
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_with_many_witnesses() -> networks.NetworksBuilder:
     config = {
         "networks": [
@@ -16,10 +16,10 @@ def prepare_with_many_witnesses() -> networks.NetworksBuilder:
     }
     architecture = networks.NetworksArchitecture()
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_10_10"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_10_10"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_fork_2_sub_networks_00() -> networks.NetworksBuilder:
     config = {
         "networks": [
@@ -29,10 +29,10 @@ def prepare_fork_2_sub_networks_00() -> networks.NetworksBuilder:
     }
     architecture = networks.NetworksArchitecture(True)
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_fork_2_sub_networks_00"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_fork_2_sub_networks_00"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_fork_2_sub_networks_01() -> networks.NetworksBuilder:
     config = {
         "networks": [
@@ -42,10 +42,10 @@ def prepare_fork_2_sub_networks_01() -> networks.NetworksBuilder:
     }
     architecture = networks.NetworksArchitecture(True)
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_fork_2_sub_networks_01"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_fork_2_sub_networks_01"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_fork_2_sub_networks_02() -> networks.NetworksBuilder:
     config = {
         "networks": [
@@ -55,10 +55,10 @@ def prepare_fork_2_sub_networks_02() -> networks.NetworksBuilder:
     }
     architecture = networks.NetworksArchitecture(True)
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_fork_2_sub_networks_02"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_fork_2_sub_networks_02"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_fork_2_sub_networks_03() -> networks.NetworksBuilder:
     config = {
         "networks": [
@@ -68,40 +68,40 @@ def prepare_fork_2_sub_networks_03() -> networks.NetworksBuilder:
     }
     architecture = networks.NetworksArchitecture(True)
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_fork_2_sub_networks_03"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_fork_2_sub_networks_03"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_obi_throw_exception_00() -> networks.NetworksBuilder:
     config = {
         "networks": [{"InitNode": True, "ApiNode": True, "WitnessNodes": [10]}, {"ApiNode": True, "WitnessNodes": [11]}]
     }
     architecture = networks.NetworksArchitecture(True)
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_obi_throw_exception_00"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_obi_throw_exception_00"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_obi_throw_exception_01() -> networks.NetworksBuilder:
     config = {
         "networks": [{"InitNode": True, "ApiNode": True, "WitnessNodes": [10]}, {"ApiNode": True, "WitnessNodes": [11]}]
     }
     architecture = networks.NetworksArchitecture(True)
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_obi_throw_exception_01"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_obi_throw_exception_01"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_obi_throw_exception_02() -> networks.NetworksBuilder:
     config = {
         "networks": [{"InitNode": True, "ApiNode": True, "WitnessNodes": [10]}, {"ApiNode": True, "WitnessNodes": [11]}]
     }
     architecture = networks.NetworksArchitecture(True)
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_obi_throw_exception_02"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_obi_throw_exception_02"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_fork_3_sub_networks_00() -> networks.NetworksBuilder:
     config = {
         "networks": [
@@ -112,10 +112,10 @@ def prepare_fork_3_sub_networks_00() -> networks.NetworksBuilder:
     }
     architecture = networks.NetworksArchitecture(True)
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_fork_3_sub_networks_00"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_fork_3_sub_networks_00"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_fork_3_sub_networks_01() -> networks.NetworksBuilder:
     config = {
         "networks": [
@@ -126,7 +126,7 @@ def prepare_fork_3_sub_networks_01() -> networks.NetworksBuilder:
     }
     architecture = networks.NetworksArchitecture(True)
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_fork_3_sub_networks_01"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_fork_3_sub_networks_01"))
 
 
 @pytest.fixture()
@@ -136,7 +136,7 @@ def prepare_17_3() -> networks.NetworksBuilder:
     }
     architecture = networks.NetworksArchitecture()
     architecture.load(config)
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_17_3"))
+    return prepare_network(architecture, create_block_log_directory_name("block_log_17_3"))
 
 
 @pytest.fixture()
@@ -154,4 +154,4 @@ def prepare_4_4_4_4_4() -> networks.NetworksBuilder:
     architecture.load(config)
     time_offsets = prepare_time_offsets(architecture.nodes_number)
 
-    yield prepare_network(architecture, create_block_log_directory_name("block_log_4_4_4_4_4"), time_offsets)
+    return prepare_network(architecture, create_block_log_directory_name("block_log_4_4_4_4_4"), time_offsets)

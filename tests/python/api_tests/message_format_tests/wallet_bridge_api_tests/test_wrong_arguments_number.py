@@ -63,7 +63,7 @@ def test_run_command_without_arguments_where_arguments_are_required(node, wallet
 
 
 @pytest.mark.parametrize(
-    "wallet_bridge_api_command, arguments",
+    ("wallet_bridge_api_command", "arguments"),
     [
         *COMMANDS_WITH_CORRECT_ARGUMENTS,
         ("get_chain_properties", ()),
@@ -83,7 +83,7 @@ def test_run_command_with_additional_argument(node, should_prepare, wallet_bridg
 
 
 @pytest.mark.parametrize(
-    "wallet_bridge_api_command, arguments",
+    ("wallet_bridge_api_command", "arguments"),
     [
         *COMMANDS_WITH_CORRECT_ARGUMENTS,
         ("get_transaction", ("transaction_id",)),

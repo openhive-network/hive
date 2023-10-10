@@ -15,8 +15,8 @@ from hive_local_tools.functional.python.operation import get_virtual_operations
 from hive_local_tools.functional.python.operation.recurrent_transfer import RecurrentTransfer, RecurrentTransferAccount
 
 
-@pytest.mark.testnet
-@pytest.mark.parametrize("amount, executions", [(tt.Asset.Test(10), 3), (tt.Asset.Tbd(10), 3)])
+@pytest.mark.testnet()
+@pytest.mark.parametrize(("amount", "executions"), [(tt.Asset.Test(10), 3), (tt.Asset.Tbd(10), 3)])
 def test_recurrent_transfer_cases_1_and_2(node, wallet, sender, receiver, amount, executions):
     """
     User creates a recurrent transfer in Hive / HBD to be sent once a day for three days
@@ -51,8 +51,8 @@ def test_recurrent_transfer_cases_1_and_2(node, wallet, sender, receiver, amount
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=executions)
 
 
-@pytest.mark.testnet
-@pytest.mark.parametrize("amount, executions", [(tt.Asset.Test(10), 3), (tt.Asset.Tbd(10), 3)])
+@pytest.mark.testnet()
+@pytest.mark.parametrize(("amount", "executions"), [(tt.Asset.Test(10), 3), (tt.Asset.Tbd(10), 3)])
 def test_recurrent_transfer_cases_3_and_4(node, wallet, sender, receiver, amount, executions):
     """
     User removes a defined recurrent transfer in Hive / HBD.
@@ -99,9 +99,9 @@ def test_recurrent_transfer_cases_3_and_4(node, wallet, sender, receiver, amount
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "amount_1, amount_2, executions_1, executions_2",
+    ("amount_1", "amount_2", "executions_1", "executions_2"),
     [
         (tt.Asset.Test(10), tt.Asset.Test(20), 4, 2),  # User increases an amount of defined recurrent transfer in Hive.
         (tt.Asset.Tbd(10), tt.Asset.Tbd(20), 4, 2),  # User increases an amount of defined recurrent transfer in HBD.
@@ -158,9 +158,9 @@ def test_recurrent_transfer_cases_5_6_7_8(
     receiver.rc_manabar.assert_rc_current_mana_is_unchanged()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "amount, executions, update_executions",
+    ("amount", "executions", "update_executions"),
     [
         (tt.Asset.Test(10), 3, 5),
         (tt.Asset.Tbd(10), 3, 5),
@@ -227,9 +227,9 @@ def test_recurrent_transfer_cases_9_and_10(node, wallet, sender, receiver, amoun
         assert receiver.hbd == (2 + 5) * amount
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "amount, executions, update_executions",
+    ("amount", "executions", "update_executions"),
     [
         (tt.Asset.Test(10), 4, 3),
         (tt.Asset.Tbd(10), 4, 3),
@@ -290,9 +290,9 @@ def test_recurrent_transfer_cases_11_and_12(node, wallet, sender, receiver, amou
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "amount, executions, base_recurrence_time, update_recurrence_time, offset",
+    ("amount", "executions", "base_recurrence_time", "update_recurrence_time", "offset"),
     [
         # User increases a frequency of defined recurrent transfer in Hive / HBD.
         (
@@ -412,9 +412,9 @@ def test_recurrent_transfer_cases_13_14_15_16(
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "amount_1, amount_2, amount_3, executions, first_update_executions, second_update_executions",
+    ("amount_1", "amount_2", "amount_3", "executions", "first_update_executions", "second_update_executions"),
     [
         (tt.Asset.Test(10), tt.Asset.Test(20), tt.Asset.Test(30), 3, 5, 2),
         (tt.Asset.Tbd(10), tt.Asset.Tbd(20), tt.Asset.Tbd(30), 3, 5, 2),
@@ -530,9 +530,9 @@ def test_recurrent_transfer_cases_17_and_18(
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "recurrent_transfer_amount, transfer_amount",
+    ("recurrent_transfer_amount", "transfer_amount"),
     [
         (tt.Asset.Test(10), tt.Asset.Test(20)),
         (tt.Asset.Tbd(10), tt.Asset.Tbd(20)),
@@ -580,9 +580,9 @@ def test_recurrent_transfer_cases_19_and_20(node, wallet, receiver, recurrent_tr
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "amount, executions",
+    ("amount", "executions"),
     [
         (tt.Asset.Test(10), 3),
         (tt.Asset.Tbd(10), 3),
@@ -645,7 +645,7 @@ def test_recurrent_transfer_cases_21_and_22(node, wallet, receiver, amount, exec
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("amount", [(tt.Asset.Test(10)), (tt.Asset.Tbd(10))])
 def test_recurrent_transfer_cases_23_and_24(node, wallet, receiver, amount):
     """
@@ -692,9 +692,9 @@ def test_recurrent_transfer_cases_23_and_24(node, wallet, receiver, amount):
     )
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "amount, executions, recurrence",
+    ("amount", "executions", "recurrence"),
     [
         (tt.Asset.Test(10), 3, MAX_RECURRENT_TRANSFER_END_DATE / 2 * 24),
         (tt.Asset.Tbd(10), 3, MAX_RECURRENT_TRANSFER_END_DATE / 2 * 24),
@@ -728,9 +728,9 @@ def test_recurrent_transfer_cases_25_and_26(node, wallet, sender, receiver, amou
         recurrent_transfer.execute_future_transfer()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "amount, executions, recurrence",
+    ("amount", "executions", "recurrence"),
     [
         (tt.Asset.Test(10), 3, (MAX_RECURRENT_TRANSFER_END_DATE / 2 + 1) * 24),
         (tt.Asset.Tbd(10), 3, (MAX_RECURRENT_TRANSFER_END_DATE / 2 + 1) * 24),

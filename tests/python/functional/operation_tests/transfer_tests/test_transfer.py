@@ -7,7 +7,7 @@ from hive_local_tools.functional.python.operation import get_virtual_operations
 
 
 @pytest.mark.parametrize(
-    "amount, memo, check_balance",
+    ("amount", "memo", "check_balance"),
     [
         # User sends all HBD
         (tt.Asset.Tbd(50), "sending all my hbds", "get_hbd_balance"),
@@ -23,7 +23,7 @@ from hive_local_tools.functional.python.operation import get_virtual_operations
         (tt.Asset.Test(5), "", "get_hive_balance"),
     ],
 )
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_transfer(alice, bob, prepared_node, wallet, amount, memo, check_balance):
     sender_balance_before_transfer = getattr(alice, check_balance)()
     receiver_balance_before_transfer = getattr(bob, check_balance)()
@@ -46,7 +46,7 @@ def test_transfer(alice, bob, prepared_node, wallet, amount, memo, check_balance
     ), "RC amount after sending transfer wasn't decreased."
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_transfer_hives_to_hive_fund_account(prepared_node, wallet, alice, hive_fund):
     sender_balance_before_sending_hives = alice.get_hive_balance()
     receiver_balance_before_sending_hives = hive_fund.get_hbd_balance()

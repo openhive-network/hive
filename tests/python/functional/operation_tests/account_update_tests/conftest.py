@@ -7,7 +7,7 @@ import test_tools as tt
 from ..conftest import UpdateAccount
 
 
-@pytest.fixture
+@pytest.fixture()
 def alice(prepared_node, wallet):
     # slow down node - speeding up time caused random fails (it's not possible to do "+0h x1")
     prepared_node.restart(time_offset="+1h")

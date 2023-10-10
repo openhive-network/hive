@@ -9,7 +9,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "node_shared_file_size: Shared file size of node from `node` fixture")
 
 
-@pytest.fixture
+@pytest.fixture()
 def node(request):
     init_node = tt.InitNode()
     # The actual HF time does not matter as long as it's in the past
@@ -22,6 +22,6 @@ def node(request):
     return init_node
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet(node):
     return tt.Wallet(attach_to=node)

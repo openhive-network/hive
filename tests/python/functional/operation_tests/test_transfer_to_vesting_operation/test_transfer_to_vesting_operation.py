@@ -23,7 +23,7 @@ from hive_local_tools.functional.python.operation import (
 
 
 @pytest.mark.parametrize(
-    "sender, receiver",
+    ("sender", "receiver"),
     [
         ("alice", ""),  # User converts Hive to HP and transfers them to own account (empty {to}).
         ("alice", "alice"),  # User converts Hive to HP and transfers them to own account ({to} = {from}).

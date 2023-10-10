@@ -98,8 +98,8 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
 ]
 
 
-@pytest.mark.testnet
-@pytest.mark.parametrize("cli_wallet_method, arguments", METHODS_WITH_CORRECT_ARGUMENTS)
+@pytest.mark.testnet()
+@pytest.mark.parametrize(("cli_wallet_method", "arguments"), METHODS_WITH_CORRECT_ARGUMENTS)
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
 @pytest.mark.parametrize("wallet_with_pattern_name", TYPES_OF_SERIALIZATION, indirect=True)
 def test_transaction_patterns(replayed_node, wallet_with_pattern_name, verify_pattern, cli_wallet_method, arguments):
@@ -111,7 +111,7 @@ def test_transaction_patterns(replayed_node, wallet_with_pattern_name, verify_pa
     verify_pattern(wallet, pattern_name)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
 @pytest.mark.parametrize("wallet_with_pattern_name", TYPES_OF_SERIALIZATION, indirect=True)
 def test_create_account_with_keys(replayed_node, wallet_with_pattern_name, verify_pattern):
@@ -126,7 +126,7 @@ def test_create_account_with_keys(replayed_node, wallet_with_pattern_name, verif
     verify_pattern(wallet, pattern_name)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
 @pytest.mark.parametrize("wallet_with_pattern_name", TYPES_OF_SERIALIZATION, indirect=True)
 def test_create_funded_account_with_keys(replayed_node, wallet_with_pattern_name, verify_pattern):
@@ -150,7 +150,7 @@ def test_create_funded_account_with_keys(replayed_node, wallet_with_pattern_name
     verify_pattern(wallet, pattern_name)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
 @pytest.mark.parametrize("wallet_with_pattern_name", TYPES_OF_SERIALIZATION, indirect=True)
 def test_publish_feed(replayed_node, wallet_with_pattern_name, verify_pattern):
@@ -164,7 +164,7 @@ def test_publish_feed(replayed_node, wallet_with_pattern_name, verify_pattern):
     verify_pattern(wallet, pattern_name)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
 @pytest.mark.parametrize("wallet_with_pattern_name", TYPES_OF_SERIALIZATION, indirect=True)
 def test_recover_account(replayed_node, wallet_with_pattern_name, verify_pattern):
@@ -188,7 +188,7 @@ def test_recover_account(replayed_node, wallet_with_pattern_name, verify_pattern
     verify_pattern(wallet, pattern_name)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
 @pytest.mark.parametrize("wallet_with_pattern_name", TYPES_OF_SERIALIZATION, indirect=True)
 def test_update_account_auth_key(replayed_node, wallet_with_pattern_name, verify_pattern):
@@ -202,7 +202,7 @@ def test_update_account_auth_key(replayed_node, wallet_with_pattern_name, verify
     verify_pattern(wallet, pattern_name)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
 @pytest.mark.parametrize("wallet_with_pattern_name", TYPES_OF_SERIALIZATION, indirect=True)
 def test_request_account_recovery(replayed_node, wallet_with_pattern_name, verify_pattern):
@@ -218,7 +218,7 @@ def test_request_account_recovery(replayed_node, wallet_with_pattern_name, verif
     verify_pattern(wallet, pattern_name)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
 @pytest.mark.parametrize("wallet_with_pattern_name", TYPES_OF_SERIALIZATION, indirect=True)
 def test_remove_proposal(replayed_node, wallet_with_pattern_name, verify_pattern):
@@ -232,7 +232,7 @@ def test_remove_proposal(replayed_node, wallet_with_pattern_name, verify_pattern
     verify_pattern(wallet, pattern_name)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
 @pytest.mark.parametrize("wallet_with_pattern_name", TYPES_OF_SERIALIZATION, indirect=True)
 def test_update_account(replayed_node, wallet_with_pattern_name, verify_pattern):
@@ -245,7 +245,7 @@ def test_update_account(replayed_node, wallet_with_pattern_name, verify_pattern)
     verify_pattern(wallet, pattern_name)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
 @pytest.mark.parametrize("wallet_with_pattern_name", TYPES_OF_SERIALIZATION, indirect=True)
 def test_update_account_memo_key(replayed_node, wallet_with_pattern_name, verify_pattern):

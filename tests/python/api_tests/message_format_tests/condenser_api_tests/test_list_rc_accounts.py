@@ -23,7 +23,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit",
+    ("rc_account", "limit"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -37,7 +37,7 @@ def test_list_rc_accounts_with_correct_values(node, wallet, rc_account, limit):
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit",
+    ("rc_account", "limit"),
     [
         # LIMIT
         (ACCOUNT, -1),
@@ -53,7 +53,7 @@ def test_list_rc_accounts_with_incorrect_values(node, wallet, rc_account, limit)
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit",
+    ("rc_account", "limit"),
     [
         # WITNESS
         (["example-array"], 100),

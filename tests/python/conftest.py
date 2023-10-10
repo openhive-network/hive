@@ -15,7 +15,7 @@ def pytest_addoption(parser):
     parser.addoption("--http-endpoint", action="store", type=str, help="specifies http_endpoint of reference node")
 
 
-@pytest.fixture
+@pytest.fixture()
 def node(request) -> tt.InitNode | tt.RemoteNode:  # noqa: C901
     """
     This fixture returns a node depending on the arguments passed to the @run_for decorator.
@@ -141,7 +141,7 @@ def node(request) -> tt.InitNode | tt.RemoteNode:  # noqa: C901
     return create_node[requested_node.name]()
 
 
-@pytest.fixture
+@pytest.fixture()
 def should_prepare(node) -> bool:
     """
     When tests are run on mainnet or mirrornet node, where block log contains operations and blockchain state reflects
