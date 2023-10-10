@@ -86,7 +86,7 @@ def test_too_long_proxy_chain(node):
 
     with wallet.in_single_transaction():
         for i in range(3):
-            wallet.api.set_voting_proxy(f"account-layer-{i+1}", f"account-layer-{i}")
+            wallet.api.set_voting_proxy(f"account-layer-{i + 1}", f"account-layer-{i}")
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.set_voting_proxy("account-layer-4", "account-layer-3")
@@ -171,7 +171,7 @@ def test_vesting_shares_values_on_four_proxy_layers(node):
 
     with wallet.in_single_transaction():
         for num in range(len(accounts[:-1])):
-            wallet.api.set_voting_proxy(f"account-{num}", f"account-{num+1}")
+            wallet.api.set_voting_proxy(f"account-{num}", f"account-{num + 1}")
 
     node.wait_for_irreversible_block()
     node.restart(time_offset="+25h")

@@ -136,7 +136,7 @@ def wait(blocks, log: list[NodeLog], api_node):
             current.append()
 
         api_node.wait_number_of_blocks(1)
-        tt.logger.info(f"{i+1}/{blocks} blocks")
+        tt.logger.info(f"{i + 1}/{blocks} blocks")
 
 
 def final_block_the_same(method, data: list):
