@@ -50,7 +50,6 @@ namespace detail {
     void open( const fc::path& input, const fc::path& output );
     void close();
 
-    hive::chain::blockchain_worker_thread_pool* thread_pool = nullptr;
     appbase::application& theApp;
     hive::chain::blockchain_worker_thread_pool thread_pool;
   };
@@ -264,11 +263,6 @@ namespace detail {
   {
     my->close();
     my->print_wifs();
-  }
-
-  void block_log_conversion_plugin::set_thread_pool( hive::chain::blockchain_worker_thread_pool* thread_pool )
-  {
-    my->thread_pool = thread_pool;
   }
 
 } } } } // hive::converter::plugins::block_log_conversion
