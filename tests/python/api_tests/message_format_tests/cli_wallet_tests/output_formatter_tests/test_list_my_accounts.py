@@ -1,6 +1,5 @@
 import re
 from pathlib import Path
-from typing import Dict, List
 
 import pytest
 
@@ -65,7 +64,7 @@ def test_list_my_accounts_text_format_pattern_comparison(wallet_with_text_format
 
 
 def parse_text_response(text):
-    def parse_single_line_with_account_balances(line_to_parse: str) -> Dict:
+    def parse_single_line_with_account_balances(line_to_parse: str) -> dict:
         splitted_values = re.split(r"\s{2,}", line_to_parse.strip())
         return {
             "name": splitted_values[0],
@@ -74,7 +73,7 @@ def parse_text_response(text):
             "hbd_balance": splitted_values[3],
         }
 
-    def parse_single_line_with_total_balances(line_to_parse: str) -> Dict:
+    def parse_single_line_with_total_balances(line_to_parse: str) -> dict:
         splitted_values = re.split(r"\s{2,}", line_to_parse.strip())
         return {
             "total_hive": splitted_values[1],
@@ -89,6 +88,6 @@ def parse_text_response(text):
     }
 
 
-def import_private_keys_for_accounts(wallet, account_names: List[str]) -> None:
+def import_private_keys_for_accounts(wallet, account_names: list[str]) -> None:
     for name in account_names:
         wallet.api.import_key(tt.PrivateKey(name))

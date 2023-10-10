@@ -1,5 +1,4 @@
 from math import isclose
-from typing import Dict
 
 import test_tools as tt
 
@@ -8,7 +7,7 @@ def are_close(first: float, second: float) -> bool:
     return isclose(first, second, abs_tol=0.0000005)
 
 
-def create_buy_order(wallet, account, buy: tt.Asset.Test, offer: tt.Asset.Tbd, id: int) -> Dict:
+def create_buy_order(wallet, account, buy: tt.Asset.Test, offer: tt.Asset.Tbd, id: int) -> dict:
     wallet.api.create_order(account, id, offer, buy, False, 3600)
     return {
         "name": account,
@@ -20,7 +19,7 @@ def create_buy_order(wallet, account, buy: tt.Asset.Test, offer: tt.Asset.Tbd, i
     }
 
 
-def create_sell_order(wallet, account, sell: tt.Asset.Test, offer: tt.Asset.Tbd, id: int) -> Dict:
+def create_sell_order(wallet, account, sell: tt.Asset.Test, offer: tt.Asset.Tbd, id: int) -> dict:
     wallet.api.create_order(account, id, sell, offer, False, 3600)
     return {
         "name": account,

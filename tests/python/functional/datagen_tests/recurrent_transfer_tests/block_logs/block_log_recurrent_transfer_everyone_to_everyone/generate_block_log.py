@@ -4,7 +4,7 @@ import math
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Final, List
+from typing import Final
 
 import test_tools as tt
 from hive_local_tools.constants import (
@@ -102,7 +102,7 @@ def prepare_block_log():
 
 
 def __generate_recurrent_transfers_for_sender(
-    sender: str, all_accounts: List[str], amount: tt.Asset.Test = tt.Asset.Test(0.001)
+    sender: str, all_accounts: list[str], amount: tt.Asset.Test = tt.Asset.Test(0.001)
 ) -> list:
     operations = []
     for receiver in all_accounts:
@@ -124,7 +124,7 @@ def __generate_recurrent_transfers_for_sender(
     return operations
 
 
-def __order_and_broadcast_recurrent_transfers(wallet: tt.Wallet, account_names: List[str]) -> None:
+def __order_and_broadcast_recurrent_transfers(wallet: tt.Wallet, account_names: list[str]) -> None:
     for name in account_names:
         transaction = deepcopy(TRANSACTION_TEMPLATE)
         transaction["operations"].extend(__generate_recurrent_transfers_for_sender(name, account_names))
@@ -132,7 +132,7 @@ def __order_and_broadcast_recurrent_transfers(wallet: tt.Wallet, account_names: 
         tt.logger.info(f"Finished: {name}")
 
 
-def __fund_account_and_broadcast(wallet: tt.Wallet, account_names: List[str]) -> None:
+def __fund_account_and_broadcast(wallet: tt.Wallet, account_names: list[str]) -> None:
     transaction = deepcopy(TRANSACTION_TEMPLATE)
     transaction["operations"].extend(__fund_account(account_names))
     wallet.api.sign_transaction(transaction)

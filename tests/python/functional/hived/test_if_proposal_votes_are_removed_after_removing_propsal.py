@@ -1,4 +1,3 @@
-from typing import Optional
 
 import pytest
 
@@ -33,7 +32,7 @@ def get_all_proposal_votes(node: tt.InitNode, api: str) -> int:
             "status": "all",
         }
 
-        pack_of_proposals: Optional[list] = None
+        pack_of_proposals: list | None = None
         if api == "database":
             pack_of_proposals = getattr(node.api, api).list_proposal_votes(**template)["proposal_votes"]
         if api == "condenser":

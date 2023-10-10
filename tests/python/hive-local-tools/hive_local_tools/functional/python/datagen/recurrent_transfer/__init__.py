@@ -2,7 +2,7 @@ import math
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Iterable, Optional, Protocol, Sequence
+from typing import Callable, Iterable, Protocol, Sequence
 
 import test_tools as tt
 
@@ -12,8 +12,8 @@ class ReplayedNodeMaker(Protocol):
         self,
         block_log_directory: Path,
         *,
-        absolute_start_time: Optional[datetime] = None,
-        time_multiplier: Optional[float] = None,
+        absolute_start_time: datetime | None = None,
+        time_multiplier: float | None = None,
         timeout: float = tt.InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
     ) -> tt.InitNode:
         pass
@@ -23,10 +23,10 @@ def execute_function_in_threads(
     function: Callable,
     *,
     amount: int,
-    args: Optional[Iterable] = None,
-    args_sequences: Optional[Iterable[Sequence]] = None,
-    chunk_size: Optional[int] = None,
-    max_workers: Optional[int] = None,
+    args: Iterable | None = None,
+    args_sequences: Iterable[Sequence] | None = None,
+    chunk_size: int | None = None,
+    max_workers: int | None = None,
 ) -> None:
     """
     Execute the given function in threads.

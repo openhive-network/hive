@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from typing import Dict, Optional
 
 import pytest
 
@@ -77,7 +76,7 @@ def prepare_environment(hard_fork_26_time):
     # Run
     tt.logger.info("Running networks, waiting for live...")
     date_as_seconds = calculate_epoch_time(hard_fork_26_time)
-    environment_variables: Optional[Dict] = {"HIVE_HF26_TIME": f"{date_as_seconds}"}
+    environment_variables: dict | None = {"HIVE_HF26_TIME": f"{date_as_seconds}"}
     alpha_net.run(environment_variables)
 
     init_network(init_node, all_witness_names)
@@ -102,10 +101,10 @@ def prepare_environment_with_2_sub_networks(hard_fork_26_time_alpha, hard_fork_2
     tt.logger.info("Running networks, waiting for live...")
 
     date_as_seconds = calculate_epoch_time(hard_fork_26_time_alpha)
-    environment_variables_alpha: Optional[Dict] = {"HIVE_HF26_TIME": f"{date_as_seconds}"}
+    environment_variables_alpha: dict | None = {"HIVE_HF26_TIME": f"{date_as_seconds}"}
 
     date_as_seconds = calculate_epoch_time(hard_fork_26_time_beta)
-    environment_variables_beta: Optional[Dict] = {"HIVE_HF26_TIME": f"{date_as_seconds}"}
+    environment_variables_beta: dict | None = {"HIVE_HF26_TIME": f"{date_as_seconds}"}
 
     # June 20, 2032 9:45:38 AM
     alpha_net.run(environment_variables_alpha)

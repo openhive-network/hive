@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Final, List
+from typing import Final
 
 import pytest
 
@@ -111,5 +111,5 @@ def create_and_fund_voters(wallet, number_of_voters):
             wallet.api.transfer_to_vesting("initminer", voter, tt.Asset.Test(0.1))
 
 
-def get_account_names(accounts: List[tt.Account]) -> List[str]:
+def get_account_names(accounts: list[tt.Account]) -> list[str]:
     return [account.name for account in accounts]

@@ -43,7 +43,7 @@ def test_hybrid_operations(node_client: NodeClientMaker):
 
     node_client = node_client(accounts=accounts)
 
-    tt.logger.info("Chain prefix is: {}".format(node_client.prefix))
+    tt.logger.info(f"Chain prefix is: {node_client.prefix}")
     tt.logger.info("Chain ID is: {}".format(node_client.get_config()["HIVE_CHAIN_ID"]))
 
     # create test account

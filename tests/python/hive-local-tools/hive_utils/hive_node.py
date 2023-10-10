@@ -19,7 +19,7 @@ ch.setFormatter(logging.Formatter(DEFAULT_LOG_FORMAT))
 logger.addHandler(ch)
 
 
-class HiveNode(object):
+class HiveNode:
     hived_binary = None
     hived_process = None
     hived_lock = Lock()
@@ -54,7 +54,7 @@ class HiveNode(object):
         from subprocess import Popen
         from time import sleep
 
-        hived_command = [self.hived_binary, "--data-dir={}".format(self.hived_data_dir)]
+        hived_command = [self.hived_binary, f"--data-dir={self.hived_data_dir}"]
         hived_command.extend(self.hived_args)
 
         self.hived_process = Popen(hived_command, stdout=self.stdout_stream, stderr=self.stderr_stream)
@@ -107,7 +107,7 @@ class HiveNode(object):
             sleep(0.25)
 
 
-class HiveNodeInScreen(object):
+class HiveNodeInScreen:
     def __init__(
         self, hive_executable, working_dir, config_src_path, run_using_existing_data=False, node_is_steem=False
     ):
@@ -129,14 +129,14 @@ class HiveNodeInScreen(object):
 
         self.hive_config = self.parse_node_config_file(self.working_dir + "/config.ini")
         self.ip_address, self.port = self.hive_config["webserver-http-endpoint"][0].split(":")
-        self.ip_address = "http://{}".format(self.ip_address)
+        self.ip_address = f"http://{self.ip_address}"
         self.node_running = False
 
     def get_from_config(self, key):
         return self.hive_config.get(key, None)
 
     def get_node_url(self):
-        return "{}:{}/".format(self.ip_address, self.port)
+        return f"{self.ip_address}:{self.port}/"
 
     def is_running(self):
         return self.node_running
@@ -144,7 +144,7 @@ class HiveNodeInScreen(object):
     def parse_node_config_file(self, config_file_name):
         ret = {}
         lines = None
-        with open(config_file_name, "r") as f:
+        with open(config_file_name) as f:
             lines = f.readlines()
 
         for line in lines:
@@ -172,21 +172,21 @@ class HiveNodeInScreen(object):
         )
 
         if detect_process_by_name("hived" if not self.node_is_steem else "steemd", self.hive_executable, self.port):
-            msg = "{0} process is running on {1}:{2}. Please terminate that process and try again.".format(
+            msg = "{} process is running on {}:{}. Please terminate that process and try again.".format(
                 "hive", self.ip_address, self.port
             )
             raise ProcessLookupError(msg)
 
-        logger.info("*** START NODE at {0}:{1} in {2}".format(self.ip_address, self.port, self.working_dir))
+        logger.info(f"*** START NODE at {self.ip_address}:{self.port} in {self.working_dir}")
 
         parameters = [self.hive_executable, "-d", self.working_dir, "--advanced-benchmark"]
 
         parameters = parameters + additional_params
 
-        self.pid_file_name = "{0}/run_hive-{1}.pid".format(self.working_dir, self.port)
+        self.pid_file_name = f"{self.working_dir}/run_hive-{self.port}.pid"
         current_time_str = datetime.datetime.now().strftime("%Y-%m-%d")
-        log_file_name = "{0}/{1}-{2}-{3}.log".format(self.working_dir, "hive", self.port, current_time_str)
-        screen_cfg_name = "{0}/hive_screen-{1}.cfg".format(self.working_dir, self.port)
+        log_file_name = "{}/{}-{}-{}.log".format(self.working_dir, "hive", self.port, current_time_str)
+        screen_cfg_name = f"{self.working_dir}/hive_screen-{self.port}.cfg"
 
         save_screen_cfg(screen_cfg_name, log_file_name)
         screen_params = [
@@ -197,11 +197,11 @@ class HiveNodeInScreen(object):
             "-c",
             screen_cfg_name,
             "-S",
-            "{0}-{1}-{2}".format("hive", self.port, current_time_str),
+            "{}-{}-{}".format("hive", self.port, current_time_str),
         ]
 
         parameters = screen_params + parameters
-        logger.info("Running hived with command: {0}".format(" ".join(parameters)))
+        logger.info("Running hived with command: {}".format(" ".join(parameters)))
 
         try:
             subprocess.Popen(parameters)
@@ -215,7 +215,7 @@ class HiveNodeInScreen(object):
             if not detect_process_by_name(
                 "hived" if not self.node_is_steem else "steemd", self.hive_executable, self.port
             ):
-                msg = "{0} process is not running on {1}:{2}. Please check logs.".format(
+                msg = "{} process is not running on {}:{}. Please check logs.".format(
                     "hive", self.ip_address, self.port
                 )
                 raise ProcessLookupError(msg)
@@ -224,22 +224,20 @@ class HiveNodeInScreen(object):
                 wait_for_string_in_file(log_file_name, "start listening for ws requests", None)
             else:
                 if wait_for_blocks:
-                    wait_n_blocks("{}:{}".format(self.ip_address, self.port), 5)
+                    wait_n_blocks(f"{self.ip_address}:{self.port}", 5)
                 else:
                     wait_for_string_in_file(log_file_name, "start listening for ws requests", 20.0)
             self.node_running = True
-            logger.info(
-                "Node at {0}:{1} in {2} is up and running...".format(self.ip_address, self.port, self.working_dir)
-            )
+            logger.info(f"Node at {self.ip_address}:{self.port} in {self.working_dir} is up and running...")
         except Exception as ex:
-            logger.error("Exception during hived run: {0}".format(ex))
+            logger.error(f"Exception during hived run: {ex}")
             kill_process(self.pid_file_name, "hive" if not self.node_is_steem else "steem", self.ip_address, self.port)
             self.node_running = False
 
     def stop_hive_node(self):
         from .common import kill_process
 
-        logger.info("Stopping node at {0}:{1}".format(self.ip_address, self.port))
+        logger.info(f"Stopping node at {self.ip_address}:{self.port}")
         kill_process(self.pid_file_name, "hive" if not self.node_is_steem else "steem", self.ip_address, self.port)
         self.node_running = False
 
@@ -308,7 +306,7 @@ if __name__ == "__main__":
                 while KEEP_GOING:
                     sleep(1)
         except Exception as ex:
-            logger.exception("Exception: {}".format(ex))
+            logger.exception(f"Exception: {ex}")
             sys.exit(1)
 
     main()

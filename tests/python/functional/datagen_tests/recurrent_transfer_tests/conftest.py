@@ -1,6 +1,5 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -13,8 +12,8 @@ def replayed_node() -> ReplayedNodeMaker:
     def _replayed_node(
         block_log_directory: Path,
         *,
-        absolute_start_time: Optional[datetime] = None,
-        time_multiplier: Optional[float] = None,
+        absolute_start_time: datetime | None = None,
+        time_multiplier: float | None = None,
         timeout: float = tt.InitNode.DEFAULT_WAIT_FOR_LIVE_TIMEOUT,
     ) -> tt.InitNode:
         if absolute_start_time is None:

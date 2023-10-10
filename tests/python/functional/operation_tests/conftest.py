@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import pytest
 
@@ -130,9 +130,9 @@ class UpdateAccount(Account):
         self,
         *,
         new_json_meta: str = None,
-        new_owner: Union[str, list] = None,
-        new_active: Union[str, list] = None,
-        new_posting: Union[str, list] = None,
+        new_owner: str | list = None,
+        new_active: str | list = None,
+        new_posting: str | list = None,
         new_memo: str = None,
     ):
         # for owner/active/posting argument method accepts both the authority (list - [key, weight]) and key as string
@@ -184,7 +184,7 @@ class UpdateAccount(Account):
         )
 
     def update_single_account_detail(
-        self, *, json_meta: str = None, key_type: str = None, key: tt.PublicKey = None, weight: Optional[int] = 1
+        self, *, json_meta: str = None, key_type: str = None, key: tt.PublicKey = None, weight: int | None = 1
     ):
         """
         Swapping only one key owner/active/posting require firstly adding new key and then deleting old one

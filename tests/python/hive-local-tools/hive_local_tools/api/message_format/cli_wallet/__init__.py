@@ -6,7 +6,7 @@ from hive_local_tools.api import read_from_json_pattern, write_to_json_pattern
 
 
 def __read_from_text_pattern(directory: Path, method_name: str) -> str:
-    with open(f"{directory}/{method_name}.pat.txt", "r") as text_file:
+    with open(f"{directory}/{method_name}.pat.txt") as text_file:
         return text_file.read()
 
 

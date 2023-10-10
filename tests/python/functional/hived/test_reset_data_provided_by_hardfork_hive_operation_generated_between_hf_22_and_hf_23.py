@@ -1,6 +1,5 @@
 import operator
 import time
-from typing import Dict, List, Union
 
 import pytest
 
@@ -68,7 +67,7 @@ def __wait_for_hardfork_23_application(node: tt.InitNode, timeout: int = 60) -> 
             raise TimeoutError("hardfork 23 was not applied within expected time")
 
 
-def assert_account_resources(node: tt.InitNode, account_name: str, relate: Union[operator.eq, operator.gt]) -> None:
+def assert_account_resources(node: tt.InitNode, account_name: str, relate: operator.eq | operator.gt) -> None:
     """
     Depending on the given operator (param: relate), checks whether there are funds on the account (operator: gt)
     or the account does not have funds (operator: eq).
@@ -83,7 +82,7 @@ def assert_account_resources(node: tt.InitNode, account_name: str, relate: Union
             assert relate(asset.as_nai(), tt.Asset.Tbd(0))
 
 
-def __get_resources_from_account(node: tt.InitNode, account_name: str) -> Dict:
+def __get_resources_from_account(node: tt.InitNode, account_name: str) -> dict:
     account = node.api.wallet_bridge.get_account(account_name)
     return {
         "balance": account["balance"],
@@ -93,7 +92,7 @@ def __get_resources_from_account(node: tt.InitNode, account_name: str) -> Dict:
 
 
 def assert_cleared_resources_in_hardfork_hive_operation(node: tt.InitNode, account_name: str) -> None:
-    hardfork_hive_virtual_operations: List = [
+    hardfork_hive_virtual_operations: list = [
         op[1]["op"]["value"]
         for op in node.api.account_history.get_account_history(
             account=account_name,

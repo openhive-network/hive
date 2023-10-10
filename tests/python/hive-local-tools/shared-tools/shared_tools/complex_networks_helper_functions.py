@@ -1,5 +1,4 @@
 import re
-from typing import List
 
 import test_tools as tt
 
@@ -128,7 +127,7 @@ class NodeLog:
         self.collector.append(info(self.name, self.wallet))
 
 
-def wait(blocks, log: List[NodeLog], api_node):
+def wait(blocks, log: list[NodeLog], api_node):
     for i in range(blocks):
         for current in log:
             current.append()

@@ -2,7 +2,7 @@ import json
 
 
 def read_transaction_ids(directory: str) -> list:
-    with open(f"{directory}/transactions_ids.json", "r") as json_file:
+    with open(f"{directory}/transactions_ids.json") as json_file:
         return json.load(json_file)
 
 

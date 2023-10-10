@@ -29,7 +29,7 @@ def test_transaction(wallet):
 
     _time = datetime.datetime.utcnow()
     _before_seconds = (int)(_time.timestamp())
-    tt.logger.info("_time: {} seconds:{}...".format(_time, _before_seconds))
+    tt.logger.info(f"_time: {_time} seconds:{_before_seconds}...")
 
     response = wallet.api.transfer_to_savings("initminer", "carol", tt.Asset.Test(0.007), "plum")
 
@@ -37,7 +37,7 @@ def test_transaction(wallet):
 
     parsed_t = tt.Time.parse(_expiration)
     t_in_seconds = parsed_t.timestamp()
-    tt.logger.info("_time: {} seconds:{}...".format(_expiration, t_in_seconds))
+    tt.logger.info(f"_time: {_expiration} seconds:{t_in_seconds}...")
 
     _val = t_in_seconds - _before_seconds
     assert _val == 30 or _val == 31
@@ -46,7 +46,7 @@ def test_transaction(wallet):
 
     _time = datetime.datetime.utcnow()
     _before_seconds = (int)(_time.timestamp())
-    tt.logger.info("_time: {} seconds:{}...".format(_time, _before_seconds))
+    tt.logger.info(f"_time: {_time} seconds:{_before_seconds}...")
 
     response = wallet.api.transfer_to_savings("initminer", "carol", tt.Asset.Test(0.008), "lemon")
 
@@ -54,7 +54,7 @@ def test_transaction(wallet):
 
     parsed_t = tt.Time.parse(_expiration)
     t_in_seconds = parsed_t.timestamp()
-    tt.logger.info("_time: {} seconds:{}...".format(_expiration, t_in_seconds))
+    tt.logger.info(f"_time: {_expiration} seconds:{t_in_seconds}...")
 
     _val = t_in_seconds - _before_seconds
     assert _val == 678 or _val == 679

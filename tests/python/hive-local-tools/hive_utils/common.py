@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from __future__ import annotations
 
 import logging
@@ -13,8 +11,6 @@ from junit_xml import TestCase
 from test_tools.__private.communication import CustomJsonEncoder
 
 if TYPE_CHECKING:
-    from typing import Union
-
     import test_tools as tt
 
 
@@ -87,7 +83,7 @@ def wait_n_blocks(source_node: str, blocks: int, timeout: int = 60):
         raise TimeoutError("Timeout in waiting for blocks. Hived is not running?")
 
 
-def debug_generate_blocks(target_node: str, debug_key: Union[str, tt.PrivateKey], count: int) -> dict:
+def debug_generate_blocks(target_node: str, debug_key: str | tt.PrivateKey, count: int) -> dict:
     if count < 0:
         raise ValueError("Count must be a positive non-zero number")
     payload = {
@@ -100,7 +96,7 @@ def debug_generate_blocks(target_node: str, debug_key: Union[str, tt.PrivateKey]
 
 
 def debug_generate_blocks_until(
-    target_node: str, debug_key: Union[str, tt.PrivateKey], timestamp: str, generate_sparsely: bool = True
+    target_node: str, debug_key: str | tt.PrivateKey, timestamp: str, generate_sparsely: bool = True
 ) -> dict:
     payload = {
         "jsonrpc": "2.0",
@@ -140,7 +136,7 @@ def debug_set_hardfork(target_node: str, hardfork_id: int) -> dict:
 
 
 def debug_quick_block_skip_with_step(
-    node, debug_key: Union[str, tt.PrivateKey], blocks, block_step, safe_block_offset: int = 100
+    node, debug_key: str | tt.PrivateKey, blocks, block_step, safe_block_offset: int = 100
 ) -> None:
     currently_processed = blocks
     while currently_processed > 0:
@@ -219,7 +215,7 @@ def save_screen_cfg(cfg_file_name, log_file_path):
         log_file_path -- path to log file.
     """
     with open(cfg_file_name, "w") as cfg:
-        cfg.write("logfile {0}\n".format(log_file_path))
+        cfg.write(f"logfile {log_file_path}\n")
         cfg.write("deflog on\n")
         cfg.write("logfile flush 1\n")
 
@@ -234,7 +230,7 @@ def save_pid_file(pid_file_name, exec_name, port, start_time):
         start_time -- execution start time.
     """
     with open(pid_file_name, "w") as pid_file:
-        pid_file.write("{0}-{1}-{2}\n".format(exec_name, port, start_time))
+        pid_file.write(f"{exec_name}-{port}-{start_time}\n")
 
 
 def wait_for_string_in_file(log_file_name, string, timeout):
@@ -245,7 +241,7 @@ def wait_for_string_in_file(log_file_name, string, timeout):
         string -- sting to be found,
         timout -- block timeout in seconds, after this time exception will be raised.
     """
-    logger.info('Waiting for string "{}" in file {}'.format(string, log_file_name))
+    logger.info(f'Waiting for string "{string}" in file {log_file_name}')
     step = 1
     to_timeout = 0.0
     from os.path import exists
@@ -255,11 +251,11 @@ def wait_for_string_in_file(log_file_name, string, timeout):
         sleep(step)
         to_timeout = to_timeout + step
         if timeout is not None and to_timeout >= timeout:
-            msg = "Timeout during wait for string {0}".format(string)
+            msg = f"Timeout during wait for string {string}"
             logger.error(msg)
             raise TimeoutError(msg)
         if exists(log_file_name):
-            with open(log_file_name, "r") as log_file:
+            with open(log_file_name) as log_file:
                 leave = False
                 for line in log_file.readlines():
                     if string in line:
@@ -278,7 +274,7 @@ def get_last_line_of_file(file_name):
     last_line = ""
     from os import SEEK_CUR, SEEK_END
 
-    with open(file_name, "r") as f:
+    with open(file_name) as f:
         f.seek(-2, SEEK_END)
         while f.read(1) != b"\n":
             f.seek(-2, SEEK_CUR)
@@ -295,14 +291,14 @@ def kill_process(pid_file_name, proc_name, ip_address, port):
         ip_address -- executable ip address,
         port -- executable port number.
     """
-    logger.info("Terminating {0} process running on port {1}".format(proc_name, port))
+    logger.info(f"Terminating {proc_name} process running on port {port}")
     pids = []
     pid_name = None
     try:
         from os import kill, popen, remove
         from os.path import exists
 
-        with open(pid_file_name, "r") as pid_file:
+        with open(pid_file_name) as pid_file:
             pid_name = pid_file.readline()
             pid_name = pid_name.strip()
         if pid_name is not None:
@@ -311,7 +307,7 @@ def kill_process(pid_file_name, proc_name, ip_address, port):
                     line = line.strip().split()
                     pids.append(line[0])
             for pid in pids:
-                for line in popen("ps --no-header --ppid {0}".format(pid)):
+                for line in popen(f"ps --no-header --ppid {pid}"):
                     line = line.strip().split()
                     kill(int(line[0]), 2)
                 kill(int(pid), 2)
@@ -319,9 +315,9 @@ def kill_process(pid_file_name, proc_name, ip_address, port):
                 remove(pid_file_name)
             logger.info("Done...")
         else:
-            logger.warning("No such process: {0}".format(pid_name))
+            logger.warning(f"No such process: {pid_name}")
     except Exception as ex:
-        logger.error("Process {0} cannot be killed. Reason: {1}".format(proc_name, ex))
+        logger.error(f"Process {proc_name} cannot be killed. Reason: {ex}")
 
 
 def detect_process_by_name(proc_name, exec_path, port):
@@ -349,7 +345,7 @@ BLOCK_TYPE_IRREVERSIBLE = "within_irreversible_block"
 
 
 def block_until_transaction_in_block(node_url, transaction_id, block_type=BLOCK_TYPE_HEADBLOCK, timeout=60.0):
-    logger.info("Block until transaction_id: {0} is {1}".format(transaction_id, block_type))
+    logger.info(f"Block until transaction_id: {transaction_id} is {block_type}")
     from time import sleep
 
     from requests import post
@@ -358,7 +354,7 @@ def block_until_transaction_in_block(node_url, transaction_id, block_type=BLOCK_
     timeout_cnt = 0.0
     while True:
         query = {
-            "id": "{}".format(get_random_id()),
+            "id": f"{get_random_id()}",
             "jsonrpc": "2.0",
             "method": "transaction_status_api.find_transaction",
             "params": {"transaction_id": transaction_id},
@@ -368,9 +364,9 @@ def block_until_transaction_in_block(node_url, transaction_id, block_type=BLOCK_
         transaction_status = response.get("status", None)
         if transaction_status is not None:
             if transaction_status == block_type:
-                logger.info("Transaction id: {0} is {1}".format(transaction_id, block_type))
+                logger.info(f"Transaction id: {transaction_id} is {block_type}")
                 return
-            logger.info("Transaction id: {0} not {1}".format(transaction_id, block_type))
+            logger.info(f"Transaction id: {transaction_id} not {block_type}")
         sleep(step)
         timeout_cnt = timeout_cnt + step
         if timeout_cnt > timeout:

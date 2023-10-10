@@ -1,5 +1,3 @@
-from typing import List
-
 import pytest
 from beem import Hive
 
@@ -23,7 +21,7 @@ def skeleton_key(request):
 
 @pytest.fixture
 def node_client(node, worker_id) -> NodeClientMaker:
-    def _node_client(accounts: List[dict] = None) -> Hive:
+    def _node_client(accounts: list[dict] = None) -> Hive:
         accounts = accounts or []
 
         keys = node.config.private_key.copy()

@@ -1,5 +1,3 @@
-from typing import List
-
 import test_tools as tt
 
 
@@ -45,7 +43,7 @@ def prepare_proposals(wallet, accounts):
             )
 
 
-def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: List[str]) -> tt.InitNode:
+def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: list[str]) -> tt.InitNode:
     for name in witnesses_names:
         witness = tt.Account(name)
         node.config.witness.append(witness.name)

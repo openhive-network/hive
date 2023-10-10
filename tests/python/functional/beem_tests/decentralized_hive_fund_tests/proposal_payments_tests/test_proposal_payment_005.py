@@ -131,7 +131,7 @@ def test_proposal_payment_005(node_client: NodeClientMaker):  # noqa: C901
     # move forward in time to see if proposals are paid
     # moving is made in 1h increments at a time, after each
     # increment balance is printed and checked
-    tt.logger.info("Moving to date: {}".format(test_start_date_iso))
+    tt.logger.info(f"Moving to date: {test_start_date_iso}")
     hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, pre_test_start_date_iso, False)
     previous_balances = dict(zip(account_names, test_utils.print_balance(node_client, accounts)))
     hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_start_date_iso, False)
@@ -142,10 +142,10 @@ def test_proposal_payment_005(node_client: NodeClientMaker):  # noqa: C901
         current_date = current_date + datetime.timedelta(hours=1)
         current_date_iso = test_utils.date_to_iso(current_date)
 
-        tt.logger.info("Moving to date: {}".format(current_date_iso))
+        tt.logger.info(f"Moving to date: {current_date_iso}")
         budget = test_utils.calculate_propsal_budget(node_client, TREASURY, wif)
 
-        tt.logger.info("Balances for accounts at time: {}".format(current_date_iso))
+        tt.logger.info(f"Balances for accounts at time: {current_date_iso}")
         accnts = dict(zip(account_names, test_utils.print_balance(node_client, accounts)))
 
         for acc, ret in accnts.items():
@@ -160,9 +160,9 @@ def test_proposal_payment_005(node_client: NodeClientMaker):  # noqa: C901
         previous_balances = accnts
 
     # move additional hour to ensure that all proposals ended
-    tt.logger.info("Moving to date: {}".format(test_end_date_iso))
+    tt.logger.info(f"Moving to date: {test_end_date_iso}")
     hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_end_date_iso, False)
-    tt.logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
+    tt.logger.info(f"Balances for accounts at time: {test_end_date_iso}")
     balances = dict(zip(account_names, test_utils.print_balance(node_client, accounts)))
     test_balances = previous_balances
 
