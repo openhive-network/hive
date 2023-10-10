@@ -64,7 +64,10 @@ namespace hive { namespace chain {
       ~block_log();
 
       void open( const fc::path& file, bool read_only = false, bool auto_open_artifacts = true );
-
+      void open_and_init( const fc::path& file,
+                          bool enable_compression,
+                          int compression_level,
+                          bool enable_block_log_auto_fixing );
       void close();
       bool is_open()const;
 
@@ -88,9 +91,6 @@ namespace hive { namespace chain {
       std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> read_raw_head_block() const;
       std::shared_ptr<full_block_type> read_head() const;
       std::shared_ptr<full_block_type> head() const;
-      void set_compression(bool enabled);
-      void set_auto_fixing_enabled(bool enabled);
-      void set_compression_level(int level);
 
       static std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd(const char* uncompressed_block_data, size_t uncompressed_block_size, std::optional<uint8_t> dictionary_number, 
                                                                              fc::optional<int> compression_level = fc::optional<int>(), 

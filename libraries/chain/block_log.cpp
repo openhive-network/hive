@@ -510,19 +510,13 @@ namespace hive { namespace chain {
     return my->head;
   }
 
-  void block_log::set_compression(bool enabled)
+  void block_log::open_and_init( const fc::path& file, bool enable_compression,
+    int compression_level, bool enable_block_log_auto_fixing )
   {
-    my->compression_enabled = enabled;
-  }
-
-  void block_log::set_auto_fixing_enabled(bool enabled)
-  {
-    my->auto_fixing_enabled = enabled;
-  }
-
-  void block_log::set_compression_level(int level)
-  {
-    my->zstd_level = level;
+    my->auto_fixing_enabled = enable_block_log_auto_fixing;
+    open( file );
+    my->compression_enabled = enable_compression;
+    my->zstd_level = compression_level;
   }
 
   std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd_helper(const char* uncompressed_block_data, 
