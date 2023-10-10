@@ -59,6 +59,7 @@ select = [  # https://docs.astral.sh/ruff/rules/
     "UP",
     "YTT",
     "ASYNC",
+#    "BLE",  # TODO: Consider enabling this
 ]
 ignore = [
     "E501", # line too long, handled by black
