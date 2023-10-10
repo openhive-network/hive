@@ -20,7 +20,7 @@ UINT64_MAX = 2**64 - 1
         (0, True),  # returns an empty response, blocks are numbered from 1
         (UINT64_MAX, True),
         # Valid only_virtual
-        (1, True),  # virtual operations given as bool is converted to number (True:1, False:0)
+        # (1, True),  # tested above; virtual operations given as bool is converted to number (True:1, False:0)
         (1, False),
         (1, None),  # None is converted to 0
         (1, 0),  # virtual_operation as number is converted to bool

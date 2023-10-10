@@ -17,14 +17,14 @@ from hive_local_tools import run_for
         (None, True, True),  # block number given as None is converted to 0
         (0, True, True),  # returns an empty response, blocks are numbered from 1
         # Valid virtual operations
-        (1, True, True),  # virtual operations given as bool is converted to number (True:1, False:0)
+        # (1, True, True),  # tested above; virtual operations given as bool is converted to number (True:1, False:0)
         (1, False, True),
         (1, None, True),  # None is converted to 0
         (1, 0, True),  # virtual_operation as number is converted to bool
         (1, 1, True),
         (1, 2, True),
         # Valid include reversible
-        (1, True, True),
+        # (1, True, True), # tested above
         (1, True, False),
         (1, True, "true"),
         (1, True, "false"),
