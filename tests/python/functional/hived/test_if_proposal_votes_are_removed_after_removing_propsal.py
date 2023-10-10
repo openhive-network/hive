@@ -62,6 +62,6 @@ def sort_votes_by_username(list_of_votes):
         if proposal_vote["voter"] not in ordered_proposal_votes:
             ordered_proposal_votes[proposal_vote["voter"]] = proposal_vote
         else:
-            raise Exception("Duplicate proposal vote")
+            raise Exception("Duplicate proposal vote")  # noqa: TRY002
 
     return ordered_proposal_votes

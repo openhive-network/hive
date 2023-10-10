@@ -64,7 +64,7 @@ class HiveNode:
         sleep(5)
 
         if self.hived_process.returncode:
-            raise Exception("Error during starting node")
+            raise Exception("Error during starting node")  # noqa: TRY002
 
         self.last_returncode = None
 
@@ -90,7 +90,7 @@ class HiveNode:
                     sleep(7)
                     self.hived_process.poll()
                     if pid_exists(self.hived_process.pid):
-                        raise Exception("Error during stopping node. Manual intervention required.")
+                        raise Exception("Error during stopping node. Manual intervention required.")  # noqa: TRY002
         self.last_returncode = self.hived_process.returncode
         self.hived_process = None
         self.hived_lock.release()
@@ -222,7 +222,7 @@ class HiveNodeInScreen:
                 msg = "{} process is not running on {}:{}. Please check logs.".format(
                     "hive", self.ip_address, self.port
                 )
-                raise ProcessLookupError(msg)
+                raise ProcessLookupError(msg)  # noqa: TRY301
 
             if "--replay-blockchain" in parameters:
                 wait_for_string_in_file(log_file_name, "start listening for ws requests", None)
@@ -309,8 +309,8 @@ if __name__ == "__main__":
                 )
                 while KEEP_GOING:
                     sleep(1)
-        except Exception as ex:
-            logger.exception(f"Exception: {ex}")
+        except Exception:
+            logger.exception("Exception occurred")
             sys.exit(1)
 
     main()

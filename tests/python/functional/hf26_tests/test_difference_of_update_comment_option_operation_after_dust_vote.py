@@ -70,6 +70,6 @@ def is_dust_vote_ignored(wallet):
 
     try:
         wallet.api.sign_transaction(transaction_containing_comment_option_operation)
-        return True
     except tt.exceptions.CommunicationError:
         return False
+    return True

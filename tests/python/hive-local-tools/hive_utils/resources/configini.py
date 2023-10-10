@@ -103,22 +103,12 @@ def validate_address(val: str) -> bool:
         assert port >= 0
         assert port < 0xFFFF
 
-        def validate_ip(ip: list):
-            addr = ip.split(".")
-            assert len(ip) == 4
-            for part in addr:
-                x = int(part)
-                assert x >= 0
-                assert x <= 255
-
         try:
             validate_address(address)
         except Exception:
             from socket import gethostbyname as get_ip
 
             validate_address(get_ip(address))
-
-        return True
-
     except Exception:
         return False
+    return True

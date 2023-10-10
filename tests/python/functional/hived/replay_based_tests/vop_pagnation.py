@@ -82,7 +82,7 @@ def get_vops(range_begin: int, range_end: int, start_from_id: int, limit: int) -
     ret = post(f"http://{config.webserver_http_endpoint}", data=dumps(data))
     if ret.status_code == 200:
         return ret.json()["result"]
-    raise Exception("bad request")
+    raise Exception("bad request")  # noqa: TRY002
 
 
 # checks is there anythink more to get
