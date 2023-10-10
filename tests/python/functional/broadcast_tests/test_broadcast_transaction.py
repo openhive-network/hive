@@ -23,7 +23,7 @@ def test_broadcast_account_creating_with_correct_values(node, wallet, max_block_
 
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_broadcast_account_creating_with_incorrect_value(node, wallet):
-    with pytest.raises(tt.exceptions.CommunicationError):
+    with pytest.raises(tt.exceptions.CommunicationError):  # noqa: PT012
         for i in range(6):
             transaction = wallet.api.create_account("initminer", f"alice{i}", "{}", broadcast=False)
             node.api.network_broadcast.broadcast_transaction(trx=transaction, max_block_age=0)

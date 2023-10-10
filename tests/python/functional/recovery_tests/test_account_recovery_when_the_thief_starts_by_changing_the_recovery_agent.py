@@ -78,12 +78,13 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_0(prep
 
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD // 2)
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
-        # thief tries to recover "alice" account
-        thief_account_key = tt.Account("thief").public_key
-        thief_authority = get_authority(thief_account_key)
+    # thief tries to recover "alice" account
+    thief_account_key = tt.Account("thief").public_key
+    thief_authority = get_authority(thief_account_key)
 
+    with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_thief.api.request_account_recovery("thief", "alice", thief_authority)
+
     assert (
         "Cannot recover an account that does not have you as their recovery partner."
         in exception.value.response["error"]["message"]
@@ -416,12 +417,13 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_4(prep
     assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"])["requests"]) == 0
     assert get_recovery_agent(node, account_name="alice") == "alice.agent"
 
-    with pytest.raises(tt.exceptions.CommunicationError) as exception:
-        # thief tries to recover "alice" account
-        thief_account_key = tt.Account("thief").public_key
-        thief_authority = get_authority(thief_account_key)
+    # thief tries to recover "alice" account
+    thief_account_key = tt.Account("thief").public_key
+    thief_authority = get_authority(thief_account_key)
 
+    with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_thief.api.request_account_recovery("thief", "alice", thief_authority)
+
     assert (
         "Cannot recover an account that does not have you as their recovery partner."
         in exception.value.response["error"]["message"]
