@@ -105,7 +105,9 @@ class PowerDown(Operation):
         self._node.wait_for_irreversible_block()
         assert self._node.get_head_block_time() >= self._tranche_schedule[-1]
 
-    def assert_virtual_operation_fill_vesting_withdraw_operation_was_generated(self, start_block: int = None) -> None:
+    def assert_virtual_operation_fill_vesting_withdraw_operation_was_generated(
+        self, start_block: int | None = None
+    ) -> None:
         week = 13 - self._remaining_executions
         assert (
             len(get_virtual_operations(self._node, "fill_vesting_withdraw_operation", start_block=start_block)) == week

@@ -220,7 +220,7 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.Test, price: float, toleran
 
 
 def get_virtual_operations(
-    node: tt.InitNode, vop: str, skip_price_stabilization: bool = True, start_block: int = None
+    node: tt.InitNode, vop: str, skip_price_stabilization: bool = True, start_block: int | None = None
 ) -> list:
     """
     :param vop: name of the virtual operation,

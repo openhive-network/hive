@@ -306,8 +306,8 @@ def allow_generate_block_log() -> bool:
 
 def run_whole_network(
     architecture: networks.NetworksArchitecture,
-    block_log_directory_name: Path = None,
-    time_offsets: Iterable[int] = None,
+    block_log_directory_name: Path | None = None,
+    time_offsets: Iterable[int] | None = None,
     preparer: NodesPreparer = None,
 ) -> tuple[networks.NetworksBuilder, Any]:
     builder = generate_or_launch(architecture, block_log_directory_name, time_offsets, preparer)
@@ -321,8 +321,8 @@ def run_whole_network(
 
 def prepare_network(
     architecture: networks.NetworksArchitecture,
-    block_log_directory_name: Path = None,
-    time_offsets: Iterable[int] = None,
+    block_log_directory_name: Path | None = None,
+    time_offsets: Iterable[int] | None = None,
 ) -> networks.NetworksBuilder:
     return run_whole_network(architecture, block_log_directory_name, time_offsets)
 

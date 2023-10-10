@@ -7,5 +7,5 @@ if TYPE_CHECKING:
 
 
 class NodeClientMaker(Protocol):
-    def __call__(self, accounts: list[dict] = None) -> Hive:
+    def __call__(self, accounts: list[dict] | None = None) -> Hive:
         pass

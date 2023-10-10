@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from test_tools.__private.scope.scope_fixtures import *  # noqa: F401, F403
+from test_tools.__private.scope.scope_fixtures import *  # noqa: F403
 
 
 def pytest_addoption(parser):

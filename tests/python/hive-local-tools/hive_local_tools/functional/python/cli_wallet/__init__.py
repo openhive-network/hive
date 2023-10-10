@@ -45,7 +45,7 @@ class PreparedProposalData:
 
 
 class PreparedProposalDataWithId(PreparedProposalData):
-    def __init__(self, base: PreparedProposalData, id: int = None):
+    def __init__(self, base: PreparedProposalData, id: int | None = None):
         super().__init__()
         self.id: int = id
         self.permlink = base.permlink
