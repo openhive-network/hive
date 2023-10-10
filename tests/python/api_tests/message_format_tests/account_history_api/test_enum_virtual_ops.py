@@ -21,7 +21,7 @@ from hive_local_tools import run_for
         ("1", "100", True),
         (1.1, "100", True),
         # Valid group_by_block values
-        (1, 100, True),
+        # (1, 100, True), # tested above
         (1, 100, False),
         (1, 100, "true"),
         (1, 100, "false"),
