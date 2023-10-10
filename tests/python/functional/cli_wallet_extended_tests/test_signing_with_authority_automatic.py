@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 import test_tools as tt
 
 
@@ -53,10 +55,6 @@ def test_signing_with_authority(node):
     tt.logger.info("successfully signed and broadcasted transactions with account authority")
 
     # assert siging with authority does not work when dependency is to deep
-    try:
-        tt.logger.info("try signing with authority to deep in dependency tree")
+    tt.logger.info("try signing with authority to deep in dependency tree")
+    with pytest.raises(tt.exceptions.CommunicationError, match="Missing Active Authority"):
         wallet3.api.transfer(alice.name, "initminer", "0.001 TESTS", "this will NOT work")
-        raise AssertionError()
-    except tt.exceptions.CommunicationError as e:
-        assert "Missing Active Authority" in str(e)
-        tt.logger.info("couldn't sign transaction with invalid authority")
