@@ -53,7 +53,10 @@ struct blockchain_worker_thread_pool::impl
 
   appbase::application& theApp;
 
-  impl( appbase::application& app );
+  using enqueue_work_type = std::function<void(const std::vector<std::shared_ptr<full_transaction_type>>&, data_source_type, std::optional<uint32_t>)>;
+  enqueue_work_type enqueue_work;
+
+  impl( appbase::application& app, enqueue_work_type&& enqueue_work );
 
   bool allow_enqueue_work() const;
   bool is_running() const;
@@ -65,7 +68,7 @@ struct blockchain_worker_thread_pool::impl
   void thread_function();
 };
 
-blockchain_worker_thread_pool::impl::impl( appbase::application& app ): theApp( app )
+blockchain_worker_thread_pool::impl::impl( appbase::application& app, enqueue_work_type&& enqueue_work ): theApp( app )
 {
 
 }
@@ -116,7 +119,8 @@ void blockchain_worker_thread_pool::impl::thread_function()
 
 //std::shared_ptr<std::thread> fill_queue_thread = std::make_shared<std::thread>([&](){ fill_pending_queue(input_block_log_path / "block_log"); });
 blockchain_worker_thread_pool::blockchain_worker_thread_pool( appbase::application& app ) :
-  my(std::make_unique<impl>( app ))
+  my(std::make_unique<impl>( app, [this]( const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source,
+                                                 std::optional<uint32_t> block_number ){ this->enqueue_work( full_transactions, data_source, block_number ); } ))
 {
   lazy_init();
 }
@@ -169,9 +173,10 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
         full_block->decode_block();
 
         // now we have the full_transactions, get started working on them
-        blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block->get_full_transactions(), 
-                                                                   blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p,
-                                                                   full_block->get_block_num());
+        FC_ASSERT( enqueue_work );
+        enqueue_work(full_block->get_full_transactions(),
+                      blockchain_worker_thread_pool::data_source_type::transaction_inside_block_received_from_p2p,
+                      full_block->get_block_num());
         // precompute some stuff we'll need for validating the block
         full_block->compute_signing_key();
         full_block->compute_merkle_root();
@@ -219,9 +224,10 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
         if (validate_during_replay)
         {
           // now we have the full_transactions, get started working on them
-          blockchain_worker_thread_pool::get_instance( theApp ).enqueue_work(full_block->get_full_transactions(), 
-                                                                     blockchain_worker_thread_pool::data_source_type::transaction_inside_block_for_replay,
-                                                                     full_block->get_block_num());
+          FC_ASSERT( enqueue_work );
+          enqueue_work(full_block->get_full_transactions(),
+            blockchain_worker_thread_pool::data_source_type::transaction_inside_block_for_replay,
+            full_block->get_block_num());
           full_block->compute_signing_key();
           full_block->compute_merkle_root();
         }
