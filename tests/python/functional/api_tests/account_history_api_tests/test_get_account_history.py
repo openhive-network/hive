@@ -16,10 +16,10 @@ def test_get_empty_history(node):
 
 @pytest.mark.parametrize(
     "include_reversible",
-    (
+    [
         True,
         False,
-    ),
+    ],
 )
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_check_for_newly_created_history_operations(node, include_reversible):
@@ -41,7 +41,7 @@ def test_filter_only_transfer_ops(node):
     assert len(response["history"]) == 1
 
 
-@pytest.mark.parametrize("step", (1, 2, 4, 8, 16, 32, 64))
+@pytest.mark.parametrize("step", [1, 2, 4, 8, 16, 32, 64])
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_pagination(node: tt.InitNode, step: int):
     amount_of_transfers = 59

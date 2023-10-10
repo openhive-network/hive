@@ -10,10 +10,10 @@ from hive_local_tools import run_for
 
 @pytest.mark.parametrize(
     "include_reversible",
-    (
+    [
         True,
         False,
-    ),
+    ],
 )
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_get_transaction_in_reversible_block(node, include_reversible):
@@ -31,19 +31,19 @@ def test_get_transaction_in_reversible_block(node, include_reversible):
 
 @pytest.mark.parametrize(
     "incorrect_id",
-    (
+    [
         # too short hex, correct hex but unknown transaction, too long hex
         "123",
         "1000000000000000000000000000000000000000",
         "10000000000000000000000000000000000000001",
-    ),
+    ],
 )
 @pytest.mark.parametrize(
     "include_reversible",
-    (
+    [
         False,
         True,
-    ),
+    ],
 )
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_wrong_transaction_id(node, incorrect_id, include_reversible):

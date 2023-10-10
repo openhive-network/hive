@@ -11,7 +11,7 @@ def test_default_args_value(node):
     node.api.account_history.get_ops_in_block()
 
 
-@pytest.mark.parametrize(("only_virtual", "number_of_ops"), ((False, 3), (True, 2)))
+@pytest.mark.parametrize(("only_virtual", "number_of_ops"), [(False, 3), (True, 2)])
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_filter_virtual_ops(node, only_virtual, number_of_ops):
     wallet = tt.Wallet(attach_to=node)
@@ -22,7 +22,7 @@ def test_filter_virtual_ops(node, only_virtual, number_of_ops):
     assert len(response["ops"]) == number_of_ops
 
 
-@pytest.mark.parametrize(("include_reversible", "comparison_type"), ((False, "__eq__"), (True, "__gt__")))
+@pytest.mark.parametrize(("include_reversible", "comparison_type"), [(False, "__eq__"), (True, "__gt__")])
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_get_operations_in_block_with_and_without_reversible(node, include_reversible, comparison_type):
     response = node.api.account_history.get_ops_in_block(
