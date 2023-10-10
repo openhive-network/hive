@@ -117,7 +117,7 @@ void open_test_database( database& db, sync_block_writer& sbw,
             args.block_log_compression_level,
             args.enable_block_log_auto_fixing,
             thread_pool );
-  db.open( args, thread_pool );
+  db.open( args );
 }
 
 #define SET_UP_DATABASE( NAME, APP, DATA_DIR_PATH, LOG_HARDFORKS ) \

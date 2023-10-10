@@ -117,10 +117,15 @@ void blockchain_worker_thread_pool::impl::thread_function()
   }
 }
 
+void blockchain_worker_thread_pool::impl_deleter::operator()(blockchain_worker_thread_pool::impl* ptr) const
+{
+  delete ptr;
+}
+
 //std::shared_ptr<std::thread> fill_queue_thread = std::make_shared<std::thread>([&](){ fill_pending_queue(input_block_log_path / "block_log"); });
 blockchain_worker_thread_pool::blockchain_worker_thread_pool( appbase::application& app ) :
-  my(std::make_unique<impl>( app, [this]( const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source,
-                                                 std::optional<uint32_t> block_number ){ this->enqueue_work( full_transactions, data_source, block_number ); } ))
+  my(std::unique_ptr<impl, impl_deleter>( new impl( app, [this]( const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source,
+                                                 std::optional<uint32_t> block_number ){ this->enqueue_work( full_transactions, data_source, block_number ); } ) ) )
 {
   lazy_init();
 }
@@ -508,13 +513,6 @@ void blockchain_worker_thread_pool::shutdown()
 /* static */ void blockchain_worker_thread_pool::set_thread_pool_size(uint32_t new_thread_pool_size)
 {
   thread_pool_size = new_thread_pool_size;
-}
-
-/* static */ blockchain_worker_thread_pool& blockchain_worker_thread_pool::get_instance( appbase::application& app )
-{
-  static blockchain_worker_thread_pool thread_pool( app );
-  thread_pool.lazy_init();
-  return thread_pool;
 }
 
 } } // end namespace hive::chain

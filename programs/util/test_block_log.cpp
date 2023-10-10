@@ -21,7 +21,7 @@ int main( int argc, char** argv, char** envp )
   try
   {
     appbase::application theApp;
-    hive::chain::blockchain_worker_thread_pool& thread_pool = hive::chain::blockchain_worker_thread_pool::get_instance( theApp );
+    hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( theApp );
     //hive::chain::database db;
     hive::chain::block_log log( theApp );
 

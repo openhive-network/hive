@@ -736,7 +736,7 @@ void chain_plugin_impl::open()
                                 db_open_args.block_log_compression_level,
                                 db_open_args.enable_block_log_auto_fixing,
                                 thread_pool );
-    db.open( db_open_args, thread_pool );
+    db.open( db_open_args );
 
     if( dump_memory_details )
     {

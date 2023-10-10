@@ -117,6 +117,9 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
       BOOST_REQUIRE( db );
       db->_log_hardforks = false;
 
+      thread_pool = &chain.get_thread_pool();
+      BOOST_REQUIRE( thread_pool );
+
       // Load configuration file into logging config structure, used to create loggers & appenders.
       // Store the structure for further examination (in tests).
       _logging_config = app.load_logging_config();

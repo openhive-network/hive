@@ -40,7 +40,7 @@ int main(int argc, char** argv)
   try
   {
     appbase::application theApp;
-    hive::chain::blockchain_worker_thread_pool& thread_pool = hive::chain::blockchain_worker_thread_pool::get_instance( theApp );
+    hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( theApp );
 
     boost::program_options::options_description options("Allowed options");
     options.add_options()("input-block-log,i", boost::program_options::value<std::string>()->required(), "The path pointing the input block log file");

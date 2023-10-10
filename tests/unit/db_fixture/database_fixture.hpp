@@ -261,9 +261,9 @@ struct database_fixture {
   bool skip_key_index_test = false;
 
   appbase::application theApp;
-  hive::chain::blockchain_worker_thread_pool& thread_pool;
+  hive::chain::blockchain_worker_thread_pool* thread_pool = nullptr;
 
-  database_fixture();
+  database_fixture() {}
   virtual ~database_fixture() {}
 
   static fc::ecc::private_key generate_private_key( string seed = "init_key" );

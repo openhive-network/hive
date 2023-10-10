@@ -31,10 +31,18 @@ class blockchain_worker_thread_pool
 public:
   struct impl;
 private:
-  blockchain_worker_thread_pool( appbase::application& app );
+  class impl_deleter
+  {
+  public:
+    void operator()(blockchain_worker_thread_pool::impl* ptr) const;
+  };
+
   void lazy_init();
-  std::unique_ptr<impl> my;
-public: 
+  std::unique_ptr<impl, impl_deleter> my;
+public:
+
+  blockchain_worker_thread_pool( appbase::application& app );
+
   // when we process a block/transaction, we need to know where it came from in
   // order to know what processing it needs.  e.g., transactions that arrived
   // in blocks usually won't have their signatures validated, while stand-alone
@@ -66,7 +74,6 @@ public:
 
   void shutdown();
   static void set_thread_pool_size(uint32_t thread_pool_size);
-  static blockchain_worker_thread_pool& get_instance( appbase::application& app );
 };
 
 } } // end namespace hive::chain
