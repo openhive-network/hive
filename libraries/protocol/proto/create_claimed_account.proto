@@ -29,5 +29,5 @@ message create_claimed_account {
   required authority         posting = 5;
   required string            memo_key = 6 [json_name = "memo_key"];
   required string            json_metadata = 7 [json_name = "json_metadata"];
-  required future_extensions extensions = 8;
+  repeated future_extensions extensions = 8;
 }
