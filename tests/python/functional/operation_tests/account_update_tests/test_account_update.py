@@ -15,22 +15,27 @@ from hive_local_tools.functional.python.operation import get_transaction_timesta
         ("owner", "__gt__"),
     ],
 )
-def test_update_account_owner_authority(alice, authority_type, comparison_type):
+# When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
+@pytest.mark.parametrize("use_account_update2", [(True, False)])
+def test_update_account_owner_authority(alice, authority_type, comparison_type, use_account_update2):
     """
-    Test cases 1, 2 and 3 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
+    Test cases 1, 2 and 3 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519 and
+    https://gitlab.syncad.com/hive/hive/-/issues/520
     """
     alice.use_authority(authority_type)
     new_auth = alice.generate_new_authority()
     rc_before_operation = alice.get_rc_current_mana()
     if authority_type != "owner":
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
-            alice.update_account(owner=new_auth)
+            alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
         error_response = exception.value.response["error"]["message"]
         assert "Missing Owner Authority" in error_response
         assert_msg = "RC should be equal to the value before failed transaction"
     else:
-        alice.update_account(owner=new_auth)
-        assert_msg = "RC wasn't decreased after performing account_update operation"
+        alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
+        assert_msg = (
+            f"RC wasn't decreased after performing account_update{'2' if use_account_update2 else ''} operation"
+        )
         alice.assert_account_details_were_changed(new_owner=new_auth)
     rc_after_operation = alice.get_rc_current_mana()
     assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
@@ -45,22 +50,27 @@ def test_update_account_owner_authority(alice, authority_type, comparison_type):
         ("owner", "__gt__"),
     ],
 )
-def test_update_account_active_authority(alice, authority_type, comparison_type):
+# When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
+@pytest.mark.parametrize("use_account_update2", [(True, False)])
+def test_update_account_active_authority(alice, authority_type, comparison_type, use_account_update2):
     """
-    Test cases 4,5 and 6 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
+    Test cases 4,5 and 6 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519 and
+    https://gitlab.syncad.com/hive/hive/-/issues/520
     """
     alice.use_authority(authority_type)
     new_auth = alice.generate_new_authority()
     rc_before_operation = alice.get_rc_current_mana()
     if authority_type == "posting":
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
-            alice.update_account(active=new_auth)
+            alice.update_account(active=new_auth, use_account_update2=use_account_update2)
         error_response = exception.value.response["error"]["message"]
         assert "Missing Active Authority" in error_response
         assert_msg = "RC should be equal to the value before failed transaction"
     else:
-        alice.update_account(active=new_auth)
-        assert_msg = "RC wasn't decreased after performing account_update operation"
+        alice.update_account(active=new_auth, use_account_update2=use_account_update2)
+        assert_msg = (
+            f"RC wasn't decreased after performing account_update{'2' if use_account_update2 else ''} operation"
+        )
         alice.assert_account_details_were_changed(new_active=new_auth)
     rc_after_operation = alice.get_rc_current_mana()
     assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
@@ -75,22 +85,27 @@ def test_update_account_active_authority(alice, authority_type, comparison_type)
         ("owner", "__gt__"),
     ],
 )
-def test_update_account_posting_authority(alice, authority_type, comparison_type):
+# When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
+@pytest.mark.parametrize("use_account_update2", [(True, False)])
+def test_update_account_posting_authority(alice, authority_type, comparison_type, use_account_update2):
     """
-    Test cases 7,8 and 9 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
+    Test cases 7,8 and 9 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519 and
+    https://gitlab.syncad.com/hive/hive/-/issues/520
     """
     alice.use_authority(authority_type)
     new_auth = alice.generate_new_authority()
     rc_before_operation = alice.get_rc_current_mana()
     if authority_type == "posting":
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
-            alice.update_account(posting=new_auth)
+            alice.update_account(posting=new_auth, use_account_update2=use_account_update2)
         error_response = exception.value.response["error"]["message"]
         assert "Missing Active Authority" in error_response
         assert_msg = "RC should be equal to the value before failed transaction"
     else:
-        alice.update_account(posting=new_auth)
-        assert_msg = "RC wasn't decreased after performing account_update operation"
+        alice.update_account(posting=new_auth, use_account_update2=use_account_update2)
+        assert_msg = (
+            f"RC wasn't decreased after performing account_update{'2' if use_account_update2 else ''} operation"
+        )
         alice.assert_account_details_were_changed(new_posting=new_auth)
     rc_after_operation = alice.get_rc_current_mana()
     assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
@@ -105,22 +120,27 @@ def test_update_account_posting_authority(alice, authority_type, comparison_type
         ("owner", "__gt__"),
     ],
 )
-def test_update_account_memo_key(alice, authority_type, comparison_type):
+# When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
+@pytest.mark.parametrize("use_account_update2", [(True, False)])
+def test_update_account_memo_key(alice, authority_type, comparison_type, use_account_update2):
     """
-    Test cases 10, 11 and 12 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
+    Test cases 10, 11 and 12 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519 and
+    https://gitlab.syncad.com/hive/hive/-/issues/520
     """
     alice.use_authority(authority_type)
     new_key = alice.generate_new_key()
     rc_before_operation = alice.get_rc_current_mana()
     if authority_type == "posting":
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
-            alice.update_account(memo_key=new_key)
+            alice.update_account(memo_key=new_key, use_account_update2=use_account_update2)
         error_response = exception.value.response["error"]["message"]
         assert "Missing Active Authority" in error_response
         assert_msg = "RC should be equal to the value before failed transaction"
     else:
-        alice.update_account(memo_key=new_key)
-        assert_msg = "RC wasn't decreased after performing account_update operation"
+        alice.update_account(memo_key=new_key, use_account_update2=use_account_update2)
+        assert_msg = (
+            f"RC wasn't decreased after performing account_update{'2' if use_account_update2 else ''} operation"
+        )
         alice.assert_account_details_were_changed(new_memo=new_key)
     rc_after_operation = alice.get_rc_current_mana()
     assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
@@ -135,32 +155,69 @@ def test_update_account_memo_key(alice, authority_type, comparison_type):
         ("owner", "__gt__"),
     ],
 )
-def test_update_json_metadata(alice, authority_type, comparison_type):
+# When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
+@pytest.mark.parametrize("use_account_update2", [(True, False)])
+def test_update_json_metadata(alice, authority_type, comparison_type, use_account_update2):
     """
-    Test cases 13, 14 and 15 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
+    Test cases 13, 14 and 15 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519,
+    https://gitlab.syncad.com/hive/hive/-/issues/520
     """
     alice.use_authority(authority_type)
     new_json_meta = '{"foo": "bar"}'
     rc_before_operation = alice.get_rc_current_mana()
     if authority_type == "posting":
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
-            alice.update_account(json_metadata=new_json_meta)
+            alice.update_account(json_metadata=new_json_meta, use_account_update2=use_account_update2)
         error_response = exception.value.response["error"]["message"]
         assert "Missing Active Authority" in error_response
         assert_msg = "RC should be equal to the value before failed transaction"
     else:
-        alice.update_account(json_metadata=new_json_meta)
-        assert_msg = "RC wasn't decreased after performing account_update operation"
+        alice.update_account(json_metadata=new_json_meta, use_account_update2=use_account_update2)
+        assert_msg = (
+            f"RC wasn't decreased after performing account_update{'2' if use_account_update2 else ''} operation"
+        )
         alice.assert_account_details_were_changed(new_json_meta=new_json_meta)
     rc_after_operation = alice.get_rc_current_mana()
     assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
 
 
 @pytest.mark.testnet()
-def test_update_all_account_parameters_using_owner_authority(alice):
+@pytest.mark.parametrize(
+    ("authority_type", "comparison_type"),
+    [
+        ("active", "__gt__"),
+        ("posting", "__gt__"),
+        ("owner", "__gt__"),
+    ],
+)
+def test_update_posting_json_metadata(alice, authority_type, comparison_type):
     """
-    Test case 16 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
+    Test cases 16, 17 and 18 from issue: https://gitlab.syncad.com/hive/hive/-/issues/520
     """
+    alice.use_authority(authority_type)
+    new_posting_json_meta = '{"foo": "bar"}'
+    rc_before_operation = alice.get_rc_current_mana()
+    alice.update_account(posting_json_metadata=new_posting_json_meta, use_account_update2=True)
+    assert_msg = "RC wasn't decreased after performing account_update2 operation"
+    alice.assert_account_details_were_changed(new_posting_json_meta=new_posting_json_meta)
+    rc_after_operation = alice.get_rc_current_mana()
+    assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
+
+
+@pytest.mark.testnet()
+# When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
+@pytest.mark.parametrize(
+    ("use_account_update2", "posting_json_meta", "assert_posting_json"),
+    [
+        # test case 19 from issue: https://gitlab.syncad.com/hive/hive/-/issues/520
+        (True, {"posting_json_metadata": '{"key": "value"}'}, {"new_posting_json_meta": '{"key": "value"}'}),
+        # test case 16 from issue https://gitlab.syncad.com/hive/hive/-/issues/519
+        (False, {}, {}),
+    ],
+)
+def test_update_all_account_parameters_using_owner_authority(
+    alice, use_account_update2, posting_json_meta, assert_posting_json
+):
     alice.use_authority("owner")
     new_json_meta = '{"foo": "bar"}'
     new_owner, new_active, new_posting, new_memo = (
@@ -172,7 +229,13 @@ def test_update_all_account_parameters_using_owner_authority(alice):
 
     rc_before_operation = alice.get_rc_current_mana()
     alice.update_account(
-        owner=new_owner, active=new_active, posting=new_posting, memo_key=new_memo, json_metadata=new_json_meta
+        owner=new_owner,
+        active=new_active,
+        posting=new_posting,
+        memo_key=new_memo,
+        json_metadata=new_json_meta,
+        use_account_update2=use_account_update2,
+        **posting_json_meta,
     )
 
     rc_after_operation = alice.get_rc_current_mana()
@@ -182,15 +245,25 @@ def test_update_all_account_parameters_using_owner_authority(alice):
         new_posting=new_posting,
         new_memo=new_memo,
         new_json_meta=new_json_meta,
+        **assert_posting_json,
     )
     assert rc_before_operation > rc_after_operation, "RC wasn't decreased after performing account_update operation"
 
 
 @pytest.mark.testnet()
-def test_update_all_account_parameters_except_owner_key_using_active_authority(alice):
-    """
-    Test case 17 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
-    """
+# When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
+@pytest.mark.parametrize(
+    ("use_account_update2", "posting_json_meta", "assert_posting_json"),
+    [
+        # test case 20 from issue: https://gitlab.syncad.com/hive/hive/-/issues/520
+        (True, {"posting_json_metadata": '{"key": "value"}'}, {"new_posting_json_meta": '{"key": "value"}'}),
+        # test case 17 from issue https://gitlab.syncad.com/hive/hive/-/issues/519
+        (False, {}, {}),
+    ],
+)
+def test_update_all_account_parameters_except_owner_key_using_active_authority(
+    alice, use_account_update2, posting_json_meta, assert_posting_json
+):
     alice.use_authority("active")
     new_json_meta = '{"foo": "bar"}'
     new_active, new_posting, new_memo = (
@@ -199,7 +272,12 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(a
         alice.generate_new_key(),
     )
     transaction = alice.update_account(
-        active=new_active, posting=new_posting, memo_key=new_memo, json_metadata=new_json_meta
+        active=new_active,
+        posting=new_posting,
+        memo_key=new_memo,
+        json_metadata=new_json_meta,
+        use_account_update2=use_account_update2,
+        **posting_json_meta,
     )
     real_rc_before = alice.rc_manabar.calculate_current_value(
         get_transaction_timestamp(alice.node, transaction) - tt.Time.seconds(3)
@@ -212,7 +290,11 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(a
         real_rc_before == real_rc_after + transaction["rc_cost"]
     ), "RC wasn't decreased after changing all account details except owner key."
     alice.assert_account_details_were_changed(
-        new_active=new_active, new_posting=new_posting, new_memo=new_memo, new_json_meta=new_json_meta
+        new_active=new_active,
+        new_posting=new_posting,
+        new_memo=new_memo,
+        new_json_meta=new_json_meta,
+        **assert_posting_json,
     )
 
 
@@ -224,27 +306,33 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(a
         3,  # Change owner authority 3 times in less than HIVE_OWNER_UPDATE_LIMIT
     ],
 )
-@pytest.mark.testnet()
-def test_update_owner_authority_two_and_three_times_within_one_hour(alice, iterations):
-    """
-    Test case 18, 19 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
-    """
+# When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
+@pytest.mark.parametrize(
+    "use_account_update2",
+    [
+        True,  # Test case 21, 22 from issue: https://gitlab.syncad.com/hive/hive/-/issues/520
+        False,  # Test case 18, 19 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
+    ],
+)
+def test_update_owner_authority_two_and_three_times_within_one_hour(alice, iterations, use_account_update2):
     alice.use_authority("owner")
     current_key = alice.get_current_key("owner")
     for iteration in range(2, 2 + iterations):
-        new_auth = {"account_auths": [], "key_auths": [[current_key, iteration]], "weight_threshold": iteration}
+        new_auth = {"account_auths": [], "key_auths": [(current_key, iteration)], "weight_threshold": iteration}
         rc_before_operation = alice.get_rc_current_mana()
         if iteration == 4:
             with pytest.raises(tt.exceptions.CommunicationError) as exception:
-                alice.update_account(owner=new_auth)
+                alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
             rc_after_operation = alice.get_rc_current_mana()
             error_response = exception.value.response["error"]["message"]
             assert "Owner authority can only be updated twice an hour" in error_response
             assert_msg = "RC should be equal to the value before failed transaction"
             assert rc_before_operation == rc_after_operation, assert_msg
         else:
-            alice.update_account(owner=new_auth)
+            alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
             alice.assert_account_details_were_changed(new_owner=new_auth)
-            assert_msg = "RC wasn't decreased after performing account_update operation"
+            assert_msg = (
+                f"RC wasn't decreased after performing account_update{'2' if use_account_update2 else ''} operation"
+            )
             rc_after_operation = alice.get_rc_current_mana()
             assert rc_before_operation > rc_after_operation, assert_msg
