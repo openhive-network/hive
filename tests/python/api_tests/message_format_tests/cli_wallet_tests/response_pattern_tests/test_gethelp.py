@@ -12,7 +12,7 @@ __HELP_CONTENT_DIRECTORY = Path(__file__).with_name("help_response_patterns")
 
 
 def __read_and_parse_help_content() -> list:
-    with open(f"{__HELP_CONTENT_DIRECTORY}/help.pat.txt", "r") as text_file:
+    with open(f"{__HELP_CONTENT_DIRECTORY}/help.pat.txt") as text_file:
         help_content = text_file.read()
         # saparate names of functions from "help"
         return [re.match(r".* ([\w_]+)\(.*", line)[1] for line in help_content.split("\n")[:-1]]

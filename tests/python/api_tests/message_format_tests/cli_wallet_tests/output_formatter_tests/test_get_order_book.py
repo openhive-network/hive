@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Dict, List, Literal, Union
+from typing import Literal
 
 import test_tools as tt
 from hive_local_tools.api.message_format.cli_wallet import verify_json_patterns, verify_text_patterns
@@ -56,7 +56,7 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
 
 
 def parse_text_response(text):
-    def parse_lines_with_bid_and_ask(lines_to_parse: List) -> Dict:
+    def parse_lines_with_bid_and_ask(lines_to_parse: list) -> dict:
         bids = []
         asks = []
         for line_to_parse in lines_to_parse:
@@ -85,7 +85,7 @@ def parse_text_response(text):
             "asks": asks,
         }
 
-    def parse_total_bids_and_asks(line_with_bids_summary: str, line_with_asks_summary: str) -> Dict:
+    def parse_total_bids_and_asks(line_with_bids_summary: str, line_with_asks_summary: str) -> dict:
         return {
             "bid_total": line_with_bids_summary.split(":")[1].strip(),
             "ask_total": line_with_asks_summary.split(":")[1].strip(),
@@ -114,7 +114,7 @@ def prepare_accounts_and_orders(wallet):
 
 
 def assert_that_bids_are_equal(
-    orders_bids: Dict, reference_orders_bids: List, asset_format: Literal["hf26", "legacy"]
+    orders_bids: dict, reference_orders_bids: list, asset_format: Literal["hf26", "legacy"]
 ) -> None:
     sum_hbd_from_bids = tt.Asset.Tbd(0)
     for order, reference_order in zip(orders_bids, reference_orders_bids):
@@ -127,7 +127,7 @@ def assert_that_bids_are_equal(
 
 
 def assert_that_asks_are_equal(
-    orders_asks: Dict, reference_orders_asks: List, asset_format: Literal["hf26", "legacy"]
+    orders_asks: dict, reference_orders_asks: list, asset_format: Literal["hf26", "legacy"]
 ) -> None:
     sum_hbd_from_asks = tt.Asset.Tbd(0)
     for order, reference_order in zip(orders_asks, reference_orders_asks):
@@ -138,5 +138,5 @@ def assert_that_asks_are_equal(
         assert are_close(float(order["price"]), reference_order["price"])
 
 
-def __serialize_asset(asset: tt.AnyAsset, asset_format: Literal["hf26", "legacy"]) -> Union[str, Dict]:
+def __serialize_asset(asset: tt.AnyAsset, asset_format: Literal["hf26", "legacy"]) -> str | dict:
     return asset.as_nai() if asset_format == "hf26" else str(asset)

@@ -1,7 +1,6 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict
 
 import pytest
 
@@ -38,7 +37,7 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
 
 
 def parse_text_response(text):
-    def parse_single_line_with_order_values(line_to_parse: str) -> Dict:
+    def parse_single_line_with_order_values(line_to_parse: str) -> dict:
         splitted_values = re.split(r"\s{2,}", line_to_parse.strip())
         return {
             "pos": int(splitted_values[0]),

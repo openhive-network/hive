@@ -40,7 +40,7 @@ PATTERN = re.compile(args.pattern)
 
 
 def load_yaml(filename: str) -> dict:
-    with open(filename, "rt") as file:
+    with open(filename) as file:
         return safe_load(file.read().replace("!", ""))
 
 
@@ -74,7 +74,7 @@ def create_pattern(url: str, tav_file: str, directory: str):
         )
         parsed = parsed["result"]
 
-    with open(output_pattern_file, "wt") as file:
+    with open(output_pattern_file, "w") as file:
         dump(parsed, file, indent=2, sort_keys=True)
         file.write("\n")
 

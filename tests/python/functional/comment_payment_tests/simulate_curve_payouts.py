@@ -40,11 +40,11 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path):
     import os
     from shutil import copy, rmtree
 
-    logger.info("Preparing working dir {}".format(work_dir_path))
+    logger.info(f"Preparing working dir {work_dir_path}")
     blockchain_dir = work_dir_path + "/blockchain"
     if os.path.exists(work_dir_path):
         if os.path.isdir(work_dir_path):
-            logger.info("Cleaning up working dir {}".format(work_dir_path))
+            logger.info(f"Cleaning up working dir {work_dir_path}")
             paths_to_delete = [
                 work_dir_path + "/p2p",
                 work_dir_path + "/logs",
@@ -58,17 +58,17 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path):
             paths_to_delete.extend(glob(work_dir_path + "/*.cfg"))
             for path in paths_to_delete:
                 if os.path.exists(path):
-                    logger.info("Removing {}".format(path))
+                    logger.info(f"Removing {path}")
                     if os.path.isdir(path):
                         rmtree(path)
                     else:
                         os.remove(path)
         else:
-            raise RuntimeError("{} is not a directory".format(work_dir_path))
+            raise RuntimeError(f"{work_dir_path} is not a directory")
     else:
-        logger.info("Creating directory {}".format(work_dir_path))
+        logger.info(f"Creating directory {work_dir_path}")
         os.makedirs(work_dir_path)
-        logger.info("Creating directory {}".format(blockchain_dir))
+        logger.info(f"Creating directory {blockchain_dir}")
         os.makedirs(blockchain_dir)
         logger.info("Copying files [1/2]: block_log")
         copy(block_log_path, blockchain_dir + "/block_log")
@@ -77,7 +77,7 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path):
 
 
 def perform_replay(node_bin_path, node_work_dir_path, is_steem_node):
-    logger.info("Performing replay with {}".format(node_bin_path))
+    logger.info(f"Performing replay with {node_bin_path}")
     node = hive_utils.hive_node.HiveNodeInScreen(node_bin_path, node_work_dir_path, None, True, is_steem_node)
     if node is not None:
         node.run_hive_node(["--enable-stale-production", "--replay-blockchain"])
@@ -85,7 +85,7 @@ def perform_replay(node_bin_path, node_work_dir_path, is_steem_node):
 
 
 def run_node(node_bin_path, node_work_dir_path, is_steem_node):
-    logger.info("Running node with {}".format(node_bin_path))
+    logger.info(f"Running node with {node_bin_path}")
     node = hive_utils.hive_node.HiveNodeInScreen(node_bin_path, node_work_dir_path, None, True, is_steem_node)
     if node is not None:
         node.run_hive_node(["--enable-stale-production"])
@@ -164,28 +164,26 @@ if __name__ == "__main__":
 
         if args.compare_as_text:
             for k, v in reference_data.items():
-                logger.info("Comparing data under key: {}".format(k))
+                logger.info(f"Comparing data under key: {k}")
                 v1 = dumps(v)
                 v2 = dumps(test_data[k])
                 if v1 != v2:
-                    logger.error("Differences detected in data with key {}: {} != {}".format(k, v1, v2))
+                    logger.error(f"Differences detected in data with key {k}: {v1} != {v2}")
                     sys.exit(1)
         else:
             from jsondiff import diff
 
             for k, v in reference_data.items():
-                logger.info("Comparing data under key: {}".format(k))
+                logger.info(f"Comparing data under key: {k}")
                 json_diff = diff(v, test_data[k])
                 if json_diff:
                     logger.error(
-                        "Differences detected in data with key {}: {}".format(
-                            k, dumps(json_diff, sort_keys=True, indent=4)
-                        )
+                        f"Differences detected in data with key {k}: {dumps(json_diff, sort_keys=True, indent=4)}"
                     )
                     sys.exit(1)
 
     except Exception as ex:
-        logger.exception("Exception: {}".format(ex))
+        logger.exception(f"Exception: {ex}")
         if node is not None:
             node.stop_hive_node()
         sys.exit(1)

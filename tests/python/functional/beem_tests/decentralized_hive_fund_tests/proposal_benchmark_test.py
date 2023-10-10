@@ -115,7 +115,7 @@ def transfer_assets_to_accounts(node, from_account, accounts, hives, hbds):
 
 
 def create_permlink(node, account):
-    return "hivepy-proposal-title-{}".format(account)
+    return f"hivepy-proposal-title-{account}"
 
 
 def create_posts(node, accounts):
@@ -295,8 +295,8 @@ if __name__ == "__main__":
     node_url = node.get_node_url()
     wif = node.get_from_config("private-key")[0]
 
-    logger.info("Using node at: {}".format(node_url))
-    logger.info("Using private-key: {}".format(wif))
+    logger.info(f"Using node at: {node_url}")
+    logger.info(f"Using private-key: {wif}")
 
     accounts = []
     for i in range(args.nr_accounts):
@@ -359,6 +359,6 @@ if __name__ == "__main__":
             sys.exit(0)
         sys.exit(1)
     except Exception as ex:
-        logger.error("Exception: {}".format(ex))
+        logger.error(f"Exception: {ex}")
         node.stop_hive_node()
         sys.exit(1)

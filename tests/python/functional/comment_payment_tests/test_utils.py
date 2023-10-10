@@ -48,7 +48,7 @@ def transfer_assets_to_accounts(node, from_account, accounts, amount, asset):
 
 
 def get_post_permlink(account):
-    return "post-permlink-{}".format(account)
+    return f"post-permlink-{account}"
 
 
 def create_posts(node, accounts):

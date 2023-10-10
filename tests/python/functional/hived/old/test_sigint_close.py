@@ -21,21 +21,21 @@ def try_generate_crash(command_line, dump_file_str, crash_time, wait_time, exec_
         try:
             pid = check_output(["pidof", exec_name], stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            print("An error occured during PID retrieving {}. Maybe replaying is finished completely".format(e.output))
+            print(f"An error occured during PID retrieving {e.output}. Maybe replaying is finished completely")
             return False
 
         pid = str(pid)
         pid = pid[2 : len(pid) - 3]
 
         cnt += 1
-        print("cnt: {} wait-time: {}s pid: {}".format(cnt, crash_time, pid))
+        print(f"cnt: {cnt} wait-time: {crash_time}s pid: {pid}")
 
         command = "kill -2 " + str(pid)
         os.system(command)
 
         time.sleep(wait_time)
 
-    with open(dump_file_str, "r") as f:
+    with open(dump_file_str) as f:
         for line in f:
             pass
         last_line = line
@@ -43,7 +43,7 @@ def try_generate_crash(command_line, dump_file_str, crash_time, wait_time, exec_
     found = last_line.find("exited cleanly")
 
     if found == -1:
-        print("Incorrect closure!!!: `{}`".format(last_line))
+        print(f"Incorrect closure!!!: `{last_line}`")
 
     return found != -1
 

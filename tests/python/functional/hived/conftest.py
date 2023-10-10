@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Tuple
 
 from pytest import fixture
 
@@ -7,7 +6,7 @@ import test_tools as tt
 
 
 @fixture
-def block_log_helper() -> Tuple[tt.BlockLog, int]:
+def block_log_helper() -> tuple[tt.BlockLog, int]:
     block_count = 30
 
     tt.logger.info(f"preparing block log with {block_count} blocks")

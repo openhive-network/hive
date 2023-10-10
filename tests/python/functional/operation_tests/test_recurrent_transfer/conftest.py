@@ -63,7 +63,7 @@ def recurrent_transfer_setup(request, node, wallet, sender, receiver):
 
     asset = request.node.callspec.params["asset"]
 
-    sender.top_up(asset(sum((rtd.amount * rtd.executions for rtd in RECURRENT_TRANSFER_DEFINITIONS))))
+    sender.top_up(asset(sum(rtd.amount * rtd.executions for rtd in RECURRENT_TRANSFER_DEFINITIONS)))
 
     recurrent_transfers = []
     for iteration in range(3):

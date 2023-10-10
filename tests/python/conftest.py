@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, NoReturn, Optional, Union
+from typing import TYPE_CHECKING, NoReturn
 
 import pytest
 
@@ -16,7 +16,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture
-def node(request) -> Union[tt.InitNode, tt.RemoteNode]:  # noqa: C901
+def node(request) -> tt.InitNode | tt.RemoteNode:  # noqa: C901
     """
     This fixture returns a node depending on the arguments passed to the @run_for decorator.
     Tests marking is described in the @run_for definition (located in `tests/local_tools.py`).
@@ -68,7 +68,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:  # noqa: C901
     def __get_mark_set_by_run_for() -> Mark:
         return next(filter(lambda mark: mark.name == "parametrize" and mark.args[0] == "node", all_marks))
 
-    def __get_plugins() -> List[str]:
+    def __get_plugins() -> list[str]:
         mark = request.node.get_closest_marker("enable_plugins")
         return mark.args[0] if mark is not None else []
 
@@ -78,7 +78,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:  # noqa: C901
     def __was_run_for_used() -> bool:
         return request.node.get_closest_marker("decorated_with_run_for") is not None
 
-    def __assert_no_duplicated_mark_decorators_of_same_node() -> Optional[NoReturn]:
+    def __assert_no_duplicated_mark_decorators_of_same_node() -> NoReturn | None:
         all_supported_marks = __get_all_supported_marks()
         for mark in all_supported_marks:
             if all_supported_marks.count(mark) > 1:
@@ -87,7 +87,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:  # noqa: C901
                     + hint_message
                 )
 
-    def __assert_no_duplicated_node_in_run_for_params() -> Optional[NoReturn]:
+    def __assert_no_duplicated_node_in_run_for_params() -> NoReturn | None:
         parametrize_mark = __get_mark_set_by_run_for()
 
         number_of_nodes_specified_in_run_for = len(parametrize_mark.args[1])
@@ -98,8 +98,8 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:  # noqa: C901
         if number_of_nodes_specified_in_run_for != number_of_unique_nodes_given_in_the_run_for_parameters:
             raise AssertionError("Unallowed duplication of `@run_for()' decorator arguments.\n" + hint_message)
 
-    def __assert_supported_nodes_used_only_in_run_for() -> Optional[NoReturn]:
-        def __get_marks_created_by_run_for_only() -> List[Mark]:
+    def __assert_supported_nodes_used_only_in_run_for() -> NoReturn | None:
+        def __get_marks_created_by_run_for_only() -> list[Mark]:
             parametrize_mark = __get_mark_set_by_run_for()
             mark_decorators = sum([mark_decorator.marks for mark_decorator in parametrize_mark.args[1]], [])
             return [mark_decorator.mark for mark_decorator in mark_decorators]
@@ -122,7 +122,7 @@ def node(request) -> Union[tt.InitNode, tt.RemoteNode]:  # noqa: C901
     hint_message = (
         f"You can use nodes: {list(create_node)}. Each value can be used only once.\n"
         f"To correctly mark your test, please use the following syntax:\n\n"
-        f"""@run_for({", ".join((f"'{node}'" for node in create_node))})\n"""
+        f"""@run_for({", ".join(f"'{node}'" for node in create_node)})\n"""
         f"def {request.node.originalname}(node):\n"
         f"    <do something>"
     )

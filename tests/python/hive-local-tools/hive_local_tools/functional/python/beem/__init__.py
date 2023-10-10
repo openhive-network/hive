@@ -1,8 +1,8 @@
-from typing import List, Protocol
+from typing import Protocol
 
 from beem import Hive
 
 
 class NodeClientMaker(Protocol):
-    def __call__(self, accounts: List[dict] = None) -> Hive:
+    def __call__(self, accounts: list[dict] = None) -> Hive:
         pass

@@ -1,7 +1,7 @@
 import os
 from copy import deepcopy
 from pathlib import Path
-from typing import Final, List
+from typing import Final
 
 import shared_tools.networks_architecture as networks
 import test_tools as tt
@@ -163,7 +163,7 @@ def __vote_for_comment(voter: str, creator_number: str) -> list:
 
 
 def __generate_and_broadcast_transaction(
-    wallet: tt.Wallet, func, comment_number: int | None, account_names: List[str]
+    wallet: tt.Wallet, func, comment_number: int | None, account_names: list[str]
 ) -> None:
     transaction = deepcopy(TRANSACTION_TEMPLATE)
 

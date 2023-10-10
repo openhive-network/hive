@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 
-def read_from_json_pattern(directory: Path, method_name: str) -> Dict[str, Any]:
-    with open(directory / f"{method_name}.pat.json", "r") as json_file:
+def read_from_json_pattern(directory: Path, method_name: str) -> dict[str, Any]:
+    with open(directory / f"{method_name}.pat.json") as json_file:
         return json.load(json_file)
 
 

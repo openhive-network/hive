@@ -74,7 +74,7 @@ class config:  # noqa: N801
             if key in keys:
                 setattr(self, key.replace("-", "_"), value)
 
-        with open(path_to_file, "r") as file:
+        with open(path_to_file) as file:
             for line in file:
                 match_property(line)
 

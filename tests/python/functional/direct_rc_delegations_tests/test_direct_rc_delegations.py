@@ -29,7 +29,7 @@ def test_direct_rc_delegations(wallet):
     assert rc_receiver2["delegated_rc"] == 0
     assert rc_receiver2["received_delegated_rc"] == 0
 
-    print("Delegating rc to {} and {}".format(receiver, receiver2))
+    print(f"Delegating rc to {receiver} and {receiver2}")
     wallet.api.delegate_rc(delegator, [receiver, receiver2], 10, "true")
 
     rc_receiver = wallet.api.find_rc_accounts([receiver])[0]
@@ -54,7 +54,7 @@ def test_direct_rc_delegations(wallet):
     assert delegation_from_to["to"] == receiver
     assert delegation_from_to["delegated_rc"] == 10
 
-    print("Increasing the delegation to 50 to {}".format(receiver))
+    print(f"Increasing the delegation to 50 to {receiver}")
     wallet.api.delegate_rc(delegator, [receiver], 50, "true")
 
     rc_receiver = wallet.api.find_rc_accounts([receiver])[0]
@@ -68,7 +68,7 @@ def test_direct_rc_delegations(wallet):
         rc_delegator["rc_manabar"]["current_mana"] == rc_delegator_before["rc_manabar"]["current_mana"] - 62
     )  # 60 + 1 x 2, 1 is the base cost of an rc delegation op, 60 is the amount delegated
 
-    print("Reducing the delegation to 20 to {}".format(receiver))
+    print(f"Reducing the delegation to 20 to {receiver}")
     wallet.api.delegate_rc(delegator, [receiver], 20, "true")
 
     rc_receiver = wallet.api.find_rc_accounts([receiver])[0]
@@ -82,7 +82,7 @@ def test_direct_rc_delegations(wallet):
         rc_delegator["rc_manabar"]["current_mana"] == rc_delegator_before["rc_manabar"]["current_mana"] - 63
     )  # amount remains the same - 1 because current rc is not given back from reducing the delegation, and we paid 1 for the extra op
 
-    print("deleting the delegation to {}".format(receiver))
+    print(f"deleting the delegation to {receiver}")
     wallet.api.delegate_rc(delegator, [receiver], 0, "true")
 
     rc_receiver = wallet.api.find_rc_accounts([receiver])[0]

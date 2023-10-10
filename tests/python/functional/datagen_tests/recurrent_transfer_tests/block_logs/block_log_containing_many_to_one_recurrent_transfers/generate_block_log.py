@@ -1,6 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
-from typing import Final, List
+from typing import Final
 
 import test_tools as tt
 from hive_local_tools.constants import TRANSACTION_TEMPLATE
@@ -76,7 +76,7 @@ def __generate_operations_for_receiver(account: str) -> list:
     ]
 
 
-def __generate_and_broadcast(wallet: tt.Wallet, account_names: List[str]) -> None:
+def __generate_and_broadcast(wallet: tt.Wallet, account_names: list[str]) -> None:
     transaction = deepcopy(TRANSACTION_TEMPLATE)
 
     for name in account_names:

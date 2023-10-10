@@ -1,6 +1,5 @@
 import re
 from pathlib import Path
-from typing import Dict
 
 import test_tools as tt
 from hive_local_tools.api.message_format.cli_wallet import verify_json_patterns, verify_text_patterns
@@ -63,7 +62,7 @@ def prepare_orders(wallet):
 
 
 def parse_text_response(text):
-    def parse_single_line_with_order_values(line_to_parse: str) -> Dict:
+    def parse_single_line_with_order_values(line_to_parse: str) -> dict:
         splitted_values = re.split(r"\s{2,}", line_to_parse.strip())
         return {
             "id": int(splitted_values[0]),

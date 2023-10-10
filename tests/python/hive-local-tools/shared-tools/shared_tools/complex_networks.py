@@ -3,7 +3,7 @@ import re
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Iterable
 
 import shared_tools.networks_architecture as networks
 import test_tools as tt
@@ -17,7 +17,7 @@ class NodesPreparer:
 
 
 def get_time_offset_from_file(file: Path) -> str:
-    with open(file, "r", encoding="UTF-8") as file:
+    with open(file, encoding="UTF-8") as file:
         return file.read().strip()
 
 
@@ -29,10 +29,10 @@ def get_relative_time_offset_from_timestamp(timestamp: str) -> str:
 
 def init_network(
     init_node,
-    all_witness_names: List[str],
-    key: Optional[str] = None,
-    block_log_directory_name: Optional[Path] = None,
-    desired_blocklog_length: Optional[int] = None,
+    all_witness_names: list[str],
+    key: str | None = None,
+    block_log_directory_name: Path | None = None,
+    desired_blocklog_length: int | None = None,
 ) -> None:
     tt.logger.info("Attaching wallets...")
     tt.logger.info(f"Witnesses: {', '.join(all_witness_names)}")
@@ -129,10 +129,10 @@ def modify_time_offset(old_iso_date: str, offset_in_seconds: int) -> str:
 
 
 def run_networks(
-    networks: Iterable[tt.Network], blocklog_directory: Path, time_offsets: Optional[Iterable[str]] = None
+    networks: Iterable[tt.Network], blocklog_directory: Path, time_offsets: Iterable[str] | None = None
 ) -> None:
     if blocklog_directory is not None:
-        timestamp = get_time_offset_from_file((blocklog_directory / "timestamp"))
+        timestamp = get_time_offset_from_file(blocklog_directory / "timestamp")
         time_offset = get_relative_time_offset_from_timestamp(timestamp)
         block_log = tt.BlockLog(blocklog_directory / "block_log")
         tt.logger.info(f"'block_log' directory: {blocklog_directory} timestamp: {timestamp} time_offset: {time_offset}")
@@ -233,10 +233,10 @@ def prepare_nodes(sub_networks_sizes: list) -> list:
 
 def generate_networks(
     architecture: networks.NetworksArchitecture,
-    block_log_directory_name: Optional[Path] = None,
+    block_log_directory_name: Path | None = None,
     preparer: NodesPreparer = None,
-    desired_blocklog_length: Optional[int] = None,
-) -> Dict:
+    desired_blocklog_length: int | None = None,
+) -> dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
@@ -259,10 +259,10 @@ def generate_networks(
 
 def launch_networks(
     architecture: networks.NetworksArchitecture,
-    block_log_directory_name: Optional[Path] = None,
-    time_offsets: Optional[Iterable[int]] = None,
+    block_log_directory_name: Path | None = None,
+    time_offsets: Iterable[int] | None = None,
     preparer: NodesPreparer = None,
-) -> Dict:
+) -> dict:
     builder = networks.NetworksBuilder()
     builder.build(architecture)
 
@@ -280,10 +280,10 @@ def launch_networks(
 
 def generate_or_launch(
     architecture: networks.NetworksArchitecture,
-    block_log_directory_name: Optional[Path] = None,
-    time_offsets: Optional[Iterable[int]] = None,
+    block_log_directory_name: Path | None = None,
+    time_offsets: Iterable[int] | None = None,
     preparer: NodesPreparer = None,
-) -> Dict:
+) -> dict:
     if allow_generate_block_log():
         assert block_log_directory_name is not None, "Name of directory with block_log file must be given"
         tt.logger.info(f"New `block_log` generation: {block_log_directory_name}")
@@ -304,7 +304,7 @@ def run_whole_network(
     block_log_directory_name: Path = None,
     time_offsets: Iterable[int] = None,
     preparer: NodesPreparer = None,
-) -> Tuple[networks.NetworksBuilder, Any]:
+) -> tuple[networks.NetworksBuilder, Any]:
     builder = generate_or_launch(architecture, block_log_directory_name, time_offsets, preparer)
 
     if builder is None:
@@ -340,7 +340,7 @@ def create_block_log_directory_name(block_log_directory_name: str):
     return Path(__file__).parent.absolute() / "block_logs" / block_log_directory_name
 
 
-def generate_port_ranges(worker: str, number_of_nodes: int) -> List[int]:
+def generate_port_ranges(worker: str, number_of_nodes: int) -> list[int]:
     match = re.match(r"gw(\d+)", worker)
     worker_id = int(match.group(1))
     start = 2000 + worker_id * 1000
@@ -349,7 +349,7 @@ def generate_port_ranges(worker: str, number_of_nodes: int) -> List[int]:
     return ports
 
 
-def generate_free_addresses(number_of_nodes: int) -> List[str]:
+def generate_free_addresses(number_of_nodes: int) -> list[str]:
     worker_id = os.getenv("PYTEST_XDIST_WORKER")
     if worker_id:
         ports_range = generate_port_ranges(worker_id, number_of_nodes)

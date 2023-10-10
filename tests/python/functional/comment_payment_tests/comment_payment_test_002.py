@@ -39,17 +39,17 @@ except Exception:
 def compare_files_by_line(file1, file2):
     try:
         line_cnt = 0
-        with open(sys.argv[1], "r") as src:
-            with open(sys.argv[2], "r") as dst:
+        with open(sys.argv[1]) as src:
+            with open(sys.argv[2]) as dst:
                 for line in src:
                     src_line = line.strip()
                     dst_line = dst.readline().strip()
-                    assert src_line == dst_line, "On line: {} --> {} != {}".format(line_cnt, src_line, dst_line)
+                    assert src_line == dst_line, f"On line: {line_cnt} --> {src_line} != {dst_line}"
                     line_cnt += 1
-        logger.info("OK. Compared {} lines.".format(line_cnt))
+        logger.info(f"OK. Compared {line_cnt} lines.")
         return True
     except Exception as ex:
-        logger.info("Exception: {}".format(ex))
+        logger.info(f"Exception: {ex}")
         return False
 
 
@@ -57,11 +57,11 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path, overwrite=
     import os
     from shutil import copy, rmtree
 
-    logger.info("Preparing working dir {}".format(work_dir_path))
+    logger.info(f"Preparing working dir {work_dir_path}")
     blockchain_dir = work_dir_path + "/blockchain"
     if os.path.exists(work_dir_path):
         if os.path.isdir(work_dir_path):
-            logger.info("Cleaning up working dir {}".format(work_dir_path))
+            logger.info(f"Cleaning up working dir {work_dir_path}")
             paths_to_delete = [
                 work_dir_path + "/p2p",
                 work_dir_path + "/logs",
@@ -75,17 +75,17 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path, overwrite=
             paths_to_delete.extend(glob(work_dir_path + "/*.cfg"))
             for path in paths_to_delete:
                 if os.path.exists(path):
-                    logger.info("Removing {}".format(path))
+                    logger.info(f"Removing {path}")
                     if os.path.isdir(path):
                         rmtree(path)
                     else:
                         os.remove(path)
         else:
-            raise RuntimeError("{} is not a directory".format(work_dir_path))
+            raise RuntimeError(f"{work_dir_path} is not a directory")
     else:
-        logger.info("Creating directory {}".format(work_dir_path))
+        logger.info(f"Creating directory {work_dir_path}")
         os.makedirs(work_dir_path)
-        logger.info("Creating directory {}".format(blockchain_dir))
+        logger.info(f"Creating directory {blockchain_dir}")
         os.makedirs(blockchain_dir)
         logger.info("Copying files...")
         copy(block_log_path, blockchain_dir + "/block_log")
@@ -93,7 +93,7 @@ def prepare_work_dir(work_dir_path, block_log_path, config_file_path, overwrite=
 
 
 def perform_replay(node_bin_path, node_work_dir_path):
-    logger.info("Performing replay with {}".format(node_bin_path))
+    logger.info(f"Performing replay with {node_bin_path}")
     node = hive_utils.hive_node.HiveNodeInScreen(node_bin_path, node_work_dir_path, None, True)
     if node is not None:
         node.run_hive_node(
@@ -143,7 +143,7 @@ if __name__ == "__main__":
                 sys.exit(1)
         sys.exit(0)
     except Exception as ex:
-        logger.exception("Exception: {}".format(ex))
+        logger.exception(f"Exception: {ex}")
         if node is not None:
             node.stop_hive_node()
         sys.exit(1)

@@ -154,16 +154,16 @@ def test_list_proposals_sort(node_client: NodeClientMaker):
     # move forward in time to see if proposals are paid
     # moving is made in 1h increments at a time, after each
     # increment balance is printed
-    tt.logger.info("Moving to date: {}".format(start_date_str))
+    tt.logger.info(f"Moving to date: {start_date_str}")
     hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, start_date_str, False)
     current_date = start_date
     while current_date < end_date:
         current_date = current_date + datetime.timedelta(hours=1)
         current_date_str = current_date.replace(microsecond=0).isoformat()
-        tt.logger.info("Moving to date: {}".format(current_date_str))
+        tt.logger.info(f"Moving to date: {current_date_str}")
         hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, current_date_str, False)
 
-        tt.logger.info("Balances for accounts at time: {}".format(current_date_str))
+        tt.logger.info(f"Balances for accounts at time: {current_date_str}")
         test_utils.print_balance(node_client, accounts)
         test_utils.print_balance(node_client, [{"name": TREASURY}])
         votes = test_utils.list_proposals(node_client, start_date_str, "active")
@@ -172,9 +172,9 @@ def test_list_proposals_sort(node_client: NodeClientMaker):
             assert vote > 0, "All votes counts shoud be greater than 0"
 
     # move additional hour to ensure that all proposals ended
-    tt.logger.info("Moving to date: {}".format(end_date_blocks_str))
+    tt.logger.info(f"Moving to date: {end_date_blocks_str}")
     hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, end_date_blocks_str, False)
-    tt.logger.info("Balances for accounts at time: {}".format(end_date_blocks_str))
+    tt.logger.info(f"Balances for accounts at time: {end_date_blocks_str}")
     balances = test_utils.print_balance(node_client, accounts)
     for balance in balances:
         assert balance == "438000", "All balances should be equal 438000"

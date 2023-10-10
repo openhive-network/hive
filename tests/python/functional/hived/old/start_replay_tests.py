@@ -182,8 +182,8 @@ finally:
         from shutil import rmtree
 
         rmtree(work_dir)
-        print("deleted: {}".format(work_dir))
+        print(f"deleted: {work_dir}")
     else:
-        print("datadir not deleted: {}".format(work_dir))
+        print(f"datadir not deleted: {work_dir}")
 
     exit(RETCODE)

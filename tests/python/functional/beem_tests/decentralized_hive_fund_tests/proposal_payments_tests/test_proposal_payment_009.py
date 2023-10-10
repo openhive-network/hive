@@ -127,25 +127,23 @@ def test_proposal_payment_009(node_client: NodeClientMaker):
     ]
     balances = test_utils.print_balance(node_client, accounts)
     for idx in range(0, len(test_balances)):
-        assert balances[idx] == test_balances[idx], "Balances dont match {} != {}".format(
-            balances[idx], test_balances[idx]
-        )
+        assert balances[idx] == test_balances[idx], f"Balances dont match {balances[idx]} != {test_balances[idx]}"
     test_utils.print_balance(node_client, [{"name": TREASURY}])
 
     # move forward in time to see if proposals are paid
     # moving is made in 1h increments at a time, after each
     # increment balance is printed
-    tt.logger.info("Moving to date: {}".format(test_start_date_iso))
+    tt.logger.info(f"Moving to date: {test_start_date_iso}")
     hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_start_date_iso, False)
     current_date = test_start_date
     while current_date < test_end_date:
         current_date = current_date + datetime.timedelta(hours=1)
         current_date_iso = test_utils.date_to_iso(current_date)
 
-        tt.logger.info("Moving to date: {}".format(current_date_iso))
+        tt.logger.info(f"Moving to date: {current_date_iso}")
         hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, current_date_iso, False)
 
-        tt.logger.info("Balances for accounts at time: {}".format(current_date_iso))
+        tt.logger.info(f"Balances for accounts at time: {current_date_iso}")
         test_utils.print_balance(node_client, accounts)
         test_utils.print_balance(node_client, [{"name": TREASURY}])
 
@@ -154,9 +152,9 @@ def test_proposal_payment_009(node_client: NodeClientMaker):
         votes = test_utils.list_proposals(node_client, test_start_date_iso, "all")
 
     # move additional hour to ensure that all proposals ended
-    tt.logger.info("Moving to date: {}".format(test_end_date_iso))
+    tt.logger.info(f"Moving to date: {test_end_date_iso}")
     hive_utils.common.debug_generate_blocks_until(node_client.rpc.url, wif, test_end_date_iso, False)
-    tt.logger.info("Balances for accounts at time: {}".format(test_end_date_iso))
+    tt.logger.info(f"Balances for accounts at time: {test_end_date_iso}")
     balances = test_utils.print_balance(node_client, accounts)
     test_balances = [
         "390000",
@@ -165,8 +163,6 @@ def test_proposal_payment_009(node_client: NodeClientMaker):
         "486000",
     ]
     for idx in range(0, len(test_balances)):
-        assert balances[idx] == test_balances[idx], "Balances dont match {} != {}".format(
-            balances[idx], test_balances[idx]
-        )
+        assert balances[idx] == test_balances[idx], f"Balances dont match {balances[idx]} != {test_balances[idx]}"
 
     test_utils.print_balance(node_client, [{"name": TREASURY}])

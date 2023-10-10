@@ -35,7 +35,7 @@ print(na.show())
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Tuple
+from typing import Any, Callable
 
 import test_tools as tt
 
@@ -163,7 +163,7 @@ class NetworksArchitecture:
     def get_key_information(self, key_name: str, current_dict: dict, default: Any = False) -> Any:
         return current_dict.get(key_name, default)
 
-    def get_api_init(self, node_name: str, current_dict: dict) -> Tuple[bool, bool]:
+    def get_api_init(self, node_name: str, current_dict: dict) -> tuple[bool, bool]:
         # returns statuses: [active, prepare]
         node = self.get_key_information(node_name, current_dict)
         if isinstance(node, dict):
@@ -171,7 +171,7 @@ class NetworksArchitecture:
         else:
             return node, False
 
-    def get_witness(self, data: Any) -> Tuple[int, bool]:
+    def get_witness(self, data: Any) -> tuple[int, bool]:
         # returns statuses: [witnesses' number, prepare]
         if isinstance(data, dict):
             return self.get_key_information("Witnesses", data, -1), self.get_key_information("Prepare", data, -1)

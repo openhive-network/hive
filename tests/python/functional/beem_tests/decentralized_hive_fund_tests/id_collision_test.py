@@ -57,7 +57,7 @@ class ProposalsCreatorThread(threading.Thread):
         self.node_client = Hive(node=[self.node_url], keys=[self.private_key])
 
     def run(self):
-        self.log.info("Sending proposals to node at: {} with delay {}".format(self.node_url, self.delay))
+        self.log.info(f"Sending proposals to node at: {self.node_url} with delay {self.delay}")
         sleep(self.delay)
         from beembase.operations import Create_proposal
 
@@ -88,17 +88,17 @@ class ProposalsCreatorThread(threading.Thread):
 
 
 def get_permlink(account):
-    return "hivepy-proposal-title-{}".format(account)
+    return f"hivepy-proposal-title-{account}"
 
 
 def list_proposals_by_node(creator, private_key, nodes, subjects):
     for idx in range(0, len(nodes)):
         node = nodes[idx]
-        logger.info("Listing proposals using node at {}".format(node))
+        logger.info(f"Listing proposals using node at {node}")
         s = Hive(node=[node], keys=[private_key])
         proposals = s.rpc.list_proposals([creator], 1000, "by_creator", "ascending", "all")
         for subject in subjects:
-            msg = "Looking for id of proposal with subject {}".format(subject)
+            msg = f"Looking for id of proposal with subject {subject}"
             for proposal in proposals:
                 if proposal["subject"] == subject:
                     msg = msg + " - FOUND ID = {}".format(proposal["id"])
@@ -128,13 +128,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    logger.info("Performing ID collision test with nodes {}".format(args.nodes_url))
+    logger.info(f"Performing ID collision test with nodes {args.nodes_url}")
 
     node_client = Hive(node=args.nodes_url, keys=[args.wif])
     logger.info(
         "New post ==> ({},{},{},{},{})".format(
-            "Hivepy proposal title [{}]".format(args.creator),
-            "Hivepy proposal body [{}]".format(args.creator),
+            f"Hivepy proposal title [{args.creator}]",
+            f"Hivepy proposal body [{args.creator}]",
             args.creator,
             get_permlink(args.creator),
             "proposals",
@@ -142,8 +142,8 @@ if __name__ == "__main__":
     )
 
     node_client.post(
-        "Hivepy proposal title [{}]".format(args.creator),
-        "Hivepy proposal body [{}]".format(args.creator),
+        f"Hivepy proposal title [{args.creator}]",
+        f"Hivepy proposal body [{args.creator}]",
         args.creator,
         permlink=get_permlink(args.creator),
         tags="proposals",
@@ -213,7 +213,7 @@ if __name__ == "__main__":
         proposals = s.rpc.list_proposals([args.creator], 1000, "by_creator", "ascending", "all")
         for subject in node_subjects[idx]:
             for proposal in proposals:
-                msg = "Looking for id of proposal sent to {} with subject {}".format(node, subject)
+                msg = f"Looking for id of proposal sent to {node} with subject {subject}"
                 if proposal["subject"] == subject:
                     msg = msg + " - FOUND ID = {}".format(proposal["id"])
                     results[subject] = proposal["id"]

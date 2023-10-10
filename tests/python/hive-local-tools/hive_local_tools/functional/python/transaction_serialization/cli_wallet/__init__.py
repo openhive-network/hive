@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import inspect
-from typing import Callable, Dict, Iterable
+from typing import Callable, Iterable
 
 import pytest
 
@@ -13,7 +13,7 @@ def __serialize_legacy(assets: Iterable) -> Iterable[str]:
     return (str(asset) for asset in assets)
 
 
-def __serialize_modern(assets: Iterable) -> Iterable[Dict]:
+def __serialize_modern(assets: Iterable) -> Iterable[dict]:
     return (asset.as_nai() for asset in assets)
 
 

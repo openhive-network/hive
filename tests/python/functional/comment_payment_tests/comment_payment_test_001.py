@@ -77,7 +77,7 @@ def compare_tables(before, after):
     logger.info("Comparing tables...")
     for row in range(len(before)):
         for col in range(len(before[row])):
-            assert before[row][col] == after[row][col], "{} != {}".format(before[row][col], after[row][col])
+            assert before[row][col] == after[row][col], f"{before[row][col]} != {after[row][col]}"
 
 
 if __name__ == "__main__":
@@ -107,9 +107,7 @@ if __name__ == "__main__":
 
     if args.hived_path:
         logger.info(
-            "Running hived via {} in {} with config {}".format(
-                args.hived_path, args.hived_working_dir, args.hived_config_path
-            )
+            f"Running hived via {args.hived_path} in {args.hived_working_dir} with config {args.hived_config_path}"
         )
 
         node = hive_utils.hive_node.HiveNodeInScreen(args.hived_path, args.hived_working_dir, args.hived_config_path)
@@ -121,8 +119,8 @@ if __name__ == "__main__":
         logger.error("Private-key is not set in config.ini")
         sys.exit(1)
 
-    logger.info("Using node at: {}".format(node_url))
-    logger.info("Using private-key: {}".format(wif))
+    logger.info(f"Using node at: {node_url}")
+    logger.info(f"Using private-key: {wif}")
 
     accounts = [
         # place accounts here in the format: {'name' : name, 'private_key' : private-key, 'public_key' : public-key}
@@ -184,7 +182,7 @@ if __name__ == "__main__":
             w.feed_publish(1000.000, account="initminer")
             hive_utils.common.wait_n_blocks(node_client.rpc.url, 5)
 
-            logger.info("Chain prefix is: {}".format(node_client.prefix))
+            logger.info(f"Chain prefix is: {node_client.prefix}")
             logger.info("Chain ID is: {}".format(node_client.get_config()["HIVE_CHAIN_ID"]))
 
             # create accounts
@@ -257,7 +255,7 @@ if __name__ == "__main__":
             if node is not None:
                 node.stop_hive_node()
     except Exception as ex:
-        logger.error("Exception: {}".format(ex))
+        logger.error(f"Exception: {ex}")
         if node is not None:
             node.stop_hive_node()
         sys.exit(1)
