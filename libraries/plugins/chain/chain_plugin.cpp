@@ -723,6 +723,13 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
+    db.with_write_lock([&]()
+    {
+      the_block_log.open_and_init(  db_open_args.data_dir / "block_log",
+                                    db_open_args.enable_block_log_compression,
+                                    db_open_args.block_log_compression_level,
+                                    db_open_args.enable_block_log_auto_fixing );
+    });
     db.open( db_open_args );
 
     if( dump_memory_details )

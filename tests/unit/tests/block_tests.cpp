@@ -101,13 +101,7 @@ std::ostream& operator<<( std::ostream& o, const block_flow_control::phase& p )
 
 BOOST_AUTO_TEST_SUITE(block_tests)
 
-#define SET_UP_DATABASE( NAME, APP ) \
-  block_log bl_ ## NAME( APP ); \
-  database NAME( APP ); \
-  sync_block_writer sbw_ ## NAME ( bl_ ## NAME, NAME, APP ); \
-  NAME.set_block_writer( &sbw_ ## NAME );
-
-void open_test_database( database& db, const fc::path& dir, bool log_hardforks = false )
+void open_test_database( database& db, block_log& bl, const fc::path& dir, bool log_hardforks = false )
 {
   hive::chain::open_args args;
   args.data_dir = dir;
@@ -117,8 +111,22 @@ void open_test_database( database& db, const fc::path& dir, bool log_hardforks =
   configuration_data.init_supply = INITIAL_TEST_SUPPLY;
   configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
   db._log_hardforks = log_hardforks;
+  db.with_write_lock([&]()
+  {
+    bl.open_and_init( args.data_dir / "block_log",
+                      args.enable_block_log_compression,
+                      args.block_log_compression_level,
+                      args.enable_block_log_auto_fixing );
+  });
   db.open( args );
 }
+
+#define SET_UP_DATABASE( NAME, APP, DATA_DIR_PATH, LOG_HARDFORKS ) \
+  block_log bl_ ## NAME( APP ); \
+  database NAME( APP ); \
+  sync_block_writer sbw_ ## NAME ( bl_ ## NAME, NAME, APP ); \
+  NAME.set_block_writer( &sbw_ ## NAME ); \
+  open_test_database( NAME, bl_ ## NAME, DATA_DIR_PATH, LOG_HARDFORKS );
 
 BOOST_AUTO_TEST_CASE( generate_empty_blocks )
 {
@@ -132,9 +140,8 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
     std::shared_ptr<full_block_type> cutoff_block;
     {
       appbase::application app;
-      SET_UP_DATABASE( db, app )
+      SET_UP_DATABASE( db, app, data_dir.path(), false )
       witness::block_producer bp( db );
-      open_test_database( db, data_dir.path() );
       b = GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
         init_account_priv_key, database::skip_nothing );
 
@@ -160,9 +167,8 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
     }
     {
       appbase::application app;
-      SET_UP_DATABASE( db, app )
+      SET_UP_DATABASE( db, app, data_dir.path(), false )
       witness::block_producer bp( db );
-      open_test_database( db, data_dir.path() );
 
       BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block->get_block_num() );
 
@@ -189,9 +195,8 @@ BOOST_AUTO_TEST_CASE( undo_block )
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     {
       appbase::application app;
-      SET_UP_DATABASE( db, app )
+      SET_UP_DATABASE( db, app, data_dir.path(), false )
       witness::block_producer bp( db );
-      open_test_database( db, data_dir.path() );
       fc::time_point_sec now( HIVE_TESTING_GENESIS_TIMESTAMP );
       std::vector< time_point_sec > time_stack;
 
@@ -244,12 +249,10 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     //TODO This test needs 6-7 ish witnesses prior to fork
 
     appbase::application app;
-    SET_UP_DATABASE( db1, app )
+    SET_UP_DATABASE( db1, app, data_dir1.path(), false )
     witness::block_producer bp1( db1 );
-    open_test_database( db1, data_dir1.path() );
-    SET_UP_DATABASE( db2, app )
+    SET_UP_DATABASE( db2, app, data_dir2.path(), false )
     witness::block_producer bp2( db2 );
-    open_test_database( db2, data_dir2.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     for( uint32_t i = 0; i < 10; ++i )
@@ -317,12 +320,10 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     fc::temp_directory dir1( hive::utilities::temp_directory_path() ),
                   dir2( hive::utilities::temp_directory_path() );
     appbase::application app;  
-    SET_UP_DATABASE( db1, app )
-    SET_UP_DATABASE( db2, app )
+    SET_UP_DATABASE( db1, app, dir1.path(), false )
+    SET_UP_DATABASE( db2, app, dir2.path(), false )
     witness::block_producer bp1( db1 ),
                     bp2( db2 );
-    open_test_database( db1, dir1.path() );
-    open_test_database( db2, dir2.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     public_key_type init_account_pub_key  = init_account_priv_key.get_public_key();
@@ -432,12 +433,11 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
     // dump_blocks("db1", *db);
     BOOST_REQUIRE_EQUAL(db->head_block_num(), 65);
 
+    fc::temp_directory dir2(hive::utilities::temp_directory_path());
     // create a second, empty, database that we will first bring in sync with the 
     // fixture's database, then we will trigger a fork and test how it resolves.
     // we'll call the fixture's database "db1"
-    SET_UP_DATABASE( db2, theApp );
-    fc::temp_directory dir2(hive::utilities::temp_directory_path());
-    open_test_database(db2, dir2.path(), true);
+    SET_UP_DATABASE( db2, theApp, dir2.path(), true );
 
     BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
     // dump_witnesses("db2", db2);
@@ -589,13 +589,12 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
     // dump_blocks("db1", *db);
     BOOST_REQUIRE_EQUAL(db->head_block_num(), 65);
 
+    fc::temp_directory dir2(hive::utilities::temp_directory_path());
     // create a second, empty, database that we will first bring in sync with the 
     // fixture's database, then we will trigger a fork and test how it resolves.
     // we'll call the fixture's database "db1"
-    SET_UP_DATABASE( db2, theApp )
+    SET_UP_DATABASE( db2, theApp, dir2.path(), true )
 
-    fc::temp_directory dir2(hive::utilities::temp_directory_path());
-    open_test_database(db2, dir2.path(), true);
 
     BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
     // dump_witnesses("db2", db2);
@@ -714,11 +713,9 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
     fc::temp_directory dir1( hive::utilities::temp_directory_path() ),
                   dir2( hive::utilities::temp_directory_path() );
     appbase::application app;  
-    SET_UP_DATABASE( db1, app )
-    SET_UP_DATABASE( db2, app )
+    SET_UP_DATABASE( db1, app, dir1.path(), false )
+    SET_UP_DATABASE( db2, app, dir2.path(), false )
     witness::block_producer bp1( db1 );
-    open_test_database( db1, dir1.path() );
-    open_test_database( db2, dir2.path() );
     BOOST_CHECK( db1.get_chain_id() == db2.get_chain_id() );
 
     auto skip_sigs = database::skip_transaction_signatures | database::skip_authority_check;
@@ -766,9 +763,8 @@ BOOST_AUTO_TEST_CASE( tapos )
   try {
     fc::temp_directory dir1( hive::utilities::temp_directory_path() );
     appbase::application app;
-    SET_UP_DATABASE( db1, app )
+    SET_UP_DATABASE( db1, app, dir1.path(), false )
     witness::block_producer bp1( db1 );
-    open_test_database( db1, dir1.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     public_key_type init_account_pub_key  = init_account_priv_key.get_public_key();
@@ -1284,9 +1280,8 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     appbase::application app;
-    SET_UP_DATABASE( db, app )
+    SET_UP_DATABASE( db, app, data_dir.path(), false )
     witness::block_producer bp( db );
-    open_test_database( db, data_dir.path() );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     {
@@ -1335,9 +1330,8 @@ BOOST_AUTO_TEST_CASE( safe_closing_database )
 {
   try {
     appbase::application app;
-    SET_UP_DATABASE( db, app )
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    db.wipe( data_dir.path(), data_dir.path(), true );
+    SET_UP_DATABASE( db, app, data_dir.path(), true )
   }
   FC_LOG_AND_RETHROW()
 }
@@ -1470,9 +1464,8 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_generation, clean_database_fixture )
     BOOST_TEST_MESSAGE( "Testing block flow during generation" );
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    SET_UP_DATABASE( db, theApp )
+    SET_UP_DATABASE( db, theApp, data_dir.path(), false )
     witness::block_producer bp( db );
-    open_test_database( db, data_dir.path() );
 
     auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
 
@@ -1526,18 +1519,15 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     BOOST_TEST_MESSAGE( "Testing block flow during p2p block push" );
 
     fc::temp_directory data_dir_bp1( hive::utilities::temp_directory_path() );
-    SET_UP_DATABASE( db_bp1, theApp )
+    SET_UP_DATABASE( db_bp1, theApp, data_dir_bp1.path(), false )
     witness::block_producer bp1( db_bp1 );
-    open_test_database( db_bp1, data_dir_bp1.path() );
 
     fc::temp_directory data_dir_bp2( hive::utilities::temp_directory_path() );
-    SET_UP_DATABASE( db_bp2, theApp )
+    SET_UP_DATABASE( db_bp2, theApp, data_dir_bp2.path(), false )
     witness::block_producer bp2( db_bp2 );
-    open_test_database( db_bp2, data_dir_bp2.path() );
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    SET_UP_DATABASE( db, theApp )
-    open_test_database( db, data_dir.path() );
+    SET_UP_DATABASE( db, theApp, data_dir.path(), false )
 
     auto report_block = []( const database& db, const std::shared_ptr<full_block_type>& block, const char* suffix )
     {
