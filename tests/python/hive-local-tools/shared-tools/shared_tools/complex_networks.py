@@ -2,6 +2,7 @@ import os
 import re
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -180,18 +181,22 @@ def run_networks(
             if blocklog_directory:
                 tasks.append(
                     executor.submit(
-                        lambda: node.run(
-                            time_offset=(
-                                modify_time_offset(timestamp, time_offsets[node_num])
-                                if allow_external_time_offsets
-                                else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S")
+                        partial(
+                            lambda _node, _node_num: _node.run(
+                                time_offset=(
+                                    modify_time_offset(timestamp, time_offsets[_node_num])
+                                    if allow_external_time_offsets
+                                    else tt.Time.serialize(tt.Time.parse(timestamp), format_="@%Y-%m-%d %H:%M:%S")
+                                ),
+                                arguments=arguments,
                             ),
-                            arguments=arguments,
+                            node,
+                            node_num,
                         )
                     )
                 )
             else:
-                tasks.append(executor.submit(lambda: node.run(arguments=arguments)))
+                tasks.append(executor.submit(partial(lambda _node: _node.run(arguments=arguments), node)))
 
         for thread_number in tasks:
             thread_number.result()
