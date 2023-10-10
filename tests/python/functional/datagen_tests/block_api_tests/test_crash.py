@@ -23,5 +23,7 @@ def test_get_block_range_out_of_range(replayed_node):
     step = 100
     response = replayed_node.api.block.get_block_range(starting_block_num=TOTAL_BLOCKS + step, count=step)
     c = len(response["blocks"])
-    tt.logger.info(f"Query for range: start_block={TOTAL_BLOCKS+step}, count={step} gave a {c} blocks in the response")
+    tt.logger.info(
+        f"Query for range: start_block={TOTAL_BLOCKS + step}, count={step} gave a {c} blocks in the response"
+    )
     assert c == 0

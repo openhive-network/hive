@@ -11,9 +11,7 @@ import test_tools as tt
 
 def test_dump_config():
     node = tt.InitNode()
-    old_config = {}
-    for key, value in node.config.__dict__.items():
-        old_config[key] = value
+    old_config = dict(node.config.__dict__.items())
     node.run()
     node.wait_number_of_blocks(2)
     node.close()

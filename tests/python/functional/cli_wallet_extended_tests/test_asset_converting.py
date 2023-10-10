@@ -39,7 +39,7 @@ def test_conversion(wallet):
 
     _result = wallet.api.get_account("alice")
 
-    #'balance' is still the same, because request of conversion will be done after 3.5 days
+    # 'balance' is still the same, because request of conversion will be done after 3.5 days
     assert _result["balance"] == tt.Asset.Test(196)
     assert _result["hbd_balance"] == tt.Asset.Tbd(1.404)
 
