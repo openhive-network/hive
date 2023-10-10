@@ -30,7 +30,7 @@ package hive.protocol.buffers;
  */
 message escrow_transfer {
   required string from_account = 1 [json_name = "from"];
-  required string to = 2 [json_name = "to"];
+  required string to_account = 2 [json_name = "to"];
   required string agent = 3;
   required uint32 escrow_id = 4 [json_name = "escrow_id"];
   required asset  hbd_amount = 5 [json_name = "hbd_amount"];
