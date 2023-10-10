@@ -88,3 +88,4 @@ known-first-party = [
     "test_tools",
     "wax",
 ]
+required-imports = ["from __future__ import annotations"]
