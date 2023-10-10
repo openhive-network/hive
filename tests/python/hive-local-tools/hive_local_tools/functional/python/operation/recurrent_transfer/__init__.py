@@ -155,7 +155,7 @@ class RecurrentTransfer:
         self._last_execution_time = self._current_schedule[-1]
 
     def get_next_execution_date(self):
-        return [date for date in self._current_schedule if self._node.get_head_block_time() < date][0]
+        return next(date for date in self._current_schedule if self._node.get_head_block_time() < date)
 
     def assert_fill_recurrent_transfer_operation_was_generated(self, expected_vop: int):
         err = "virtual operation - `fill_recurrent_transfer_operation` hasn't been generated."
@@ -168,7 +168,9 @@ class RecurrentTransfer:
     def __assert_minimal_operation_rc_cost(self):
         assert self._rc_cost > 0, "RC cost is less than or equal to zero."
 
-    def update(self, amount: tt.Asset = None, new_executions_number: int = None, new_recurrence_time: int = None):
+    def update(
+        self, amount: tt.Asset = None, new_executions_number: int | None = None, new_recurrence_time: int | None = None
+    ):
         self._transaction = getattr(self._wallet.api, self._operation_name)(
             from_=self._from_,
             to=self._to,

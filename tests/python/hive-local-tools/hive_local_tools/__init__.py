@@ -8,7 +8,7 @@ import pytest
 PYTHON_TESTS_DIR: Final[Path] = Path(__file__).parent.parent.parent
 
 
-def run_for(*node_names: Literal["testnet", "mainnet_5m", "live_mainnet"], enable_plugins: list = None):
+def run_for(*node_names: Literal["testnet", "mainnet_5m", "live_mainnet"], enable_plugins: list | None = None):
     """
     Runs decorated test for each node specified as parameter.
 

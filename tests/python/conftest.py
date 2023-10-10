@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, NoReturn
 import pytest
 
 import test_tools as tt
-from test_tools.__private.scope.scope_fixtures import *  # noqa: F401, F403
+from test_tools.__private.scope.scope_fixtures import *  # noqa: F403
 
 if TYPE_CHECKING:
     from _pytest.mark import Mark

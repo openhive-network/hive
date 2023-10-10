@@ -57,7 +57,7 @@ class LimitOrderAccount(Account):
         order_id: int = 0,
         fill_or_kill: bool = False,
         expiration: int = 60,
-        buy_hbd: bool = None,
+        buy_hbd: bool | None = None,
     ):
         return self._wallet.api.create_order(
             self._name,
@@ -76,7 +76,7 @@ class LimitOrderAccount(Account):
         order_id: int = 0,
         fill_or_kill: bool = False,
         expiration: int = 60,
-        buy_hbd: bool = None,
+        buy_hbd: bool | None = None,
     ):
         expiration_time = tt.Time.serialize(
             self._node.get_head_block_time() + tt.Time.seconds(expiration), format_=tt.Time.DEFAULT_FORMAT
@@ -129,11 +129,11 @@ class UpdateAccount(Account):
     def assert_account_details_were_changed(
         self,
         *,
-        new_json_meta: str = None,
-        new_owner: str | list = None,
-        new_active: str | list = None,
-        new_posting: str | list = None,
-        new_memo: str = None,
+        new_json_meta: str | None = None,
+        new_owner: str | list | None = None,
+        new_active: str | list | None = None,
+        new_posting: str | list | None = None,
+        new_memo: str | None = None,
     ):
         # for owner/active/posting argument method accepts both the authority (list - [key, weight]) and key as string
         self.update_account_info()
@@ -184,7 +184,12 @@ class UpdateAccount(Account):
         )
 
     def update_single_account_detail(
-        self, *, json_meta: str = None, key_type: str = None, key: tt.PublicKey = None, weight: int | None = 1
+        self,
+        *,
+        json_meta: str | None = None,
+        key_type: str | None = None,
+        key: tt.PublicKey = None,
+        weight: int | None = 1,
     ):
         """
         Swapping only one key owner/active/posting require firstly adding new key and then deleting old one

@@ -195,7 +195,10 @@ def drop_keys_from(container: dict, *keys_to_drop) -> None:
 
 
 def build_alternate_chain_spec(
-    hardfork_schedule: list, init_witnesses: list = None, init_supply: int = None, hbd_init_supply: int = None
+    hardfork_schedule: list,
+    init_witnesses: list | None = None,
+    init_supply: int | None = None,
+    hbd_init_supply: int | None = None,
 ) -> dict:
     return {
         "genesis_time": int(time.time()),
