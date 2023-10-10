@@ -1,6 +1,6 @@
-export * from '../../../build_wasm/beekeeper';
+export * from './build/beekeeper';
 
-import { MainModule } from '../../../build_wasm/beekeeper';
+import { MainModule } from './build/beekeeper';
 
 export interface FileSystemType {
   MEMFS: {};

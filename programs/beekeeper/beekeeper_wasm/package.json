@@ -1,0 +1,35 @@
+{
+  "name": "@hive/beekeeper",
+  "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
+  "description": "call hived functions from JavaScript",
+  "main": "build/beekeeper_wasm.mjs",
+  "type": "module",
+  "private": false,
+  "scripts": {
+    "prebuild:comment": "# Husky does not allow installing git hooks on parent directories, so we create a symbolic link to our root git directory to cheat it",
+    "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
+    "test": "node beekeeper_wasm_test/run_node.mjs"
+  },
+  "license": "SEE LICENSE IN LICENSE.md",
+  "files": [
+    "build/beekeeper_wasm.mjs",
+    "build/beekeeper_wasm.wasm",
+    "build/beekeeper.d.ts",
+    "beekeeper.d.ts"
+  ],
+  "devDependencies": {
+    "husky": "8.0.3"
+  },
+  "types": "beekeeper.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.syncad.com/hive/hive.git"
+  },
+  "engines": {
+    "node": ">= 12"
+  },
+  "publishConfig": {
+    "registry": "https://RegistryPlaceholder",
+    "tag": "DistTagPlaceholder"
+  }
+}

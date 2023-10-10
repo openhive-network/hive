@@ -9,6 +9,8 @@ SCOPE="${2:-@hiveio}"
 # gitlab.syncad.com/api/v4/projects/419/packages/npm/
 REGISTRY_URL="${3:-registry.npmjs.org/}"
 
+PROJECT_NAME="beekeeper"
+
 git config --global --add safe.directory '*'
 
 git fetch --tags
@@ -51,8 +53,11 @@ fi
 
 echo "//${REGISTRY_URL}:_authToken=\"${PUBLISH_TOKEN}\"" >> "${PROJECT_DIR}/.npmrc"
 
-jq ".name = \"${SCOPE}/beekeeper\" | .version = \"$NEW_VERSION\" | .publishConfig.registry = \"https://${REGISTRY_URL}\" | .publishConfig.tag = \"${DIST_TAG}\"" "${PROJECT_DIR}/package.json.template" > "${PROJECT_DIR}/package.json"
+git checkout package.json # be sure we're on clean version
+
+jq ".name = \"${SCOPE}/${PROJECT_NAME}\" | .version = \"$NEW_VERSION\" | .publishConfig.registry = \"https://${REGISTRY_URL}\" | .publishConfig.tag = \"${DIST_TAG}\"" "${PROJECT_DIR}/package.json" > "${PROJECT_DIR}/package.json.tmp"
+
+mv "${PROJECT_DIR}/package.json.tmp" "${PROJECT_DIR}/package.json"
 
 # Display detailed publish config data
 jq -r '.name + "@" + .version + " (" + .publishConfig.tag + ") " + .publishConfig.registry' "package.json"
-

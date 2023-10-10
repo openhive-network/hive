@@ -6,7 +6,7 @@ import path from 'path';
 import { setTimeout } from 'timers/promises';
 import { fileURLToPath } from 'url';
 
-import Module from '../../../../build_wasm/beekeeper_wasm.mjs';
+import Module from '../build/beekeeper_wasm.mjs';
 
 import BeekeeperInstanceHelper, { ExtractError } from './run_node_helper.mjs';
 
