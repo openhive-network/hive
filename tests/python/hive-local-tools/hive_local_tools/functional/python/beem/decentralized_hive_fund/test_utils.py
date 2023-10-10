@@ -140,7 +140,7 @@ def vote_proposals(node, accounts, wif=None):
     from beembase.operations import Update_proposal_votes
 
     for acnt in accounts:
-        proposal_set = list(range(0, len(accounts)))
+        proposal_set = list(range(len(accounts)))
         tt.logger.info(
             f"Account {acnt['name']} voted for proposals: {','.join(str(x) for x in proposal_set)}",
             stacklevel=STACK_LEVEL,

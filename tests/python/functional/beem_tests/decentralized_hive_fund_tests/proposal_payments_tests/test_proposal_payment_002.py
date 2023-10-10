@@ -150,7 +150,7 @@ def test_proposal_payment_002(node_client: NodeClientMaker):
         "414000",
     ]
 
-    for idx in range(0, len(test_balances)):
+    for idx in range(len(test_balances)):
         assert balances[idx] == test_balances[idx], f"Balances dont match {balances[idx]} != {test_balances[idx]}"
 
     test_utils.print_balance(node_client, [{"name": TREASURY}])
