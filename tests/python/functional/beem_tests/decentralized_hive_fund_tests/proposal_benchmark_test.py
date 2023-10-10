@@ -158,7 +158,7 @@ def print_progress(i, count):
     sys.stdout.write("\r")
     sys.stdout.write(" === %d from %d === " % (i, count))
     sys.stdout.flush()
-    print("")
+    print()
 
 
 def create_proposals(node, accounts, start_date, end_date, nr_proposals):

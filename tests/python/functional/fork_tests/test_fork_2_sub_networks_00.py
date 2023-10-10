@@ -24,8 +24,12 @@ def test_fork_2_sub_networks_00(prepare_fork_2_sub_networks_00):
 
     logs = []
 
-    logs.append(sh.NodeLog("M", tt.Wallet(attach_to=majority_api_node)))
-    logs.append(sh.NodeLog("m", tt.Wallet(attach_to=minority_api_node)))
+    logs.extend(
+        (
+            sh.NodeLog("M", tt.Wallet(attach_to=majority_api_node)),
+            sh.NodeLog("m", tt.Wallet(attach_to=minority_api_node)),
+        )
+    )
 
     _M = logs[0].collector
     _m = logs[1].collector
