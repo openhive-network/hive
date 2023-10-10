@@ -230,8 +230,7 @@ def wait_for_specific_witnesses(node, logs, witness_name_patterns):
             if val_1 < val_2:
                 tt.logger.info("Witnesses patterns will be processed in the same schedule")
                 return
-            else:
-                tt.logger.info("Witnesses patterns can't be processed in the same schedule. Still waiting...")
+            tt.logger.info("Witnesses patterns can't be processed in the same schedule. Still waiting...")
 
 
 def display_info(wallet):

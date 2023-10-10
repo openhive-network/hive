@@ -55,8 +55,7 @@ def run_for_all_cases(**assets: tt.AnyAsset):
                 return test(**kwargs)
 
             with pytest.raises(tt.exceptions.CommunicationError):
-                test(**kwargs)
-                return None
+                test(**kwargs)  # noqa: RET503
 
         return __decorated_test
 
