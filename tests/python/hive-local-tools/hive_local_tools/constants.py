@@ -108,3 +108,5 @@ VESTING_WITHDRAW_INTERVALS: Final[int] = 13  # 13 * VESTING_WITHDRAW_INTERVAL_SE
 VESTING_WITHDRAW_INTERVAL_SECONDS: Final[int] = 60 * 60  # 60 min in testnet / 7 days on mainnet
 
 ALTERNATE_CHAIN_JSON_FILENAME: Final[str] = "alternate-chain-spec.json"
+
+HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD = 5  # 5 days in testnet / 365 days in mainnet
