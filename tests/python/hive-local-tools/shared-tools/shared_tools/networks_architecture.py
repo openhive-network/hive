@@ -91,11 +91,7 @@ class WitnessWrapper(NodeWrapper):
                 )  # "witness0-alpha", "witness1-alpha", "witness2-alpha"
 
     def show(self) -> str:
-        details = []
-
-        for witness in self.witnesses:
-            details.append(witness)
-
+        details = list(self.witnesses)
         return NodeWrapper.show(self, " ") + " (" + ", ".join(detail for detail in details) + ")"
 
 
