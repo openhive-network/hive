@@ -49,7 +49,7 @@ int main( int argc, char** argv )
     {
       auto _is_thread_closed = bc_converter_app.is_thread_closed();
       if( !_is_thread_closed )
-        kill(getpid(), SIGINT);
+        appbase::application::kill();
 
       bc_converter_app.wait();
 

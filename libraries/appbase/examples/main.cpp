@@ -100,7 +100,7 @@ int main( int argc, char** argv ) {
     BOOST_SCOPE_EXIT(&theApp)
     {
       if( !theApp.is_thread_closed() )
-        kill(getpid(), SIGINT);
+        appbase::application::kill();
 
       theApp.wait();
 

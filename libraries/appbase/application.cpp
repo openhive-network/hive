@@ -614,5 +614,9 @@ void application::setup_notifications(const boost::program_options::variables_ma
   notification_handler.setup( hive::utilities::notifications::setup_notifications( args ) );
 }
 
+void application::kill()
+{
+  ::kill(getpid(), SIGINT);
+}
 
 } /// namespace appbase

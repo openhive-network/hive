@@ -15,7 +15,7 @@ beekeeper_app::beekeeper_app()
 beekeeper_app::~beekeeper_app()
 {
   if( !app.is_thread_closed() )
-    kill(getpid(), SIGINT);
+    appbase::application::kill();
 
   app.wait();
 }
@@ -99,7 +99,7 @@ std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_walle
   instance = std::make_shared<beekeeper_instance>( app, cmd_wallet_dir, notifications_endpoint );
   return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager>( notifications_endpoint ), instance,
                                                                        cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit,
-                                                                       [this]() { kill(getpid(), SIGINT); } );
+                                                                       [this]() { appbase::application::kill(); } );
 }
 
 bool beekeeper_app::should_start_loop() const

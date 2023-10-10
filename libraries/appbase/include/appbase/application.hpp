@@ -165,6 +165,8 @@ namespace appbase {
 
       std::set< std::string > get_plugins_names() const;
 
+      static void kill();
+
     protected:
       template< typename Impl >
       friend class plugin;

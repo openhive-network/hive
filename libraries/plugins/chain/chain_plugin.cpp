@@ -1114,7 +1114,7 @@ void chain_plugin_impl::work( synchronization_type& on_sync )
   if(this->exit_before_sync)
   {
     ilog("Shutting down node without performing any action on user request");
-    kill(getpid(), SIGINT);
+    appbase::application::kill();
     return;
   }else ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
@@ -1543,7 +1543,7 @@ void chain_plugin::plugin_startup()
 
   ilog("Chain plugin initialization finished...");
   if( get_app().is_interrupt_request() )
-    kill(getpid(), SIGINT);
+    appbase::application::kill();
 }
 
 void chain_plugin::plugin_shutdown()
