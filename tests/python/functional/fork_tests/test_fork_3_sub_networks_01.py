@@ -42,7 +42,7 @@ def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01):
         sh.wait(1, logs, minority_api_node_7a)
 
         cnt += 1
-        if cnt > blocks_before_disconnect:
+        if cnt > blocks_before_disconnect:  # noqa: SIM102
             if sh.get_last_irreversible_block_num(_m7a) == sh.get_last_irreversible_block_num(
                 _m7b
             ) and sh.get_last_irreversible_block_num(_m7a) == sh.get_last_irreversible_block_num(_m7c):

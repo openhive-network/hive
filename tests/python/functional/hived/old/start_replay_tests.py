@@ -79,7 +79,7 @@ stderr = None
 
 if args.artifacts:
     stderr = sub.STDOUT
-    stdout = open(os.path.join(args.artifacts, "replayed_node.log"), "w", 1)
+    stdout = open(os.path.join(args.artifacts, "replayed_node.log"), "w", 1)  # noqa: SIM115
 
 # creating node
 node = HiveNode(
@@ -125,7 +125,7 @@ try:
             if args.artifacts:
                 log_filename = test.split(".")[0] + ".log"
                 path_to_save = os.path.join(args.artifacts, log_filename)
-                output = open(path_to_save, "w", 1)
+                output = open(path_to_save, "w", 1)  # noqa: SIM115
 
             T = sub.Popen(
                 [
