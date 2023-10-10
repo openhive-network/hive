@@ -8,7 +8,7 @@ from hive_local_tools import run_for
 
 @run_for("testnet")
 def send_transfers_to_vesting_from_initminer_to_alice(wallet: tt.Wallet, *, amount: int):
-    for _x in range(amount):
+    for _ in range(amount):
         wallet.api.transfer_to_vesting("initminer", "alice", tt.Asset.Test(1))
 
 
@@ -215,7 +215,7 @@ def test_pagination(node):
     number_of_ops = len(response["ops"])
     next_op_id = response["ops"][0]["operation_id"]
     ops_from_pagination = []
-    for _x in range(number_of_ops):
+    for _ in range(number_of_ops):
         output = node.api.account_history.enum_virtual_ops(
             block_range_begin=block_to_start,
             block_range_end=end_block,

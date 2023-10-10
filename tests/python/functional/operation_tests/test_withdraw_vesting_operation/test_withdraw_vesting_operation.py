@@ -92,7 +92,7 @@ def test_modify_power_down_amount(prepared_node, wallet, alice, first_pd_amount,
     )
     alice.update_account_info()
 
-    for week_number in range(1, 3):  # check weekly vests/ hives changes from week 1 to 2 (first power down)
+    for _week_number in range(1, 3):  # check weekly vests/ hives changes from week 1 to 2 (first power down)
         power_down.execute_next_withdraw()
 
         alice.assert_hive_power_balance_is_reduced_by_weekly_amount(power_down.weekly_vest_reduction)

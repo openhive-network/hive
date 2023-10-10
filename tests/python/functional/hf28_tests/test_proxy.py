@@ -149,7 +149,7 @@ def test_long_single_layer_proxy_chain(node):
     node.wait_for_irreversible_block()
     node.restart(time_offset="+25h")
 
-    for account_number, account in enumerate(accounts[:-1]):
+    for account_number, _ in enumerate(accounts[:-1]):
         assert (
             node.api.wallet_bridge.get_account(accounts[account_number].name)["proxy"]
             == node.api.wallet_bridge.get_account(accounts[account_number + 1].name)["name"]

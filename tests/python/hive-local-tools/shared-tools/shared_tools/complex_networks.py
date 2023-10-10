@@ -326,7 +326,7 @@ def prepare_time_offsets(limit: int):
     time_offsets: int = []
 
     cnt = 0
-    for _i in range(limit):
+    for _ in range(limit):
         time_offsets.append(cnt % 3 + 1)
         cnt += 1
 
