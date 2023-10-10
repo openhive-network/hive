@@ -126,9 +126,7 @@ def modify_time_offset(old_iso_date: str, offset_in_seconds: int) -> str:
     new_iso_date = tt.Time.serialize(tt.Time.parse(old_iso_date) - tt.Time.seconds(offset_in_seconds))
     tt.logger.info(f"old date: {old_iso_date} new date(after time offset): {new_iso_date}")
 
-    time_offset = get_relative_time_offset_from_timestamp(new_iso_date)
-
-    return time_offset
+    return get_relative_time_offset_from_timestamp(new_iso_date)
 
 
 def run_networks(
@@ -352,8 +350,7 @@ def generate_port_ranges(worker: str, number_of_nodes: int) -> list[int]:
     worker_id = int(match.group(1))
     start = 2000 + worker_id * 1000
     end = start + number_of_nodes
-    ports = list(range(start, end))
-    return ports
+    return list(range(start, end))
 
 
 def generate_free_addresses(number_of_nodes: int) -> list[str]:

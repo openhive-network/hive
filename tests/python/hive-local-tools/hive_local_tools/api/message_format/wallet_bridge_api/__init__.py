@@ -83,5 +83,5 @@ def get_transaction_id_from_head_block(node) -> str:
         head_block_number = node.api.database.get_dynamic_global_properties()["head_block_number"]
         if not isinstance(node, tt.RemoteNode):
             node.wait_for_irreversible_block()
-        transaction_id = node.api.block.get_block(block_num=head_block_number)["block"]["transaction_ids"][0]
-        return transaction_id
+        return node.api.block.get_block(block_num=head_block_number)["block"]["transaction_ids"][0]
+    return None

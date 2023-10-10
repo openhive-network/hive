@@ -49,5 +49,4 @@ def test_conversion(wallet):
 
 
 def is_valid_asset(asset_value):
-    bool_value = bool(re.search(r"\d+\.\d{3}\sTESTS", asset_value))
-    return bool_value
+    return bool(re.search(r"\d+\.\d{3}\sTESTS", asset_value))
