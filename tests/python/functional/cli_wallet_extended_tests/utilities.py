@@ -3,10 +3,10 @@ def check_sell_price(node, base, quote):
     _sell_price = node["sell_price"]
 
     assert "base" in _sell_price
-    _sell_price["base"] == base
+    assert _sell_price["base"] == base
 
     assert "quote" in _sell_price
-    _sell_price["quote"] == quote
+    assert _sell_price["quote"] == quote
 
 
 def check_recurrent_transfer_data(node):
@@ -37,10 +37,10 @@ def check_ask(node, base, quote):
     _order_price = node["order_price"]
 
     assert "base" in _order_price
-    _order_price["base"] == base
+    assert _order_price["base"] == base
 
     assert "quote" in _order_price
-    _order_price["quote"] == quote
+    assert _order_price["quote"] == quote
 
 
 def get_key(node_name, result):

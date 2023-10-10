@@ -31,8 +31,8 @@ def test_update(wallet):
     assert len(_key_auths) == 2
     __key_auths = _key_auths[1]
     assert len(__key_auths) == 2
-    __account_auths[0] == "TST8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f"
-    __account_auths[1] == 3
+    assert __key_auths[0] == "TST8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f"
+    assert __key_auths[1] == 3
 
     wallet.api.update_account_auth_threshold("alice", "posting", 4)
 
@@ -43,7 +43,8 @@ def test_update(wallet):
     assert len(_key_auths) == 2
     __key_auths = _key_auths[1]
     assert len(__key_auths) == 2
-    __account_auths[1] == 4
+    assert __key_auths[0] == "TST8ViK3T9FHbbtQs9Mo5odBM6tSmtFEVCvjEDKNPqKe9U1bJs53f"
+    assert _posting["weight_threshold"] == 4
 
     wallet.api.update_account_memo_key("alice", "TST84oS1GW3yb9QaRaGztrqH5cHqeFFyLgLGSK4FoLEoDFBJqCnSJ")
 
