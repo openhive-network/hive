@@ -16,13 +16,14 @@
 
 namespace hive { namespace chain {
 
-namespace
-{
-  uint32_t thread_pool_size = 0;
-}
-
 struct blockchain_worker_thread_pool::impl
 {
+  private:
+  
+    uint32_t thread_pool_size = 0;
+
+  public:
+
   struct work_request_type
   {
     struct transaction_work_request_type
@@ -66,6 +67,7 @@ struct blockchain_worker_thread_pool::impl
   void perform_work(const std::weak_ptr<full_block_type>& full_block, data_source_type data_source);
   void perform_work(const work_request_type::transaction_work_request_type& transaction_work_request, data_source_type data_source);
   void thread_function();
+  void lazy_init( uint32_t new_thread_pool_size );
 };
 
 blockchain_worker_thread_pool::impl::impl( appbase::application& app, enqueue_work_type&& enqueue_work ): theApp( app )
@@ -117,22 +119,10 @@ void blockchain_worker_thread_pool::impl::thread_function()
   }
 }
 
-void blockchain_worker_thread_pool::impl_deleter::operator()(blockchain_worker_thread_pool::impl* ptr) const
+void blockchain_worker_thread_pool::impl::lazy_init( uint32_t new_thread_pool_size )
 {
-  delete ptr;
-}
-
-//std::shared_ptr<std::thread> fill_queue_thread = std::make_shared<std::thread>([&](){ fill_pending_queue(input_block_log_path / "block_log"); });
-blockchain_worker_thread_pool::blockchain_worker_thread_pool( appbase::application& app ) :
-  my(std::unique_ptr<impl, impl_deleter>( new impl( app, [this]( const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source,
-                                                 std::optional<uint32_t> block_number ){ this->enqueue_work( full_transactions, data_source, block_number ); } ) ) )
-{
-  lazy_init();
-}
-
-void blockchain_worker_thread_pool::lazy_init()
-{
-  if( (thread_pool_size == 0) || not my->threads.empty() )
+  thread_pool_size = new_thread_pool_size;
+  if( (thread_pool_size == 0) || not threads.empty() )
   {
     if( thread_pool_size == 0 )
     {
@@ -151,16 +141,28 @@ void blockchain_worker_thread_pool::lazy_init()
   ilog("Emplacing worker threads");
     for (unsigned i = 1; i <= thread_pool_size; ++i)
     {
-      my->threads.emplace_back([i, this]() {
+      threads.emplace_back([i, this]() {
         std::ostringstream thread_name_stream;
         thread_name_stream << "worker_" << i << "_of_" << thread_pool_size;
         std::string thread_name = thread_name_stream.str();
         fc::set_thread_name(thread_name.c_str()); // tells the OS the thread's name
         fc::thread::current().set_name(thread_name); // tells fc the thread's name for logging
-        my->thread_function();
+        thread_function();
       });
     }
   ilog("Emplacing worker threads done");
+}
+
+void blockchain_worker_thread_pool::impl_deleter::operator()(blockchain_worker_thread_pool::impl* ptr) const
+{
+  delete ptr;
+}
+
+//std::shared_ptr<std::thread> fill_queue_thread = std::make_shared<std::thread>([&](){ fill_pending_queue(input_block_log_path / "block_log"); });
+blockchain_worker_thread_pool::blockchain_worker_thread_pool( appbase::application& app ) :
+  my(std::unique_ptr<impl, impl_deleter>( new impl( app, [this]( const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, data_source_type data_source,
+                                                 std::optional<uint32_t> block_number ){ this->enqueue_work( full_transactions, data_source, block_number ); } ) ) )
+{
 }
 
 void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_block_type>& full_block_weak_ptr, data_source_type data_source)
@@ -509,10 +511,9 @@ void blockchain_worker_thread_pool::shutdown()
   ilog("worker threads successfully shut down");
 }
 
-// this only works if called before the singleton instance is created
-/* static */ void blockchain_worker_thread_pool::set_thread_pool_size(uint32_t new_thread_pool_size)
+void blockchain_worker_thread_pool::set_thread_pool_size(uint32_t new_thread_pool_size)
 {
-  thread_pool_size = new_thread_pool_size;
+  my->lazy_init( new_thread_pool_size );
 }
 
 } } // end namespace hive::chain
