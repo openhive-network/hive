@@ -66,10 +66,7 @@ if __name__ == "__main__":
 
     exec_name = ""
     parts = args.path.split("/")
-    if len(parts) == 1:
-        exec_name = parts[0][2:]
-    else:
-        exec_name = parts[len(parts) - 1]
+    exec_name = parts[0][2:] if len(parts) == 1 else parts[len(parts) - 1]
 
     command_line = (
         args.path

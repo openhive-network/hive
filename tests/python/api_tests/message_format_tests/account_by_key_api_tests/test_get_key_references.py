@@ -14,4 +14,4 @@ def test_get_key_references(node, should_prepare):
     key = node.api.condenser.get_accounts([ACCOUNT_NAME])[0]["active"]["key_auths"][0][0]
     result_account = node.api.account_by_key.get_key_references(keys=[key])["accounts"][0][0]
 
-    assert ACCOUNT_NAME == result_account
+    assert result_account == ACCOUNT_NAME

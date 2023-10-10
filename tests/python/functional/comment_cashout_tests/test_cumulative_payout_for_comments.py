@@ -53,8 +53,8 @@ def build_fortress(network) -> None:
     The function isolates witness nodes, ensuring that each mining node (castle) has its own dedicated API node (bastion).
     While the bastions are interconnected, the castles remain disconnected from one another.
     """
-    castle_nodes = [node for node in network.nodes if isinstance(node, tt.InitNode) or isinstance(node, tt.WitnessNode)]
-    bastion_nodes = [node for node in network.nodes if isinstance(node, tt.ApiNode) or isinstance(node, tt.FullApiNode)]
+    castle_nodes = [node for node in network.nodes if isinstance(node, (tt.InitNode, tt.WitnessNode))]
+    bastion_nodes = [node for node in network.nodes if isinstance(node, (tt.ApiNode, tt.FullApiNode))]
 
     error_message = "The number of Init/Witness Nodes (miner-nodes) does not correspond to the number of ApiNodes"
     assert len(castle_nodes) == len(bastion_nodes), error_message

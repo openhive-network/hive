@@ -10,10 +10,7 @@ LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
 MAIN_LOG_PATH = "comment_payment_001.log"
 log_dir = os.environ.get("TEST_LOG_DIR", None)
-if log_dir is not None:
-    MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH
-else:
-    MAIN_LOG_PATH = "./" + MAIN_LOG_PATH
+MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH if log_dir is not None else "./" + MAIN_LOG_PATH
 
 MODULE_NAME = "Comment-Payment-Tester"
 logger = logging.getLogger(MODULE_NAME)
@@ -41,13 +38,12 @@ except Exception:
 def compare_files_by_line(file1, file2):
     try:
         line_cnt = 0
-        with open(sys.argv[1]) as src:
-            with open(sys.argv[2]) as dst:
-                for line in src:
-                    src_line = line.strip()
-                    dst_line = dst.readline().strip()
-                    assert src_line == dst_line, f"On line: {line_cnt} --> {src_line} != {dst_line}"
-                    line_cnt += 1
+        with open(sys.argv[1]) as src, open(sys.argv[2]) as dst:
+            for line in src:
+                src_line = line.strip()
+                dst_line = dst.readline().strip()
+                assert src_line == dst_line, f"On line: {line_cnt} --> {src_line} != {dst_line}"
+                line_cnt += 1
         logger.info(f"OK. Compared {line_cnt} lines.")
         return True
     except Exception as ex:

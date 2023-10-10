@@ -172,14 +172,12 @@ def wait_for_final_block(
         wait(1, logs, witness_node)
 
         # Veryfing if all nodes have the same last irreversible block number
-        if allow_lib:
-            if lib_cond() and final_block_the_same(get_last_irreversible_block_num, data):
-                return False
+        if allow_lib and lib_cond() and final_block_the_same(get_last_irreversible_block_num, data):
+            return False
 
         # Veryfing if all nodes have the same last head block number
-        if allow_last_head:
-            if final_block_the_same(get_last_head_block_number, data):
-                return False
+        if allow_last_head and final_block_the_same(get_last_head_block_number, data):
+            return False
 
 
 def calculate_transformed_witnesses(wallet, node):

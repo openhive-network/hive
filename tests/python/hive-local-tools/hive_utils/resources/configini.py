@@ -1,6 +1,8 @@
 # Easier way to generate configs
 from __future__ import annotations
 
+import contextlib
+
 
 class config:  # noqa: N801
     def __init__(self, check_is_arg_exists: bool = True, **kwargs):
@@ -46,7 +48,7 @@ class config:  # noqa: N801
         self.snapshot_root_dir = '"/tmp/snapshots"'
 
         for key, value in kwargs.items():
-            assert (not check_is_arg_exists) or key in self.__dict__.keys(), f"key `{key}` not found"
+            assert (not check_is_arg_exists) or key in self.__dict__, f"key `{key}` not found"
             setattr(self, key, value)
 
     def generate(self, path_to_file: str):
@@ -87,10 +89,8 @@ class config:  # noqa: N801
     def exclude_plugins(self, plugins_to_exclude: list):
         current_plugins = self.plugin.split(" ")
         for plugin in plugins_to_exclude:
-            try:
+            with contextlib.suppress(ValueError):
                 current_plugins.remove(plugin)
-            except ValueError:
-                pass
         self.plugin = " ".join(current_plugins)
 
 

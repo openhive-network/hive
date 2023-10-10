@@ -27,9 +27,8 @@ CORRECT_VALUES = [
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_block_with_correct_value(node, should_prepare, block_number):
-    if should_prepare:
-        if int(block_number) < 2:  # To get existing block for block ids: 0 and 1.
-            node.wait_for_block_with_number(2)
+    if should_prepare and int(block_number) < 2:  # To get existing block for block ids: 0 and 1.
+        node.wait_for_block_with_number(2)
 
     node.api.wallet_bridge.get_block(block_number)
 
