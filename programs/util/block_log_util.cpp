@@ -748,7 +748,7 @@ int main(int argc, char** argv)
       return options_map.count("help") ? 0 : 1;
     }
 
-    hive::chain::blockchain_worker_thread_pool::set_thread_pool_size(options_map["jobs"].as<int>());
+    thread_pool.set_thread_pool_size(options_map["jobs"].as<int>());
     BOOST_SCOPE_EXIT(&thread_pool) { thread_pool.shutdown(); } BOOST_SCOPE_EXIT_END
 
     if (options_map.count("verbose") || options_map.count("debug"))

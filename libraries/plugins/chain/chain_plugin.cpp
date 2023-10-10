@@ -1345,7 +1345,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   }
 #endif
   uint32_t blockchain_thread_pool_size = options.at("blockchain-thread-pool-size").as<uint32_t>();
-  blockchain_worker_thread_pool::set_thread_pool_size(blockchain_thread_pool_size);
+  get_thread_pool().set_thread_pool_size(blockchain_thread_pool_size);
 
   if (my->validate_during_replay)
     get_thread_pool().set_validate_during_replay();

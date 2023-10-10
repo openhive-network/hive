@@ -37,7 +37,6 @@ private:
     void operator()(blockchain_worker_thread_pool::impl* ptr) const;
   };
 
-  void lazy_init();
   std::unique_ptr<impl, impl_deleter> my;
 public:
 
@@ -73,7 +72,7 @@ public:
   void set_last_checkpoint(uint32_t last_checkpoint);
 
   void shutdown();
-  static void set_thread_pool_size(uint32_t thread_pool_size);
+  void set_thread_pool_size(uint32_t thread_pool_size);
 };
 
 } } // end namespace hive::chain
