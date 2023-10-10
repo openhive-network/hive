@@ -9,7 +9,7 @@ import test_tools as tt
 from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 
-@pytest.fixture
+@pytest.fixture()
 def replayed_node() -> ReplayedNodeMaker:
     def _replayed_node(
         block_log_directory: Path,

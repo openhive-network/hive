@@ -11,7 +11,7 @@ PROPOSAL_END_DATE_AFTER_UPDATE = tt.Time.from_now(weeks=19)
 
 
 @pytest.mark.parametrize(
-    "api, expected_extension",
+    ("api", "expected_extension"),
     [
         (
             "condenser",
@@ -63,7 +63,7 @@ def test_change_comment_operation(node, api, expected_extension):
 
 
 @pytest.mark.parametrize(
-    "api, expected_extension",
+    ("api", "expected_extension"),
     [
         ("block", {"type": "update_proposal_end_date", "value": {"end_date": PROPOSAL_END_DATE_AFTER_UPDATE}}),
         ("condenser", ["update_proposal_end_date", {"end_date": PROPOSAL_END_DATE_AFTER_UPDATE}]),

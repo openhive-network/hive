@@ -6,9 +6,9 @@ import test_tools as tt
 from hive_local_tools.functional.python.operation import get_transaction_timestamp
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "authority_type, comparison_type",
+    ("authority_type", "comparison_type"),
     (
         ("active", "__eq__"),
         ("posting", "__eq__"),
@@ -36,9 +36,9 @@ def test_update_account_owner_authority(alice, authority_type, comparison_type):
     assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "authority_type, comparison_type",
+    ("authority_type", "comparison_type"),
     (
         ("active", "__gt__"),
         ("posting", "__eq__"),
@@ -66,9 +66,9 @@ def test_update_account_active_authority(alice, authority_type, comparison_type)
     assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "authority_type, comparison_type",
+    ("authority_type", "comparison_type"),
     (
         ("active", "__gt__"),
         ("posting", "__eq__"),
@@ -96,9 +96,9 @@ def test_update_account_posting_authority(alice, authority_type, comparison_type
     assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "authority_type, comparison_type",
+    ("authority_type", "comparison_type"),
     (
         ("active", "__gt__"),
         ("posting", "__eq__"),
@@ -126,9 +126,9 @@ def test_update_account_memo_key(alice, authority_type, comparison_type):
     assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "authority_type, comparison_type",
+    ("authority_type", "comparison_type"),
     (
         ("active", "__gt__"),
         ("posting", "__eq__"),
@@ -156,7 +156,7 @@ def test_update_json_metadata(alice, authority_type, comparison_type):
     assert getattr(rc_before_operation, comparison_type)(rc_after_operation), assert_msg
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_update_all_account_parameters_using_owner_authority(alice):
     """
     Test case 16 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
@@ -184,7 +184,7 @@ def test_update_all_account_parameters_using_owner_authority(alice):
     assert rc_before_operation > rc_after_operation, "RC wasn't decreased after performing account_update operation"
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_update_all_account_parameters_except_owner_key_using_active_authority(alice):
     """
     Test case 17 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
@@ -229,7 +229,7 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(a
     )
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
     "iterations",
     (
@@ -237,7 +237,7 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(a
         3,  # Change owner authority 3 times in less than HIVE_OWNER_UPDATE_LIMIT
     ),
 )
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_update_owner_authority_two_and_three_times_within_one_hour(alice, iterations):
     """
     Test case 18, 19 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519

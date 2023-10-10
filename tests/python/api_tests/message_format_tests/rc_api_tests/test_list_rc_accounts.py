@@ -22,7 +22,7 @@ CORRECT_VALUES = [
 ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def ready_node(node, should_prepare):
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
@@ -31,7 +31,7 @@ def ready_node(node, should_prepare):
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit",
+    ("rc_account", "limit"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -44,7 +44,7 @@ def test_list_rc_accounts_with_correct_values(ready_node, rc_account, limit):
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit",
+    ("rc_account", "limit"),
     [
         # LIMIT
         (ACCOUNT, -1),
@@ -59,7 +59,7 @@ def test_list_rc_accounts_with_incorrect_values(ready_node, rc_account, limit):
 
 
 @pytest.mark.parametrize(
-    "rc_account, limit",
+    ("rc_account", "limit"),
     [
         # WITNESS
         (["example-array"], 100),

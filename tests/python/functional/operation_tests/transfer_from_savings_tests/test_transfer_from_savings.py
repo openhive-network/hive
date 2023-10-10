@@ -10,7 +10,7 @@ from hive_local_tools.functional.python.operation import (
 
 
 @pytest.mark.parametrize(
-    "receiver_of_savings_withdrawal, currency, check_savings_balance, check_balance",
+    ("receiver_of_savings_withdrawal", "currency", "check_savings_balance", "check_balance"),
     (
         # transfer from savings in HIVES, receiver is the same person as sender
         ("alice", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
@@ -22,7 +22,7 @@ from hive_local_tools.functional.python.operation import (
         ("bob", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
     ),
 )
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_transfer_from_savings_account(
     prepared_node, wallet, alice, bob, receiver_of_savings_withdrawal, currency, check_balance, check_savings_balance
 ):
@@ -61,7 +61,7 @@ def test_transfer_from_savings_account(
 
 
 @pytest.mark.parametrize(
-    "currency, check_savings_balance, check_balance",
+    ("currency", "check_savings_balance", "check_balance"),
     (
         # transfers from savings in HIVES
         (tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
@@ -69,7 +69,7 @@ def test_transfer_from_savings_account(
         (tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
     ),
 )
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_transfer_from_savings_during_few_days(
     prepared_node, wallet, alice, currency, check_savings_balance, check_balance
 ):

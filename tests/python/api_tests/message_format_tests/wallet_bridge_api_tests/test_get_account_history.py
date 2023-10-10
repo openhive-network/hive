@@ -30,7 +30,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "account, from_, limit",
+    ("account", "from_", "limit"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -49,7 +49,7 @@ def test_get_account_history_with_correct_value(node, account, from_, limit, sho
 
 
 @pytest.mark.parametrize(
-    "account, from_, limit",
+    ("account", "from_", "limit"),
     [
         # FROM
         (ACCOUNTS[5], UINT64_MAX + 1, 1000),
@@ -66,7 +66,7 @@ def test_get_account_history_with_incorrect_value(node, account, from_, limit):
 
 
 @pytest.mark.parametrize(
-    "account, from_, limit",
+    ("account", "from_", "limit"),
     [
         # ACCOUNT
         (["example_array"], -1, 1000),

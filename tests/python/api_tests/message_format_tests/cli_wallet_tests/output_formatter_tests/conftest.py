@@ -7,7 +7,7 @@ import pytest
 import test_tools as tt
 
 
-@pytest.fixture
+@pytest.fixture()
 def node(request):
     if request.node.get_closest_marker("replayed_node") is None:
         node = tt.InitNode()
@@ -18,14 +18,14 @@ def node(request):
     return api_node
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet_with_text_formatter(node) -> tt.Wallet:
     return tt.Wallet(
         attach_to=node, additional_arguments=["--output-formatter=text", "--transaction-serialization=legacy"]
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet_with_json_formatter(node) -> tt.Wallet:
     return tt.Wallet(
         attach_to=node, additional_arguments=["--output-formatter=json", "--transaction-serialization=legacy"]

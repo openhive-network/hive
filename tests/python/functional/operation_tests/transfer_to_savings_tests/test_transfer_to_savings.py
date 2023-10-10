@@ -6,7 +6,7 @@ import test_tools as tt
 
 
 @pytest.mark.parametrize(
-    "receiver, currency, check_savings_balance, check_balance",
+    ("receiver", "currency", "check_savings_balance", "check_balance"),
     (
         # transfer to savings in HIVES, receiver is the same person as sender
         ("alice", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
@@ -18,7 +18,7 @@ import test_tools as tt
         ("bob", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
     ),
 )
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_transfer_to_savings_account(
     prepared_node, wallet, alice, bob, receiver, currency, check_savings_balance, check_balance
 ):

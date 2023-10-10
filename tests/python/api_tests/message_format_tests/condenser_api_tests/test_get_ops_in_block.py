@@ -9,7 +9,7 @@ UINT64_MAX = 2**64 - 1
 
 
 @pytest.mark.parametrize(
-    "block_num, only_virtual",
+    ("block_num", "only_virtual"),
     [
         # Valid block_num
         (1, True),
@@ -36,7 +36,7 @@ def test_get_ops_in_block(node, should_prepare, block_num, only_virtual):
 
 
 @pytest.mark.parametrize(
-    "block_num, only_virtual",
+    ("block_num", "only_virtual"),
     [
         # Invalid block_num
         ("incorrect_string_argument", True),

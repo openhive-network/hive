@@ -7,14 +7,14 @@ import pytest
 import test_tools as tt
 
 
-@pytest.fixture
+@pytest.fixture()
 def replayed_node():
     api_node = tt.ApiNode()
     api_node.run(replay_from=Path(__file__).parent / "block_log" / "block_log", wait_for_live=False)
     return api_node
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet_with_pattern_name(replayed_node, request):
     if "cli_wallet_method" in request.fixturenames:
         pattern_name = request.getfixturevalue("cli_wallet_method")

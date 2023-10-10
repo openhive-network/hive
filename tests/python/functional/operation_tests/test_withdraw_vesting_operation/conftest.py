@@ -6,7 +6,7 @@ import test_tools as tt
 from hive_local_tools.functional.python.operation.withdrawe_vesting import PowerDownAccount
 
 
-@pytest.fixture
+@pytest.fixture()
 def alice(prepared_node, wallet):
     wallet.create_account("alice")
     alice = PowerDownAccount("alice", prepared_node, wallet)

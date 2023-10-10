@@ -106,7 +106,7 @@ def test_grouping_by_block(node):
         assert response["ops_by_block"][x - 1]["block"] == response["ops_by_block"][x]["block"] - 1
 
 
-@pytest.mark.parametrize("group_by_block, include_reversible", itertools.product((True, False), (True, False)))
+@pytest.mark.parametrize(("group_by_block", "include_reversible"), itertools.product((True, False), (True, False)))
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_limit(node, group_by_block: bool, include_reversible: bool):
     node.wait_number_of_blocks(1)
@@ -140,7 +140,7 @@ def test_limit(node, group_by_block: bool, include_reversible: bool):
     assert amount_of_returned_operations == 2
 
 
-@pytest.mark.parametrize("group_by_block, key", ((False, "ops"), (True, "ops_by_block")))
+@pytest.mark.parametrize(("group_by_block", "key"), ((False, "ops"), (True, "ops_by_block")))
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_list_vops_partly_in_irreversible_and_partly_in_reversible_blocks(node, group_by_block, key):
     node.wait_number_of_blocks(1)

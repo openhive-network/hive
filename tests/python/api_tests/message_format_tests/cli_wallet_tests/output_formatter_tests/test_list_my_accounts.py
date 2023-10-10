@@ -18,7 +18,7 @@ TOTAL_BALANCES = {
 __PATTERNS_DIRECTORY = Path(__file__).with_name("response_patterns")
 
 
-@pytest.mark.replayed_node
+@pytest.mark.replayed_node()
 def test_list_my_accounts_json_format(wallet_with_json_formatter):
     import_private_keys_for_accounts(wallet_with_json_formatter, block_log.CREATED_ACCOUNTS)
     accounts_summary = wallet_with_json_formatter.api.list_my_accounts()
@@ -33,7 +33,7 @@ def test_list_my_accounts_json_format(wallet_with_json_formatter):
     assert accounts_summary["total_hbd"] == TOTAL_BALANCES["hbds"].as_nai()
 
 
-@pytest.mark.replayed_node
+@pytest.mark.replayed_node()
 def test_list_my_accounts_text_format(wallet_with_text_formatter):
     import_private_keys_for_accounts(wallet_with_text_formatter, block_log.CREATED_ACCOUNTS)
     accounts_summary = parse_text_response(wallet_with_text_formatter.api.list_my_accounts())
@@ -49,7 +49,7 @@ def test_list_my_accounts_text_format(wallet_with_text_formatter):
     assert accounts_summary["total_hbd"] == TOTAL_BALANCES["hbds"]
 
 
-@pytest.mark.replayed_node
+@pytest.mark.replayed_node()
 def test_list_my_accounts_json_format_pattern_comparison(wallet_with_json_formatter):
     import_private_keys_for_accounts(wallet_with_json_formatter, block_log.CREATED_ACCOUNTS)
     accounts_summary = wallet_with_json_formatter.api.list_my_accounts()
@@ -57,7 +57,7 @@ def test_list_my_accounts_json_format_pattern_comparison(wallet_with_json_format
     verify_json_patterns(__PATTERNS_DIRECTORY, "list_my_accounts", accounts_summary)
 
 
-@pytest.mark.replayed_node
+@pytest.mark.replayed_node()
 def test_list_my_accounts_text_format_pattern_comparison(wallet_with_text_formatter):
     import_private_keys_for_accounts(wallet_with_text_formatter, block_log.CREATED_ACCOUNTS)
     accounts_summary = wallet_with_text_formatter.api.list_my_accounts()

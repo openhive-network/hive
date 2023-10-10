@@ -5,7 +5,7 @@ import pytest
 import test_tools as tt
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepared_wallet(node, request):
     if request.param == "modern":
         yield tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
@@ -15,7 +15,7 @@ def prepared_wallet(node, request):
         raise RuntimeError(f'Unsupported argument value "{request.param}", should be "modern" or "legacy"')
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet_with_legacy_serialization(node, request):
     return tt.Wallet(
         attach_to=node,
@@ -26,7 +26,7 @@ def wallet_with_legacy_serialization(node, request):
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet_with_hf26_serialization(node, request):
     return tt.Wallet(
         attach_to=node,

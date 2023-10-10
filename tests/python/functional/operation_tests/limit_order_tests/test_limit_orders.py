@@ -29,7 +29,7 @@ parametrize_values = (
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_not_matching_orders_with_fill_or_kill(
     prepared_node, alice, bob, use_hbd_in_matching_order, create_main_order, create_normal_order
 ):
@@ -45,7 +45,7 @@ def test_not_matching_orders_with_fill_or_kill(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_match_third_order_with_kill_or_fill(
     prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order, create_normal_order
 ):
@@ -71,7 +71,7 @@ def test_match_third_order_with_kill_or_fill(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_match_fifth_order(
     prepared_node,
     alice,
@@ -111,7 +111,7 @@ def test_match_fifth_order(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_not_matching_orders(
     prepared_node, alice, bob, use_hbd_in_matching_order, create_main_order, create_normal_order
 ):
@@ -132,7 +132,7 @@ def test_not_matching_orders(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_full_match_third_order(
     prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order, create_normal_order
 ):
@@ -165,7 +165,7 @@ def test_full_match_third_order(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_full_match_first_order(
     prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order, create_normal_order
 ):
@@ -199,7 +199,7 @@ def test_full_match_first_order(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_partial_match_third_order(
     prepared_node, alice, bob, carol, daisy, use_hbd_in_matching_order, create_main_order, create_normal_order
 ):
@@ -243,7 +243,7 @@ def test_partial_match_third_order(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_partially_match_every_next_order(
     prepared_node,
     alice,
@@ -320,7 +320,7 @@ def test_partially_match_every_next_order(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_match_third_order_partially_and_wait_for_expiration(
     prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order, create_normal_order
 ):
@@ -352,7 +352,7 @@ def test_match_third_order_partially_and_wait_for_expiration(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_match_third_order_partially_and_wait_for_expiration_scenario_2(
     prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order, create_normal_order
 ):
@@ -390,7 +390,7 @@ def test_match_third_order_partially_and_wait_for_expiration_scenario_2(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_match_fifth_order_partially(
     prepared_node,
     alice,
@@ -434,7 +434,7 @@ def test_match_fifth_order_partially(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_full_match_fifth_order(
     prepared_node,
     alice,
@@ -498,7 +498,7 @@ def test_full_match_fifth_order(
 
 
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_full_match_fourth_order(
     prepared_node, alice, bob, carol, daisy, use_hbd_in_matching_order, create_main_order, create_normal_order
 ):

@@ -11,17 +11,17 @@ from hive_local_tools.functional.python.cli_wallet import (
 )
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet(node) -> tt.Wallet:
     return tt.Wallet(attach_to=node)
 
 
-@pytest.fixture
+@pytest.fixture()
 def creator(node) -> tt.Account:
     return tt.Account("initminer")
 
 
-@pytest.fixture
+@pytest.fixture()
 def funded_account(creator: tt.Account, wallet: tt.Wallet, id: int = 0) -> FundedAccountInfo:
     return create_funded_account(creator=creator, wallet=wallet, id=id)
 
@@ -40,11 +40,11 @@ def create_proposal(wallet: tt.Wallet, funded_account: FundedAccountInfo, creato
     raise AssertionError("proposal not found")
 
 
-@pytest.fixture
+@pytest.fixture()
 def creator_proposal_id(wallet: tt.Wallet, funded_account: FundedAccountInfo) -> PreparedProposalDataWithId:
     return create_proposal(wallet=wallet, funded_account=funded_account, creator_is_propsal_creator=True)
 
 
-@pytest.fixture
+@pytest.fixture()
 def account_proposal_id(wallet: tt.Wallet, funded_account: FundedAccountInfo) -> PreparedProposalDataWithId:
     return create_proposal(wallet=wallet, funded_account=funded_account, creator_is_propsal_creator=False)

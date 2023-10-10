@@ -5,7 +5,7 @@ import pytest
 import test_tools as tt
 
 
-@pytest.mark.fork_tests_group_1
+@pytest.mark.fork_tests_group_1()
 def test_enum_virtual_ops(prepare_with_many_witnesses):
     # Test enum_virtual_ops for head block returns only virtual ops
     networks_builder = prepare_with_many_witnesses

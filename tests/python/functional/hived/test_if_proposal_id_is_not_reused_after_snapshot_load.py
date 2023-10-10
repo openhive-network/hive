@@ -5,7 +5,7 @@ import pytest
 import test_tools as tt
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_if_proposal_id_is_not_reused_after_snapshot_load():
     """
     When you create a proposal and delete it, proposal id should not be used again. For example when you create

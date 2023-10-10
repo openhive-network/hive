@@ -222,47 +222,47 @@ class UpdateAccount(Account):
         self._wallet.api.use_authority(authority_type, self._name)
 
 
-@pytest.fixture
+@pytest.fixture()
 def create_account_object():
     return TransferAccount
 
 
-@pytest.fixture
+@pytest.fixture()
 def alice(prepared_node, wallet, create_account_object):
     wallet.create_account("alice", hives=450, hbds=450, vests=50)
     return create_account_object("alice", prepared_node, wallet)
 
 
-@pytest.fixture
+@pytest.fixture()
 def bob(prepared_node, wallet, create_account_object):
     wallet.create_account("bob", hives=300, hbds=300, vests=50)
     return create_account_object("bob", prepared_node, wallet)
 
 
-@pytest.fixture
+@pytest.fixture()
 def carol(prepared_node, wallet, create_account_object):
     wallet.create_account("carol", hives=400, hbds=400, vests=50)
     return create_account_object("carol", prepared_node, wallet)
 
 
-@pytest.fixture
+@pytest.fixture()
 def daisy(prepared_node, wallet, create_account_object):
     wallet.create_account("daisy", hives=480, hbds=480, vests=50)
     return create_account_object("daisy", prepared_node, wallet)
 
 
-@pytest.fixture
+@pytest.fixture()
 def elizabeth(prepared_node, wallet, create_account_object):
     wallet.create_account("elizabeth", hives=600, hbds=600, vests=50)
     return create_account_object("elizabeth", prepared_node, wallet)
 
 
-@pytest.fixture
+@pytest.fixture()
 def hive_fund(prepared_node, wallet, create_account_object):
     return create_account_object("hive.fund", prepared_node, wallet)
 
 
-@pytest.fixture
+@pytest.fixture()
 def speed_up_node() -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
@@ -270,12 +270,12 @@ def speed_up_node() -> tt.InitNode:
     return node
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet(speed_up_node: tt.InitNode) -> tt.Wallet:
     return tt.Wallet(attach_to=speed_up_node)
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepared_node(speed_up_node: tt.InitNode, wallet: tt.Wallet) -> tt.InitNode:
     speed_up_node.set_vest_price(quote=tt.Asset.Vest(1800), invest=tt.Asset.Test(10_000_000))
 

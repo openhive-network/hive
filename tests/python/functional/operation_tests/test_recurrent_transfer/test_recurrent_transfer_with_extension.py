@@ -18,7 +18,7 @@ RECURRENT_TRANSFER_DEFINITIONS = [
 ]
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
 def test_recurrent_transfer_with_extension_cases_1_and_2(asset, recurrent_transfer_setup):
     """
@@ -45,7 +45,7 @@ def test_recurrent_transfer_with_extension_cases_1_and_2(asset, recurrent_transf
     rtd3.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=7)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
 def test_recurrent_transfer_with_extension_cases_3_and_4(asset, recurrent_transfer_setup):
     """
@@ -74,7 +74,7 @@ def test_recurrent_transfer_with_extension_cases_3_and_4(asset, recurrent_transf
     rtd1.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=4)
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
 def test_recurrent_transfer_with_extension_cases_5_and_6(asset, recurrent_transfer_setup):
     """
@@ -108,7 +108,7 @@ def test_recurrent_transfer_with_extension_cases_5_and_6(asset, recurrent_transf
         receiver.update_account_info()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
 def test_recurrent_transfer_with_extension_cases_7_and_8(asset, recurrent_transfer_setup):
     """
@@ -153,7 +153,7 @@ def test_recurrent_transfer_with_extension_cases_7_and_8(asset, recurrent_transf
         receiver.update_account_info()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
 def test_recurrent_transfer_with_extension_cases_9_and_10(asset, recurrent_transfer_setup):
     """
@@ -211,7 +211,7 @@ def test_recurrent_transfer_with_extension_cases_9_and_10(asset, recurrent_trans
         receiver.update_account_info()
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
 def test_recurrent_transfer_with_extension_cases_11_and_12(node, wallet, sender, receiver, asset):
     """

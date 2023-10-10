@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from hive_local_tools.functional.python.beem import NodeClientMaker
 
 
-@pytest.fixture
+@pytest.fixture()
 def node(chain_id, skeleton_key):
     block_log_directory = Path(__file__).parent / "block_log_mirrornet_1k"
     block_log_path = block_log_directory / "block_log"
@@ -39,7 +39,7 @@ def node(chain_id, skeleton_key):
     return init_node
 
 
-@pytest.mark.mirrornet
+@pytest.mark.mirrornet()
 @pytest.mark.parametrize("asset", ["HIVE", "HBD", "VESTS"])
 def test_assets(asset: str, node_client: NodeClientMaker):
     # ARRANGE
@@ -53,7 +53,7 @@ def test_assets(asset: str, node_client: NodeClientMaker):
     assert asset in balance.symbol
 
 
-@pytest.mark.mirrornet
+@pytest.mark.mirrornet()
 @pytest.mark.parametrize("asset", ["STEEM", "SBD"])
 def test_incorrect_assets(asset: str, node_client: NodeClientMaker):
     # ARRANGE
@@ -65,7 +65,7 @@ def test_incorrect_assets(asset: str, node_client: NodeClientMaker):
         account.get_balance("available", asset)
 
 
-@pytest.mark.mirrornet
+@pytest.mark.mirrornet()
 def test_hive_transfer(node_client: NodeClientMaker):
     # ARRANGE
     node_client = node_client()

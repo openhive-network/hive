@@ -11,7 +11,7 @@ from shared_tools.complex_networks import prepare_network
 from .block_log.generate_block_log import CONFIG
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_environment() -> networks.NetworksBuilder:
     block_log_directory = Path(__file__).parent / "block_log"
 
@@ -19,4 +19,4 @@ def prepare_environment() -> networks.NetworksBuilder:
     architecture.load(CONFIG)
     tt.logger.info(architecture)
 
-    yield prepare_network(architecture, block_log_directory)
+    return prepare_network(architecture, block_log_directory)

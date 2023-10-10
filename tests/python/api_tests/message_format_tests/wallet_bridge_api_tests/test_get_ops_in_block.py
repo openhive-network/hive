@@ -17,7 +17,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "block_number, virtual_operation",
+    ("block_number", "virtual_operation"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -34,7 +34,7 @@ def test_get_ops_in_block_with_correct_value(node, should_prepare, block_number,
 
 
 @pytest.mark.parametrize(
-    "block_number, virtual_operation",
+    ("block_number", "virtual_operation"),
     [
         #  BLOCK NUMBER
         (UINT64_MAX + 1, True),
@@ -47,7 +47,7 @@ def test_get_ops_in_block_with_incorrect_value(node, block_number, virtual_opera
 
 
 @pytest.mark.parametrize(
-    "block_number, virtual_operation",
+    ("block_number", "virtual_operation"),
     [
         #  BLOCK NUMBER
         ("incorrect_string_argument", True),

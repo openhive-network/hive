@@ -62,7 +62,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "start, limit, order_by, order_direction, status",
+    ("start", "limit", "order_by", "order_direction", "status"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -90,7 +90,7 @@ def test_list_proposal_votes_with_correct_values_in_testnet(
 
 
 @pytest.mark.parametrize(
-    "start, limit, order_by, order_direction, status",
+    ("start", "limit", "order_by", "order_direction", "status"),
     [
         # START
         ([-2], 100, ORDER_BY["by_proposal_voter"], ORDER_DIRECTION["ascending"], STATUS["all"]),
@@ -130,7 +130,7 @@ def test_list_proposal_votes_with_incorrect_values(
 
 
 @pytest.mark.parametrize(
-    "start, limit, order_by, order_direction, status",
+    ("start", "limit", "order_by", "order_direction", "status"),
     [
         # START
         # by_voter_proposal

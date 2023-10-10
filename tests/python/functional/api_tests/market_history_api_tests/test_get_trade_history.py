@@ -20,7 +20,7 @@ def test_exceed_time_range(node):
 
 
 @pytest.mark.parametrize(
-    "tests_amount, tbds_amount",
+    ("tests_amount", "tbds_amount"),
     (
         (100, 10),
         (10, 100),

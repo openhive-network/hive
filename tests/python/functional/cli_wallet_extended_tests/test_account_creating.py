@@ -11,7 +11,7 @@ def test_account_creation(wallet):
 
 
 @pytest.mark.parametrize(
-    "account_name, expected_error_message",
+    ("account_name", "expected_error_message"),
     [
         [
             "too-long-account-name",

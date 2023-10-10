@@ -59,7 +59,7 @@ CORRECT_VALUES = [
 
 
 @pytest.mark.parametrize(
-    "start, limit, order_by, order_direction, status",
+    ("start", "limit", "order_by", "order_direction", "status"),
     [
         *CORRECT_VALUES,
         *as_string(CORRECT_VALUES),
@@ -81,7 +81,7 @@ def test_list_proposals_with_correct_values(node, should_prepare, start, limit, 
 
 
 @pytest.mark.parametrize(
-    "start, limit, order_by, order_direction, status",
+    ("start", "limit", "order_by", "order_direction", "status"),
     [
         # START
         # by start date
@@ -95,7 +95,6 @@ def test_list_proposals_with_correct_values(node, should_prepare, start, limit, 
         ([ACCOUNTS[1]], 100, ORDER_BY["by_end_date"], ORDER_DIRECTION["ascending"], STATUS["all"]),
         (["true"], 100, ORDER_BY["by_end_date"], ORDER_DIRECTION["ascending"], STATUS["all"]),
         ([True], 100, ORDER_BY["by_end_date"], ORDER_DIRECTION["ascending"], STATUS["all"]),
-        ([10], 100, ORDER_BY["by_start_date"], ORDER_DIRECTION["ascending"], STATUS["all"]),
         # by total votes
         (["invalid-account-name"], 100, ORDER_BY["by_total_votes"], ORDER_DIRECTION["ascending"], STATUS["all"]),
         ([ACCOUNTS[1]], 100, ORDER_BY["by_total_votes"], ORDER_DIRECTION["ascending"], STATUS["all"]),
@@ -132,7 +131,7 @@ def test_list_proposals_with_incorrect_values(node, should_prepare, start, limit
 
 
 @pytest.mark.parametrize(
-    "start, limit, order_by, order_direction, status",
+    ("start", "limit", "order_by", "order_direction", "status"),
     [
         # START
         (10, 100, 29, 0, 0),

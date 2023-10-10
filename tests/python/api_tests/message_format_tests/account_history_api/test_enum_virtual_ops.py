@@ -7,7 +7,7 @@ from hive_local_tools import run_for
 
 
 @pytest.mark.parametrize(
-    "block_range_begin, block_range_end, group_by_block",
+    ("block_range_begin", "block_range_end", "group_by_block"),
     [
         # Valid block ranges
         (0, 100, True),  # returns blocks from the first available block. Blocks are numbered from 1.
@@ -40,7 +40,7 @@ def test_enum_virtual_ops_with_correct_values(node, block_range_begin, block_ran
 
 
 @pytest.mark.parametrize(
-    "block_range_begin, block_range_end, group_by_block",
+    ("block_range_begin", "block_range_end", "group_by_block"),
     [
         # Invalid block ranges
         (1, 1, True),

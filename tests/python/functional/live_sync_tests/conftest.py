@@ -23,7 +23,7 @@ def prepare_4_4_4_4_4_with_time_offset_and_full_api_node() -> networks.NetworksB
     architecture = networks.NetworksArchitecture()
     architecture.load(config)
     time_offsets_list = [0, 0, 0, 0, 0, 0, -4]
-    yield prepare_network(
+    return prepare_network(
         architecture,
         create_block_log_directory_name("block_log_4_4_4_4_4_with_full_api_node"),
         time_offsets_list,

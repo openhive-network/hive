@@ -5,7 +5,7 @@ import pytest
 import test_tools as tt
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet(request):
     node = tt.InitNode()
     node.run()

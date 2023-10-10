@@ -12,12 +12,12 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "transaction_status_block_depth: set argument in config.ini")
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet(node):
     return tt.Wallet(attach_to=node)
 
 
-@pytest.fixture
+@pytest.fixture()
 def replayed_node(request):
     api_node = tt.ApiNode()
     transaction_status_track_after_block = request.node.get_closest_marker("transaction_status_track_after_block")

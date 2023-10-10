@@ -9,19 +9,19 @@ from hive_local_tools.functional.python.operation.recurrent_transfer import Recu
 from .test_recurrent_transfer_with_extension import RECURRENT_TRANSFER_DEFINITIONS
 
 
-@pytest.fixture
+@pytest.fixture()
 def node(speed_up_node) -> tt.InitNode:
     speed_up_node.set_vest_price(quote=tt.Asset.Vest(1800))
     speed_up_node.wait_for_block_with_number(30)
     return speed_up_node
 
 
-@pytest.fixture
+@pytest.fixture()
 def wallet(node) -> tt.Wallet:
     return tt.Wallet(attach_to=node)
 
 
-@pytest.fixture
+@pytest.fixture()
 def receiver(node, wallet):
     wallet.create_account("receiver")
     receiver = RecurrentTransferAccount("receiver", node, wallet)
@@ -29,7 +29,7 @@ def receiver(node, wallet):
     return receiver
 
 
-@pytest.fixture
+@pytest.fixture()
 def sender(request, node, wallet):
     params = request.node.callspec.params
     amount = [params[amount] for amount in params.keys() if "amount" in amount]
@@ -49,7 +49,7 @@ def sender(request, node, wallet):
     return sender
 
 
-@pytest.fixture
+@pytest.fixture()
 def recurrent_transfer_setup(request, node, wallet, sender, receiver):
     """
     Part of the common for recurrent_transfer_with_extensions test scenarios.
@@ -102,4 +102,4 @@ def recurrent_transfer_setup(request, node, wallet, sender, receiver):
     node.wait_number_of_blocks(3)  # Extending the time between subsequent transfers
     tt.logger.info("Finish - common part of tests.")
 
-    yield node, wallet, sender, receiver, *recurrent_transfers
+    return node, wallet, sender, receiver, *recurrent_transfers

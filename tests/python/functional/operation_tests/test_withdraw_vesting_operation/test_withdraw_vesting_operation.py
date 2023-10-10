@@ -9,7 +9,7 @@ from hive_local_tools.functional.python.operation import jump_to_date
 from hive_local_tools.functional.python.operation.withdrawe_vesting import PowerDown
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_power_down(prepared_node, wallet, alice):
     """
     User creates Power down
@@ -42,7 +42,7 @@ def test_power_down(prepared_node, wallet, alice):
     alice.rc_manabar.assert_max_rc_mana_state("unchanged")
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 def test_cancel_power_down(prepared_node, wallet, alice):
     """
     User wants to stop Power down a few days after creating Power down.
@@ -75,9 +75,9 @@ def test_cancel_power_down(prepared_node, wallet, alice):
     assert alice.get_rc_max_mana() == alice.rc_manabar.max_rc + power_down.weekly_vest_reduction.amount + 1, err_message
 
 
-@pytest.mark.testnet
+@pytest.mark.testnet()
 @pytest.mark.parametrize(
-    "first_pd_amount, second_pd_amount",
+    ("first_pd_amount", "second_pd_amount"),
     [
         (tt.Asset.Test(3_000), tt.Asset.Test(10_000)),  # User wants to increase the amount of Power down.
         (tt.Asset.Test(10_000), tt.Asset.Test(3_000)),  # User wants to decrease the amount of Power down.

@@ -8,7 +8,7 @@ import test_tools as tt
 from hive_local_tools.functional.python.hf28.constants import PROXY_ACCOUNT, VOTER_ACCOUNT
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_environment(node):
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
@@ -25,7 +25,7 @@ def prepare_environment(node):
     return node, wallet
 
 
-@pytest.fixture
+@pytest.fixture()
 def prepare_environment_on_hf_27(node):
     # run on a node with a date earlier than the start date of hardfork 28 (february 8, 2023 1:00:00 am)
     node = tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(20)])

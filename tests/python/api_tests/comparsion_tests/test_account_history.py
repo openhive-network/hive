@@ -11,31 +11,31 @@ import test_tools as tt
 LIMIT = 1_000
 
 
-@pytest.fixture
+@pytest.fixture()
 def ref_node(request) -> tt.RemoteNode:
     return tt.RemoteNode(request.config.getoption("--ref"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_node(request) -> tt.RemoteNode:
     return tt.RemoteNode(request.config.getoption("--test"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def transactions() -> list:
     from input_data.hashes import HASHES
 
     return HASHES
 
 
-@pytest.fixture
+@pytest.fixture()
 def accounts() -> list:
     from input_data.accounts import ACCOUNTS
 
     return ACCOUNTS
 
 
-@pytest.fixture
+@pytest.fixture()
 def block_range(request):
     return range(request.config.getoption("--start"), request.config.getoption("--stop"))
 
