@@ -108,12 +108,11 @@ def assert_cleared_resources_in_hardfork_hive_operation(node: tt.InitNode, accou
     asset_keys = list(tt.Asset.Hbd(1.0).as_nai().keys())
     for op in hardfork_hive_virtual_operations:
         for value in op.values():
-            if isinstance(value, dict):
-                if list(value.keys()) == asset_keys:
-                    asset = tt.Asset.from_(value)
-                    if isinstance(asset, tt.Asset.Test):
-                        assert asset > tt.Asset.Test(0)
-                    if isinstance(asset, tt.Asset.Vest):
-                        assert asset > tt.Asset.Vest(0)
-                    if isinstance(asset, tt.Asset.Tbd):
-                        assert asset > tt.Asset.Tbd(0)
+            if isinstance(value, dict) and list(value.keys()) == asset_keys:
+                asset = tt.Asset.from_(value)
+                if isinstance(asset, tt.Asset.Test):
+                    assert asset > tt.Asset.Test(0)
+                if isinstance(asset, tt.Asset.Vest):
+                    assert asset > tt.Asset.Vest(0)
+                if isinstance(asset, tt.Asset.Tbd):
+                    assert asset > tt.Asset.Tbd(0)

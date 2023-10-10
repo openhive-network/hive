@@ -32,8 +32,8 @@ def receiver(node, wallet):
 @pytest.fixture()
 def sender(request, node, wallet):
     params = request.node.callspec.params
-    amount = [params[amount] for amount in params.keys() if "amount" in amount]
-    execution = [params[execution] for execution in params.keys() if "execution" in execution]
+    amount = [params[amount] for amount in params if "amount" in amount]
+    execution = [params[execution] for execution in params if "execution" in execution]
     if len(amount) != len(execution):
         amount = [amount[0] for _ in range(len(execution))]
     top_up_sum = sum([amount * execution for amount, execution in zip(amount, execution)])

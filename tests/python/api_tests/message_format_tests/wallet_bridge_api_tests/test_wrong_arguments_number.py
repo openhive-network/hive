@@ -15,7 +15,7 @@ def get_commands(commands_with_arguments):
 
 
 def is_mainnet_5m_node(node) -> bool:
-    return True if isinstance(node, tt.RemoteNode) and node.get_last_block_number() <= 5_000_000 else False
+    return bool(isinstance(node, tt.RemoteNode) and node.get_last_block_number() <= 5000000)
 
 
 COMMANDS_WITH_CORRECT_ARGUMENTS = [

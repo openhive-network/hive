@@ -164,7 +164,7 @@ def test_proposal_payment_006(node_client: NodeClientMaker):  # noqa: C901
         expected_results = test_utils.calculate_expected_hourly_payout(expected_results, budget)
 
         for acc, ret in accnts.items():
-            if acc in expected_results.keys():
+            if acc in expected_results:
                 # because of rounding mechanism
                 assert abs((int(previous_balances[acc]) + expected_results[acc]) - int(ret)) < 2, (
                     f"too big missmatch, prev: {previous_balances[acc]}, budget: {budget}, now: {ret}, expected:"

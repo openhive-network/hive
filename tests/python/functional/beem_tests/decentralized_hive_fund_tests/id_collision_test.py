@@ -13,10 +13,7 @@ LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)-15s - %(name)s - %(levelname)s - %(message)s"
 MAIN_LOG_PATH = "dhf_id_collision_test.log"
 log_dir = os.environ.get("TEST_LOG_DIR", None)
-if log_dir is not None:
-    MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH
-else:
-    MAIN_LOG_PATH = "./" + MAIN_LOG_PATH
+MAIN_LOG_PATH = log_dir + "/" + MAIN_LOG_PATH if log_dir is not None else "./" + MAIN_LOG_PATH
 
 
 MODULE_NAME = "DHF-Tests"

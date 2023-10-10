@@ -110,9 +110,8 @@ PID: int = None
 RETCODE: int = 0
 MAX_TIME_FOR_EACH_TEST_IN_SECONDS = 15 * 60
 
-if args.artifacts:
-    if not os.path.exists(args.artifacts):
-        os.mkdir(args.artifacts)
+if args.artifacts and not os.path.exists(args.artifacts):
+    os.mkdir(args.artifacts)
 
 try:
     with node:
