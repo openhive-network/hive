@@ -66,7 +66,7 @@ def create_posts(node, account):
 def create_proposals(node, account, start_date, end_date, proposal_count):
     tt.logger.info("Creating proposals...")
 
-    for idx in range(0, proposal_count):
+    for idx in range(proposal_count):
         tt.logger.info(
             f"New proposal ==> ({account['name']},{account['name']},{start_date},{end_date},24.000 TBD,Proposal from"
             f" account {account['name']} {idx}/{proposal_count},{get_permlink(account['name'])})"

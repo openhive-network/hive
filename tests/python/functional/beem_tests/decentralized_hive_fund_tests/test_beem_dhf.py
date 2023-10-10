@@ -283,7 +283,7 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
 
     if not remove:
         start_date = test_utils.date_to_iso(now + datetime.timedelta(days=6))
-        for _ in range(0, 2):
+        for _ in range(2):
             proposals = node.list_proposals([start_date], 5, "by_start_date", "descending", "all")
             ids = []
             for proposal in proposals:

@@ -94,7 +94,7 @@ def get_permlink(account):
 
 
 def list_proposals_by_node(creator, private_key, nodes, subjects):
-    for idx in range(0, len(nodes)):
+    for idx in range(len(nodes)):
         node = nodes[idx]
         logger.info(f"Listing proposals using node at {node}")
         s = Hive(node=[node], keys=[private_key])
@@ -174,10 +174,10 @@ if __name__ == "__main__":
     only_subjects = []
 
     logger.info("Creating proposals and workers...")
-    for idx in range(0, len(args.nodes_url)):
+    for idx in range(len(args.nodes_url)):
         proposals = []
         subjects = []
-        for _ in range(0, args.proposal_count):
+        for _ in range(args.proposal_count):
             subject = str(uuid4())
             proposal = {
                 "creator": args.creator,
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     logger.info("===== QUERY PROPOSALS =====")
     logger.info("Gathering proposals ID from the nodes where we send the transactions")
     results = {}
-    for idx in range(0, len(node_subjects)):
+    for idx in range(len(node_subjects)):
         node = args.nodes_url[idx]
         s = Hive(node=[node], keys=[args.wif])
         proposals = s.rpc.list_proposals([args.creator], 1000, "by_creator", "ascending", "all")
