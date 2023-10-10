@@ -81,12 +81,14 @@ select = [  # https://docs.astral.sh/ruff/rules/
 #    "PL",  # TODO: Consider enabling this
     "TRY",
     "FLY",
+    "PERF",
 ]
 ignore = [
     "E501", # line too long, handled by black
     "PT004", # fixture does not return anything, add leading underscore;  issue: pytest seems to ignore (not launch) auto-use fixtures with leading underscode
     "TRY003", # too restrictive
     "TRY400", # TODO: Consider fixing
+    "PERF401", # too restrictive
 ]
 
 [tool.ruff.per-file-ignores]
