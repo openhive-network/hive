@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from threading import Lock
+from typing import Any, ClassVar
 
 from .common import DEFAULT_LOG_FORMAT, DEFAULT_LOG_LEVEL
 
@@ -26,7 +27,7 @@ class HiveNode:
     hived_process = None
     hived_lock = Lock()
     hived_data_dir = None
-    hived_args = []
+    hived_args: ClassVar[list[Any]] = []
 
     def __init__(
         self, binary_path: str, working_dir: str, binary_args: list, stdout_stream=subprocess.PIPE, stderr_stream=None
