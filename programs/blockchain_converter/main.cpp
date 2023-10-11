@@ -46,15 +46,8 @@ int main( int argc, char** argv )
 
     BOOST_SCOPE_EXIT(&bc_converter_app)
     {
-      auto _is_thread_closed = bc_converter_app.is_thread_closed();
-      if( !_is_thread_closed )
-        appbase::application::kill();
-
-      bc_converter_app.wait();
-
-      if( _is_thread_closed )
+      if( bc_converter_app.quit() )
         ilog("exited cleanly");
-
     } BOOST_SCOPE_EXIT_END
 
     // Setup converter options

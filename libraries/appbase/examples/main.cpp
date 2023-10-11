@@ -99,13 +99,8 @@ int main( int argc, char** argv ) {
 
     BOOST_SCOPE_EXIT(&theApp)
     {
-      if( !theApp.is_thread_closed() )
-        appbase::application::kill();
-
-      theApp.wait();
-
-      ilog("exited cleanly");
-
+      if( theApp.quit() )
+        ilog("exited cleanly");
     } BOOST_SCOPE_EXIT_END
 
     theApp.register_plugin<plugin_b>();

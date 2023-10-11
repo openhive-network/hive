@@ -172,7 +172,7 @@ namespace detail {
     }
 
     if( !theApp.is_interrupt_request() )
-      appbase::application::kill();
+      theApp.kill();
   }
 
   void block_log_conversion_plugin_impl::close()
