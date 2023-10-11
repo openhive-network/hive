@@ -23,9 +23,6 @@ namespace hive { namespace chain {
 
     virtual void set_is_at_live_sync() override { _is_at_live_sync = true; }
 
-    /**
-     * 
-     */
     virtual void store_block( uint32_t current_irreversible_block_num,
                               uint32_t state_head_block_number ) override;
 
@@ -49,6 +46,7 @@ namespace hive { namespace chain {
 
     void on_reindex_start();
     void on_reindex_end( const std::shared_ptr<full_block_type>& end_block );
+    void close();
 
   private:
     fork_db_block_reader  _reader;

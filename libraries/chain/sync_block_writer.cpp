@@ -373,4 +373,10 @@ void sync_block_writer::on_reindex_end( const std::shared_ptr<full_block_type>& 
   _fork_db.start_block( end_block );
 }
 
+void sync_block_writer::close()
+{
+  _fork_db.reset();
+  _block_log.close();
+}
+
 } } //hive::chain
