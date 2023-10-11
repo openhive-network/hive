@@ -77,7 +77,7 @@ except Exception:
 # create_account "initminer" "pychol" "" true
 def create_accounts(node, creator, accounts):
     for account in accounts:
-        logger.info("Creating account: {}".format(account["name"]))
+        logger.info(f"Creating account: {account['name']}")
         node.commit.create_account(
             account["name"],
             owner_key=account["public_key"],
@@ -94,7 +94,7 @@ def create_accounts(node, creator, accounts):
 # transfer_to_vesting initminer pychol "310.000 TESTS" true
 def transfer_to_vesting(node, from_account, accounts, vests):
     for acnt in accounts:
-        logger.info("Transfer to vesting from {} to {} amount {} {}".format(from_account, acnt["name"], vests, "TESTS"))
+        logger.info(f"Transfer to vesting from {from_account} to {acnt['name']} amount {vests} TESTS")
         node.commit.transfer_to_vesting(vests, to=acnt["name"], account=from_account, asset="TESTS")
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
@@ -103,11 +103,11 @@ def transfer_to_vesting(node, from_account, accounts, vests):
 # transfer initminer pychol "398.000 TBD" "initial transfer" true
 def transfer_assets_to_accounts(node, from_account, accounts, hives, hbds):
     for acnt in accounts:
-        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt["name"], hives, "TESTS"))
+        logger.info(f"Transfer from {from_account} to {acnt['name']} amount {hives} TESTS")
         node.commit.transfer(acnt["name"], hives, "TESTS", memo="initial transfer", account=from_account)
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
     for acnt in accounts:
-        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt["name"], hbds, "TBD"))
+        logger.info(f"Transfer from {from_account} to {acnt['name']} amount {hbds} TBD")
         node.commit.transfer(acnt["name"], hbds, "TBD", memo="initial transfer", account=from_account)
     hive_utils.common.wait_n_blocks(node.url, delayed_blocks)
 
@@ -121,8 +121,8 @@ def create_posts(node, accounts):
     i = 0
     for acnt in accounts:
         node.commit.post(
-            "Hivepy proposal title [{}]".format(acnt["name"]),
-            "Hivepy proposal body [{}]".format(acnt["name"]),
+            f"Hivepy proposal title [{acnt['name']}]",
+            f"Hivepy proposal body [{acnt['name']}]",
             acnt["name"],
             permlink=create_permlink(node, acnt["name"]),
             tags="proposals",
@@ -223,7 +223,7 @@ def list_voter_proposals(node, limit):
 
 
 def vote_proposals(node, ids, accounts):
-    logger.info("Voting proposals for %i proposals..." % (len(ids)))
+    logger.info(f"Voting proposals for {len(ids)} proposals...")
 
     proposal_limit = HIVE_PROPOSAL_MAX_IDS_NUMBER
 
@@ -253,7 +253,7 @@ def generate_blocks(node, time, wif):
     logger.info("Generating blocks ...")
 
     ret = node.debug_generate_blocks_until(wif, time, False)
-    print("Moved %s blocks" % (ret["blocks"]))
+    print(f"Moved {ret['blocks']} blocks")
     node.debug_generate_blocks(wif, delayed_blocks_ex)
 
 
@@ -267,9 +267,9 @@ def get_block_time(node):
 def get_info(node, message, time):
     block_time = get_block_time(node)
 
-    print("%s:" % (message))
-    print("block_time: %s" % (block_time))
-    print("end time  : %s" % (time))
+    print(f"{message}:")
+    print(f"block_time: {block_time}")
+    print(f"end time  : {time}")
 
 
 if __name__ == "__main__":
@@ -334,7 +334,7 @@ if __name__ == "__main__":
             # total votes: total proposals * accounts
             vote_proposals(node_client, ids, accounts)
 
-            print("%s items is ready to be removed" % (total_proposals * len(accounts) + total_proposals))
+            print(f"{total_proposals * len(accounts) + total_proposals} items is ready to be removed")
 
             get_info(node_client, "before movement", end_date_delay)
             generate_blocks(node_client, end_date_delay, wif)

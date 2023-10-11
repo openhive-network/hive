@@ -12,9 +12,7 @@ def vote_proposals(node, accounts, wif):
     idx = 0
     for account in accounts:
         proposal_set = [idx]
-        tt.logger.info(
-            "Account {} voted for proposals: {}".format(account["name"], ",".join(str(x) for x in proposal_set))
-        )
+        tt.logger.info(f"Account {account['name']} voted for proposals: {','.join(str(x) for x in proposal_set)}")
         op = Update_proposal_votes(**{"voter": account["name"], "proposal_ids": proposal_set, "approve": True})
         node.finalizeOp(op, account["name"], "active")
         idx += 1

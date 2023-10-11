@@ -190,7 +190,7 @@ class HiveNodeInScreen:
 
         self.pid_file_name = f"{self.working_dir}/run_hive-{self.port}.pid"
         current_time_str = datetime.datetime.now().strftime("%Y-%m-%d")
-        log_file_name = "{}/{}-{}-{}.log".format(self.working_dir, "hive", self.port, current_time_str)
+        log_file_name = f"{self.working_dir}/hive-{self.port}-{current_time_str}.log"
         screen_cfg_name = f"{self.working_dir}/hive_screen-{self.port}.cfg"
 
         save_screen_cfg(screen_cfg_name, log_file_name)
@@ -202,11 +202,11 @@ class HiveNodeInScreen:
             "-c",
             screen_cfg_name,
             "-S",
-            "{}-{}-{}".format("hive", self.port, current_time_str),
+            f"hive-{self.port}-{current_time_str}",
         ]
 
         parameters = screen_params + parameters
-        logger.info("Running hived with command: {}".format(" ".join(parameters)))
+        logger.info(f"Running hived with command: {' '.join(parameters)}")
 
         try:
             subprocess.Popen(parameters)

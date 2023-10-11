@@ -100,7 +100,7 @@ def list_proposals_by_node(creator, private_key, nodes, subjects):
             msg = f"Looking for id of proposal with subject {subject}"
             for proposal in proposals:
                 if proposal["subject"] == subject:
-                    msg = msg + " - FOUND ID = {}".format(proposal["id"])
+                    msg = msg + f" - FOUND ID = {proposal['id']}"
                     # assert proposal['id'] == results[subject], "ID do not match expected {} got {}".format(results[subject], proposal['id'])
                     break
             logger.info(msg)
@@ -214,7 +214,7 @@ if __name__ == "__main__":
             for proposal in proposals:
                 msg = f"Looking for id of proposal sent to {node} with subject {subject}"
                 if proposal["subject"] == subject:
-                    msg = msg + " - FOUND ID = {}".format(proposal["id"])
+                    msg = msg + f" - FOUND ID = {proposal['id']}"
                     results[subject] = proposal["id"]
                     break
             logger.info(msg)

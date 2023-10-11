@@ -36,7 +36,7 @@ class CompressedVop:
         from hashlib import sha512
         from json import dumps
 
-        self.id = "{}_{}_{}".format((~0x8000000000000000) & int(vop["operation_id"]), vop["block"], vop["trx_in_block"])
+        self.id = f"{~0x8000000000000000 & int(vop['operation_id'])}_{vop['block']}_{vop['trx_in_block']}"
         self.checksum = sha512(dumps(vop).encode()).hexdigest()
         # self.content = vop
 

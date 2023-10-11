@@ -17,9 +17,7 @@ def unvote_proposals(node, accounts, wif):
     tt.logger.info("Unvoting proposals...")
     for account in accounts:
         proposal_set = [0]
-        tt.logger.info(
-            "Account {} unvoted proposals: {}".format(account["name"], ",".join(str(x) for x in proposal_set))
-        )
+        tt.logger.info(f"Account {account['name']} unvoted proposals: {','.join(str(x) for x in proposal_set)}")
         op = Update_proposal_votes(**{"voter": account["name"], "proposal_ids": proposal_set, "approve": False})
         node.finalizeOp(op, account["name"], "active")
     if wif is not None:

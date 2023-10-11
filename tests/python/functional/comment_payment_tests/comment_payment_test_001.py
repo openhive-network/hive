@@ -182,7 +182,7 @@ if __name__ == "__main__":
             hive_utils.common.wait_n_blocks(node_client.rpc.url, 5)
 
             logger.info(f"Chain prefix is: {node_client.prefix}")
-            logger.info("Chain ID is: {}".format(node_client.get_config()["HIVE_CHAIN_ID"]))
+            logger.info(f"Chain ID is: {node_client.get_config()['HIVE_CHAIN_ID']}")
 
             # create accounts
             test_utils.create_accounts(node_client, args.creator, accounts)
@@ -202,15 +202,11 @@ if __name__ == "__main__":
             logger.info("Voting...")
             for account in accounts[1:]:
                 acc = Account(account["name"], hive_instance=node_client)
-                node_client.vote(
-                    100.0, "@{}/{}".format("tester001", test_utils.get_post_permlink("tester001")), account=acc
-                )
+                node_client.vote(100.0, f"@tester001/{test_utils.get_post_permlink('tester001')}", account=acc)
             hive_utils.common.wait_n_blocks(node_client.rpc.url, 10)
 
             last_cashout_time, _ = print_comment_rewards(node_client, accounts)
-            logger.info(
-                "Last block number: {}".format(node_client.get_dynamic_global_properties(False)["head_block_number"])
-            )
+            logger.info(f"Last block number: {node_client.get_dynamic_global_properties(False)['head_block_number']}")
             logger.info("Accelerating time...")
             hive_utils.debug_generate_blocks_until(node_client.rpc.url, wif, last_cashout_time, False)
             hive_utils.debug_generate_blocks(node_client.rpc.url, wif, 100)
@@ -218,9 +214,7 @@ if __name__ == "__main__":
 
             logger.info("Balances for accounts at end of the test")
             balances_before = test_utils.print_balance(node_client, accounts)
-            logger.info(
-                "Last block number: {}".format(node_client.get_dynamic_global_properties(False)["head_block_number"])
-            )
+            logger.info(f"Last block number: {node_client.get_dynamic_global_properties(False)['head_block_number']}")
             if node is not None:
                 node.stop_hive_node()
 
@@ -243,9 +237,7 @@ if __name__ == "__main__":
             _, after = print_comment_rewards(node_client, accounts)
             logger.info("Balances for accounts at end of the replay")
             balances_after = test_utils.print_balance(node_client, accounts)
-            logger.info(
-                "Last block number: {}".format(node_client.get_dynamic_global_properties(False)["head_block_number"])
-            )
+            logger.info(f"Last block number: {node_client.get_dynamic_global_properties(False)['head_block_number']}")
             logger.info("Comparing comment rewards")
             compare_tables(before, after)
             logger.info("Comparing balances")
