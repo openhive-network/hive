@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 import shared_tools.networks_architecture as networks

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from hive_local_tools import run_for
 from hive_local_tools.functional.python.datagen.api.transaction_status_api import assert_transaction_status
 

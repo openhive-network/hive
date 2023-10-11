@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import beemapi
 import pytest
 from beem.account import Account

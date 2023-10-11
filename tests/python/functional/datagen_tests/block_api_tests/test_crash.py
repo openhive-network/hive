@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import test_tools as tt
 
 from .block_log.generate_block_log import TOTAL_BLOCKS

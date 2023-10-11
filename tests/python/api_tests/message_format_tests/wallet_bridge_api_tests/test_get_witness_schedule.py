@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format.wallet_bridge_api import prepare_node_with_witnesses
 from hive_local_tools.api.message_format.wallet_bridge_api.constants import WITNESSES_NAMES

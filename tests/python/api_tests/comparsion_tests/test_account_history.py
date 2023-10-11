@@ -1,4 +1,6 @@
 # Example usage: pytest -s -n 4 test_account_history.py --ref localhost:8090 --test localhost:8095 [ --start 4900000 --stop 4925000 ]
+from __future__ import annotations
+
 from functools import partial
 from typing import Callable, Generator
 

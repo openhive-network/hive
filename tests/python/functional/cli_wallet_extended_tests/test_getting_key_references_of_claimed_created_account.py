@@ -1,5 +1,6 @@
 # This is a regression test for problem described in following issue:
 # https://gitlab.syncad.com/hive/hive/-/issues/113
+from __future__ import annotations
 
 import test_tools as tt
 

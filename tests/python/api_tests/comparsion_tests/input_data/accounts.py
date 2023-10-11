@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 ACCOUNTS = [
     "ranko-k",
     "alittle",

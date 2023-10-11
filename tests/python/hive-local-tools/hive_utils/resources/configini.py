@@ -1,4 +1,5 @@
 # Easier way to generate configs
+from __future__ import annotations
 
 
 class config:  # noqa: N801

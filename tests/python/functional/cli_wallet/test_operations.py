@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import test_tools as tt
 from hive_local_tools.functional.python.cli_wallet import FundedAccountInfo
 

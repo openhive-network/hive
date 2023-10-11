@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import test_tools as tt
 
 from .utilities import check_recurrent_transfer, check_recurrent_transfer_data, create_accounts

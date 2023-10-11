@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def pytest_addoption(parser):
     parser.addoption("--ref", action="store", type=str, help="specifies address of reference node")
     parser.addoption("--test", action="store", type=str, help="specifies address of tested service")

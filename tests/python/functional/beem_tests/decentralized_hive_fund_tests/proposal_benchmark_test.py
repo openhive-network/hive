@@ -23,6 +23,7 @@
 #  ./proposal_benchmark_test.py "/home/a/hived" "/home/a/data" "../../hive_utils/resources/config.ini.in" initminer 2 300 200000.000 30000.000 100000.000
 
 # Time[ms] is saved in `r_advanced_benchmark.json` ( position{"op_name": "dhf_processor"} ) in directory where this script is called
+from __future__ import annotations
 
 import logging
 import os

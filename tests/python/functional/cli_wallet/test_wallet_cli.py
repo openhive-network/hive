@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from subprocess import run as run_executable
 

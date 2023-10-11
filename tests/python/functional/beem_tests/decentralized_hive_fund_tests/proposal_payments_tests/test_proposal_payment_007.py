@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 
 from beembase.operations import Update_proposal_votes

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from hive_local_tools import run_for
 
 

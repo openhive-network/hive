@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from beembase.operations import Update_proposal_votes
 
 import hive_utils
