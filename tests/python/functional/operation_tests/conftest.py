@@ -71,6 +71,9 @@ class LimitOrderAccount(Account):
             f"is not correct. {self._name} should have now {amount} {token}"
         )
 
+    def cancel_order(self, *, order_id: int = 0):
+        return self._wallet.api.cancel_order(self._name, order_id)
+
     def create_order(
         self,
         amount_to_sell: int,
