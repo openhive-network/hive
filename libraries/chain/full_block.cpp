@@ -1,8 +1,7 @@
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
-#include <hive/chain/block_log.hpp>
-
 #include <fc/bitutil.hpp>
+
 #include <fc/io/json.hpp>
 
 namespace hive { namespace chain {

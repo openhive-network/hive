@@ -14,8 +14,6 @@ namespace hive { namespace plugins { namespace account_by_key {
 
 namespace detail {
 
-using namespace hive::protocol;
-
 class account_by_key_plugin_impl
 {
   public:

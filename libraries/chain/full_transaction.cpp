@@ -14,9 +14,6 @@ namespace fc {
 }
 namespace hive { namespace chain {
 
-using hive::protocol::chain_id_type;
-using hive::protocol::signed_transaction;
-
 std::atomic<uint32_t> cached_validate_calls = {0};
 std::atomic<uint32_t> non_cached_validate_calls = {0};
 std::atomic<uint32_t> cached_get_signature_keys_calls = {0};

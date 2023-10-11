@@ -13,8 +13,6 @@
 
 namespace hive { namespace chain {
 
-using namespace hive::protocol;
-
 using fc::uint128_t;
 
 resource_credits::report_type resource_credits::auto_report_type = resource_credits::report_type::REGULAR;

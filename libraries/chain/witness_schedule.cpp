@@ -14,7 +14,6 @@ namespace hive { namespace chain {
 using hive::chain::util::rd_system_params;
 using hive::chain::util::rd_user_params;
 using hive::chain::util::rd_validate_user_params;
-using hive::protocol::system_warning_operation;
 
 void reset_virtual_schedule_time( database& db )
 { try {
