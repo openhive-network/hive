@@ -107,7 +107,7 @@ class LimitOrderAccount(Account):
         fill_or_kill: bool = False,
         expiration: int = 60,
         buy_hbd: bool | None = None,
-    ) -> None:
+    ) -> dict[str, Any]:
         expiration_time = tt.Time.serialize(
             self._node.get_head_block_time() + tt.Time.seconds(expiration),
             format_=tt.TimeFormats.DEFAULT_FORMAT,
@@ -116,11 +116,11 @@ class LimitOrderAccount(Account):
         base = tt.Asset.Test if buy_hbd else tt.Asset.Tbd
         quote = tt.Asset.Test if not buy_hbd else tt.Asset.Tbd
 
-        create_transaction_with_any_operation(
+        return create_transaction_with_any_operation(
             self._wallet,
             LimitOrderCreate2OperationLegacy(
                 owner=self._name,
-                order_id=order_id,
+                orderid=order_id,
                 amount_to_sell=base(amount_to_sell).as_legacy(),
                 exchange_rate=HbdExchangeRate(
                     base=base(amount_to_sell).as_legacy(),
