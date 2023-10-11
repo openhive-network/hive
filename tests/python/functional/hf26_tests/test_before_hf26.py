@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from hive_local_tools.functional.python.hf26 import hf26_operation_failed, legacy_operation_passed, prepare_wallets
 
 

@@ -2,6 +2,7 @@
 # These tests are to ensure proper assets format (legacy) in wallet api. These tests are
 # needed only temporarily. When Protocol Buffers will be implemented, then correct format
 # (nai at this moment) will be enforced by them. This file should be removed then.
+from __future__ import annotations
 
 import test_tools as tt
 

@@ -1,4 +1,6 @@
 """Scenarios description: https://gitlab.syncad.com/hive/hive/-/issues/523"""
+from __future__ import annotations
+
 import pytest
 
 import test_tools as tt

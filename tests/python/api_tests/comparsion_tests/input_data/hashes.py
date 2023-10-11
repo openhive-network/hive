@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 HASHES = [
     "973290d26bac31335c000c7a3d3fe058ce3dbb9f",
     "6707feb450da66dc223ab5cb3e259937b2fef6bf",

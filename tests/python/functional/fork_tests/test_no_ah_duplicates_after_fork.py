@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 import shared_tools.complex_networks_helper_functions as sh

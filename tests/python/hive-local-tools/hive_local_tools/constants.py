@@ -10,6 +10,7 @@ or package in which they will be used. e.g.:
  - create in the test .py module - when used by tests only in this file,
  - create in proper place in the hive-local-tools - when used by tests in multiple modules/packages.
 """
+from __future__ import annotations
 
 from typing import Final
 

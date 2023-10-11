@@ -1,4 +1,6 @@
 # this test checks implementation of last_id field in list_voter_proposal arguments
+from __future__ import annotations
+
 import datetime
 
 import dateutil.parser

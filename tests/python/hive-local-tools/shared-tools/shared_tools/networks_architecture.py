@@ -33,6 +33,7 @@ print(na.show())
  (WitnessNode-0(P)) (witness7-beta, witness8-beta, witness9-beta, witness10-beta, witness11-beta, witness12-beta)
  (WitnessNode-1()) (witness13-beta, witness14-beta, witness15-beta, witness16-beta, witness17-beta)
 """
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Callable

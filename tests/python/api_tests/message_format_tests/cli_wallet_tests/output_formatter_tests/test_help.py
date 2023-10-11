@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 from hive_local_tools.api.message_format.cli_wallet import verify_json_patterns, verify_text_patterns

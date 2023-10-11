@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def check_sell_price(node, base, quote):
     assert "sell_price" in node
     _sell_price = node["sell_price"]

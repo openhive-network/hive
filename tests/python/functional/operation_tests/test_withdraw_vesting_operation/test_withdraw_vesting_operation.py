@@ -1,4 +1,6 @@
 """Tests - operation in Hive - Power down - https://gitlab.syncad.com/hive/hive/-/issues/474"""
+from __future__ import annotations
+
 import pytest
 
 import test_tools as tt
