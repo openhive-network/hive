@@ -24,7 +24,6 @@
 #include <graphene/net/core_messages.hpp>
 #include <graphene/net/message.hpp>
 #include <hive/chain/full_block.hpp>
-#include <hive/chain/block_log.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 

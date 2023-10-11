@@ -16,8 +16,6 @@ using hive::protocol::proposal_pay_operation;
 using hive::chain::dhf_helper;
 using hive::chain::dynamic_global_property_object;
 using hive::chain::block_notification;
-using hive::protocol::dhf_funding_operation;
-using hive::protocol::dhf_conversion_operation;
 
 const std::string dhf_processor::removing_name = "dhf_processor_remove";
 const std::string dhf_processor::calculating_name = "dhf_processor_calculate";

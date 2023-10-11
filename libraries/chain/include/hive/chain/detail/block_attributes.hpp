@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <optional>
 
 namespace hive { namespace chain { namespace detail {
