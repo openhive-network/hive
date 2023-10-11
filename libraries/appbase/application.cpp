@@ -619,4 +619,15 @@ void application::kill()
   ::kill(getpid(), SIGINT);
 }
 
+bool application::quit()
+{
+  auto _is_thread_closed = is_thread_closed();
+  if( !_is_thread_closed )
+    kill();
+
+  wait();
+
+  return _is_thread_closed;
+}
+
 } /// namespace appbase

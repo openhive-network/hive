@@ -88,15 +88,8 @@ int main( int argc, char** argv )
 
     BOOST_SCOPE_EXIT(&theApp)
     {
-      auto _is_thread_closed = theApp.is_thread_closed();
-      if( !_is_thread_closed )
-        appbase::application::kill();
-
-      theApp.wait();
-
-      if( _is_thread_closed )
+      if( theApp.quit() )
         ilog("exited cleanly");
-
     } BOOST_SCOPE_EXIT_END
 
     // Setup logging config

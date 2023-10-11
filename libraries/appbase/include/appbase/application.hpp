@@ -165,7 +165,8 @@ namespace appbase {
 
       std::set< std::string > get_plugins_names() const;
 
-      static void kill();
+      void kill();
+      bool quit();
 
     protected:
       template< typename Impl >
