@@ -9,10 +9,9 @@ init_data beekeeper_app_base::run( int argc, char** argv )
   set_program_options();
 
   auto _init_data = initialize( argc, argv );
-  if( !_init_data.status )
-    return _init_data;
 
-  start();
+  if( should_start_loop() )
+    start();
 
   return _init_data;
 }

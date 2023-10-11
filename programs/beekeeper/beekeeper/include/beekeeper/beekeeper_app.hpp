@@ -13,11 +13,11 @@ class beekeeper_app: public beekeeper_app_init
 {
   private:
 
+    bool start_loop = true;
+
     std::string notifications_endpoint;
 
     std::shared_ptr<beekeeper_instance> instance;
-
-    appbase::initialization_result::result init_status = appbase::initialization_result::result::ok;
 
     boost::signals2::connection webserver_connection;
 
@@ -30,6 +30,8 @@ class beekeeper_app: public beekeeper_app_init
     void setup_notifications( const boost::program_options::variables_map& args ) override;
 
     std::shared_ptr<beekeeper::beekeeper_wallet_manager> create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit ) override;
+
+    bool should_start_loop() const override;
 
   protected:
 

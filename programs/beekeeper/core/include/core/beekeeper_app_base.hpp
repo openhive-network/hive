@@ -14,6 +14,7 @@ class beekeeper_app_base
     virtual bool save_keys( const std::string& notification, const std::string& wallet_name, const std::string& wallet_password ) = 0;
     virtual init_data initialize( int argc, char** argv ) = 0;
     virtual void start() = 0;
+    virtual bool should_start_loop() const { return true; };
 
     init_data run( int argc, char** argv );
 
