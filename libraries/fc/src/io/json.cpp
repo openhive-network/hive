@@ -691,9 +691,15 @@ namespace fc
               return;
          case variant::int64_type:
          {
+              // Javascript needs to use bigint type for values which exceeses below limits,
+              // so in case if v exceeses, return it as string.
+              constexpr int64_t json_max_int_value_limit = 0x1fffffffffffff;
+              constexpr int64_t json_min_int_value_limit = -0x1fffffffffffff;
+
               int64_t i = v.as_int64();
               if( format == json::stringify_large_ints_and_doubles &&
-                  i > 0xffffffff )
+                  (i > json_max_int_value_limit ||
+                  i < json_min_int_value_limit ))
                  os << '"'<<v.as_string()<<'"';
               else
                  os << i;
@@ -702,9 +708,11 @@ namespace fc
          }
          case variant::uint64_type:
          {
+              constexpr uint64_t json_max_int_value_limit = 0x1fffffffffffff;
+
               uint64_t i = v.as_uint64();
               if( format == json::stringify_large_ints_and_doubles &&
-                  i > 0xffffffff )
+                  i > json_max_int_value_limit )
                  os << '"'<<v.as_string()<<'"';
               else
                  os << i;
