@@ -78,10 +78,8 @@ def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: list[str]) -
     return node
 
 
-def get_transaction_id_from_head_block(node) -> str:
-    if isinstance(node, (tt.ApiNode, tt.FullApiNode, tt.InitNode, tt.RemoteNode)):
-        head_block_number = node.api.database.get_dynamic_global_properties()["head_block_number"]
-        if not isinstance(node, tt.RemoteNode):
-            node.wait_for_irreversible_block()
-        return node.api.block.get_block(block_num=head_block_number)["block"]["transaction_ids"][0]
-    return None
+def get_transaction_id_from_head_block(node: tt.AnyNode) -> str:
+    head_block_number = node.api.database.get_dynamic_global_properties()["head_block_number"]
+    if not isinstance(node, tt.RemoteNode):
+        node.wait_for_irreversible_block()
+    return node.api.block.get_block(block_num=head_block_number)["block"]["transaction_ids"][0]
