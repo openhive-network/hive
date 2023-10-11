@@ -631,6 +631,8 @@ bool chain_plugin_impl::start_replay_processing()
 
 void chain_plugin_impl::initial_settings()
 {
+  db.set_block_writer( &( default_block_writer ) );
+
   if( statsd_on_replay )
   {
     auto statsd = theApp.find_plugin< hive::plugins::statsd::statsd_plugin >();
@@ -646,6 +648,7 @@ void chain_plugin_impl::initial_settings()
   {
     wlog("resync requested: deleting block log and shared memory");
     db.wipe( theApp.data_dir() / "blockchain", shared_memory_dir, true );
+    default_block_writer.close();
   }
 
   db.set_flush_interval( flush_interval );
@@ -1318,8 +1321,6 @@ void chain_plugin::plugin_startup()
 {
   ilog("Chain plugin initialization...");
 
-  my->db.set_block_writer( &( my->default_block_writer ) );
-
   my->initial_settings();
 
   ilog("Database opening...");
@@ -1378,6 +1379,7 @@ void chain_plugin::plugin_shutdown()
   blockchain_worker_thread_pool::get_instance( get_app() ).shutdown();
   my->stop_write_processing();
   my->db.close_all();
+  my->default_block_writer.close();
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");
 }

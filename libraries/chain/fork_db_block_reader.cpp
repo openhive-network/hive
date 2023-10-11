@@ -16,12 +16,6 @@ void fork_db_block_reader::start_reader( const std::shared_ptr<full_block_type>&
   _fork_db.start_block( head_block );
 }
 
-void fork_db_block_reader::close_reader()
-{
-  _fork_db.reset();
-  block_log_reader::close_reader();
-}
-
 std::shared_ptr<full_block_type> fork_db_block_reader::head_block() const
 {
   auto head = _fork_db.head();

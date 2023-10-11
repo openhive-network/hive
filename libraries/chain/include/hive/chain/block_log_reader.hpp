@@ -13,7 +13,6 @@ namespace hive { namespace chain {
     virtual ~block_log_reader() = default;
 
     virtual void start_reader( const std::shared_ptr<full_block_type>& head_block ) override;
-    virtual void close_reader() override;
 
     virtual std::shared_ptr<full_block_type> head_block() const override;
 
