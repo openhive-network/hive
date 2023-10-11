@@ -40,10 +40,10 @@ init_data beekeeper_app::initialize( int argc, char** argv )
   auto initializationResult = app.initialize<
                                 hive::plugins::webserver::webserver_plugin >
                               ( argc, argv );
-  init_status = static_cast<appbase::initialization_result::result>( initializationResult.get_result_code() );
+  start_loop = initializationResult.should_start_loop();
 
   if( !initializationResult.should_start_loop() )
-    return { false, "" };
+    return { initializationResult.get_result_code() == appbase::initialization_result::ok, "" };
   else
   {
     auto _initialization = initialize_program_options();
@@ -96,6 +96,11 @@ std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_app::create_walle
                                                                        cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit,
                                                                        [this]() { std::raise(SIGINT); } );
 }
+
+bool beekeeper_app::should_start_loop() const
+{
+  return start_loop;
+};
 
 init_data beekeeper_app::init( int argc, char** argv )
 {
