@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beekeeper Test</title>
+</head>
+<body id="beekeeperbody">
+  <script type="importmap">
+    {
+      "imports": {
+        "@hive/beekeeper": "/build/beekeeper.mjs"
+      }
+    }
+  </script>
+  <script type="module">
+    import BeekeeperModule from '@hive/beekeeper';
+
+    Object.defineProperties(window, {
+      beekeeper: {
+        get() {
+          return BeekeeperModule;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

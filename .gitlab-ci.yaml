@@ -39,7 +39,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: ba9d240a5d338120d3ad537d14f22c65f43a7103
+    ref: dd5a7fb401b572c8d64ab700980ba943d33506ef
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
@@ -54,6 +54,7 @@ include:
   interruptible: true
 
   before_script:
+    - cd programs/beekeeper/beekeeper_wasm
     - pnpm install
 
   tags:
@@ -133,7 +134,7 @@ beekeeper_wasm_package_generation:
     - scripts/ci-helpers/bump_npm_version.sh "$PUBLISH_TOKEN" "$NPM_SCOPE" "$NPM_REGISTRY"
   artifacts:
     paths:
-      - "$CI_PROJECT_DIR/package.json"
+      - "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/package.json"
 
     when: always
     expire_in: 1 week
@@ -186,7 +187,12 @@ test_beekeeper_wasm:
 
   script:
     - npm run test
-  allow_failure: true # Temporary - until actual set of tests will be adjusted to web environment
+
+  artifacts:
+    reports:
+      junit: programs/beekeeper/beekeeper_wasm/results.xml
+    paths:
+      - "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/results.json"
 
 mirrornet_replay_test:
   extends: .job-defaults

@@ -1,0 +1,58 @@
+{
+  "compilerOptions": {
+    "emitDecoratorMetadata": true,
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+
+    "incremental": false,
+    "noEmit": false,
+
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+
+    "noImplicitAny": false,
+    "noLib": false,
+
+    "allowUnreachableCode": false,
+    "allowSyntheticDefaultImports": true,
+    "allowUnusedLabels": false,
+    "strictNullChecks": true,
+    "strictPropertyInitialization": true,
+    "noFallthroughCasesInSwitch": false,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "rootDir": ".",
+    "baseUrl": ".",
+
+    "outDir": "./dist",
+
+    "removeComments": false,
+    "checkJs": false,
+    "strict": true,
+    "alwaysStrict": true,
+
+    "allowJs": false,
+
+    "target": "ES6",
+    "lib": [
+      "DOM",
+      "ES2017"
+    ],
+    "module": "ES6",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+
+    "noErrorTruncation": true
+  },
+  "buildOptions": {
+    "force": true,
+    "verbose": true
+  },
+  "include": [
+    "./**/*.ts"
+  ]
+}
