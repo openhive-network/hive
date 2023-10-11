@@ -2,23 +2,26 @@
   "name": "@hive/beekeeper",
   "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
   "description": "call hived functions from JavaScript",
-  "main": "build/beekeeper_wasm.mjs",
+  "main": "build/beekeeper.mjs",
   "type": "module",
   "private": false,
   "scripts": {
-    "prebuild:comment": "# Husky does not allow installing git hooks on parent directories, so we create a symbolic link to our root git directory to cheat it",
+    "postinstall": "playwright install",
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
-    "test": "node beekeeper_wasm_test/run_node.mjs"
+    "test": "unset CI && playwright test --workers 1 --max-failures 1 __tests__"
   },
   "license": "SEE LICENSE IN LICENSE.md",
   "files": [
-    "build/beekeeper_wasm.mjs",
-    "build/beekeeper_wasm.wasm",
+    "LICENSE.md",
+    "build/beekeeper.mjs",
     "build/beekeeper.d.ts",
     "beekeeper.d.ts"
   ],
   "devDependencies": {
-    "husky": "8.0.3"
+    "@playwright/test": "^1.38.1",
+    "http-server": "^14.1.1",
+    "husky": "8.0.3",
+    "playwright": "^1.38.1"
   },
   "types": "beekeeper.d.ts",
   "repository": {

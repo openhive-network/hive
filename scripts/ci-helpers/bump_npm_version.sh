@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-PROJECT_DIR="${SCRIPTPATH}/../.."
+PROJECT_DIR="${SCRIPTPATH}/../../programs/beekeeper/beekeeper_wasm"
 
 PUBLISH_TOKEN="${1}"
 # @hive
@@ -53,11 +53,11 @@ fi
 
 echo "//${REGISTRY_URL}:_authToken=\"${PUBLISH_TOKEN}\"" >> "${PROJECT_DIR}/.npmrc"
 
-git checkout package.json # be sure we're on clean version
+git checkout "${PROJECT_DIR}/package.json" # be sure we're on clean version
 
 jq ".name = \"${SCOPE}/${PROJECT_NAME}\" | .version = \"$NEW_VERSION\" | .publishConfig.registry = \"https://${REGISTRY_URL}\" | .publishConfig.tag = \"${DIST_TAG}\"" "${PROJECT_DIR}/package.json" > "${PROJECT_DIR}/package.json.tmp"
 
 mv "${PROJECT_DIR}/package.json.tmp" "${PROJECT_DIR}/package.json"
 
 # Display detailed publish config data
-jq -r '.name + "@" + .version + " (" + .publishConfig.tag + ") " + .publishConfig.registry' "package.json"
+jq -r '.name + "@" + .version + " (" + .publishConfig.tag + ") " + .publishConfig.registry' "${PROJECT_DIR}/package.json"

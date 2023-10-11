@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+PROJECT_DIR="${SCRIPTPATH}/../../programs/beekeeper/beekeeper_wasm"
+
 git config --global --add safe.directory '*'
 
 git fetch --tags
@@ -11,6 +14,8 @@ if [ "${CURRENT_BRANCH_IMPL}" = "" ]; then
 else
   CURRENT_BRANCH="${CURRENT_BRANCH_IMPL#*/}"
 fi
+
+cd "${PROJECT_DIR}"
 
 NAME=$(jq -r '.name' package.json)
 TAG=$(jq -r '.version' package.json)
