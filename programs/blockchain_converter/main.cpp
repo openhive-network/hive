@@ -41,7 +41,6 @@ int main( int argc, char** argv )
 {
   try
   {
-    appbase::initialization_result initResult( appbase::initialization_result::ok, false);
     appbase::application bc_converter_app;
     bc_converter_app.init_signals_handler();
 
@@ -101,19 +100,19 @@ int main( int argc, char** argv )
   }
   catch ( const boost::exception& e )
   {
-    std::cerr << boost::diagnostic_information(e) << "\n";
+    elog( boost::diagnostic_information(e) );
   }
   catch ( const fc::exception& e )
   {
-    std::cerr << e.to_detail_string() << "\n";
+    elog( e.to_detail_string() );
   }
   catch ( const std::exception& e )
   {
-    std::cerr << e.what() << "\n";
+    elog( e.what() );
   }
   catch ( ... )
   {
-    std::cerr << "unknown exception\n";
+    elog( "unknown exception" );
   }
 
   return -1;

@@ -174,19 +174,19 @@ int main( int argc, char** argv )
   }
   catch ( const boost::exception& e )
   {
-    ilog( boost::diagnostic_information(e) );
+    elog( boost::diagnostic_information(e) );
   }
   catch ( const fc::exception& e )
   {
-    ilog( e.to_detail_string() );
+    elog( e.to_detail_string() );
   }
   catch ( const std::exception& e )
   {
-    ilog( e.what() );
+    elog( e.what() );
   }
   catch ( ... )
   {
-    ilog( "unknown exception" );
+    elog( "unknown exception" );
   }
 
   return -1;
