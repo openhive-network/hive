@@ -123,6 +123,7 @@ int main( int argc, char** argv, char** envp )
   std::cout << fc::json::to_string( ss ) << std::endl;
 
   db.close_all();
+  block_writer.close();
 
   return 0;
 }

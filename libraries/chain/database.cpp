@@ -312,8 +312,6 @@ void database::close_all()
 
     chainbase::database::close();
 
-    block_reader().close_reader();
-
     ilog( "Database is closed" );
   }
   FC_CAPTURE_AND_RETHROW()
