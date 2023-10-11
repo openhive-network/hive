@@ -56,7 +56,7 @@ class config:  # noqa: N801
         with open(path_to_file, "w") as file:
             for key, value in conf.items():
                 if value is not None:
-                    file.write("{} = {}\n".format(key.replace("_", "-"), value))
+                    file.write(f"{key.replace('_', '-')} = {value}\n")
 
     def load(self, path_to_file: str):
         _keys = list(self.__dict__.keys())

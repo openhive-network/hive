@@ -15,7 +15,7 @@ logger.setLevel(LOG_LEVEL)
 
 def create_accounts(node, creator, accounts):
     for account in accounts:
-        logger.info("Creating account: {}".format(account["name"]))
+        logger.info(f"Creating account: {account['name']}")
         node.create_account(
             account["name"],
             owner_key=account["public_key"],
@@ -33,7 +33,7 @@ def transfer_to_vesting(node, from_account, accounts, amount, asset):
     from beem.account import Account
 
     for acnt in accounts:
-        logger.info("Transfer to vesting from {} to {} amount {} {}".format(from_account, acnt["name"], amount, asset))
+        logger.info(f"Transfer to vesting from {from_account} to {acnt['name']} amount {amount} {asset}")
         acc = Account(from_account, hive_instance=node)
         acc.transfer_to_vesting(amount, to=acnt["name"], asset=asset)
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
@@ -43,7 +43,7 @@ def transfer_assets_to_accounts(node, from_account, accounts, amount, asset):
     from beem.account import Account
 
     for acnt in accounts:
-        logger.info("Transfer from {} to {} amount {} {}".format(from_account, acnt["name"], amount, asset))
+        logger.info(f"Transfer from {from_account} to {acnt['name']} amount {amount} {asset}")
         acc = Account(from_account, hive_instance=node)
         acc.transfer(acnt["name"], amount, asset, memo="initial transfer")
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
@@ -66,8 +66,8 @@ def create_posts(node, accounts):
             )
         )
         node.post(
-            "Post title [{}]".format(acnt["name"]),
-            "Post body [{}]".format(acnt["name"]),
+            f"Post title [{acnt['name']}]",
+            f"Post body [{acnt['name']}]",
             author=acnt["name"],
             permlink=get_post_permlink(acnt["name"]),
             reply_identifier=None,

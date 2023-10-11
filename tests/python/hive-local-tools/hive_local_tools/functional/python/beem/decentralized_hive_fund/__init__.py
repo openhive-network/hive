@@ -53,7 +53,7 @@ def create_proposals(node, accounts, start_date, end_date, wif=None):
                 "start_date": start_date,
                 "end_date": end_date,
                 "daily_pay": "24.000 TBD",
-                "subject": "Proposal from account {}".format(account["name"]),
+                "subject": f"Proposal from account {account['name']}",
                 "permlink": test_utils.get_permlink(account["name"]),
             }
         )

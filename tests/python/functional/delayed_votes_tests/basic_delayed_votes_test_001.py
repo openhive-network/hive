@@ -40,7 +40,7 @@ if __name__ == "__main__":
         query(
             '{"jsonrpc":"2.0", "method":"condenser_api.get_accounts", "params":[["initminer"], false ], "id":1}', False
         )
-        print("test {} passed ".format("condenser_api.get_accounts passed"))
+        print("test condenser_api.get_accounts passed passed ")
 
         query(
             '{"jsonrpc":"2.0", "method":"condenser_api.lookup_account_names", "params":[["initminer"]], "id":1}', True
@@ -54,7 +54,7 @@ if __name__ == "__main__":
             ' "id":1}',
             False,
         )
-        print("test {} passed ".format("condenser_api.lookup_account_names"))
+        print("test condenser_api.lookup_account_names passed ")
 
         query(
             '{"jsonrpc":"2.0", "method":"database_api.find_accounts", "params": {"accounts":["initminer"]}, "id":1}',
@@ -70,7 +70,7 @@ if __name__ == "__main__":
             ' "delayed_votes_active" : false }, "id":1}',
             False,
         )
-        print("test {} passed ".format("condenser_api.find_accounts passed"))
+        print("test condenser_api.find_accounts passed passed ")
 
         query(
             '{"jsonrpc":"2.0", "method":"database_api.list_accounts", "params": {"start":"initminer", "limit":1,'
@@ -87,7 +87,7 @@ if __name__ == "__main__":
             ' "order":"by_name", "delayed_votes_active" : false }, "id":1}',
             False,
         )
-        print("test {} passed ".format("condenser_api.list_accounts passed"))
+        print("test condenser_api.list_accounts passed passed ")
 
         print("TEST PASSED")
 
