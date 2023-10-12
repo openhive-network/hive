@@ -16,7 +16,7 @@ namespace hive { namespace chain {
   class sync_block_writer : public block_write_i
   {
   public:
-    sync_block_writer( block_log& block_log, database& db, application& app );
+    sync_block_writer( database& db, application& app );
     virtual ~sync_block_writer() = default;
 
     virtual block_read_i& get_block_reader() override;
@@ -46,11 +46,14 @@ namespace hive { namespace chain {
 
     void on_reindex_start();
     void on_reindex_end( const std::shared_ptr<full_block_type>& end_block );
+    void open(  const fc::path& file, bool enable_compression,
+                int compression_level, bool enable_block_log_auto_fixing );
     void close();
+    const block_log& get_block_log() const { return _block_log; }
 
   private:
+    block_log             _block_log;
     fork_db_block_reader  _reader;
-    block_log&            _block_log;
     fork_database         _fork_db;
     bool                  _is_at_live_sync = false;
     database&             _db; /// Needed only for notification purposes.

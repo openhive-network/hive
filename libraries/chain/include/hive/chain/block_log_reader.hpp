@@ -9,7 +9,7 @@ namespace hive { namespace chain {
   class block_log_reader : public block_read_i
   {
   public:
-    block_log_reader( block_log& the_log );
+    block_log_reader( const block_log& the_log );
     virtual ~block_log_reader() = default;
 
     virtual void start_reader( const std::shared_ptr<full_block_type>& head_block ) override;
@@ -55,7 +55,7 @@ namespace hive { namespace chain {
       uint32_t limit) const override;
 
   private:
-    block_log&      _block_log;
+    const block_log& _block_log;
   };
 
 } }

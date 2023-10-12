@@ -18,7 +18,6 @@
 #include <vector>
 
 #include <hive/chain/account_object.hpp>
-#include <hive/chain/block_log.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
@@ -82,8 +81,7 @@ int main( int argc, char** argv, char** envp )
   appbase::application app;
 
   hive::chain::database db( app );
-  hive::chain::block_log bl( app );
-  hive::chain::sync_block_writer block_writer( bl, db, app );
+  hive::chain::sync_block_writer block_writer( db, app );
   db.set_block_writer( &block_writer );
 
   hive::chain::open_args db_args;
@@ -94,13 +92,10 @@ int main( int argc, char** argv, char** envp )
 
   std::map< std::string, schema_info > schema_map;
 
-  db.with_write_lock([&]()
-  {
-    bl.open_and_init( db_args.data_dir / "block_log",
+  block_writer.open(  db_args.data_dir / "block_log",
                       db_args.enable_block_log_compression,
                       db_args.block_log_compression_level,
                       db_args.enable_block_log_auto_fixing );
-  });
   db.open( db_args );
 
   hive_schema ss;
