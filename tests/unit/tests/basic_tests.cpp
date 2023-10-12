@@ -838,6 +838,30 @@ BOOST_AUTO_TEST_CASE( fc_optional_alignment )
   BOOST_CHECK_EQUAL( t[0]->m4, t[1]->m2 );
 }
 
+BOOST_AUTO_TEST_CASE( fc_json_integer_formatting )
+{
+  {
+    constexpr int64_t json_max_int_value_limit = 0x1fffffffffffff;
+    constexpr int64_t json_min_int_value_limit = -0x1fffffffffffff;
+    const fc::variant v(std::vector<int64_t>{json_max_int_value_limit + 1, json_min_int_value_limit - 1, json_max_int_value_limit, json_min_int_value_limit});
+
+    const string legacy_generator_formating_pattern = "[9007199254740992,-9007199254740992,9007199254740991,-9007199254740991]";
+    BOOST_CHECK_EQUAL(fc::json::to_string(v, fc::json::output_formatting::legacy_generator), legacy_generator_formating_pattern);
+    const string stringify_generator_formating_pattern = "[\"9007199254740992\",\"-9007199254740992\",9007199254740991,-9007199254740991]";
+    BOOST_CHECK_EQUAL(fc::json::to_string(v, fc::json::output_formatting::stringify_large_ints_and_doubles), stringify_generator_formating_pattern);
+  }
+
+  {
+    constexpr uint64_t javascript_max_uint_value_limit = 0x1fffffffffffff;
+    const fc::variant v(std::vector<uint64_t>{javascript_max_uint_value_limit + 1, javascript_max_uint_value_limit});
+
+    const string legacy_generator_formating_pattern = "[9007199254740992,9007199254740991]";
+    BOOST_CHECK_EQUAL(fc::json::to_string(v, fc::json::output_formatting::legacy_generator), legacy_generator_formating_pattern);
+    const string stringify_generator_formating_pattern = "[\"9007199254740992\",9007199254740991]";
+    BOOST_CHECK_EQUAL(fc::json::to_string(v, fc::json::output_formatting::stringify_large_ints_and_doubles), stringify_generator_formating_pattern);
+  }
+}
+
 BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
 {
   hive::chain::util::decoded_types_data_storage dtds;
