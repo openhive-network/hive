@@ -115,10 +115,6 @@ class PowerDown(Operation):
 
 
 class PowerDownAccount(Account):
-    def fund_vests(self, tests: tt.Asset.Test) -> None:
-        self._wallet.api.transfer_to_vesting("initminer", self._name, tests)
-        self.update_account_info()
-
     def assert_hive_power_is_unchanged(self) -> None:
         assert self.get_hive_power() == self._vest, "Hive Power has been changed."
 
