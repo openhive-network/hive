@@ -23,7 +23,12 @@ beekeeper_app_init::~beekeeper_app_init()
 void beekeeper_app_init::set_program_options()
 {
   options.add_options()
-    ("wallet-dir", bpo::value<boost::filesystem::path>()->default_value("."),
+  /*
+    The option `wallet-dir` can't have `boost::filesystem::path` type.
+    Explanation:
+      https://stackoverflow.com/questions/68716288/q-boost-program-options-using-stdfilesystempath-as-option-fails-when-the-gi
+  */
+    ("wallet-dir", bpo::value<std::string>()->default_value("."),
       "The path of the wallet files (absolute path or relative to application data dir)")
 
     ("unlock-timeout", bpo::value<uint64_t>()->default_value(900),
@@ -162,7 +167,7 @@ init_data beekeeper_app_init::initialize_program_options()
       std::string _notification = get_notifications_endpoint( _args );
 
       FC_ASSERT( _args.count("wallet-dir") );
-      auto _dir = _args.at("wallet-dir").as<boost::filesystem::path>();
+      boost::filesystem::path _dir( _args.at("wallet-dir").as<std::string>() );
       if(_dir.is_relative() )
           _dir = get_data_dir() / _dir;
       if( !bfs::exists( _dir ) )

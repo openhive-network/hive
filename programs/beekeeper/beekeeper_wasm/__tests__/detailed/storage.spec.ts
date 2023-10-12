@@ -206,13 +206,12 @@ test.describe('WASM storage tests', () => {
   test('Should be able to init beekeeper and save the wallet file with explicitly closing the instance of beekeeper', async () => {
     const dir = await saveKeys(page1, { close: true, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
 
-    expect(dir).toStrictEqual([ '.', '..', 'beekeeper', '.beekeeper' ]);
+    expect(dir).toStrictEqual([ '.', '..', 'beekeeper', 'directory with spaces' ]);
   });
 
   test('Should be able to init beekeeper and save the wallet file without explicitly closing the instance of beekeeper', async () => {
     const dir = await saveKeys(page3, { close: false, walletDir: STORAGE_ROOT, args: WALLET_OPTIONS });
-
-    expect(dir).toStrictEqual([ '.', '..', '.beekeeper' ]);
+    expect(dir).toStrictEqual([ '.', '..', 'directory with spaces' ]);
   });
 
   test('Should not be able to list the previously imported key from other context', async ({ page }) => {

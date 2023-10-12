@@ -19,4 +19,4 @@ declare global {
 }
 
 export const STORAGE_ROOT = '/storage_root';
-export const WALLET_OPTIONS = ['--wallet-dir', `${STORAGE_ROOT}/.beekeeper`];
+export const WALLET_OPTIONS = ['--wallet-dir', `${STORAGE_ROOT}/directory with spaces/.beekeeper`];
