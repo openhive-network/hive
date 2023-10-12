@@ -42,18 +42,22 @@ class LimitOrderAccount(Account):
         asset = tt.Asset.Tbd if check_hbd else tt.Asset.Test
         currency = asset(0).get_asset_information()
         messages = {
+            "cancellation": (
+                f"Something went wrong after cancelling an order. {self._name} should have {amount} "
+                f"{currency.get_symbol()}."
+            ),
+            "creation": f"{currency.get_symbol()} balance of {self._name} wasn't reduced after creating order.",
             "expiration": (
                 f"Something went wrong after expiration of orders. {self._name} should have"
                 f" {amount} {currency.get_symbol()}."
             ),
-            "creation": f"{currency} balance of {self._name} wasn't reduced after creating order.",
-            "order_match": (
-                f"Something went wrong in completing a trade. {currency.get_symbol()} balance of {self._name} should be"
-                f" equal to {amount}."
-            ),
             "no_match": (
                 f"Something went wrong after order creation - it shouldn't be matched. {currency.get_symbol()} balance"
                 f" of {self._name} should be equal to {amount}."
+            ),
+            "order_match": (
+                f"Something went wrong in completing a trade. {currency.get_symbol()} balance of {self._name} should be"
+                f" equal to {amount}."
             ),
         }
 
