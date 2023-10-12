@@ -922,6 +922,7 @@ operation_tests:
       - OPERATION: [ account_update_tests,
                      account_witness_vote_tests,
                      cancel_transfer_from_savings,
+                     comment_tests,
                      limit_order_tests,
                      test_recurrent_transfer,
                      test_transfer_to_vesting_operation,
@@ -929,7 +930,7 @@ operation_tests:
                      transfer_from_savings_tests,
                      transfer_tests,
                      transfer_to_savings_tests,
-                     comment_tests ]
+                     update_proposal_votes_tests ]
   tags:
     - public-runner-docker
 
