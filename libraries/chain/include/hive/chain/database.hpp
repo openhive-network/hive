@@ -115,9 +115,6 @@ namespace chain {
 
       void set_block_writer( block_write_i* writer );
 
-      block_read_i& block_reader();
-      const block_read_i& block_reader() const;
-
       enum transaction_status
       {
         TX_STATUS_NONE       = 0x00, //outside any transaction processing

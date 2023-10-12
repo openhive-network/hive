@@ -12,11 +12,13 @@ class transaction_status_api_impl
 public:
   transaction_status_api_impl( appbase::application& app ) :
     _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+    _block_reader( app.get_plugin< chain::chain_plugin >().block_reader() ),
     _tsp( app.get_plugin< hive::plugins::transaction_status::transaction_status_plugin >() ) {}
 
   DECLARE_API_IMPL( (find_transaction) )
 
   chain::database& _db;
+  const hive::chain::block_read_i& _block_reader;
   transaction_status::transaction_status_plugin& _tsp;
 };
 
@@ -62,7 +64,7 @@ DEFINE_API_IMPL( transaction_status_api_impl, find_transaction )
 
       // Check if the expiration is before our earliest tracked block plus maximum transaction expiration
       std::shared_ptr<hive::chain::full_block_type> earliest_tracked_block = 
-        _db.block_reader().fetch_block_by_number( earliest_tracked_block_num );
+        _block_reader.fetch_block_by_number( earliest_tracked_block_num );
       if (expiration < earliest_tracked_block->get_block_header().timestamp + HIVE_MAX_TIME_UNTIL_EXPIRATION)
         return {
           .status = transaction_status::too_old
@@ -72,7 +74,7 @@ DEFINE_API_IMPL( transaction_status_api_impl, find_transaction )
       if ( last_irreversible_block_num > 0 )
       {
         std::shared_ptr<hive::chain::full_block_type> last_irreversible_block = 
-          _db.block_reader().fetch_block_by_number( last_irreversible_block_num );
+          _block_reader.fetch_block_by_number( last_irreversible_block_num );
         if (expiration <= last_irreversible_block->get_block_header().timestamp)
           return {
             .status = transaction_status::expired_irreversible

@@ -31,7 +31,7 @@ namespace hive { namespace chain {
     using block_processor_t = std::function<bool( const std::shared_ptr<full_block_type>& )>;
     /// Let provided processor walk over provided block range.
     virtual void process_blocks( uint32_t starting_block_number, uint32_t ending_block_number,
-                                 block_processor_t processor ) = 0;
+                                 block_processor_t processor ) const = 0;
 
     /// Check among reversible blocks. If found none check among irreversible blocks.
     virtual std::shared_ptr<full_block_type> fetch_block_by_id( const block_id_type& id ) const = 0;

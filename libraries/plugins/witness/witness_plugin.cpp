@@ -61,6 +61,7 @@ namespace detail {
       _timer(io),
       _chain_plugin( app.get_plugin< hive::plugins::chain::chain_plugin >() ),
       _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+      _block_reader( app.get_plugin< chain::chain_plugin >().block_reader() ),
       _block_producer( std::make_shared< witness::block_producer >( _db ) ),
       theApp( app )
       {}
@@ -84,6 +85,7 @@ namespace detail {
 
     plugins::chain::chain_plugin& _chain_plugin;
     chain::database&              _db;
+    const chain::block_read_i&    _block_reader;
     boost::signals2::connection   _post_apply_block_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
     boost::signals2::connection   _finish_push_block_conn;
@@ -315,7 +317,7 @@ namespace detail {
                 uint32_t last_irreversible_block = _db.get_last_irreversible_block_num();
                 const block_id_type reference_block_id = 
                   last_irreversible_block ?
-                    _db.block_reader().find_block_id_for_num(last_irreversible_block) :
+                    _block_reader.find_block_id_for_num(last_irreversible_block) :
                     _db.head_block_id();
                 tx.set_reference_block(reference_block_id);
                 tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION/2);
