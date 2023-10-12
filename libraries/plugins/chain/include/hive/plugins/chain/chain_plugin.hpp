@@ -83,8 +83,6 @@ public:
     */
   int16_t set_write_lock_hold_time( int16_t new_time );
 
-  bool block_is_on_preferred_chain( const hive::chain::block_id_type& block_id );
-
   void check_time_in_block( const hive::chain::signed_block& block );
 
   template< typename MultiIndexType >
@@ -126,6 +124,8 @@ public:
   // Exposed for backwards compatibility. In the future, plugins should manage their own internal database
   database& db();
   const database& db() const;
+
+  const block_read_i& block_reader() const;
 
   // Emitted when the blockchain is syncing/live.
   // This is to synchronize plugins that have the chain plugin as an optional dependency.

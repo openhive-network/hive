@@ -53,8 +53,12 @@ struct hived_fixture : public database_fixture
   const fc::optional< fc::logging_config > get_logging_config() const { return _logging_config; }
   const fc::path& get_data_dir() const { return _data_dir; };
 
+  const hive::chain::block_read_i& get_block_reader() const;
+
   private:
     void postponed_init_impl( const config_arg_override_t& config_arg_overrides );
+  private:
+    const hive::chain::block_read_i* _block_reader = nullptr;
 };
 
 struct json_rpc_database_fixture : public hived_fixture

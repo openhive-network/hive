@@ -20,7 +20,7 @@ class block_api_impl
       (get_block_range)
     )
 
-    chain::database& _db;
+    const hive::chain::block_read_i& _block_reader;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -38,7 +38,7 @@ block_api::block_api( appbase::application& app )
 block_api::~block_api() {}
 
 block_api_impl::block_api_impl( appbase::application& app )
-  : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+  : _block_reader( app.get_plugin< hive::plugins::chain::chain_plugin >().block_reader() ) {}
 
 block_api_impl::~block_api_impl() {}
 
@@ -52,7 +52,7 @@ DEFINE_API_IMPL( block_api_impl, get_block_header )
 {
   get_block_header_return result;
   std::shared_ptr<full_block_type> block = 
-    _db.block_reader().fetch_block_by_number(args.block_num, fc::seconds(1) );
+    _block_reader.fetch_block_by_number(args.block_num, fc::seconds(1) );
   if (block)
     result.header = block->get_block_header();
   return result;
@@ -62,7 +62,7 @@ DEFINE_API_IMPL( block_api_impl, get_block )
 {
   get_block_return result;
   std::shared_ptr<full_block_type> full_block = 
-    _db.block_reader().fetch_block_by_number(args.block_num, fc::seconds(1));
+    _block_reader.fetch_block_by_number(args.block_num, fc::seconds(1));
   if (full_block)
     result.block = full_block;
   return result;
@@ -72,7 +72,7 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
 {
   get_block_range_return result;
   auto count = args.count;
-  auto head = _db.block_reader().head_block_num(fc::seconds(1));
+  auto head = _block_reader.head_block_num(fc::seconds(1));
   if( args.starting_block_num > head )
     count = 0;
   else if( args.starting_block_num + count - 1 > head )
@@ -80,7 +80,7 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
   if( count )
   {
     std::vector<std::shared_ptr<full_block_type>> full_blocks = 
-      _db.block_reader().fetch_block_range(args.starting_block_num, count, fc::seconds(1));
+      _block_reader.fetch_block_range(args.starting_block_num, count, fc::seconds(1));
     result.blocks.reserve(full_blocks.size());
     for (const std::shared_ptr<full_block_type>& full_block : full_blocks)
       result.blocks.push_back(full_block);

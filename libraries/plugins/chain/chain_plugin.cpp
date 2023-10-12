@@ -150,8 +150,9 @@ class chain_plugin_impl
 
     void initial_settings();
     void open();
-    uint32_t reindex( const open_args& args );
-    uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block );
+    uint32_t reindex( const open_args& args, const block_read_i& block_reader );
+    uint32_t reindex_internal( const open_args& args, 
+      const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader );
     /**
       * @brief Check if replaying was finished and all blocks from `block_reader` were processed.
       *
@@ -162,10 +163,11 @@ class chain_plugin_impl
       *
       * @return information if replaying was finished
       */
-    bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
-    bool replay_blockchain();
+    bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state,
+                              const block_read_i& block_reader ) const;
+    bool replay_blockchain( const block_read_i& block_reader );
     void process_snapshot();
-    bool check_data_consistency();
+    bool check_data_consistency( const block_read_i& block_reader );
 
     void prepare_work( bool started, synchronization_type& on_sync );
     void work( synchronization_type& on_sync );
@@ -599,7 +601,7 @@ bool chain_plugin_impl::start_replay_processing()
   } BOOST_SCOPE_EXIT_END
   
   theApp.notify_status("replaying");
-  bool replay_is_last_operation = replay_blockchain();
+  bool replay_is_last_operation = replay_blockchain( default_block_writer.get_block_reader() );
   theApp.notify_status("finished replaying");
 
   if( replay_is_last_operation )
@@ -688,12 +690,13 @@ void chain_plugin_impl::initial_settings()
   db_open_args.load_snapshot = load_snapshot;
 }
 
-bool chain_plugin_impl::check_data_consistency()
+bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader )
 {
   uint64_t head_block_num_origin = 0;
   uint64_t head_block_num_state = 0;
 
-  auto _is_reindex_complete = is_reindex_complete( &head_block_num_origin, &head_block_num_state );
+  auto _is_reindex_complete = 
+    is_reindex_complete( &head_block_num_origin, &head_block_num_state, block_reader );
 
   if( !_is_reindex_complete )
   {
@@ -749,7 +752,7 @@ void chain_plugin_impl::open()
   }
 }
 
-uint32_t chain_plugin_impl::reindex( const open_args& args )
+uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& block_reader )
 {
   reindex_notification note( args );
 
@@ -767,7 +770,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
 
     uint32_t _head_block_num = db.head_block_num();
 
-    std::shared_ptr<full_block_type> _head = db.block_reader().head_block();
+    std::shared_ptr<full_block_type> _head = block_reader.head_block();
     if( _head )
     {
       if( args.stop_replay_at == 0 )
@@ -799,11 +802,11 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
       if( _head_block_num > 0 )
       {
         if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
-          start_block = db.block_reader().read_block_by_num( _head_block_num + 1 );
+          start_block = block_reader.read_block_by_num( _head_block_num + 1 );
 
         if( !start_block )
         {
-          start_block = db.block_reader().read_block_by_num( _head_block_num );
+          start_block = block_reader.read_block_by_num( _head_block_num );
           FC_ASSERT( start_block, "Head block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", _head_block_num ) );
 
           replay_required = false;
@@ -811,7 +814,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
       }
       else
       {
-        start_block = db.block_reader().read_block_by_num( 1 );
+        start_block = block_reader.read_block_by_num( 1 );
       }
 
       if( replay_required )
@@ -820,7 +823,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
         if( _last_block_number && !args.force_replay )
           ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
 
-        note.last_block_number = reindex_internal( args, start_block );
+        note.last_block_number = reindex_internal( args, start_block, block_reader );
       }
       else
       {
@@ -832,8 +835,8 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
       //get_index< account_index >().indices().print_stats();
     });
 
-    FC_ASSERT( db.block_reader().head_block()->get_block_num(), "this should never happen" );
-    default_block_writer.on_reindex_end( db.block_reader().head_block() );
+    FC_ASSERT( block_reader.head_block()->get_block_num(), "this should never happen" );
+    default_block_writer.on_reindex_end( block_reader.head_block() );
 
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
@@ -846,7 +849,8 @@ uint32_t chain_plugin_impl::reindex( const open_args& args )
   FC_CAPTURE_AND_RETHROW( (args.data_dir)(args.shared_mem_dir) )
 }
 
-uint32_t chain_plugin_impl::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
+uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
+  const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader )
 {
   uint64_t skip_flags = chain::database::skip_validate_invariants | chain::database::skip_block_log;
   if (args.validate_during_replay)
@@ -863,7 +867,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args, const std::
       chain::database::skip_validate; /// no need to validate operations
   }
 
-  uint32_t last_block_num = db.block_reader().head_block()->get_block_num();
+  uint32_t last_block_num = block_reader.head_block()->get_block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
     last_block_num = args.stop_replay_at;
 
@@ -899,7 +903,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args, const std::
   process_block(start_block);
 
   if (start_block_number < last_block_num)
-    db.block_reader().process_blocks(start_block_number + 1, last_block_num, process_block);
+    block_reader.process_blocks(start_block_number + 1, last_block_num, process_block);
 
   if (theApp.is_interrupt_request())
     ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})",
@@ -911,9 +915,10 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args, const std::
   return last_applied_block->get_block_num();
 }
 
-bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64_t* head_block_num_in_db ) const
+bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklog,
+  uint64_t* head_block_num_in_db, const block_read_i& block_reader ) const
 {
-  std::shared_ptr<full_block_type> head = db.block_reader().head_block();
+  std::shared_ptr<full_block_type> head = block_reader.head_block();
   uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
   uint32_t head_block_num_state = db.head_block_num();
 
@@ -930,13 +935,13 @@ bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklo
   return head_block_num_origin == head_block_num_state;
 }
 
-bool chain_plugin_impl::replay_blockchain()
+bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader )
 {
   try
   {
     ilog("Replaying blockchain on user request.");
     uint32_t last_block_number = 0;
-    last_block_number = reindex( db_open_args );
+    last_block_number = reindex( db_open_args, block_reader );
 
     if( benchmark_interval > 0 )
     {
@@ -1039,6 +1044,13 @@ chain_plugin::~chain_plugin(){}
 
 database& chain_plugin::db() { return my->db; }
 const hive::chain::database& chain_plugin::db() const { return my->db; }
+
+const block_read_i& chain_plugin::block_reader() const 
+{ 
+  // When other plugins are able to call this method, replay is complete (if required)
+  // and default syncing block writer is being used.
+  return my->default_block_writer.get_block_reader();
+}
 
 bfs::path chain_plugin::state_storage_dir() const
 {
@@ -1337,7 +1349,7 @@ void chain_plugin::plugin_startup()
   else
   {
     ilog("Consistency data checking...");
-    if( my->check_data_consistency() )
+    if( my->check_data_consistency( my->default_block_writer.get_block_reader() ) )
     {
       if( my->db.get_snapshot_loaded() )
       {
@@ -1554,16 +1566,6 @@ int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )
   int16_t old_time = my->write_lock_hold_time;
   my->write_lock_hold_time = new_time;
   return old_time;
-}
-
-bool chain_plugin::block_is_on_preferred_chain(const hive::chain::block_id_type& block_id )
-{
-  // If it's not known, it's not preferred.
-  if( !db().block_reader().is_known_block(block_id) ) return false;
-
-  // Extract the block number from block_id, and fetch that block number's ID from the database.
-  // If the database's block ID matches block_id, then block_id is on the preferred chain. Otherwise, it's on a fork.
-  return db().block_reader().find_block_id_for_num( hive::chain::block_header::num_from_id( block_id ) ) == block_id;
 }
 
 void chain_plugin::check_time_in_block(const hive::chain::signed_block& block)

@@ -8,7 +8,8 @@ namespace detail {
 class abstract_account_history_api_impl
 {
   public:
-    abstract_account_history_api_impl( appbase::application& app ) : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+    abstract_account_history_api_impl( appbase::application& app )
+      : _block_reader( app.get_plugin< hive::plugins::chain::chain_plugin >().block_reader() ) {}
     virtual ~abstract_account_history_api_impl() {}
 
     virtual get_ops_in_block_return get_ops_in_block( const get_ops_in_block_args& ) = 0;
@@ -16,7 +17,7 @@ class abstract_account_history_api_impl
     virtual get_account_history_return get_account_history( const get_account_history_args& ) = 0;
     virtual enum_virtual_ops_return enum_virtual_ops( const enum_virtual_ops_args& ) = 0;
 
-    chain::database& _db;
+    const hive::chain::block_read_i& _block_reader;
 };
 
 class account_history_api_rocksdb_impl : public abstract_account_history_api_impl
@@ -206,7 +207,7 @@ DEFINE_API_IMPL( account_history_api_rocksdb_impl, get_transaction )
   if(_dataSource.find_transaction_info(id, include_reversible, &blockNo, &txInBlock))
   {
     std::shared_ptr<hive::chain::full_block_type> blk = 
-      _db.block_reader().fetch_block_by_number(blockNo, fc::seconds(1));
+      _block_reader.fetch_block_by_number(blockNo, fc::seconds(1));
     FC_ASSERT(blk);
     
     const auto& full_txs = blk->get_full_transactions();

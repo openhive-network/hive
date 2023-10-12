@@ -401,7 +401,7 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Popping generated block one more time" );
-    auto block = db->block_reader().fetch_block_by_number( db->head_block_num() );
+    auto block = get_block_reader().fetch_block_by_number( db->head_block_num() );
     BOOST_REQUIRE(block);
     db->pop_block();
 
@@ -502,7 +502,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
     for( int i = 10; i > 0; )
     {
       --i;
-      reality1[i] = db->block_reader().fetch_block_by_number( db->head_block_num() );
+      reality1[i] = get_block_reader().fetch_block_by_number( db->head_block_num() );
       db->pop_block();
     }
 
@@ -663,7 +663,7 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
     for( int i = 3; i > 0; )
     {
       --i;
-      reality1[i] = db->block_reader().fetch_block_by_number( db->head_block_num() );
+      reality1[i] = get_block_reader().fetch_block_by_number( db->head_block_num() );
       db->pop_block();
     }
 

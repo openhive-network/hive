@@ -113,6 +113,7 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
       auto& chain = app.get_plugin< hive::plugins::chain::chain_plugin >();
       chain.disable_p2p(); // We don't want p2p plugin connections at all.
       db = &chain.db();
+      _block_reader = &( chain.block_reader() );
       BOOST_REQUIRE( db );
       db->_log_hardforks = false;
 
@@ -137,6 +138,12 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
     edump( (e.to_detail_string()) );
     throw;
   }
+}
+
+const hive::chain::block_read_i& hived_fixture::get_block_reader() const
+{
+  BOOST_ASSERT( _block_reader != nullptr );
+  return *_block_reader;
 }
 
 json_rpc_database_fixture::json_rpc_database_fixture()
