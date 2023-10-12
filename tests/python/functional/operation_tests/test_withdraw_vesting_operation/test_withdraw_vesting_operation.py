@@ -19,7 +19,8 @@ def test_power_down(prepared_node, wallet, alice):
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1
+        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1,
+        operation_timestamp=power_down.timestamp,
     )
     alice.update_account_info()
 
@@ -52,7 +53,8 @@ def test_cancel_power_down(prepared_node, wallet, alice):
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1
+        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1,
+        operation_timestamp=power_down.timestamp,
     )
     alice.update_account_info()
 
@@ -90,7 +92,8 @@ def test_modify_power_down_amount(prepared_node, wallet, alice, first_pd_amount,
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1
+        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1,
+        operation_timestamp=power_down.timestamp,
     )
     alice.update_account_info()
 
