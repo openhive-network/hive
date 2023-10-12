@@ -40,7 +40,7 @@ public:
 
 typedef oid_ref< transaction_status_object > transaction_status_object_id_type;
 
-struct by_trx_id;
+struct by_trx_id {};
 struct by_block_num;
 struct by_expiration;
 

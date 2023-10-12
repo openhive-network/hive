@@ -71,7 +71,7 @@ class proposal_vote_object : public object< proposal_vote_object_type, proposal_
   CHAINBASE_UNPACK_CONSTRUCTOR(proposal_vote_object);
 };
 
-struct by_proposal_id;
+struct by_proposal_id {};
 struct by_start_date;
 struct by_end_date;
 struct by_creator;

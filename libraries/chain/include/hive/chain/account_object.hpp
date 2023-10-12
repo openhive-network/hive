@@ -532,7 +532,7 @@ namespace hive { namespace chain {
     allocator< account_object >
   > account_index;
 
-  struct by_account;
+  struct by_account {};
 
   typedef multi_index_container <
     account_metadata_object,
@@ -578,7 +578,7 @@ namespace hive { namespace chain {
     allocator< account_authority_object >
   > account_authority_index;
 
-  struct by_delegation;
+  struct by_delegation {};
 
   typedef multi_index_container <
     vesting_delegation_object,
@@ -595,8 +595,8 @@ namespace hive { namespace chain {
     allocator< vesting_delegation_object >
   > vesting_delegation_index;
 
-  struct by_expiration;
-  struct by_account_expiration;
+  struct by_expiration {};
+  struct by_account_expiration {};
 
   typedef multi_index_container <
     vesting_delegation_expiration_object,
@@ -641,7 +641,7 @@ namespace hive { namespace chain {
     allocator< account_recovery_request_object >
   > account_recovery_request_index;
 
-  struct by_effective_date;
+  struct by_effective_date {};
 
   typedef multi_index_container <
     change_recovery_account_request_object,
