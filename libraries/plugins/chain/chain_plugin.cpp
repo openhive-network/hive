@@ -123,7 +123,6 @@ class chain_plugin_impl
       db( app ),
       the_block_log( app ),
       default_block_writer( the_block_log, db, app ),
-      reindex_block_writer( the_block_log ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
     {
@@ -222,7 +221,6 @@ class chain_plugin_impl
     database  db;
     block_log                        the_block_log;
     sync_block_writer                default_block_writer;
-    irreversible_block_writer        reindex_block_writer;
 
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
@@ -595,6 +593,7 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing()
 {
+  irreversible_block_writer reindex_block_writer( the_block_log );
   db.set_block_writer( &reindex_block_writer );
 
   BOOST_SCOPE_EXIT(this_) {
