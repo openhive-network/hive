@@ -61,6 +61,14 @@ class Account:
     def vest(self):
         return self._vest
 
+    def fund_vests(self, tests: tt.Asset.Test) -> None:
+        self._wallet.api.transfer_to_vesting(
+            "initminer",
+            self._name,
+            tests,
+        )
+        self.update_account_info()
+
     def get_hbd_balance(self):
         return get_hbd_balance(self._node, self._name)
 
