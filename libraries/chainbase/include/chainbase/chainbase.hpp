@@ -1170,7 +1170,15 @@ namespace chainbase {
           auto obj = find< ObjectType, IndexedByType >( std::forward< CompatibleKey >( key ) );
           if( !obj )
           {
-            CHAINBASE_THROW_EXCEPTION( std::out_of_range( "unknown key" ) );
+            typedef typename get_index_type< ObjectType >::type index_type;
+            std::string index_type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+            std::string indexed_by_typename = boost::core::demangle(typeid(IndexedByType).name());
+            std::string compatible_key_typename = boost::core::demangle(typeid(CompatibleKey).name());
+            
+            fc::exception msg_format_helper(FC_LOG_MESSAGE(error, "unknown key: ${key} of type: ${kt} at multiindex lookup: ${multiindex}.index<${indexed_by_typename}>",
+              ("kt", compatible_key_typename)("multiindex", index_type_name)("indexed_by_typename", indexed_by_typename)("key", key)));
+
+            CHAINBASE_THROW_EXCEPTION(std::out_of_range(msg_format_helper.to_detail_string() ));
           }
           return *obj;
       }
@@ -1180,7 +1188,18 @@ namespace chainbase {
       {
           CHAINBASE_REQUIRE_READ_LOCK("get", ObjectType);
           auto obj = find< ObjectType >( key );
-          if( !obj ) CHAINBASE_THROW_EXCEPTION( std::out_of_range( "unknown key") );
+          if( !obj )
+          {
+            typedef typename get_index_type< ObjectType >::type index_type;
+            std::string compatible_key_typename = boost::core::demangle(typeid(ObjectType).name());
+
+            std::string index_type_name = boost::core::demangle(typeid(typename index_type::value_type).name());
+
+            fc::exception msg_format_helper(FC_LOG_MESSAGE(error, "unknown key: ${key} of type: oid<${kt}> at multiindex lookup: ${multiindex}",
+              ("kt", compatible_key_typename)("multiindex", index_type_name)("key", key)));
+
+            CHAINBASE_THROW_EXCEPTION(std::out_of_range(msg_format_helper.to_detail_string()));
+          }
           return *obj;
       }
 
