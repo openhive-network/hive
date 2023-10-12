@@ -5,7 +5,7 @@
 
 namespace hive { namespace chain {
 
-irreversible_block_writer::irreversible_block_writer( block_log& block_log )
+irreversible_block_writer::irreversible_block_writer( const block_log& block_log )
   : _reader( block_log )
 {}
 
