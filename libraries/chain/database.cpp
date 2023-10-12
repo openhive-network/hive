@@ -247,13 +247,14 @@ void database::load_state_initial_data(const open_args& args)
 
   if (head_block_num())
   {
-    std::shared_ptr<full_block_type> head_block = block_reader().read_block_by_num(head_block_num());
+    std::shared_ptr<full_block_type> head_block = 
+      _block_writer->get_block_reader().read_block_by_num(head_block_num());
     // This assertion should be caught and a reindex should occur
     FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
     "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
     ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
 
-    block_reader().start_reader( head_block );
+    _block_writer->get_block_reader().start_reader( head_block );
   }
 
   with_read_lock([&]() {
@@ -876,7 +877,7 @@ void database::pop_block()
     std::shared_ptr<full_block_type> full_head_block;
     try
     {
-      full_head_block = block_reader().fetch_block_by_id(head_id);
+      full_head_block = _block_writer->get_block_reader().fetch_block_by_id(head_id);
     }
     FC_CAPTURE_AND_RETHROW()
 
@@ -6799,16 +6800,6 @@ void database::remove_expired_governance_votes()
       break;
     }
   }
-}
-
-block_read_i& database::block_reader()
-{
-  return _block_writer->get_block_reader();
-}
-
-const block_read_i& database::block_reader() const
-{
-  return _block_writer->get_block_reader();
 }
 
 void database::set_block_writer( block_write_i* writer )

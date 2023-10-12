@@ -146,7 +146,7 @@ bool p2p_plugin_impl::has_item( const graphene::net::item_id& id )
   try
   {
     if( id.item_type == graphene::net::block_message_type )
-      return chain.db().block_reader().is_known_block(id.item_hash);
+      return chain.block_reader().is_known_block(id.item_hash);
     else
       return chain.db().with_read_lock( [&]() {
         return chain.db().is_known_transaction(id.item_hash);
@@ -161,7 +161,7 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
   {
     action_catcher ac( shutdown_helper, hive_p2p_handler_type::HIVE_P2P_BLOCK_HANDLER );
 
-    uint32_t head_block_num = chain.db().block_reader().head_block_num();
+    uint32_t head_block_num = chain.block_reader().head_block_num();
     if (sync_mode)
       fc_ilog(fc::logger::get("sync"),
           "chain pushing sync block #${block_num} ${block_hash}, head is ${head_block_num}",
@@ -265,7 +265,7 @@ std::vector<graphene::net::item_hash_t> p2p_plugin_impl::get_block_ids(const std
 { try {
   try
   {
-    return chain.db().block_reader().get_block_ids(blockchain_synopsis, remaining_item_count, limit);
+    return chain.block_reader().get_block_ids(blockchain_synopsis, remaining_item_count, limit);
   }
   catch (const hive::chain::internal_peer_is_on_an_unreachable_fork&)
   {
@@ -276,7 +276,7 @@ std::vector<graphene::net::item_hash_t> p2p_plugin_impl::get_block_ids(const std
 std::shared_ptr<chain::full_block_type> p2p_plugin_impl::get_full_block(const block_id_type& id)
 { try {
   fc_dlog(fc::logger::get("chainlock"), "get_full_block will get forkdb read lock");
-  return chain.db().block_reader().fetch_block_by_id(id);
+  return chain.block_reader().fetch_block_by_id(id);
 } FC_CAPTURE_AND_RETHROW((id)) }
 
 hive::protocol::chain_id_type p2p_plugin_impl::get_old_chain_id() const
@@ -296,7 +296,7 @@ hive::protocol::chain_id_type p2p_plugin_impl::get_chain_id() const
 
 std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synopsis( const graphene::net::item_hash_t& reference_point, uint32_t number_of_blocks_after_reference_point )
 { try {
-  return chain.db().block_reader().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
+  return chain.block_reader().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
 } FC_LOG_AND_RETHROW() }
 
 void p2p_plugin_impl::sync_status( uint32_t item_type, uint32_t item_count )
@@ -320,14 +320,14 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
   try
   {
     std::shared_ptr<hive::chain::full_block_type> block = 
-      chain.db().block_reader().fetch_block_by_id(block_id);
+      chain.block_reader().fetch_block_by_id(block_id);
     return block ? block->get_block_header().timestamp : fc::time_point_sec::min();
   } FC_CAPTURE_AND_RETHROW((block_id))
 }
 
 graphene::net::item_hash_t p2p_plugin_impl::get_head_block_id() const
 { try {
-  return chain.db().block_reader().head_block_id();
+  return chain.block_reader().head_block_id();
 } FC_CAPTURE_AND_RETHROW() }
 
 uint32_t p2p_plugin_impl::estimate_last_known_fork_from_git_revision_timestamp(uint32_t) const
@@ -342,7 +342,7 @@ void p2p_plugin_impl::error_encountered( const string& message, const fc::oexcep
 
 std::deque<block_id_type>::const_iterator p2p_plugin_impl::find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received)
 {
-  return chain.db().block_reader().find_first_item_not_in_blockchain(item_hashes_received);
+  return chain.block_reader().find_first_item_not_in_blockchain(item_hashes_received);
 }
 
 void p2p_plugin_impl::request_precomputing_transaction_signatures_if_useful()
@@ -364,7 +364,7 @@ bool p2p_plugin_impl::is_included_block(const block_id_type& block_id)
   try
   {
     block_id_type block_id_in_preferred_chain = 
-      chain.db().block_reader().find_block_id_for_num(block_num);
+      chain.block_reader().find_block_id_for_num(block_num);
     return block_id == block_id_in_preferred_chain;
   }
   catch (fc::key_not_found_exception&)

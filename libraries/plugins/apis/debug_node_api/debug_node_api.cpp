@@ -19,6 +19,7 @@ class debug_node_api_impl
   public:
     debug_node_api_impl( appbase::application& app ) :
       _db( app.get_plugin< chain::chain_plugin >().db() ),
+      _block_reader( app.get_plugin< chain::chain_plugin >().block_reader() ),
       _debug_node( app.get_plugin< debug_node_plugin >() ),
       theApp( app ) {}
 
@@ -38,6 +39,7 @@ class debug_node_api_impl
     )
 
     chain::database& _db;
+    const hive::chain::block_read_i& _block_reader;
     debug_node::debug_node_plugin& _debug_node;
 
     appbase::application& theApp;
@@ -112,7 +114,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_generate_blocks_until )
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_head_block )
 {
-  return { _db.block_reader().fetch_block_by_number(_db.head_block_num())->get_block() }; 
+  return { _block_reader.fetch_block_by_number(_db.head_block_num())->get_block() }; 
 }
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_get_witness_schedule )
