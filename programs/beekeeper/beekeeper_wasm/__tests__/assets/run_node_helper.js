@@ -1,6 +1,4 @@
-import { strict as assert } from 'node:assert';
-
-export class ExtractError extends Error {
+class ExtractError extends Error {
   constructor(parsed) {
     super("Response resulted with error");
     this.name = 'ExtractError';
@@ -8,7 +6,7 @@ export class ExtractError extends Error {
   }
 }
 
-export default class BeekeeperInstanceHelper {
+class BeekeeperInstanceHelper {
   // Private properties:
 
   #instance = undefined;
@@ -48,7 +46,8 @@ export default class BeekeeperInstanceHelper {
 
   static #getPassword(walletName) {
     const pass = BeekeeperInstanceHelper.#passwords.get(walletName);
-    assert.ok(pass, "Wallet does not exist");
+    if(!pass)
+      throw new Error("Wallet does not exist");
 
     return pass;
   }
@@ -60,14 +59,14 @@ export default class BeekeeperInstanceHelper {
     {
       if( !parsed.hasOwnProperty('error') )
         throw new ExtractError(parsed);
-  
+
       return JSON.parse(parsed.error);
     }
     else
     {
       if( !parsed.hasOwnProperty('result') )
         throw new ExtractError(parsed);
-  
+
       return JSON.parse(parsed.result);
     }
   }
@@ -78,7 +77,8 @@ export default class BeekeeperInstanceHelper {
       params.push_back(option);
 
     const s = params.size();
-    assert.equal(s, options.length);
+    if(s !== options.length)
+      throw new Error("Invalid params size");
 
     return params;
   }
@@ -157,7 +157,7 @@ export default class BeekeeperInstanceHelper {
     else
     {
       const value = this.#extract(returnedValue);
-  
+
       return value.public_key;
     }
   };

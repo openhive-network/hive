@@ -60,6 +60,20 @@ test.describe('WASM Base tests', () => {
     }, WALLET_OPTIONS);
   });
 
+  test('Should be able to create instance of ExtractError - import script', async ({ page }) => {
+    await page.evaluate(async () => {
+      new ExtractError("");
+    }, );
+  });
+
+  test('Should be able to create instance of BeekeeperInstanceHelper', async ({ page }) => {
+    await page.evaluate(async (WALLET_OPTIONS) => {
+      const provider = await beekeeper();
+
+      new BeekeeperInstanceHelper(provider, WALLET_OPTIONS)
+    }, WALLET_OPTIONS);
+  });
+
   test.afterAll(async () => {
     await browser.close();
   });
