@@ -521,7 +521,7 @@ namespace hive { namespace chain {
     allocator< withdraw_vesting_route_object >
   > withdraw_vesting_route_index;
 
-  struct by_from_id;
+  struct by_from_id {};
   struct by_ratification_deadline;
   typedef multi_index_container<
     escrow_object,
@@ -546,7 +546,7 @@ namespace hive { namespace chain {
     allocator< escrow_object >
   > escrow_index;
 
-  struct by_from_rid;
+  struct by_from_rid {};
   struct by_to_complete;
   struct by_complete_from_rid;
   typedef multi_index_container<

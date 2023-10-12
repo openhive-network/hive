@@ -405,7 +405,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(comment_vote_object);
   };
 
-  struct by_comment_voter;
+  struct by_comment_voter {};
   struct by_voter_comment;
   typedef multi_index_container<
     comment_vote_object,
@@ -429,7 +429,7 @@ namespace hive { namespace chain {
   > comment_vote_index;
 
 
-  struct by_permlink; /// author, perm
+  struct by_permlink {}; /// author, perm
   
   /**
     * @ingroup object_index

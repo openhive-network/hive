@@ -61,6 +61,6 @@ public:
   oid_ref& operator= ( const oid<T>& id ) { *static_cast< oid<T>* >( this ) = id; return *this; }
 };
 
-struct by_id;
+struct by_id {};
 
 } /// namespace chainbase
