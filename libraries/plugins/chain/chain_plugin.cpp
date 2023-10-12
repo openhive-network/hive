@@ -121,8 +121,7 @@ class chain_plugin_impl
   public:
     chain_plugin_impl( appbase::application& app ):
       db( app ),
-      the_block_log( app ),
-      default_block_writer( the_block_log, db, app ),
+      default_block_writer( db, app ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
     {
@@ -218,8 +217,7 @@ class chain_plugin_impl
     fc::mutable_variant_object       plugin_state_opts;
     bfs::path                        database_cfg;
 
-    database  db;
-    block_log                        the_block_log;
+    database                         db;
     sync_block_writer                default_block_writer;
 
     std::string block_generator_registrant;
@@ -593,7 +591,7 @@ void chain_plugin_impl::stop_write_processing()
 
 bool chain_plugin_impl::start_replay_processing()
 {
-  irreversible_block_writer reindex_block_writer( the_block_log );
+  irreversible_block_writer reindex_block_writer( default_block_writer.get_block_log() );
   db.set_block_writer( &reindex_block_writer );
 
   BOOST_SCOPE_EXIT(this_) {
@@ -725,13 +723,10 @@ void chain_plugin_impl::open()
   {
     ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
 
-    db.with_write_lock([&]()
-    {
-      the_block_log.open_and_init(  db_open_args.data_dir / "block_log",
-                                    db_open_args.enable_block_log_compression,
-                                    db_open_args.block_log_compression_level,
-                                    db_open_args.enable_block_log_auto_fixing );
-    });
+    default_block_writer.open(  db_open_args.data_dir / "block_log",
+                                db_open_args.enable_block_log_compression,
+                                db_open_args.block_log_compression_level,
+                                db_open_args.enable_block_log_auto_fixing );
     db.open( db_open_args );
 
     if( dump_memory_details )

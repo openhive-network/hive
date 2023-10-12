@@ -10,8 +10,8 @@
 
 namespace hive { namespace chain {
 
-sync_block_writer::sync_block_writer( block_log& block_log, database& db, application& app )
-  : _reader( _fork_db, block_log ), _block_log( block_log ), _db(db), _app(app)
+sync_block_writer::sync_block_writer( database& db, application& app )
+  : _block_log( app ), _reader( _fork_db, _block_log ), _db(db), _app(app)
 {}
 
 block_read_i& sync_block_writer::get_block_reader()
@@ -371,6 +371,18 @@ void sync_block_writer::on_reindex_start()
 void sync_block_writer::on_reindex_end( const std::shared_ptr<full_block_type>& end_block )
 {
   _fork_db.start_block( end_block );
+}
+
+void sync_block_writer::open( const fc::path& file, bool enable_compression,
+  int compression_level, bool enable_block_log_auto_fixing )
+{
+  _db.with_write_lock([&]()
+  {
+    _block_log.open_and_init( file,
+                              enable_compression,
+                              compression_level,
+                              enable_block_log_auto_fixing );
+  });
 }
 
 void sync_block_writer::close()

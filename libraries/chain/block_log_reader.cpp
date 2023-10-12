@@ -4,7 +4,7 @@
 
 namespace hive { namespace chain {
 
-block_log_reader::block_log_reader( block_log& block_log )
+block_log_reader::block_log_reader( const block_log& block_log )
   : _block_log( block_log )
 {}
 

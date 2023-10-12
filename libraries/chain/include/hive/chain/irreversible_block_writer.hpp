@@ -11,7 +11,7 @@ namespace hive { namespace chain {
   class irreversible_block_writer : public block_write_i
   {
   public:
-    irreversible_block_writer( block_log& block_log );
+    irreversible_block_writer( const block_log& block_log );
     virtual ~irreversible_block_writer() = default;
 
     virtual block_read_i& get_block_reader() override;
@@ -46,7 +46,7 @@ namespace hive { namespace chain {
       { FC_ASSERT( false, "Wrong writer bro" ); }
 
   private:
-    block_log_reader  _reader;
+    block_log_reader _reader;
   };
 
 } }
