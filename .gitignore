@@ -122,6 +122,7 @@ r_advanced_benchmark.json
 *.norm
 results.json
 results.xml
+programs/beekeeper/beekeeper_wasm/LICENSE.md
 
 # pyrest tests
 *.out.json

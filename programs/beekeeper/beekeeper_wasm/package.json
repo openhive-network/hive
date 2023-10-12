@@ -8,7 +8,8 @@
   "scripts": {
     "postinstall": "playwright install",
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
-    "test": "unset CI && playwright test --workers 1 --max-failures 1 __tests__"
+    "test": "unset CI && playwright test --workers 1 --max-failures 1 __tests__",
+    "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
   },
   "license": "SEE LICENSE IN LICENSE.md",
   "files": [
