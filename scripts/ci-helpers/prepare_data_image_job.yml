@@ -1,13 +1,13 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "b5202fecccf40845099da351cbc0c38a6205339c"
+  CI_COMMON_JOB_VERSION: "5c42c8019dd329000fd036668b22eb3eb99a743a"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: b5202fecccf40845099da351cbc0c38a6205339c # develop
+    ref: 5c42c8019dd329000fd036668b22eb3eb99a743a # develop
     file: '/templates/docker_image_jobs.gitlab-ci.yml'
 
 .docker_image_builder_job:
@@ -59,7 +59,6 @@ include:
     paths:
       - ./$BINARY_CACHE_PATH/*
       - ./docker_image_name.env
-    expire_in: 6 hours
 
 .prepare_hived_data_5m:
   extends: .docker_image_builder_job
@@ -84,5 +83,4 @@ include:
         - docker_image_name.env
         - hived_uid.env
     paths:
-    - docker_entrypoint.log
-    expire_in: 6 hours
+      - docker_entrypoint.log
