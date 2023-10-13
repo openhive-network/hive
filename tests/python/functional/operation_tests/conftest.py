@@ -74,6 +74,11 @@ class LimitOrderAccount(Account):
     def cancel_order(self, *, order_id: int = 0):
         return self._wallet.api.cancel_order(self._name, order_id)
 
+    def assert_rc_current_mana_was_reduced(self, transaction):
+        self.rc_manabar.assert_rc_current_mana_is_reduced(
+            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
+        )
+
     def create_order(
         self,
         amount_to_sell: int,
