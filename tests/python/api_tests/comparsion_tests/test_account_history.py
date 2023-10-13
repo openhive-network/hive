@@ -23,14 +23,14 @@ def test_node(request) -> tt.RemoteNode:
 
 @pytest.fixture()
 def transactions() -> list:
-    from input_data.hashes import HASHES
+    from .input_data.hashes import HASHES
 
     return HASHES
 
 
 @pytest.fixture()
 def accounts() -> list:
-    from input_data.accounts import ACCOUNTS
+    from .input_data.accounts import ACCOUNTS
 
     return ACCOUNTS
 
