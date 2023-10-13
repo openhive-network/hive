@@ -280,6 +280,12 @@ def get_rc_manabar(node: tt.InitNode, account_name: str) -> dict:
     }
 
 
+def list_votes_for_all_proposals(node):
+    return node.api.database.list_proposal_votes(
+        start=[""], limit=1000, order="by_voter_proposal", order_direction="ascending", status="all"
+    )["proposal_votes"]
+
+
 class Comment:
     account_counter = 0
 
