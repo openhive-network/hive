@@ -51,7 +51,7 @@ target_link_libraries( beekeeper_wasm PUBLIC embind hive_protocol beekeeper_core
 target_link_options( beekeeper_wasm PUBLIC -fexceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864
                                            -sSINGLE_FILE=1 -sENVIRONMENT="web" -sUSE_ES6_IMPORT_META=0 -sEXPORTED_RUNTIME_METHODS=["FS"]
 )
-set_target_properties( beekeeper_wasm PROPERTIES OUTPUT_NAME beekeeper.mjs )
+set_target_properties( beekeeper_wasm PROPERTIES OUTPUT_NAME beekeeper_wasm.js )
 
 # Helper target, just to perform TypeScript wrapper generation
 ADD_EXECUTABLE( beekeeper_ts_gen ${SOURCES} )
@@ -60,5 +60,5 @@ target_include_directories( beekeeper_ts_gen PUBLIC ${INCLUDES} )
 target_compile_options( beekeeper_ts_gen PUBLIC -fexceptions )
 target_link_libraries( beekeeper_ts_gen PUBLIC embind hive_protocol beekeeper_core idbfs.js )
 
-target_link_options( beekeeper_ts_gen PUBLIC -fexceptions --embind-emit-tsd ${CMAKE_CURRENT_BINARY_DIR}/beekeeper.d.ts )
+target_link_options( beekeeper_ts_gen PUBLIC -fexceptions --embind-emit-tsd ${CMAKE_CURRENT_BINARY_DIR}/beekeeper_wasm.d.ts )
 set_target_properties( beekeeper_ts_gen PROPERTIES OUTPUT_NAME beekeeper_ts_gen.cjs )

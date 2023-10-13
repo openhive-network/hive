@@ -13,8 +13,8 @@ docker run \
 else
   echo "Performing a build..."
   cd /src
+  rm -rf ./programs/beekeeper/beekeeper_wasm/build
   mkdir -vp programs/beekeeper/beekeeper_wasm/build
-  rm -rf ./programs/beekeeper/beekeeper_wasm/build/*
   cd programs/beekeeper/beekeeper_wasm/build
 
   #-DBoost_DEBUG=TRUE -DBoost_VERBOSE=TRUE -DCMAKE_STATIC_LIBRARY_SUFFIX=".a;.bc"

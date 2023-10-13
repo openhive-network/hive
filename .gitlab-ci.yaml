@@ -118,6 +118,28 @@ beekeeper_wasm_build:
   tags:
     - public-runner-docker
 
+beekeeper_tsc_build:
+  extends: .job-defaults
+  stage: build
+  # emscripten image can be used as it contains all needed tools.
+  image: ${EMSCRIPTEN_IMAGE}
+  script:
+    - cd programs/beekeeper/beekeeper_wasm
+    - pnpm install
+    - npm run build
+  artifacts:
+    paths:
+      - "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
+
+    when: always
+
+  needs:
+    - job: beekeeper_wasm_build
+      artifacts: true
+
+  tags:
+    - public-runner-docker
+
 beekeeper_wasm_package_generation:
   extends: .job-defaults
   stage: build
@@ -178,6 +200,8 @@ test_beekeeper_wasm:
 
   needs:
     - job: beekeeper_wasm_build
+      artifacts: true
+    - job: beekeeper_tsc_build
       artifacts: true
     - job: beekeeper_wasm_package_generation
       artifacts: true
@@ -989,6 +1013,8 @@ deploy_beekeeper_wasm_dev_package:
     - job: test_beekeeper_wasm
     - job: beekeeper_wasm_build
       artifacts: true
+    - job: beekeeper_tsc_build
+      artifacts: true
   tags:
     - public-runner-docker
 
@@ -1005,6 +1031,8 @@ deploy_beekeeper_wasm_production_public_npm:
     - scripts/ci-helpers/npm_publish.sh
   needs:
     - job: beekeeper_wasm_build
+      artifacts: true
+    - job: beekeeper_tsc_build
       artifacts: true
   tags:
     - public-runner-docker

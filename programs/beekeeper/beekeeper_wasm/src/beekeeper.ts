@@ -1,6 +1,7 @@
-export * from './build/beekeeper';
+export { MainModule, StringList, beekeeper_api } from '../build/beekeeper_wasm.js';
+import type { MainModule } from '../build/beekeeper_wasm.js';
 
-import { MainModule } from './build/beekeeper';
+import beekeeper from '../build/beekeeper_wasm.js';
 
 export interface FileSystemType {
   MEMFS: {};
@@ -22,6 +23,6 @@ export interface BeekeeperModule extends MainModule {
   }
 }
 
-declare function beekeepermodule(): Promise<BeekeeperModule>;
+export type beekeepermodule = () => Promise<BeekeeperModule>;
 
-export default beekeepermodule;
+export default beekeeper as beekeepermodule;
