@@ -964,12 +964,12 @@ files = [
 
 [[package]]
 name = "schemas"
-version = "0.0.1.dev241+ef14364"
+version = "0.0.1.dev253+0140986"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "schemas-0.0.1.dev241+ef14364-py3-none-any.whl", hash = "sha256:904d9d3e5719538467c8a368108b01c80977f50331170585d627bb55a426e912"},
+    {file = "schemas-0.0.1.dev253+0140986-py3-none-any.whl", hash = "sha256:c83609de7752c7eda4fdffb8438e1b37a80d74e47aad87f7a1c228f2b3342632"},
 ]
 
 [package.dependencies]
@@ -1073,7 +1073,7 @@ develop = true
 abstractcp = "0.9.9"
 python-dateutil = "2.8.2"
 requests = "2.27.1"
-schemas = "0.0.1.dev241+ef14364"
+schemas = "0.0.1.dev253+0140986"
 
 [package.source]
 type = "directory"
