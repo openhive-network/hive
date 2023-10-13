@@ -1,10 +1,10 @@
-import type WaxModule from '../../beekeeper';
-import type { MainModule } from '../../build/beekeeper';
+import type BeekeeperModule from '../../build/beekeeper_wasm';
+import type { MainModule } from '../../build/beekeeper_wasm';
 
 import type { BeekeeperInstanceHelper, ExtractError } from './run_node_helper.js';
 
 declare global {
-  var beekeeper: typeof WaxModule;
+  var beekeeper: typeof BeekeeperModule;
   var provider: MainModule;
   var BeekeeperInstanceHelper: BeekeeperInstanceHelper;
   var ExtractError: ExtractError;

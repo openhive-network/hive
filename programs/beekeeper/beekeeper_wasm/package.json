@@ -2,29 +2,33 @@
   "name": "@hive/beekeeper",
   "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
   "description": "call hived functions from JavaScript",
-  "main": "build/beekeeper.mjs",
+  "main": "dist/index.js",
   "type": "module",
   "private": false,
   "scripts": {
     "postinstall": "playwright install",
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
+    "build": "tsc",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 __tests__",
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
   },
   "license": "SEE LICENSE IN LICENSE.md",
   "files": [
     "LICENSE.md",
-    "build/beekeeper.mjs",
-    "build/beekeeper.d.ts",
-    "beekeeper.d.ts"
+    "build/beekeeper_wasm.js",
+    "build/beekeeper_wasm.d.ts",
+    "dist/*.d.ts",
+    "dist/*.js"
   ],
   "devDependencies": {
     "@playwright/test": "^1.38.1",
+    "@types/node": "^20.6.0",
     "http-server": "^14.1.1",
     "husky": "8.0.3",
-    "playwright": "^1.38.1"
+    "playwright": "^1.38.1",
+    "typescript": "4.4.4"
   },
-  "types": "beekeeper.d.ts",
+  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://gitlab.syncad.com/hive/hive.git"
