@@ -150,21 +150,6 @@ class chain_plugin_impl
 
     void initial_settings();
     void open();
-    uint32_t reindex( const open_args& args, const block_read_i& block_reader );
-    uint32_t reindex_internal( const open_args& args, 
-      const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader );
-    /**
-      * @brief Check if replaying was finished and all blocks from `block_reader` were processed.
-      *
-      * If returns `true` then a synchronization is allowed.
-      * If returns `false`, then opening a node should be forbidden.
-      *
-      * There are output-type arguments: `head_block_num_origin`, `head_block_num_state` for information purposes only.
-      *
-      * @return information if replaying was finished
-      */
-    bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state,
-                              const block_read_i& block_reader ) const;
     bool replay_blockchain( const block_read_i& block_reader );
     void process_snapshot();
     bool check_data_consistency( const block_read_i& block_reader );
@@ -254,6 +239,23 @@ class chain_plugin_impl
     hive::plugins::webserver::webserver_plugin& webserver;
 
     appbase::application& theApp;
+
+  private:
+    uint32_t reindex( const open_args& args, const block_read_i& block_reader );
+    uint32_t reindex_internal( const open_args& args, 
+      const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader );
+    /**
+      * @brief Check if replaying was finished and all blocks from `block_reader` were processed.
+      *
+      * If returns `true` then a synchronization is allowed.
+      * If returns `false`, then opening a node should be forbidden.
+      *
+      * There are output-type arguments: `head_block_num_origin`, `head_block_num_state` for information purposes only.
+      *
+      * @return information if replaying was finished
+      */
+    bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state,
+                              const block_read_i& block_reader ) const;  
 };
 
 struct chain_plugin_impl::write_request_visitor
@@ -921,6 +923,8 @@ bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklo
   std::shared_ptr<full_block_type> head = block_reader.head_block();
   uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
   uint32_t head_block_num_state = db.head_block_num();
+  ilog( "head_block_num_origin: ${o}, head_block_num_state: ${s}", 
+        ( "o", head_block_num_origin )( "s", head_block_num_state ) );
 
   if( head_block_num_in_blocklog ) //if head block number requested
     *head_block_num_in_blocklog = head_block_num_origin;
