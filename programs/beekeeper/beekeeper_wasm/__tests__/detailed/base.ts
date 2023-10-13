@@ -74,6 +74,12 @@ test.describe('WASM Base tests', () => {
     }, WALLET_OPTIONS);
   });
 
+  test('Should be able to create instance of beekeeper factory', async ({ page }) => {
+    await page.evaluate(async () => {
+      factory();
+    });
+  });
+
   test.afterAll(async () => {
     await browser.close();
   });
