@@ -282,7 +282,7 @@ void database::load_state_initial_data(const open_args& args)
 void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks)
 {
   if( get_is_open() )
-    close_all();
+    close();
   chainbase::database::wipe( shared_mem_dir );
   if( include_blocks )
   {
@@ -291,12 +291,12 @@ void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, b
   }
 }
 
-void database::close_all()
+void database::close()
 {
   try
   {
     if(get_is_open() == false)
-      wlog("database::close_all method is MISUSED since it is NOT opened atm...");
+      wlog("database::close method is MISUSED since it is NOT opened atm...");
 
     ilog( "Closing database" );
 
