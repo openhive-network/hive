@@ -920,7 +920,7 @@ operation_tests:
   parallel:
     matrix:
       - OPERATION: [ account_update_tests,
-                     account_witness_vote,
+                     account_witness_vote_tests,
                      cancel_transfer_from_savings,
                      limit_order_tests,
                      test_recurrent_transfer,
