@@ -213,23 +213,14 @@ namespace chain {
       void load_state_initial_data(const open_args& args);
 
       /**
-        * @brief Rebuild object graph from block history and open detabase
-        *
-        * This method may be called after or instead of @ref database::open, and will rebuild the object graph by
-        * replaying blockchain history. When this method exits successfully, the database will be open.
-        *
-        * @return the last replayed block number.
-        */
-      uint32_t reindex( const open_args& args );
-
-      /**
         * @brief wipe Delete database from disk, and potentially the raw chain as well.
         * @param include_blocks If true, delete the raw chain as well as the database.
         *
         * Will close the database before wiping. Database will be closed when this function returns.
         */
       void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
-      void close_all();
+       /// Watch out for superclass' variant of close.
+      void close() /*override*/;
 
       //////////////////// db_block.cpp ////////////////////
 
