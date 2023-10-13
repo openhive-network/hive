@@ -9,18 +9,25 @@
   <script type="importmap">
     {
       "imports": {
-        "@hive/beekeeper": "/build/beekeeper_wasm.js"
+        "@hive/beekeeper": "/build/beekeeper_wasm.js",
+        "@hive/beekeeperfactory": "/dist/index.js"
       }
     }
   </script>
   <script src="/__tests__/assets/run_node_helper.js"></script>
   <script type="module">
     import BeekeeperModule from '@hive/beekeeper';
+    import beekeeperFactory from '@hive/beekeeperfactory';
 
     Object.defineProperties(window, {
       beekeeper: {
         get() {
           return BeekeeperModule;
+        }
+      },
+      factory: {
+        get() {
+          return beekeeperFactory;
         }
       },
       assert: {
