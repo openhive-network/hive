@@ -1,4 +1,8 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/../../../../.husky/_/husky.sh"
+#!/bin/bash
+set -e
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+PROJECT_DIR="${SCRIPTPATH}/../../../.."
+HUSKY_DIR="${SCRIPTPATH}"
+. "${HUSKY_DIR}/_/husky.sh"
 
-scripts/precommit_hook.sh
+"${PROJECT_DIR}/scripts/precommit_hook.sh"
