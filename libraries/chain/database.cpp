@@ -357,6 +357,8 @@ bool database::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64
   std::shared_ptr<full_block_type> head = _block_log.head();
   uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
   uint32_t head_block_num_state = head_block_num();
+  ilog( "head_block_num_origin: ${o}, head_block_num_state: ${s}", 
+        ( "o", head_block_num_origin )( "s", head_block_num_state ) );
 
   if( head_block_num_in_blocklog ) //if head block number requested
     *head_block_num_in_blocklog = head_block_num_origin;
