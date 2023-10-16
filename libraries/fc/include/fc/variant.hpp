@@ -17,6 +17,7 @@
 #include <fc/container/flat_fwd.hpp>
 #include <fc/smart_ref_fwd.hpp>
 #include <boost/multi_index_container_fwd.hpp>
+#include <boost/tuple/tuple.hpp>
 
 namespace fc
 {
@@ -669,6 +670,14 @@ namespace fc
         vo = T();
         from_variant(var, *vo);
      }
+   }
+
+   template<typename T1, typename T2> void to_variant(const boost::tuple<T1, T2>& t, variant& v)
+   {
+     std::vector<variant> vars(2);
+     vars[0] = variant(boost::tuples::get<0>(t));
+     vars[1] = variant(boost::tuples::get<1>(t));
+     v = vars;
    }
 
    bool operator == ( const variant& a, const variant& b );
