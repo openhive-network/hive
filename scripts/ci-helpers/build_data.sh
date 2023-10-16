@@ -84,7 +84,6 @@ echo "Attempting to perform replay basing on image ${IMG}..."
     --detach \
     --docker-option=--volume="$DATA_CACHE":"$DATA_CACHE" \
     --data-dir="$DATA_CACHE/datadir" \
-    --shared-file-dir="$DATA_CACHE/shm_dir" \
     --docker-option=--env=HIVED_UID="$(id -u)" \
     $IMG --replay-blockchain --stop-replay-at-block=5000000 --exit-before-sync
 

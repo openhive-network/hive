@@ -30,7 +30,6 @@ then
   exit 1
 else
   mkdir -p $DATA_BASE_DIR/datadir
-  mkdir -p $DATA_BASE_DIR/shm_dir
 fi
 
 
