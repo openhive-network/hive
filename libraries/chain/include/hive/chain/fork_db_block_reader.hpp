@@ -12,8 +12,6 @@ namespace hive { namespace chain {
     fork_db_block_reader( fork_database& fork_db, block_log& block_log );
     virtual ~fork_db_block_reader() = default;
 
-    virtual void start_reader( const std::shared_ptr<full_block_type>& head_block ) override;
-
     virtual std::shared_ptr<full_block_type> head_block() const override;
 
     virtual uint32_t head_block_num( 

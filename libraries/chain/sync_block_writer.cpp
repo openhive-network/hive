@@ -383,6 +383,11 @@ void sync_block_writer::open( const fc::path& file, bool enable_compression,
                               compression_level,
                               enable_block_log_auto_fixing );
   });
+  
+  // Get fork db in sync with block log.
+  auto head = _block_log.head();
+  if( head )
+    _fork_db.start_block( head );
 }
 
 void sync_block_writer::close()
