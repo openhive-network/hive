@@ -151,7 +151,7 @@ public:
   // in case of exception
   virtual void on_failure( const fc::exception& e ) const;
   // at the end of processing in worker thread (called even if there was exception earlier)
-  virtual void on_worker_done() const;
+  virtual void on_worker_done( appbase::application& app ) const;
 
   virtual fc::time_point_sec get_block_timestamp() const = 0;
   const std::shared_ptr<full_block_type>& get_full_block() const { return full_block; }
@@ -167,8 +167,8 @@ public:
   void rethrow_if_exception() const { if( except ) except->dynamic_rethrow_exception(); }
 
 protected:
-  block_flow_control( const std::shared_ptr<full_block_type>& _block, appbase::application& app )
-    : full_block( _block ), theApp( app ) {}
+  block_flow_control( const std::shared_ptr<full_block_type>& _block )
+    : full_block( _block ) {}
 
   // "type" of buffer to put in log/notification report (in case of success)
   virtual const char* buffer_type() const = 0;
@@ -183,8 +183,6 @@ protected:
 
   static report_type auto_report_type; //type of automatic block stats reports (disabled for sync blocks)
   static report_output auto_report_output; //output of automatic block stat reports
-
-  appbase::application& theApp;
 };
 
 /**
@@ -195,8 +193,8 @@ class generate_block_flow_control : public block_flow_control
 {
 public:
   generate_block_flow_control( const fc::time_point_sec _block_ts, const protocol::account_name_type& _wo,
-    const fc::ecc::private_key& _key, uint32_t _skip, appbase::application& app )
-  : block_flow_control( nullptr, app ), block_ts( _block_ts ), witness_owner( _wo ),
+    const fc::ecc::private_key& _key, uint32_t _skip )
+  : block_flow_control( nullptr ), block_ts( _block_ts ), witness_owner( _wo ),
     block_signing_private_key( _key ), skip( _skip ) {}
   virtual ~generate_block_flow_control() = default;
 
@@ -231,8 +229,8 @@ protected:
 class p2p_block_flow_control : public block_flow_control
 {
 public:
-  p2p_block_flow_control( const std::shared_ptr<full_block_type>& _block, uint32_t _skip, appbase::application& app )
-    : block_flow_control( _block, app ), skip( _skip ) { FC_ASSERT( _block ); }
+  p2p_block_flow_control( const std::shared_ptr<full_block_type>& _block, uint32_t _skip )
+    : block_flow_control( _block ), skip( _skip ) { FC_ASSERT( _block ); }
   virtual ~p2p_block_flow_control() = default;
 
   void attach_promise( const fc::promise<void>::ptr& _p ) { prom = _p; }
@@ -263,7 +261,7 @@ public:
   using p2p_block_flow_control::p2p_block_flow_control;
   virtual ~sync_block_flow_control() = default;
 
-  virtual void on_worker_done() const override;
+  virtual void on_worker_done( appbase::application& app ) const override;
 
 private:
   virtual const char* buffer_type() const override final { return "sync"; }
@@ -275,8 +273,8 @@ private:
 class existing_block_flow_control : public block_flow_control
 {
 public:
-  existing_block_flow_control( const std::shared_ptr<full_block_type>& _block, appbase::application& app )
-    : block_flow_control( _block, app ) { FC_ASSERT( _block ); }
+  existing_block_flow_control( const std::shared_ptr<full_block_type>& _block )
+    : block_flow_control( _block ) { FC_ASSERT( _block ); }
   virtual ~existing_block_flow_control() = default;
 
   virtual void on_end_of_apply_block() const override;

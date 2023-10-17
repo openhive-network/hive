@@ -83,7 +83,7 @@ void block_flow_control::on_failure( const fc::exception& e ) const
   except = e.dynamic_copy_exception();
 }
 
-void block_flow_control::on_worker_done() const
+void block_flow_control::on_worker_done( appbase::application& app ) const
 {
   if( auto_report_type == report_type::NONE )
     return;
@@ -92,7 +92,7 @@ void block_flow_control::on_worker_done() const
   switch (auto_report_output)
   {
   case report_output::NOTIFY:
-    theApp.notify("Block stats", "block_stats", report);
+    app.notify("Block stats", "block_stats", report);
     break;
   case report_output::ILOG:
     ilog("Block stats:${report}", (report));
@@ -248,13 +248,13 @@ fc::time_point_sec p2p_block_flow_control::get_block_timestamp() const
   return full_block->get_block_header().timestamp;
 }
 
-void sync_block_flow_control::on_worker_done() const
+void sync_block_flow_control::on_worker_done( appbase::application& app ) const
 {
   //do not generate report: many stats make no practical sense for sync blocks
   //and the excess logging seems to be slowing down sync
   //...with exception to last couple blocks of syncing
   if( ( fc::time_point::now() - get_block_timestamp() ) < HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS )
-    block_flow_control::on_worker_done();
+    block_flow_control::on_worker_done( app );
 }
 
 void existing_block_flow_control::on_end_of_apply_block() const

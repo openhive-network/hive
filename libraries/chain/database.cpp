@@ -5568,7 +5568,7 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
 
     try
     {
-      detail::without_pending_transactions(*this, existing_block_flow_control(new_head_block->full_block, theApp), std::move(_pending_tx), [&]() {
+      detail::without_pending_transactions(*this, existing_block_flow_control(new_head_block->full_block), std::move(_pending_tx), [&]() {
         try
         {
           dlog("calling switch_forks() from update_last_irreversible_block()");

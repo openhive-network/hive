@@ -80,7 +80,7 @@ struct expectation_set : appbase::plugin< expectation_set >
   std::vector< boost::signals2::connection > connections;
   bool failure = false;
 
-  expectation_set( appbase::application& app, database& db ) : appbase::plugin<expectation_set>(), _db( db )
+  expectation_set( database& db ) : _db( db )
   {
     connections.emplace_back( _db.add_pre_apply_block_handler(
       [this]( const block_notification& ){ verify( expectation::PRE_BLOCK); }, *this, 0 ) );
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
     ACTORS( (alice)(bob)(carol)(dan) )
     generate_block();
 
-    expectation_set check( theApp, *db );
+    expectation_set check( *db );
 
     BOOST_TEST_MESSAGE( "Valid transaction" );
     comment_operation comment;
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     fund( "carol", 10000 );
     generate_block();
 
-    expectation_set check( theApp, *db );
+    expectation_set check( *db );
 
     BOOST_TEST_MESSAGE( "Valid transactions" );
     transfer_operation transfer;
@@ -508,7 +508,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
 
     BOOST_TEST_MESSAGE( "Build alternative reality" );
     {
-      expectation_set check( theApp, *db );
+      expectation_set check( *db );
 
       //we have to add something to it, or new incarnation of block 0 would also be empty like original
       //and would have the same id, which means tapos would not fail for first popped transaction
@@ -562,7 +562,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
     push( transfer, alice_private_key );
     generate_block(); //8'
 
-    expectation_set check( theApp, *db );
+    expectation_set check( *db );
 
     BOOST_TEST_MESSAGE( "Reapply previous reality on top of current one" );
     //blocks are not even validated until fork becomes longer than previous one
@@ -667,7 +667,7 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
       db->pop_block();
     }
 
-    expectation_set check( theApp, *db );
+    expectation_set check( *db );
 
     BOOST_TEST_MESSAGE( "Build alternative reality" );
     transfer.from = "alice";
