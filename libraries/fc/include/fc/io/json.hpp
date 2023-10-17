@@ -29,6 +29,12 @@ namespace fc
             stringify_large_ints_and_doubles = 0,
             legacy_generator = 1
          };
+         // Javascript needs to use bigint type for values which exceeses below limits
+         enum json_integer_limits : int64_t
+         {
+            max_negative_value = -0x1fffffffffffff,
+            max_positive_value = 0x1fffffffffffff
+         };
 
          static ostream& to_stream( ostream& out, const fc::string& );
          static ostream& to_stream( ostream& out, const variant& v, output_formatting format = stringify_large_ints_and_doubles );
