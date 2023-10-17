@@ -40,6 +40,7 @@ namespace hive { namespace protocol {
     }
 
     vector< public_key_type > get_keys()const;
+    vector< account_name_type > get_accounts()const;
 
     bool     is_impossible()const;
     uint32_t num_auths()const;
