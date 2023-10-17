@@ -13,6 +13,8 @@ import test_tools as tt
 
 from .complex_networks_helper_functions import connect_sub_networks
 
+last_used_port_number = None
+
 
 class NodesPreparer:
     def prepare(self, _: networks.NetworksBuilder) -> None:
@@ -346,10 +348,13 @@ def create_block_log_directory_name(block_log_directory_name: str):
 
 
 def generate_port_ranges(worker: str, number_of_nodes: int) -> list[int]:
+    global last_used_port_number
     match = re.match(r"gw(\d+)", worker)
+    assert match is not None
     worker_id = int(match.group(1))
-    start = 2000 + worker_id * 1000
+    start = 2000 + worker_id * 1000 if last_used_port_number is None else last_used_port_number
     end = start + number_of_nodes
+    last_used_port_number = end
     return list(range(start, end))
 
 
