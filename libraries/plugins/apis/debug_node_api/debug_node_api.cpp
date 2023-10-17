@@ -83,7 +83,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
 
       try
       {
-        hive::chain::existing_block_flow_control block_ctrl( full_block, theApp );
+        hive::chain::existing_block_flow_control block_ctrl( full_block );
         _db.push_block( block_ctrl, skip_flags );
       }
       catch (const fc::exception& e)

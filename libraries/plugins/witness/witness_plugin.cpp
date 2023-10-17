@@ -98,14 +98,21 @@ namespace detail {
   class witness_generate_block_flow_control final : public generate_block_flow_control
   {
   public:
-    using generate_block_flow_control::generate_block_flow_control;
+    witness_generate_block_flow_control( const fc::time_point_sec _block_ts,
+      const protocol::account_name_type& _wo, const fc::ecc::private_key& _key, uint32_t _skip,
+      appbase::application& app )
+    : generate_block_flow_control( _block_ts, _wo, _key, _skip ),
+      p2p( app.get_plugin< hive::plugins::p2p::p2p_plugin >() ) {}
     virtual ~witness_generate_block_flow_control() = default;
 
     virtual void on_fork_db_insert() const override
     {
-      theApp.get_plugin< hive::plugins::p2p::p2p_plugin >().broadcast_block( full_block );
+      p2p.broadcast_block( full_block );
       generate_block_flow_control::on_fork_db_insert();
     }
+
+  private:
+    hive::plugins::p2p::p2p_plugin& p2p;
   };
 
   void check_memo( const string& memo, const chain::account_object& account, const account_authority_object& auth )

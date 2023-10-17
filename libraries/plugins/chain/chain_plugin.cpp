@@ -55,7 +55,7 @@ public:
   void attach_promise( promise_ptr _p ) { prom_ptr = _p; }
 
   void on_failure( const fc::exception& ex ) { except = ex.dynamic_copy_exception(); }
-  void on_worker_done();
+  void on_worker_done( appbase::application& app );
 
   const std::shared_ptr<full_transaction_type>& get_full_transaction() const { return tx; }
   const fc::exception_ptr& get_exception() const { return except; }
@@ -91,7 +91,7 @@ struct transaction_flow_control::request_promise_visitor
   }
 };
 
-void transaction_flow_control::on_worker_done()
+void transaction_flow_control::on_worker_done( appbase::application& app )
 {
   request_promise_visitor prom_visitor;
   prom_ptr.visit( prom_visitor );
@@ -280,7 +280,7 @@ struct chain_plugin_impl::write_request_visitor
       p2p_block_ctrl->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
         "Unexpected exception while pushing block." ), std::current_exception() ) );
     }
-    p2p_block_ctrl->on_worker_done();
+    p2p_block_ctrl->on_worker_done( cp.theApp );
   }
 
   void operator()( transaction_flow_control* tx_ctrl )
@@ -316,7 +316,7 @@ struct chain_plugin_impl::write_request_visitor
       tx_ctrl->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
         "Unexpected exception while pushing transaction." ), std::current_exception() ) );
     }
-    tx_ctrl->on_worker_done();
+    tx_ctrl->on_worker_done( cp.theApp );
   }
 
   void operator()( std::shared_ptr< generate_block_flow_control > generate_block_ctrl )
@@ -340,7 +340,7 @@ struct chain_plugin_impl::write_request_visitor
       generate_block_ctrl->on_failure( fc::unhandled_exception( FC_LOG_MESSAGE( warn,
         "Unexpected exception while generating block."), std::current_exception() ) );
     }
-    generate_block_ctrl->on_worker_done();
+    generate_block_ctrl->on_worker_done( cp.theApp );
   }
 };
 
