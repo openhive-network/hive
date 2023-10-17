@@ -7,7 +7,11 @@ from typing import Literal
 import pytest
 
 import test_tools as tt
-from hive_local_tools.functional.python.operation import Account, create_transaction_with_any_operation
+from hive_local_tools.functional.python.operation import (
+    Account,
+    create_transaction_with_any_operation,
+    get_transaction_timestamp,
+)
 
 
 @dataclass
@@ -161,6 +165,14 @@ class UpdateAccount(Account):
             assert (
                 json.loads(new_posting_json_meta) == to_compare
             ), f"Posting json metadata of account {self._name} wasn't changed."
+
+    def assert_if_rc_current_mana_was_reduced(self, transaction):
+        self.rc_manabar.assert_rc_current_mana_is_reduced(
+            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
+        )
+
+    def assert_if_rc_current_mana_was_unchanged(self):
+        self.rc_manabar.assert_rc_current_mana_is_unchanged()
 
     def generate_new_authority(self) -> dict:
         return {"account_auths": [], "key_auths": [(self.generate_new_key(), 1)], "weight_threshold": 1}
