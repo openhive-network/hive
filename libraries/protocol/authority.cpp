@@ -23,6 +23,15 @@ vector< public_key_type > authority::get_keys()const
   return result;
 }
 
+vector< account_name_type > authority::get_accounts()const
+{
+  vector< account_name_type > result;
+  result.reserve( account_auths.size() );
+  for( const auto& k : account_auths )
+    result.push_back(k.first);
+  return result;
+}
+
 bool authority::is_impossible()const
 {
   uint64_t auth_weights = 0;

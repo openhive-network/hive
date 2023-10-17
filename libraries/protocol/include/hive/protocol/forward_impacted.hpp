@@ -20,6 +20,7 @@ enum class authority_t : std::int32_t
   OWNER,
   ACTIVE,
   POSTING,
+  MEMO,
   WITNESS,
   NEW_OWNER_AUTHORITY,
   RECENT_OWNER_AUTHORITY,
@@ -27,10 +28,10 @@ enum class authority_t : std::int32_t
 
 struct collected_keyauth_t
 {
-  std::string key_auth;
-  authority_t authority_kind;
   std::string account_name;
-
+  authority_t authority_kind;
+  std::set<std::string> key_auth;
+  std::set<std::string> account_auth;
 };
 
 typedef std::set<std::string> stringset;
