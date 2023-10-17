@@ -179,7 +179,14 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
     BOOST_TEST_MESSAGE( "Failed transaction" );
     comment.parent_author = "alice";
     check.expect( expectation::new_transaction( expectation::PRE_TX ) );
-    HIVE_REQUIRE_CHAINBASE_ASSERT( push_transaction( comment, alice_private_key ), "unknown key" );
+
+    const std::string expected_msg =
+R"~(0 exception: unspecified
+unknown key: e18edce16c159ac21f056cc10f82c1942f27e999 of type: fc::ripemd160 at multiindex lookup: hive::chain::comment_object.index<hive::chain::by_permlink>
+    {"kt":"fc::ripemd160","multiindex":"hive::chain::comment_object","indexed_by_typename":"hive::chain::by_permlink","key":"e18edce16c159ac21f056cc10f82c1942f27e999"}
+    chainbase.hpp:1178 get)~";
+
+    HIVE_REQUIRE_CHAINBASE_ASSERT(push_transaction(comment, alice_private_key), expected_msg);
     check.check_empty();
 
     BOOST_TEST_MESSAGE( "Generating first block after transaction" );
