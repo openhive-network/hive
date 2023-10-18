@@ -604,17 +604,30 @@ rc_direct_delegations_tests:
 message_format_testnet_tests:
   stage: test
   extends: .test_tools_based
-
   variables:
-    PYTEST_TIMEOUT_MINUTES: 45
+    PYTEST_TIMEOUT_MINUTES: 25
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     NODE_TYPE: "testnet"
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
-
   script:
-    - cd tests/python/api_tests/message_format_tests
+    - cd tests/python/api_tests/message_format_tests/$API
     - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
     - *run-pytest
+  parallel:
+    matrix:
+      - API: [ account_by_key_api_tests,
+               account_history_api,
+               block_api_tests,
+               condenser_api_tests,
+               database_api_tests,
+               debug_node_api_tests,
+               json_rpc_api_tests,
+               market_history_api_tests,
+               network_broadcast_api_tests,
+               rc_api_tests,
+               reputation_api_tests,
+               transaction_status_api_tests,
+               wallet_bridge_api_tests ]
   tags:
     - public-runner-docker
 
