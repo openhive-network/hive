@@ -1,39 +1,59 @@
 # beekeeper
 
-## TypeScript
+call hived functions from JavaScript
 
-### Configure
+## Install
 
-**It is strongly advised to use our development image: `registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:3.1.43`**
+This is a [Node.js](https://nodejs.org/en/) module available through the
+[npm registry](https://www.npmjs.com/).
 
-If you want to test our package locally follow those steps:
+Before installing, [download and install Node.js](https://nodejs.org/en/download/).
+Node.js 12 or higher is required.
 
-First install the package manager:
+Installation is done using the
+[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
 
 ```bash
-sudo npm i -g pnpm
+npm install @hiveio/beekeeper
 ```
 
-And all of the required dependencies:
+## Usage
+
+```js
+import beekeeperFactory from '@hiveio/beekeeper';
+
+const beekeeper = await beekeeperFactory();
+
+const sessionData = await beekeeper.create_session('pear');
+
+console.log(beekeeper.get_info(sessionData.token));
+```
+
+## API
+
+**(WIP)**
+
+## Support and tests
+
+Tested on the latest Chromium (v117)
+
+[Automated CI test](https://gitlab.syncad.com/hive/hive/-/pipelines) runs are available.
+
+To run the tests on your own, clone the Hive repo and install the dependencies:
 
 ```bash
+git clone https://gitlab.syncad.com/hive/hive.git --depth 1
+cd hive/programs/beekeeper/beekeeper_wasm
+sudo npm install -g pnpm
 pnpm install
 ```
 
-### Build
-
-```bash
-npm run build
-```
-
-### Test
-
-We use playwright in our tests to emulate WASM behaviour in the browser environment:
+Then run tests:
 
 ```bash
 npm run test
 ```
 
-### License
+## License
 
-See license in the [LICENSE.md](../../../LICENSE.md) file
+See license in the [LICENSE.md](LICENSE.md) file

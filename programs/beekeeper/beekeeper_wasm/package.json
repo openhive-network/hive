@@ -15,6 +15,7 @@
   "license": "SEE LICENSE IN LICENSE.md",
   "files": [
     "LICENSE.md",
+    "README.md",
     "build/beekeeper_wasm.js",
     "build/beekeeper_wasm.d.ts",
     "dist/*.d.ts",
