@@ -208,7 +208,7 @@ typedef multi_index_container <
   allocator< smt_contribution_object >
 > smt_contribution_index;
 
-struct by_symbol;
+struct by_symbol {};
 struct by_control_account;
 
 typedef multi_index_container <
