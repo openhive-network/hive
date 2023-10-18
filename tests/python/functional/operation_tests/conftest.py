@@ -79,7 +79,8 @@ class LimitOrderAccount(Account):
         buy_hbd: bool | None = None,
     ):
         expiration_time = tt.Time.serialize(
-            self._node.get_head_block_time() + tt.Time.seconds(expiration), format_=tt.Time.DEFAULT_FORMAT
+            self._node.get_head_block_time() + tt.Time.seconds(expiration),
+            format_=tt.TimeFormats.DEFAULT_FORMAT,
         )
         create_transaction_with_any_operation(
             self._wallet,
