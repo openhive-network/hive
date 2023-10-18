@@ -109,8 +109,7 @@ void open_test_database( database& db, sync_block_writer& sbw,
   args.shared_mem_dir = dir;
   args.shared_file_size = TEST_SHARED_MEM_SIZE;
   args.database_cfg = hive::utilities::default_database_configuration();
-  configuration_data.init_supply = INITIAL_TEST_SUPPLY;
-  configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
+  configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
   db._log_hardforks = log_hardforks;
   sbw.open( args.data_dir / "block_log",
             args.enable_block_log_compression,

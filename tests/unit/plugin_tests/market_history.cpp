@@ -26,8 +26,7 @@ BOOST_AUTO_TEST_CASE( mh_test )
   {
     market_history_api_plugin* mh_plug = nullptr;
 
-    configuration_data.init_supply = INITIAL_TEST_SUPPLY;
-    configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
+    configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
 
     postponed_init(
       { 

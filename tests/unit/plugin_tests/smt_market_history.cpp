@@ -20,8 +20,7 @@ BOOST_AUTO_TEST_CASE( smt_mh_test )
 
   try
   {
-    configuration_data.init_supply = INITIAL_TEST_SUPPLY;
-    configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
+    configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
 
     postponed_init(
       {

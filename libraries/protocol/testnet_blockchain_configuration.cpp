@@ -98,6 +98,18 @@ void configuration::set_hive_owner_update_limit( uint16_t limit )
   hive_owner_update_limit = limit;
 }
 
+void configuration::set_initial_asset_supply( uint64_t hive, uint64_t hbd, uint64_t to_vest, const price& vest_price )
+{
+  FC_ASSERT( hive >= to_vest, "Too much HIVE requested for vesting compared to given supply" );
+  FC_ASSERT( vest_price.base.symbol == VESTS_SYMBOL && vest_price.quote.symbol == HIVE_SYMBOL,
+    "Invalid price of vests - expected VESTS on HIVE" );
+
+  init_hive_supply = hive;
+  init_hbd_supply = hbd;
+  initial_vesting = to_vest;
+  initial_vesting_price = vest_price;
+}
+
 } } }// hive::protocol::testnet_blockchain_configuration
 
 #endif // USE_ALTERNATE_CHAIN_ID

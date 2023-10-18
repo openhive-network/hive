@@ -27,8 +27,10 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MIN_REPLY_INTERVAL_HF20          (configuration_data.min_reply_interval_hf20) // 3 seconds
 #define HIVE_MIN_COMMENT_EDIT_INTERVAL        (configuration_data.min_comment_edit_interval) // 3 seconds
 
-#define HIVE_INIT_SUPPLY                      (configuration_data.init_supply)
-#define HIVE_HBD_INIT_SUPPLY                  (configuration_data.hbd_init_supply)
+#define HIVE_INIT_SUPPLY                      (configuration_data.get_init_hive_supply())
+#define HIVE_HBD_INIT_SUPPLY                  (configuration_data.get_init_hbd_supply())
+#define HIVE_INITIAL_VESTING                  (configuration_data.get_initial_vesting())
+#define HIVE_INITIAL_VESTING_PRICE            (configuration_data.get_initial_vesting_price())
 
 #else
 

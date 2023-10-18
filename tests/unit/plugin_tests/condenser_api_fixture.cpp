@@ -20,8 +20,7 @@ condenser_api_fixture::condenser_api_fixture()
   configuration_data.set_min_recurrent_transfers_recurrence( 1 );
   configuration_data.set_generate_missed_block_operations( true );
   configuration_data.set_witness_shutdown_threshold( 0 );
-  configuration_data.init_supply = INITIAL_TEST_SUPPLY;
-  configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
+  configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
 
   hive::plugins::account_history::account_history_api_plugin* ah_api_plugin = nullptr;
   hive::plugins::condenser_api::condenser_api_plugin* denser_api_plugin = nullptr;

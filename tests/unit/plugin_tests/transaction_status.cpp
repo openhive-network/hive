@@ -29,8 +29,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     hive::plugins::transaction_status_api::transaction_status_api_plugin* tx_status_api = nullptr;
     hive::plugins::transaction_status::transaction_status_plugin* tx_status = nullptr;
 
-    configuration_data.init_supply = INITIAL_TEST_SUPPLY;
-    configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
+    configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
     configuration_data.allow_not_enough_rc = false;
 
     postponed_init(
