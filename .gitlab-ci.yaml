@@ -678,20 +678,14 @@ patterns_tests:
     - cd $CI_PROJECT_DIR/tests/python/api_tests/pattern_tests
     - timeout 33m ./run_tests.sh hived-instance:8091 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
-  after_script:
-    - rm docker_entrypoint.log -f
-    - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/$CI_JOB_NAME.log" "$CI_PROJECT_DIR/docker_entrypoint.log"
-
   artifacts:
     reports:
       junit: tests/python/api_tests/pattern_tests/results.xml
     paths:
-    - "$CI_JOB_NAME"
     - "**/from_node.log"
     - "**/ah.log"
     - "**/*.out.json"
     - "$CI_PROJECT_DIR/tests/python/hive-local-tools/tests-api/hived/workdir_*"
-    - docker_entrypoint.log
     when: always
   tags:
     - data-cache-storage
@@ -740,10 +734,6 @@ python_pattern_mainnet_tests:
     - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8091 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/$BINARY_CACHE_PATH/cli_wallet)
     - *run-pytest
 
-  after_script:
-    - rm docker_entrypoint.log -f
-    - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/$CI_JOB_NAME.log" "$CI_PROJECT_DIR/docker_entrypoint.log"
-
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     reports:
@@ -751,7 +741,6 @@ python_pattern_mainnet_tests:
     paths:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
-    - docker_entrypoint.log
     exclude:
     - "**/generated_during_*/**/block_log"
     - "**/generated_during_*/**/block_log.artifacts"
@@ -818,9 +807,6 @@ message_format_mainnet_5m_tests:
   before_script:
     - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
     - !reference [.message_format_tests, before_script]
-  after_script:
-    - rm docker_entrypoint.log -f
-    - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/$CI_JOB_NAME.log" "$CI_PROJECT_DIR/docker_entrypoint.log"
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     reports:
@@ -828,7 +814,6 @@ message_format_mainnet_5m_tests:
     paths:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
-    - docker_entrypoint.log
     exclude:
     - "**/generated_during_*/**/block_log"
     - "**/generated_during_*/**/block_log.artifacts"
@@ -882,9 +867,6 @@ witness_tests:
     - cd tests/python/functional/witness_tests
     - export PYTEST_ARGS=(--http-endpoint=${NODE_ADDRESS})
     - *run-pytest
-  after_script:
-    - rm docker_entrypoint.log -f
-    - cp "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}/datadir/$CI_JOB_NAME.log" "$CI_PROJECT_DIR/docker_entrypoint.log"
   tags:
     - data-cache-storage
 
