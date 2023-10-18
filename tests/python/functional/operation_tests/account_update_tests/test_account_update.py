@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_transaction_timestamp
+
+if TYPE_CHECKING:
+    from python.functional.operation_tests.conftest import UpdateAccount
 
 
 @pytest.mark.testnet()
@@ -15,7 +20,7 @@ from hive_local_tools.functional.python.operation import get_transaction_timesta
         ("owner", "__gt__"),
     ],
 )
-def test_update_account_owner_authority(alice, authority_type, comparison_type):
+def test_update_account_owner_authority(alice: UpdateAccount, authority_type: str, comparison_type: str) -> None:
     """
     Test cases 1, 2 and 3 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
     """
@@ -45,7 +50,7 @@ def test_update_account_owner_authority(alice, authority_type, comparison_type):
         ("owner", "__gt__"),
     ],
 )
-def test_update_account_active_authority(alice, authority_type, comparison_type):
+def test_update_account_active_authority(alice: UpdateAccount, authority_type: str, comparison_type: str) -> None:
     """
     Test cases 4,5 and 6 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
     """
@@ -75,7 +80,7 @@ def test_update_account_active_authority(alice, authority_type, comparison_type)
         ("owner", "__gt__"),
     ],
 )
-def test_update_account_posting_authority(alice, authority_type, comparison_type):
+def test_update_account_posting_authority(alice: UpdateAccount, authority_type: str, comparison_type: str) -> None:
     """
     Test cases 7,8 and 9 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
     """
@@ -105,7 +110,7 @@ def test_update_account_posting_authority(alice, authority_type, comparison_type
         ("owner", "__gt__"),
     ],
 )
-def test_update_account_memo_key(alice, authority_type, comparison_type):
+def test_update_account_memo_key(alice: UpdateAccount, authority_type: str, comparison_type: str) -> None:
     """
     Test cases 10, 11 and 12 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
     """
@@ -135,7 +140,7 @@ def test_update_account_memo_key(alice, authority_type, comparison_type):
         ("owner", "__gt__"),
     ],
 )
-def test_update_json_metadata(alice, authority_type, comparison_type):
+def test_update_json_metadata(alice: UpdateAccount, authority_type: str, comparison_type: str) -> None:
     """
     Test cases 13, 14 and 15 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
     """
@@ -157,7 +162,7 @@ def test_update_json_metadata(alice, authority_type, comparison_type):
 
 
 @pytest.mark.testnet()
-def test_update_all_account_parameters_using_owner_authority(alice):
+def test_update_all_account_parameters_using_owner_authority(alice: UpdateAccount) -> None:
     """
     Test case 16 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
     """
@@ -185,7 +190,9 @@ def test_update_all_account_parameters_using_owner_authority(alice):
 
 
 @pytest.mark.testnet()
-def test_update_all_account_parameters_except_owner_key_using_active_authority(alice):
+def test_update_all_account_parameters_except_owner_key_using_active_authority(
+    alice: UpdateAccount,
+) -> None:
     """
     Test case 17 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
     """
@@ -238,7 +245,7 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(a
     ],
 )
 @pytest.mark.testnet()
-def test_update_owner_authority_two_and_three_times_within_one_hour(alice, iterations):
+def test_update_owner_authority_two_and_three_times_within_one_hour(alice: UpdateAccount, iterations: int) -> None:
     """
     Test case 18, 19 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519
     """

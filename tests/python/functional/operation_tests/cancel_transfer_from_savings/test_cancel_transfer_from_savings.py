@@ -1,23 +1,35 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 import test_tools as tt
-from hive_local_tools.functional.python.operation import check_if_fill_transfer_from_savings_vop_was_generated
+from hive_local_tools.functional.python.operation import (
+    check_if_fill_transfer_from_savings_vop_was_generated,
+)
+
+if TYPE_CHECKING:
+    from python.functional.operation_tests.conftest import TransferAccount
 
 
 @pytest.mark.parametrize(
     ("currency", "check_savings_balance", "check_balance"),
     [
         # transfers from savings in HIVES
-        (tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        (tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
-        (tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        (tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()
 def test_cancel_transfer_from_savings_simplest_scenario(
-    prepared_node, wallet, alice, currency, check_savings_balance, check_balance
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    alice: TransferAccount,
+    currency,
+    check_savings_balance,
+    check_balance,
 ):
     alice.transfer_to_savings("alice", currency(50), "transfer to savings")
     funds_after_transfer_to_savings = getattr(alice, check_balance)()
@@ -65,14 +77,19 @@ def test_cancel_transfer_from_savings_simplest_scenario(
     ("currency", "check_savings_balance", "check_balance"),
     [
         # transfers from savings in HIVES
-        (tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        (tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
-        (tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        (tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()
 def test_cancel_all_transfers_from_savings(
-    prepared_node, wallet, alice, currency, check_savings_balance, check_balance
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    alice: TransferAccount,
+    currency,
+    check_savings_balance,
+    check_balance,
 ):
     create_three_savings_withdrawals_from_fresh_account(
         prepared_node, currency, alice, check_savings_balance, currency.token
@@ -97,14 +114,19 @@ def test_cancel_all_transfers_from_savings(
     ("currency", "check_savings_balance", "check_balance"),
     [
         # transfers from savings in HIVES
-        (tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        (tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
-        (tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        (tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()
 def test_cancel_all_transfers_from_savings_except_one(
-    prepared_node, wallet, alice, currency, check_savings_balance, check_balance
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    alice: TransferAccount,
+    currency,
+    check_savings_balance,
+    check_balance,
 ):
     create_three_savings_withdrawals_from_fresh_account(
         prepared_node, currency, alice, check_savings_balance, currency.token

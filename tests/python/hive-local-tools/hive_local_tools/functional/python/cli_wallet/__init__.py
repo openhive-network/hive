@@ -10,9 +10,9 @@ class FundedAccountInfo:
     def __init__(self):
         self.creator: tt.Account = None
         self.account: tt.Account = None
-        self.funded_TESTS: tt.Asset.Test = None
-        self.funded_TBD: tt.Asset.Tbd = None
-        self.funded_VESTS: tt.Asset.Test = None
+        self.funded_TESTS: tt.Asset.TestT = None
+        self.funded_TBD: tt.Asset.TbdT = None
+        self.funded_VESTS: tt.Asset.TestT = None
 
 
 def format_datetime(input) -> str:

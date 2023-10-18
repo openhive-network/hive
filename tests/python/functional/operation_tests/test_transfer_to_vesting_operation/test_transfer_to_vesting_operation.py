@@ -196,7 +196,7 @@ def __assert_hive_balance_is_reduced_by_amount(node: tt.InitNode, account: str, 
     assert get_hive_balance(node, account) + amount == initial_balance, error_message
 
 
-def __assert_hive_power_balance_is_increased(node, account: str, amount: tt.Asset.Vest) -> None:
+def __assert_hive_power_balance_is_increased(node, account: str, amount: tt.Asset.VestT) -> None:
     assert get_hive_power(node, account) > amount, f"{account} HP balance is not increased by {amount}."
 
 
@@ -205,7 +205,7 @@ def __assert_minimal_operation_rc_cost(transaction) -> None:
 
 
 def __assert_power_up_exchange_rate(
-    node: tt.InitNode, account: str, amount: tt.Asset.Test, price: int, tolerance: int
+    node: tt.InitNode, account: str, amount: tt.Asset.TestT, price: int, tolerance: int
 ) -> None:
     err = "The conversion is done using the wrong exchange rate."
     assert get_hive_power(node, account) in convert_hive_to_vest_range(amount, price, tolerance=tolerance), err

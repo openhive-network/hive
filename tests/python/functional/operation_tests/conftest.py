@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import Account, create_transaction_with_any_operation
+
+if TYPE_CHECKING:
+    from schemas.fields.basic import PublicKey
 
 
 @dataclass
@@ -17,7 +20,7 @@ class LimitOrderAccount(Account):
         amount: float,
         check_hbd: bool,
         message: Literal["expiration", "creation", "order_match", "no_match"],
-    ):
+    ) -> None:
         super().update_account_info()
         get_balance = self.get_hbd_balance if check_hbd else self.get_hive_balance
         currency = tt.Asset.Tbd if check_hbd else tt.Asset.Test
@@ -38,7 +41,7 @@ class LimitOrderAccount(Account):
 
         assert get_balance() == currency(amount), messages[message]
 
-    def assert_not_completed_order(self, amount: int, hbd: bool):
+    def assert_not_completed_order(self, amount: int, hbd: bool) -> None:
         query = self._node.api.database.find_limit_orders(account=self._name)["orders"][0]
         for_sale = query["for_sale"]
         nai = query["sell_price"]["base"]
@@ -58,7 +61,7 @@ class LimitOrderAccount(Account):
         fill_or_kill: bool = False,
         expiration: int = 60,
         buy_hbd: bool | None = None,
-    ):
+    ) -> dict[str, Any]:
         return self._wallet.api.create_order(
             self._name,
             order_id,
@@ -77,7 +80,7 @@ class LimitOrderAccount(Account):
         fill_or_kill: bool = False,
         expiration: int = 60,
         buy_hbd: bool | None = None,
-    ):
+    ) -> None:
         expiration_time = tt.Time.serialize(
             self._node.get_head_block_time() + tt.Time.seconds(expiration),
             format_=tt.TimeFormats.DEFAULT_FORMAT,
@@ -100,27 +103,29 @@ class LimitOrderAccount(Account):
 @dataclass
 class TransferAccount(Account):
     # class with account representation created for transfer, transfer_to/from_savings tests
-    def transfer(self, receiver, amount, memo):
+    def transfer(self, receiver: str, amount: tt.Asset.TestT | tt.Asset.TbdT, memo: str) -> None:
         self._wallet.api.transfer(self._name, receiver, amount, memo)
 
-    def transfer_to_savings(self, receiver, amount, memo):
+    def transfer_to_savings(self, receiver: str, amount: tt.Asset.TestT | tt.Asset.TbdT, memo: str) -> None:
         self._wallet.api.transfer_to_savings(self._name, receiver, amount, memo)
 
-    def transfer_from_savings(self, transfer_id, receiver, amount, memo):
+    def transfer_from_savings(
+        self,
+        transfer_id: int,
+        receiver: str,
+        amount: tt.Asset.TestT | tt.Asset.TbdT,
+        memo: str,
+    ) -> None:
         self._wallet.api.transfer_from_savings(self._name, transfer_id, receiver, amount, memo)
 
-    def cancel_transfer_from_savings(self, transfer_id):
+    def cancel_transfer_from_savings(self, transfer_id: int) -> None:
         self._wallet.api.cancel_transfer_from_savings(self._wallet, transfer_id)
 
-    def get_hbd_savings_balance(self) -> tt.Asset.Tbd:
-        return tt.Asset.from_(
-            self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]["savings_hbd_balance"]
-        )
+    def get_hbd_savings_balance(self) -> tt.Asset.TbdT:
+        return self._node.api.database.find_accounts(accounts=[self._name]).accounts[0].savings_hbd_balance
 
-    def get_hive_savings_balance(self) -> tt.Asset.Test:
-        return tt.Asset.from_(
-            self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]["savings_balance"]
-        )
+    def get_hive_savings_balance(self) -> tt.Asset.TestT:
+        return self._node.api.database.find_accounts(accounts=[self._name]).accounts[0].savings_balance
 
 
 @dataclass
@@ -135,7 +140,7 @@ class UpdateAccount(Account):
         new_active: str | list | None = None,
         new_posting: str | list | None = None,
         new_memo: str | None = None,
-    ):
+    ) -> None:
         # for owner/active/posting argument method accepts both the authority (list - [key, weight]) and key as string
         self.update_account_info()
         if new_owner is not None:
@@ -170,16 +175,16 @@ class UpdateAccount(Account):
             to_compare = self._acc_info["json_metadata"]
             assert new_json_meta == to_compare, f"Json metadata of account {self._name} wasn't changed."
 
-    def generate_new_key(self):
+    def generate_new_key(self) -> PublicKey:
         self.__key_generation_counter += 1
         return tt.Account(self._name, secret=f"other_than_previous_{self.__key_generation_counter}").public_key
 
-    def get_current_key(self, type_: str):
+    def get_current_key(self, type_: Literal["owner", "active", "posting", "memo"]) -> str:
         assert type_ in ("owner", "active", "posting", "memo"), "Wrong key type."
         self.update_account_info()
         return self._acc_info[type_]["key_auths"][0][0] if type_ != "memo" else self._acc_info[type_ + "_key"]
 
-    def update_all_account_details(self, *, json_meta: str, owner: str, active: str, posting: str, memo: str):
+    def update_all_account_details(self, *, json_meta: str, owner: str, active: str, posting: str, memo: str) -> None:
         self._wallet.api.update_account(
             self._name, json_meta=json_meta, owner=owner, active=active, posting=posting, memo=memo, broadcast=True
         )
@@ -191,7 +196,7 @@ class UpdateAccount(Account):
         key_type: str | None = None,
         key: tt.PublicKey = None,
         weight: int | None = 1,
-    ):
+    ) -> dict[str, Any]:
         """
         Swapping only one key owner/active/posting require firstly adding new key and then deleting old one
         (setting weight equal to zero). This has to be done because update account requires all 5 arguments. Methods
@@ -229,42 +234,66 @@ class UpdateAccount(Account):
 
 
 @pytest.fixture()
-def create_account_object():
+def create_account_object() -> type[TransferAccount]:
     return TransferAccount
 
 
 @pytest.fixture()
-def alice(prepared_node, wallet, create_account_object):
+def alice(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     wallet.create_account("alice", hives=450, hbds=450, vests=50)
     return create_account_object("alice", prepared_node, wallet)
 
 
 @pytest.fixture()
-def bob(prepared_node, wallet, create_account_object):
+def bob(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     wallet.create_account("bob", hives=300, hbds=300, vests=50)
     return create_account_object("bob", prepared_node, wallet)
 
 
 @pytest.fixture()
-def carol(prepared_node, wallet, create_account_object):
+def carol(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     wallet.create_account("carol", hives=400, hbds=400, vests=50)
     return create_account_object("carol", prepared_node, wallet)
 
 
 @pytest.fixture()
-def daisy(prepared_node, wallet, create_account_object):
+def daisy(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     wallet.create_account("daisy", hives=480, hbds=480, vests=50)
     return create_account_object("daisy", prepared_node, wallet)
 
 
 @pytest.fixture()
-def elizabeth(prepared_node, wallet, create_account_object):
+def elizabeth(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     wallet.create_account("elizabeth", hives=600, hbds=600, vests=50)
     return create_account_object("elizabeth", prepared_node, wallet)
 
 
 @pytest.fixture()
-def hive_fund(prepared_node, wallet, create_account_object):
+def hive_fund(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     return create_account_object("hive.fund", prepared_node, wallet)
 
 

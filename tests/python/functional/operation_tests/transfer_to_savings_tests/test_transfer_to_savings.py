@@ -9,13 +9,13 @@ import test_tools as tt
     ("receiver", "currency", "check_savings_balance", "check_balance"),
     [
         # transfer to savings in HIVES, receiver is the same person as sender
-        ("alice", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        ("alice", tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
         # transfer to savings in HIVES, receiver is other account
-        ("bob", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        ("bob", tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
         # transfer to savings in HBDS, receiver is the same person as sender
-        ("alice", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        ("alice", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
         # transfer to savings in HBDS, receiver is other account
-        ("bob", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        ("bob", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()

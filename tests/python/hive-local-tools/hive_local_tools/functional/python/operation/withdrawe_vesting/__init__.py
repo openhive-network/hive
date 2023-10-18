@@ -65,7 +65,7 @@ class PowerDown(Operation):
         return self._update_timestamp
 
     @staticmethod
-    def convert_to_vest(node, hive: tt.Asset.Test) -> tt.Asset.Vest:
+    def convert_to_vest(node, hive: tt.Asset.TestT) -> tt.Asset.Vest:
         return tt.Asset.from_({"amount": hive.amount * get_vesting_price(node), "precision": 6, "nai": "@@000000037"})
 
     @staticmethod
@@ -77,7 +77,7 @@ class PowerDown(Operation):
     def cancel(self) -> None:
         self._wallet.api.withdraw_vesting(self._name, tt.Asset.Vest(0))
 
-    def update(self, vesting_shares: tt.Asset.Vest):
+    def update(self, vesting_shares: tt.Asset.VestT):
         self.__init__(self._node, self._wallet, self._name, vesting_shares, update=True)
 
     def execute_next_withdraw(self) -> None:

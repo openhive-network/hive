@@ -10,7 +10,7 @@ def pytest_configure(config):
 
 
 @pytest.fixture()
-def node(request):
+def node(request: pytest.FixtureRequest) -> tt.InitNode:
     init_node = tt.InitNode()
 
     enabled_plugins = request.node.get_closest_marker("enabled_plugins")
