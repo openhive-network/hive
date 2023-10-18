@@ -15,7 +15,7 @@
           "rshares": 52708083,
           "total_vote_weight": "17554534529202619714",
           "voter": "curpose",
-          "weight": "568632284990"
+          "weight": 568632284990
         }
       },
       "op_in_trx": 1,
@@ -40,7 +40,7 @@
           "rshares": 690731471,
           "total_vote_weight": "11744100289542753206",
           "voter": "bunny",
-          "weight": "420580428064964"
+          "weight": 420580428064964
         }
       },
       "op_in_trx": 1,
@@ -65,7 +65,7 @@
           "rshares": 54539701,
           "total_vote_weight": "11544473076463145755",
           "voter": "comeup",
-          "weight": "35214316861460"
+          "weight": 35214316861460
         }
       },
       "op_in_trx": 1,
@@ -112,10 +112,10 @@
             "precision": 3
           },
           "permlink": "alarm-clock-dawn-an-original-novel-episode-19",
-          "rshares": "6321074836",
+          "rshares": 6321074836,
           "total_vote_weight": "16249210841704374069",
           "voter": "johnbradshaw",
-          "weight": "413774656473490"
+          "weight": 413774656473490
         }
       },
       "op_in_trx": 1,
@@ -140,7 +140,7 @@
           "rshares": 213742499,
           "total_vote_weight": "11744230424812042576",
           "voter": "moon",
-          "weight": "130135269289370"
+          "weight": 130135269289370
         }
       },
       "op_in_trx": 1,
@@ -190,7 +190,7 @@
           "rshares": 2117475967,
           "total_vote_weight": "12342522533047087099",
           "voter": "natalymaty",
-          "weight": "1069486812730121"
+          "weight": 1069486812730121
         }
       },
       "op_in_trx": 1,

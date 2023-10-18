@@ -17,7 +17,7 @@
           "rshares": 482849945,
           "total_vote_weight": "10483254175320587397",
           "voter": "minion",
-          "weight": "415013258959387"
+          "weight": 415013258959387
         }
       },
       "op_in_trx": 1,
@@ -42,7 +42,7 @@
           "rshares": 13539108,
           "total_vote_weight": "202733454487810326",
           "voter": "michelnilles",
-          "weight": "61073446005733"
+          "weight": 61073446005733
         }
       },
       "op_in_trx": 1,

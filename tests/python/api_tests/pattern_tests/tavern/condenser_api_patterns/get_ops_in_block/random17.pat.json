@@ -25,9 +25,9 @@
         "pending_payout": "0.000 HBD",
         "permlink": "re-darknet-altcoins-i-own-and-altcoins-i-am-following-20160724t121553946z",
         "rshares": 202458957,
-        "total_vote_weight": "1456874093176353",
+        "total_vote_weight": 1456874093176353,
         "voter": "zuarzalfa",
-        "weight": "933576917541687"
+        "weight": 933576917541687
       }
     ],
     "op_in_trx": 1,
@@ -189,7 +189,7 @@
         "rshares": 266704134,
         "total_vote_weight": "200100327558371606",
         "voter": "nurev",
-        "weight": "411194477983728"
+        "weight": 411194477983728
       }
     ],
     "op_in_trx": 1,

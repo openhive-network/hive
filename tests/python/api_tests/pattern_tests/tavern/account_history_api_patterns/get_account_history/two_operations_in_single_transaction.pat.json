@@ -145,7 +145,7 @@
             },
             "permlink": "how-i-managed-depression-and-work",
             "rshares": 55192542,
-            "total_vote_weight": "254527162262593",
+            "total_vote_weight": 254527162262593,
             "voter": "a-m3001",
             "weight": 0
           }
@@ -194,9 +194,9 @@
             },
             "permlink": "how-i-managed-depression-and-work",
             "rshares": 259093790,
-            "total_vote_weight": "1449276011156827",
+            "total_vote_weight": 1449276011156827,
             "voter": "karenmckersie",
-            "weight": "35842465466827"
+            "weight": 35842465466827
           }
         },
         "op_in_trx": 1,
@@ -291,9 +291,9 @@
             },
             "permlink": "how-i-managed-depression-and-work",
             "rshares": 53013998,
-            "total_vote_weight": "1693718270604835",
+            "total_vote_weight": 1693718270604835,
             "voter": "g00by",
-            "weight": "219183225971713"
+            "weight": 219183225971713
           }
         },
         "op_in_trx": 1,
@@ -363,7 +363,7 @@
               "precision": 3
             },
             "permlink": "how-i-managed-depression-and-work",
-            "rshares": "5591952200",
+            "rshares": 5591952200,
             "total_vote_weight": 0,
             "voter": "logic",
             "weight": 0
