@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 if [[ $1 == *":"* ]]; then
     export HIVEMIND_ADDRESS=${1%:*}
     export HIVEMIND_PORT=${1##*:}
