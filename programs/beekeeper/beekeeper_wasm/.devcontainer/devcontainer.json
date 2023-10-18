@@ -1,0 +1,15 @@
+{
+  "name": "Hive NodeJS & Typescript",
+  "image": "registry.gitlab.syncad.com/hive/common-ci-configuration/emsdk:4ae851c0ae78a898526cac04da84d6653613c2f6",
+  //    "mounts": ["/workspace/src/wax:/src/"],
+//  "features": {
+//    "ghcr.io/devcontainers/features/git:1": {},
+//    "ghcr.io/devcontainers/features/node:1": {}
+//  },
+  "containerUser": "emscripten",
+  "customizations": {
+    "vscode": {
+      "extensions": []
+    }
+  }
+}
