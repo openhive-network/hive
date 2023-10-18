@@ -3693,16 +3693,23 @@ void database::init_genesis()
     // issue initial token supply to balance of first miner
     if( HIVE_INIT_SUPPLY != 0 || HIVE_HBD_INIT_SUPPLY != 0 )
     {
+      HIVE_asset to_vest( HIVE_INITIAL_VESTING );
+      VEST_asset initial_vests( to_vest * HIVE_INITIAL_VESTING_PRICE );
+
       modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
       {
-        a.balance = HIVE_asset( HIVE_INIT_SUPPLY );
+        a.balance = HIVE_asset( HIVE_INIT_SUPPLY ) - to_vest;
         a.hbd_balance = HBD_asset( HIVE_HBD_INIT_SUPPLY );
+        a.vesting_shares = initial_vests;
+        FC_ASSERT( a.balance.amount >= 0 && a.hbd_balance.amount >= 0 && a.vesting_shares.amount >= 0, "Invalid testnet configuration" );
       } );
-      modify( dgpo, []( dynamic_global_property_object& gpo )
+      modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
         gpo.current_supply += HIVE_asset( HIVE_INIT_SUPPLY );
         gpo.current_hbd_supply += HBD_asset( HIVE_HBD_INIT_SUPPLY );
         gpo.init_hbd_supply = HBD_asset( HIVE_HBD_INIT_SUPPLY );
+        gpo.total_vesting_fund_hive += to_vest;
+        gpo.total_vesting_shares += initial_vests;
       } );
       update_virtual_supply();
     }
