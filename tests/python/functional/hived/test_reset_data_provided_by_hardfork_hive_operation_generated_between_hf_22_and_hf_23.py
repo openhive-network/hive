@@ -17,7 +17,7 @@ def node() -> tt.InitNode:
     node.run(
         time_offset=tt.Time.serialize(
             tt.Time.parse(time_of_hf_23) - tt.Time.seconds(10),
-            format_=tt.Time.TIME_OFFSET_FORMAT,
+            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
     )
 

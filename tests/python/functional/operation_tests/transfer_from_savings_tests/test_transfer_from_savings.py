@@ -119,6 +119,6 @@ def test_transfer_from_savings_during_few_days(
 
         prepared_node.restart(
             time_offset=tt.Time.serialize(
-                prepared_node.get_head_block_time() + tt.Time.days(1), format_=tt.Time.TIME_OFFSET_FORMAT
+                prepared_node.get_head_block_time() + tt.Time.days(1), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
             )
         )
