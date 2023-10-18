@@ -13,7 +13,7 @@ from hive_local_tools.functional.python.operation import (
 )
 
 if TYPE_CHECKING:
-    import datetime
+    from datetime import datetime
 
 
 class PowerDown(Operation):
