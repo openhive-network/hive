@@ -73,7 +73,7 @@ bool fork_db_block_reader::is_known_block_unlocked( const block_id_type& id ) co
     if (_fork_db.fetch_block_unlocked(id, true /* only search linked blocks */))
       return true;
 
-    return block_log_reader::is_known_block_unlocked( id );
+    return block_log_reader::is_known_block( id );
   } FC_CAPTURE_AND_RETHROW()
 }
 

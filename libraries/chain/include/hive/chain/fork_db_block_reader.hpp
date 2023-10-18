@@ -24,8 +24,6 @@ namespace hive { namespace chain {
 
     virtual bool is_known_block( const block_id_type& id ) const override;
 
-    virtual bool is_known_block_unlocked( const block_id_type& id ) const override;
-
     virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(
       const std::deque<block_id_type>& item_hashes_received ) const override;
 
@@ -48,6 +46,7 @@ namespace hive { namespace chain {
       uint32_t limit) const override;
 
   private:
+    bool is_known_block_unlocked( const block_id_type& id ) const;
   	/** Needed by p2p plugin only.
      *  Check among reversible blocks on main branch then among irreversible.
     */
