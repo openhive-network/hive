@@ -4,6 +4,7 @@
 
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/hardfork.hpp>
+#include <hive/protocol/asset.hpp>
 
 #include <fc/optional.hpp>
 #include <fc/time.hpp>

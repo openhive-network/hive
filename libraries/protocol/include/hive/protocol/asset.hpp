@@ -1,6 +1,5 @@
 #pragma once
 #include <hive/protocol/types.hpp>
-#include <hive/protocol/config.hpp>
 #include <hive/protocol/asset_symbol.hpp>
 
 namespace hive { namespace protocol {

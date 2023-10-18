@@ -4,6 +4,7 @@
 #include <hive/protocol/base.hpp>
 #include <hive/protocol/block_header.hpp>
 #include <hive/protocol/asset.hpp>
+#include <hive/protocol/config.hpp>
 
 #include <fc/utf8.hpp>
 
