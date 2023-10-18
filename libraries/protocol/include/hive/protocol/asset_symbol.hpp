@@ -134,6 +134,10 @@ class asset_symbol_type
 
 } } // hive::protocol
 
+#define VESTS_SYMBOL  (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS ) )
+#define HIVE_SYMBOL   (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_HIVE ) )
+#define HBD_SYMBOL    (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_HBD ) )
+
 FC_REFLECT(hive::protocol::asset_symbol_type, (asset_num))
 
 namespace fc { namespace raw {

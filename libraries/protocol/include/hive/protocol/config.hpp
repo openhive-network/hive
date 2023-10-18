@@ -205,10 +205,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #endif
 
-#define VESTS_SYMBOL  (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS ) )
-#define HIVE_SYMBOL   (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_HIVE ) )
-#define HBD_SYMBOL    (hive::protocol::asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_HBD ) )
-
 #define HIVE_BLOCKCHAIN_HARDFORK_VERSION      ( hardfork_version( HIVE_BLOCKCHAIN_VERSION ) )
 
 #define HIVE_100_PERCENT                      10000
