@@ -380,6 +380,10 @@ def get_hive_power(node: tt.InitNode, account_name: str) -> tt.Asset.VestsT:
     return _find_account(node, account_name).vesting_shares
 
 
+def get_current_median_history_price(node: tt.InitNode) -> dict:
+    return node.api.wallet_bridge.get_current_median_history_price()
+
+
 def get_rc_current_mana(node: tt.InitNode, account_name: str) -> int:
     return int(node.api.rc.find_rc_accounts(accounts=[account_name]).rc_accounts[0].rc_manabar.current_mana)
 
