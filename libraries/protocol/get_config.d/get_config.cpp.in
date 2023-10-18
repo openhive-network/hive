@@ -12,6 +12,10 @@ fc::mutable_variant_object get_config( const std::string& treasury_name, const f
 	result["HIVE_CHAIN_ID"] = chain_id;
   result["HIVE_TREASURY_ACCOUNT"] = treasury_name;
 
+  result["VESTS_SYMBOL"] = VESTS_SYMBOL;
+  result["HIVE_SYMBOL"] = HIVE_SYMBOL;
+  result["HBD_SYMBOL"] = HBD_SYMBOL;
+
 #ifdef IS_TEST_NET
   result["IS_TEST_NET"] = true;
 #else
