@@ -24,6 +24,9 @@ test.describe('WASM Base tests', () => {
   // Base browser type test
   test('Should test on chromium', async () => {
     const browserType = browser.browserType();
+    const version = browser.version();
+
+    console.info(`Using browser ${browserType} v${version}`);;
 
     expect(browserType.name()).toBe('chromium');
   });
