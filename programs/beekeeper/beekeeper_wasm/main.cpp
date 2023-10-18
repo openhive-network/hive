@@ -35,7 +35,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         token:  A token of a session created implicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
         version: A hash of current commit.
     */
-    .function("init", &beekeeper_api::init)
+    .function("init()", &beekeeper_api::init)
 
     /*
       ****creation of a session****
@@ -45,7 +45,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         {"token":"440c44f01dde9ef65e7b88c6d44f3a929bbf0ff993c06efa6d942d40b08567f3"}
         token: A token of a session created explicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
     */
-    .function("create_session", &beekeeper_api::create_session)
+    .function("create_session(salt)", &beekeeper_api::create_session)
 
     /*
       ****closing of a session****
@@ -54,7 +54,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
       result:
         nothing
     */
-    .function("close_session", &beekeeper_api::close_session)
+    .function("close_session(token)", &beekeeper_api::close_session)
 
     /*
       ****creation of a wallet****
@@ -69,8 +69,8 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         {"password":"PW5KNCWdnMZFKzrvVyA2xwKLRxcAZWxPoyGVSN9r38te3p1ceEjo1"}
         password: a password of newly created a wallet
     */
-    .function("create", select_overload<std::string(const std::string&, const std::string&)>(&beekeeper_api::create))                     //(1)
-    .function("create", select_overload<std::string(const std::string&, const std::string&, const std::string&)>(&beekeeper_api::create)) //(2)
+    .function("create(token, wallet_name)", select_overload<std::string(const std::string&, const std::string&)>(&beekeeper_api::create))                     //(1)
+    .function("create(token, wallet_name, password)", select_overload<std::string(const std::string&, const std::string&, const std::string&)>(&beekeeper_api::create)) //(2)
 
     /*
       ****unlocking of a wallet****
@@ -81,7 +81,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
       result:
         nothing
     */
-    .function("unlock", &beekeeper_api::unlock)
+    .function("unlock(token, wallet_name, password)", &beekeeper_api::unlock)
 
     /*
       ****opening of a wallet****
@@ -91,7 +91,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
       result:
         nothing
     */
-    .function("open", &beekeeper_api::open)
+    .function("open(token, wallet_name)", &beekeeper_api::open)
 
     /*
       ****closing of a wallet****
@@ -101,7 +101,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
       result:
         nothing
     */
-    .function("close", &beekeeper_api::close)
+    .function("close(token, wallet_name)", &beekeeper_api::close)
 
     /*
       ****setting a timeout for a session****
@@ -111,7 +111,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
       result:
         nothing
     */
-    .function("set_timeout", &beekeeper_api::set_timeout)
+    .function("set_timeout(token, seconds)", &beekeeper_api::set_timeout)
 
     /*
       ****locking all wallets****
@@ -120,7 +120,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
       result:
         nothing
     */
-    .function("lock_all", &beekeeper_api::lock_all)
+    .function("lock_all(token)", &beekeeper_api::lock_all)
 
     /*
       ****locking a wallet****
@@ -130,7 +130,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
       result:
         nothing
     */
-    .function("lock", &beekeeper_api::lock)
+    .function("lock(token, wallet_name)", &beekeeper_api::lock)
 
     /*
       ****importing of a private key into a wallet****
@@ -142,7 +142,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         {"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"}
         public_key: a public key corresponding to a private key
     */
-    .function("import_key", &beekeeper_api::import_key)
+    .function("import_key(token, wallet_name, wif_key)", &beekeeper_api::import_key)
 
     /*
       ****removing of a private key from a wallet****
@@ -154,7 +154,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
       result:
         nothing
     */
-    .function("remove_key", &beekeeper_api::remove_key)
+    .function("remove_key(token, wallet_name, password, public_key)", &beekeeper_api::remove_key)
 
     /*
       ****listing of all opened wallets****
@@ -166,7 +166,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
           name: name of wallet
           unlocked: information if a wallet is opened/closed
     */
-    .function("list_wallets", &beekeeper_api::list_wallets)
+    .function("list_wallets(token)", &beekeeper_api::list_wallets)
 
     /*
       ****listing of all public keys****
@@ -177,7 +177,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         keys: a set of all keys for all unlocked wallets. Every key has information:
           public_key: a public key corresponding to a private key that is stored in a wallet
     */
-    .function("get_public_keys", &beekeeper_api::get_public_keys)
+    .function("get_public_keys(token)", &beekeeper_api::get_public_keys)
 
     /*
       ****signing a transaction by signing sig_digest****
@@ -189,7 +189,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         { "signature":"1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340"}
         signature: a signature of a transaction
     */
-    .function("sign_digest", &beekeeper_api::sign_digest)
+    .function("sign_digest(token, public_key, sig_digest)", &beekeeper_api::sign_digest)
 
     /*
       ****signing a transaction presented in a binary form (hex)****
@@ -226,7 +226,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         now:          current server's time
         timeout_time: time when wallets will be automatically closed
     */
-    .function("get_info", &beekeeper_api::get_info)
+    .function("get_info(token)", &beekeeper_api::get_info)
     ;
 }
 
