@@ -1,32 +1,29 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "5c42c8019dd329000fd036668b22eb3eb99a743a"
+  CI_COMMON_JOB_VERSION: "b09f45f7f13e7760aefc61d2e749f0c71e285e09"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 5c42c8019dd329000fd036668b22eb3eb99a743a # develop
+    ref: b09f45f7f13e7760aefc61d2e749f0c71e285e09 # develop
     file: '/templates/docker_image_jobs.gitlab-ci.yml'
 
 .docker_image_builder_job:
   extends: .docker_image_builder_job_template
   variables:
     FF_NETWORK_PER_BUILD: "true"
-  interruptible: true
 
   before_script:
     - git config --global --add safe.directory '*'
 
 .docker_image_cleanup_job:
   extends: .docker_image_cleanup_job_template
-  interruptible: true
 
 .cleanup_cache_manual:
   extends: .job-defaults
   image: alpine:3.16
-  interruptible: true
   variables:
     CLEANUP_PATH_PATTERN: ""
   needs: []
