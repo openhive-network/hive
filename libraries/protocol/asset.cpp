@@ -1,5 +1,6 @@
 #include <hive/protocol/asset.hpp>
 #include <hive/protocol/misc_utilities.hpp>
+#include <hive/protocol/config.hpp>
 
 #include <fc/io/json.hpp>
 

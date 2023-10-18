@@ -6,6 +6,7 @@
 #include <hive/chain/hive_object_types.hpp>
 
 #include <hive/protocol/asset.hpp>
+#include <hive/protocol/config.hpp>
 
 namespace hive { namespace chain {
 

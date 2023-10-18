@@ -2,6 +2,7 @@
 
 #include <hive/protocol/base.hpp>
 #include <hive/protocol/asset.hpp>
+#include <hive/protocol/config.hpp>
 #include <hive/protocol/misc_utilities.hpp>
 
 #ifdef HIVE_ENABLE_SMT
