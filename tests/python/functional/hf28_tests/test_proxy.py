@@ -92,8 +92,7 @@ def test_too_long_proxy_chain(node: tt.InitNode | tt.RemoteNode) -> None:
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.set_voting_proxy("account-layer-4", "account-layer-3")
-    error_response = exception.value.response["error"]["message"]
-    assert "Proxy chain is too long." in error_response
+    assert "Proxy chain is too long." in exception.value.error
 
 
 @run_for("testnet")
@@ -128,8 +127,7 @@ def test_set_the_proxy_on_the_same_account_twice(node: tt.InitNode | tt.RemoteNo
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.set_voting_proxy("alice", "bob")
 
-    error_response = exception.value.response["error"]["message"]
-    assert "Proxy must change." in error_response
+    assert "Proxy must change." in exception.value.error
 
 
 @run_for("testnet")

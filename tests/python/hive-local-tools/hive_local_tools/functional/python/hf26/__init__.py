@@ -37,9 +37,7 @@ def hf26_operation_failed(wallet: tt.Wallet) -> None:
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.transfer("initminer", "alice", tt.Asset.Test(200).as_nai(), "memo")
 
-    assert (
-        "missing required active authority" in exception.value.response["error"]["message"]
-    ), "Incorrect error in `hf26` transfer operation"
+    assert "missing required active authority" in exception.value.error, "Incorrect error in `hf26` transfer operation"
 
 
 def run_with_faketime(node, time):

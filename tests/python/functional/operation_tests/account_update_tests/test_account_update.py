@@ -30,8 +30,7 @@ def test_update_account_owner_authority(alice: UpdateAccount, authority_type: st
     if authority_type != "owner":
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
             alice.update_single_account_detail(key_type="owner", key=new_key)
-        error_response = exception.value.response["error"]["message"]
-        assert "Missing Owner Authority" in error_response
+        assert "Missing Owner Authority" in exception.value.error
         assert_msg = "RC should be equal to the value before failed transaction"
     else:
         alice.update_single_account_detail(key_type="owner", key=new_key)
@@ -60,8 +59,7 @@ def test_update_account_active_authority(alice: UpdateAccount, authority_type: s
     if authority_type == "posting":
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
             alice.update_single_account_detail(key_type="active", key=new_key)
-        error_response = exception.value.response["error"]["message"]
-        assert "Missing Active Authority" in error_response
+        assert "Missing Active Authority" in exception.value.error
         assert_msg = "RC should be equal to the value before failed transaction"
     else:
         alice.update_single_account_detail(key_type="active", key=new_key)
@@ -90,8 +88,7 @@ def test_update_account_posting_authority(alice: UpdateAccount, authority_type: 
     if authority_type == "posting":
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
             alice.update_single_account_detail(key_type="posting", key=new_key)
-        error_response = exception.value.response["error"]["message"]
-        assert "Missing Active Authority" in error_response
+        assert "Missing Active Authority" in exception.value.error
         assert_msg = "RC should be equal to the value before failed transaction"
     else:
         alice.update_single_account_detail(key_type="posting", key=new_key)
@@ -120,8 +117,7 @@ def test_update_account_memo_key(alice: UpdateAccount, authority_type: str, comp
     if authority_type == "posting":
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
             alice.update_single_account_detail(key_type="memo", key=new_key)
-        error_response = exception.value.response["error"]["message"]
-        assert "Missing Active Authority" in error_response
+        assert "Missing Active Authority" in exception.value.error
         assert_msg = "RC should be equal to the value before failed transaction"
     else:
         alice.update_single_account_detail(key_type="memo", key=new_key)
@@ -150,8 +146,7 @@ def test_update_json_metadata(alice: UpdateAccount, authority_type: str, compari
     if authority_type == "posting":
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
             alice.update_single_account_detail(json_meta=new_json_meta)
-        error_response = exception.value.response["error"]["message"]
-        assert "Missing Active Authority" in error_response
+        assert "Missing Active Authority" in exception.value.error
         assert_msg = "RC should be equal to the value before failed transaction"
     else:
         alice.update_single_account_detail(json_meta=new_json_meta)
@@ -257,8 +252,7 @@ def test_update_owner_authority_two_and_three_times_within_one_hour(alice: Updat
             with pytest.raises(tt.exceptions.CommunicationError) as exception:
                 alice.update_single_account_detail(key_type="owner", key=current_key, weight=iteration)
             rc_after_operation = alice.get_rc_current_mana()
-            error_response = exception.value.response["error"]["message"]
-            assert "Owner authority can only be updated twice an hour" in error_response
+            assert "Owner authority can only be updated twice an hour" in exception.value.error
             assert_msg = "RC should be equal to the value before failed transaction"
             assert rc_before_operation == rc_after_operation, assert_msg
         else:
