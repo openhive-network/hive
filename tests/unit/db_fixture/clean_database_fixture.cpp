@@ -19,8 +19,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
 {
   try {
 
-  configuration_data.init_supply = INITIAL_TEST_SUPPLY;
-  configuration_data.hbd_init_supply = HBD_INITIAL_TEST_SUPPLY;
+  configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
   configuration_data.allow_not_enough_rc = true;
 
   postponed_init(

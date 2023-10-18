@@ -1224,11 +1224,43 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     uint32_t              genesis_time      = alternate_chain_spec["genesis_time"].as< uint32_t >();
     auto                  hardfork_schedule = alternate_chain_spec["hardfork_schedule"].as< std::vector< hardfork_schedule_item_t > >();
 
-    if( alternate_chain_spec.get_object().contains("init_supply") )
-      configuration_data.init_supply = alternate_chain_spec["init_supply"].as< uint64_t >();
+    {
+      uint64_t hive = 0, hbd = 0, to_vest = 0;
+      // default value somewhat close to mainnet - won't have any impact if to_vest remains zero
+      // see comment for configuration::set_initial_asset_supply to see why the price looks so weird
+      hive::protocol::price vest_price( VEST_asset( 1800 ), HIVE_asset( 1'000 ) );
+      bool set = false;
 
-    if( alternate_chain_spec.get_object().contains("hbd_init_supply") )
-      configuration_data.hbd_init_supply = alternate_chain_spec["hbd_init_supply"].as< uint64_t >();
+      if( alternate_chain_spec.get_object().contains("init_supply") )
+      {
+        set = true;
+        hive = alternate_chain_spec["init_supply"].as< uint64_t >();
+      }
+      if( alternate_chain_spec.get_object().contains("hbd_init_supply") )
+      {
+        set = true;
+        hbd = alternate_chain_spec["hbd_init_supply"].as< uint64_t >();
+      }
+      if( alternate_chain_spec.get_object().contains( "initial_vesting" ) )
+      {
+        set = true;
+
+        fc::variant initial_vesting = alternate_chain_spec[ "initial_vesting" ];
+        FC_ASSERT( initial_vesting.get_object().contains( "hive_amount" ) );
+        FC_ASSERT( initial_vesting.get_object().contains( "vests_per_hive" ) );
+
+        to_vest = initial_vesting[ "hive_amount" ].as< uint64_t >();
+        uint64_t vests_per_hive = initial_vesting[ "vests_per_hive" ].as< uint64_t >();
+
+        vest_price = hive::protocol::price(
+          hive::protocol::VEST_asset( vests_per_hive ),
+          hive::protocol::HIVE_asset( 1'000 ) // see comment for configuration::set_initial_asset_supply
+        );
+      }
+
+      if( set )
+        configuration_data.set_initial_asset_supply( hive, hbd, to_vest, vest_price );
+    }
 
     if( alternate_chain_spec.get_object().contains("min_root_comment_interval") )
       configuration_data.min_root_comment_interval = fc::seconds( alternate_chain_spec["min_root_comment_interval"].as< uint64_t >() );
@@ -1261,7 +1293,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
     for( const auto& wit : init_witnesses )
       hive::protocol::validate_account_name( wit );
 
-    std::vector< hardfork_schedule_item_t > result_hardfors;
+    std::vector< hardfork_schedule_item_t > result_hardforks;
 
     FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork-schedule", ("hardfork-schedule", alternate_chain_spec["hardfork_schedule"]) );
 
@@ -1286,10 +1318,10 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       if( j == hardfork_schedule.size() )
         break;
 
-      result_hardfors.emplace_back(hardfork_schedule_item_t{ i + 1, hardfork_schedule[j].block_num });
+      result_hardforks.emplace_back(hardfork_schedule_item_t{ i + 1, hardfork_schedule[j].block_num });
     }
 
-    configuration_data.set_hardfork_schedule( fc::time_point_sec( genesis_time ), result_hardfors );
+    configuration_data.set_hardfork_schedule( fc::time_point_sec( genesis_time ), result_hardforks );
     configuration_data.set_init_witnesses( init_witnesses );
   }
 #endif
