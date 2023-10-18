@@ -38,7 +38,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: 5c42c8019dd329000fd036668b22eb3eb99a743a
+    ref: b09f45f7f13e7760aefc61d2e749f0c71e285e09
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
@@ -48,9 +48,7 @@ include:
   # emscripten image can be used as it contains all needed tools (node and npm).
   image: ${EMSCRIPTEN_IMAGE}
   variables:
-    FF_NETWORK_PER_BUILD: 1
-
-  interruptible: true
+    FF_NETWORK_PER_BUILD: 1  
 
   before_script:
     - cd programs/beekeeper/beekeeper_wasm
@@ -232,7 +230,6 @@ mirrornet_replay_test:
     MIRRORNET_SOURCE_5M_DATA_DIR: "$MIRRORNET_WORKING_DIR/source_5m"
     MAINNET_TRUNCATED_DIR: "$CI_PROJECT_DIR/mainnet"
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini"
-  interruptible: true
   before_script:
     - export NUMBER_OF_PROCESSES=8
     - mkdir -p "$MAINNET_TRUNCATED_DIR"
@@ -287,7 +284,6 @@ mirrornet_replay_test:
     - job: testnet_node_build
       artifacts: true
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  interruptible: true
   variables:
     GIT_STRATEGY: none
     FF_NETWORK_PER_BUILD: "true"
@@ -701,7 +697,6 @@ python_pattern_mainnet_tests:
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   extends: .test_tools_based
-  interruptible: true
   variables:
     PYTEST_TIMEOUT_MINUTES: 27
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
