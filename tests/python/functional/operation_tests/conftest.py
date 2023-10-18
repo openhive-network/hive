@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
 
 import test_tools as tt
-from hive_local_tools.constants import HIVE_TREASURY_FEE
+from hive_local_tools.constants import HIVE_100_PERCENT, HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_TREASURY_FEE
 from hive_local_tools.functional.python.operation import (
     Account,
     create_transaction_with_any_operation,
+    get_current_median_history_price,
     get_transaction_timestamp,
+    get_virtual_operations,
 )
 from schemas.fields.compound import Authority, HbdExchangeRate
 from schemas.operations.account_update2_operation import AccountUpdate2Operation
@@ -19,13 +21,183 @@ from schemas.operations.account_update_operation import AccountUpdateOperation
 from schemas.operations.limit_order_create2_operation import (
     LimitOrderCreate2OperationLegacy,
 )
+from schemas.operations.virtual.collateralized_convert_immediate_conversion_operation import (
+    CollateralizedConvertImmediateConversionOperation,
+)
+from schemas.operations.virtual.fill_collateralized_convert_request_operation import (
+    FillCollateralizedConvertRequestOperation,
+)
+from schemas.operations.virtual.fill_convert_request_operation import FillConvertRequestOperation
 
 if TYPE_CHECKING:
     from schemas.fields.basic import PublicKey
+    from schemas.virtual_operation import (
+        VirtualOperation as SchemaVirtualOperation,
+    )
 
 
 class UnknownKeyAuthsFormatError(Exception):
     """Raised if given Key Auths are in invalid format"""
+
+
+@dataclass
+class ConvertAccount(Account):
+    _added_hbds_by_convert: list = field(default_factory=list, init=False)
+    _added_hbds_by_convert_it: int = field(default=-1)
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.update_account_info()
+
+    @property
+    def added_hbds_by_convert(self) -> tt.Asset.TbdT:
+        self._added_hbds_by_convert_it += 1
+        return self._added_hbds_by_convert[self._added_hbds_by_convert_it]
+
+    def assert_collateralized_conversion_requests(self, trx: dict, state: Literal["create", "delete"]) -> None:
+        # extract requestid from transaction
+        operations_from_transaction = trx["operations"]
+        for operation in operations_from_transaction:
+            if operation[0] == "collateralized_convert":
+                requestid = operation[1]["requestid"]
+
+        assert "requestid" in locals(), "Provided transaction doesn't contain collateralized convert operation."
+
+        requests = self._node.api.database.list_collateralized_conversion_requests(
+            start=[""], limit=100, order="by_account"
+        )["requests"]
+        all_request_ids = []
+        for request in requests:
+            all_request_ids.append(request.requestid)
+
+        match state:
+            case "create":
+                message = "Collateralized conversion request wasn't created."
+                assert requestid in all_request_ids, message
+            case "delete":
+                message = "Collateralized conversion request wasn't deleted after HIVE_CONVERSION_DELAY time."
+                assert requestid not in all_request_ids, message
+
+    def assert_fill_collateralized_convert_request_operation(self, expected_amount: int) -> None:
+        vops = self.__get_vops_from_more_than_2000_blocks(FillCollateralizedConvertRequestOperation)
+        assert (
+            len(vops) == expected_amount
+        ), "fill_collateralized_convert_request_operation virtual operation wasn't generated"
+
+    def assert_collateralized_convert_immediate_conversion_operation(self, expected_amount: int) -> None:
+        vops = self.__get_vops_from_more_than_2000_blocks(CollateralizedConvertImmediateConversionOperation)
+        assert (
+            len(vops) == expected_amount
+        ), "collateralized_convert_immediate_conversion virtual operation wasn't generated"
+
+    def assert_fill_convert_request_operation(self, expected_amount: int) -> None:
+        vops = self.__get_vops_from_more_than_2000_blocks(FillConvertRequestOperation)
+        assert len(vops) == expected_amount, "fill_convert_request virtual operation wasn't generated"
+
+    def __get_vops_from_more_than_2000_blocks(self, vop: type[SchemaVirtualOperation]) -> list:
+        collected_vops = []
+        last_block_number = self._node.get_last_block_number()
+        end_block = 2000
+        for _iterations in range((last_block_number // 2000) + 1):
+            vops = get_virtual_operations(self._node, vop, start_block=end_block - 1999, end_block=end_block)
+            collected_vops.extend(vop for vop in vops if vop not in collected_vops)
+            end_block += 2000
+        return collected_vops
+
+    def convert_hbd(self, amount: tt.Asset.Tbd, broadcast: bool = True) -> dict:
+        return self._wallet.api.convert_hbd(self._name, amount, broadcast=broadcast)
+
+    def convert_hives(self, amount: tt.Asset.Test, broadcast: bool = True) -> dict:
+        return self._wallet.api.convert_hive_with_collateral(self._name, amount, broadcast=broadcast)
+
+    def check_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:
+        self.rc_manabar.assert_rc_current_mana_is_reduced(
+            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
+        )
+
+    def check_if_right_amount_was_converted_and_added_to_balance(self, transaction: dict) -> None:
+        old_hive_balance = self.hive
+        self.update_account_info()
+        median = get_current_median_history_price(self._node)
+        amount_to_convert = self.extract_amount_from_convert_operation(transaction)
+        exchange_rate = int(median["quote"]["amount"]) / int(median["base"]["amount"])
+        should_be_added = tt.Asset.Test(int(amount_to_convert.amount) / 1000 * exchange_rate)
+        tolerance = tt.Asset.Test(0.001)
+        assert (
+            self.hive - tolerance <= should_be_added + old_hive_balance <= self.hive + tolerance
+        ), "Funds were not added to account balance after HBD conversion."
+
+    def check_if_funds_to_convert_were_subtracted(self, transaction: dict) -> None:
+        to_convert = self.extract_amount_from_convert_operation(transaction)
+        get_balance = self.get_hbd_balance if isinstance(to_convert, tt.Asset.TbdT) else self.get_hive_balance
+        funds_before_operation = self.hbd if isinstance(to_convert, tt.Asset.TbdT) else self.hive
+        self.update_account_info()
+        funds_after_operation = get_balance()
+        assert (
+            funds_before_operation == funds_after_operation + to_convert
+        ), f"Funds weren't subtracted from {self._name} balance after making convert or collateralized convert request."
+
+    def assert_if_right_amount_of_hives_came_back_after_collateral_conversion(self, transaction: dict) -> None:
+        to_convert = self.extract_amount_from_convert_operation(transaction)
+        current_median = get_current_median_history_price(self._node)
+        required_amount = (
+            (
+                int(self.added_hbds_by_convert.amount)
+                * int(current_median["quote"]["amount"])
+                * (HIVE_100_PERCENT + HIVE_COLLATERALIZED_CONVERSION_FEE)
+            )
+            / (int(current_median["base"]["amount"]) * HIVE_100_PERCENT)
+        ) * 0.001
+
+        old_hive_balance = self.hive
+        self.update_account_info()
+
+        if int(to_convert.amount) * 0.001 - required_amount < 0:
+            assert old_hive_balance == self.hive, "All collateral funds were used, but hive balance is not correct."
+        else:
+            hives_to_add = to_convert - tt.Asset.Test(required_amount)
+            tolerance = tt.Asset.Test(0.001)
+            assert (
+                self.hive - tolerance <= hives_to_add + old_hive_balance <= self.hive + tolerance
+            ), f"Balance is incorrect. After HIVE_COLLATERALIZED_CONVERSION_DELAY {self._name}"
+            f" should get {hives_to_add.amount} HIVES."
+
+    def assert_account_balance_after_creating_collateral_conversion_request(self, transaction: dict) -> None:
+        # it checks if hives were substracted and hbds added immediately after creating request
+        to_convert = self.extract_amount_from_convert_operation(transaction)
+        hives_before_operation = self.hive
+        hbds_before_operation = self.hbd
+        self.update_account_info()
+        hives_after_operation = self.get_hive_balance()
+        hbds_after_operation = self.get_hbd_balance()
+
+        response = self._node.api.wallet_bridge.get_feed_history().current_min_history
+        current_min_history = int(response["base"]["amount"]) / int(response["quote"]["amount"])
+        hbds_to_add = tt.Asset.Tbd(0.95 * current_min_history * int((to_convert / 2).amount) / 1000)
+
+        assert (
+            hives_before_operation == hives_after_operation + to_convert
+        ), f"Hives weren't subtracted from {self._name}'s balance after making collateralized convert request."
+
+        hbd_tolerance = tt.Asset.Tbd(0.6)
+        assert (
+            hbds_after_operation - hbd_tolerance
+            <= hbds_before_operation + hbds_to_add
+            <= hbds_after_operation + hbd_tolerance
+        ), f"Hbds weren't added to {self._name}'s balance after making collateralized convert request."
+        self._added_hbds_by_convert.append(hbds_after_operation - hbds_before_operation)
+
+    @staticmethod
+    def extract_amount_from_convert_operation(transaction: dict) -> tt.Asset.HiveT | tt.Asset.TbdT:
+        ops_in_transaction = transaction["operations"]
+        # get amount to convert from transaction
+        for operation in ops_in_transaction:
+            if operation[0] == "convert" or operation[0] == "collateralized_convert":
+                to_convert = tt.Asset.from_legacy(operation[1]["amount"])
+        assert (
+            "to_convert" in locals()
+        ), "Convert or collateralized_convert operation wasn't found in given transaction."
+        return to_convert
 
 
 @dataclass
