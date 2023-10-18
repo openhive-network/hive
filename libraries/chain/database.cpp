@@ -3695,14 +3695,14 @@ void database::init_genesis()
     {
       modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
       {
-        a.balance = asset( HIVE_INIT_SUPPLY, HIVE_SYMBOL );
-        a.hbd_balance = asset( HIVE_HBD_INIT_SUPPLY, HBD_SYMBOL );
+        a.balance = HIVE_asset( HIVE_INIT_SUPPLY );
+        a.hbd_balance = HBD_asset( HIVE_HBD_INIT_SUPPLY );
       } );
       modify( dgpo, []( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply.amount += HIVE_INIT_SUPPLY;
-        gpo.current_hbd_supply.amount += HIVE_HBD_INIT_SUPPLY;
-        gpo.init_hbd_supply.amount = HIVE_HBD_INIT_SUPPLY;
+        gpo.current_supply += HIVE_asset( HIVE_INIT_SUPPLY );
+        gpo.current_hbd_supply += HBD_asset( HIVE_HBD_INIT_SUPPLY );
+        gpo.init_hbd_supply = HBD_asset( HIVE_HBD_INIT_SUPPLY );
       } );
       update_virtual_supply();
     }
