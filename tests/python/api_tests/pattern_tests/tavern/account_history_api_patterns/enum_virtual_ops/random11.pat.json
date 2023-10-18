@@ -17,7 +17,7 @@
           "rshares": 46666976,
           "total_vote_weight": "23933506742336775",
           "voter": "gaming",
-          "weight": "214657851936620"
+          "weight": 214657851936620
         }
       },
       "op_in_trx": 1,
@@ -42,7 +42,7 @@
           "rshares": 116415003,
           "total_vote_weight": "157502768850162716",
           "voter": "ben99",
-          "weight": "216379946133873"
+          "weight": 216379946133873
         }
       },
       "op_in_trx": 1,
@@ -67,7 +67,7 @@
           "rshares": 14964652,
           "total_vote_weight": "10604595232172165318",
           "voter": "alexpopov",
-          "weight": "12472621992778"
+          "weight": 12472621992778
         }
       },
       "op_in_trx": 1,
@@ -89,10 +89,10 @@
             "precision": 3
           },
           "permlink": "my-addiction-to-danger-multi-vortex-tornado-disaster-photos-and-my-story-with-discovery-channel",
-          "rshares": "41420905017",
+          "rshares": 41420905017,
           "total_vote_weight": "17730566325915304113",
           "voter": "ratel",
-          "weight": "288042221224463"
+          "weight": 288042221224463
         }
       },
       "op_in_trx": 1,
@@ -114,7 +114,7 @@
             "precision": 3
           },
           "permlink": "hey-steemers-let-me-introduce-myself-i-m-tony-winchester-an-entrepreneur-bitcoin-millionaire-investor-programmer-specialist-in",
-          "rshares": "629276879668",
+          "rshares": 629276879668,
           "total_vote_weight": "3486303628560818097",
           "voter": "nanzo-scoop",
           "weight": "2187906179130592628"

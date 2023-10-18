@@ -24,7 +24,7 @@
         "author": "nkdk",
         "pending_payout": "0.970 HBD",
         "permlink": "cornea-cells-successfully-grown-and-implanted-to-cure-blindness",
-        "rshares": "653605642253",
+        "rshares": 653605642253,
         "total_vote_weight": "3865836501914462473",
         "voter": "barrie",
         "weight": "2162547851223633905"
@@ -80,10 +80,10 @@
         "author": "theoretical",
         "pending_payout": "99.540 HBD",
         "permlink": "are-registry-based-anti-plagiarism-measures-feasible-for-steem",
-        "rshares": "26082676961",
+        "rshares": 26082676961,
         "total_vote_weight": "15558077465267086167",
         "voter": "jonnyrevolution",
-        "weight": "2824695379324833"
+        "weight": 2824695379324833
       }
     ],
     "op_in_trx": 1,
@@ -183,9 +183,9 @@
         "pending_payout": "0.000 HBD",
         "permlink": "re-mombasa-my-introduction-20160816t144308895z",
         "rshares": 56483214,
-        "total_vote_weight": "260479170104465",
+        "total_vote_weight": 260479170104465,
         "voter": "mombasa",
-        "weight": "260479170104465"
+        "weight": 260479170104465
       }
     ],
     "op_in_trx": 1,

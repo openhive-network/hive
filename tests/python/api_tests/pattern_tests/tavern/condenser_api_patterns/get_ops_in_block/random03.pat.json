@@ -7,10 +7,10 @@
         "author": "sogarmy",
         "pending_payout": "662.819 HBD",
         "permlink": "dawgs-waltz-plants-from-soil-2-oil",
-        "rshares": "117824858397",
+        "rshares": 117824858397,
         "total_vote_weight": "16935212528262340499",
         "voter": "thedashguy",
-        "weight": "3657136290483184"
+        "weight": 3657136290483184
       }
     ],
     "op_in_trx": 1,
@@ -27,7 +27,7 @@
         "author": "jessicca",
         "pending_payout": "1.400 HBD",
         "permlink": "step-by-step-instructions-to-pick-a-flawless-watermelon-tips-from-an-accomplished-rancher",
-        "rshares": "696759059798",
+        "rshares": 696759059798,
         "total_vote_weight": "3499518706481084300",
         "voter": "pfunk",
         "weight": "2456427202684386280"

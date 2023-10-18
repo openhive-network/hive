@@ -17,7 +17,7 @@
           "rshares": 2894871753,
           "total_vote_weight": "13340584767947174",
           "voter": "jrcornel",
-          "weight": "200108771519207"
+          "weight": 200108771519207
         }
       },
       "op_in_trx": 1,
@@ -39,10 +39,10 @@
             "precision": 3
           },
           "permlink": "dogs-and-me-featuring-fred703-as-author",
-          "rshares": "31449520132",
+          "rshares": 31449520132,
           "total_vote_weight": "17568859184136296014",
           "voter": "talanhorne",
-          "weight": "328603351517985"
+          "weight": 328603351517985
         }
       },
       "op_in_trx": 1,
@@ -67,7 +67,7 @@
           "rshares": 2022966642,
           "total_vote_weight": "15896435663338918938",
           "voter": "cryptoeasy",
-          "weight": "149465436504542"
+          "weight": 149465436504542
         }
       },
       "op_in_trx": 1,

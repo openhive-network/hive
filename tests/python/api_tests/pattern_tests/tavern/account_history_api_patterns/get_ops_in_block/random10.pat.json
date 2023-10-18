@@ -15,7 +15,7 @@
           "rshares": 1904280488,
           "total_vote_weight": "627354753561260663",
           "voter": "owdy",
-          "weight": "3019796162763868"
+          "weight": 3019796162763868
         }
       },
       "op_in_trx": 1,
@@ -40,7 +40,7 @@
           "rshares": 54822719,
           "total_vote_weight": "7916849247891189115",
           "voter": "lisajohn",
-          "weight": "82381998229234"
+          "weight": 82381998229234
         }
       },
       "op_in_trx": 1,
@@ -65,7 +65,7 @@
           "rshares": 120086198,
           "total_vote_weight": "17581890367070516",
           "voter": "remlaps",
-          "weight": "552761251159971"
+          "weight": 552761251159971
         }
       },
       "op_in_trx": 1,

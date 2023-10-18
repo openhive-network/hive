@@ -22,7 +22,7 @@
               "rshares": 317169384,
               "total_vote_weight": "6429011873866132200",
               "voter": "illlefr4u",
-              "weight": "620839047906922"
+              "weight": 620839047906922
             }
           },
           "op_in_trx": 1,
@@ -44,10 +44,10 @@
                 "precision": 3
               },
               "permlink": "calling-out-to-steemians-who-are-good-teachers",
-              "rshares": "5938139439",
+              "rshares": 5938139439,
               "total_vote_weight": "3887360978470583429",
               "voter": "chick1",
-              "weight": "4867552481953842"
+              "weight": 4867552481953842
             }
           },
           "op_in_trx": 1,
@@ -79,7 +79,7 @@
               "rshares": 3572994301,
               "total_vote_weight": "3679164408340410238",
               "voter": "murh",
-              "weight": "1144837989503106"
+              "weight": 1144837989503106
             }
           },
           "op_in_trx": 1,

@@ -24,10 +24,10 @@
         "author": "kiaora712",
         "pending_payout": "1.252 HBD",
         "permlink": "a-guy-with-the-backpack",
-        "rshares": "492265040424",
-        "total_vote_weight": "492265040424",
+        "rshares": 492265040424,
+        "total_vote_weight": 492265040424,
         "voter": "liondani",
-        "weight": "492265040424"
+        "weight": 492265040424
       }
     ],
     "op_in_trx": 1,
