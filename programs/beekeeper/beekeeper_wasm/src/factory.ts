@@ -32,6 +32,11 @@ type BeekeeperApi = Omit<{
 
 type beekeeper_fs = BeekeeperModule['FS'];
 
+interface BeekeeperOptions {
+  storage_root: string;
+  enable_logs: boolean;
+}
+
 class BeekeeperProxy implements ProxyHandler<BeekeeperApi> {
   public constructor(
     private readonly fs: beekeeper_fs
@@ -99,19 +104,31 @@ class BeekeeperProxy implements ProxyHandler<BeekeeperApi> {
   }
 }
 
-const createBeekeeper = async(storage_root: string = "/storage_root"): Promise<BeekeeperApi> => {
+const createBeekeeper = async (
+  { storage_root, enable_logs }: BeekeeperOptions = {
+    storage_root: "/storage_root",
+    enable_logs: true,
+  }
+): Promise<BeekeeperApi> => {
   const beekeeperProvider = await Beekeeper();
   const fs = await BeekeeperProxy.initFS(beekeeperProvider, storage_root);
 
-  const WALLET_OPTIONS = ['--wallet-dir', `${storage_root}/.beekeeper`];
-
+  const WALLET_OPTIONS = [
+    "--wallet-dir",
+    `${storage_root}/.beekeeper`,
+    "--enable-logs",
+    Boolean(enable_logs).toString(),
+  ];
   const beekeeperOptions = new beekeeperProvider.StringList();
   WALLET_OPTIONS.forEach((opt) => void beekeeperOptions.push_back(opt));
 
   const internal_api = new beekeeperProvider.beekeeper_api(beekeeperOptions);
   internal_api.init();
 
-  return new Proxy(internal_api as unknown as BeekeeperApi, new BeekeeperProxy(fs));
+  return new Proxy(
+    internal_api as unknown as BeekeeperApi,
+    new BeekeeperProxy(fs)
+  );
 };
 
 export default createBeekeeper;
