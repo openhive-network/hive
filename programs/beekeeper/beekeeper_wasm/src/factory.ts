@@ -21,7 +21,7 @@ type SyncMethodGen<C extends Callable> = (...args: Parameters<C>) => Promise<Ret
 type BeekeeperSyncApi = typeof requiresSyncFs[number];
 
 /// Omit init method from final interface since it should be called only internally by factory
-type BeekeeperApi = Omit<{
+export type BeekeeperApi = Omit<{
   [method in keyof beekeeper_api]: beekeeper_api[method] extends Function ?
       method extends BeekeeperSyncApi ?
         SyncMethodGen<beekeeper_api[method]>
