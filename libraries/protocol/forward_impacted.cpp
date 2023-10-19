@@ -1055,7 +1055,7 @@ private:
     op.get_required_authorities(authorities);
     for(const auto& authority : authorities)
     {
-      collect_one(op, authority, hive::app::key_t::WITNESS,  op.owner);
+      collect_one(op, authority, hive::app::key_t::WITNESS_SIGNING,  op.owner);
     }
   }
 
