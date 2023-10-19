@@ -15,7 +15,7 @@ void operation_get_impacted_accounts(
   fc::flat_set<protocol::account_name_type>& result );
 
 
-enum class authority_t : std::int32_t
+enum class key_t : std::int32_t
 {
   OWNER,
   ACTIVE,
@@ -29,7 +29,7 @@ enum class authority_t : std::int32_t
 struct collected_keyauth_t
 {
   std::string account_name;
-  authority_t authority_kind;
+  key_t key_kind;
   std::set<std::string> key_auth;
   std::set<std::string> account_auth;
 };
