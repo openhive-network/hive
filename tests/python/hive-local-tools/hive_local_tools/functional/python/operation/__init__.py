@@ -11,7 +11,6 @@ from hive_local_tools.constants import (
 )
 from schemas.apis.database_api.fundaments_of_reponses import AccountItemFundament
 from schemas.fields.compound import Manabar
-from schemas.jsonrpc import get_response_model
 from schemas.operations import (
     CommentOperation,
     DeleteCommentOperation,
@@ -327,7 +326,6 @@ def get_rc_manabar(node: tt.InitNode, account_name: str) -> ExtendedManabar:
 
 
 class CommentTransaction(TransactionLegacy):
-    operations: list[CommentOperation]
     rc_cost: int
 
 
@@ -392,7 +390,8 @@ class Comment:
 
     @property
     def author_obj(self) -> Account:
-        assert self.__author is not None
+        if self.__author is None:
+            self.__author = self.__create_comment_account()
         return self.__author
 
     @property
@@ -407,6 +406,12 @@ class Comment:
     def comment_trx(self) -> CommentTransaction:
         assert self.comment_exists()
         return self.__comment_transaction
+
+    @property
+    def comment_op(self) -> CommentOperation:
+        op = self.comment_trx.operations[0][1]
+        assert isinstance(op, CommentOperation)
+        return op
 
     @property
     def parent(self) -> Comment | None:
@@ -470,7 +475,7 @@ class Comment:
             assert self.parent is not None
             if self.__author is None:
                 self.__author = self.__create_comment_account()
-            self.permlink = f"{self.author}-response-{self.parent.permlink}"
+            self.__permlink = f"{self.author}-response-{self.parent.permlink}"
 
         set_reply = {
             "no_reply": new_post,
@@ -481,8 +486,7 @@ class Comment:
         set_reply[reply_type]()
 
         self.author_obj.update_account_info()  # Refresh RC mana before send
-        self.__comment_transaction = get_response_model(
-            CommentTransaction,
+        self.__comment_transaction = CommentTransaction(
             **self.__wallet.api.post_comment(
                 author=self.author,
                 permlink=self.permlink,
@@ -491,7 +495,7 @@ class Comment:
                 title=f"tittle-{self.permlink}",
                 body=f"body-{self.permlink}",
                 json="{}",
-            ),
+            )
         )
 
     def reply(self, reply_type: Literal["reply_own_comment", "reply_another_comment"]) -> Comment:
@@ -516,9 +520,8 @@ class Comment:
 
     def update(self) -> None:
         self.author_obj.update_account_info()  # Refresh RC mana before update
-        self.__comment_transaction = get_response_model(
-            CommentTransaction,
-            self.__wallet.api.post_comment(
+        self.__comment_transaction = CommentTransaction(
+            **self.__wallet.api.post_comment(
                 author=self.author,
                 permlink=self.permlink,
                 parent_author=self.__force_get_parent().author,
@@ -526,7 +529,7 @@ class Comment:
                 title=f"update-title-{self.author}",
                 body=f"update-body-{self.permlink}",
                 json='{"tags":["hiveio","example","tags"]}',
-            ),
+            )
         )
 
     def vote(self) -> None:
@@ -540,7 +543,7 @@ class Comment:
         self.__wallet.api.vote(hater.name, self.author, self.permlink, -10)
 
     def assert_is_comment_sent_or_update(self) -> None:
-        comment_operation = self.comment_trx.operations[0]
+        comment_operation = self.comment_op
         ops_in_block = self.__node.api.account_history.get_ops_in_block(
             block_num=self.comment_trx.block_num, include_reversible=True
         )
