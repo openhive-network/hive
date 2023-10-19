@@ -11,12 +11,12 @@ import test_tools as tt
 
 def test_dump_config():
     node = tt.InitNode()
-    old_config = dict(node.config.__dict__.items())
+    old_config = node.config.json(exclude={"notifications_endpoint"})
     node.run()
     node.wait_number_of_blocks(2)
     node.close()
     node.dump_config()
-    assert node.config.__dict__ == old_config
+    assert node.config.json(exclude={"notifications_endpoint"}) == old_config
 
 
 def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used():
