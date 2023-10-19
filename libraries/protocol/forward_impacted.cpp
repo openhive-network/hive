@@ -960,13 +960,13 @@ private:
   void collect_one(
     const T& _op,
     const AT& _authority,
-    authority_t _authority_kind,
+    key_t _key_kind,
     std::string _account_name)
   {
     has_keyauth = true;
     collected_keyauth_t collected_item;
     collected_item.account_name   = _account_name;
-    collected_item.authority_kind = _authority_kind;
+    collected_item.key_kind = _key_kind;
 
     for(const auto& key_data: get_keys(_authority))
     {
@@ -986,7 +986,7 @@ private:
   {
     collected_keyauth_t collected_item;
     collected_item.account_name   = _account_name;
-    collected_item.authority_kind = hive::app::authority_t::MEMO;
+    collected_item.key_kind = hive::app::key_t::MEMO;
 
     if(std::string memo_key = get_memo_key(op, op.memo_key); !memo_key.empty())
     {
@@ -1001,59 +1001,59 @@ private:
   // ops
   result_type operator()( const account_create_operation& op )
   {
-    collect_one(op, op.owner,   hive::app::authority_t::OWNER,   op.new_account_name);
-    collect_one(op, op.active,  hive::app::authority_t::ACTIVE,  op.new_account_name);
-    collect_one(op, op.posting, hive::app::authority_t::POSTING, op.new_account_name);
+    collect_one(op, op.owner,   hive::app::key_t::OWNER,   op.new_account_name);
+    collect_one(op, op.active,  hive::app::key_t::ACTIVE,  op.new_account_name);
+    collect_one(op, op.posting, hive::app::key_t::POSTING, op.new_account_name);
     collect_memo(op, op.new_account_name);
   }
 
   result_type operator()( const account_create_with_delegation_operation& op )
   {
-    collect_one(op, op.owner,   hive::app::authority_t::OWNER,   op.new_account_name);
-    collect_one(op, op.active,  hive::app::authority_t::ACTIVE,  op.new_account_name);
-    collect_one(op, op.posting, hive::app::authority_t::POSTING, op.new_account_name);
+    collect_one(op, op.owner,   hive::app::key_t::OWNER,   op.new_account_name);
+    collect_one(op, op.active,  hive::app::key_t::ACTIVE,  op.new_account_name);
+    collect_one(op, op.posting, hive::app::key_t::POSTING, op.new_account_name);
     collect_memo(op, op.new_account_name);
   }
   
   result_type operator()( const account_update_operation& op )
   {
-    collect_one(op, op.owner,  hive::app::authority_t::OWNER,  op.account);
-    collect_one(op, op.active, hive::app::authority_t::ACTIVE, op.account);
-    collect_one(op, op.posting,hive::app::authority_t::POSTING, op.account);
+    collect_one(op, op.owner,  hive::app::key_t::OWNER,  op.account);
+    collect_one(op, op.active, hive::app::key_t::ACTIVE, op.account);
+    collect_one(op, op.posting,hive::app::key_t::POSTING, op.account);
     collect_memo(op, op.account);
   }
   
   result_type operator()( const account_update2_operation& op )
   {
-    collect_one(op, op.owner,  hive::app::authority_t::OWNER,  op.account);
-    collect_one(op, op.active, hive::app::authority_t::ACTIVE, op.account);
-    collect_one(op, op.posting,hive::app::authority_t::POSTING, op.account);
+    collect_one(op, op.owner,  hive::app::key_t::OWNER,  op.account);
+    collect_one(op, op.active, hive::app::key_t::ACTIVE, op.account);
+    collect_one(op, op.posting,hive::app::key_t::POSTING, op.account);
     collect_memo(op, op.account);
   }
   
   result_type operator()( const create_claimed_account_operation& op )
   {
-    collect_one(op, op.owner,  hive::app::authority_t::OWNER,  op.new_account_name);
-    collect_one(op, op.active, hive::app::authority_t::ACTIVE, op.new_account_name);
-    collect_one(op, op.posting,hive::app::authority_t::POSTING, op.new_account_name);
+    collect_one(op, op.owner,  hive::app::key_t::OWNER,  op.new_account_name);
+    collect_one(op, op.active, hive::app::key_t::ACTIVE, op.new_account_name);
+    collect_one(op, op.posting,hive::app::key_t::POSTING, op.new_account_name);
     collect_memo(op, op.new_account_name);
   }
 
   result_type operator()( const recover_account_operation& op)
   {
-    collect_one(op, op.new_owner_authority,    hive::app::authority_t::NEW_OWNER_AUTHORITY,    op.account_to_recover);
-    collect_one(op, op.recent_owner_authority, hive::app::authority_t::RECENT_OWNER_AUTHORITY, op.account_to_recover);
+    collect_one(op, op.new_owner_authority,    hive::app::key_t::NEW_OWNER_AUTHORITY,    op.account_to_recover);
+    collect_one(op, op.recent_owner_authority, hive::app::key_t::RECENT_OWNER_AUTHORITY, op.account_to_recover);
   }
 
   result_type operator()( const reset_account_operation& op) 
   {
-    collect_one(op, op.new_owner_authority, hive::app::authority_t::NEW_OWNER_AUTHORITY, op.account_to_reset);
+    collect_one(op, op.new_owner_authority, hive::app::key_t::NEW_OWNER_AUTHORITY, op.account_to_reset);
   }
   
   result_type operator()( const request_account_recovery_operation& op)
   {
-    collect_one(op, op.new_owner_authority, hive::app::authority_t::NEW_OWNER_AUTHORITY, op.account_to_recover);
-    collect_one(op, op.new_owner_authority, hive::app::authority_t::NEW_OWNER_AUTHORITY, op.recovery_account);
+    collect_one(op, op.new_owner_authority, hive::app::key_t::NEW_OWNER_AUTHORITY, op.account_to_recover);
+    collect_one(op, op.new_owner_authority, hive::app::key_t::NEW_OWNER_AUTHORITY, op.recovery_account);
   }
 
   result_type operator()( const witness_set_properties_operation& op )
@@ -1062,7 +1062,7 @@ private:
     op.get_required_authorities(authorities);
     for(const auto& authority : authorities)
     {
-      collect_one(op, authority, hive::app::authority_t::WITNESS,  op.owner);
+      collect_one(op, authority, hive::app::key_t::WITNESS,  op.owner);
     }
   }
 
