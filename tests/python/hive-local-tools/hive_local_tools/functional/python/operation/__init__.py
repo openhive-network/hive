@@ -157,10 +157,10 @@ def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, mem
     return any(vop["op"]["value"]["memo"] == memo for vop in payout_vops)
 
 
-def create_transaction_with_any_operation(wallet, operation_name, **kwargs):
+def create_transaction_with_any_operation(wallet: tt.Wallet, *operations: AnyLegacyOperation) -> dict[str, Any]:
     # function creates transaction manually because some operations are not added to wallet
-    transaction = deepcopy(TRANSACTION_TEMPLATE)
-    transaction["operations"].append([operation_name, kwargs])
+    transaction = get_transaction_model()
+    transaction.operations = [(op.get_name(), op) for op in operations]
     return wallet.api.sign_transaction(transaction)
 
 

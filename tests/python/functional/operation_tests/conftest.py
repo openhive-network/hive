@@ -11,7 +11,9 @@ from hive_local_tools.functional.python.operation import (
     create_transaction_with_any_operation,
 )
 from schemas.fields.compound import Authority, HbdExchangeRate
-from hive_local_tools.functional.python.operation import Account, create_transaction_with_any_operation
+from schemas.operations.limit_order_create2_operation import (
+    LimitOrderCreate2OperationLegacy,
+)
 
 if TYPE_CHECKING:
     from schemas.fields.basic import PublicKey
@@ -96,18 +98,23 @@ class LimitOrderAccount(Account):
             self._node.get_head_block_time() + tt.Time.seconds(expiration),
             format_=tt.TimeFormats.DEFAULT_FORMAT,
         )
+
+        base = tt.Asset.Test if buy_hbd else tt.Asset.Tbd
+        quote = tt.Asset.Test if not buy_hbd else tt.Asset.Tbd
+
         create_transaction_with_any_operation(
             self._wallet,
-            "limit_order_create2",
-            owner=self._name,
-            orderid=order_id,
-            amount_to_sell=tt.Asset.Test(amount_to_sell) if buy_hbd else tt.Asset.Tbd(amount_to_sell),
-            exchange_rate={
-                "base": tt.Asset.Test(amount_to_sell) if buy_hbd else tt.Asset.Tbd(amount_to_sell),
-                "quote": tt.Asset.Tbd(min_to_receive) if buy_hbd else tt.Asset.Test(min_to_receive),
-            },
-            fill_or_kill=fill_or_kill,
-            expiration=expiration_time,
+            LimitOrderCreate2OperationLegacy(
+                owner=self._name,
+                order_id=order_id,
+                amount_to_sell=base(amount_to_sell).as_legacy(),
+                exchange_rate=HbdExchangeRate(
+                    base=base(amount_to_sell).as_legacy(),
+                    quote=quote(min_to_receive).as_legacy(),
+                ),
+                fill_or_kill=fill_or_kill,
+                expiration=expiration_time,
+            ),
         )
 
 
