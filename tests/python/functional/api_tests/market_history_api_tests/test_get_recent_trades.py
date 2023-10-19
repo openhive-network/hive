@@ -36,7 +36,7 @@ from hive_local_tools import run_for
     ],
 )
 @run_for("testnet")
-def test_recent_trades_output_parameters(node, limit_orders):
+def test_recent_trades_output_parameters(node: tt.InitNode, limit_orders: dict) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(600), vests=tt.Asset.Test(100))
     for number in range(len(limit_orders)):
@@ -57,7 +57,7 @@ def test_recent_trades_output_parameters(node, limit_orders):
             False,
             3600,
         )
-    response = node.api.market_history.get_recent_trades()["trades"]
+    response = node.api.market_history.get_recent_trades().trades
     assert len(response) == 3
 
     # trades appear in response from last to first
@@ -68,7 +68,7 @@ def test_recent_trades_output_parameters(node, limit_orders):
 
 @pytest.mark.parametrize("limit", [1, 2])
 @run_for("testnet")
-def test_limit(node, limit):
+def test_limit(node: tt.InitNode, limit: int) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(600), vests=tt.Asset.Test(300))
 
@@ -80,5 +80,5 @@ def test_limit(node, limit):
     if limit == 2:
         wallet.api.create_order("alice", 2, tt.Asset.Test(300), tt.Asset.Tbd(50), False, 3600)
         wallet.api.create_order("initminer", 2, tt.Asset.Tbd(50), tt.Asset.Test(300), False, 3600)
-    response = node.api.market_history.get_recent_trades(limit=limit)["trades"]
+    response = node.api.market_history.get_recent_trades(limit=limit).trades
     assert len(response) == limit
