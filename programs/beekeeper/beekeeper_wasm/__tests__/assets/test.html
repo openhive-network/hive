@@ -10,7 +10,8 @@
     {
       "imports": {
         "@hive/beekeeper": "/build/beekeeper_wasm.js",
-        "@hive/beekeeperfactory": "/dist/index.js"
+        "@hive/beekeeperfactory": "/dist/index.js",
+        "@hive/beekeeperfactory2": "/dist/detailed/index.js"
       }
     }
   </script>
@@ -18,6 +19,7 @@
   <script type="module">
     import BeekeeperModule from '@hive/beekeeper';
     import beekeeperFactory from '@hive/beekeeperfactory';
+    import beekeeperFactory2 from '@hive/beekeeperfactory2';
 
     Object.defineProperties(window, {
       beekeeper: {
@@ -28,6 +30,11 @@
       factory: {
         get() {
           return beekeeperFactory;
+        }
+      },
+      factory2: {
+        get() {
+          return beekeeperFactory2;
         }
       },
       assert: {

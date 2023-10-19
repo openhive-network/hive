@@ -189,7 +189,7 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         { "signature":"1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340"}
         signature: a signature of a transaction
     */
-    .function("sign_digest(token, public_key, sig_digest)", &beekeeper_api::sign_digest)
+    .function("sign_digest(token, sig_digest, public_key)", &beekeeper_api::sign_digest)
 
     /*
       ****information about a session****
