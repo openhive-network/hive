@@ -1041,21 +1041,14 @@ private:
 
   result_type operator()( const recover_account_operation& op)
   {
-    collect_one(op, op.new_owner_authority,    hive::app::key_t::NEW_OWNER_AUTHORITY,    op.account_to_recover);
-    collect_one(op, op.recent_owner_authority, hive::app::key_t::RECENT_OWNER_AUTHORITY, op.account_to_recover);
+    collect_one(op, op.new_owner_authority, hive::app::key_t::OWNER, op.account_to_recover);
   }
 
   result_type operator()( const reset_account_operation& op) 
   {
-    collect_one(op, op.new_owner_authority, hive::app::key_t::NEW_OWNER_AUTHORITY, op.account_to_reset);
+    collect_one(op, op.new_owner_authority, hive::app::key_t::OWNER, op.account_to_reset);
   }
   
-  result_type operator()( const request_account_recovery_operation& op)
-  {
-    collect_one(op, op.new_owner_authority, hive::app::key_t::NEW_OWNER_AUTHORITY, op.account_to_recover);
-    collect_one(op, op.new_owner_authority, hive::app::key_t::NEW_OWNER_AUTHORITY, op.recovery_account);
-  }
-
   result_type operator()( const witness_set_properties_operation& op )
   {
     vector< authority > authorities;
