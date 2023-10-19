@@ -23,33 +23,36 @@ class LimitOrderAccount(Account):
     ) -> None:
         super().update_account_info()
         get_balance = self.get_hbd_balance if check_hbd else self.get_hive_balance
-        currency = tt.Asset.Tbd if check_hbd else tt.Asset.Test
+        asset = tt.Asset.Tbd if check_hbd else tt.Asset.Test
+        currency = asset(0).get_asset_information()
         messages = {
             "expiration": (
-                f"Something went wrong after expiration of orders. {self._name} should have {amount} {currency.token}."
+                f"Something went wrong after expiration of orders. {self._name} should have"
+                f" {amount} {currency.get_symbol()}."
             ),
             "creation": f"{currency} balance of {self._name} wasn't reduced after creating order.",
             "order_match": (
-                f"Something went wrong in completing a trade. {currency.token} balance of {self._name} should be equal"
-                f" to {amount}."
+                f"Something went wrong in completing a trade. {currency.get_symbol()} balance of {self._name} should be"
+                f" equal to {amount}."
             ),
             "no_match": (
-                f"Something went wrong after order creation - it shouldn't be matched. {currency.token} balance of"
-                f" {self._name} should be equal to {amount}."
+                f"Something went wrong after order creation - it shouldn't be matched. {currency.get_symbol()} balance"
+                f" of {self._name} should be equal to {amount}."
             ),
         }
 
-        assert get_balance() == currency(amount), messages[message]
+        assert get_balance() == asset(amount), messages[message]
 
     def assert_not_completed_order(self, amount: int, hbd: bool) -> None:
-        query = self._node.api.database.find_limit_orders(account=self._name)["orders"][0]
-        for_sale = query["for_sale"]
-        nai = query["sell_price"]["base"]
-        nai["amount"] = for_sale
+        query = self._node.api.database.find_limit_orders(account=self._name).orders[0]
+        for_sale = query.for_sale
+        nai = query.sell_price.base
+        nai = nai.clone(amount=for_sale)
         currency = tt.Asset.Tbd if hbd else tt.Asset.Test
-        assert tt.Asset.from_(nai) == currency(amount), (
-            f"Amount of {currency.token} that are still available for sale "
-            f"is not correct. {self._name} should have now {amount} {currency.token}"
+        token = currency(0).get_asset_information().get_symbol()
+        assert nai == currency(amount), (
+            f"Amount of {token} that are still available for sale "
+            f"is not correct. {self._name} should have now {amount} {token}"
         )
 
     def create_order(
