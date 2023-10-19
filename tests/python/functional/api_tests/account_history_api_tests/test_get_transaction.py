@@ -16,7 +16,7 @@ from hive_local_tools import run_for
     ],
 )
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_get_transaction_in_reversible_block(node, include_reversible):
+def test_get_transaction_in_reversible_block(node: tt.InitNode, include_reversible: bool) -> None:
     wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
     transaction = wallet.create_account("alice")
     if not include_reversible:
@@ -46,6 +46,6 @@ def test_get_transaction_in_reversible_block(node, include_reversible):
     ],
 )
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_wrong_transaction_id(node, incorrect_id, include_reversible):
+def test_wrong_transaction_id(node: tt.InitNode, incorrect_id: str, include_reversible: bool) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.get_transaction(id=incorrect_id, include_reversible=include_reversible)

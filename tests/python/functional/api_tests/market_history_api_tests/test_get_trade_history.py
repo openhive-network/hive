@@ -8,13 +8,13 @@ from hive_local_tools import run_for
 
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/449")
 @run_for("testnet")
-def test_get_trade_history_with_start_date_after_end(node):
+def test_get_trade_history_with_start_date_after_end(node: tt.InitNode) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.market_history.get_trade_history(start=tt.Time.from_now(weeks=10), end=tt.Time.from_now(weeks=-1))
 
 
 @run_for("testnet")
-def test_exceed_time_range(node):
+def test_exceed_time_range(node: tt.InitNode) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.market_history.get_trade_history(start=tt.Time.from_now(years=-100), end=tt.Time.from_now(years=100))
 
@@ -28,7 +28,7 @@ def test_exceed_time_range(node):
     ],
 )
 @run_for("testnet")
-def test_trade_history_with_different_values(node, tests_amount, tbds_amount):
+def test_trade_history_with_different_values(node: tt.InitNode, tests_amount: int, tbds_amount: int) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
@@ -37,15 +37,15 @@ def test_trade_history_with_different_values(node, tests_amount, tbds_amount):
 
     response = node.api.market_history.get_trade_history(
         start=tt.Time.from_now(weeks=-1), end=tt.Time.from_now(weeks=1)
-    )["trades"]
+    ).trades
 
     assert len(response) == 1
-    assert response[0]["current_pays"] == tt.Asset.Tbd(tbds_amount)
-    assert response[0]["open_pays"] == tt.Asset.Hive(tests_amount)
+    assert response[0].current_pays == tt.Asset.Tbd(tbds_amount)
+    assert response[0].open_pays == tt.Asset.Hive(tests_amount)
 
 
 @run_for("testnet")
-def test_get_empty_trade_history(node):
+def test_get_empty_trade_history(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
@@ -57,13 +57,13 @@ def test_get_empty_trade_history(node):
     # ask for history from last 15 seconds
     response = node.api.market_history.get_trade_history(
         start=tt.Time.from_now(seconds=-15), end=tt.Time.from_now(weeks=1), limit=10
-    )["trades"]
+    ).trades
     assert len(response) == 0
 
 
 @pytest.mark.parametrize("limit", [1, 2])
 @run_for("testnet")
-def test_trade_history_limit(node, limit):
+def test_trade_history_limit(node: tt.InitNode, limit: int) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(500), vests=tt.Asset.Test(100))
 
@@ -78,5 +78,5 @@ def test_trade_history_limit(node, limit):
         wallet.api.create_order("initminer", 5, tt.Asset.Tbd(5), tt.Asset.Test(50), False, 3600)
     response = node.api.market_history.get_trade_history(
         start=tt.Time.from_now(weeks=-1), end=tt.Time.from_now(weeks=1), limit=limit
-    )["trades"]
+    ).trades
     assert len(response) == limit
