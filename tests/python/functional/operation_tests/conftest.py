@@ -6,7 +6,15 @@ from typing import TYPE_CHECKING, Any, Literal
 import pytest
 
 import test_tools as tt
+from hive_local_tools.functional.python.operation import (
+    Account,
+    create_transaction_with_any_operation,
+)
+from schemas.fields.compound import Authority, HbdExchangeRate
 from hive_local_tools.functional.python.operation import Account, create_transaction_with_any_operation
+
+if TYPE_CHECKING:
+    from schemas.fields.basic import PublicKey
 
 if TYPE_CHECKING:
     from schemas.fields.basic import PublicKey
@@ -146,37 +154,32 @@ class UpdateAccount(Account):
     ) -> None:
         # for owner/active/posting argument method accepts both the authority (list - [key, weight]) and key as string
         self.update_account_info()
+
+        def unify_type(new_key: str | list, old_key: list[tuple[PublicKey, int]]) -> str | list:
+            return list(old_key[0]) if isinstance(new_key, list) else old_key[0][0]
+
         if new_owner is not None:
-            to_compare = (
-                list(self._acc_info["owner"]["key_auths"][0])
-                if isinstance(new_owner, list)
-                else (self._acc_info)["owner"]["key_auths"][0][0]
-            )
-            assert new_owner == to_compare, f"Owner authority of account {self._name} wasn't changed."
+            assert new_owner == unify_type(
+                new_owner, self._acc_info.owner.key_auths
+            ), f"Owner authority of account {self._name} wasn't changed."
 
         if new_active is not None:
-            to_compare = (
-                list(self._acc_info["active"]["key_auths"][0])
-                if isinstance(new_active, list)
-                else (self._acc_info)["active"]["key_auths"][0][0]
-            )
-            assert new_active == to_compare, f"Active authority of account {self._name} wasn't changed."
+            assert new_active == unify_type(
+                new_active, self._acc_info.active.key_auths
+            ), f"Active authority of account {self._name} wasn't changed."
 
         if new_posting is not None:
-            to_compare = (
-                list(self._acc_info["posting"]["key_auths"][0])
-                if isinstance(new_posting, list)
-                else (self._acc_info)["posting"]["key_auths"][0][0]
-            )
-            assert new_posting == to_compare, f"Posting authority of account {self._name} wasn't changed."
+            assert new_posting == unify_type(
+                new_posting, self._acc_info.posting.key_auths
+            ), f"Posting authority of account {self._name} wasn't changed."
 
         if new_memo is not None:
-            to_compare = self._acc_info["memo_key"]
-            assert new_memo == to_compare, f"Memo key of account {self._name} wasn't changed."
+            assert new_memo == self._acc_info.memo_key, f"Memo key of account {self._name} wasn't changed."
 
         if new_json_meta is not None:
-            to_compare = self._acc_info["json_metadata"]
-            assert new_json_meta == to_compare, f"Json metadata of account {self._name} wasn't changed."
+            assert (
+                new_json_meta == self._acc_info.json_metadata
+            ), f"Json metadata of account {self._name} wasn't changed."
 
     def generate_new_key(self) -> PublicKey:
         self.__key_generation_counter += 1
@@ -184,8 +187,11 @@ class UpdateAccount(Account):
 
     def get_current_key(self, type_: Literal["owner", "active", "posting", "memo"]) -> str:
         assert type_ in ("owner", "active", "posting", "memo"), "Wrong key type."
+        if type_ == "memo":
+            type_ = "memo_key"
         self.update_account_info()
-        return self._acc_info[type_]["key_auths"][0][0] if type_ != "memo" else self._acc_info[type_ + "_key"]
+        authority: Authority = self._acc_info[type_]
+        return authority.key_auths[0][0]
 
     def update_all_account_details(self, *, json_meta: str, owner: str, active: str, posting: str, memo: str) -> None:
         self._wallet.api.update_account(
