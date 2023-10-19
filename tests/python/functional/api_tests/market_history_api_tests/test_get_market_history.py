@@ -10,7 +10,7 @@ from hive_local_tools import run_for
 
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/449")
 @run_for("testnet")
-def test_get_market_history_with_start_date_after_end(node: tt.InitNode | tt.RemoteNode):
+def test_get_market_history_with_start_date_after_end(node: tt.InitNode) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.market_history.get_market_history(
             bucket_seconds=60, start=tt.Time.from_now(weeks=10), end=tt.Time.from_now(weeks=-1)
@@ -18,7 +18,7 @@ def test_get_market_history_with_start_date_after_end(node: tt.InitNode | tt.Rem
 
 
 @run_for("testnet")
-def test_exceed_time_range(node: tt.InitNode | tt.RemoteNode):
+def test_exceed_time_range(node: tt.InitNode) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.market_history.get_market_history(
             bucket_seconds=60, start=tt.Time.from_now(years=-100), end=tt.Time.from_now(years=100)
@@ -36,7 +36,7 @@ def test_get_market_history_with_wrong_bucket_seconds_value(node: tt.InitNode | 
 
 
 @run_for("testnet")
-def test_create_better_offer_and_cancel_it(node: tt.InitNode | tt.RemoteNode):
+def test_create_better_offer_and_cancel_it(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(100))
     wallet.create_account("bob", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(100))
@@ -56,7 +56,7 @@ def test_create_better_offer_and_cancel_it(node: tt.InitNode | tt.RemoteNode):
 
 
 @run_for("testnet")
-def test_get_empty_market_history(node: tt.InitNode | tt.RemoteNode):
+def test_get_empty_market_history(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(500), vests=tt.Asset.Test(100))
 
@@ -81,7 +81,7 @@ def test_get_empty_market_history(node: tt.InitNode | tt.RemoteNode):
     ],
 )
 @run_for("testnet")
-def test_get_two_buckets(node: tt.InitNode | tt.RemoteNode, bucket_seconds, blocks_to_wait):
+def test_get_two_buckets(node: tt.InitNode, bucket_seconds: int, blocks_to_wait: int) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(500), vests=tt.Asset.Test(100))
 
@@ -107,8 +107,14 @@ def test_get_two_buckets(node: tt.InitNode | tt.RemoteNode, bucket_seconds, bloc
 )
 @run_for("testnet")
 def test_bucket_output_parameters(
-    node: tt.InitNode | tt.RemoteNode, tbds, hive_high, hive_low, non_hive_high, non_hive_low, non_hive_volume
-):
+    node: tt.InitNode,
+    tbds: int,
+    hive_high: int,
+    hive_low: int,
+    non_hive_high: int,
+    non_hive_low: int,
+    non_hive_volume: int,
+) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(100))
     epoch_time_zero = tt.Time.parse("1970-01-01T00:00:00")

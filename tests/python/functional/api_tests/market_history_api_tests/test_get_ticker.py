@@ -42,7 +42,7 @@ HIVE_AND_HBD_AMOUNTS = (
     ],
 )
 @run_for("testnet")
-def test_ticker_output_parameters(node, limit_orders):
+def test_ticker_output_parameters(node: tt.InitNode, limit_orders: dict) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(600), vests=tt.Asset.Test(100))
     hive_volume = 0
@@ -73,30 +73,30 @@ def test_ticker_output_parameters(node, limit_orders):
     latest = limit_orders["order_2"]["tbds"] / limit_orders["order_2"]["tests"]
     open = limit_orders["order_0"]["tbds"] / limit_orders["order_0"]["tests"]
 
-    assert float(response["percent_change"]) == (latest - open) / open * 100
-    assert response["hive_volume"] == tt.Asset.Test(hive_volume)
-    assert response["hbd_volume"] == tt.Asset.Tbd(hbd_volume)
-    assert float(response["latest"]) == latest
+    assert float(response.percent_change) == (latest - open) / open * 100
+    assert response.hive_volume == tt.Asset.Test(hive_volume)
+    assert response.hbd_volume == tt.Asset.Tbd(hbd_volume)
+    assert float(response.latest) == latest
 
 
 @pytest.mark.parametrize(("hive_amount", "hbd_amount"), HIVE_AND_HBD_AMOUNTS)
 @run_for("testnet")
-def test_lowest_ask_in_ticker(node, hive_amount, hbd_amount):
+def test_lowest_ask_in_ticker(node: tt.InitNode, hive_amount: list, hbd_amount: list) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.api.create_order("initminer", 0, tt.Asset.Test(hive_amount[0]), tt.Asset.Tbd(hbd_amount[0]), False, 3600)
     wallet.api.create_order("initminer", 1, tt.Asset.Test(hive_amount[1]), tt.Asset.Tbd(hbd_amount[1]), False, 3600)
 
     response = node.api.market_history.get_ticker()
-    assert float(response["lowest_ask"]) == min(hbd_amount[0] / hive_amount[0], hbd_amount[1] / hive_amount[1])
+    assert float(response.lowest_ask) == min(hbd_amount[0] / hive_amount[0], hbd_amount[1] / hive_amount[1])
 
 
 @pytest.mark.parametrize(("hive_amount", "hbd_amount"), HIVE_AND_HBD_AMOUNTS)
 @run_for("testnet")
-def test_highest_bid_in_ticker(node, hive_amount, hbd_amount):
+def test_highest_bid_in_ticker(node: tt.InitNode, hive_amount: list, hbd_amount: list) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.api.create_order("initminer", 0, tt.Asset.Tbd(hbd_amount[0]), tt.Asset.Test(hive_amount[0]), False, 3600)
     wallet.api.create_order("initminer", 1, tt.Asset.Tbd(hbd_amount[1]), tt.Asset.Test(hive_amount[1]), False, 3600)
     response = node.api.market_history.get_ticker()
-    assert float(response["highest_bid"]) == max(hbd_amount[0] / hive_amount[0], hbd_amount[1] / hive_amount[1])
+    assert float(response.highest_bid) == max(hbd_amount[0] / hive_amount[0], hbd_amount[1] / hive_amount[1])
