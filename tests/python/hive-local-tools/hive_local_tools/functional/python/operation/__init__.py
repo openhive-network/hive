@@ -1,13 +1,35 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import test_tools as tt
 import wax
-from hive_local_tools.constants import TRANSACTION_TEMPLATE, filters_enum_virtual_ops
+from hive_local_tools.constants import (
+    get_transaction_model,
+)
+from schemas.apis.database_api.fundaments_of_reponses import AccountItemFundament
+from schemas.fields.compound import Manabar
+from schemas.jsonrpc import get_response_model
+from schemas.operations import (
+    CommentOperation,
+    DeleteCommentOperation,
+)
+from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
+    TransferToVestingCompletedOperation,
+)
+from schemas.transaction import TransactionLegacy
+from schemas.virtual_operation import (
+    VirtualOperation as SchemaVirtualOperation,
+)
+from schemas.virtual_operation import (
+    build_vop_filter,
+)
+
+if TYPE_CHECKING:
+    from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
+    from schemas.operations import AnyLegacyOperation
 
 
 @dataclass
@@ -24,42 +46,48 @@ class Operation:
         assert self._rc_cost > 0, "RC cost is less than or equal to zero."
 
 
+ApiAccountItem = AccountItemFundament[tt.Asset.TestT, tt.Asset.TbdT, tt.Asset.VestsT]
+
+
+def _find_account(node: tt.InitNode, account_name: str) -> ApiAccountItem:
+    return node.api.database.find_accounts(accounts=[account_name]).accounts[0]
+
+
 @dataclass
 class Account:
-    _acc_info: dict = field(init=False, default_factory=dict)
     _name: str
     _node: tt.InitNode
     _wallet: tt.Wallet
-    _hive: tt.Asset.Test = field(init=False, default=None)
-    _vest: tt.Asset.Vest = field(init=False, default=None)
-    _hbd: tt.Asset.Tbd = field(init=False, default=None)
+    _acc_info: ApiAccountItem = field(init=False)
+    _rc_manabar: _RcManabar = field(init=False)
 
     def __post_init__(self):
-        self._rc_manabar = _RcManabar(self._node, self._name)
+        if self._name:
+            self._rc_manabar = _RcManabar(self._node, self._name)
 
     @property
-    def node(self):
+    def node(self) -> tt.InitNode:
         return self._node
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def hive(self):
-        return self._hive
+    def hive(self) -> tt.Asset.TestT:
+        return self._acc_info.balance
 
     @property
-    def hbd(self):
-        return self._hbd
+    def hbd(self) -> tt.Asset.TbdT:
+        return self._acc_info.hbd_balance
 
     @property
-    def rc_manabar(self):
+    def rc_manabar(self) -> _RcManabar:
         return self._rc_manabar
 
     @property
-    def vest(self):
-        return self._vest
+    def vest(self) -> tt.Asset.VestsT:
+        return self._acc_info.vesting_shares
 
     def fund_vests(self, tests: tt.Asset.Test) -> None:
         self._wallet.api.transfer_to_vesting(
@@ -69,41 +97,53 @@ class Account:
         )
         self.update_account_info()
 
-    def get_hbd_balance(self):
+    def get_hbd_balance(self) -> tt.Asset.TbdT:
         return get_hbd_balance(self._node, self._name)
 
-    def get_hive_balance(self):
+    def get_hive_balance(self) -> tt.Asset.TestT:
         return get_hive_balance(self._node, self._name)
 
-    def get_hive_power(self):
+    def get_hive_power(self) -> tt.Asset.VestsT:
         return get_hive_power(self._node, self._name)
 
-    def get_rc_current_mana(self):
+    def get_rc_current_mana(self) -> int:
         return get_rc_current_mana(self._node, self._name)
 
-    def get_rc_max_mana(self):
+    def get_rc_max_mana(self) -> int:
         return get_rc_max_mana(self._node, self._name)
 
-    def update_account_info(self):
-        self._acc_info = self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]
-        self._hive = tt.Asset.from_(self._acc_info["balance"])
-        self._hbd = tt.Asset.from_(self._acc_info["hbd_balance"])
-        self._vest = tt.Asset.from_(self._acc_info["vesting_shares"])
+    def update_account_info(self) -> None:
+        self._acc_info = _find_account(self._node, self._name)
         self._rc_manabar.update()
 
-    def top_up(self, amount: tt.Asset.Test | tt.Asset.Tbd):
+    def top_up(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
         self._wallet.api.transfer("initminer", self._name, amount, "{}")
         self.update_account_info()
 
 
 class _RcManabar:
-    def __init__(self, node, name):
+    def __init__(self, node: tt.InitNode, name: str):
         self._node = node
         self._name = name
-        self.current_rc_mana = None
-        self.last_update_time = None
-        self.max_rc = None
+        self.__manabar: ExtendedManabar | None = None
         self.update()
+
+    @property
+    def manabar(self) -> ExtendedManabar:
+        assert self.__manabar is not None
+        return self.__manabar
+
+    @property
+    def current_rc_mana(self) -> int:
+        return self.manabar.current_mana
+
+    @property
+    def last_update_time(self) -> datetime:
+        return self.manabar.last_update_time
+
+    @property
+    def max_rc(self) -> int:
+        return self.manabar.maximum
 
     def __str__(self):
         return (
@@ -111,7 +151,7 @@ class _RcManabar:
             f" {datetime.fromtimestamp(self.last_update_time)}"
         )
 
-    def calculate_current_value(self, head_block_time):
+    def calculate_current_value(self, head_block_time: datetime) -> int:
         return int(
             wax.calculate_current_manabar_value(
                 now=int(head_block_time.timestamp()),
@@ -121,18 +161,17 @@ class _RcManabar:
             ).result
         )
 
-    def update(self):
-        rc_manabar = get_rc_manabar(self._node, self._name)
-        self.current_rc_mana = rc_manabar["current_mana"]
-        self.last_update_time = rc_manabar["last_update_time"]
-        self.max_rc = rc_manabar["max_rc"]
+    def update(self) -> None:
+        self.__manabar = get_rc_manabar(self._node, self._name)
 
-    def assert_rc_current_mana_is_unchanged(self):
+    def assert_rc_current_mana_is_unchanged(self) -> None:
         assert (
             get_rc_current_mana(self._node, self._name) == self.current_rc_mana
         ), f"The {self._name} account rc_current_mana has been changed."
 
-    def assert_rc_current_mana_is_reduced(self, operation_rc_cost: int, operation_timestamp=None):
+    def assert_rc_current_mana_is_reduced(
+        self, operation_rc_cost: int, operation_timestamp: datetime | None = None
+    ) -> None:
         err = f"The account {self._name} did not incur the operation cost."
         if operation_timestamp:
             mana_before_operation = self.calculate_current_value(operation_timestamp - tt.Time.seconds(3))
@@ -140,7 +179,7 @@ class _RcManabar:
         else:
             assert get_rc_current_mana(self._node, self._name) + operation_rc_cost == self.current_rc_mana, err
 
-    def assert_max_rc_mana_state(self, state: Literal["reduced", "unchanged", "increased"]):
+    def assert_max_rc_mana_state(self, state: Literal["reduced", "unchanged", "increased"]) -> None:
         actual_max_rc_mana = get_rc_max_mana(self._node, self._name)
         error_message = f"The {self._name} account `rc_max_mana` has been not {state}"
         match state:
@@ -171,32 +210,30 @@ def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_na
         if "Proxy must change" not in str(error):
             raise
 
-    return int(node.api.database.find_accounts(accounts=["initminer"])["accounts"][0]["proxied_vsf_votes"][0])
+    return int(_find_account(node, "initminer").proxied_vsf_votes[0])
 
 
-def get_hbd_balance(node: tt.InitNode, account_name: str) -> tt.Asset.Tbd:
-    return tt.Asset.from_(node.api.database.find_accounts(accounts=[account_name])["accounts"][0]["hbd_balance"])
+def get_hbd_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TbdT:
+    return _find_account(node, account_name).hbd_balance
 
 
-def get_hbd_savings_balance(node: tt.InitNode, account_name: str) -> tt.Asset.Tbd:
-    return tt.Asset.from_(
-        node.api.database.find_accounts(accounts=[account_name])["accounts"][0]["savings_hbd_balance"]
-    )
+def get_hbd_savings_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TbdT:
+    return _find_account(node, account_name).savings_hbd_balance
 
 
-def get_hive_balance(node: tt.InitNode, account_name: str) -> tt.Asset.Test:
-    return tt.Asset.from_(node.api.database.find_accounts(accounts=[account_name])["accounts"][0]["balance"])
+def get_hive_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TestT:
+    return _find_account(node, account_name).balance
 
 
-def get_hive_power(node: tt.InitNode, account_name: str) -> tt.Asset.Vest:
-    return tt.Asset.from_(node.api.database.find_accounts(accounts=[account_name])["accounts"][0]["vesting_shares"])
+def get_hive_power(node: tt.InitNode, account_name: str) -> tt.Asset.VestsT:
+    return _find_account(node, account_name).vesting_shares
 
 
 def get_rc_current_mana(node: tt.InitNode, account_name: str) -> int:
-    return int(node.api.rc.find_rc_accounts(accounts=[account_name])["rc_accounts"][0]["rc_manabar"]["current_mana"])
+    return int(node.api.rc.find_rc_accounts(accounts=[account_name]).rc_accounts[0].rc_manabar.current_mana)
 
 
-def get_number_of_fill_order_operations(node):
+def get_number_of_fill_order_operations(node: tt.InitNode) -> int:
     return len(
         node.api.account_history.enum_virtual_ops(
             block_range_begin=1,
@@ -204,7 +241,7 @@ def get_number_of_fill_order_operations(node):
             include_reversible=True,
             filter=0x000080,
             group_by_block=False,
-        )["ops"]
+        ).ops
     )
 
 
@@ -213,13 +250,13 @@ def get_vesting_price(node: tt.InitNode) -> int:
     Current exchange rate - `1` Hive to Vest conversion price.
     """
     dgpo = node.api.wallet_bridge.get_dynamic_global_properties()
-    total_vesting_shares = dgpo["total_vesting_shares"]["amount"]
-    total_vesting_fund_hive = dgpo["total_vesting_fund_hive"]["amount"]
+    total_vesting_shares = dgpo.total_vesting_shares.amount
+    total_vesting_fund_hive = dgpo.total_vesting_fund_hive.amount
 
     return int(total_vesting_shares) // int(total_vesting_fund_hive)
 
 
-def convert_hive_to_vest_range(hive_amount: tt.Asset.Test, price: float, tolerance: int = 5) -> tt.Asset.Range:
+def convert_hive_to_vest_range(hive_amount: tt.Asset.TestT, price: float, tolerance: int = 5) -> tt.Asset.Range:
     """
      Converts Hive to VEST resources at the current exchange rate provided in the `price` parameter.
     :param hive_amount: The amount of Hive resources to convert.
@@ -227,12 +264,15 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.Test, price: float, toleran
     :param tolerance: The tolerance percent for the VEST conversion, defaults its 5%.
     :return: The equivalent amount of VEST resources after the conversion, within the specified tolerance.
     """
-    vests = tt.Asset.from_({"amount": hive_amount.amount * price, "precision": 6, "nai": "@@000000037"})
+    vests = tt.Asset.Vest(hive_amount.amount * price)
     return tt.Asset.Range(vests, tolerance=tolerance)
 
 
 def get_virtual_operations(
-    node: tt.InitNode, vop: str, skip_price_stabilization: bool = True, start_block: int | None = None
+    node: tt.InitNode,
+    skip_price_stabilization: bool = True,
+    start_block: int | None = None,
+    *vops: type[SchemaVirtualOperation],
 ) -> list:
     """
     :param vop: name of the virtual operation,
@@ -240,18 +280,20 @@ def get_virtual_operations(
     :param start_block: block from which virtual operations will be given,
     :return: a list of virtual operations of the type specified in the `vop` argument.
     """
-    result = node.api.account_history.enum_virtual_ops(
-        filter=filters_enum_virtual_ops[vop],
+    result: EnumVirtualOps = node.api.account_history.enum_virtual_ops(
+        filter=build_vop_filter(*vops),
         include_reversible=True,
         block_range_begin=start_block,
         block_range_end=2000,
-    )["ops"]
+    )
 
-    if skip_price_stabilization and vop == "transfer_to_vesting_completed_operation":
-        for vop_number, vop in enumerate(result):
-            if vop["op"]["value"]["hive_vested"] == tt.Asset.Test(10_000_000):
-                result.pop(vop_number)
-    return result
+    if skip_price_stabilization:
+        for vop_number, vop in enumerate(result.ops):
+            if isinstance(
+                vop.op.value, TransferToVestingCompletedOperation
+            ) and vop.op.value.hive_vested == tt.Asset.Test(10_000_000):
+                result.ops.pop(vop_number)
+    return result.ops
 
 
 def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
@@ -266,18 +308,27 @@ def jump_to_date(node: tt.InitNode, time_offset: datetime) -> None:
     node.restart(
         time_offset=tt.Time.serialize(
             time_offset,
-            format_=tt.Time.TIME_OFFSET_FORMAT,
+            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
     )
 
 
-def get_rc_manabar(node: tt.InitNode, account_name: str) -> dict:
-    response = node.api.rc.find_rc_accounts(accounts=[account_name])["rc_accounts"][0]
-    return {
-        "current_mana": int(response["rc_manabar"]["current_mana"]),
-        "last_update_time": response["rc_manabar"]["last_update_time"],
-        "max_rc": int(response["max_rc"]),
-    }
+class ExtendedManabar(Manabar):
+    maximum: int
+
+
+def get_rc_manabar(node: tt.InitNode, account_name: str) -> ExtendedManabar:
+    response = node.api.rc.find_rc_accounts(accounts=[account_name]).rc_accounts[0]
+    return ExtendedManabar(
+        current_mana=response.rc_manabar.current_mana,
+        last_update_time=response.rc_manabar.last_update_time,
+        maximum=response.max_rc,
+    )
+
+
+class CommentTransaction(TransactionLegacy):
+    operations: list[CommentOperation]
+    rc_cost: int
 
 
 def list_votes_for_all_proposals(node):
@@ -287,161 +338,240 @@ def list_votes_for_all_proposals(node):
 
 
 class Comment:
+    """Represents chain comment instance.
+
+
+    +--------+
+    |  top   |  <- created by self.reply
+    +--------+
+       /|\
+        |
+        |
+    +--------+
+    |  self  |
+    +--------+
+       /|\
+        |
+        |
+    +--------+
+    | bottom |  <- created by self.create_parent_comment
+    +--------+
+
+    bottom is post (it has no parent set)
+    self is reply to bottom (it has parent_author and parent_permlink set to author and permlink of bottom)
+    top is reply to self (it has parent_author and parent_permlink set to author and permlink of self)
+
+    to achieve such schema you should:
+
+    comment = Comment(node, wallet)
+    comment.create_parent_comment()
+    comment.send()
+    comment.reply()
+    """
+
     account_counter = 0
 
-    def __init__(self, node: tt.InitNode, wallet: tt.Wallet):
+    def __init__(
+        self,
+        node: tt.InitNode,
+        wallet: tt.Wallet,
+        *,
+        permlink: str | None = None,
+        author: Account | None = None,
+        child: Comment | None = None,
+        parent: Comment | None = None,
+    ):
         self.__node = node
         self.__wallet = wallet
-        self.__comment_transaction: dict[str, Any] | None = None
-        self.__bottom_comment_sent: bool = False
-        self.__comment_exist: bool = False
-        self.__comment_deleted: bool = False
+        self.__author = author
+        self.__parent = parent
+        self.__permlink = permlink or f"main-permlink-{self.author}"
+        self.__children: list[Comment] = [child] if child is not None else []
+        self.__comment_transaction: CommentTransaction | None = None
+        self.__deleted: bool = False
 
     @property
-    def author(self):
-        return self.__comment_author_obj.name
+    def author_obj(self) -> Account:
+        assert self.__author is not None
+        return self.__author
 
-    def __create_comment_account(self):
+    @property
+    def author(self) -> str:
+        return self.author_obj.name
+
+    @property
+    def permlink(self) -> str:
+        return self.__permlink
+
+    @property
+    def comment_trx(self) -> CommentTransaction:
+        assert self.comment_exists()
+        return self.__comment_transaction
+
+    @property
+    def parent(self) -> Comment | None:
+        return self.__parent
+
+    def __force_get_parent(self) -> Comment:
+        """
+        if parent does not exists, returns non-existing comment with parameters as for new post
+        """
+        return self.parent or Comment(
+            node=self.__node,
+            wallet=self.__wallet,
+            permlink="parent-permlink-is-not-empty",
+            author=Account("", self.__node, self.__wallet),
+        )
+
+    @property
+    def children(self) -> list[Comment]:
+        return self.__children
+
+    def comment_exists(self) -> bool:
+        return self.__comment_transaction is not None and not self.__deleted
+
+    def assert_comment_exists(self) -> None:
+        if not self.comment_exists():
+            raise ValueError("Comment not exist")
+
+    def __create_comment_account(self) -> Account:
         author = f"account-{Comment.account_counter}"
         sample_vests_amount = 50
         self.__wallet.create_account(author, vests=sample_vests_amount)
         Comment.account_counter += 1
         return Account(author, self.__node, self.__wallet)
 
-    def send_bottom_comment(self):
-        self.__bottom_comment_author_obj = self.__create_comment_account()
-        self.__bottom_comment_permlink = f"bottom-permlink-{self.__bottom_comment_author_obj.name}"
-        self.__wallet.api.post_comment(
-            author=self.__bottom_comment_author_obj.name,
-            permlink=self.__bottom_comment_permlink,
-            parent_author="",
-            parent_permlink="parent-permlink-is-not-empty",
-            title=f"parent-title-{self.__bottom_comment_author_obj.name}",
-            body=f"parent-body-{self.__bottom_comment_author_obj.name}",
-            json="{}",
+    def create_parent_comment(self) -> Comment:
+        parent_account = self.__create_comment_account()
+        self.__parent = Comment(
+            node=self.__node,
+            wallet=self.__wallet,
+            permlink=f"parent-permlink-{parent_account.name}",
+            author=parent_account,
+            child=self,
         )
-        self.__bottom_comment_sent = True
+        self.__parent.post(reply_type="no_reply")
+        return self.parent
 
-    def send(self, reply_type: Literal["no_reply", "reply_own_comment", "reply_another_comment"]):
-        if not self.__bottom_comment_sent and reply_type in {"reply_own_comment", "reply_another_comment"}:
-            raise ValueError("Parent comment not exist")
+    def post(
+        self,
+        reply_type: Literal["no_reply", "reply_own_comment", "reply_another_comment"],
+    ) -> None:
+        def new_post() -> None:
+            if self.__author is None:
+                self.__author = self.__create_comment_account()
 
-        def set_no_reply():
-            self.__parent_author: str = ""
-            self.__parent_permlink: str = "parent-permlink-is-not-empty"
-            self.__comment_author_obj = self.__create_comment_account()
+        def reply_to_parent_as_same_account():
+            assert self.parent is not None
+            self.__author = self.parent.author_obj
+            self.__permlink = f"self-response-{self.parent.permlink}"
 
-        def set_reply_own_comment():
-            self.__parent_author: str = self.__bottom_comment_author_obj.name
-            self.__parent_permlink: str = self.__bottom_comment_permlink
-            self.__comment_author_obj = self.__bottom_comment_author_obj
-
-        def set_reply_another_comment():
-            self.__parent_author: str = self.__bottom_comment_author_obj.name
-            self.__parent_permlink: str = self.__bottom_comment_permlink
-            self.__comment_author_obj = self.__create_comment_account()
+        def reply_to_parent_as_other_account():
+            assert self.parent is not None
+            if self.__author is None:
+                self.__author = self.__create_comment_account()
+            self.permlink = f"{self.author}-response-{self.parent.permlink}"
 
         set_reply = {
-            "no_reply": set_no_reply,
-            "reply_own_comment": set_reply_own_comment,
-            "reply_another_comment": set_reply_another_comment,
+            "no_reply": new_post,
+            "reply_own_comment": reply_to_parent_as_same_account,
+            "reply_another_comment": reply_to_parent_as_other_account,
         }
 
         set_reply[reply_type]()
-        self.__comment_permlink = f"main-permlink-{self.__comment_author_obj.name}"
 
-        self.__comment_author_obj.update_account_info()  # Refresh RC mana before send
-        self.__comment_transaction = self.__wallet.api.post_comment(
-            author=self.__comment_author_obj.name,
-            permlink=self.__comment_permlink,
-            parent_author=self.__parent_author,
-            parent_permlink=self.__parent_permlink,
-            title=f"main-title-{self.__comment_author_obj.name}",
-            body=f"main-body-{self.__comment_author_obj.name}",
-            json="{}",
-        )
-        self.__comment_exist = True
-
-    def send_top_comment(self, reply_type: Literal["reply_own_comment", "reply_another_comment"]):
-        if not self.__comment_exist:
-            raise ValueError("Parent comment not exist")
-
-        parent_author: str = self.__comment_author_obj.name
-        parent_permlink: str = self.__comment_permlink
-        if reply_type == "reply_own_comment":
-            top_comment_author_obj = self.__comment_author_obj
-        else:
-            top_comment_author_obj = self.__create_comment_account()
-
-        self.__wallet.api.post_comment(
-            author=top_comment_author_obj.name,
-            permlink=f"top-permlink-{top_comment_author_obj.name}",
-            parent_author=parent_author,
-            parent_permlink=parent_permlink,
-            title=f"top-title-{top_comment_author_obj.name}",
-            body=f"top-body-{top_comment_author_obj.name}",
-            json="{}",
+        self.author_obj.update_account_info()  # Refresh RC mana before send
+        self.__comment_transaction = get_response_model(
+            CommentTransaction,
+            **self.__wallet.api.post_comment(
+                author=self.author,
+                permlink=self.permlink,
+                parent_author=self.__force_get_parent().author,
+                parent_permlink=self.__force_get_parent().permlink if self.parent is None else self.parent.permlink,
+                title=f"tittle-{self.permlink}",
+                body=f"body-{self.permlink}",
+                json="{}",
+            ),
         )
 
-    def update(self):
-        self.__comment_author_obj.update_account_info()  # Refresh RC mana before update
-        self.__comment_transaction = self.__wallet.api.post_comment(
-            author=self.__comment_author_obj.name,
-            permlink=self.__comment_permlink,
-            parent_author=self.__parent_author,
-            parent_permlink=self.__parent_permlink,
-            title=f"update-title-{self.__comment_author_obj.name}",
-            body=f"update--body-{self.__comment_author_obj.name}",
-            json='{"tags":["hiveio","example","tags"]}',
+    def reply(self, reply_type: Literal["reply_own_comment", "reply_another_comment"]) -> Comment:
+        self.assert_comment_exists()
+        reply_account = self.author_obj
+        reply_permlink = f"self-reply-{self.permlink}"
+
+        if reply_type != "reply_own_comment":
+            reply_account = self.__create_comment_account()
+            reply_permlink = f"{reply_account.name}-reply-{self.permlink}"
+
+        reply = Comment(
+            node=self.__node,
+            wallet=self.__wallet,
+            permlink=reply_permlink,
+            author=reply_account,
+            parent=self,
+        )
+        reply.post(reply_type=reply_type)
+        self.__children.append(reply)
+        return reply
+
+    def update(self) -> None:
+        self.author_obj.update_account_info()  # Refresh RC mana before update
+        self.__comment_transaction = get_response_model(
+            CommentTransaction,
+            self.__wallet.api.post_comment(
+                author=self.author,
+                permlink=self.permlink,
+                parent_author=self.__force_get_parent().author,
+                parent_permlink=self.__force_get_parent().permlink,
+                title=f"update-title-{self.author}",
+                body=f"update-body-{self.permlink}",
+                json='{"tags":["hiveio","example","tags"]}',
+            ),
         )
 
-    def vote(self):
-        if not self.__comment_exist:
-            raise ValueError("Comment not exist")
+    def vote(self) -> None:
+        self.assert_comment_exists()
         voter = self.__create_comment_account()
-        self.__wallet.api.vote(voter.name, self.__comment_author_obj.name, self.__comment_permlink, 100)
+        self.__wallet.api.vote(voter.name, self.author, self.permlink, 100)
 
-    def downvote(self):
-        if not self.__comment_exist:
-            raise ValueError("Comment not exist")
+    def downvote(self) -> None:
+        self.assert_comment_exists()
         hater = self.__create_comment_account()
-        self.__wallet.api.vote(hater.name, self.__comment_author_obj.name, self.__comment_permlink, -10)
+        self.__wallet.api.vote(hater.name, self.author, self.permlink, -10)
 
-    def assert_is_comment_sent_or_update(self):
-        comment_operation = self.__comment_transaction["operations"][0][1]
+    def assert_is_comment_sent_or_update(self) -> None:
+        comment_operation = self.comment_trx.operations[0]
         ops_in_block = self.__node.api.account_history.get_ops_in_block(
-            block_num=self.__comment_transaction["block_num"], include_reversible=True
+            block_num=self.comment_trx.block_num, include_reversible=True
         )
-        for operation in ops_in_block["ops"]:
-            if operation["op"]["type"] == "comment_operation" and operation["op"]["value"] == comment_operation:
+        for operation in ops_in_block.ops:
+            if operation.op["type"] == "comment_operation" and operation.op["value"] == comment_operation:
                 return
         raise AssertionError
 
-    def assert_is_rc_mana_decreased_after_post_or_update(self):
-        if not self.__comment_exist:
-            raise ValueError("Try to post comment before verification")
-        comment_rc_cost = int(self.__comment_transaction["rc_cost"])
+    def assert_is_rc_mana_decreased_after_post_or_update(self) -> None:
+        self.assert_comment_exists()
+        comment_rc_cost = int(self.comment_trx.rc_cost)
         comment_timestamp = get_transaction_timestamp(self.__node, self.__comment_transaction)
-        self.__comment_author_obj.rc_manabar.assert_rc_current_mana_is_reduced(comment_rc_cost, comment_timestamp)
+        self.author_obj.rc_manabar.assert_rc_current_mana_is_reduced(comment_rc_cost, comment_timestamp)
 
-    def delete(self):
-        self.__comment_author_obj.update_account_info()  # Refresh RC mana before update
+    def delete(self) -> None:
+        self.author_obj.update_account_info()  # Refresh RC mana before update
         self.__delete_transaction = create_transaction_with_any_operation(
-            self.__wallet, "delete_comment", author=self.__comment_author_obj.name, permlink=self.__comment_permlink
+            self.__wallet,
+            DeleteCommentOperation(author=self.author, permlink=self.permlink),
         )
-        self.__comment_deleted = True
 
-    def assert_is_rc_mana_decreased_after_comment_delete(self):
-        if not self.__comment_deleted:
-            raise ValueError("Try to delete comment before verification")
+    def assert_is_rc_mana_decreased_after_comment_delete(self) -> None:
+        self.assert_comment_exists()
         delete_rc_cost = int(self.__delete_transaction["rc_cost"])
         delete_timestamp = get_transaction_timestamp(self.__node, self.__delete_transaction)
-        self.__comment_author_obj.rc_manabar.assert_rc_current_mana_is_reduced(delete_rc_cost, delete_timestamp)
+        self.author_obj.rc_manabar.assert_rc_current_mana_is_reduced(delete_rc_cost, delete_timestamp)
 
-    def assert_comment(self, mode: Literal["deleted", "not_deleted"]):
+    def assert_comment(self, mode: Literal["deleted", "not_deleted"]) -> None:
         voter = self.__create_comment_account()
         try:
-            self.__wallet.api.vote(voter.name, self.__comment_author_obj.name, self.__comment_permlink, 1)
+            self.__wallet.api.vote(voter.name, self.author, self.permlink, 1)
             vote_send = True
         except tt.exceptions.CommunicationError:
             vote_send = False
