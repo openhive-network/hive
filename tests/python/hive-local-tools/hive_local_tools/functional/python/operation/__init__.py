@@ -15,7 +15,8 @@ from schemas.operations import (
     CommentOperation,
     DeleteCommentOperation,
 )
-from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
+from schemas.operations.virtual import (
+    FillTransferFromSavingsOperation,
     TransferToVestingCompletedOperation,
 )
 from schemas.transaction import TransactionLegacy
@@ -191,7 +192,7 @@ class _RcManabar:
 
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
-    payout_vops = get_virtual_operations(node, "fill_transfer_from_savings_operation")
+    payout_vops = get_virtual_operations(node, FillTransferFromSavingsOperation)
     return any(vop["op"]["value"]["memo"] == memo for vop in payout_vops)
 
 
@@ -269,9 +270,9 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.TestT, price: float, tolera
 
 def get_virtual_operations(
     node: tt.InitNode,
+    *vops: type[SchemaVirtualOperation],
     skip_price_stabilization: bool = True,
     start_block: int | None = None,
-    *vops: type[SchemaVirtualOperation],
 ) -> list:
     """
     :param vop: name of the virtual operation,

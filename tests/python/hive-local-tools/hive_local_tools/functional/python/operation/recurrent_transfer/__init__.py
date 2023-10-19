@@ -10,7 +10,7 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_virtual_operations,
 )
-from schemas.operations.virtual import FillRecurrentTransferOperation
+from schemas.operations.virtual import FailedRecurrentTransferOperation, FillRecurrentTransferOperation
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -174,7 +174,7 @@ class RecurrentTransfer:
 
     def assert_failed_recurrent_transfer_operation_was_generated(self, expected_vop: int):
         err = "virtual operation - `failed_recurrent_transfer_operation` hasn't been generated."
-        assert len(get_virtual_operations(self._node, "failed_recurrent_transfer_operation")) == expected_vop, err
+        assert len(get_virtual_operations(self._node, FailedRecurrentTransferOperation)) == expected_vop, err
 
     def __assert_minimal_operation_rc_cost(self):
         assert self._rc_cost > 0, "RC cost is less than or equal to zero."
