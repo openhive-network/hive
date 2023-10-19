@@ -21,9 +21,7 @@ enum class key_t : std::int32_t
   ACTIVE,
   POSTING,
   MEMO,
-  WITNESS,
-  NEW_OWNER_AUTHORITY,
-  RECENT_OWNER_AUTHORITY,
+  WITNESS_SIGNING,
 };
 
 struct collected_keyauth_t
