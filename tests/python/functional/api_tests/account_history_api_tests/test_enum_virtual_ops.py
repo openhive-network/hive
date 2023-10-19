@@ -8,7 +8,6 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 
-@run_for("testnet")
 def send_transfers_to_vesting_from_initminer_to_alice(wallet: tt.Wallet, *, amount: int):
     for _ in range(amount):
         wallet.api.transfer_to_vesting("initminer", "alice", tt.Asset.Test(1))
