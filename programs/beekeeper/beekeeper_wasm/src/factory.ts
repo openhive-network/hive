@@ -8,7 +8,7 @@ const requiresSyncFs = [
 ] as const;
 const doesNotRequireSyncFs = [
   "init", "list_wallets", "get_public_keys", "sign_digest",
-  "sign_binary_transaction", "sign_transaction", "get_info"
+  "sign_binary_transaction", "get_info"
 ] as const;
 
 type Callable = {
