@@ -351,11 +351,8 @@ def generate_port_ranges(worker: str, number_of_nodes: int) -> list[int]:
     global last_used_port_number
     match = re.match(r"gw(\d+)", worker)
     worker_id = int(match.group(1))
-
-    if globals()["last_used_port_number"] is None:
-        start = 2000 + worker_id * 1000
-    else:
-        start = globals()["last_used_port_number"]
+    last_used_port_number = globals()["last_used_port_number"]
+    start = 2000 + worker_id * 1000 if last_used_port_number is None else last_used_port_number
     end = start + number_of_nodes
     last_used_port_number = end
     return list(range(start, end))
