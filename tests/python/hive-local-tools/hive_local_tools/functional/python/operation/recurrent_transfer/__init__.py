@@ -180,7 +180,10 @@ class RecurrentTransfer:
         assert self._rc_cost > 0, "RC cost is less than or equal to zero."
 
     def update(
-        self, amount: tt.Asset = None, new_executions_number: int | None = None, new_recurrence_time: int | None = None
+        self,
+        amount: tt.Asset.AnyT = None,
+        new_executions_number: int | None = None,
+        new_recurrence_time: int | None = None,
     ):
         self._transaction = getattr(self._wallet.api, self._operation_name)(
             from_=self._from_,
@@ -215,7 +218,7 @@ class RecurrentTransfer:
             self._executions = new_executions_number
             self._recurrence = new_recurrence_time
         elif not new_executions_number and not new_recurrence_time and amount:
-            if amount == type(amount)(0):
+            if amount == amount.clone(amount=0):
                 self._current_schedule = []
             else:
                 self._current_schedule = self.__get_transfer_schedule(self.get_next_execution_date())

@@ -3,6 +3,8 @@ Test scenarios: https://gitlab.syncad.com/hive/hive/-/issues/484
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 import test_tools as tt
@@ -15,26 +17,35 @@ from hive_local_tools.functional.python.operation import get_virtual_operations
 from hive_local_tools.functional.python.operation.recurrent_transfer import RecurrentTransfer, RecurrentTransferAccount
 from schemas.operations.virtual import FailedRecurrentTransferOperation
 
+if TYPE_CHECKING:
+    from datetime import timedelta
+
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize(("amount", "executions"), [(tt.Asset.Test(10), 3), (tt.Asset.Tbd(10), 3)])
-def test_recurrent_transfer_cases_1_and_2(node, wallet, sender, receiver, amount, executions):
+def test_recurrent_transfer_cases_1_and_2(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+) -> None:
     """
     User creates a recurrent transfer in Hive / HBD to be sent once a day for three days
     """
+    recurrent_transfer = RecurrentTransfer(
+        node,
+        wallet,
+        from_=sender.name,
+        to=receiver.name,
+        amount=amount,
+        recurrence=MIN_RECURRENT_TRANSFERS_RECURRENCE,
+        executions=executions,
+    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
     for execution in range(executions):
-        if execution == 0:
-            recurrent_transfer = RecurrentTransfer(
-                node,
-                wallet,
-                from_=sender.name,
-                to=receiver.name,
-                amount=amount,
-                recurrence=MIN_RECURRENT_TRANSFERS_RECURRENCE,
-                executions=executions,
-            )
-            sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
-        else:
+        if execution > 0:
             node.wait_for_irreversible_block()
             recurrent_transfer.execute_future_transfer()
             sender.rc_manabar.assert_rc_current_mana_is_unchanged()
@@ -54,7 +65,14 @@ def test_recurrent_transfer_cases_1_and_2(node, wallet, sender, receiver, amount
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize(("amount", "executions"), [(tt.Asset.Test(10), 3), (tt.Asset.Tbd(10), 3)])
-def test_recurrent_transfer_cases_3_and_4(node, wallet, sender, receiver, amount, executions):
+def test_recurrent_transfer_cases_3_and_4(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+) -> None:
     """
     User removes a defined recurrent transfer in Hive / HBD.
     """
@@ -111,22 +129,28 @@ def test_recurrent_transfer_cases_3_and_4(node, wallet, sender, receiver, amount
     ],
 )
 def test_recurrent_transfer_cases_5_6_7_8(
-    node, wallet, sender, receiver, amount_1, amount_2, executions_1, executions_2
-):
-    for execution in range(executions_1 // 2):
-        if execution == 0:
-            recurrent_transfer = RecurrentTransfer(
-                node,
-                wallet,
-                from_=sender.name,
-                to=receiver.name,
-                amount=amount_1,
-                recurrence=MIN_RECURRENT_TRANSFERS_RECURRENCE,
-                executions=executions_1,
-            )
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount_1: tt.Asset.TestT | tt.Asset.TbdT,
+    amount_2: tt.Asset.TestT | tt.Asset.TbdT,
+    executions_1: int,
+    executions_2: int,
+) -> None:
+    recurrent_transfer = RecurrentTransfer(
+        node,
+        wallet,
+        from_=sender.name,
+        to=receiver.name,
+        amount=amount_1,
+        recurrence=MIN_RECURRENT_TRANSFERS_RECURRENCE,
+        executions=executions_1,
+    )
 
-            sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
-        else:
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+    for execution in range(executions_1 // 2):
+        if execution > 0:
             recurrent_transfer.execute_future_transfer()
             sender.rc_manabar.assert_rc_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount_1)
@@ -167,7 +191,15 @@ def test_recurrent_transfer_cases_5_6_7_8(
         (tt.Asset.Tbd(10), 3, 5),
     ],
 )
-def test_recurrent_transfer_cases_9_and_10(node, wallet, sender, receiver, amount, executions, update_executions):
+def test_recurrent_transfer_cases_9_and_10(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+    update_executions: int,
+) -> None:
     """
     User increases a number of defined recurrent transfer in Hive / HBD.
     """
@@ -236,7 +268,15 @@ def test_recurrent_transfer_cases_9_and_10(node, wallet, sender, receiver, amoun
         (tt.Asset.Tbd(10), 4, 3),
     ],
 )
-def test_recurrent_transfer_cases_11_and_12(node, wallet, sender, receiver, amount, executions, update_executions):
+def test_recurrent_transfer_cases_11_and_12(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+    update_executions: int,
+) -> None:
     """
     User decreases a number of defined recurrent transfer in Hive / HBD.
     """
@@ -340,8 +380,15 @@ def test_recurrent_transfer_cases_11_and_12(node, wallet, sender, receiver, amou
     ],
 )
 def test_recurrent_transfer_cases_13_14_15_16(
-    node, wallet, receiver, amount, executions, base_recurrence_time, update_recurrence_time, offset
-):
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    receiver: RecurrentTransferAccount,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+    base_recurrence_time: int,
+    update_recurrence_time: int,
+    offset: timedelta,
+) -> None:
     wallet.create_account(
         "sender",
         hives=6 * amount if isinstance(amount, tt.Asset.TestT) else None,
@@ -424,17 +471,17 @@ def test_recurrent_transfer_cases_13_14_15_16(
     ],
 )
 def test_recurrent_transfer_cases_17_and_18(
-    node,
-    wallet,
-    receiver,
-    sender,
-    amount_1,
-    amount_2,
-    amount_3,
-    executions,
-    first_update_executions,
-    second_update_executions,
-):
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    receiver: RecurrentTransferAccount,
+    sender: RecurrentTransferAccount,
+    amount_1: tt.Asset.TestT | tt.Asset.TbdT,
+    amount_2: tt.Asset.TestT | tt.Asset.TbdT,
+    amount_3: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+    first_update_executions: int,
+    second_update_executions: int,
+) -> None:
     """
     User increases a frequency of defined recurrent transfer in Hive / HBD.
     """
@@ -545,7 +592,13 @@ def test_recurrent_transfer_cases_17_and_18(
         (tt.Asset.Tbd(10), tt.Asset.Tbd(20)),
     ],
 )
-def test_recurrent_transfer_cases_19_and_20(node, wallet, receiver, recurrent_transfer_amount, transfer_amount):
+def test_recurrent_transfer_cases_19_and_20(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    receiver: RecurrentTransferAccount,
+    recurrent_transfer_amount: tt.Asset.TestT | tt.Asset.TbdT,
+    transfer_amount: tt.Asset.TestT | tt.Asset.TbdT,
+) -> None:
     """
     User creates a recurrent transfer in Hive / HBD, but the first transfer is not created because the lack of funds.
     """
@@ -564,7 +617,8 @@ def test_recurrent_transfer_cases_19_and_20(node, wallet, receiver, recurrent_tr
         )
         wallet.api.transfer(sender.name, receiver.name, transfer_amount, "{}")
 
-    transaction_rc_cost = transaction.get_response()["rc_cost"]
+    assert (transaction := transaction.get_response()) is not None
+    transaction_rc_cost = transaction["rc_cost"]
     sender.assert_balance_is_reduced_by_transfer(transfer_amount)
     receiver.assert_balance_is_increased_by_transfer(transfer_amount)
     sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=transaction_rc_cost)
@@ -595,7 +649,13 @@ def test_recurrent_transfer_cases_19_and_20(node, wallet, receiver, recurrent_tr
         (tt.Asset.Tbd(10), 3),
     ],
 )
-def test_recurrent_transfer_cases_21_and_22(node, wallet, receiver, amount, executions):
+def test_recurrent_transfer_cases_21_and_22(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    receiver: RecurrentTransferAccount,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+) -> None:
     """
     User creates a recurrent transfer in Hive / HBD with expected second execution to fail (lack of funds).
     """
@@ -654,7 +714,9 @@ def test_recurrent_transfer_cases_21_and_22(node, wallet, receiver, amount, exec
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize("amount", [(tt.Asset.Test(10)), (tt.Asset.Tbd(10))])
-def test_recurrent_transfer_cases_23_and_24(node, wallet, receiver, amount):
+def test_recurrent_transfer_cases_23_and_24(
+    node: tt.InitNode, wallet: tt.Wallet, receiver: RecurrentTransferAccount, amount: tt.Asset.TestT | tt.Asset.TbdT
+) -> None:
     """
     User creates a recurrent transfer in Hive / HBD and the next execution fails
     HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES times, because of the lack of funds.
@@ -707,7 +769,15 @@ def test_recurrent_transfer_cases_23_and_24(node, wallet, receiver, amount):
         (tt.Asset.Tbd(10), 3, MAX_RECURRENT_TRANSFER_END_DATE / 2 * 24),
     ],
 )
-def test_recurrent_transfer_cases_25_and_26(node, wallet, sender, receiver, amount, executions, recurrence):
+def test_recurrent_transfer_cases_25_and_26(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount,
+    executions,
+    recurrence,
+):
     """
     User creates a recurrent transfer in Hive / HBD to be executed 3 times every year.
     """
@@ -743,7 +813,15 @@ def test_recurrent_transfer_cases_25_and_26(node, wallet, sender, receiver, amou
         (tt.Asset.Tbd(10), 3, (MAX_RECURRENT_TRANSFER_END_DATE / 2 + 1) * 24),
     ],
 )
-def test_recurrent_transfer_cases_27_and_28(node, wallet, sender, receiver, amount, executions, recurrence):
+def test_recurrent_transfer_cases_27_and_28(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount,
+    executions,
+    recurrence,
+):
     """
     User tries to create a recurrent transfer in Hive / HBD to be executed 3 times every 366 days.
     """
@@ -759,4 +837,4 @@ def test_recurrent_transfer_cases_27_and_28(node, wallet, sender, receiver, amou
         )
 
     expected_error_message = "Cannot set a transfer that would last for longer than 730 days"
-    assert expected_error_message in exception.value.response["error"]["message"]
+    assert expected_error_message in exception.value.error
