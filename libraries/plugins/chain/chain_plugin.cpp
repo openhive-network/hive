@@ -1112,7 +1112,9 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ;
 }
 
-void chain_plugin::plugin_initialize(const variables_map& options) {
+void chain_plugin::plugin_initialize(const variables_map& options)
+{ try {
+
   my.reset( new detail::chain_plugin_impl( get_app() ) );
 
   get_app().setup_notifications(options);
@@ -1221,9 +1223,6 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
     idump((alternate_chain_spec));
 
-    uint32_t              genesis_time      = alternate_chain_spec["genesis_time"].as< uint32_t >();
-    auto                  hardfork_schedule = alternate_chain_spec["hardfork_schedule"].as< std::vector< hardfork_schedule_item_t > >();
-
     {
       uint64_t hive = 0, hbd = 0, to_vest = 0;
       // default value somewhat close to mainnet - won't have any impact if to_vest remains zero
@@ -1295,21 +1294,27 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
     std::vector< hardfork_schedule_item_t > result_hardforks;
 
-    FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork-schedule", ("hardfork-schedule", alternate_chain_spec["hardfork_schedule"]) );
+    FC_ASSERT( alternate_chain_spec.get_object().contains( "hardfork_schedule" ) );
+    auto hardfork_schedule = alternate_chain_spec[ "hardfork_schedule" ].as< std::vector< hardfork_schedule_item_t > >();
+    // we could allow skipping hardfork_schedule, but we'd need to decide what it means:
+    // - "don't change hardfork timestamps at all" would be most natural, but not very useful
+    // - "activate all hardforks in first block" is a useful alternative, but that could be achieved by other means,
+    //   for example, by allowing -1 as indicator of "latest hardfork"
+    FC_ASSERT( hardfork_schedule.size(), "At least one hardfork should be provided in the hardfork_schedule", ("hardfork_schedule", alternate_chain_spec["hardfork_schedule"]) );
 
     bool is_sorted_hardfork = std::is_sorted(hardfork_schedule.begin(), hardfork_schedule.end(), [&](const auto& __lhs, const auto& __rhs){
-        return __lhs.hardfork < __rhs.hardfork;
+      return __lhs.hardfork < __rhs.hardfork;
     });
 
     bool is_sorted_block_num = std::is_sorted(hardfork_schedule.begin(), hardfork_schedule.end(), [&](const auto& __lhs, const auto& __rhs){
-        return __lhs.block_num < __rhs.block_num;
+      return __lhs.block_num < __rhs.block_num;
     });
 
-    FC_ASSERT( is_sorted_hardfork && is_sorted_block_num, "hardfork schedule obects should be ascending in hardfork and block numbers", ("hardfork-schedule", alternate_chain_spec["hardfork_schedule"]) );
+    FC_ASSERT( is_sorted_hardfork && is_sorted_block_num, "hardfork schedule objects should be ascending in hardfork and block numbers", ("hardfork_schedule", alternate_chain_spec["hardfork_schedule"]) );
 
     for(uint32_t i = 0, j = 0; i < HIVE_NUM_HARDFORKS; ++i)
     {
-      FC_ASSERT( hardfork_schedule[j].hardfork > 0, "You cannot specify the hardfork 0 block. Use 'genesis-time' option instead" );
+      FC_ASSERT( hardfork_schedule[j].hardfork > 0, "You cannot specify the hardfork 0 block. Use 'genesis_time' option instead" );
       FC_ASSERT( hardfork_schedule[j].hardfork <= HIVE_NUM_HARDFORKS, "You are not allowed to specify future hardfork times" );
 
       if( i + 1 > hardfork_schedule[j].hardfork )
@@ -1320,6 +1325,11 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
       result_hardforks.emplace_back(hardfork_schedule_item_t{ i + 1, hardfork_schedule[j].block_num });
     }
+
+    // note that we cannot substitute 'now' for missing 'genesis_time', because caller has to give the same configuration
+    // every time node is restarted and 'now' would be different each time; that's why this option is required
+    FC_ASSERT( alternate_chain_spec.get_object().contains( "genesis_time" ) );
+    uint32_t genesis_time = alternate_chain_spec[ "genesis_time" ].as< uint32_t >();
 
     configuration_data.set_hardfork_schedule( fc::time_point_sec( genesis_time ), result_hardforks );
     configuration_data.set_init_witnesses( init_witnesses );
@@ -1357,7 +1367,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       }
     }, *this, 0);
   }
-}
+} FC_LOG_AND_RETHROW() }
 
 void chain_plugin::plugin_startup()
 {
