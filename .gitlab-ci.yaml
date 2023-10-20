@@ -751,6 +751,19 @@ python_pattern_mainnet_tests:
   tags:
     - data-cache-storage
 
+python_pattern_testnet_tests:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_TIMEOUT_MINUTES: 10
+    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
+  script:
+    - cd tests/python/api_tests/python_patterns_tests/
+    - export PYTEST_ARGS=(-m "not testnet and not mainnet_5m and not live_mainnet")
+    - *run-pytest
+  tags:
+    - public-runner-docker
+
 .message_format_tests:
   stage: test
   extends: .test_tools_based
