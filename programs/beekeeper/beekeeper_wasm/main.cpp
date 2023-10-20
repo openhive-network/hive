@@ -16,56 +16,57 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
 
     /*
       ****creation of an instance of beekeeper****
-      params:
-      --wallet-dir DIRECTORY  (directory where keys are stored)
-      --salt       SALT       (a salt chosen by an user used to an encryption. Not required.)
+      PARAMS:
+      --wallet-dir      : a directory where keys are stored in particular wallets. Default: `.`
+      --unlock-timeout  : timeout for an unlocked wallet in seconds. After this time the wallet will be locked automatically when an attempt of execution of almost all(*) API endpoint occurs. Default: `900`
+                         (*) except: `create_session`, `close_session`, `get_info`, `lock_all`, `set_timeout`
+      --enable-logs     : whether logs can be generated. Default: `true`
 
-      result:
-        returns an instance of beekeeper
+      RESULT:
+        an instance of a beekeeper
     */
     .constructor<std::vector<std::string>>()
 
     /*
       ****initialization of a beekeeper****
-      params:
+      PARAMS:
         nothing
-      result:
-        {"status":true,"token":"e653fc43f2c98df497ae7adf9874d7cf04b2dc90d551088aca56d18b87d8f0ba"}
+      RESULT:
+        {"status":true,"version":"a8329e82abe68bb222d8d92db0b09ec941c5f477"}
         status: if an initialization passed/failed
-        token:  A token of a session created implicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
-        version: A hash of current commit.
+        version: a hash of current commit.
     */
     .function("init()", &beekeeper_api::init)
 
     /*
       ****creation of a session****
-      params:
+      PARAMS:
         salt: a salt used for creation of a token
-      result:
+      RESULT:
         {"token":"440c44f01dde9ef65e7b88c6d44f3a929bbf0ff993c06efa6d942d40b08567f3"}
-        token: A token of a session created explicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
+        token: a token of a session created explicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
     */
     .function("create_session(salt)", &beekeeper_api::create_session)
 
     /*
       ****closing of a session****
-      params:
+      PARAMS:
         token: a token representing a session
-      result:
+      RESULT:
         nothing
     */
     .function("close_session(token)", &beekeeper_api::close_session)
 
     /*
       ****creation of a wallet****
-      params:
+      PARAMS:
         token:        a token representing a session
         wallet_name:  a name of wallet
         password:     a password used for creation of a wallet. Not required and in this case a password is automatically generated.
                       If the password is:
                        - not given, chosen is a version (1)
                        -     given, chosen is a version (2)
-      result:
+      RESULT:
         {"password":"PW5KNCWdnMZFKzrvVyA2xwKLRxcAZWxPoyGVSN9r38te3p1ceEjo1"}
         password: a password of newly created a wallet
     */
@@ -74,71 +75,71 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
 
     /*
       ****unlocking of a wallet****
-      params:
+      PARAMS:
         token:        a token representing a session
         wallet_name:  a name of wallet
         password:     a wallet's password
-      result:
+      RESULT:
         nothing
     */
     .function("unlock(token, wallet_name, password)", &beekeeper_api::unlock)
 
     /*
       ****opening of a wallet****
-      params:
+      PARAMS:
         token:        a token representing a session
         wallet_name:  a name of wallet
-      result:
+      RESULT:
         nothing
     */
     .function("open(token, wallet_name)", &beekeeper_api::open)
 
     /*
       ****closing of a wallet****
-      params:
+      PARAMS:
         token:        a token representing a session
         wallet_name:  a name of wallet
-      result:
+      RESULT:
         nothing
     */
     .function("close(token, wallet_name)", &beekeeper_api::close)
 
     /*
       ****setting a timeout for a session****
-      params:
+      PARAMS:
         token:    a token representing a session
         seconds:  number of seconds
-      result:
+      RESULT:
         nothing
     */
     .function("set_timeout(token, seconds)", &beekeeper_api::set_timeout)
 
     /*
       ****locking all wallets****
-      params:
+      PARAMS:
         token: a token representing a session
-      result:
+      RESULT:
         nothing
     */
     .function("lock_all(token)", &beekeeper_api::lock_all)
 
     /*
       ****locking a wallet****
-      params:
+      PARAMS:
         token:        a token representing a session
         wallet_name:  a name of wallet
-      result:
+      RESULT:
         nothing
     */
     .function("lock(token, wallet_name)", &beekeeper_api::lock)
 
     /*
       ****importing of a private key into a wallet****
-      params:
+      PARAMS:
         token:        a token representing a session
         wallet_name:  a name of wallet
         wif_key:      a private key
-      result:
+      RESULT:
         {"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"}
         public_key: a public key corresponding to a private key
     */
@@ -146,33 +147,33 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
 
     /*
       ****removing of a private key from a wallet****
-      params:
+      PARAMS:
         token:        a token representing a session
         wallet_name:  a name of wallet
         password:     a wallet's password
         public_key:   a public key corresponding to a private key that is stored in a wallet
-      result:
+      RESULT:
         nothing
     */
     .function("remove_key(token, wallet_name, password, public_key)", &beekeeper_api::remove_key)
 
     /*
       ****listing of all opened wallets****
-      params:
+      PARAMS:
         token: a token representing a session
-      result:
+      RESULT:
         {"wallets":[{"name":"wallet_a","unlocked":true},{"name":"wallet_b","unlocked":true}]}
         wallets: a set of all opened wallets. Every wallet has information:
-          name: name of wallet
+          name: a name of wallet
           unlocked: information if a wallet is opened/closed
     */
     .function("list_wallets(token)", &beekeeper_api::list_wallets)
 
     /*
       ****listing of all public keys****
-      params:
+      PARAMS:
         token:  a token representing a session
-      result:
+      RESULT:
         {"keys":[{"public_key":"6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"},{"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"}]}
         keys: a set of all keys for all unlocked wallets. Every key has information:
           public_key: a public key corresponding to a private key that is stored in a wallet
@@ -180,12 +181,12 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     .function("get_public_keys(token)", &beekeeper_api::get_public_keys)
 
     /*
-      ****signing a transaction by signing sig_digest****
-      params:
+      ****signing a transaction by signing a digest of the transaction****
+      PARAMS:
         token:      a token representing a session
         public_key: a public key corresponding to a private key that is stored in a wallet. It will be used for creation of a signature
         sig_digest: a digest of a transaction
-      result:
+      RESULT:
         { "signature":"1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340"}
         signature: a signature of a transaction
     */
@@ -193,9 +194,9 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
 
     /*
       ****information about a session****
-      params:
+      PARAMS:
         token:        a token representing a session
-      result:
+      RESULT:
         {"now":"2023-07-25T09:41:51","timeout_time":"2023-07-25T09:56:51"}
         now:          current server's time
         timeout_time: time when wallets will be automatically closed
