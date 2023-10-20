@@ -47,7 +47,9 @@ import test_tools as tt
         ("initminer", "alice", []),
     ],
 )
-def test_list_rc_direct_delegations(node, wallet, from_, to, expected_delegations):
+def test_list_rc_direct_delegations(
+    node: tt.InitNode, wallet: tt.Wallet, from_: str, to: str, expected_delegations: list
+) -> None:
     # 'to' parameter is name of account, but accounts are listing by id involved with account, NOT alphabetically
     with wallet.in_single_transaction():
         wallet.api.create_account("initminer", "alice", "{}")
