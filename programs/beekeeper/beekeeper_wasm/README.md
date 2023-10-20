@@ -1,6 +1,6 @@
 # beekeeper
 
-call hived functions from JavaScript
+Hive Beekeeper functionality exposed to TypeScript/JavaScript environments
 
 ## Install
 
@@ -24,9 +24,16 @@ import beekeeperFactory from '@hiveio/beekeeper';
 
 const beekeeper = await beekeeperFactory();
 
-const sessionData = await beekeeper.create_session('pear');
+const session = await beekeeper.createSession("my.salt");
 
-console.log(beekeeper.get_info(sessionData.token));
+const { wallet } = await session.createWallet('w0', 'mypassword');
+
+await wallet.importKey('5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT');
+await wallet.importKey('5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78');
+
+await wallet.removeKey('mypassword', '6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa');
+
+console.log(await wallet.getPublicKeys());
 ```
 
 ## API
@@ -39,13 +46,23 @@ Tested on the latest Chromium (v117)
 
 [Automated CI test](https://gitlab.syncad.com/hive/hive/-/pipelines) runs are available.
 
-To run the tests on your own, clone the Hive repo and install the dependencies:
+To run the tests on your own, clone the Hive repo and install the dependencies following this documentation:
+
+[Getting Hive source code](https://gitlab.syncad.com/hive/hive/-/blob/master/doc/building.md?ref_type=heads#getting-hive-source-code)
+
+and then compile the project:
 
 ```bash
-git clone https://gitlab.syncad.com/hive/hive.git --depth 1
+./scripts/build_wasm_beekeeper.sh
 cd hive/programs/beekeeper/beekeeper_wasm
 sudo npm install -g pnpm
 pnpm install
+```
+
+Compile source:
+
+```bash
+npm run build
 ```
 
 Then run tests:
