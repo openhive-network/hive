@@ -8,7 +8,7 @@ import pytest
 import test_tools as tt
 
 
-def test_delegated_rc_account_execute_operation(wallet: tt.Wallet):
+def test_delegated_rc_account_execute_operation(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(0.1))
@@ -16,7 +16,7 @@ def test_delegated_rc_account_execute_operation(wallet: tt.Wallet):
     wallet.api.create_account(accounts[1], "alice", "{}")
 
 
-def test_undelegated_rc_account_reject_execute_operation(wallet: tt.Wallet):
+def test_undelegated_rc_account_reject_execute_operation(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(0.1))
@@ -30,7 +30,7 @@ def test_undelegated_rc_account_reject_execute_operation(wallet: tt.Wallet):
         wallet.api.create_account(accounts[1], "bob", "{}")
 
 
-def test_rc_delegation_to_same_receiver(wallet: tt.Wallet):
+def test_rc_delegation_to_same_receiver(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(3, "receiver"))
 
     with wallet.in_single_transaction():
@@ -44,7 +44,7 @@ def test_rc_delegation_to_same_receiver(wallet: tt.Wallet):
     assert get_rc_account_info(accounts[2], wallet)["max_rc"] == 12
 
 
-def test_same_rc_delegation_rejection(wallet: tt.Wallet):
+def test_same_rc_delegation_rejection(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(10))
@@ -55,7 +55,7 @@ def test_same_rc_delegation_rejection(wallet: tt.Wallet):
         wallet.api.delegate_rc(accounts[0], [accounts[1]], 10)
 
 
-def test_overwriting_of_delegated_rc_value(wallet: tt.Wallet):
+def test_overwriting_of_delegated_rc_value(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(10))
@@ -70,7 +70,7 @@ def test_overwriting_of_delegated_rc_value(wallet: tt.Wallet):
     assert get_rc_account_info(accounts[1], wallet)["max_rc"] == 7
 
 
-def test_large_rc_delegation(node, wallet: tt.Wallet):
+def test_large_rc_delegation(node: tt.InitNode, wallet: tt.Wallet) -> None:
     # Wait for block is necessary because transactions must always enter the same specific blocks.
     # This way, 'cost of transaction' is always same and is possible to delegate maximal, huge amount of RC.
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
@@ -83,7 +83,7 @@ def test_large_rc_delegation(node, wallet: tt.Wallet):
     assert int(get_rc_account_info(accounts[1], wallet)["max_rc"]) == rc_to_delegate
 
 
-def test_out_of_int64_rc_delegation(wallet: tt.Wallet):
+def test_out_of_int64_rc_delegation(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(2000))
@@ -92,7 +92,7 @@ def test_out_of_int64_rc_delegation(wallet: tt.Wallet):
         wallet.api.delegate_rc(accounts[0], [accounts[1]], 9223372036854775808)
 
 
-def test_reject_of_delegation_of_delegated_rc(wallet: tt.Wallet):
+def test_reject_of_delegation_of_delegated_rc(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(3, "receiver"))
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(0.1))
@@ -102,7 +102,7 @@ def test_reject_of_delegation_of_delegated_rc(wallet: tt.Wallet):
         wallet.api.delegate_rc(accounts[1], [accounts[2]], 50)
 
 
-def test_wrong_sign_in_transaction(wallet: tt.Wallet):
+def test_wrong_sign_in_transaction(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(10))
@@ -114,7 +114,7 @@ def test_wrong_sign_in_transaction(wallet: tt.Wallet):
         wallet.api.sign_transaction(operation)
 
 
-def test_minus_rc_delegation(wallet: tt.Wallet):
+def test_minus_rc_delegation(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(10))
@@ -122,7 +122,7 @@ def test_minus_rc_delegation(wallet: tt.Wallet):
         wallet.api.delegate_rc(accounts[0], [accounts[1]], -100)
 
 
-def test_power_up_delegator(wallet: tt.Wallet):
+def test_power_up_delegator(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(2, "receiver"))
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(10))
@@ -134,7 +134,7 @@ def test_power_up_delegator(wallet: tt.Wallet):
 
 
 @pytest.mark.node_shared_file_size("16G")
-def test_multidelegation(wallet: tt.Wallet):
+def test_multidelegation(wallet: tt.Wallet) -> None:
     amount_of_delegated_rc = 1
     number_of_threads = 50
     tt.logger.info("Start of delegators and receivers creation")
@@ -170,7 +170,7 @@ def test_multidelegation(wallet: tt.Wallet):
         assert get_rc_account_info(accounts[account_index], wallet)["received_delegated_rc"] == amount_of_delegated_rc
 
 
-def test_delegations_cancellation_after_rollback_vest_delegation_to_delegator(wallet: tt.Wallet):
+def test_delegations_cancellation_after_rollback_vest_delegation_to_delegator(wallet: tt.Wallet) -> None:
     accounts = get_accounts_name(wallet.create_accounts(5, "account"))
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(10000))
     wallet.api.delegate_vesting_shares(accounts[0], accounts[1], tt.Asset.Vest(1000))
@@ -183,19 +183,19 @@ def test_delegations_cancellation_after_rollback_vest_delegation_to_delegator(wa
     assert len(wallet.api.list_rc_direct_delegations([accounts[1], accounts[0]], 100)) == 0
 
 
-def delegate_rc(wallet, delegator, receivers, amount_of_delegated_rc):
+def delegate_rc(wallet: tt.Wallet, delegator: str, receivers: list, amount_of_delegated_rc: int) -> None:
     tt.logger.info(f"Delegation accounts from range {receivers[0]} : {receivers[-1]}--------START")
     for account_number in range(0, len(receivers), 100):
         wallet.api.delegate_rc(delegator, receivers[account_number : account_number + 100], amount_of_delegated_rc)
     tt.logger.info(f"Delegation accounts from range {receivers[0]} : {receivers[-1]}--------END")
 
 
-def get_accounts_name(accounts):
+def get_accounts_name(accounts: list) -> list:
     accounts_names = []
     for account_number in range(len(accounts)):
         accounts_names.append(accounts[account_number].name)
     return accounts_names
 
 
-def get_rc_account_info(account, wallet):
+def get_rc_account_info(account: str, wallet: tt.Wallet) -> dict:
     return wallet.api.find_rc_accounts([account])[0]
