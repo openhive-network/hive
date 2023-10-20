@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 import test_tools as tt
 
 
-def test_direct_rc_delegations(wallet):
+def test_direct_rc_delegations(wallet: tt.Wallet) -> None:
     creator = "initminer"
     delegator = "delegator"
     receiver = "receiver"
@@ -13,12 +15,10 @@ def test_direct_rc_delegations(wallet):
     wallet.api.create_account(creator, receiver2, "{}")
     wallet.api.transfer(creator, receiver, "10.000 TESTS", "", "true")
     wallet.api.transfer_to_vesting(creator, delegator, "0.010 TESTS", "true")
-    try:
+    with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.transfer(receiver, receiver, "0.001 TESTS", "", "true")
-    except tt.exceptions.CommunicationError as e:
-        message = str(e.response)
-        found = message.find("receiver has 0 RC, needs 1 RC. Please wait to transact")
-        assert found != -1, str(message)
+    assert "receiver has 0 RC, needs 1 RC. Please wait to transact" in exception.value.error
+
     rc_receiver = wallet.api.find_rc_accounts([receiver])[0]
     rc_receiver2 = wallet.api.find_rc_accounts([receiver2])[0]
     rc_delegator = wallet.api.find_rc_accounts([delegator])[0]
