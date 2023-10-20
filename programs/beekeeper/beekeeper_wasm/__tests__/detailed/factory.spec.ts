@@ -25,7 +25,9 @@ test.describe('Beekeeper factory tests', () => {
     await page.evaluate(async () => {
       const beekeeper = await factory();
 
-      beekeeper.delete();
+      await beekeeper.createSession("my.salt");
+
+      await beekeeper.delete();
     });
   });
 
@@ -33,10 +35,10 @@ test.describe('Beekeeper factory tests', () => {
     const info = await page.evaluate(async () => {
       const beekeeper = await factory();
 
-      const sessionData = await beekeeper.create_session('pear') as { token: string };
+      const session = await beekeeper.createSession("my.salt");
 
-      return beekeeper.get_info(sessionData.token);
-    }) as { now: string; timeout_time: string };
+      return await session.getInfo();
+    });
 
     expect(info).toHaveProperty('now');
     expect(info).toHaveProperty('timeout_time');
@@ -45,6 +47,93 @@ test.describe('Beekeeper factory tests', () => {
 
     expect(info.now).toMatch(timeMatch);
     expect(info.timeout_time).toMatch(timeMatch);
+  });
+
+  test('Should set a proper timeout', async ({ page }) => {
+    const timeoutSeconds = 5;
+
+    const info = await page.evaluate(async unlockTimeout => {
+      const beekeeper = await factory({
+        unlockTimeout
+      });
+
+      const session = await beekeeper.createSession("my.salt");
+
+      return await session.getInfo();
+    }, timeoutSeconds);
+
+    expect(new Date(info.timeout_time).getTime()).toBe(new Date(info.now).getTime() + (timeoutSeconds * 1000 ));
+  });
+
+  test('Should be able to create multiple sessions with wallets and delete the beekeeper instance', async ({ page }) => {
+    await page.evaluate(async () => {
+      const beekeeper = await factory();
+
+      const session1 = await beekeeper.createSession("avocado1");
+      const session2 = await beekeeper.createSession("avocado2");
+
+      await session1.createWallet('w0');
+      await session2.createWallet('w1');
+
+      await beekeeper.delete();
+    });
+  });
+
+  test('Should be able to create a wallet and import and remove keys', async ({ page }) => {
+    const info = await page.evaluate(async () => {
+      const beekeeper = await factory();
+
+      const session = await beekeeper.createSession("my.salt");
+
+      const { wallet: unlocked } = await session.createWallet('w0', 'mypassword');
+
+      await unlocked.importKey('5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT');
+      await unlocked.importKey('5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78');
+
+      await unlocked.removeKey('mypassword', '6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa');
+
+      return await unlocked.getPublicKeys();
+    });
+
+    expect(info).toStrictEqual(['5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh']);
+  });
+
+  test('Should not be able to import keys after closing a wallet', async ({ page }) => {
+    const threw = await page.evaluate(async () => {
+      const beekeeper = await factory();
+
+      const session = await beekeeper.createSession("my.salt");
+
+      const { wallet: unlocked } = await session.createWallet('w0', 'mypassword');
+
+      await unlocked.close();
+
+      try {
+        await unlocked.importKey('5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT'); // This should fail
+
+        return false;
+      } catch(error) {
+        return true;
+      }
+    });
+
+    expect(threw).toBeTruthy();
+  });
+
+  test('Should be able to create multiple wallets and access them using listWallets references', async ({ page }) => {
+    const info = await page.evaluate(async () => {
+      const beekeeper = await factory();
+
+      const session = await beekeeper.createSession("my.salt");
+
+      await session.createWallet('w0', 'mypassword');
+      await session.createWallet('w1', 'mypassword');
+      await session.createWallet('w2', 'mypassword');
+
+      return (await session.listWallets()).map(value => value.name);
+    });
+
+    expect(info).toStrictEqual(['w0','w1','w2']);
   });
 
   test.afterAll(async () => {
