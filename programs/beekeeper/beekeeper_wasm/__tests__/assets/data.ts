@@ -1,7 +1,6 @@
 import type BeekeeperModule from '../../build/beekeeper_wasm';
 import type { MainModule } from '../../build/beekeeper_wasm';
-import type BeekeeperFactory from '../../dist/index';
-import type BeekeeperFactory2 from '../../dist/detailed/index';
+import type BeekeeperFactory from '../../dist';
 
 import type { BeekeeperInstanceHelper, ExtractError } from './run_node_helper.js';
 
@@ -9,7 +8,6 @@ declare global {
   var beekeeper: typeof BeekeeperModule;
   var provider: MainModule;
   var factory: typeof BeekeeperFactory;
-  var factory2: typeof BeekeeperFactory2;
   var BeekeeperInstanceHelper: BeekeeperInstanceHelper;
   var ExtractError: ExtractError;
 
