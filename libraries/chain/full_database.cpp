@@ -70,7 +70,7 @@ uint32_t full_database::reindex_internal( const open_args& args, const std::shar
     apply_block(full_block, skip_flags);
     last_applied_block = full_block;
 
-    return !appbase::app().is_interrupt_request();
+    return !get_app().is_interrupt_request();
   };
 
   const uint32_t start_block_number = start_block->get_block_num();
@@ -79,7 +79,7 @@ uint32_t full_database::reindex_internal( const open_args& args, const std::shar
   if (start_block_number < last_block_num)
     _block_log.for_each_block(start_block_number + 1, last_block_num, process_block, block_log::for_each_purpose::replay);
 
-  if (appbase::app().is_interrupt_request())
+  if (get_app().is_interrupt_request())
     ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})",
          ("n", last_applied_block->get_block_num())("id", last_applied_block->get_block_id()));
 
@@ -120,7 +120,7 @@ uint32_t full_database::reindex( const open_args& args )
   {
     ilog( "Reindexing Blockchain" );
 
-    if( appbase::app().is_interrupt_request() )
+    if( get_app().is_interrupt_request() )
       return 0;
 
     uint32_t _head_block_num = head_block_num();
@@ -540,5 +540,11 @@ std::vector<block_id_type> full_database::get_block_ids(const std::vector<block_
 
   return result;
 }
+
+full_database::full_database( appbase::application& app )
+  : database( app ),
+   _block_log( app )
+  {}
+
 
 }}

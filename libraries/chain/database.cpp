@@ -146,7 +146,7 @@ void database_impl::delete_decoded_types_data_storage()
 }
 
 database::database( appbase::application& app )
-  : rc(*this), _my( new database_impl(*this) ), _block_log( app ), theApp( app ) {}
+  : rc(*this), _my( new database_impl(*this) ), theApp( app ) {}
 
 void database::begin_type_register_process(util::abstract_type_registrar& r)
 {
@@ -163,8 +163,8 @@ void database::state_independent_open( const open_args& args )
   init_schema();
 
   helpers::environment_extension_resources environment_extension(
-                                              appbase::app().get_version_string(),
-                                              appbase::app().get_plugins_names(),
+                                              theApp.get_version_string(),
+                                              theApp.get_plugins_names(),
                                               []( const std::string& message ){ wlog( message.c_str() ); }
                                             );
   const bool wipe_shared_file = args.force_replay || args.load_snapshot;
@@ -5243,9 +5243,9 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 
     migrate_irreversible_state_perform(old_last_irreversible);
   }
-  FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
+  FC_CAPTURE_CALL_LOG_AND_RETHROW( [this](){
                                           elog( "An error occured during migrating an irreversible state. The node will be closed." );
-                                          appbase::app().generate_interrupt_request();
+                                          theApp.generate_interrupt_request();
                                        }, (old_last_irreversible) )
 }
 

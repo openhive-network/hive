@@ -1529,7 +1529,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     open_test_database( db_bp2, data_dir_bp2.path() );
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    full_database db ( the App);
+    full_database db ( theApp);
     db._log_hardforks = false;
     open_test_database( db, data_dir.path() );
 
