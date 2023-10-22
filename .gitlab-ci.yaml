@@ -38,7 +38,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: 9a6047e95ebb2db70cb5dc158d00a88d163fb3e7
+    ref: ae2ec71af47184cdd9567ae85ff821d133c3343f
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
@@ -48,7 +48,7 @@ include:
   # emscripten image can be used as it contains all needed tools (node and npm).
   image: ${EMSCRIPTEN_IMAGE}
   variables:
-    FF_NETWORK_PER_BUILD: 1  
+    FF_NETWORK_PER_BUILD: 1
 
   before_script:
     - cd programs/beekeeper/beekeeper_wasm
