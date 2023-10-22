@@ -1,7 +1,7 @@
 {
   "name": "@hive/beekeeper",
   "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
-  "description": "call hived functions from JavaScript",
+  "description": "Hive Beekeeper functionality exposed to TypeScript/JavaScript environments",
   "main": "dist/index.js",
   "type": "module",
   "private": false,
