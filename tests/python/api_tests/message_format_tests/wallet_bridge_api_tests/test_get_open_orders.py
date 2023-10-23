@@ -24,7 +24,9 @@ CORRECT_VALUES = [
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_open_orders_with_correct_value(node, should_prepare, account_name):
+def test_get_open_orders_with_correct_value(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, account_name: bool | int | str
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_account_and_create_order(wallet, account_name="alice")
@@ -33,7 +35,9 @@ def test_get_open_orders_with_correct_value(node, should_prepare, account_name):
 
 @pytest.mark.parametrize("account_name", [["alice"]])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_open_orders_with_incorrect_type_of_argument(node, should_prepare, account_name):
+def test_get_open_orders_with_incorrect_type_of_argument(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, account_name: list
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_account_and_create_order(wallet, account_name="alice")

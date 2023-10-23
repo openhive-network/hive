@@ -26,7 +26,9 @@ CORRECT_VALUES = [
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_witness_with_correct_value(node, witness_account, should_prepare):
+def test_get_witness_with_correct_value(
+    node: tt.InitNode | tt.RemoteNode, witness_account: bool | int | str, should_prepare: bool
+) -> None:
     if should_prepare:
         node = prepare_node_with_witnesses(node, WITNESSES_NAMES)
     node.api.wallet_bridge.get_witness(witness_account)
@@ -34,6 +36,6 @@ def test_get_witness_with_correct_value(node, witness_account, should_prepare):
 
 @pytest.mark.parametrize("witness_account", [["example-array"]])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_witness_with_incorrect_type_of_argument(node, witness_account):
+def test_get_witness_with_incorrect_type_of_argument(node: tt.InitNode | tt.RemoteNode, witness_account: list) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_witness(witness_account)
