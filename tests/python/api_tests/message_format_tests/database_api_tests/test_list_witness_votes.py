@@ -5,7 +5,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_witness_votes(node, should_prepare):
+def test_list_witness_votes(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account("alice", vests=tt.Asset.Test(100))
@@ -19,5 +19,5 @@ def test_list_witness_votes(node, should_prepare):
             {"account_creation_fee": tt.Asset.Test(28), "maximum_block_size": 131072, "hbd_interest_rate": 1000},
         )
         wallet.api.vote_for_witness("bob", "alice", True)
-    votes = node.api.database.list_witness_votes(start=["", ""], limit=100, order="by_witness_account")["votes"]
+    votes = node.api.database.list_witness_votes(start=["", ""], limit=100, order="by_witness_account").votes
     assert len(votes) != 0
