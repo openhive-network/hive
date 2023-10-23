@@ -13,7 +13,7 @@ from hive_local_tools.functional.python.recovery import get_authority, get_owner
 
 
 @run_for("testnet")
-def test_request_account_recovery(node):
+def test_request_account_recovery(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -21,11 +21,11 @@ def test_request_account_recovery(node):
     new_authority = get_authority(new_key)
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
 
-    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 1
 
 
 @run_for("testnet")
-def test_account_recovery_request_expiration(node):
+def test_account_recovery_request_expiration(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -35,11 +35,11 @@ def test_account_recovery_request_expiration(node):
 
     node.wait_number_of_blocks(ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD)
 
-    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"])["requests"]) == 0
+    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 0
 
 
 @run_for("testnet")
-def test_remove_account_recovery_request(node):
+def test_remove_account_recovery_request(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -53,11 +53,11 @@ def test_remove_account_recovery_request(node):
     authority["weight_threshold"] = 0
 
     wallet.api.request_account_recovery("initminer", "alice", authority)
-    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"])["requests"]) == 0
+    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 0
 
 
 @run_for("testnet")
-def test_account_recovery_process(node):
+def test_account_recovery_process(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=100)
 
@@ -80,7 +80,7 @@ def test_account_recovery_process(node):
 
 
 @run_for("testnet")
-def test_recovery_account_process_without_changing_owner_key(node):
+def test_recovery_account_process_without_changing_owner_key(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -92,16 +92,16 @@ def test_recovery_account_process_without_changing_owner_key(node):
     wallet.api.import_key(tt.PrivateKey("alice", secret="new_key"))
 
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
-    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 1
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.recover_account("alice", primary_authority, new_authority)
 
-    assert "Recent authority not found in authority history." in exception.value.response["error"]["message"]
+    assert "Recent authority not found in authority history." in exception.value.error
 
 
 @run_for("testnet")
-def test_confirm_account_recovery_without_account_recovery_request(node):
+def test_confirm_account_recovery_without_account_recovery_request(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -115,11 +115,11 @@ def test_confirm_account_recovery_without_account_recovery_request(node):
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.recover_account("alice", primary_authority, new_authority)
 
-    assert "There are no active recovery requests for this account." in exception.value.response["error"]["message"]
+    assert "There are no active recovery requests for this account." in exception.value.error
 
 
 @run_for("testnet")
-def test_account_recovery_process_with_mismatched_key(node):
+def test_account_recovery_process_with_mismatched_key(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=100)
 
@@ -143,12 +143,12 @@ def test_account_recovery_process_with_mismatched_key(node):
         # The key does not match the key provided in the recovery request
         wallet.api.recover_account("alice", primary_authority, random_authority)
 
-    assert "New owner authority does not match recovery request." in exception.value.response["error"]["message"]
+    assert "New owner authority does not match recovery request." in exception.value.error
 
 
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/506")
 @run_for("testnet")
-def test_account_recovery_process_with_most_trust_witness_as_recovery_agent(node):
+def test_account_recovery_process_with_most_trust_witness_as_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", creator="temp", vests=tt.Asset.Test(10))
     assert get_recovery_agent(node, account_name="alice") == ""
@@ -164,7 +164,7 @@ def test_account_recovery_process_with_most_trust_witness_as_recovery_agent(node
     wallet.api.update_account_auth_key("alice", "owner", tt.PublicKey("alice", secret="thief_key"), 3)
 
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
-    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 1
 
     # alice confirms the request made by her agent
     wallet.api.recover_account("alice", primary_authority, new_authority)
@@ -172,7 +172,7 @@ def test_account_recovery_process_with_most_trust_witness_as_recovery_agent(node
 
 
 @run_for("testnet")
-def test_create_account_recovery_request_from_random_account_as_recovery_agent(node):
+def test_create_account_recovery_request_from_random_account_as_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
     wallet.create_account("random-account")
@@ -184,14 +184,11 @@ def test_create_account_recovery_request_from_random_account_as_recovery_agent(n
         # alice confirms the request made by random account
         wallet.api.request_account_recovery("random-account", "alice", authority)
 
-    assert (
-        "Cannot recover an account that does not have you as their recovery partner."
-        in exception.value.response["error"]["message"]
-    )
+    assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
 
 
 @run_for("testnet")
-def test_create_recovery_account_request_from_future_recovery_agent(node):
+def test_create_recovery_account_request_from_future_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(100))
     wallet.create_account("future-agent")
@@ -203,14 +200,13 @@ def test_create_recovery_account_request_from_future_recovery_agent(node):
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.request_account_recovery("future-agent", "alice", new_authority)
 
-    assert (
-        "Cannot recover an account that does not have you as their recovery partner."
-        in exception.value.response["error"]["message"]
-    )
+    assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
 
 
 @run_for("testnet")
-def test_recover_account_using_current_agent_while_waiting_for_the_approval_of_the_new_recovery_agent(node):
+def test_recover_account_using_current_agent_while_waiting_for_the_approval_of_the_new_recovery_agent(
+    node: tt.InitNode,
+) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(100))
 
@@ -230,13 +226,13 @@ def test_recover_account_using_current_agent_while_waiting_for_the_approval_of_t
     new_authority = get_authority(new_key)
 
     wallet.api.request_account_recovery("initminer", "alice", new_authority)
-    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 1
 
     wallet.api.recover_account("alice", alice_original_authority, new_authority)
 
 
 @run_for("testnet")
-def test_try_to_confirm_account_recovery_request_with_expired_key(node):
+def test_try_to_confirm_account_recovery_request_with_expired_key(node: tt.InitNode) -> None:
     """
     Timeline:
                                       The time during which the original key works
@@ -269,11 +265,11 @@ def test_try_to_confirm_account_recovery_request_with_expired_key(node):
         # alice confirms the request made by her agent
         wallet.api.recover_account("alice", alice_original_authority, new_authority)
 
-    assert "Recent authority not found in authority history." in exception.value.response["error"]["message"]
+    assert "Recent authority not found in authority history." in exception.value.error
 
 
 @run_for("testnet")
-def test_use_account_recovery_system_twice(node):
+def test_use_account_recovery_system_twice(node: tt.InitNode) -> None:
     """
     Timeline:                               0    minimum time to reconfirm recovery account    6s
                                             │‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾│
@@ -314,7 +310,7 @@ def test_use_account_recovery_system_twice(node):
 
 
 @run_for("testnet")
-def test_use_account_recovery_system_twice_within_a_short_period_of_time(node):
+def test_use_account_recovery_system_twice_within_a_short_period_of_time(node: tt.InitNode) -> None:
     """
     Timeline:                               0    minimum time to reconfirm recovery account    6s
                                             │‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾│
