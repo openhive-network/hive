@@ -572,14 +572,14 @@ hive::app::stringset run_all_visitor_overloads(Collector& k)
         variant.visit( get_static_variant_name_with_prefix( operation_name ) );
         string_variant_map[operation_name] = variant;
     }
-    
+
     k.used_operations.clear();
     //collect all type strings
     for(const auto& [s, _]: string_variant_map)
     {
       k.used_operations.insert(s);
     }
-    
+
     //call all overloads by visiting - inside overload remove unused type strings with exclude_from_used_operations
     for(const auto& [_, variant_instance]: string_variant_map)
     {
@@ -807,7 +807,7 @@ struct impacted_balance_collector
   {
     emplace_back(o.seller, o.amount_back);
   }
-  
+
   void operator()(const claim_reward_balance_operation& o)
   {
     emplace_back(o.account, o.reward_hive);
@@ -895,7 +895,7 @@ struct impacted_balance_collector
   }
 
   template <typename T>
-  void operator()(const T& op) 
+  void operator()(const T& op)
   {
     exclude_from_used_operations<T>(used_operations);
   }
@@ -917,7 +917,7 @@ struct keyauth_collector
   typedef void result_type;
 
 private:
-  
+
   auto get_keys(const authority& _authority)
   {
     return _authority.get_keys();
@@ -929,7 +929,7 @@ private:
       return _authority->get_keys();
     return std::vector<public_key_type>();
   }
-  
+
   auto get_accounts(const authority& _authority)
   {
     return _authority.get_accounts();
@@ -956,7 +956,7 @@ private:
     return "";
   }
 
-  template<typename T, typename AT> 
+  template<typename T, typename AT>
   void collect_one(
     const T& _op,
     const AT& _authority,
@@ -1014,7 +1014,7 @@ private:
     collect_one(op, op.posting, hive::app::key_t::POSTING, op.new_account_name);
     collect_memo(op, op.new_account_name);
   }
-  
+
   result_type operator()( const account_update_operation& op )
   {
     collect_one(op, op.owner,  hive::app::key_t::OWNER,  op.account);
@@ -1022,7 +1022,7 @@ private:
     collect_one(op, op.posting,hive::app::key_t::POSTING, op.account);
     collect_memo(op, op.account);
   }
-  
+
   result_type operator()( const account_update2_operation& op )
   {
     collect_one(op, op.owner,  hive::app::key_t::OWNER,  op.account);
@@ -1030,7 +1030,7 @@ private:
     collect_one(op, op.posting,hive::app::key_t::POSTING, op.account);
     collect_memo(op, op.account);
   }
-  
+
   result_type operator()( const create_claimed_account_operation& op )
   {
     collect_one(op, op.owner,  hive::app::key_t::OWNER,  op.new_account_name);
@@ -1044,11 +1044,11 @@ private:
     collect_one(op, op.new_owner_authority, hive::app::key_t::OWNER, op.account_to_recover);
   }
 
-  result_type operator()( const reset_account_operation& op) 
+  result_type operator()( const reset_account_operation& op)
   {
     collect_one(op, op.new_owner_authority, hive::app::key_t::OWNER, op.account_to_reset);
   }
-  
+
   result_type operator()( const witness_set_properties_operation& op )
   {
     vector< authority > authorities;
@@ -1060,7 +1060,7 @@ private:
   }
 
   template <typename T>
-  void operator()(const T& op) 
+  void operator()(const T& op)
   {
     exclude_from_used_operations<T>(used_operations);
   }
@@ -1076,7 +1076,7 @@ struct metadata_collector
   bool has_metadata = false;  
 
   typedef void result_type;
-  
+
   public:
 
   void collect_one(
@@ -1106,7 +1106,7 @@ struct metadata_collector
   {
     collect_one(op.account, op.json_metadata, "");
   }
-  
+
   result_type operator()( const create_claimed_account_operation& op )
   {
     collect_one(op.new_account_name, op.json_metadata, "");
@@ -1116,14 +1116,14 @@ struct metadata_collector
   {
     collect_one(op.new_account_name, op.json_metadata, "");
   }
-  
+
   result_type operator()( const account_update2_operation& op )
   {
     collect_one(op.account, op.json_metadata, op.posting_json_metadata);
   }
 
   template <typename T>
-  void operator()(const T& op) 
+  void operator()(const T& op)
   {
     exclude_from_used_operations<T>(used_operations);
   }
@@ -1139,7 +1139,7 @@ impacted_balance_data operation_get_impacted_balances(const hive::protocol::oper
   impacted_balance_collector collector(is_hardfork_1);
 
   op.visit(collector);
-  
+
   return std::move(collector.result);
 }
 
@@ -1157,7 +1157,7 @@ collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::oper
   keyauth_collector collector;
 
   op.visit(collector);
-  
+
   return std::move(collector.collected_keyauths);
 }
 
@@ -1180,7 +1180,7 @@ collected_metadata_collection_t operation_get_metadata(const hive::protocol::ope
   metadata_collector collector;
 
   op.visit(collector);
-  
+
   return std::move(collector.collected_metadata);
 }
 
