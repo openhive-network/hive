@@ -39,7 +39,13 @@ CORRECT_VALUES = [
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_account_history_with_correct_value(node, account, from_, limit, should_prepare):
+def test_get_account_history_with_correct_value(
+    node: tt.InitNode | tt.RemoteNode,
+    account: bool | int | str,
+    from_: bool | int,
+    limit: bool | int,
+    should_prepare: bool,
+) -> None:
     if should_prepare:
         node.restart(time_offset="+0h x10")
         wallet = tt.Wallet(attach_to=node)
@@ -60,7 +66,9 @@ def test_get_account_history_with_correct_value(node, account, from_, limit, sho
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_account_history_with_incorrect_value(node, account, from_, limit):
+def test_get_account_history_with_incorrect_value(
+    node: tt.InitNode | tt.RemoteNode, account: bool | int | str, from_: bool | int, limit: bool | int
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_account_history(account, from_, limit)
 
@@ -80,7 +88,13 @@ def test_get_account_history_with_incorrect_value(node, account, from_, limit):
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_account_history_with_incorrect_type_of_argument(node, account, from_, limit, should_prepare):
+def test_get_account_history_with_incorrect_type_of_argument(
+    node: tt.InitNode | tt.RemoteNode,
+    account: str | list,
+    from_: int | list | str,
+    limit: int | str,
+    should_prepare: bool,
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))

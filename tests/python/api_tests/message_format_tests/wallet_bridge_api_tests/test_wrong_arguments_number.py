@@ -14,7 +14,7 @@ def get_commands(commands_with_arguments):
     return commands
 
 
-def is_mainnet_5m_node(node) -> bool:
+def is_mainnet_5m_node(node: tt.InitNode | tt.RemoteNode) -> bool:
     return bool(isinstance(node, tt.RemoteNode) and node.get_last_block_number() <= 5000000)
 
 
@@ -57,7 +57,9 @@ COMMANDS_WITH_CORRECT_ARGUMENTS = [
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_run_command_without_arguments_where_arguments_are_required(node, wallet_bridge_api_command):
+def test_run_command_without_arguments_where_arguments_are_required(
+    node: tt.InitNode | tt.RemoteNode, wallet_bridge_api_command: str
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
@@ -74,7 +76,9 @@ def test_run_command_without_arguments_where_arguments_are_required(node, wallet
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_run_command_with_additional_argument(node, should_prepare, wallet_bridge_api_command, arguments):
+def test_run_command_with_additional_argument(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, wallet_bridge_api_command: str, arguments: tuple
+) -> None:
     if is_mainnet_5m_node(node) and wallet_bridge_api_command == "get_reward_fund":
         with pytest.raises(tt.exceptions.CommunicationError):
             getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, "additional_string_argument")
@@ -95,6 +99,8 @@ def test_run_command_with_additional_argument(node, should_prepare, wallet_bridg
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_run_command_with_missing_argument(node, wallet_bridge_api_command, arguments):
+def test_run_command_with_missing_argument(
+    node: tt.InitNode | tt.RemoteNode, wallet_bridge_api_command: str, arguments: tuple
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments[:-1])
