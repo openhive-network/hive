@@ -20,7 +20,7 @@ def test_getters(node, wallet):
     _ops = _trx["operations"]
 
     _value = _ops[0][1]
-    assert _value["amount"] == tt.Asset.Test(500)
+    assert tt.Asset.from_legacy(_value["amount"]) == tt.Asset.Test(500)
 
     _encrypted = wallet.api.get_encrypted_memo("alice", "initminer", "#this is memo")
 
@@ -29,8 +29,8 @@ def test_getters(node, wallet):
     response = wallet.api.get_feed_history()
 
     _current_median_history = response["current_median_history"]
-    assert _current_median_history["base"] == tt.Asset.Tbd(0.001)
-    assert _current_median_history["quote"] == tt.Asset.Test(0.001)
+    assert tt.Asset.from_legacy(_current_median_history["base"]) == tt.Asset.Tbd(0.001)
+    assert tt.Asset.from_legacy(_current_median_history["quote"]) == tt.Asset.Test(0.001)
 
     with wallet.in_single_transaction() as transaction:
         wallet.api.create_account("initminer", "bob", "{}")
@@ -54,7 +54,7 @@ def test_getters(node, wallet):
     response = wallet.api.get_prototype_operation("transfer_operation")
 
     _value = response[1]
-    assert _value["amount"] == tt.Asset.Test(0)
+    assert tt.Asset.from_legacy(_value["amount"]) == tt.Asset.Test(0)
 
     response = wallet.api.get_transaction(transaction_id)
 
@@ -62,4 +62,4 @@ def test_getters(node, wallet):
     assert _ops[0][0] == "account_create"
 
     assert "fee" in _ops[0][1]
-    assert _ops[0][1]["fee"] == tt.Asset.Test(0)
+    assert tt.Asset.from_legacy(_ops[0][1]["fee"]) == tt.Asset.Test(0)

@@ -31,5 +31,4 @@ def test_creation_of_account_with_invalid_name(wallet, account_name, expected_er
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.create_account("initminer", account_name, "{}")
 
-    error_message = exception.value.response["error"]["message"]
-    assert expected_error_message in error_message
+    assert expected_error_message in exception.value.error
