@@ -9,7 +9,7 @@
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/compound.hpp>
 #include <hive/chain/custom_operation_interpreter.hpp>
-#include <hive/chain/full_database.hpp>
+#include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/evaluator_registry.hpp>
@@ -171,18 +171,17 @@ void database::state_independent_open( const open_args& args )
   initialize_state_independent_data(args);
 }
 
-void database::state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function)
+void database::state_dependent_open( const open_args& args )
 {
-  load_state_initial_data(args, get_block_by_num_function);
+  load_state_initial_data(args, {});
 }
 
-void database::open( const open_args& args)
+void database::open( const open_args& args )
 {
   try
   {
     state_independent_open(args);
-    state_dependent_open(args, {});
-
+    state_dependent_open(args);
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
@@ -329,8 +328,9 @@ void database::close(bool rewind)
 {
   try
   {
-   close_chainbase(rewind);
-   close_forkbase(rewind);
+    close_chainbase(rewind);
+    close_forkbase(rewind);
+    ilog( "Database is closed" );
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -4584,7 +4584,6 @@ boost::signals2::connection database::add_switch_fork_handler( const switch_fork
   return connect_impl<false>(_switch_fork_signal, func, plugin, group, "switch_fork");
 }
 
-
 boost::signals2::connection database::add_finish_push_block_handler( const push_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
@@ -4967,7 +4966,6 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
   return old_last_irreversible;
 } FC_CAPTURE_AND_RETHROW() }
 
-
 void database::migrate_irreversible_state_perform(uint32_t old_last_irreversible)
 {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
@@ -4988,7 +4986,6 @@ void database::migrate_irreversible_state_perform(uint32_t old_last_irreversible
       notify_irreversible_block(i);
   }
 }
-
 
 void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 {

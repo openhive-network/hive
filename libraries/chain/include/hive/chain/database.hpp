@@ -195,26 +195,24 @@ namespace chain {
         */
       void open( const open_args& args );
 
-    private:      
-      void state_independent_open( const open_args& args);
+    private:
+      void state_independent_open( const open_args& args );
 
     public: 
       /**
-         * @brief Opens a state with a block provided externally
-         *
-         * In derived classes, this function provides an interface to supply a block from the outside 
-         * (e.g., from an external system). Essential for initiating the fork database 
-         * when specific block data needs to be provided. This function is public because it is 
-         * used by the load snapshot plugin to inject block data. Takes part in normal open process.
-         *
-         * @param args Arguments required for the open operation
-         * @param get_block_by_num_function A function type to fetch the block by its number
-         */
-      virtual void state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function );
+        * @brief Opens a state with a block provided externally
+        *
+        * In derived classes, this function provides an interface to supply a block from the outside 
+        * (e.g., from an external system). Essential for initiating the fork database 
+        * when specific block data needs to be provided. This function is public because it is 
+        * used by the load snapshot plugin to inject block data. Takes part in normal open process.
+        */
+      virtual void state_dependent_open( const open_args& args );
 
     private:
 
       void remove_expired_governance_votes();
+
       //Remove proposal votes for accounts that declined voting rights during HF28.
       void remove_proposal_votes_for_accounts_without_voting_rights();
 
@@ -245,9 +243,6 @@ namespace chain {
       bool                       is_known_transaction( const transaction_id_type& id )const;
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
-    public:
-
-
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
@@ -709,6 +704,7 @@ namespace chain {
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
       void migrate_irreversible_state(uint32_t old_last_irreversible);
+
     protected:
       /**
        * @brief Handle the proper execution of the irreversible state migration.
@@ -720,7 +716,8 @@ namespace chain {
        *
        * @param old_last_irreversible Represents the previous irreversible point before migration.
        */
-      virtual void migrate_irreversible_state_perform(uint32_t old_last_irreversible); 
+      virtual void migrate_irreversible_state_perform(uint32_t old_last_irreversible);
+
     private:
       void clear_expired_transactions();
       void clear_expired_orders();
@@ -955,8 +952,6 @@ namespace chain {
       }
   };
 
-
-  
   struct reindex_notification
   {
     reindex_notification( const open_args& a ) : args( a ) {}
