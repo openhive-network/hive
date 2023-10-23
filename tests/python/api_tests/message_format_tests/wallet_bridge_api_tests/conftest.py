@@ -10,5 +10,5 @@ def pytest_configure(config):
 
 
 @pytest.fixture()
-def wallet(node):
+def wallet(node: tt.InitNode) -> tt.Wallet:
     return tt.Wallet(attach_to=node)

@@ -32,7 +32,9 @@ CORRECT_VALUES = [
     ],
 )
 @run_for("testnet", "live_mainnet")
-def test_list_rc_accounts_with_correct_values(node, should_prepare, rc_account, limit):
+def test_list_rc_accounts_with_correct_values(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, rc_account: bool | int | str, limit: bool | int | str
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account("true")
@@ -55,7 +57,9 @@ def test_list_rc_accounts_with_correct_values(node, should_prepare, rc_account, 
     ],
 )
 @run_for("mainnet_5m")
-def test_list_rc_account_with_correct_values_in_mainnet_5m(node, rc_account, limit):
+def test_list_rc_account_with_correct_values_in_mainnet_5m(
+    node: tt.RemoteNode, rc_account: bool | int | str, limit: bool | int | str
+) -> None:
     # rc service wasn't available until the HF20. The expected response for 5 million block node is always an empty list
     rc_accounts = node.api.wallet_bridge.list_rc_accounts(rc_account, limit)
     assert rc_accounts == []
@@ -71,7 +75,9 @@ def test_list_rc_account_with_correct_values_in_mainnet_5m(node, rc_account, lim
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_rc_accounts_with_incorrect_values(node, should_prepare, rc_account, limit):
+def test_list_rc_accounts_with_incorrect_values(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, rc_account: str, limit: int
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
@@ -92,7 +98,9 @@ def test_list_rc_accounts_with_incorrect_values(node, should_prepare, rc_account
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_rc_accounts_with_incorrect_type_of_arguments(node, should_prepare, rc_account, limit):
+def test_list_rc_accounts_with_incorrect_type_of_arguments(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, rc_account: list | str, limit: list | int | str
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))

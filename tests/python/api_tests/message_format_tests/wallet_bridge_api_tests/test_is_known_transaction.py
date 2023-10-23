@@ -8,7 +8,9 @@ from hive_local_tools.api.message_format.wallet_bridge_api import get_transactio
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_is_know_transaction_with_correct_value_and_existing_transaction(node, should_prepare):
+def test_is_know_transaction_with_correct_value_and_existing_transaction(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.api.create_account("initminer", "alice", "{}")
@@ -30,7 +32,9 @@ def test_is_know_transaction_with_correct_value_and_existing_transaction(node, s
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_is_know_transaction_with_correct_value_and_non_existing_transaction(node, transaction_id):
+def test_is_know_transaction_with_correct_value_and_non_existing_transaction(
+    node: tt.InitNode | tt.RemoteNode, transaction_id: int | str
+) -> None:
     node.api.wallet_bridge.is_known_transaction(transaction_id)
 
 
@@ -45,6 +49,8 @@ def test_is_know_transaction_with_correct_value_and_non_existing_transaction(nod
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_is_know_transaction_with_incorrect_type_of_argument(node, transaction_id):
+def test_is_know_transaction_with_incorrect_type_of_argument(
+    node: tt.InitNode | tt.RemoteNode, transaction_id: bool | list | str
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.is_known_transaction(transaction_id)

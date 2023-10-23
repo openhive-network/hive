@@ -30,7 +30,9 @@ CORRECT_VALUES = [
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_accounts_with_correct_values(node, should_prepare, lowerbound_account, limit):
+def test_list_accounts_with_correct_values(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, lowerbound_account: bool | int | str, limit: int
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
@@ -47,7 +49,9 @@ def test_list_accounts_with_correct_values(node, should_prepare, lowerbound_acco
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_accounts_with_incorrect_values(node, should_prepare, lowerbound_account, limit):
+def test_list_accounts_with_incorrect_values(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, lowerbound_account: str, limit: int
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
@@ -67,6 +71,8 @@ def test_list_accounts_with_incorrect_values(node, should_prepare, lowerbound_ac
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_accounts_with_incorrect_type_of_argument(node, lowerbound_account, limit):
+def test_list_accounts_with_incorrect_type_of_argument(
+    node: tt.InitNode | tt.RemoteNode, lowerbound_account: list | str, limit: list | int | str
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_accounts(lowerbound_account, limit)
