@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from hive_local_tools import run_for
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 METHODS_WITH_CORRECT_ARGUMENTS = [
     ["find_account_recovery_requests", {"accounts": ["hive.fund", "initminer", "miners", "null", "steem.dao", "temp"]}],
@@ -144,5 +149,7 @@ METHODS_WITH_CORRECT_ARGUMENTS = [
 
 @pytest.mark.parametrize(("api_database_method", "arguments"), METHODS_WITH_CORRECT_ARGUMENTS)
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_run_method_with_additional_argument(node, api_database_method, arguments):
+def test_run_method_with_additional_argument(
+    node: tt.InitNode | tt.RemoteNode, api_database_method: str, arguments: dict
+) -> None:
     getattr(node.api.database, api_database_method)(**arguments, additional_argument="Additional value")
