@@ -8,7 +8,7 @@ from hive_local_tools.api.message_format import create_proposal
 # This test is not performed on 5 million blocklog because proposals feature was introduced after block with number
 # 5000000. See the readme.md file in this directory for further explanation.
 @run_for("testnet", "live_mainnet")
-def test_list_proposals(node, should_prepare):
+def test_list_proposals(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     preparation_for_testnet_node(node, should_prepare)
 
     proposals = node.api.condenser.list_proposals(["alice"], 100, "by_creator", "ascending", "all", 0)
@@ -16,7 +16,7 @@ def test_list_proposals(node, should_prepare):
 
 
 @run_for("testnet", "live_mainnet")
-def test_list_proposals_with_default_sixth_argument(node, should_prepare):
+def test_list_proposals_with_default_sixth_argument(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     preparation_for_testnet_node(node, should_prepare)
 
     proposals = node.api.condenser.list_proposals(["alice"], 100, "by_creator", "ascending", "all")
@@ -24,7 +24,9 @@ def test_list_proposals_with_default_sixth_argument(node, should_prepare):
 
 
 @run_for("testnet", "live_mainnet")
-def test_list_proposals_with_default_fifth_and_sixth_argument(node, should_prepare):
+def test_list_proposals_with_default_fifth_and_sixth_argument(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool
+) -> None:
     preparation_for_testnet_node(node, should_prepare)
 
     proposals = node.api.condenser.list_proposals(["alice"], 100, "by_creator", "ascending")
@@ -32,14 +34,16 @@ def test_list_proposals_with_default_fifth_and_sixth_argument(node, should_prepa
 
 
 @run_for("testnet", "live_mainnet")
-def test_list_proposals_with_default_fourth_fifth_and_sixth_argument(node, should_prepare):
+def test_list_proposals_with_default_fourth_fifth_and_sixth_argument(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool
+) -> None:
     preparation_for_testnet_node(node, should_prepare)
 
     proposals = node.api.condenser.list_proposals(["alice"], 100, "by_creator")
     assert len(proposals) != 0
 
 
-def preparation_for_testnet_node(node, should_prepare):
+def preparation_for_testnet_node(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100), hbds=tt.Asset.Tbd(300))
