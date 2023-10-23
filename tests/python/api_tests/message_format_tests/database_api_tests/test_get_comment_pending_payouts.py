@@ -5,7 +5,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_comment_pending_payouts(node, should_prepare):
+def test_get_comment_pending_payouts(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account("herverisson", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
@@ -20,5 +20,5 @@ def test_get_comment_pending_payouts(node, should_prepare):
         )
     cashout_info = node.api.database.get_comment_pending_payouts(
         comments=[["herverisson", "homefront-a-one-act-play-last-part"]]
-    )["cashout_infos"]
+    ).cashout_infos
     assert len(cashout_info) != 0

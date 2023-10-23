@@ -9,7 +9,7 @@ from hive_local_tools.api.message_format.database_api import generate_sig_digest
 # private key of real account which signed transaction. This key is kept in secret and the only person that know it
 # is its owner.
 @run_for("testnet")
-def test_verify_signatures_in_testnet(node):
+def test_verify_signatures_in_testnet(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node, additional_arguments=["--transaction-serialization=hf26"])
     transaction = wallet.api.create_account("initminer", "alice", "{}")
     sig_digest = generate_sig_digest(transaction, tt.Account("initminer").private_key)
