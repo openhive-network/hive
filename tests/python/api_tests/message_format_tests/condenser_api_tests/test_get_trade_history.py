@@ -5,7 +5,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_trade_history(node, should_prepare):
+def test_get_trade_history(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     preparation_for_testnet_node(node, should_prepare)
 
     history = node.api.condenser.get_trade_history(tt.Time.from_now(weeks=-480), tt.Time.now(), 10)
@@ -13,14 +13,14 @@ def test_get_trade_history(node, should_prepare):
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_trade_history_with_default_third_argument(node, should_prepare):
+def test_get_trade_history_with_default_third_argument(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     preparation_for_testnet_node(node, should_prepare)
 
     history = node.api.condenser.get_trade_history(tt.Time.from_now(weeks=-480), tt.Time.now())
     assert len(history) != 0
 
 
-def preparation_for_testnet_node(node, should_prepare):
+def preparation_for_testnet_node(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
