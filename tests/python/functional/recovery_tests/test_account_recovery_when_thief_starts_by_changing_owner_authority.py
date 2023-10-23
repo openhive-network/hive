@@ -7,7 +7,7 @@ from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 from hive_local_tools.functional.python.recovery import get_authority, get_owner_key, get_recovery_agent
 
 
-def test_steal_account_scenario_0(prepare_environment):
+def test_steal_account_scenario_0(prepare_environment: tuple) -> None:
     """
     Timeline:
         0d                                 15d                                 30d                              45d
@@ -62,13 +62,13 @@ def test_steal_account_scenario_0(prepare_environment):
     wallet_thief.api.import_key(tt.Account("thief", secret="it_is_thief").private_key)
     thief_authority = get_authority(thief_key)
     wallet_thief.api.request_account_recovery("thief", "alice", thief_authority)
-    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 1
 
     wallet_thief.api.recover_account("alice", thief_owner_authority_to_alice_account, thief_authority)
     assert get_owner_key(node, "alice") == thief_key
 
 
-def test_steal_account_scenario_1(prepare_environment):
+def test_steal_account_scenario_1(prepare_environment: tuple) -> None:
     """
     Timeline:
         0d                                 15d                                 30d                              45d
@@ -114,18 +114,15 @@ def test_steal_account_scenario_1(prepare_environment):
 
     # alice cancel change recovery agent request
     wallet_alice.api.change_recovery_account("alice", "alice.agent")
-    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"])["requests"]) == 0
+    assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 0
     assert get_recovery_agent(node, "alice") == "alice.agent"
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_thief.api.request_account_recovery("thief", "alice", get_authority(tt.Account("thief").public_key))
-    assert (
-        "Cannot recover an account that does not have you as their recovery partner."
-        in exception.value.response["error"]["message"]
-    )
+    assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
 
 
-def test_steal_account_scenario_2(prepare_environment):
+def test_steal_account_scenario_2(prepare_environment: tuple) -> None:
     """
     Timeline:
         0d                                 15d                                 30d                              45d
@@ -169,4 +166,4 @@ def test_steal_account_scenario_2(prepare_environment):
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet_alice.api.recover_account("alice", alice_original_authority, alice_new_authority)
-    assert "Recent authority not found in authority history." in exception.value.response["error"]["message"]
+    assert "Recent authority not found in authority history." in exception.value.error
