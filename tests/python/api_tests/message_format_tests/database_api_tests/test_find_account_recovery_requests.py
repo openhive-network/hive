@@ -10,9 +10,9 @@ from hive_local_tools.api.message_format import request_account_recovery
 
 
 @run_for("testnet")
-def test_find_account_recovery_requests(node):
+def test_find_account_recovery_requests(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.api.create_account("initminer", "alice", "{}")
     request_account_recovery(wallet, "alice")
-    requests = node.api.database.find_account_recovery_requests(accounts=["alice"])["requests"]
+    requests = node.api.database.find_account_recovery_requests(accounts=["alice"]).requests
     assert len(requests) != 0
