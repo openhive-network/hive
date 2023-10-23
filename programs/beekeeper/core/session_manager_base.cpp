@@ -1,4 +1,6 @@
 #include <core/session_manager_base.hpp>
+#include <core/beekeeper_instance_base.hpp>
+
 #include <core/time_manager_base.hpp>
 
 #include <core/token_generator.hpp>
@@ -23,9 +25,12 @@ std::shared_ptr<session_base> session_manager_base::create_session( const std::s
   return std::make_shared<session_base>( token, time );
 }
 
-std::string session_manager_base::create_session( const std::string& salt, const std::string& notifications_endpoint, const boost::filesystem::path& directory, const std::string& extension )
+std::string session_manager_base::create_session( const std::string& salt, const std::string& notifications_endpoint, const beekeeper_instance_base& bk_instance )
 {
   auto _token = token_generator::generate_token( salt, token_length );
+
+  const boost::filesystem::path& directory = bk_instance.get_wallet_directory();
+  const std::string& extension = bk_instance.get_extension();
 
   std::shared_ptr<session_base> _session = create_session( notifications_endpoint, _token, time );
   sessions.emplace( _token, _session );
@@ -41,11 +46,11 @@ std::string session_manager_base::create_session( const std::string& salt, const
 
                 _wallet_mgr->lock_all();
               },
-              [notifications_endpoint, _session, directory, extension]()
+              [&bk_instance, notifications_endpoint, _session, directory, extension]()
               {
                 FC_ASSERT( _session, "notification: session is empty." );
 
-                _session->prepare_notifications( directory, extension );
+                _session->prepare_notifications( bk_instance, directory, extension );
               }
               );
 
