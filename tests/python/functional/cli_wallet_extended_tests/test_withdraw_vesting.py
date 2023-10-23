@@ -7,7 +7,7 @@ from .utilities import create_accounts
 
 def test_withdraw_vesting(wallet):
     def check_withdraw_data(node, vesting_withdraw_rate, to_withdraw):
-        assert node["vesting_withdraw_rate"] == vesting_withdraw_rate
+        assert tt.Asset.from_legacy(node["vesting_withdraw_rate"]) == vesting_withdraw_rate
         assert node["to_withdraw"] == to_withdraw
 
     def check_route_data(node):
