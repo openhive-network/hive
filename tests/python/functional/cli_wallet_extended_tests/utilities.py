@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import test_tools as tt
+
 
 def check_sell_price(node, base, quote):
     assert "sell_price" in node
     _sell_price = node["sell_price"]
 
     assert "base" in _sell_price
-    assert _sell_price["base"] == base
+    assert tt.Asset.from_legacy(_sell_price["base"]) == base
 
     assert "quote" in _sell_price
-    assert _sell_price["quote"] == quote
+    assert tt.Asset.from_legacy(_sell_price["quote"]) == quote
 
 
 def check_recurrent_transfer_data(node):
@@ -21,7 +23,7 @@ def check_recurrent_transfer_data(node):
 def check_recurrent_transfer(node, _from, to, amount, memo, recurrence, executions_key, executions_number, pair_id):
     assert node["from"] == _from
     assert node["to"] == to
-    assert node["amount"] == amount
+    assert tt.Asset.from_legacy(node["amount"]) == amount
     assert node["memo"] == memo
     assert node["recurrence"] == recurrence
     assert node[executions_key] == executions_number
@@ -40,10 +42,10 @@ def check_ask(node, base, quote):
     _order_price = node["order_price"]
 
     assert "base" in _order_price
-    assert _order_price["base"] == base
+    assert tt.Asset.from_legacy(_order_price["base"]) == base
 
     assert "quote" in _order_price
-    assert _order_price["quote"] == quote
+    assert tt.Asset.from_legacy(_order_price["quote"]) == quote
 
 
 def get_key(node_name, result):
