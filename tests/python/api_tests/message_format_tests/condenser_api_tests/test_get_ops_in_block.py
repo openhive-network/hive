@@ -29,7 +29,12 @@ UINT64_MAX = 2**64 - 1
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_ops_in_block(node, should_prepare, block_num, only_virtual):
+def test_get_ops_in_block(
+    node: tt.InitNode | tt.RemoteNode,
+    should_prepare: bool,
+    block_num: bool | int | None | str,
+    only_virtual: bool | int | None,
+) -> None:
     if should_prepare:
         node.wait_for_irreversible_block()
     node.api.condenser.get_ops_in_block(block_num, only_virtual)
@@ -53,23 +58,25 @@ def test_get_ops_in_block(node, should_prepare, block_num, only_virtual):
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_ops_in_block_with_incorrect_types_of_argument(node, block_num, only_virtual):
+def test_get_ops_in_block_with_incorrect_types_of_argument(
+    node: tt.InitNode | tt.RemoteNode, block_num: dict | int | str | tuple, only_virtual: dict | list | str | tuple
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.condenser.get_ops_in_block(block_num, only_virtual)
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_ops_in_block_with_additional_argument(node):
+def test_get_ops_in_block_with_additional_argument(node: tt.InitNode | tt.RemoteNode) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.condenser.get_ops_in_block(0, False, "additional_argument")
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_ops_in_block_without_arguments(node):
+def test_get_ops_in_block_without_arguments(node: tt.InitNode | tt.RemoteNode) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.condenser.get_ops_in_block()
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_ops_in_block_with_default_second_argument(node):
+def test_get_ops_in_block_with_default_second_argument(node: tt.InitNode | tt.RemoteNode) -> None:
     node.api.condenser.get_ops_in_block(1)

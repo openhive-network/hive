@@ -5,7 +5,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_owner_history(node, should_prepare):
+def test_get_owner_history(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         # abramov is a real user existing on a 5m node. For test standardization, it was also created in testnet.

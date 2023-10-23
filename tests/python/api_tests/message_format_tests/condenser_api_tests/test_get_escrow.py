@@ -6,7 +6,7 @@ from hive_local_tools.api.message_format import prepare_escrow
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_escrow(node, should_prepare):
+def test_get_escrow(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         prepare_escrow(wallet, sender="addicttolife")
