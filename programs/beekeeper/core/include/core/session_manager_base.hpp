@@ -6,6 +6,8 @@
 
 namespace beekeeper {
 
+class beekeeper_instance_base;
+
 class session_manager_base
 {
   private:
@@ -29,7 +31,7 @@ class session_manager_base
     session_manager_base();
     virtual ~session_manager_base(){}
 
-    std::string create_session( const std::string& salt, const std::string& notifications_endpoint, const boost::filesystem::path& directory, const std::string& extension );
+    std::string create_session( const std::string& salt, const std::string& notifications_endpoint, const beekeeper_instance_base& bk_instance);
     void close_session( const std::string& token );
     bool empty() const;
 

@@ -76,6 +76,8 @@ public:
   /// @return A list of wallet names with " *" appended if the wallet is unlocked.
   std::vector<wallet_details> list_wallets( const std::string& token );
 
+  std::vector<wallet_details> list_created_wallets(const std::string& token);
+
   /// @return A list of private keys from a wallet provided password is correct to said wallet
   map<public_key_type, private_key_type> list_keys( const std::string& token, const string& name, const string& pw );
 

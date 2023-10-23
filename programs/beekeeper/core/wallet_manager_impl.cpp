@@ -94,21 +94,22 @@ void wallet_manager_impl::close( const std::string& name )
   wallets.erase( name );
 }
 
-std::vector<wallet_details> wallet_manager_impl::list_wallets( const std::vector< std::string >& wallet_files )
+std::vector<wallet_details> wallet_manager_impl::list_wallets(wallet_filename_creator_type wallet_filename_creator,
+  const std::vector< std::string >& wallet_files )
 {
   std::vector<wallet_details> _result;
 
   for(const auto& wallet_file_name : wallet_files )
   {
-    auto it = wallets.find( wallet_file_name );
-    if( it == wallets.end() )
-    {
-      _result.emplace_back( wallet_details{ wallet_file_name, false } );
-    }
-    else
-    {
-      _result.emplace_back( wallet_details{ it->first, !it->second->is_locked() } );  
-    }
+    auto it = wallets.find(wallet_file_name);
+    /// For each not opened wallet perform implicit open - this is needed to correctly support a close method
+    if (it == wallets.end())
+      open(wallet_filename_creator, wallet_file_name);
+  }
+
+  for(const auto& w : wallets)
+  {
+    _result.emplace_back( wallet_details{ w.first, !w.second->is_locked() } );
   }
 
   return _result;

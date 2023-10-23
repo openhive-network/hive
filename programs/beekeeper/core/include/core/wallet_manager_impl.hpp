@@ -19,7 +19,7 @@ class wallet_manager_impl {
     std::string create( wallet_filename_creator_type wallet_filename_creator, const std::string& name, const std::optional<std::string>& password );
     void open( wallet_filename_creator_type wallet_filename_creator, const std::string& name );
     void close( const std::string& name );
-    std::vector<wallet_details> list_wallets( const std::vector< std::string >& wallet_files );
+    std::vector<wallet_details> list_wallets( wallet_filename_creator_type wallet_filename_creator, const std::vector< std::string >& wallet_files );
     map<public_key_type, private_key_type> list_keys( const string& name, const string& pw );
     flat_set<public_key_type> get_public_keys();
     void lock_all();

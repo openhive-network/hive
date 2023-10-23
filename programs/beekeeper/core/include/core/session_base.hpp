@@ -8,6 +8,8 @@
 
 namespace beekeeper {
 
+class beekeeper_instance_base;
+
 class session_base
 {
   private:
@@ -38,7 +40,7 @@ class session_base
 
     std::shared_ptr<wallet_manager_impl> get_wallet_manager();
 
-    virtual void prepare_notifications( const boost::filesystem::path& directory, const std::string& extension ){};
+    virtual void prepare_notifications( const beekeeper_instance_base& bk_instance, const boost::filesystem::path& directory, const std::string& extension ){};
 };
 
 } //beekeeper
