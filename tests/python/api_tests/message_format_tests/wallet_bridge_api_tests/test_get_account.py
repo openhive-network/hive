@@ -25,7 +25,9 @@ CORRECT_VALUES = [
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_account_with_correct_value(node, should_prepare, account):
+def test_get_account_with_correct_value(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, account: bool | int | str
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
@@ -34,6 +36,6 @@ def test_get_account_with_correct_value(node, should_prepare, account):
 
 @pytest.mark.parametrize("account", [["example_array"]])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_account_incorrect_type_of_argument(node, account):
+def test_get_account_incorrect_type_of_argument(node: tt.InitNode | tt.RemoteNode, account: list) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_account(account)

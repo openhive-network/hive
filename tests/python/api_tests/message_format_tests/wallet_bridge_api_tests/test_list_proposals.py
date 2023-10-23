@@ -71,7 +71,15 @@ CORRECT_VALUES = [
 )
 # proposals system was introduced after the 5 millionth block, it is only tested on live node and testnet node
 @run_for("testnet", "live_mainnet")
-def test_list_proposals_with_correct_values(node, should_prepare, start, limit, order_by, order_direction, status):
+def test_list_proposals_with_correct_values(
+    node: tt.InitNode | tt.RemoteNode,
+    should_prepare: bool,
+    start: list,
+    limit: bool | int | str,
+    order_by: int,
+    order_direction: bool | int,
+    status: bool | int,
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
@@ -120,7 +128,15 @@ def test_list_proposals_with_correct_values(node, should_prepare, start, limit, 
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_proposals_with_incorrect_values(node, should_prepare, start, limit, order_by, order_direction, status):
+def test_list_proposals_with_incorrect_values(
+    node: tt.InitNode | tt.RemoteNode,
+    should_prepare: bool,
+    start: list,
+    limit: str | int,
+    order_by: bool | int | str,
+    order_direction: int | str,
+    status: int | str,
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
@@ -150,6 +166,13 @@ def test_list_proposals_with_incorrect_values(node, should_prepare, start, limit
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def tests_list_proposals_with_incorrect_type_of_argument(node, start, limit, order_by, order_direction, status):
+def tests_list_proposals_with_incorrect_type_of_argument(
+    node: tt.InitNode | tt.RemoteNode,
+    start: bool | int | list | str,
+    limit: int | str,
+    order_by: int | str,
+    order_direction: int | str,
+    status: int | str,
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_proposals(start, limit, order_by, order_direction, status)
