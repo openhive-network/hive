@@ -232,7 +232,7 @@ namespace beekeeper {
   {
     auto _method = [&, this]()
     {
-      list_wallets_return _result = { _impl->app.get_wallet_manager()->list_wallets( token ) };
+      list_wallets_return _result = { _impl->app.get_wallet_manager()->list_created_wallets( token ) };
       return to_string( _result );
     };
     return exception_handler( _method );
