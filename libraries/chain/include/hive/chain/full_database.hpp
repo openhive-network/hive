@@ -53,7 +53,7 @@ namespace hive { namespace chain {
         * @return the last replayed block number.
         */
       uint32_t reindex( const open_args& args );
-      virtual void close_chainbase(bool rewind) override;
+      virtual void close(bool rewind = true) override;
 
       /**
         *  @return true if the block is in our fork DB or saved to disk as
