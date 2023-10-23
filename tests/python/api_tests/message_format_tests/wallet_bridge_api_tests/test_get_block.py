@@ -26,7 +26,9 @@ CORRECT_VALUES = [
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_block_with_correct_value(node, should_prepare, block_number):
+def test_get_block_with_correct_value(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, block_number: bool | int | str
+) -> None:
     if should_prepare and int(block_number) < 2:  # To get existing block for block ids: 0 and 1.
         node.wait_for_block_with_number(2)
 
@@ -40,13 +42,13 @@ def test_get_block_with_correct_value(node, should_prepare, block_number):
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_block_with_incorrect_value(node, block_number):
+def test_get_block_with_incorrect_value(node: tt.InitNode | tt.RemoteNode, block_number: int) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_block(block_number)
 
 
 @pytest.mark.parametrize("block_number", [[0], "incorrect_string_argument", "true"])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_block_with_incorrect_type_of_argument(node, block_number):
+def test_get_block_with_incorrect_type_of_argument(node: tt.InitNode | tt.RemoteNode, block_number: list | str) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_block(block_number)

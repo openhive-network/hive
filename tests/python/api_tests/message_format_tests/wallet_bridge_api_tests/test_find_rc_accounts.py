@@ -25,7 +25,9 @@ VALUES_THAT_TRIGGER_EMPTY_RESPONSES = [[""], ["non-exist-acc"], [100]]
     ],
 )
 @run_for("testnet", "live_mainnet")
-def test_find_rc_accounts_with_correct_value(node, should_prepare, rc_accounts):
+def test_find_rc_accounts_with_correct_value(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, rc_accounts: list
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account("true")
@@ -41,7 +43,9 @@ def test_find_rc_accounts_with_correct_value(node, should_prepare, rc_accounts):
     ],
 )
 @run_for("mainnet_5m")
-def test_find_rc_accounts_with_correct_values_and_existing_accounts_in_mainnet_5m(node, should_prepare, rc_accounts):
+def test_find_rc_accounts_with_correct_values_and_existing_accounts_in_mainnet_5m(
+    node: tt.RemoteNode, should_prepare: bool, rc_accounts: list
+) -> None:
     # rc service wasn't available until the HF20. The expected response for 5 million block node is always an empty list
     found_accounts = node.api.wallet_bridge.find_rc_accounts(rc_accounts)
     assert found_accounts == []
@@ -55,7 +59,9 @@ def test_find_rc_accounts_with_correct_values_and_existing_accounts_in_mainnet_5
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_find_rc_accounts_with_correct_values_and_non_existing_accounts(node, should_prepare, rc_accounts):
+def test_find_rc_accounts_with_correct_values_and_non_existing_accounts(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, rc_accounts: list
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
@@ -74,6 +80,8 @@ def test_find_rc_accounts_with_correct_values_and_non_existing_accounts(node, sh
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_find_rc_accounts_with_incorrect_type_of_argument(node, rc_accounts):
+def test_find_rc_accounts_with_incorrect_type_of_argument(
+    node: tt.InitNode | tt.RemoteNode, rc_accounts: bool | int | str
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_rc_accounts(rc_accounts)

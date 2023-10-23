@@ -32,7 +32,12 @@ CORRECT_VALUES = [
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_withdraw_routes_with_correct_value(node, should_prepare, account_name, withdraw_route_type):
+def test_get_withdraw_routes_with_correct_value(
+    node: tt.InitNode | tt.RemoteNode,
+    should_prepare: bool,
+    account_name: bool | int | str,
+    withdraw_route_type: bool | int | str,
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_="alice", to="bob")
@@ -52,7 +57,9 @@ def test_get_withdraw_routes_with_correct_value(node, should_prepare, account_na
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_withdraw_routes_with_incorrect_value(node, should_prepare, account_name, withdraw_route_type):
+def test_get_withdraw_routes_with_incorrect_value(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, account_name: str, withdraw_route_type: str
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_="alice", to="bob")
@@ -72,7 +79,12 @@ def test_get_withdraw_routes_with_incorrect_value(node, should_prepare, account_
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_withdraw_routes_with_incorrect_type_of_arguments(node, should_prepare, account_name, withdraw_route_type):
+def test_get_withdraw_routes_with_incorrect_type_of_arguments(
+    node: tt.InitNode | tt.RemoteNode,
+    should_prepare: bool,
+    account_name: list | str,
+    withdraw_route_type: int | list | str,
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_="alice", to="bob")
@@ -82,7 +94,7 @@ def test_get_withdraw_routes_with_incorrect_type_of_arguments(node, should_prepa
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_withdraw_routes_with_additional_argument(node, should_prepare):
+def test_get_withdraw_routes_with_additional_argument(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_="alice", to="bob")
@@ -91,7 +103,7 @@ def test_get_withdraw_routes_with_additional_argument(node, should_prepare):
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_withdraw_routes_with_missing_argument(node, should_prepare):
+def test_get_withdraw_routes_with_missing_argument(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_="alice", to="bob")
@@ -100,7 +112,7 @@ def test_get_withdraw_routes_with_missing_argument(node, should_prepare):
         node.api.wallet_bridge.get_withdraw_routes("alice")
 
 
-def create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_, to):
+def create_accounts_and_set_withdraw_vesting_route_between_them(wallet: tt.Wallet, from_: str, to: str) -> None:
     with wallet.in_single_transaction():
         wallet.api.create_account("initminer", from_, "{}")
         wallet.api.create_account("initminer", to, "{}")

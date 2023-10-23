@@ -15,7 +15,7 @@ INCORRECT_VALUES = [
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_conversion_requests_with_correct_value(node, should_prepare):
+def test_get_conversion_requests_with_correct_value(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_account_with_converted_hbd(wallet, account_name="alice")
@@ -31,14 +31,18 @@ def test_get_conversion_requests_with_correct_value(node, should_prepare):
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_conversion_requests_with_incorrect_value(node, account_name):
+def test_get_conversion_requests_with_incorrect_value(
+    node: tt.InitNode | tt.RemoteNode, account_name: int | list | str
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_conversion_requests(account_name)
 
 
 @pytest.mark.parametrize("account_name", [["alice"]])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_conversion_requests_with_incorrect_type_of_argument(node, should_prepare, account_name):
+def test_get_conversion_requests_with_incorrect_type_of_argument(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, account_name: list
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_account_with_converted_hbd(wallet, account_name="alice")
@@ -56,7 +60,7 @@ def test_get_conversion_requests_with_additional_argument(node, should_prepare):
     node.api.wallet_bridge.get_conversion_requests("alice", "additional_argument")  # BUG1
 
 
-def create_account_with_converted_hbd(wallet, account_name):
+def create_account_with_converted_hbd(wallet: tt.Wallet, account_name: str) -> str:
     wallet.api.create_account("initminer", account_name, "{}")
     wallet.api.transfer("initminer", account_name, tt.Asset.Test(100), "memo")
     wallet.api.transfer_to_vesting("initminer", account_name, tt.Asset.Test(100))

@@ -15,7 +15,9 @@ from hive_local_tools.api.message_format.wallet_bridge_api.constants import ACCO
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_my_accounts_with_correct_value(node, should_prepare, accounts):
+def test_list_my_accounts_with_correct_value(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, accounts: list
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
@@ -39,7 +41,9 @@ def test_list_my_accounts_with_correct_value(node, should_prepare, accounts):
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_my_accounts_with_incorrect_values(node, should_prepare, account_key):
+def test_list_my_accounts_with_incorrect_values(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, account_key: str
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
@@ -50,13 +54,15 @@ def test_list_my_accounts_with_incorrect_values(node, should_prepare, account_ke
 
 @pytest.mark.parametrize("account_key", [["example-array"], 100, True, "incorrect_string_argument"])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_my_accounts_with_incorrect_type_of_argument(node, account_key):
+def test_list_my_accounts_with_incorrect_type_of_argument(
+    node: tt.InitNode | tt.RemoteNode, account_key: bool | int | list | str
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_my_accounts([account_key])
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_my_accounts_with_additional_argument(node, should_prepare):
+def test_list_my_accounts_with_additional_argument(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
@@ -70,6 +76,6 @@ def test_list_my_accounts_with_additional_argument(node, should_prepare):
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_my_accounts_with_missing_argument(node):
+def test_list_my_accounts_with_missing_argument(node: tt.InitNode | tt.RemoteNode) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.list_my_accounts()

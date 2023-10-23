@@ -27,7 +27,9 @@ CORRECT_VALUES = [
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_ops_in_block_with_correct_value(node, should_prepare, block_number, virtual_operation):
+def test_get_ops_in_block_with_correct_value(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, block_number: bool | int, virtual_operation: bool | int
+) -> None:
     if should_prepare:
         node.wait_for_block_with_number(22)  # Waiting for next witness schedule
     node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
@@ -41,7 +43,9 @@ def test_get_ops_in_block_with_correct_value(node, should_prepare, block_number,
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_ops_in_block_with_incorrect_value(node, block_number, virtual_operation):
+def test_get_ops_in_block_with_incorrect_value(
+    node: tt.InitNode | tt.RemoteNode, block_number: int, virtual_operation: bool
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
 
@@ -58,6 +62,8 @@ def test_get_ops_in_block_with_incorrect_value(node, block_number, virtual_opera
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_ops_in_block_with_incorrect_type_of_arguments(node, block_number, virtual_operation):
+def test_get_ops_in_block_with_incorrect_type_of_arguments(
+    node: tt.InitNode | tt.RemoteNode, block_number: list | str, virtual_operation: bool | list | str
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_ops_in_block(block_number, virtual_operation)
