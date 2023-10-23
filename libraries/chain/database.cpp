@@ -9,7 +9,7 @@
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/compound.hpp>
 #include <hive/chain/custom_operation_interpreter.hpp>
-#include <hive/chain/database.hpp>
+#include <hive/chain/full_database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/evaluator_registry.hpp>
@@ -173,12 +173,6 @@ void database::state_independent_open( const open_args& args )
 void database::state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function)
 {
   load_state_initial_data(args, get_block_by_num_function);
-}
-
-void full_database::state_dependent_open( const open_args& args, get_block_by_num_function_type )
-{
-  open_block_log(args);
-  database::state_dependent_open(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
 }
 
 void database::open( const open_args& args)
@@ -4664,17 +4658,6 @@ boost::signals2::connection database::add_switch_fork_handler( const switch_fork
   return connect_impl<false>(_switch_fork_signal, func, plugin, group, "switch_fork");
 }
 
-boost::signals2::connection full_database::add_pre_reindex_handler(const reindex_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
-{
-  return connect_impl<true>(_pre_reindex_signal, func, plugin, group, "reindex");
-}
-
-boost::signals2::connection full_database::add_post_reindex_handler(const reindex_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
-{
-  return connect_impl<false>(_post_reindex_signal, func, plugin, group, "reindex");
-}
 
 boost::signals2::connection database::add_finish_push_block_handler( const push_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
