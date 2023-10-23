@@ -62,8 +62,4 @@ void transaction_get_impacted_accounts(
   fc::flat_set<protocol::account_name_type>& result
   );
 
-bool is_keyauths_operation( const protocol::operation& op );
-
-bool is_metadata_operation( const protocol::operation& op );
-
 } } // hive::app

@@ -907,12 +907,6 @@ struct impacted_balance_collector
 struct keyauth_collector
 {
   collected_keyauth_collection_t collected_keyauths;
-  /*
-   * Setting one boolean flag is faster than comparing whole operation names (with namespaces in `is_keyauths_operation`
-   * function using `get_operations_used_in_get_keyauths` function). Also we could use collected_keyauths.size(), but sometimes there are
-   * operations with optional authority, which are uninitialized
-   */
-  bool has_keyauth = false;
 
   typedef void result_type;
 
@@ -963,7 +957,6 @@ private:
     key_t _key_kind,
     std::string _account_name)
   {
-    has_keyauth = true;
     collected_keyauth_t collected_item;
     collected_item.account_name   = _account_name;
     collected_item.key_kind = _key_kind;
@@ -1072,8 +1065,6 @@ private:
 struct metadata_collector
 {
   collected_metadata_collection_t collected_metadata;
-  
-  bool has_metadata = false;  
 
   typedef void result_type;
 
@@ -1085,7 +1076,6 @@ struct metadata_collector
     std::string _posting_json_metadata
     )
   {
-    has_metadata = true;
     collected_metadata_t collected_item;
     collected_item.account_name   = _account_name;
     collected_item.json_metadata = _json_metadata;
@@ -1168,13 +1158,6 @@ stringset get_operations_used_in_get_keyauths()
   return used_operations;
 }
 
-bool is_keyauths_operation( const operation& op )
-{
-  keyauth_collector collector;
-  op.visit(collector);
-  return collector.has_keyauth;
-}
-
 collected_metadata_collection_t operation_get_metadata(const hive::protocol::operation& op)
 {
   metadata_collector collector;
@@ -1182,13 +1165,6 @@ collected_metadata_collection_t operation_get_metadata(const hive::protocol::ope
   op.visit(collector);
 
   return std::move(collector.collected_metadata);
-}
-
-bool is_metadata_operation( const operation& op )
-{
-  metadata_collector collector;
-  op.visit(collector);
-  return collector.has_metadata;
 }
 
 stringset get_operations_used_in_get_metadata()
