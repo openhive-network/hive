@@ -23,7 +23,9 @@ CORRECT_VALUES = [
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_order_book_with_correct_value_testnet(node, should_prepare, orders_limit):
+def test_get_order_book_with_correct_value_testnet(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, orders_limit: bool | int | str
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_account_and_create_order(wallet, account_name="alice")
@@ -38,13 +40,15 @@ def test_get_order_book_with_correct_value_testnet(node, should_prepare, orders_
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_order_book_with_incorrect_value(node, orders_limit):
+def test_get_order_book_with_incorrect_value(node: tt.InitNode | tt.RemoteNode, orders_limit: int) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_order_book(orders_limit)
 
 
 @pytest.mark.parametrize("orders_limit", [[1], "incorrect_string_argument", "true"])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_order_book_with_incorrect_type_of_argument(node, orders_limit):
+def test_get_order_book_with_incorrect_type_of_argument(
+    node: tt.InitNode | tt.RemoteNode, orders_limit: list | str
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.get_order_book(orders_limit)

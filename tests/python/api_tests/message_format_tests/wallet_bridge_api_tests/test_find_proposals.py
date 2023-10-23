@@ -26,7 +26,9 @@ CORRECT_VALUES = [
 )
 # proposals system was introduced after the 5 millionth block, it is only tested on  live node
 @run_for("testnet", "live_mainnet")
-def test_find_proposals_with_correct_values(node, proposal_ids, should_prepare):
+def test_find_proposals_with_correct_values(
+    node: tt.InitNode | tt.RemoteNode, proposal_ids: list, should_prepare: bool
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
@@ -42,7 +44,9 @@ def test_find_proposals_with_correct_values(node, proposal_ids, should_prepare):
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_find_proposals_with_incorrect_values(node, proposal_id, should_prepare):
+def test_find_proposals_with_incorrect_values(
+    node: tt.InitNode | tt.RemoteNode, proposal_id: list, should_prepare: bool
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
@@ -59,6 +63,8 @@ def test_find_proposals_with_incorrect_values(node, proposal_id, should_prepare)
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_find_proposals_with_incorrect_type_of_argument(node, proposal_id):
+def test_find_proposals_with_incorrect_type_of_argument(
+    node: tt.InitNode | tt.RemoteNode, proposal_id: list | str
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.wallet_bridge.find_proposals(proposal_id)
