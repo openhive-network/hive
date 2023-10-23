@@ -16,18 +16,18 @@ def test_transaction(wallet):
     _result_trx_response = transaction.get_response()
 
     _result = wallet.api.get_account("carol")
-    assert _result["balance"] == tt.Asset.Test(0)
-    assert _result["hbd_balance"] == tt.Asset.Tbd(0)
-    assert _result["vesting_shares"] == tt.Asset.Vest(0)
+    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(0)
+    assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(0)
+    assert tt.Asset.from_legacy(_result["vesting_shares"]) == tt.Asset.Vest(0)
 
     assert wallet.api.serialize_transaction(_result_trx_response) != "00000000000000000000000000"
 
     wallet.api.sign_transaction(_result_trx_response)
 
     _result = wallet.api.get_account("carol")
-    assert _result["balance"] == tt.Asset.Test(500)
-    assert _result["hbd_balance"] == tt.Asset.Tbd(50)
-    assert _result["vesting_shares"] != tt.Asset.Vest(0)
+    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(500)
+    assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(50)
+    assert tt.Asset.from_legacy(_result["vesting_shares"]) != tt.Asset.Vest(0)
 
     _time = datetime.datetime.utcnow()
     _before_seconds = (int)(_time.timestamp())
