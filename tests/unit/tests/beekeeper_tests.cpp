@@ -724,9 +724,12 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
     BOOST_TEST_MESSAGE( _wallets );
     {
       beekeeper::list_wallets_return _result = fc::json::from_string( _wallets ).as<beekeeper::list_wallets_return>();
-      BOOST_REQUIRE( _result.wallets.size() == 1 );
+      BOOST_REQUIRE( _result.wallets.size() == 2 ); /// Both wallets should be returned
       BOOST_REQUIRE( _result.wallets[0].name == "wallet_0" );
       BOOST_REQUIRE( _result.wallets[0].unlocked );
+      BOOST_REQUIRE( _result.wallets[1].name == "wallet_1" );
+      BOOST_REQUIRE( _result.wallets[1].unlocked == false );
+
     }
 
     _obj.unlock( _token, "wallet_1", _password_1 );
