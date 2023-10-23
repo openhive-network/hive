@@ -9,7 +9,7 @@ from hive_local_tools.functional.python.recovery import get_recovery_agent
 
 
 @run_for("testnet")
-def test_default_recovery_agent(node):
+def test_default_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice")
 
@@ -17,7 +17,7 @@ def test_default_recovery_agent(node):
 
 
 @run_for("testnet")
-def test_change_recovery_agent(node):
+def test_change_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
     wallet.create_account("bob")
@@ -29,7 +29,7 @@ def test_change_recovery_agent(node):
 
 
 @run_for("testnet")
-def test_resign_from_the_current_recovery_agent(node):
+def test_resign_from_the_current_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -38,22 +38,22 @@ def test_resign_from_the_current_recovery_agent(node):
 
 
 @run_for("testnet")
-def test_withdrawal_of_the_request_for_a_change_of_recovery_agent(node):
+def test_withdrawal_of_the_request_for_a_change_of_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(node)
     wallet.create_account("alice", vests=tt.Asset.Test(100))
     wallet.create_account("bob")
 
     wallet.api.change_recovery_account("alice", "bob")
-    assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"]).requests) == 1
 
     # to cancel change_recovery_agent_request set previous recovery agent
     wallet.api.change_recovery_account("alice", "initminer")
-    assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"])["requests"]) == 0
+    assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"]).requests) == 0
     assert get_recovery_agent(node, account_name="alice") == "initminer"
 
 
 @run_for("testnet")
-def test_set_own_account_as_recovery_agent(node):
+def test_set_own_account_as_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -64,7 +64,7 @@ def test_set_own_account_as_recovery_agent(node):
 
 
 @run_for("testnet")
-def test_set_null_account_as_recovery_agent(node):
+def test_set_null_account_as_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -75,7 +75,7 @@ def test_set_null_account_as_recovery_agent(node):
 
 
 @run_for("testnet")
-def test_set_temp_account_as_recovery_agent(node):
+def test_set_temp_account_as_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -86,7 +86,7 @@ def test_set_temp_account_as_recovery_agent(node):
 
 
 @run_for("testnet")
-def test_change_recovery_agent_to_non_existing_account(node):
+def test_change_recovery_agent_to_non_existing_account(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -96,7 +96,7 @@ def test_change_recovery_agent_to_non_existing_account(node):
 
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/466")
 @run_for("testnet")
-def test_change_recovery_agent_to_the_same_recovery_agent(node):
+def test_change_recovery_agent_to_the_same_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
@@ -107,7 +107,7 @@ def test_change_recovery_agent_to_the_same_recovery_agent(node):
 
 
 @run_for("testnet")
-def test_that_there_is_only_one_change_recovery_agent_request(node):
+def test_that_there_is_only_one_change_recovery_agent_request(node: tt.InitNode) -> None:
     wallet = tt.Wallet(node)
     wallet.create_account("alice", vests=tt.Asset.Test(100))
 
@@ -116,35 +116,35 @@ def test_that_there_is_only_one_change_recovery_agent_request(node):
     wallet.api.change_recovery_account("alice", "account-0")
     wallet.api.change_recovery_account("alice", "account-1")
     wallet.api.change_recovery_account("alice", "account-2")
-    assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"]).requests) == 1
 
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
     assert get_recovery_agent(node, account_name="alice") == "account-2"
-    assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"])["requests"]) == 0
+    assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"]).requests) == 0
 
 
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/466")
 @run_for("testnet")
-def test_change_recovery_agent_twice_while_the_request_is_in_progress(node):
+def test_change_recovery_agent_twice_while_the_request_is_in_progress(node: tt.InitNode) -> None:
     wallet = tt.Wallet(node)
     wallet.create_account("alice", vests=tt.Asset.Test(100))
     wallet.create_account("bob")
 
     wallet.api.change_recovery_account("alice", "bob")
-    first_request = node.api.database.find_change_recovery_account_requests(accounts=["alice"])["requests"]
+    first_request = node.api.database.find_change_recovery_account_requests(accounts=["alice"]).requests
 
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD // 2)
 
     wallet.api.change_recovery_account("alice", "bob")
-    second_request = node.api.database.find_change_recovery_account_requests(accounts=["alice"])["requests"]
+    second_request = node.api.database.find_change_recovery_account_requests(accounts=["alice"]).requests
 
-    assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_change_recovery_account_requests(accounts=["alice"]).requests) == 1
     assert first_request == second_request
 
 
 @pytest.mark.parametrize("authority", ["active", "posting"])
 @run_for("testnet")
-def test_change_recovery_agent_with_too_low_threshold_authority(node, authority):
+def test_change_recovery_agent_with_too_low_threshold_authority(node: tt.InitNode, authority: str) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.api.create_account("initminer", "alice", "{}")
     wallet.api.transfer_to_vesting("initminer", "alice", tt.Asset.Test(100))
