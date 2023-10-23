@@ -10,6 +10,7 @@
 #include <chrono>
 
 #include <boost/exception/diagnostic_information.hpp>
+#include <boost/filesystem.hpp>
 
 namespace beekeeper {
 
@@ -215,6 +216,8 @@ struct exception
     return { _error_message, false };
   }
 };
+
+std::vector< std::string > list_all_wallets( const boost::filesystem::path& directory, const std::string& extension );
 
 }
 namespace fc

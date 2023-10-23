@@ -29,7 +29,7 @@ class session_manager_base
     session_manager_base();
     virtual ~session_manager_base(){}
 
-    std::string create_session( const std::string& salt, const std::string& notifications_endpoint );
+    std::string create_session( const std::string& salt, const std::string& notifications_endpoint, const boost::filesystem::path& directory, const std::string& extension );
     void close_session( const std::string& token );
     bool empty() const;
 

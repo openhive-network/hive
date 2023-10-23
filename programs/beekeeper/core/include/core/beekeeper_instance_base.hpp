@@ -21,9 +21,19 @@ namespace beekeeper
 
       virtual bool start(){ return true; }
 
-      virtual boost::filesystem::path create_wallet_filename( const std::string& wallet_name ) const
+      boost::filesystem::path create_wallet_filename( const std::string& wallet_name ) const
       {
         return wallet_directory / ( wallet_name + file_ext );
+      }
+
+      const std::string& get_extension() const
+      {
+        return file_ext;
+      }
+
+      const boost::filesystem::path& get_wallet_directory() const
+      {
+        return wallet_directory;
       }
   };
 }

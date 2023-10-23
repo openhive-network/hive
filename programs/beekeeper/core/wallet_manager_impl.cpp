@@ -94,14 +94,24 @@ void wallet_manager_impl::close( const std::string& name )
   wallets.erase( name );
 }
 
-std::vector<wallet_details> wallet_manager_impl::list_wallets()
+std::vector<wallet_details> wallet_manager_impl::list_wallets( const std::vector< std::string >& wallet_files )
 {
-  std::vector<wallet_details> result;
-  for (const auto& i : wallets)
+  std::vector<wallet_details> _result;
+
+  for(const auto& wallet_file_name : wallet_files )
   {
-    result.emplace_back( wallet_details{ i.first, !i.second->is_locked() } );
+    auto it = wallets.find( wallet_file_name );
+    if( it == wallets.end() )
+    {
+      _result.emplace_back( wallet_details{ wallet_file_name, false } );
+    }
+    else
+    {
+      _result.emplace_back( wallet_details{ it->first, !it->second->is_locked() } );  
+    }
   }
-  return result;
+
+  return _result;
 }
 
 map<public_key_type, private_key_type> wallet_manager_impl::list_keys( const string& name, const string& pw )
