@@ -18,7 +18,7 @@ public:
 
   DECLARE_API_IMPL( (simulate_curve_payouts) );
 
-  chain::full_database& _db;
+  chain::database& _db;
 };
 
 DEFINE_API_IMPL( rewards_api_impl, simulate_curve_payouts )

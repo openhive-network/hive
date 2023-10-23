@@ -30,7 +30,7 @@ class debug_node_plugin_impl
     virtual ~debug_node_plugin_impl();
 
     plugins::chain::chain_plugin&             _chain_plugin;
-    chain::full_database&                     _db;
+    chain::database&                          _db;
 
     typedef std::vector< std::pair< protocol::transaction_id_type, bool> > current_debug_update_transactions;
     current_debug_update_transactions         _current_debug_update_txs;
@@ -99,7 +99,7 @@ void debug_node_plugin::plugin_startup()
   }*/
 }
 
-chain::full_database& debug_node_plugin::database() { return my->_db; }
+chain::database& debug_node_plugin::database() { return my->_db; }
 
 const protocol::transaction_id_type& debug_node_plugin::make_artificial_transaction_for_debug_update()
 {
@@ -342,7 +342,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
     return;
   }
 
-  chain::full_database& db = database();
+  chain::database& db = database();
 
   uint32_t slot = args.miss_blocks+1, produced = 0;
   while( produced < args.count )
