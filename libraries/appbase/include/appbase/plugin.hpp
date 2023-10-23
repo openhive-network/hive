@@ -23,9 +23,6 @@ namespace appbase {
   using std::vector;
   using std::map;
 
-  class application;
-  application& app();
-
   class abstract_plugin {
     public:
       enum state {

@@ -92,7 +92,7 @@ exited cleanly
 
 The application owns a `boost::asio::io_service` which starts running when appbase::exec() is called. If 
 a plugin needs to perform IO or other asynchronous operations then it should dispatch it via 
-`app().get_io_service().post( lambda )`.  
+`get_app().get_io_service().post( lambda )`.
 
 Because the app calls `io_service::run()` from within `application::exec()` all asynchronous operations
 posted to the io_service should be run in the same thread.  

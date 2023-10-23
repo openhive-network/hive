@@ -92,12 +92,6 @@ namespace appbase {
       void run();
   };
 
-  class application;
-
-  application& app();
-  /// Allows to reset (destroy) application object.
-  void reset();
-
   class application final
   {
     public:
