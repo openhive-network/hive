@@ -296,38 +296,30 @@ void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, b
   }
 }
 
-void database::close_chainbase(bool rewind)
-{
-  if(get_is_open() == false)
-    wlog("database::close method is MISUSED since it is NOT opened atm...");
-
-  ilog( "Closing database" );
-
-  // Since pop_block() will move tx's in the popped blocks into pending,
-  // we have to clear_pending() after we're done popping to get a clean
-  // DB state (issue #336).
-  clear_pending();
-
-  chainbase::database::flush();
-
-  auto lib = this->get_last_irreversible_block_num();
-
-  ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
-
-  chainbase::database::close();
-}
-
-void database::close_forkbase(bool rewind)
-{
-  _fork_db.reset();
-}
-
 void database::close(bool rewind)
 {
   try
   {
-    close_chainbase(rewind);
-    close_forkbase(rewind);
+    if(get_is_open() == false)
+      wlog("database::close method is MISUSED since it is NOT opened atm...");
+
+    ilog( "Closing database" );
+
+    // Since pop_block() will move tx's in the popped blocks into pending,
+    // we have to clear_pending() after we're done popping to get a clean
+    // DB state (issue #336).
+    clear_pending();
+
+    chainbase::database::flush();
+
+    auto lib = this->get_last_irreversible_block_num();
+
+    ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
+
+    chainbase::database::close();
+
+    _fork_db.reset();
+
     ilog( "Database is closed" );
   }
   FC_CAPTURE_AND_RETHROW()

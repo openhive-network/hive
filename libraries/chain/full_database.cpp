@@ -205,10 +205,14 @@ uint32_t full_database::reindex( const open_args& args )
 
 }
 
-void full_database::close_chainbase(bool rewind)
+void full_database::close(bool rewind)
 {
-  database::close_chainbase(rewind);
-  _block_log.close();
+  try
+  {
+    database::close();
+    _block_log.close();
+  }
+  FC_CAPTURE_AND_RETHROW()
 }
 
 //no chainbase lock required
