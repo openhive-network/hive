@@ -51,7 +51,7 @@ void beekeeper_wallet_manager::close( const std::string& token, const std::strin
 std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::string& token )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->list_wallets();
+  return sessions->get_wallet_manager( token )->list_wallets( list_all_wallets( instance->get_wallet_directory(), instance->get_extension() ) );
 }
 
 map<public_key_type, private_key_type> beekeeper_wallet_manager::list_keys( const std::string& token, const string& name, const string& pw )
@@ -110,7 +110,7 @@ string beekeeper_wallet_manager::create_session( const string& salt, const strin
 {
   FC_ASSERT( session_cnt < session_limit, "Number of concurrent sessions reached a limit ==`${session_limit}`. Close previous sessions so as to open the new one.", (session_limit) );
 
-  auto _token = sessions->create_session( salt, notifications_endpoint );
+  auto _token = sessions->create_session( salt, notifications_endpoint, instance->get_wallet_directory(), instance->get_extension());
   set_timeout_impl( _token, unlock_timeout );
 
   ++session_cnt;

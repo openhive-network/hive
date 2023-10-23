@@ -23,7 +23,7 @@ std::shared_ptr<session_base> session_manager_base::create_session( const std::s
   return std::make_shared<session_base>( token, time );
 }
 
-std::string session_manager_base::create_session( const std::string& salt, const std::string& notifications_endpoint )
+std::string session_manager_base::create_session( const std::string& salt, const std::string& notifications_endpoint, const boost::filesystem::path& directory, const std::string& extension )
 {
   auto _token = token_generator::generate_token( salt, token_length );
 
@@ -41,11 +41,11 @@ std::string session_manager_base::create_session( const std::string& salt, const
 
                 _wallet_mgr->lock_all();
               },
-              [notifications_endpoint, _session]()
+              [notifications_endpoint, _session, directory, extension]()
               {
                 FC_ASSERT( _session, "notification: session is empty." );
 
-                _session->prepare_notifications();
+                _session->prepare_notifications( directory, extension );
               }
               );
 

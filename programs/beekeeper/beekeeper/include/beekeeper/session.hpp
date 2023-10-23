@@ -16,7 +16,7 @@ class session: public session_base
 
     session( const std::string& notifications_endpoint, const std::string& token, std::shared_ptr<time_manager_base> time );
 
-    void prepare_notifications() override;
+    void prepare_notifications( const boost::filesystem::path& directory, const std::string& extension ) override;
 };
 
 } //beekeeper

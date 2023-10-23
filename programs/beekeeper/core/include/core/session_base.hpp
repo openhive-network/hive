@@ -38,7 +38,7 @@ class session_base
 
     std::shared_ptr<wallet_manager_impl> get_wallet_manager();
 
-    virtual void prepare_notifications(){};
+    virtual void prepare_notifications( const boost::filesystem::path& directory, const std::string& extension ){};
 };
 
 } //beekeeper
