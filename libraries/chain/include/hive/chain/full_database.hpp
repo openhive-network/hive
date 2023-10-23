@@ -6,6 +6,10 @@ namespace hive { namespace chain {
 
   class full_database : public database
   {
+    public: 
+      full_database( appbase::application& app );
+    
+    private:
       block_log _block_log;
 
       /**
@@ -73,7 +77,7 @@ namespace hive { namespace chain {
       virtual void migrate_irreversible_state_perform(uint32_t old_last_irreversible) override;
       void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
 
-      void open_block_log(const open_args& args);
+      void open_block_log(const open_args& args); 
   };
 
 }}

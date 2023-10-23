@@ -162,8 +162,8 @@ void database::state_independent_open( const open_args& args )
   init_schema();
 
   helpers::environment_extension_resources environment_extension(
-                                              appbase::app().get_version_string(),
-                                              appbase::app().get_plugins_names(),
+                                              theApp.get_version_string(),
+                                              theApp.get_plugins_names(),
                                               []( const std::string& message ){ wlog( message.c_str() ); }
                                             );
   const bool wipe_shared_file = args.force_replay || args.load_snapshot;
