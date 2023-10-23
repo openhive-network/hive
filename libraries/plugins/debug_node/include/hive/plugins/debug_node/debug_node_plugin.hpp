@@ -58,7 +58,7 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     virtual void plugin_startup() override;
     virtual void plugin_shutdown() override;
 
-    chain::database& database();
+    chain::full_database& database();
 
     // creates and pushes internal custom op transaction when there is none to be reused; returns id
     const protocol::transaction_id_type& make_artificial_transaction_for_debug_update();

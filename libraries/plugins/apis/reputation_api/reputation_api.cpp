@@ -16,7 +16,7 @@ class reputation_api_impl
       (get_account_reputations)
     )
 
-    chain::database& _db;
+    chain::full_database& _db;
 };
 
 DEFINE_API_IMPL( reputation_api_impl, get_account_reputations )

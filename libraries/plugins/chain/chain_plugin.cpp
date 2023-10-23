@@ -1046,7 +1046,7 @@ void chain_plugin_impl_deleter::operator()( chain_plugin_impl* impl ) const
 chain_plugin::chain_plugin(){}
 chain_plugin::~chain_plugin(){}
 
-database& chain_plugin::db() { return my->db; }
+full_database& chain_plugin::db() { return my->db; }
 const hive::chain::database& chain_plugin::db() const { return my->db; }
 
 const block_read_i& chain_plugin::block_reader() const 

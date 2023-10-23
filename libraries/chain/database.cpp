@@ -156,21 +156,37 @@ database::~database()
   clear_pending();
 }
 
-void database::open( const open_args& args )
+void database::state_independent_open( const open_args& args )
+{
+  init_schema();
+
+  helpers::environment_extension_resources environment_extension(
+                                              appbase::app().get_version_string(),
+                                              appbase::app().get_plugins_names(),
+                                              []( const std::string& message ){ wlog( message.c_str() ); }
+                                            );
+  const bool wipe_shared_file = args.force_replay || args.load_snapshot;
+  chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, wipe_shared_file );
+  initialize_state_independent_data(args);
+}
+
+void database::state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function)
+{
+  load_state_initial_data(args, get_block_by_num_function);
+}
+
+void full_database::state_dependent_open( const open_args& args, get_block_by_num_function_type )
+{
+  open_block_log(args);
+  database::state_dependent_open(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
+}
+
+void database::open( const open_args& args)
 {
   try
   {
-    init_schema();
-
-    helpers::environment_extension_resources environment_extension(
-                                                theApp.get_version_string(),
-                                                theApp.get_plugins_names(),
-                                                []( const std::string& message ){ wlog( message.c_str() ); }
-                                              );
-    const bool wipe_shared_file = args.force_replay || args.load_snapshot;
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, wipe_shared_file );
-    initialize_state_independent_data(args);
-    load_state_initial_data(args);
+    state_independent_open(args);
+    state_dependent_open(args, {});
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
@@ -211,7 +227,7 @@ void database::initialize_state_independent_data(const open_args& args)
   init_hardforks();
 }
 
-void database::load_state_initial_data(const open_args& args)
+void database::load_state_initial_data( const open_args& args, get_block_by_num_function_type get_block_by_num_function )
 {
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
@@ -296,22 +312,30 @@ void database::close()
     if(get_is_open() == false)
       wlog("database::close method is MISUSED since it is NOT opened atm...");
 
-    ilog( "Closing database" );
+  ilog( "Closing database" );
 
-    // Since pop_block() will move tx's in the popped blocks into pending,
-    // we have to clear_pending() after we're done popping to get a clean
-    // DB state (issue #336).
-    clear_pending();
+  // Since pop_block() will move tx's in the popped blocks into pending,
+  // we have to clear_pending() after we're done popping to get a clean
+  // DB state (issue #336).
+  clear_pending();
 
-    chainbase::database::flush();
+  chainbase::database::flush();
 
-    auto lib = this->get_last_irreversible_block_num();
+  auto lib = this->get_last_irreversible_block_num();
 
-    ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
+  ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
 
     chainbase::database::close();
 
-    ilog( "Database is closed" );
+  ilog( "Database is closed" );
+}
+
+void database::close(bool rewind)
+{
+  try
+  {
+   close_chainbase(rewind);
+   close_forkbase(rewind);
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -4640,13 +4664,13 @@ boost::signals2::connection database::add_switch_fork_handler( const switch_fork
   return connect_impl<false>(_switch_fork_signal, func, plugin, group, "switch_fork");
 }
 
-boost::signals2::connection database::add_pre_reindex_handler(const reindex_handler_t& func,
+boost::signals2::connection full_database::add_pre_reindex_handler(const reindex_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
   return connect_impl<true>(_pre_reindex_signal, func, plugin, group, "reindex");
 }
 
-boost::signals2::connection database::add_post_reindex_handler(const reindex_handler_t& func,
+boost::signals2::connection full_database::add_post_reindex_handler(const reindex_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
   return connect_impl<false>(_post_reindex_signal, func, plugin, group, "reindex");
@@ -5033,6 +5057,29 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
 
   return old_last_irreversible;
 } FC_CAPTURE_AND_RETHROW() }
+
+
+void database::migrate_irreversible_state_perform(uint32_t old_last_irreversible)
+{
+  const dynamic_global_property_object& dpo = get_dynamic_global_properties();
+
+  // This deletes blocks from the fork db
+  //edump((dpo.head_block_number)(get_last_irreversible_block_num()));
+  _fork_db.set_max_size( dpo.head_block_number - get_last_irreversible_block_num() + 1 );
+
+  // This deletes undo state
+  commit( get_last_irreversible_block_num() );
+
+  if (old_last_irreversible < get_last_irreversible_block_num())
+  {
+    //ilog("Updating last irreversible block to: ${b}. Old last irreversible was: ${ob}.",
+    //  ("b", get_last_irreversible_block_num())("ob", old_last_irreversible));
+
+    for (uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i)
+      notify_irreversible_block(i);
+  }
+}
+
 
 void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 {

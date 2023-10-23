@@ -49,6 +49,7 @@ namespace chain {
   using hive::protocol::asset_symbol_type;
   using hive::protocol::price;
   using abstract_plugin = appbase::abstract_plugin;
+  using get_block_by_num_function_type = std::function<std::shared_ptr<full_block_type>(int block_num)>;
 
   struct prepare_snapshot_supplement_notification;
   struct load_snapshot_supplement_notification;
@@ -110,8 +111,9 @@ namespace chain {
   class database : public chainbase::database
   {
     public:
+
       database( appbase::application& app );
-      ~database();
+      virtual ~database();
 
       void set_block_writer( block_write_i* writer );
 
@@ -193,11 +195,26 @@ namespace chain {
         */
       void open( const open_args& args );
 
+    private:      
+      void state_independent_open( const open_args& args);
+
+    public: 
+      /**
+         * @brief Opens a state with a block provided externally
+         *
+         * In derived classes, this function provides an interface to supply a block from the outside 
+         * (e.g., from an external system). Essential for initiating the fork database 
+         * when specific block data needs to be provided. This function is public because it is 
+         * used by the load snapshot plugin to inject block data. Takes part in normal open process.
+         *
+         * @param args Arguments required for the open operation
+         * @param get_block_by_num_function A function type to fetch the block by its number
+         */
+      virtual void state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function );
+
     private:
 
-      uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& full_block );
       void remove_expired_governance_votes();
-
       //Remove proposal votes for accounts that declined voting rights during HF28.
       void remove_proposal_votes_for_accounts_without_voting_rights();
 
@@ -229,7 +246,8 @@ namespace chain {
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
     public:
-      std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
+
+
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
@@ -375,12 +393,13 @@ namespace chain {
       void notify_comment_reward(const comment_reward_notification& note);
       void notify_end_of_syncing();
 
-    private:
+    protected:
       template < bool IS_PRE_OPERATION, typename TSignal,
                  typename TNotification = std::function<typename TSignal::signature_type> >
       boost::signals2::connection connect_impl( TSignal& signal, const TNotification& func,
         const abstract_plugin& plugin, int32_t group, const std::string& item_name = "" );
 
+    private:
       template< bool IS_PRE_OPERATION >
       boost::signals2::connection any_apply_operation_handler_impl( const apply_operation_handler_t& func,
         const abstract_plugin& plugin, int32_t group );
@@ -396,8 +415,6 @@ namespace chain {
       boost::signals2::connection add_fail_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_irreversible_block_handler        ( const irreversible_block_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_switch_fork_handler               ( const switch_fork_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_finish_push_block_handler          ( const push_block_handler_t&                func, const abstract_plugin& plugin, int32_t group = -1 );
@@ -692,6 +709,19 @@ namespace chain {
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
       void migrate_irreversible_state(uint32_t old_last_irreversible);
+    protected:
+      /**
+       * @brief Handle the proper execution of the irreversible state migration.
+       * 
+       * In derived implementations, this method can be overridden to manage 
+       * updates to external resources during the update irreversible state process. When overriding, 
+       * it's recommended to call the `database::migrate_irreversible_state_perform` 
+       * method to ensure proper base functionality.
+       *
+       * @param old_last_irreversible Represents the previous irreversible point before migration.
+       */
+      virtual void migrate_irreversible_state_perform(uint32_t old_last_irreversible); 
+    private:
       void clear_expired_transactions();
       void clear_expired_orders();
       void clear_expired_delegations();
@@ -798,7 +828,9 @@ namespace chain {
 
       flat_map<uint32_t,block_id_type>  _checkpoints;
 
+    protected:
       node_property_object              _node_property_object;
+    private:
 
       uint32_t                      _flush_blocks = 0;
       uint32_t                      _next_flush_block = 0;
@@ -921,6 +953,82 @@ namespace chain {
       {
         return theApp;
       }
+  };
+
+
+  class full_database : public database
+  {
+    block_log _block_log;
+
+    public:
+      /**
+        * Emitted when reindexing starts
+        */
+      fc::signal<void(const reindex_notification&)>         _pre_reindex_signal;
+
+      /**
+        * Emitted when reindexing finishes
+        */
+      fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
+
+    public:
+      boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
+      boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
+
+    private: 
+      void state_dependent_open( const open_args& args, get_block_by_num_function_type get_block_by_num_function ) override;
+
+    private:
+      bool is_included_block_unlocked(const block_id_type& block_id);
+      uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block );
+    public:
+      std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
+      std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received); //by is_known_block_unlocked
+      std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
+
+      /**
+        * @brief Check if replaying was finished and all blocks from `block_log` were processed.
+        *
+        * This method is called from a chain plugin, if returns `true` then a synchronization is allowed.
+        * If returns `false`, then opening a node should be forbidden.
+        *
+        * There are output-type arguments: `head_block_num_origin`, `head_block_num_state` for information purposes only.
+        *
+        * @return information if replaying was finished
+        */
+      bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
+ 
+      /**
+        * @brief Rebuild object graph from block history and open detabase
+        *
+        * This method may be called after or instead of @ref database::open, and will rebuild the object graph by
+        * replaying blockchain history. When this method exits successfully, the database will be open.
+        *
+        * @return the last replayed block number.
+        */
+      uint32_t reindex( const open_args& args );
+      void close_chainbase(bool rewind) override;
+    
+
+      /**
+        *  @return true if the block is in our fork DB or saved to disk as
+        *  part of the official chain, otherwise return false
+        */
+      bool is_known_block( const block_id_type& id )const;
+    private:  
+      bool is_known_block_unlocked(const block_id_type& id)const;
+    public:  
+      block_id_type              find_block_id_for_num( uint32_t block_num )const;
+      block_id_type              get_block_id_for_num( uint32_t block_num )const;
+      std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
+      std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+      std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds());
+    
+    private:
+      void migrate_irreversible_state_perform(uint32_t old_last_irreversible) override; 
+      void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
+
+      void open_block_log(const open_args& args);
   };
 
   struct reindex_notification

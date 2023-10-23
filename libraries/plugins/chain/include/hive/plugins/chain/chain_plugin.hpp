@@ -122,7 +122,7 @@ public:
   }
 
   // Exposed for backwards compatibility. In the future, plugins should manage their own internal database
-  database& db();
+  full_database& db();
   const database& db() const;
 
   const block_read_i& block_reader() const;
