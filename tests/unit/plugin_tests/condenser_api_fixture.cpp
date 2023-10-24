@@ -388,7 +388,7 @@ void condenser_api_fixture::account_scenario( check_point_tester_t check_point_t
 
   ACTORS( (alice8ah)(carol8ah) );
   // We need elected witness for claim_account_operation to succeed.
-  fund( "alice8ah", 5000 );
+  fund( "alice8ah", ASSET( "5.000 TESTS" ) );
   vest( "alice8ah", 5000 );
   generate_block();
   witness_vote( "alice8ah", "initminer", alice8ah_private_key );

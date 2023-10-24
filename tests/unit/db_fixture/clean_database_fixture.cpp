@@ -46,7 +46,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
   for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
   {
     account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_pub_key );
-    fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD.amount.value );
+    fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
     witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_priv_key, "foo.bar", init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
   }
 
@@ -140,7 +140,7 @@ asset_symbol_type t_smt_database_fixture< T >::create_smt_with_nai( const string
   signed_transaction tx;
   try
   {
-    fund( account_name, 10 * 1000 * 1000 );
+    fund( account_name, ASSET( "10000.000 TESTS" ) );
     this->generate_block();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
@@ -205,7 +205,7 @@ std::array<asset_symbol_type, 3> t_smt_database_fixture< T >::create_smt_3(const
 
   try
   {
-    fund( control_account_name, 10 * 1000 * 1000 );
+    fund( control_account_name, ASSET( "10000.000 TESTS" ) );
     this->generate_block();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );

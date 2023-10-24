@@ -277,9 +277,9 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
 
     ACTORS( (alice)(bob)(carol) )
     generate_block();
-    fund( "alice", 10000 );
-    fund( "bob", 10000 );
-    fund( "carol", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
+    fund( "bob", ASSET( "10.000 TESTS" ) );
+    fund( "carol", ASSET( "10.000 TESTS" ) );
     generate_block();
 
     expectation_set check( *db );
@@ -435,9 +435,9 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
 
     ACTORS( (alice)(bob)(carol) )
     generate_block();
-    fund( "alice", 10000 );
-    fund( "bob", 10000 );
-    fund( "carol", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
+    fund( "bob", ASSET( "10.000 TESTS" ) );
+    fund( "carol", ASSET( "10.000 TESTS" ) );
     generate_block();
 
     const auto& dgpo = db->get_dynamic_global_properties();
@@ -635,7 +635,7 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
 
     ACTORS( (alice)(bob)(carol) )
     generate_block();
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Build fork" );

@@ -28,7 +28,7 @@ condenser_api_reversible_fixture::condenser_api_reversible_fixture()
 
     ACTORS((whale)(voter1)(voter2)(voter3)(voter4)(voter5)(voter6)(voter7)(voter8)(voter9)(voter10))
 
-    fund( "whale", 500000000 );
+    fund( "whale", ASSET( "500000.000 TESTS" ) );
     vest( "whale", 500000000 );
 
     account_witness_vote_operation op;
@@ -43,7 +43,7 @@ condenser_api_reversible_fixture::condenser_api_reversible_fixture()
     for( int i = 1; i <= 10; ++i )
     {
       std::string name = "voter" + std::to_string(i);
-      fund( name, 10000000 );
+      fund( name, ASSET( "10000.000 TESTS" ) );
       vest( name, 10000000 / i );
       op.account = name;
       for( int v = 1; v <= i; ++v )

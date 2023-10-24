@@ -359,7 +359,7 @@ struct database_fixture {
 
   bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 
-  void fund( const string& account_name, const share_type& amount );
+  void fund( const string& account_name, const asset& amount );
   void issue_funds( const string& account_name, const asset& amount, bool update_print_rate = true );
   void transfer( const string& from, const string& to, const asset& amount, const std::string& memo, const fc::ecc::private_key& key );
   void recurrent_transfer( const string& from, const string& to, const asset& amount, const string& memo, uint16_t recurrence,

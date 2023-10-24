@@ -58,13 +58,13 @@ BOOST_AUTO_TEST_CASE( smt_liquidity_rewards )
     ISSUE_FUNDS( "alice", asset( 25522, any_smt_symbol ) );
     asset alice_smt = db->get_balance( alice_account, any_smt_symbol );
 
-    fund( "alice", alice_smt.amount );
+    fund( "alice", asset( alice_smt.amount, HIVE_SYMBOL ) );
     generate_block();
-    fund( "bob", alice_smt.amount );
+    fund( "bob", asset( alice_smt.amount, HIVE_SYMBOL ) );
     generate_block();
-    fund( "sam", alice_smt.amount );
+    fund( "sam", asset( alice_smt.amount, HIVE_SYMBOL ) );
     generate_block();
-    fund( "dave", alice_smt.amount );
+    fund( "dave", asset( alice_smt.amount, HIVE_SYMBOL ) );
     generate_block();
 
     int64_t alice_smt_volume = 0;

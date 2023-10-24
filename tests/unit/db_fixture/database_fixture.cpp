@@ -357,12 +357,12 @@ void database_fixture::witness_vote( account_name_type voter, account_name_type 
 
 void database_fixture::fund(
   const string& account_name,
-  const share_type& amount
+  const asset& amount
   )
 {
   try
   {
-    transfer( HIVE_INIT_MINER_NAME, account_name, asset( amount, HIVE_SYMBOL ), "", init_account_priv_key );
+    transfer( HIVE_INIT_MINER_NAME, account_name, amount, "", init_account_priv_key );
 
   } FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
 }

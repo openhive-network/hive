@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE( update_operation )
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
       ACTORS_EXT( (*executor), (alice) );
-      executor->fund( "alice", 1000000 );
+      executor->fund( "alice", ASSET( "1000.000 TESTS" ) );
       executor->generate_block();
 
       executor->db_plugin->debug_update( [=]( database& db )
@@ -270,8 +270,8 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
       ACTORS_EXT( (*executor), (alice)(bob) );
-      executor->fund( "alice", 1000000 );
-      executor->fund( "bob", 1000000 );
+      executor->fund( "alice", ASSET( "1000.000 TESTS" ) );
+      executor->fund( "bob", ASSET( "1000.000 TESTS" ) );
       executor->generate_block();
 
       auto _get_trx = []( ptr_hardfork_database_fixture& executor, const std::vector<operation>& ops )

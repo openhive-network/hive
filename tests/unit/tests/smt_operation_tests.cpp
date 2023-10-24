@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
 
     asset alice_0 = asset( 0, alice_symbol );
 
-    fund( "bob", 1000000 );
+    fund( "bob", ASSET( "1000.000 TESTS" ) );
     generate_block();
     convert( "bob", ASSET("1000.000 TESTS" ) );
     generate_block();
@@ -566,7 +566,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
 
     asset alice_0 = asset( 0, alice_symbol );
 
-    fund( "bob", 1000000 );
+    fund( "bob", ASSET( "1000.000 TESTS" ) );
     generate_block();
     convert( "bob", ASSET("1000.000 TESTS" ) );
     generate_block();
@@ -1795,7 +1795,7 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_count )
 
     ACTORS( (alice) )
 
-    fund( "alice", 10 * 1000 * 1000 );
+    fund( "alice", ASSET( "10000.000 TESTS" ) );
     generate_block();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
@@ -2154,9 +2154,9 @@ BOOST_AUTO_TEST_CASE( set_setup_parameters_apply )
 
     generate_block();
 
-    fund( "alice", 5000000 );
+    fund( "alice", ASSET( "5000.000 TESTS" ) );
     generate_block();
-    fund( "bob", 5000000 );
+    fund( "bob", ASSET( "5000.000 TESTS" ) );
     generate_block();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
