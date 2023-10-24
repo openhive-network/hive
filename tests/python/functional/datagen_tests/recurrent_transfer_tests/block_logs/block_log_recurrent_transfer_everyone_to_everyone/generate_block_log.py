@@ -21,7 +21,7 @@ ACCOUNTS_PER_CHUNK: Final[int] = 256
 MAX_WORKERS: Final[int] = 100
 
 
-def prepare_block_log():
+def prepare_block_log() -> None:
     """
     This script generate block_log with specific conditions. The entire block_log can be divided into four parts:
       1) creating accounts - the number is specified in a variable - AMOUNT_OF_ALL_ACCOUNTS
@@ -61,9 +61,7 @@ def prepare_block_log():
     tt.logger.info("All accounts founded")
 
     tt.logger.info(f"created accounts: {node.api.condenser.get_account_count()}")
-    tt.logger.info(
-        f"maximum_block_size: {node.api.database.get_witness_schedule()['median_props']['maximum_block_size']}"
-    )
+    tt.logger.info(f"maximum_block_size: {node.api.database.get_witness_schedule().median_props.maximum_block_size}")
 
     time_before_operations = __get_head_block_time(node)
 
@@ -92,7 +90,7 @@ def prepare_block_log():
     node.wait_for_block_with_number(waiting_to_block_with_number)
 
     head_block_num = node.get_last_block_number()
-    timestamp = node.api.block.get_block(block_num=head_block_num)["block"]["timestamp"]
+    timestamp = node.api.block.get_block(block_num=head_block_num).block.timestamp
     tt.logger.info(f"head block number: {head_block_num}")
     tt.logger.info(f"head block timestamp: {timestamp}")
 
@@ -140,7 +138,7 @@ def __fund_account_and_broadcast(wallet: tt.Wallet, account_names: list[str]) ->
     tt.logger.info(f"Finished: {account_names[-1]}")
 
 
-def __fund_account(account_names):
+def __fund_account(account_names: list[str]) -> list:
     operations = []
     for account in account_names:
         transfer = ["transfer", {"from": "initminer", "to": account, "amount": tt.Asset.Test(300), "memo": "{}"}]
@@ -154,7 +152,7 @@ def __fund_account(account_names):
 
 def __get_head_block_time(node: tt.AnyNode) -> datetime:
     last_block_number = node.get_last_block_number()
-    timestamp = node.api.block.get_block(block_num=last_block_number)["block"]["timestamp"]
+    timestamp = node.api.block.get_block(block_num=last_block_number).block.timestamp
     return tt.Time.parse(timestamp)
 
 

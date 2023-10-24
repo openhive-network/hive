@@ -6,7 +6,7 @@ from hive_local_tools.constants import MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILUR
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_exceed_max_consecutive_recurrent_transfer_failures(node: tt.InitNode | tt.RemoteNode):
+def test_exceed_max_consecutive_recurrent_transfer_failures(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("sender", hives=tt.Asset.Test(10), vests=tt.Asset.Test(10))
@@ -37,11 +37,7 @@ def test_exceed_max_consecutive_recurrent_transfer_failures(node: tt.InitNode | 
 
     # Validating that immediately after turning on the node no recurrent transfer was a fail
     assert (
-        len(
-            node.api.account_history.enum_virtual_ops(block_range_begin=0, block_range_end=100, filter=17179869184)[
-                "ops"
-            ]
-        )
+        len(node.api.account_history.enum_virtual_ops(block_range_begin=0, block_range_end=100, filter=17179869184).ops)
         == 0
     )
 
@@ -57,7 +53,7 @@ def test_exceed_max_consecutive_recurrent_transfer_failures(node: tt.InitNode | 
                 block_range_end=node.get_last_block_number(),
                 include_reversible=True,
                 filter=17179869184,
-            )["ops"]
+            ).ops
         )
         == MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES
     )

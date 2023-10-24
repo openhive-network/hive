@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -8,6 +9,9 @@ from hive_local_tools.functional.python.datagen.api.transaction_status_api impor
     read_transaction_ids,
     verify_transaction_status_in_block_range,
 )
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 __PATTERNS_DIRECTORY = Path(__file__).with_name("block_log")
 
@@ -18,31 +22,31 @@ Real transaction_status_track_after_block = transaction_status_track_after_block
 
 
 @pytest.mark.transaction_status_track_after_block("1200")
-def test_transaction_status_track_after_0_block(replayed_node):
+def test_transaction_status_track_after_0_block(replayed_node: tt.ApiNode) -> None:
     transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
     verify_transaction_status_in_block_range(replayed_node, 0, 101, transactions, "within_irreversible_block")
 
 
 @pytest.mark.transaction_status_track_after_block("1300")
-def test_transaction_status_track_after_100_block(replayed_node):
+def test_transaction_status_track_after_100_block(replayed_node: tt.ApiNode) -> None:
     transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
     verify_transaction_status_in_block_range(replayed_node, 0, 101, transactions, "unknown")
 
 
 @pytest.mark.transaction_status_block_depth("100")
-def test_transaction_status_1300_block_depth(replayed_node):
+def test_transaction_status_1300_block_depth(replayed_node: tt.ApiNode) -> None:
     transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
     verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, "unknown")
 
 
 @pytest.mark.transaction_status_block_depth("300")
-def test_transaction_status_1500_block_depth(replayed_node):
+def test_transaction_status_1500_block_depth(replayed_node: tt.ApiNode) -> None:
     transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
     verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, "within_irreversible_block")
 
 
 @pytest.mark.transaction_status_block_depth("100")
-def test_transaction_status_rebuild_state(replayed_node):
+def test_transaction_status_rebuild_state(replayed_node: tt.ApiNode) -> None:
     transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
     verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, "unknown")
 
