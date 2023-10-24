@@ -5,7 +5,9 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_is_get_impacted_accounts_operation_collect_accounts_from_the_comment_payout_beneficiaries(node: tt.InitNode):
+def test_is_get_impacted_accounts_operation_collect_accounts_from_the_comment_payout_beneficiaries(
+    node: tt.InitNode,
+) -> None:
     """
     If get_impacted_accounts_operation collect accounts from the comment_payout_beneficiaries, comment_option operations
     appear in account history of account, which was set a beneficiaries and in setter account.
