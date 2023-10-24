@@ -24,7 +24,9 @@ ACCOUNT = "initminer"
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_account_history_with_correct_values(node, start, limit):
+def test_get_account_history_with_correct_values(
+    node: tt.InitNode | tt.RemoteNode, start: bool | float | None | str, limit: bool | float | str
+) -> None:
     node.api.account_history.get_account_history(
         account="initminer",
         start=start,
@@ -60,7 +62,12 @@ def test_get_account_history_with_correct_values(node, start, limit):
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_account_history_with_incorrect_values(node, account_name, start, limit):
+def test_get_account_history_with_incorrect_values(
+    node: tt.InitNode | tt.RemoteNode,
+    account_name: dict | list | None | str,
+    start: dict | int | list | None | str,
+    limit: dict | int | list | None | str,
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.get_account_history(
             account=account_name,
