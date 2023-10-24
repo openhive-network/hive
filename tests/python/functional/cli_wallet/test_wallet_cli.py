@@ -6,7 +6,7 @@ from subprocess import run as run_executable
 import test_tools as tt
 
 
-def test_help_option():
+def test_help_option() -> None:
     only_args_to_be_founded = [
         "--help",
         "--version",
@@ -38,7 +38,7 @@ def test_help_option():
     assert len(diff) == 0
 
 
-def test_wallet_help_default_values():
+def test_wallet_help_default_values() -> None:
     cli_wallet_path = tt.paths_to_executables.get_path_of("cli_wallet")
     process = run_executable([cli_wallet_path, "--help"], capture_output=True)
     stdout = process.stdout.decode("utf-8")
