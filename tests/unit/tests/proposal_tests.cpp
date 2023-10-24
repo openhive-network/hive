@@ -175,9 +175,9 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     }
 
     //skipping interest generating is necessary
-    transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ), "", init_account_priv_key );
+    fund( receiver, ASSET( "0.001 TBD" ) );
     generate_block();
-    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ), "", init_account_priv_key );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
     generate_block();
 
     const auto& dgpo = db->get_dynamic_global_properties();
@@ -966,9 +966,9 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
     generate_blocks( 1 );
     //skipping interest generating is necessary
-    transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ), "", init_account_priv_key );
+    fund( receiver, ASSET( "0.001 TBD" ) );
     generate_block( 5 );
-    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ), "", init_account_priv_key );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
     generate_block( 5 );
 
     const auto& dgpo = db->get_dynamic_global_properties();
@@ -1406,9 +1406,9 @@ try
     generate_block();
 
     //skipping interest generating is necessary
-    transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ), "", init_account_priv_key );
+    fund( receiver, ASSET( "0.001 TBD" ) );
     generate_block();
-    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ), "", init_account_priv_key );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
     generate_block();
 
     const auto& dgpo = db->get_dynamic_global_properties();
@@ -1494,9 +1494,9 @@ try
     generate_block();
 
     //skipping interest generating is necessary
-    transfer( HIVE_INIT_MINER_NAME, receiver, ASSET( "0.001 TBD" ), "", init_account_priv_key );
+    fund( receiver, ASSET( "0.001 TBD" ) );
     generate_block();
-    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), ASSET( "0.001 TBD" ), "", init_account_priv_key );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
     generate_block();
 
     const auto& dgpo = db->get_dynamic_global_properties();

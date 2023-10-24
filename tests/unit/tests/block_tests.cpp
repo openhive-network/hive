@@ -1857,8 +1857,8 @@ BOOST_FIXTURE_TEST_CASE( init_hive_hbd_supply, init_supply_database_fixture )
     db->set_hardfork( HIVE_NUM_HARDFORKS );
     generate_block();
 
-    transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "100.000 TESTS" ), "", init_account_priv_key );
-    transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "100.000 TBD" ), "", init_account_priv_key );
+    fund( HIVE_NULL_ACCOUNT, ASSET( "100.000 TESTS" ) );
+    fund( HIVE_NULL_ACCOUNT, ASSET( "100.000 TBD" ) );
 
     generate_block(); // the bug caused assertion during reapplication of block containing HBD transfer to 'null'
 
