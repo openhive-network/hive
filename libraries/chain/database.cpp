@@ -204,14 +204,6 @@ void database::initialize_state_independent_data(const open_args& args)
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
 
-  with_write_lock([&]()
-  {
-    _block_log.set_auto_fixing_enabled(args.enable_block_log_auto_fixing);
-    _block_log.open(args.data_dir / "block_log");
-    _block_log.set_compression(args.enable_block_log_compression);
-    _block_log.set_compression_level(args.block_log_compression_level);
-  });
-
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
 
@@ -285,188 +277,6 @@ void database::load_state_initial_data(const open_args& args)
 #endif /// IS_TEST_NET
 }
 
-uint32_t database::reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block )
-{
-  uint64_t skip_flags = skip_validate_invariants | skip_block_log;
-  if (args.validate_during_replay)
-    ulog("Doing full validation during replay at user request");
-  else
-  {
-    skip_flags |= skip_witness_signature |
-      skip_transaction_signatures |
-      skip_transaction_dupe_check |
-      skip_tapos_check |
-      skip_merkle_check |
-      skip_witness_schedule_check |
-      skip_authority_check |
-      skip_validate; /// no need to validate operations
-  }
-
-  uint32_t last_block_num = _block_log.head()->get_block_num();
-  if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
-    last_block_num = args.stop_replay_at;
-
-  bool rat = fc::enable_record_assert_trip;
-  bool as = fc::enable_assert_stacktrace;
-  fc::enable_record_assert_trip = true; //enable detailed backtrace from FC_ASSERT (that should not ever be triggered during replay)
-  fc::enable_assert_stacktrace = true;
-
-  BOOST_SCOPE_EXIT( this_ ) { this_->clear_tx_status(); } BOOST_SCOPE_EXIT_END
-  set_tx_status( TX_STATUS_BLOCK );
-
-  std::shared_ptr<full_block_type> last_applied_block;
-  const auto process_block = [&](const std::shared_ptr<full_block_type>& full_block) {
-    const uint32_t current_block_num = full_block->get_block_num();
-
-    if (current_block_num % 100000 == 0)
-    {
-      std::ostringstream percent_complete_stream;
-      percent_complete_stream << std::fixed << std::setprecision(2) << double(current_block_num) * 100 / last_block_num;
-      ulog("   ${current_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shared memory free)",
-           ("percent_complete", percent_complete_stream.str())
-           (current_block_num)(last_block_num)
-           ("free_memory_megabytes", get_free_memory() >> 20));
-    }
-
-    apply_block(full_block, skip_flags);
-    last_applied_block = full_block;
-
-    return !theApp.is_interrupt_request();
-  };
-
-  const uint32_t start_block_number = start_block->get_block_num();
-  process_block(start_block);
-
-  if (start_block_number < last_block_num)
-    _block_log.for_each_block(start_block_number + 1, last_block_num, process_block, block_log::for_each_purpose::replay);
-
-  if (theApp.is_interrupt_request())
-    ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})",
-         ("n", last_applied_block->get_block_num())("id", last_applied_block->get_block_id()));
-
-  fc::enable_record_assert_trip = rat; //restore flag
-  fc::enable_assert_stacktrace = as;
-
-  return last_applied_block->get_block_num();
-}
-
-bool database::is_reindex_complete( uint64_t* head_block_num_in_blocklog, uint64_t* head_block_num_in_db ) const
-{
-  std::shared_ptr<full_block_type> head = _block_log.head();
-  uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
-  uint32_t head_block_num_state = head_block_num();
-
-  if( head_block_num_in_blocklog ) //if head block number requested
-    *head_block_num_in_blocklog = head_block_num_origin;
-
-  if( head_block_num_in_db ) //if head block number in database requested
-    *head_block_num_in_db = head_block_num_state;
-
-  if( head_block_num_state > head_block_num_origin )
-  elog( "Incorrect number of blocks in `block_log` vs `state`. { \"block_log-head\": ${head_block_num_origin}, \"state-head\": ${head_block_num_state} }",
-      ( head_block_num_origin )(head_block_num_state ) );
-
-  return head_block_num_origin == head_block_num_state;
-}
-
-uint32_t database::reindex( const open_args& args )
-{
-  reindex_notification note( args );
-
-  BOOST_SCOPE_EXIT(this_,&note) {
-    HIVE_TRY_NOTIFY(this_->_post_reindex_signal, note);
-  } BOOST_SCOPE_EXIT_END
-
-  try
-  {
-    ilog( "Reindexing Blockchain" );
-
-
-    if( theApp.is_interrupt_request() )
-      return 0;
-
-    uint32_t _head_block_num = head_block_num();
-
-    std::shared_ptr<full_block_type> _head = _block_log.head();
-    if( _head )
-    {
-      if( args.stop_replay_at == 0 )
-        note.max_block_number = _head->get_block_num();
-      else
-        note.max_block_number = std::min( args.stop_replay_at, _head->get_block_num() );
-    }
-    else
-      note.max_block_number = 0;//anyway later an assert is triggered
-
-    note.force_replay = args.force_replay || _head_block_num == 0;
-    note.validate_during_replay = args.validate_during_replay;
-
-    HIVE_TRY_NOTIFY(_pre_reindex_signal, note);
-
-    _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
-
-    auto start_time = fc::time_point::now();
-    HIVE_ASSERT( _head, block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
-
-    ilog( "Replaying blocks..." );
-
-    with_write_lock( [&]()
-    {
-      std::shared_ptr<full_block_type> start_block;
-
-      bool replay_required = true;
-
-      if( _head_block_num > 0 )
-      {
-        if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
-          start_block = _block_log.read_block_by_num( _head_block_num + 1 );
-
-        if( !start_block )
-        {
-          start_block = _block_log.read_block_by_num( _head_block_num );
-          FC_ASSERT( start_block, "Head block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", _head_block_num ) );
-
-          replay_required = false;
-        }
-      }
-      else
-      {
-        start_block = _block_log.read_block_by_num( 1 );
-      }
-
-      if( replay_required )
-      {
-        auto _last_block_number = start_block->get_block_num();
-        if( _last_block_number && !args.force_replay )
-          ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
-
-        note.last_block_number = reindex_internal( args, start_block );
-      }
-      else
-      {
-        note.last_block_number = start_block->get_block_num();
-      }
-
-      set_revision( head_block_num() );
-
-      //get_index< account_index >().indices().print_stats();
-    });
-
-    FC_ASSERT( _block_log.head()->get_block_num(), "this should never happen" );
-    _fork_db.start_block( _block_log.head() );
-
-    auto end_time = fc::time_point::now();
-    ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
-         ("elapsed_time", double((end_time - start_time).count()) / 1000000.0));
-
-    note.reindex_success = true;
-
-    return note.last_block_number;
-  }
-  FC_CAPTURE_AND_RETHROW( (args.data_dir)(args.shared_mem_dir) )
-
-}
-
 void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks)
 {
   if( get_is_open() )
@@ -480,31 +290,6 @@ void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, b
 }
 
 void database::close()
-{
-  try
-  {
-    if(get_is_open() == false)
-      wlog("database::close method is MISUSED since it is NOT opened atm...");
-
-  ilog( "Closing database" );
-
-  // Since pop_block() will move tx's in the popped blocks into pending,
-  // we have to clear_pending() after we're done popping to get a clean
-  // DB state (issue #336).
-  clear_pending();
-
-  chainbase::database::flush();
-
-  auto lib = this->get_last_irreversible_block_num();
-
-  ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
-
-    chainbase::database::close();
-
-  ilog( "Database is closed" );
-}
-
-void database::close(bool rewind)
 {
   try
   {
@@ -526,38 +311,10 @@ void database::close(bool rewind)
 
     chainbase::database::close();
 
-    _block_log.close();
-
-    _fork_db.reset();
-
     ilog( "Database is closed" );
   }
   FC_CAPTURE_AND_RETHROW()
 }
-
-//no chainbase lock required
-bool database::is_known_block(const block_id_type& id)const
-{ try {
-  if (_fork_db.fetch_block(id))
-    return true;
-
-  auto requested_block_num = protocol::block_header::num_from_id(id);
-  auto read_block_id = _block_log.read_block_id_by_num(requested_block_num);
-
-  return read_block_id != block_id_type() && read_block_id == id;
-} FC_CAPTURE_AND_RETHROW() }
-
-//no chainbase lock required, but fork database read lock is required
-bool database::is_known_block_unlocked(const block_id_type& id)const
-{ try {
-  if (_fork_db.fetch_block_unlocked(id, true /* only search linked blocks */))
-    return true;
-
-  auto requested_block_num = protocol::block_header::num_from_id(id);
-  auto read_block_id = _block_log.read_block_id_by_num(requested_block_num);
-
-  return read_block_id != block_id_type() && read_block_id == id;
-} FC_CAPTURE_AND_RETHROW() }
 
 /**
   * Only return true *if* the transaction has not expired or been invalidated. If this
@@ -569,103 +326,6 @@ bool database::is_known_transaction( const transaction_id_type& id )const
   const auto& trx_idx = get_index<transaction_index>().indices().get<by_trx_id>();
   return trx_idx.find( id ) != trx_idx.end();
 } FC_CAPTURE_AND_RETHROW() }
-
-//no chainbase lock required
-block_id_type database::find_block_id_for_num( uint32_t block_num )const
-{
-  try
-  {
-    if( block_num == 0 )
-      return block_id_type();
-/*
-    // Reversible blocks are *usually* in the TAPOS buffer.  Since this
-    // is the fastest check, we do it first.
-    block_summary_object::id_type bsid( block_num & 0xFFFF );
-    const block_summary_object* bs = find< block_summary_object, by_id >( bsid );
-    if( bs != nullptr )
-    {
-      if( protocol::block_header::num_from_id(bs->block_id) == block_num )
-        return bs->block_id;
-    }
-*/
-
-    // See if fork DB has the item
-    shared_ptr<fork_item> fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
-    if( fitem )
-      return fitem->get_block_id();
-
-    // Next we check if block_log has it. Irreversible blocks are here.
-    return _block_log.read_block_id_by_num(block_num);
-  }
-  FC_CAPTURE_AND_RETHROW( (block_num) )
-}
-
-//no chainbase lock required
-block_id_type database::get_block_id_for_num( uint32_t block_num )const
-{
-  block_id_type bid = find_block_id_for_num( block_num );
-  if (bid == block_id_type())
-    FC_THROW_EXCEPTION(fc::key_not_found_exception, "block number not found");
-  return bid;
-}
-
-//no chainbase lock required
-std::shared_ptr<full_block_type> database::fetch_block_by_id( const block_id_type& id )const
-{ try {
-  shared_ptr<fork_item> fork_item = _fork_db.fetch_block( id );
-  if (fork_item)
-    return fork_item->full_block;
-
-  std::shared_ptr<full_block_type> block_from_block_log = _block_log.read_block_by_num( protocol::block_header::num_from_id( id ) );
-  if( block_from_block_log && block_from_block_log->get_block_id() == id )
-    return block_from_block_log;
-  return std::shared_ptr<full_block_type>();
-} FC_CAPTURE_AND_RETHROW() }
-
-//no chainbase lock required
-std::shared_ptr<full_block_type> database::fetch_block_by_number( uint32_t block_num, fc::microseconds wait_for_microseconds )const
-{ try {
-  shared_ptr<fork_item> forkdb_item = _fork_db.fetch_block_on_main_branch_by_number(block_num, wait_for_microseconds);
-  if (forkdb_item)
-    return forkdb_item->full_block;
-
-  return _block_log.read_block_by_num(block_num);
-} FC_LOG_AND_RETHROW() }
-
-//no chainbase lock required
-std::vector<std::shared_ptr<full_block_type>> database::fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds )
-{ try {
-  // for debugging, put the head block back so it should straddle the last irreversible
-  // const uint32_t starting_block_num = head_block_num() - 30;
-  FC_ASSERT(starting_block_num > 0, "Invalid starting block number");
-  FC_ASSERT(count > 0, "Why ask for zero blocks?");
-  FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
-  idump((starting_block_num)(count));
-
-  vector<fork_item> fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count, wait_for_microseconds );
-  idump((fork_items.size()));
-  if (!fork_items.empty())
-    idump((fork_items.front().get_block_num()));
-
-  // if the fork database returns some blocks, it means:
-  // - that the last block in the range [starting_block_num, starting_block_num + count - 1]
-  // - any block before the first block it returned should be in the block log
-  uint32_t remaining_count = fork_items.empty() ? count : fork_items.front().get_block_num() - starting_block_num;
-  idump((remaining_count));
-  std::vector<std::shared_ptr<full_block_type>> result;
-
-  if (remaining_count)
-    result = _block_log.read_block_range_by_num(starting_block_num, remaining_count);
-
-  idump((result.size()));
-  if (!result.empty())
-    idump((result.front()->get_block_num())(result.back()->get_block_num()));
-  result.reserve(result.size() + fork_items.size());
-  for (fork_item& item : fork_items)
-    result.push_back(item.full_block);
-
-  return result;
-} FC_LOG_AND_RETHROW() }
 
 chain_id_type database::get_chain_id() const
 {
@@ -5373,63 +5033,6 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
 
   return old_last_irreversible;
 } FC_CAPTURE_AND_RETHROW() }
-
-void database::migrate_irreversible_state(uint32_t old_last_irreversible)
-{
-  // This method should happen atomically. We cannot prevent unclean shutdown in the middle
-  // of the call, but all side effects happen at the end to minize the chance that state
-  // invariants will be violated.
-  try
-  {
-    const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-
-    const auto fork_head = _fork_db.head();
-    if (fork_head)
-      FC_ASSERT(fork_head->get_block_num() == dpo.head_block_number, "Fork Head Block Number: ${fork_head}, Chain Head Block Number: ${chain_head}",
-                ("fork_head", fork_head->get_block_num())("chain_head", dpo.head_block_number));
-
-    if( !( get_node_skip_flags() & skip_block_log ) )
-    {
-      // output to block log based on new last irreverisible block num
-      std::shared_ptr<full_block_type> tmp_head = _block_log.head();
-      uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
-      vector<item_ptr> blocks_to_write;
-
-      if( blocklog_head_num < get_last_irreversible_block_num() )
-      {
-        // Check for all blocks that we want to write out to the block log but don't write any
-        // unless we are certain they all exist in the fork db
-        while( blocklog_head_num < get_last_irreversible_block_num() )
-        {
-          item_ptr block_ptr = _fork_db.fetch_block_on_main_branch_by_number( blocklog_head_num + 1 );
-          FC_ASSERT( block_ptr, "Current fork in the fork database does not contain the last_irreversible_block" );
-          blocks_to_write.push_back( block_ptr );
-          blocklog_head_num++;
-        }
-
-        for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-          _block_log.append( block_itr->get()->full_block, _is_at_live_sync );
-
-        _block_log.flush();
-      }
-    }
-
-    // This deletes blocks from the fork db
-    //edump((dpo.head_block_number)(get_last_irreversible_block_num()));
-    _fork_db.set_max_size( dpo.head_block_number - get_last_irreversible_block_num() + 1 );
-
-    // This deletes undo state
-    commit( get_last_irreversible_block_num() );
-
-    if (old_last_irreversible < get_last_irreversible_block_num())
-    {
-      //ilog("Updating last irreversible block to: ${b}. Old last irreversible was: ${ob}.",
-      //  ("b", get_last_irreversible_block_num())("ob", old_last_irreversible));
-
-    for (uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i)
-      notify_irreversible_block(i);
-  }
-}
 
 void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 {

@@ -111,7 +111,7 @@ namespace chain {
   {
     public:
       database( appbase::application& app );
-      virtual ~database();
+      ~database();
 
       void set_block_writer( block_write_i* writer );
 
@@ -204,8 +204,6 @@ namespace chain {
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
       void initialize_state_independent_data(const open_args& args);
 
-      bool is_included_block_unlocked(const block_id_type& block_id);
-
       void begin_type_register_process(util::abstract_type_registrar& r);
 
       void verify_match_of_state_objects_definitions_from_shm();
@@ -226,24 +224,11 @@ namespace chain {
 
       //////////////////// db_block.cpp ////////////////////
 
-      /**
-        *  @return true if the block is in our fork DB or saved to disk as
-        *  part of the official chain, otherwise return false
-        */
-      bool                       is_known_block( const block_id_type& id )const;
-    private:
-      bool                       is_known_block_unlocked(const block_id_type& id)const;
     public:
       bool                       is_known_transaction( const transaction_id_type& id )const;
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
-      block_id_type              find_block_id_for_num( uint32_t block_num )const;
     public:
-      block_id_type              get_block_id_for_num( uint32_t block_num )const;
-      std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
-      std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
-      std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
-                                                                        fc::microseconds wait_for_microseconds = fc::microseconds() );
       std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
@@ -878,16 +863,6 @@ namespace chain {
         * chain state.
         */
       fc::signal<void(const transaction_notification&)>     _post_apply_transaction_signal;
-
-      /**
-        * Emitted when reindexing starts
-        */
-      fc::signal<void(const reindex_notification&)>         _pre_reindex_signal;
-
-      /**
-        * Emitted when reindexing finishes
-        */
-      fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
 
   public:
       /**

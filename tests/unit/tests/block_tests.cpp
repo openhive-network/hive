@@ -64,7 +64,7 @@ namespace fc
     return ostr;
   }
 }
-namespace hive
+namespace hive 
 {
   namespace protocol
   {
