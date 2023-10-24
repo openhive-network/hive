@@ -1224,16 +1224,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
 
-    {
-    signed_transaction tx;
-    transfer_operation transfer;
-    transfer.to = "bob";
-    transfer.from = "alice";
-    transfer.amount = ASSET( "1.000 TBD" );
-    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( transfer );
-    push_transaction( tx, alice_private_key );
-    }
+    transfer( "alice", "bob", ASSET( "1.000 TBD" ), "", alice_private_key );
 
     auto& gpo = db->get_dynamic_global_properties();
 

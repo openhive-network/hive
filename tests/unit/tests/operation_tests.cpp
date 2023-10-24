@@ -10512,13 +10512,13 @@ BOOST_AUTO_TEST_CASE( private_key_memo_test )
     push_transaction( op, init_account_priv_key );
     generate_block();
 
-    transfer( HIVE_INIT_MINER_NAME, "alice1", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
-    transfer( HIVE_INIT_MINER_NAME, "alice2", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
-    transfer( HIVE_INIT_MINER_NAME, "alice3", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
-    transfer( HIVE_INIT_MINER_NAME, "alice4", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
-    transfer( HIVE_INIT_MINER_NAME, "alice5", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
-    transfer( HIVE_INIT_MINER_NAME, "alice", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
-    transfer( HIVE_INIT_MINER_NAME, "bob", ASSET( "100.000 TESTS" ), "", init_account_priv_key );
+    fund( "alice1", ASSET( "100.000 TESTS" ) );
+    fund( "alice2", ASSET( "100.000 TESTS" ) );
+    fund( "alice3", ASSET( "100.000 TESTS" ) );
+    fund( "alice4", ASSET( "100.000 TESTS" ) );
+    fund( "alice5", ASSET( "100.000 TESTS" ) );
+    fund( "alice", ASSET( "100.000 TESTS" ) );
+    fund( "bob", ASSET( "100.000 TESTS" ) );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Testing master password based keys in memo - owner key" );
