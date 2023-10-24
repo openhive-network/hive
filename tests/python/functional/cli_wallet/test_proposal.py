@@ -68,15 +68,18 @@ def test_create_proposal_fail_negative_payment(
     assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
     prepared_proposal = prepare_proposal(funded_account)
-    prepared_proposal.create_proposal_arguments["daily_pay"] = tt.Asset.Tbd(-1)  # "-1.000 TBD"
+    # create asset with negative value manually - pydantic doesn't allow to do it via constructor
+    negative_value = tt.Asset.Tbd(1)
+    negative_value.amount = -1000
+    prepared_proposal.create_proposal_arguments["daily_pay"] = negative_value  # "-1.000 TBD"
     wallet.api.post_comment(**prepared_proposal.post_comment_arguments)
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.create_proposal(**prepared_proposal.create_proposal_arguments)
 
-    response = exception.value.response
-    assert "daily_pay.amount >= 0" in response["error"]["message"]
-    assert "Daily pay can't be negative value" in response["error"]["message"]
+    response = exception.value.error
+    assert "daily_pay.amount >= 0" in response
+    assert "Daily pay can't be negative value" in response
 
     assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
@@ -125,7 +128,7 @@ def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInf
     update_args = {
         "proposal_id": proposal_id,
         "creator": author.name,
-        "daily_pay": str(current_daily_pay),
+        "daily_pay": current_daily_pay,
         "subject": "updated subject",
         "permlink": prepared_proposal.permlink,
         "end_date": format_datetime(prepared_proposal.end_date - timedelta(days=2)),
@@ -135,7 +138,7 @@ def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInf
 
     proposal = wallet.api.find_proposals([proposal_id])[0]
 
-    assert proposal["daily_pay"] == current_daily_pay
+    assert proposal["daily_pay"] == current_daily_pay.as_legacy()
     assert proposal["subject"] == update_args["subject"]
     assert proposal["permlink"] == prepared_proposal.permlink
     assert proposal["end_date"] == update_args["end_date"]
@@ -147,14 +150,14 @@ def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInf
 
     current_daily_pay -= tt.Asset.Tbd(1)
     tt.logger.info(current_daily_pay)
-    update_args["daily_pay"] = str(current_daily_pay)
+    update_args["daily_pay"] = current_daily_pay
     update_args["subject"] = "updated subject again"
     update_args["end_date"] = None
 
     wallet.api.update_proposal(**update_args)
     proposal = wallet.api.find_proposals([proposal_id])[0]
 
-    assert proposal["daily_pay"] == current_daily_pay
+    assert proposal["daily_pay"] == current_daily_pay.as_legacy()
     assert proposal["subject"] == update_args["subject"]
     assert proposal["permlink"] == prepared_proposal.permlink
     assert proposal["end_date"] == last_date
