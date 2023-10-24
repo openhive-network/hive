@@ -9,7 +9,7 @@ import pytest
 import test_tools as tt
 
 
-def test_dump_config():
+def test_dump_config() -> None:
     node = tt.InitNode()
     old_config = node.config.json(exclude={"notifications_endpoint"})
     node.run()
@@ -19,7 +19,7 @@ def test_dump_config():
     assert node.config.json(exclude={"notifications_endpoint"}) == old_config
 
 
-def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used():
+def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used() -> None:
     node = tt.InitNode()
     node.run()
 
@@ -30,7 +30,7 @@ def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used(
     assert warning not in stderr
 
 
-def test_warning_about_deprecated_flag_exit_after_replay(block_log):
+def test_warning_about_deprecated_flag_exit_after_replay(block_log: Path) -> None:
     node = tt.ApiNode()
 
     node.run(replay_from=block_log, arguments=["--exit-after-replay"])
@@ -49,7 +49,7 @@ def test_warning_about_deprecated_flag_exit_after_replay(block_log):
         {"exit_before_synchronization": True},
     ],
 )
-def test_stop_after_replay(way_to_stop, block_log: Path, block_log_length: int):
+def test_stop_after_replay(way_to_stop: dict, block_log: Path, block_log_length: int) -> None:
     network = tt.Network()
     node_which_should_not_synchronize = tt.ApiNode(network=network)
     node_with_new_blocks = tt.InitNode(network=network)
@@ -75,7 +75,7 @@ def test_stop_after_replay(way_to_stop, block_log: Path, block_log_length: int):
         {"exit_before_synchronization": True},
     ],
 )
-def test_stop_after_replay_in_load_from_snapshot(way_to_stop, block_log: Path):
+def test_stop_after_replay_in_load_from_snapshot(way_to_stop: dict, block_log: Path) -> None:
     node = tt.ApiNode()
     node.run(replay_from=block_log, **way_to_stop)
     snap = node.dump_snapshot(close=True)
@@ -84,7 +84,7 @@ def test_stop_after_replay_in_load_from_snapshot(way_to_stop, block_log: Path):
     assert not node.is_running()
 
 
-def test_stop_replay_at_given_block(block_log: Path, block_log_length: int):
+def test_stop_replay_at_given_block(block_log: Path, block_log_length: int) -> None:
     final_block: Final[int] = block_log_length // 2
 
     node = tt.ApiNode()
@@ -93,7 +93,7 @@ def test_stop_replay_at_given_block(block_log: Path, block_log_length: int):
     assert node.get_last_block_number() == final_block
 
 
-def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path, block_log_length: int):
+def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path, block_log_length: int) -> None:
     # In the past there was a problem with witness node stopped at given block. This issue was caused by communication
     # of witness plugin with p2p plugin. When node is stopped at given block, p2p plugin is not enabled, so witness
     # plugin was unable to get information from it and program used to crash.
@@ -114,7 +114,7 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path,
     assert node.is_running()  # Make sure, that node didn't crash.
 
 
-def test_hived_get_version():
+def test_hived_get_version() -> None:
     node = tt.RawNode()
     version_json = node.get_version()
 
