@@ -27,7 +27,7 @@ def node() -> tt.InitNode:
 
 @pytest.mark.skip(reason="Remove this marker after fixing source code")
 @run_for("testnet")
-def test_reset_data_provided_by_hardfork_hive_operation_generated_between_hf_22_and_hf_23(node: tt.InitNode):
+def test_reset_data_provided_by_hardfork_hive_operation_generated_between_hf_22_and_hf_23(node: tt.InitNode) -> None:
     """
     The test checks whether the virtual operation "hardfork_hive_operation" (generated on hardfork 23) contains
     correct data related to "air drop" HIVE.
@@ -87,9 +87,9 @@ def assert_account_resources(node: tt.InitNode, account_name: str, relate: opera
 def __get_resources_from_account(node: tt.InitNode, account_name: str) -> dict:
     account = node.api.wallet_bridge.get_account(account_name)
     return {
-        "balance": account["balance"],
-        "hbd_balance": account["hbd_balance"],
-        "vesting_shares": account["vesting_shares"],
+        "balance": account.balance,
+        "hbd_balance": account.hbd_balance,
+        "vesting_shares": account.vesting_shares,
     }
 
 
@@ -102,7 +102,7 @@ def assert_cleared_resources_in_hardfork_hive_operation(node: tt.InitNode, accou
             limit=2,
             include_reversible=True,
             operation_filter_high=528,
-        )["history"]
+        ).history
     ]
 
     asset_keys = list(tt.Asset.Hbd(1.0).as_nai().keys())

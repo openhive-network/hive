@@ -21,7 +21,7 @@ CALL_LIST_PROPOSAL_VOTES_TEMPLATE: Final[dict] = {
 @run_for("testnet")
 @pytest.mark.parametrize("api", ["condenser", "database", "wallet_bridge"])
 @pytest.mark.parametrize("status", ["active", "all", "expired", "inactive", "votable"])
-def test_proposal_status_filter_on_list_proposal_votes(node, api, status):
+def test_proposal_status_filter_on_list_proposal_votes(node: tt.InitNode, api: str, status: str) -> None:
     wallet = tt.Wallet(attach_to=node)
     create_and_fund_voters(wallet, VOTERS_AMOUNT)
 
@@ -55,7 +55,7 @@ def wait_for_proposal_expiration(node: tt.InitNode) -> None:
                 order="by_creator",
                 order_direction="ascending",
                 status="expired",
-            )["proposals"]
+            ).proposals
         )
 
     error_message = "Proposal didn't expired within indicated time."
@@ -82,7 +82,7 @@ def call_list_proposal_votes(node: tt.InitNode, api: str, status: str) -> dict:
         result = getattr(node.api, api).list_proposal_votes(*args)
 
     if api != "condenser":
-        return result["proposal_votes"]
+        return result.proposal_votes
 
     return result
 
@@ -105,7 +105,7 @@ def create_account_and_proposal(
     )
 
 
-def create_and_fund_voters(wallet, number_of_voters):
+def create_and_fund_voters(wallet: tt.Wallet, number_of_voters: int) -> None:
     voters = get_account_names(wallet.create_accounts(number_of_voters, name_base="voter"))
 
     with wallet.in_single_transaction():
