@@ -8,7 +8,7 @@ from hive_local_tools.constants import MAX_OPEN_RECURRENT_TRANSFERS
 
 
 @run_for("testnet")
-def test_try_to_send_more_than_the_maximum_limit_of_recurrent_transfers_from_one_account(node):
+def test_try_to_send_more_than_the_maximum_limit_of_recurrent_transfers_from_one_account(node: tt.InitNode) -> None:
     amount_of_receiver_accounts = MAX_OPEN_RECURRENT_TRANSFERS
     account_that_sends_all_recurrent_transfers = "sender"
     account_that_exceed_transfers_limit = "additional-acc"

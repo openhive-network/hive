@@ -13,12 +13,12 @@ def pytest_configure(config):
 
 
 @pytest.fixture()
-def wallet(node):
+def wallet(node: tt.InitNode) -> tt.Wallet:
     return tt.Wallet(attach_to=node)
 
 
 @pytest.fixture()
-def replayed_node(request):
+def replayed_node(request: pytest.FixtureRequest) -> tt.ApiNode:
     api_node = tt.ApiNode()
     transaction_status_track_after_block = request.node.get_closest_marker("transaction_status_track_after_block")
     transaction_status_block_depth = request.node.get_closest_marker("transaction_status_block_depth")

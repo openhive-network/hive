@@ -5,7 +5,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet")
-def test_cancel_recurrent_transfer(node):
+def test_cancel_recurrent_transfer(node: tt.InitNode) -> None:
     # To cancel recurrent transfer make this transfer with hive amount equals 0
     wallet = tt.Wallet(attach_to=node)
 
