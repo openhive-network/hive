@@ -33,7 +33,12 @@ from hive_local_tools import run_for
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_ops_in_block_with_correct_values(node, block_num, virtual_operation, include_reversible):
+def test_get_ops_in_block_with_correct_values(
+    node: tt.InitNode | tt.RemoteNode,
+    block_num: bool | float | None,
+    virtual_operation: bool | int | None,
+    include_reversible: bool | int | str,
+) -> None:
     node.api.account_history.get_ops_in_block(
         block_num=block_num,
         only_virtual=virtual_operation,
@@ -63,7 +68,12 @@ def test_get_ops_in_block_with_correct_values(node, block_num, virtual_operation
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_get_ops_in_block_with_incorrect_type_of_arguments(node, block_num, virtual_operation, include_reversible):
+def test_get_ops_in_block_with_incorrect_type_of_arguments(
+    node: tt.InitNode | tt.RemoteNode,
+    block_num: dict | int | list | str,
+    virtual_operation: bool | dict | list | str,
+    include_reversible: bool | dict | list | str,
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.get_ops_in_block(
             block_num=block_num,

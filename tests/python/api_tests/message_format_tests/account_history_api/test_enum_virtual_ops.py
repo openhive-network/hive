@@ -30,7 +30,12 @@ from hive_local_tools import run_for
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_enum_virtual_ops_with_correct_values(node, block_range_begin, block_range_end, group_by_block):
+def test_enum_virtual_ops_with_correct_values(
+    node: tt.InitNode | tt.RemoteNode,
+    block_range_begin: bool | int | str,
+    block_range_end: bool | int | str,
+    group_by_block: bool | int | str,
+) -> None:
     node.api.account_history.enum_virtual_ops(
         block_range_begin=block_range_begin,
         block_range_end=block_range_end,
@@ -65,7 +70,12 @@ def test_enum_virtual_ops_with_correct_values(node, block_range_begin, block_ran
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
-def test_enum_virtual_ops_with_incorrect_values(node, block_range_begin, block_range_end, group_by_block):
+def test_enum_virtual_ops_with_incorrect_values(
+    node: tt.InitNode | tt.RemoteNode,
+    block_range_begin: bool | int | str,
+    block_range_end: bool | int | str,
+    group_by_block: bool | dict | int | list | str,
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.enum_virtual_ops(
             block_range_begin=block_range_begin,
