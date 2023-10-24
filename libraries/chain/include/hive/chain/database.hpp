@@ -780,7 +780,7 @@ namespace chain {
 
       hardfork_versions             _hardfork_versions;
 
-      block_write_i*                _block_writer;
+      block_write_i*                _block_writer = reinterpret_cast<block_write_i*>(0xBADC0FFEE0DDF00D);
 
       // this function needs access to _plugin_index_signal
       template< typename MultiIndexType >
