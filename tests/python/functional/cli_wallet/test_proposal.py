@@ -23,12 +23,12 @@ def list_proposals_by_creator(wallet: tt.Wallet, creator_name: str) -> list:
     return find_proposals_by_creator_name(_creator=creator_name, _proposal_list=all_proposals)
 
 
-def list_proposal_votes_by_voter(wallet: tt.Wallet, voter_name: str):
+def list_proposal_votes_by_voter(wallet: tt.Wallet, voter_name: str) -> list:
     all_proposal_votes = wallet.api.list_proposal_votes(**get_list_proposal_votes_args(start=[voter_name]))
     return find_proposals_by_voter_name(voter_name, all_proposal_votes)
 
 
-def test_create_proposal(wallet: tt.Wallet, creator: tt.Account, creator_proposal_id):
+def test_create_proposal(wallet: tt.Wallet, creator: tt.Account, creator_proposal_id) -> None:
     creator_proposals_after_count = len(list_proposals_by_creator(wallet, creator.name))
     assert creator_proposals_after_count == 1
 
@@ -38,7 +38,7 @@ def test_remove_proposal(
     funded_account: FundedAccountInfo,
     creator_proposal_id: PreparedProposalDataWithId,
     account_proposal_id: PreparedProposalDataWithId,
-):
+) -> None:
     wallet.api.remove_proposal(deleter=funded_account.creator.name, ids=[creator_proposal_id.id])
 
     proposals_after_creator = list_proposals_by_creator(wallet, creator_name=funded_account.creator.name)
@@ -53,7 +53,9 @@ def test_remove_proposal(
     ), "removed invalid proposal"
 
 
-def test_update_proposal_votes(wallet: tt.Wallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account):
+def test_update_proposal_votes(
+    wallet: tt.Wallet, creator_proposal_id: PreparedProposalDataWithId, creator: tt.Account
+) -> None:
     voter_proposals_before_count = len(list_proposal_votes_by_voter(wallet, creator.name))
 
     wallet.api.update_proposal_votes(voter=creator.name, proposals=[creator_proposal_id.id], approve=True)
@@ -64,7 +66,7 @@ def test_update_proposal_votes(wallet: tt.Wallet, creator_proposal_id: PreparedP
 
 def test_create_proposal_fail_negative_payment(
     wallet: tt.Wallet, funded_account: FundedAccountInfo, creator: tt.Account
-):
+) -> None:
     assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
     prepared_proposal = prepare_proposal(funded_account)
@@ -85,7 +87,7 @@ def test_create_proposal_fail_negative_payment(
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInfo):
+def test_update_proposal_xxx(wallet: tt.Wallet, funded_account: FundedAccountInfo) -> None:
     from datetime import datetime as date_type
 
     def check_is_proposal_update_exists(block_number: int, end_date: date_type) -> bool:
