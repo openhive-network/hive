@@ -5,14 +5,14 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api", "transaction_status_api"])
-def test_find_transaction(node, should_prepare):
+def test_find_transaction(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account("gtg")
-    head_block_number = node.api.wallet_bridge.get_dynamic_global_properties()["head_block_number"]
+    head_block_number = node.api.wallet_bridge.get_dynamic_global_properties().head_block_number
     operation = node.api.account_history.get_ops_in_block(block_num=head_block_number, include_reversible=True)
 
     assert len(operation["ops"]) > 0, f"Missing transactions in block {head_block_number}"
 
-    transaction_id = operation["ops"][-1]["trx_id"]
+    transaction_id = operation.ops[-1].trx_id
     node.api.transaction_status.find_transaction(transaction_id=transaction_id)
