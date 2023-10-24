@@ -7,7 +7,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet")
-def test_recurrent_transfer_without_resources(node):
+def test_recurrent_transfer_without_resources(node: tt.InitNode) -> None:
     # "sender" want to send recurrent transfer, but it does not have resources
     wallet = tt.Wallet(attach_to=node)
 

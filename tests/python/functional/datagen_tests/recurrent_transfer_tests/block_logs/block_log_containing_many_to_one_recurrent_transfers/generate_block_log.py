@@ -47,7 +47,7 @@ def prepare_block_log_with_many_to_one_recurrent_transfers() -> None:
     init_node.wait_for_irreversible_block()
 
     head_block_num = init_node.get_last_block_number()
-    timestamp = init_node.api.block.get_block(block_num=head_block_num)["block"]["timestamp"]
+    timestamp = init_node.api.block.get_block(block_num=head_block_num).block.timestamp
     tt.logger.info(f"head block timestamp: {timestamp}")
 
     with open("timestamp", "w", encoding="utf-8") as file:
