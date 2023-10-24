@@ -5,7 +5,7 @@ import re
 import test_tools as tt
 
 
-def test_conversion(wallet):
+def test_conversion(wallet: tt.Wallet) -> None:
     response = wallet.api.create_account("initminer", "alice", "{}")
 
     response = wallet.api.transfer("initminer", "alice", tt.Asset.Test(200), "avocado")
@@ -32,7 +32,6 @@ def test_conversion(wallet):
     _request = response[0]
     assert tt.Asset.from_legacy(_request["collateral_amount"]) == tt.Asset.Test(4)
     assert tt.Asset.from_legacy(_request["converted_amount"]) == tt.Asset.Tbd(1.904)
-
     assert is_valid_asset(wallet.api.estimate_hive_collateral(tt.Asset.Test(4)))
 
     wallet.api.convert_hbd("alice", tt.Asset.Tbd(0.5))
@@ -48,5 +47,5 @@ def test_conversion(wallet):
     assert tt.Asset.from_legacy(response[0]["amount"]) == tt.Asset.Tbd(0.5)
 
 
-def is_valid_asset(asset_value):
+def is_valid_asset(asset_value: str) -> bool:
     return bool(re.search(r"\d+\.\d{3}\sTESTS", asset_value))

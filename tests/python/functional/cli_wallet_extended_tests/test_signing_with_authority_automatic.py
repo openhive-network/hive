@@ -5,7 +5,7 @@ import pytest
 import test_tools as tt
 
 
-def test_signing_with_authority(node):
+def test_signing_with_authority(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet1 = tt.Wallet(attach_to=node)
     wallet2 = tt.Wallet(attach_to=node)
