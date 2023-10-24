@@ -320,7 +320,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   BOOST_REQUIRE( get_balance( "greg" ) == zero );
 
   // initminer -> alice
-  fund( "alice", token.amount.value );
+  fund( "alice", asset( token.amount.value, HIVE_SYMBOL ) );
   BOOST_REQUIRE( get_balance( "alice" ) == token );
   BOOST_REQUIRE( get_balance( "bob" ) == zero );
   BOOST_REQUIRE( get_balance( "carol" ) == zero );

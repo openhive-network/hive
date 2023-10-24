@@ -341,7 +341,7 @@ struct curation_rewards_handler
 
   uint64_t prepare_funds_impl( uint32_t idx, uint32_t amount )
   {
-    test_object.fund( voters[idx], amount );
+    test_object.fund( voters[idx], asset( amount, HIVE_SYMBOL ) );
     test_object.vest( voters[idx], voters[idx], asset( amount / 10, HIVE_SYMBOL ), voter_keys[idx] );
     return amount;
   }

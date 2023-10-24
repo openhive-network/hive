@@ -66,8 +66,8 @@ BOOST_AUTO_TEST_CASE( get_transaction_signatures )
   BOOST_TEST_MESSAGE( "testing get_transaction with different number of signatures" );
 
   ACTORS( (alice1trx)(bob1trx) );
-  fund( "alice1trx", 100000 );
-  fund( "temp", 3333 );
+  fund( "alice1trx", ASSET( "100.000 TESTS" ) );
+  fund( "temp", ASSET( "3.333 TESTS" ) );
 
   authority multi_authority( 2, bob1trx_public_key, 1, alice1trx_public_key, 1 );
   account_update( "bob1trx", bob1trx_private_key.get_public_key(), "", multi_authority, multi_authority, multi_authority, bob1trx_private_key );

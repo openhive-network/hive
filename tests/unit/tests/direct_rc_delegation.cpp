@@ -1191,7 +1191,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
 
     ACTORS_DEFAULT_FEE( (alice)(bob) )
     generate_block();
-    fund( "bob", 9000000000 );
+    fund( "bob", ASSET( "9000000.000 TESTS" ) );
     vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1.000 TESTS" ) );
     generate_block();
 

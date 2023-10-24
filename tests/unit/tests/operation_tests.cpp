@@ -1407,7 +1407,7 @@ BOOST_AUTO_TEST_CASE( transfer_authorities )
   try
   {
     ACTORS( (alice)(bob) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "Testing: transfer_authorities" );
 
@@ -1449,7 +1449,7 @@ BOOST_AUTO_TEST_CASE( signature_stripping )
     // Sam shouldn't be able to add or remove signatures to get the transaction to process multiple times.
 
     ACTORS( (alice)(bob)(sam)(corp) )
-    fund( "corp", 10000 );
+    fund( "corp", ASSET( "10.000 TESTS" ) );
 
     account_update_operation update_op;
     update_op.account = "corp";
@@ -1506,7 +1506,7 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
 
     ACTORS( (alice)(bob) )
     generate_block();
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     issue_funds( "bob", ASSET( "1.000 TBD" ) );
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
@@ -1609,7 +1609,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_authorities )
   try
   {
     ACTORS( (alice)(bob) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "Testing: transfer_to_vesting_authorities" );
 
@@ -1649,7 +1649,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     BOOST_TEST_MESSAGE( "Testing: transfer_to_vesting_apply" );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     const auto& gpo = db->get_dynamic_global_properties();
 
@@ -1737,7 +1737,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_authorities )
     BOOST_TEST_MESSAGE( "Testing: withdraw_vesting_authorities" );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     vest( "alice", 10000 );
 
     withdraw_vesting_operation op;
@@ -1916,7 +1916,7 @@ BOOST_AUTO_TEST_CASE( witness_update_authorities )
     BOOST_TEST_MESSAGE( "Testing: witness_update_authorities" );
 
     ACTORS( (alice)(bob) );
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     private_key_type signing_key = generate_private_key( "new_key" );
 
@@ -1958,7 +1958,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     BOOST_TEST_MESSAGE( "Testing: witness_update_apply" );
 
     ACTORS( (alice) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     private_key_type signing_key = generate_private_key( "new_key" );
 
@@ -2052,7 +2052,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_authorities )
 
     ACTORS( (alice)(bob)(sam) )
 
-    fund( "alice", 1000 );
+    fund( "alice", ASSET( "1.000 TESTS" ) );
     private_key_type alice_witness_key = generate_private_key( "alice_witness" );
     witness_create( "alice", alice_private_key, "foo.bar", alice_witness_key.get_public_key(), 1000 );
 
@@ -2095,9 +2095,9 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     BOOST_TEST_MESSAGE( "Testing: account_witness_vote_apply" );
 
     ACTORS( (alice)(bob)(sam) )
-    fund( "alice" , 5000 );
+    fund( "alice" , ASSET( "5.000 TESTS" ) );
     vest( "alice", 5000 );
-    fund( "sam", 1000 );
+    fund( "sam", ASSET( "1.000 TESTS" ) );
 
     private_key_type sam_witness_key = generate_private_key( "sam_key" );
     witness_create( "sam", sam_private_key, "foo.bar", sam_witness_key.get_public_key(), 1000 );
@@ -2204,11 +2204,11 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
     BOOST_TEST_MESSAGE("Testing: account_witness_vote_apply_delay");
 
     ACTORS((alice)(bob)(sam))
-    fund("alice", 5000);
+    fund("alice", ASSET( "5.000 TESTS" ));
     vest("alice", 5000);
     //vests are going to vote after HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS
     //note that account creation also vests a bit for new account
-    fund("sam", 1000);
+    fund("sam", ASSET( "1.000 TESTS" ));
 
     private_key_type sam_witness_key = generate_private_key("sam_key");
     witness_create("sam", sam_private_key, "foo.bar", sam_witness_key.get_public_key(), 1000);
@@ -2459,13 +2459,13 @@ BOOST_AUTO_TEST_CASE( proxy_cleared_operation_basic )
     BOOST_TEST_MESSAGE( "Testing: 'proxy_cleared_operation' virtual operation" );
 
     ACTORS( (alice)(bob)(carol)(dan) )
-    fund( "alice", 1000 );
+    fund( "alice", ASSET( "1.000 TESTS" ) );
     vest( "alice", 1000 );
-    fund( "bob", 3000 );
+    fund( "bob", ASSET( "3.000 TESTS" ) );
     vest( "bob", 3000 );
-    fund( "carol", 3000 );
+    fund( "carol", ASSET( "3.000 TESTS" ) );
     vest( "carol", 3000 );
-    fund( "dan", 3000 );
+    fund( "dan", ASSET( "3.000 TESTS" ) );
     vest( "dan", 3000 );
 
     {
@@ -2596,13 +2596,13 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     BOOST_TEST_MESSAGE( "Testing: account_witness_proxy_apply" );
 
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", 1000 );
+    fund( "alice", ASSET( "1.000 TESTS" ) );
     vest( "alice", 1000 );
-    fund( "bob", 3000 );
+    fund( "bob", ASSET( "3.000 TESTS" ) );
     vest( "bob", 3000 );
-    fund( "sam", 5000 );
+    fund( "sam", ASSET( "5.000 TESTS" ) );
     vest( "sam", 5000 );
-    fund( "dave", 7000 );
+    fund( "dave", ASSET( "7.000 TESTS" ) );
     vest( "dave", 7000 );
 
     BOOST_TEST_MESSAGE( "--- Test setting proxy to another account from self." );
@@ -2749,17 +2749,17 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_too_long )
     BOOST_TEST_MESSAGE( "Testing: account_witness_proxy too long chain" );
 
     ACTORS( (alice)(bob)(sam)(dave)(greg)(henry) )
-    fund( "alice", 1000 );
+    fund( "alice", ASSET( "1.000 TESTS" ) );
     vest( "alice", 1000 );
-    fund( "bob", 3000 );
+    fund( "bob", ASSET( "3.000 TESTS" ) );
     vest( "bob", 3000 );
-    fund( "sam", 5000 );
+    fund( "sam", ASSET( "5.000 TESTS" ) );
     vest( "sam", 5000 );
-    fund( "dave", 7000 );
+    fund( "dave", ASSET( "7.000 TESTS" ) );
     vest( "dave", 7000 );
-    fund( "greg", 9000 );
+    fund( "greg", ASSET( "9.000 TESTS" ) );
     vest( "greg", 9000 );
-    fund( "henry", 11000 );
+    fund( "henry", ASSET( "11.000 TESTS" ) );
     vest( "henry", 11000 );
 
     //wait for delayed votes to become active
@@ -2814,7 +2814,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_too_long )
     BOOST_REQUIRE_EQUAL( top_proxied_votes[3].value, get_vesting( "greg" ).amount.value );
 
     //let's change voting power of henry and see what happens (should be reflected up to bob, but not alice)
-    fund( "henry", 100 );
+    fund( "henry", ASSET( "0.100 TESTS" ) );
     vest( "henry", 100 );
     //wait for delayed votes to become active
     generate_blocks( db->head_block_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
@@ -2847,15 +2847,15 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
     BOOST_TEST_MESSAGE( "Testing: account_witness_proxy_apply_delay" );
 
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", 1000 );
+    fund( "alice", ASSET( "1.000 TESTS" ) );
     vest( "alice", 1000 );
     //vests are going to vote after HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS
     //note that account creation also vests a bit for new account
-    fund( "bob", 3000 );
+    fund( "bob", ASSET( "3.000 TESTS" ) );
     vest( "bob", 3000 );
-    fund( "sam", 5000 );
+    fund( "sam", ASSET( "5.000 TESTS" ) );
     vest( "sam", 5000 );
-    fund( "dave", 7000 );
+    fund( "dave", ASSET( "7.000 TESTS" ) );
     vest( "dave", 7000 );
 
     generate_block();
@@ -3174,7 +3174,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_authorities )
     BOOST_TEST_MESSAGE( "Testing: feed_publish_authorities" );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     witness_create( "alice", alice_private_key, "foo.bar", alice_private_key.get_public_key(), 1000 );
 
     feed_publish_operation op;
@@ -3212,7 +3212,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_apply )
     BOOST_TEST_MESSAGE( "Testing: feed_publish_apply" );
 
     ACTORS( (alice) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     witness_create( "alice", alice_private_key, "foo.bar", alice_private_key.get_public_key(), 1000 );
 
     BOOST_TEST_MESSAGE( "--- Test publishing price feed" );
@@ -3283,7 +3283,7 @@ BOOST_AUTO_TEST_CASE( convert_authorities )
     BOOST_TEST_MESSAGE( "Testing: convert_authorities" );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
@@ -3325,8 +3325,8 @@ BOOST_AUTO_TEST_CASE( convert_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: convert_apply" );
     ACTORS( (alice)(bob) );
-    fund( "alice", 10000 );
-    fund( "bob" , 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
+    fund( "bob", ASSET( "10.000 TESTS" ) );
 
     convert_operation op;
     signed_transaction tx;
@@ -3418,7 +3418,7 @@ BOOST_AUTO_TEST_CASE( fixture_convert_checks_balance )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
     ACTORS( (dany) )
 
-    fund( "dany", 5000 );
+    fund( "dany", ASSET( "5.000 TESTS" ) );
     HIVE_REQUIRE_THROW( convert( "dany", ASSET( "5000.000 TESTS" ) ), fc::exception );
   }
   FC_LOG_AND_RETHROW()
@@ -3537,7 +3537,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "available >= -delta" );
 
     //give alice enough for further tests
-    fund( "alice", 9000000 );
+    fund( "alice", ASSET( "9000.000 TESTS" ) );
     auto alice_balance = get_balance( "alice" );
     BOOST_REQUIRE( alice_balance == ASSET( "10000.000 TESTS" ) );
 
@@ -3910,7 +3910,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create_authorities )
     BOOST_TEST_MESSAGE( "Testing: limit_order_create_authorities" );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     limit_order_create_operation op;
     op.owner = "alice";
@@ -3951,8 +3951,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", 1000000 );
-    fund( "bob", 1000000 );
+    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    fund( "bob", ASSET( "1000.000 TESTS" ) );
     convert( "bob", ASSET("1000.000 TESTS" ) );
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
@@ -4219,7 +4219,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_authorities )
     BOOST_TEST_MESSAGE( "Testing: limit_order_create2_authorities" );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     limit_order_create2_operation op;
     op.owner = "alice";
@@ -4260,8 +4260,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", 1000000 );
-    fund( "bob", 1000000 );
+    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    fund( "bob", ASSET( "1000.000 TESTS" ) );
     convert( "bob", ASSET("1000.000 TESTS" ) );
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
@@ -4540,8 +4540,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
 
     BOOST_TEST_MESSAGE( "--- Test filling best order with multiple matches." );
     ACTORS( (sam)(dave) )
-    fund( "sam", 1000000 );
-    fund( "dave", 1000000 );
+    fund( "sam", ASSET( "1000.000 TESTS" ) );
+    fund( "dave", ASSET( "1000.000 TESTS" ) );
     convert( "dave", ASSET("1000.000 TESTS" ) );
 
     op.owner = "bob";
@@ -4626,7 +4626,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cancel_authorities )
     BOOST_TEST_MESSAGE( "Testing: limit_order_cancel_authorities" );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     limit_order_create_operation c;
     c.owner = "alice";
@@ -4674,7 +4674,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cancel_apply )
     BOOST_TEST_MESSAGE( "Testing: limit_order_cancel_apply" );
 
     ACTORS( (alice) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
 
@@ -4748,7 +4748,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     BOOST_TEST_MESSAGE( "Testing: account recovery" );
 
     ACTORS( (alice) );
-    fund( "alice", 1000000 );
+    fund( "alice", ASSET( "1000.000 TESTS" ) );
     generate_block();
 
     db_plugin->debug_update( [=]( database& db )
@@ -5161,7 +5161,7 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
 
     ACTORS( (alice)(bob)(sam) )
 
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     escrow_transfer_operation op;
     op.from = "alice";
@@ -5317,7 +5317,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: escrow_approve_apply" );
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     escrow_transfer_operation et_op;
     et_op.from = "alice";
@@ -5670,7 +5670,7 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
     BOOST_TEST_MESSAGE( "Testing: escrow_dispute_apply" );
 
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     escrow_transfer_operation et_op;
     et_op.from = "alice";
@@ -5942,7 +5942,7 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     BOOST_TEST_MESSAGE( "Testing: escrow_release_apply" );
 
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
 
     escrow_transfer_operation et_op;
     et_op.from = "alice";
@@ -6357,7 +6357,7 @@ BOOST_AUTO_TEST_CASE( escrow_limit )
     BOOST_TEST_MESSAGE( "Testing: escrow_limit" );
 
     ACTORS((alice)(bob)(sam))
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     generate_block();
 
     escrow_transfer_operation op;
@@ -8446,7 +8446,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_validate )
     BOOST_TEST_MESSAGE( "Testing: witness_set_properties_validate" );
 
     ACTORS( (alice) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     private_key_type signing_key = generate_private_key( "old_key" );
 
     witness_update_operation op;
@@ -8621,7 +8621,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
     BOOST_TEST_MESSAGE( "Testing: witness_set_properties_apply" );
 
     ACTORS( (alice) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     private_key_type signing_key = generate_private_key( "old_key" );
 
     witness_update_operation op;
@@ -9691,7 +9691,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
 
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
 
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     issue_funds( "alice", ASSET("100.000 TBD") );
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
@@ -10658,26 +10658,26 @@ struct timeshare_test_fixture : clean_database_fixture
 
     // one account that votes for all voted witnesses
     ACTORS((staticvoter))
-    fund("staticvoter", 100000000);
+    fund("staticvoter", ASSET( "100000.000 TESTS" ));
     vest("staticvoter", 100000000);
 
     // one account that votes for all timeshare witnesses
     ACTORS((timesharevoter1))
-    fund("timesharevoter1", 10000000);
+    fund("timesharevoter1", ASSET( "10000.000 TESTS" ));
     vest("timesharevoter1", 10000000);
 
     ACTORS((timesharevoter2))
-    fund("timesharevoter2", 10000000);
+    fund("timesharevoter2", ASSET( "10000.000 TESTS" ));
     vest("timesharevoter2", 10000000);
 
     ACTORS((timesharevoter3))
-    fund("timesharevoter3", 100);
+    fund("timesharevoter3", ASSET( "0.100 TESTS" ));
     vest("timesharevoter3", 100);
 
     ACTORS((littlevoter1)(littlevoter2)(littlevoter3)(littlevoter4)(littlevoter5)(littlevoter6)(littlevoter7)(littlevoter8)(littlevoter9)(littlevoter10))
     for (unsigned i = 1; i <= 10; ++i)
     {
-      fund("littlevoter" + std::to_string(i), 1);
+      fund("littlevoter" + std::to_string(i), ASSET( "0.001 TESTS" ));
       vest("littlevoter" + std::to_string(i), 1);
     }
 

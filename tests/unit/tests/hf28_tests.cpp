@@ -25,8 +25,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
         ACTORS_EXT( (*executor), (alice)(bob) );
-        executor->fund( "alice", 1000 );
-        executor->fund( "bob", 1000 );
+        executor->fund( "alice", ASSET( "1.000 TESTS" ) );
+        executor->fund( "bob", ASSET( "1.000 TESTS" ) );
         executor->vest( "alice", 1000 );
         executor->vest( "bob", 1000 );
 
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic_2 )
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
         ACTORS_EXT( (*executor), (alice) );
-        executor->fund( "alice", 1000 );
+        executor->fund( "alice", ASSET( "1.000 TESTS" ) );
         executor->vest( "alice", 1000 );
 
         auto _create_decline_voting_rights_operation = []( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& key )
@@ -157,8 +157,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes )
 
       executor->generate_block();
 
-      executor->fund( "alice", 100000 );
-      executor->fund( "bob", 100000 );
+      executor->fund( "alice", ASSET( "100.000 TESTS" ) );
+      executor->fund( "bob", ASSET( "100.000 TESTS" ) );
       executor->issue_funds( "alice", ASSET( "200.000 TBD" ) );
       executor->issue_funds( "bob", ASSET( "200.000 TBD" ) );
       executor->vest( "alice", 100000 );
@@ -224,8 +224,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
 
       executor->generate_block();
 
-      executor->fund( "alice", 100000 );
-      executor->fund( "bob", 100000 );
+      executor->fund( "alice", ASSET( "100.000 TESTS" ) );
+      executor->fund( "bob", ASSET( "100.000 TESTS" ) );
       executor->issue_funds( "alice", ASSET( "200.000 TBD" ) );
       executor->issue_funds( "bob", ASSET( "200.000 TBD" ) );
       executor->vest( "alice", 100000 );
@@ -523,7 +523,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
       std::vector<account_data> _actors = { { "alice", alice_private_key }, { "bob", bob_private_key }, { "carol", carol_private_key }, { "diana", diana_private_key } };
       for( auto& actor : _actors )
       {
-        executor->fund( actor.name, 100000 );
+        executor->fund( actor.name, ASSET( "100.000 TESTS" ) );
         executor->issue_funds( actor.name, ASSET( "200.000 TBD" ) );
         executor->vest( actor.name, 100000 );
       }

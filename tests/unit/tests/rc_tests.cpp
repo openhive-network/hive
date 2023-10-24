@@ -121,9 +121,9 @@ BOOST_AUTO_TEST_CASE( rc_usage_buckets )
       check_eq( bucket.get_usage(), {} );
 
     ACTORS( (alice)(bob)(sam) )
-    fund( "alice", 1000 );
-    fund( "bob", 1000 );
-    fund( "sam", 1000 );
+    fund( "alice", ASSET( "1.000 TESTS" ) );
+    fund( "bob", ASSET( "1.000 TESTS" ) );
+    fund( "sam", ASSET( "1.000 TESTS" ) );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Some resources consumed" );
@@ -1359,13 +1359,13 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
 
     //add some source of RC so they can actually perform those (expensive) operations
     vest( "initminer", "alice", ASSET( "10.000 TESTS" ) );
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     vest( "initminer", "barry", ASSET( "10.000 TESTS" ) );
-    fund( "barry", 10000 );
+    fund( "barry", ASSET( "10.000 TESTS" ) );
     vest( "initminer", "carol", ASSET( "10.000 TESTS" ) );
-    fund( "carol", 10000 );
+    fund( "carol", ASSET( "10.000 TESTS" ) );
     vest( "initminer", "diana", ASSET( "10.000 TESTS" ) );
-    fund( "diana", 10000 );
+    fund( "diana", ASSET( "10.000 TESTS" ) );
     generate_block();
     //see explanation at the end of rc_pending_data_reset test
     //note that we don't actually have access to data on transaction but whole block, so it is

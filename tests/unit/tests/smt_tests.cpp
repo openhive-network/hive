@@ -498,9 +498,9 @@ BOOST_AUTO_TEST_CASE( setup_apply )
 
     generate_block();
 
-    fund( "alice", 10 * 1000 * 1000 );
+    fund( "alice", ASSET( "10000.000 TESTS" ) );
     generate_block();
-    fund( "bob", 10 * 1000 * 1000 );
+    fund( "bob", ASSET( "10000.000 TESTS" ) );
     generate_block();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
@@ -577,7 +577,7 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
 
     BOOST_TEST_MESSAGE( " -- SMT create with insufficient HBD balance" );
     // Fund with HIVE, and set fee with HBD.
-    fund( "alice", test_amount );
+    fund( "alice", asset( test_amount, HIVE_SYMBOL ) );
     generate_block();
     // Declare fee in HBD/TBD though alice has none.
     op.smt_creation_fee = asset( test_amount, HBD_SYMBOL );
@@ -621,7 +621,7 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
 
     BOOST_TEST_MESSAGE( " -- Check that we cannot create an SMT with an insufficent HIVE creation fee" );
     // Check too low fee in HIVE.
-    fund( "bob", too_low_fee_amount );
+    fund( "bob", asset( too_low_fee_amount, HIVE_SYMBOL ) );
     generate_block();
     op.smt_creation_fee = asset( too_low_fee_amount, HIVE_SYMBOL );
     FAIL_WITH_OP(op, bob_private_key, fc::assert_exception);

@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
 
     for( const auto& voter : voters )
     {
-      fund( voter.name, 10000 );
+      fund( voter.name, ASSET( "10.000 TESTS" ) );
       vest( voter.name, 10000 );
     }
 
@@ -384,13 +384,13 @@ BOOST_AUTO_TEST_CASE( comment_payout )
   try
   {
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     vest( "alice", 10000 );
-    fund( "bob", 7500 );
+    fund( "bob", ASSET( "7.500 TESTS" ) );
     vest( "bob", 7500 );
-    fund( "sam", 8000 );
+    fund( "sam", ASSET( "8.000 TESTS" ) );
     vest( "sam", 8000 );
-    fund( "dave", 5000 );
+    fund( "dave", ASSET( "5.000 TESTS" ) );
     vest( "dave", 5000 );
 
     price exchange_rate( ASSET( "1.000 TESTS" ), ASSET( "1.000 TBD" ) );
@@ -531,13 +531,13 @@ BOOST_AUTO_TEST_CASE( comment_payout )
   try
   {
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     vest( "alice", 10000 );
-    fund( "bob", 7500 );
+    fund( "bob", ASSET( "7.500 TESTS" ) );
     vest( "bob", 7500 );
-    fund( "sam", 8000 );
+    fund( "sam", ASSET( "8.000 TESTS" ) );
     vest( "sam", 8000 );
-    fund( "dave", 5000 );
+    fund( "dave", ASSET( "5.000 TESTS" ) );
     vest( "dave", 5000 );
 
     price exchange_rate( ASSET( "1.000 TESTS" ), ASSET( "1.000 TBD" ) );
@@ -817,13 +817,13 @@ OOST_AUTO_TEST_CASE( nested_comments )
   try
   {
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     vest( "alice", 10000 );
-    fund( "bob", 10000 );
+    fund( "bob", ASSET( "10.000 TESTS" ) );
     vest( "bob", 10000 );
-    fund( "sam", 10000 );
+    fund( "sam", ASSET( "10.000 TESTS" ) );
     vest( "sam", 10000 );
-    fund( "dave", 10000 );
+    fund( "dave", ASSET( "10.000 TESTS" ) );
     vest( "dave", 10000 );
 
     price exchange_rate( ASSET( "1.000 TESTS" ), ASSET( "1.000 TBD" ) );
@@ -1127,7 +1127,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     auto auto_reset( set_mainnet_cashout_values() ); // Test on mainnet values
 
     ACTORS( (alice) )
-    fund( "alice", 100000 );
+    fund( "alice", ASSET( "100.000 TESTS" ) );
     vest( "alice", 100000 );
 
     const auto& new_alice = db->get_account( "alice" );
@@ -1220,7 +1220,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
 
     auto original_vesting = alice.get_vesting();
 
-    fund( "alice", 1040000 );
+    fund( "alice", ASSET( "1040.000 TESTS" ) );
     vest( "alice", 1040000 );
 
     auto withdraw_amount = alice.get_vesting() - original_vesting;
@@ -1384,7 +1384,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     // Upgrade accounts to witnesses
     for( int i = 0; i < 7; i++ )
     {
-      fund( accounts[i], 10000 );
+      fund( accounts[i], ASSET( "10.000 TESTS" ) );
       witness_create( accounts[i], keys[i], "foo.bar", keys[i].get_public_key(), 1000 );
 
       ops.push_back( feed_publish_operation() );
@@ -1891,10 +1891,10 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
 
     generate_block();
 
-    fund( "alice", alice_hbd.amount );
-    fund( "bob", alice_hbd.amount );
-    fund( "sam", alice_hbd.amount );
-    fund( "dave", alice_hbd.amount );
+    fund( "alice", asset( alice_hbd.amount, HIVE_SYMBOL ) );
+    fund( "bob", asset( alice_hbd.amount, HIVE_SYMBOL ) );
+    fund( "sam", asset( alice_hbd.amount, HIVE_SYMBOL ) );
+    fund( "dave", asset( alice_hbd.amount, HIVE_SYMBOL ) );
 
     int64_t alice_hbd_volume = 0;
     int64_t alice_hive_volume = 0;
@@ -2461,7 +2461,7 @@ BOOST_AUTO_TEST_CASE( post_rate_limit )
   {
     ACTORS( (alice) )
 
-    fund( "alice", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
     vest( "alice", 10000 );
 
     comment_operation op;
@@ -2521,10 +2521,10 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
   try
   {
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", 10000 );
-    fund( "bob", 10000 );
-    fund( "sam", 10000 );
-    fund( "dave", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
+    fund( "bob", ASSET( "10.000 TESTS" ) );
+    fund( "sam", ASSET( "10.000 TESTS" ) );
+    fund( "dave", ASSET( "10.000 TESTS" ) );
 
     vest( "alice", 10000 );
     vest( "bob", 10000 );
@@ -2642,8 +2642,8 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     ACTORS( (alice)(bob)(sam) );
 
-    fund( "alice", 10000 );
-    fund( "bob", 10000 );
+    fund( "alice", ASSET( "10.000 TESTS" ) );
+    fund( "bob", ASSET( "10.000 TESTS" ) );
 
     vest( "alice", 10000 );
     vest( "bob", 10000 );

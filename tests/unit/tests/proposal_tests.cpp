@@ -280,14 +280,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
   {
     BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes" );
     ACTORS( (acc1)(acc2)(acc3)(acc4)(acc5)(acc6)(acc7)(acc8)(accw)(accw2)(accp)(pxy) )
-    fund( "acc1", 1000 ); vest( "acc1", 1000 );
-    fund( "acc2", 2000 ); vest( "acc2", 2000 );
-    fund( "acc3", 3000 ); vest( "acc3", 3000 );
-    fund( "acc4", 4000 ); vest( "acc4", 4000 );
-    fund( "acc5", 5000 ); vest( "acc5", 5000 );
-    fund( "acc6", 6000 ); vest( "acc6", 6000 );
-    fund( "acc7", 7000 ); vest( "acc7", 7000 );
-    fund( "acc8", 8000 ); vest( "acc8", 8000 );
+    fund( "acc1", ASSET( "1.000 TESTS" ) ); vest( "acc1", 1000 );
+    fund( "acc2", ASSET( "2.000 TESTS" ) ); vest( "acc2", 2000 );
+    fund( "acc3", ASSET( "3.000 TESTS" ) ); vest( "acc3", 3000 );
+    fund( "acc4", ASSET( "4.000 TESTS" ) ); vest( "acc4", 4000 );
+    fund( "acc5", ASSET( "5.000 TESTS" ) ); vest( "acc5", 5000 );
+    fund( "acc6", ASSET( "6.000 TESTS" ) ); vest( "acc6", 6000 );
+    fund( "acc7", ASSET( "7.000 TESTS" ) ); vest( "acc7", 7000 );
+    fund( "acc8", ASSET( "8.000 TESTS" ) ); vest( "acc8", 8000 );
 
     generate_block();
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
@@ -638,7 +638,7 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
   {
     BOOST_TEST_MESSAGE( "Testing: proposals_with_decline_voting_rights" );
     ACTORS((acc1)(acc2)(accp)(dwr))
-    fund( "dwr", 1000 ); vest( "dwr", 1000 );
+    fund( "dwr", ASSET( "1.000 TESTS" ) ); vest( "dwr", 1000 );
 
     generate_block();
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
