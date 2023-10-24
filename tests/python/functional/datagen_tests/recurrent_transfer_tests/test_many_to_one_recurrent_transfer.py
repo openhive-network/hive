@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from hive_local_tools.functional.python.datagen.recurrent_transfer import ReplayedNodeMaker
 
 
-def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker):
+def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker) -> None:
     block_log_directory = Path(bl.__file__).parent
     with open(block_log_directory / "timestamp", encoding="utf-8") as file:
         timestamp = tt.Time.parse(file.read())
@@ -28,7 +28,7 @@ def test_many_to_one_recurrent_transfer(replayed_node: ReplayedNodeMaker):
 
     receiver_balance_after_the_second_top_up = replayed_node.api.wallet_bridge.get_accounts([bl.RECEIVER_ACCOUNT_NAME])[
         0
-    ]["balance"]
+    ].balance
 
     expected_balance = bl.NUMBER_OF_SENDER_ACCOUNTS * bl.SINGLE_TRANSFER_AMOUNT * 2
     assert receiver_balance_after_the_second_top_up == expected_balance
