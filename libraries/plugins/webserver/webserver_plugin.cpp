@@ -45,6 +45,9 @@ typedef uint32_t thread_pool_size_t;
 
 namespace detail {
 
+  struct asio_tls_with_stub_log : public websocketpp::config::asio_tls
+  {
+  };
   struct asio_with_stub_log : public websocketpp::config::asio
   {
     typedef asio_with_stub_log type;
@@ -81,6 +84,18 @@ namespace detail {
       transport_type;
 
     static const long timeout_open_handshake = 0;
+  };
+  struct asio_tls_with_stub_log_and_permessage_deflate_enabled : public asio_tls_with_stub_log
+  {
+    struct permessage_deflate_config {};
+
+    typedef websocketpp::extensions::permessage_deflate::enabled<permessage_deflate_config> permessage_deflate_type;
+  };
+  struct asio_tls_with_stub_log_and_permessage_deflate_disabled : public asio_tls_with_stub_log
+  {
+    struct permessage_deflate_config {};
+
+    typedef websocketpp::extensions::permessage_deflate::disabled<permessage_deflate_config> permessage_deflate_type;
   };
   struct asio_with_stub_log_and_permessage_deflate_enabled : public asio_with_stub_log
   {
@@ -132,9 +147,73 @@ namespace detail {
 
     typedef websocketpp::extensions::permessage_deflate::enabled<permessage_deflate_config> permessage_deflate_type;
   };
+using websocket_tls_server_type_deflate = websocketpp::server<asio_tls_with_stub_log_and_permessage_deflate_enabled>;
+using websocket_tls_server_type_nondeflate = websocketpp::server<asio_tls_with_stub_log_and_permessage_deflate_disabled>;
 using websocket_server_type_deflate = websocketpp::server<asio_with_stub_log_and_permessage_deflate_enabled>;
 using websocket_server_type_nondeflate = websocketpp::server<asio_with_stub_log_and_permessage_deflate_disabled>;
 using websocket_local_server_type = websocketpp::server<detail::asio_local_with_stub_log_and_permessage_deflate>;
+
+struct tls_server
+{
+  typedef websocketpp::lib::shared_ptr<boost::asio::ssl::context> context_ptr;
+
+  std::string server_certificate_file_name;
+  std::string server_key_file_name;
+
+  context_ptr on_tls_init( websocketpp::connection_hdl hdl );
+
+  template<typename websocket_server_type>
+  void on_fail( websocket_server_type& server, websocketpp::connection_hdl hdl );
+
+  template<typename websocket_server_type>
+  void set_tls_handlers( websocket_server_type& server );
+};
+
+tls_server::context_ptr tls_server::on_tls_init( websocketpp::connection_hdl hdl )
+{
+  dlog("TLS initialization.");
+  context_ptr ctx(new boost::asio::ssl::context(boost::asio::ssl::context::sslv23));
+
+  try
+  {
+    ctx->set_options(boost::asio::ssl::context::default_workarounds |
+                      boost::asio::ssl::context::no_sslv2 |
+                      boost::asio::ssl::context::no_sslv3 );
+
+    ctx->use_certificate_file( server_certificate_file_name, boost::asio::ssl::context::pem );
+    ctx->use_private_key_file( server_key_file_name, boost::asio::ssl::context::pem );
+  }
+  catch ( const boost::exception& e )
+  {
+    elog( boost::diagnostic_information(e) );
+  }
+  catch(std::exception& e )
+  {
+    elog( e.what() );
+  }
+  catch(...)
+  {
+    elog( "Unexpected error. TLS initialization failed..." );
+  }
+  return ctx;
+}
+
+template<typename websocket_server_type>
+void tls_server::on_fail( websocket_server_type& server, websocketpp::connection_hdl hdl )
+{
+  typename websocket_server_type::connection_ptr con = server.get_con_from_hdl(hdl);
+  ilog( "TLS failed connection: '${message}'. Error code: '${code}'",("message", con->get_ec().message())("code", websocketpp::lib::error_code().message()) );
+}
+
+template<typename websocket_server_type>
+void tls_server::set_tls_handlers( websocket_server_type& server )
+{
+  server.set_tls_init_handler( boost::bind( &tls_server::on_tls_init, this, _1 ) );
+  server.set_fail_handler( boost::bind( &tls_server::on_fail<websocket_server_type>, this, std::ref( server ), _1 ) );
+}
+
+template<> void tls_server::set_tls_handlers<websocket_server_type_nondeflate>( websocket_server_type_nondeflate& server ){}
+template<> void tls_server::set_tls_handlers<websocket_server_type_deflate>( websocket_server_type_deflate& server ){}
 
 class webserver_base
 {
@@ -146,6 +225,8 @@ class webserver_base
     virtual ~webserver_base() {};
 
     virtual boost::signals2::connection add_connection( std::function<void(const collector_t&)> ) = 0;
+
+    optional<tls_server>                                      tls;
 
     optional< tcp::endpoint >                                 http_endpoint;
     optional< boost::asio::local::stream_protocol::endpoint > unix_endpoint;
@@ -302,10 +383,14 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
 
         http_server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_message, this, &http_server, _1 ) );
 
+        if( tls )
+          tls->set_tls_handlers( http_server );
+
         http_server.listen( *http_endpoint );
         http_server.start_accept();
         update_http_endpoint();
-        ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
+        ilog( "start listening for ${type} requests on ${endpoint}",
+            ("type", tls ? "https" : "http")( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
 
         notify( "HTTP", http_endpoint );
 
@@ -572,6 +657,7 @@ void webserver_plugin::set_program_options( options_description&, options_descri
 {
   cfg.add_options()
     ("webserver-http-endpoint", bpo::value< string >(), "Local http endpoint for webserver requests.")
+    ("webserver-https-endpoint", bpo::value< string >(), "Local https endpoint for webserver requests.")
     ("webserver-unix-endpoint", bpo::value< string >(), "Local unix http endpoint for webserver requests.")
     ("webserver-ws-endpoint", bpo::value< string >(), "Local websocket endpoint for webserver requests.")
     // TODO: maybe add a flag to make this optional
@@ -579,6 +665,8 @@ void webserver_plugin::set_program_options( options_description&, options_descri
     ("rpc-endpoint", bpo::value< string >(), "Local http and websocket endpoint for webserver requests. Deprecated in favor of webserver-http-endpoint and webserver-ws-endpoint" )
     ("webserver-thread-pool-size", bpo::value<thread_pool_size_t>()->default_value(32),
       "Number of threads used to handle queries. Default: 32.")
+    ("webserver-https-certificate-file-name", bpo::value< string >()->default_value( "server.crt" ), "File name with a server's certificate. Default `server.cert`." )
+    ("webserver-https-key-file-name", bpo::value< string >()->default_value( "server.key" ), "File name with a server's private key. Default `server.key`." );
     ;
 }
 
@@ -591,18 +679,37 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
 
   auto _ws_deflate_enabled = options.at( "webserver-ws-deflate" ).as< bool >();
   ilog("Compression in webserver is ${_ws_deflate_enabled}", ("_ws_deflate_enabled", _ws_deflate_enabled ? "enabled" : "disabled"));
-  if( _ws_deflate_enabled )
-    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size, get_app() ) );
-  else
-    my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_nondeflate>( thread_pool_size, get_app() ) );
 
-  if( options.count( "webserver-http-endpoint" ) )
+  if( options.count( "webserver-https-endpoint" ) )
   {
-    auto http_endpoint = options.at( "webserver-http-endpoint" ).as< string >();
-    auto endpoints = fc::resolve_string_to_ip_endpoints( http_endpoint );
-    FC_ASSERT( endpoints.size(), "webserver-http-endpoint ${hostname} did not resolve", ("hostname", http_endpoint) );
+    if( _ws_deflate_enabled )
+      my.reset( new detail::webserver_plugin_impl<detail::websocket_tls_server_type_deflate>( thread_pool_size, get_app() ) );
+    else
+      my.reset( new detail::webserver_plugin_impl<detail::websocket_tls_server_type_nondeflate>( thread_pool_size, get_app() ) );
+
+    my->tls = detail::tls_server();
+    my->tls->server_certificate_file_name = options.at( "webserver-https-certificate-file-name" ).as< string >();
+    my->tls->server_key_file_name = options.at( "webserver-https-key-file-name" ).as< string >();
+  }
+  else
+  {
+    if( _ws_deflate_enabled )
+      my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size, get_app() ) );
+    else
+      my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_nondeflate>( thread_pool_size, get_app() ) );
+  }
+
+  if( options.count( "webserver-http-endpoint" ) || options.count( "webserver-https-endpoint" ) )
+  {
+    std::string _http_or_https_endpoint = my->tls ? options.at( "webserver-https-endpoint" ).as< string >() : options.at( "webserver-http-endpoint" ).as< string >();
+
+    auto endpoints = fc::resolve_string_to_ip_endpoints( _http_or_https_endpoint );
+
+    FC_ASSERT( endpoints.size(), "${http-endpoint-type} ${hostname} did not resolve",
+              ("http-endpoint-type", my->tls ? "webserver-https-endpoint" : "webserver-http-endpoint")("hostname", _http_or_https_endpoint) );
+
     my->http_endpoint = tcp::endpoint( boost::asio::ip::address_v4::from_string( ( string )endpoints[0].get_address() ), endpoints[0].port() );
-    ilog( "configured http to listen on ${ep}", ("ep", endpoints[0]) );
+    ilog( "configured ${type} to listen on ${ep}", ("type", my->tls ? "https" : "http")("ep", endpoints[0]) );
   }
 
   if( options.count( "webserver-unix-endpoint" ) )
