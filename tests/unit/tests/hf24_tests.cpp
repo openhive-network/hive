@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE( treasury_debt_ratio )
     ISSUE_FUNDS("alice", ASSET( "1000000.000 TBD" ));
     const auto during_hbd_print_rate = dgpo.hbd_print_rate;
 
-    transfer( "alice", db->get_treasury_name(), asset( 1000000000, HBD_SYMBOL ) );
+    transfer( "alice", db->get_treasury_name(), asset( 1000000000, HBD_SYMBOL ), "", alice_private_key );
     generate_block();
     const auto after_hbd_print_rate = dgpo.hbd_print_rate;
 

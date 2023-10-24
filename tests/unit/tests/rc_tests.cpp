@@ -146,9 +146,9 @@ BOOST_AUTO_TEST_CASE( rc_usage_buckets )
       for( int i = 0; i < amount; ++i )
       {
         resource_count_type usage = pools.get_usage();
-        transfer( "alice", "bob", ASSET( "0.100 TESTS" ) );
-        transfer( "bob", "sam", ASSET( "0.100 TESTS" ) );
-        transfer( "sam", "alice", ASSET( "0.100 TESTS" ) );
+        transfer( "alice", "bob", ASSET( "0.100 TESTS" ), "", alice_private_key );
+        transfer( "bob", "sam", ASSET( "0.100 TESTS" ), "", bob_private_key );
+        transfer( "sam", "alice", ASSET( "0.100 TESTS" ), "", sam_private_key );
         generate_block();
         print(); //transfers use market and execution, but transaction itself uses history and state
         BOOST_CHECK_LT( usage[ resource_history_bytes ], pools.get_usage( resource_history_bytes ) );

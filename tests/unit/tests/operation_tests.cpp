@@ -3518,7 +3518,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     op.owner = "alice";
     op.amount = ASSET( "5.000 TBD" );
     HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "is_asset_type( amount, HIVE_SYMBOL )" );
-    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
+    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ), "", alice_private_key );
 
     BOOST_TEST_MESSAGE( "--- Test failure sending negative collateral" );
     op.amount = ASSET( "-5.000 TESTS" );
@@ -3537,7 +3537,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "available >= -delta" );
 
     //give alice enough for further tests
-    transfer( HIVE_INIT_MINER_NAME, "alice", ASSET( "9000.000 TESTS" ) );
+    fund( "alice", 9000000 );
     auto alice_balance = get_balance( "alice" );
     BOOST_REQUIRE( alice_balance == ASSET( "10000.000 TESTS" ) );
 
@@ -3556,7 +3556,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     alice_balance -= ASSET( "1000.000 TESTS" );
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "119.047 TBD" ) ); // 1000/2 collateral * 10/42 price with fee
-    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
+    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ), "", alice_private_key );
 
     generate_block();
 
@@ -3599,7 +3599,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     alice_balance -= ASSET( "1000.000 TESTS" );
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "119.047 TBD" ) ); // 1000/2 collateral * 10/42 price with fee
-    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
+    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ), "", alice_private_key );
 
     price price_1_for_8 = price( ASSET( "1.000 TBD" ), ASSET( "8.000 TESTS" ) );
     set_price_feed( price_1_for_8 );
@@ -3664,7 +3664,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
       BOOST_REQUIRE( sys_warn_op.message.compare( 0, 23, "Insufficient collateral" ) == 0 );
     }
-    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
+    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ), "", alice_private_key );
 
     BOOST_TEST_MESSAGE( "--- Setting amount of HBD in the system to the edge of upper soft limit" );
     {
@@ -3686,7 +3686,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     BOOST_REQUIRE( collateralized_convert_request_idx.empty() );
 
     //let's make some room for conversion (treasury HBD does not count)
-    transfer( "alice", db->get_treasury_name(), ASSET( "25.000 TBD" ) );
+    transfer( "alice", db->get_treasury_name(), ASSET( "25.000 TBD" ), "", alice_private_key );
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 5 cents initial, 5 cents per HIVE actual" );
     op.amount = ASSET( "1000.000 TESTS" );
@@ -3748,8 +3748,8 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       //with different limits value will change, but should be less than 400.000 TESTS
 
     //put HBD on treasury where it does not count, but try to make some conversion with artificial price before it is changed back down
-    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) );
-    transfer( "bob", db->get_treasury_name(), get_hbd_balance( "bob" ) );
+    transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ), "", alice_private_key );
+    transfer( "bob", db->get_treasury_name(), get_hbd_balance( "bob" ), "", bob_private_key );
 
     BOOST_TEST_MESSAGE( "--- Test failed - conversion initiated while artificial price is active" );
     op.amount = ASSET( "1000.000 TESTS" );

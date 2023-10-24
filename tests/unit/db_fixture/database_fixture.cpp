@@ -362,7 +362,7 @@ void database_fixture::fund(
 {
   try
   {
-    transfer( HIVE_INIT_MINER_NAME, account_name, asset( amount, HIVE_SYMBOL ) );
+    transfer( HIVE_INIT_MINER_NAME, account_name, asset( amount, HIVE_SYMBOL ), "", init_account_priv_key );
 
   } FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
 }
@@ -470,27 +470,6 @@ void database_fixture::collateralized_convert_hive_to_hbd( const std::string& ow
     op.amount = amount;
 
     push_transaction( op, key );
-}
-
-void database_fixture::transfer(
-  const string& from,
-  const string& to,
-  const asset& amount )
-{
-  try
-  {
-    transfer_operation op;
-    op.from = from;
-    op.to = to;
-    op.amount = amount;
-
-    trx.operations.push_back( op );
-    trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.validate();
-
-    push_transaction( trx, ( from == HIVE_INIT_MINER_NAME ) ? init_account_priv_key : fc::ecc::private_key(), ~0 );
-    trx.clear();
-  } FC_CAPTURE_AND_RETHROW( (from)(to)(amount) )
 }
 
 void database_fixture::transfer( const string& from, const string& to, const asset& amount, const std::string& memo,
