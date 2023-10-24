@@ -37,11 +37,11 @@ def get_all_proposal_votes(node: tt.InitNode, api: str) -> int:
 
         pack_of_proposals: list | None = None
         if api == "database":
-            pack_of_proposals = getattr(node.api, api).list_proposal_votes(**template)["proposal_votes"]
+            pack_of_proposals = getattr(node.api, api).list_proposal_votes(**template).proposal_votes
         if api == "condenser":
             pack_of_proposals = getattr(node.api, api).list_proposal_votes(*template.values())
         if api == "wallet_bridge":
-            pack_of_proposals = getattr(node.api, api).list_proposal_votes(*template.values())["proposal_votes"]
+            pack_of_proposals = getattr(node.api, api).list_proposal_votes(*template.values()).proposal_votes
 
         if not pack_of_proposals or len(pack_of_proposals) == 1:
             break
@@ -52,17 +52,17 @@ def get_all_proposal_votes(node: tt.InitNode, api: str) -> int:
 
         proposal_votes.extend(pack_of_proposals)
 
-        start_account = pack_of_proposals[-1]["voter"]
+        start_account = pack_of_proposals[-1].voter
 
     sorted_proposal_votes = sort_votes_by_username(proposal_votes)
     return len(sorted_proposal_votes)
 
 
-def sort_votes_by_username(list_of_votes):
+def sort_votes_by_username(list_of_votes: list) -> dict:
     ordered_proposal_votes = {}
     for proposal_vote in list_of_votes:
-        if proposal_vote["voter"] not in ordered_proposal_votes:
-            ordered_proposal_votes[proposal_vote["voter"]] = proposal_vote
+        if proposal_vote.voter not in ordered_proposal_votes:
+            ordered_proposal_votes[proposal_vote.voter] = proposal_vote
         else:
             raise Exception("Duplicate proposal vote")  # noqa: TRY002
 

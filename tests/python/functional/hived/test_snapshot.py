@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def test_snapshots_content_binary(block_log: Path):
+def test_snapshots_content_binary(block_log: Path) -> None:
     node = [None]
     snap = [None]
 
@@ -27,7 +27,7 @@ def test_snapshots_content_binary(block_log: Path):
     assert snap[1] == snap[2]
 
 
-def test_snapshots_existing_dir(block_log: Path, block_log_length: int):
+def test_snapshots_existing_dir(block_log: Path, block_log_length: int) -> None:
     def clear_state(node):
         from os.path import join as join_paths
         from shutil import rmtree
