@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.flaky(reruns=5, reruns_delay=30)
-def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(replayed_node: ReplayedNodeMaker):
+def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(replayed_node: ReplayedNodeMaker) -> None:
     """
     Test scenario: block log that was replayed contains ordered recurrent transfers.
       1) replay block_log it contains outstanding recurring transfers,

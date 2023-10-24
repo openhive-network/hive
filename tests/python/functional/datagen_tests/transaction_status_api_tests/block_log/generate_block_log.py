@@ -6,7 +6,7 @@ from pathlib import Path
 import test_tools as tt
 
 
-def prepare_block_log_with_witnesses():
+def prepare_block_log_with_witnesses() -> None:
     node = tt.InitNode()
     node.run()
     wallet = tt.Wallet(attach_to=node)

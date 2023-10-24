@@ -5,7 +5,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet")
-def test_overwrite_recurrent_transfer(node):
+def test_overwrite_recurrent_transfer(node: tt.InitNode) -> None:
     # The second recurrent transfer to the same account is overwriting parameters of the first recurrent transfer
     wallet = tt.Wallet(attach_to=node)
 

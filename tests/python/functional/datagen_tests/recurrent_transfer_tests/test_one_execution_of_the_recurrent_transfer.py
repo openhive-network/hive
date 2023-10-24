@@ -7,7 +7,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet")
-def test_one_execution_of_the_recurrent_transfer(node):
+def test_one_execution_of_the_recurrent_transfer(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("receiver")
