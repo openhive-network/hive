@@ -7,7 +7,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet")
-def test_recurrence_time_is_less_than_24h(node):
+def test_recurrence_time_is_less_than_24h(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("receiver")
