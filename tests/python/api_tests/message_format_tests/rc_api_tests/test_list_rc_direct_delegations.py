@@ -19,7 +19,7 @@ CORRECT_VALUES = [
 
 
 @pytest.fixture()
-def ready_node(node, should_prepare):
+def ready_node(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> tt.InitNode | tt.RemoteNode:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
@@ -35,7 +35,9 @@ def ready_node(node, should_prepare):
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_rc_direct_delegations_with_correct_value(ready_node, from_, to, limit):
+def test_list_rc_direct_delegations_with_correct_value(
+    ready_node: tt.InitNode | tt.RemoteNode, from_: str, to: str, limit: bool | int | str
+) -> None:
     ready_node.api.rc.list_rc_direct_delegations(start=[from_, to], limit=limit)
 
 
@@ -54,13 +56,15 @@ def test_list_rc_direct_delegations_with_correct_value(ready_node, from_, to, li
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_rc_direct_delegations_with_incorrect_value(ready_node, from_, to, limit):
+def test_list_rc_direct_delegations_with_incorrect_value(
+    ready_node: tt.InitNode | tt.RemoteNode, from_: str, to: str, limit: int
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         ready_node.api.rc.list_rc_direct_delegations(start=[from_, to], limit=limit)
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_rc_direct_delegations_with_additional_argument(ready_node):
+def test_list_rc_direct_delegations_with_additional_argument(ready_node: tt.InitNode | tt.RemoteNode) -> None:
     ready_node.api.rc.list_rc_direct_delegations(
         start=[ACCOUNTS[0], ACCOUNTS[1]],
         limit=100,
@@ -87,17 +91,19 @@ def test_list_rc_direct_delegations_with_additional_argument(ready_node):
     ],
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(ready_node, from_, to, limit):
+def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(
+    ready_node: tt.InitNode | tt.RemoteNode, from_: int | list | str, to: int | list | str, limit: int | list | str
+) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         ready_node.api.rc.list_rc_direct_delegations(start=[from_, to], limit=limit)
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_list_rc_direct_delegations_with_missing_argument(ready_node):
+def test_list_rc_direct_delegations_with_missing_argument(ready_node: tt.InitNode | tt.RemoteNode) -> None:
     with pytest.raises(tt.exceptions.CommunicationError):
         ready_node.api.rc.list_rc_direct_delegations(start=[ACCOUNTS[0], ACCOUNTS[1]])
 
 
-def create_account_and_delegate_its_rc(wallet, accounts):
+def create_account_and_delegate_its_rc(wallet: tt.Wallet, accounts: list) -> None:
     wallet.create_account(accounts[1], vests=tt.Asset.Test(50))
     wallet.api.delegate_rc(accounts[0], [accounts[1]], 5)

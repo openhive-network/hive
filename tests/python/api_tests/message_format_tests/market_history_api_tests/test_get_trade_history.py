@@ -5,7 +5,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
-def test_get_trade_history(node, should_prepare):
+def test_get_trade_history(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account("alice", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(1000))
@@ -19,5 +19,5 @@ def test_get_trade_history(node, should_prepare):
         )  # Buy 100 HIVE for 100 HBD
     history = node.api.market_history.get_trade_history(
         start=tt.Time.from_now(weeks=-480), end=tt.Time.now(), limit=10
-    )["trades"]
+    ).trades
     assert len(history) != 0
