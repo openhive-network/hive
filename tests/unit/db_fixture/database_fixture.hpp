@@ -361,7 +361,6 @@ struct database_fixture {
 
   void fund( const string& account_name, const share_type& amount );
   void issue_funds( const string& account_name, const asset& amount, bool update_print_rate = true );
-  void transfer( const string& from, const string& to, const asset& amount );
   void transfer( const string& from, const string& to, const asset& amount, const std::string& memo, const fc::ecc::private_key& key );
   void recurrent_transfer( const string& from, const string& to, const asset& amount, const string& memo, uint16_t recurrence,
                            uint16_t executions, const fc::ecc::private_key& key );

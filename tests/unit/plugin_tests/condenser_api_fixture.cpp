@@ -352,7 +352,7 @@ void condenser_api_fixture::proposal_scenario( check_point_tester_t check_point_
   generate_block();
 
   // Fill treasury handsomely so that the payout occurres early.
-  transfer( "carol7ah", db->get_treasury_name(), ASSET( "30000.333 TESTS" ) ); // <- trigger dhf_conversion_operation
+  transfer( "carol7ah", db->get_treasury_name(), ASSET( "30000.333 TESTS" ), "", carol7ah_private_key ); // <- trigger dhf_conversion_operation
 
   // Create the proposal for the first time to be updated and removed.
   post_comment("alice7ah", "permlink0", "title", "body", "test", alice7ah_private_key);

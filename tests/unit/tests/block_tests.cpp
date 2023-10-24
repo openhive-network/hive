@@ -824,7 +824,7 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
 
     BOOST_TEST_MESSAGE( "Create transaction" );
 
-    transfer( HIVE_INIT_MINER_NAME, "alice", asset( 1000000, HIVE_SYMBOL ) );
+    fund( "alice", 1000000 );
     transfer_operation op;
     op.from = "alice";
     op.to = "bob";
@@ -932,7 +932,7 @@ BOOST_FIXTURE_TEST_CASE( pop_block_twice, clean_database_fixture )
 
     db->get_account( HIVE_INIT_MINER_NAME );
     // transfer from committee account to Sam account
-    transfer( HIVE_INIT_MINER_NAME, "sam", asset( 100000, HIVE_SYMBOL ) );
+    fund( "sam", 100000 );
 
     generate_block(skip_flags);
 
@@ -1857,8 +1857,8 @@ BOOST_FIXTURE_TEST_CASE( init_hive_hbd_supply, init_supply_database_fixture )
     db->set_hardfork( HIVE_NUM_HARDFORKS );
     generate_block();
 
-    transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "100.000 TESTS" ) );
-    transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "100.000 TBD" ) );
+    transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "100.000 TESTS" ), "", init_account_priv_key );
+    transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "100.000 TBD" ), "", init_account_priv_key );
 
     generate_block(); // the bug caused assertion during reapplication of block containing HBD transfer to 'null'
 
