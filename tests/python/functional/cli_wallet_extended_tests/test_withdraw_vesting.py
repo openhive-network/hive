@@ -5,19 +5,19 @@ import test_tools as tt
 from .utilities import create_accounts
 
 
-def test_withdraw_vesting(wallet):
-    def check_withdraw_data(node, vesting_withdraw_rate, to_withdraw):
+def test_withdraw_vesting(wallet: tt.Wallet) -> None:
+    def check_withdraw_data(node: tt.InitNode, vesting_withdraw_rate: tt.Asset.Vest, to_withdraw: int) -> None:
         assert tt.Asset.from_legacy(node["vesting_withdraw_rate"]) == vesting_withdraw_rate
         assert node["to_withdraw"] == to_withdraw
 
-    def check_route_data(node):
+    def check_route_data(node: tt.InitNode) -> dict:
         _ops = node["operations"]
 
         assert _ops[0][0] == "set_withdraw_vesting_route"
 
         return _ops[0][1]
 
-    def check_route(node, from_account, to_account, percent, auto_vest):
+    def check_route(node: tt.InitNode, from_account: str, to_account: str, percent: int, auto_vest: bool) -> None:
         assert node["from_account"] == from_account
         assert node["to_account"] == to_account
         assert node["percent"] == percent

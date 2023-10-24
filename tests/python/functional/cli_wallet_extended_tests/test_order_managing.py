@@ -5,7 +5,7 @@ import test_tools as tt
 from .utilities import check_ask, check_sell_price
 
 
-def test_order(wallet):
+def test_order(wallet: tt.Wallet) -> None:
     wallet.api.create_account("initminer", "alice", "{}")
 
     wallet.api.transfer("initminer", "alice", tt.Asset.Test(77), "lime")
