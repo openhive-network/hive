@@ -5,7 +5,7 @@ import pytest
 import test_tools as tt
 
 
-def test_delegate(node, wallet):
+def test_delegate(node: tt.InitNode, wallet: tt.Wallet):
     wallet.api.create_account("initminer", "alice", "{}")
 
     wallet.api.transfer("initminer", "alice", tt.Asset.Test(200), "avocado")
