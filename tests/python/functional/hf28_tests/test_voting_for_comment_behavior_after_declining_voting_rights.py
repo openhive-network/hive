@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import pytest
+from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
+from schemas.operations.virtual import CurationRewardOperation, DeclinedVotingRightsOperation
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -11,7 +13,7 @@ from schemas.operations.virtual import CurationRewardOperation, DeclinedVotingRi
 
 
 @run_for("testnet")
-def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(node: tt.InitNode | tt.RemoteNode) -> None:
+def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("alice", vests=100)
@@ -93,7 +95,7 @@ def test_edit_comment_vote_without_voting_rights_before_comment_reward_pay_out(n
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_payout_rewards_for_comment_vote_without_voting_rights(node: tt.InitNode | tt.RemoteNode) -> None:
+def test_payout_rewards_for_comment_vote_without_voting_rights(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=100_000_000)
 
@@ -128,7 +130,7 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node: tt.InitNode
     wallet.api.vote("alice", "creator-2", "comment-of-creator-2", 100)
     node.wait_number_of_blocks(21)
 
-    vops = node.api.account_history.enum_virtual_ops(
+    vops: EnumVirtualOps = node.api.account_history.enum_virtual_ops(
         block_range_begin=0,
         block_range_end=2000,
         limit=2000,
@@ -141,5 +143,5 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node: tt.InitNode
     assert vops.ops[2].op.type == "declined_voting_rights_operation"
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
-    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
-    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_balance > tt.Asset.Vest(0)
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_hive > tt.Asset.Test(0)
