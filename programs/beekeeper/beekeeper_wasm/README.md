@@ -38,7 +38,7 @@ console.log(await wallet.getPublicKeys());
 
 ## API
 
-**(WIP)**
+See API definition in [api.md](api.md)
 
 ## Support and tests
 

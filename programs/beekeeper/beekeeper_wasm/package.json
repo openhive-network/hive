@@ -16,6 +16,7 @@
   "files": [
     "LICENSE.md",
     "README.md",
+    "api.md",
     "build/beekeeper_wasm.js",
     "build/beekeeper_wasm.d.ts",
     "dist/*.d.ts",
@@ -24,9 +25,12 @@
   "devDependencies": {
     "@playwright/test": "^1.38.1",
     "@types/node": "^20.6.0",
+    "concat-md": "^0.5.1",
     "http-server": "^14.1.1",
     "husky": "8.0.3",
     "playwright": "^1.38.1",
+    "typedoc": "0.22",
+    "typedoc-plugin-markdown": "3.12.1",
     "typescript": "4.4.4"
   },
   "types": "dist/index.d.ts",
