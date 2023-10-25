@@ -67,7 +67,6 @@ struct t_smt_database_fixture : public T
 
   using database_fixture::set_price_feed;
   using database_fixture::fund;
-  using database_fixture::convert;
 
   t_smt_database_fixture(){}
   virtual ~t_smt_database_fixture(){}

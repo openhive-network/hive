@@ -3283,11 +3283,8 @@ BOOST_AUTO_TEST_CASE( convert_authorities )
     BOOST_TEST_MESSAGE( "Testing: convert_authorities" );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-
-    convert( "alice", ASSET( "2.500 TESTS" ) );
+    fund( "alice", ASSET( "7.500 TESTS" ) );
+    fund( "alice", ASSET( "2.500 TBD" ) );
 
     validate_database();
 
@@ -3325,19 +3322,16 @@ BOOST_AUTO_TEST_CASE( convert_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: convert_apply" );
     ACTORS( (alice)(bob) );
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    fund( "bob", ASSET( "10.000 TESTS" ) );
+    fund( "alice", ASSET( "7.500 TESTS" ) );
+    fund( "bob", ASSET( "3.000 TESTS" ) );
+    fund( "alice", ASSET( "2.500 TBD" ) );
+    fund( "bob", ASSET( "7.000 TBD" ) );
 
     convert_operation op;
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
     const auto& convert_request_idx = db->get_index< convert_request_index, by_owner >();
-
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-
-    convert( "alice", ASSET( "2.500 TESTS" ) );
-    convert( "bob", ASSET( "7.000 TESTS" ) );
 
     const auto& new_alice = db->get_account( "alice" );
     const auto& new_bob = db->get_account( "bob" );
@@ -3407,22 +3401,6 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     validate_database();
   }
   FC_LOG_AND_RETHROW()
-}
-
-BOOST_AUTO_TEST_CASE( fixture_convert_checks_balance )
-{
-  // This actually tests the convert() method of the database fixture can't result in negative
-  //   balances, see issue #1825
-  try
-  {
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    ACTORS( (dany) )
-
-    fund( "dany", ASSET( "5.000 TESTS" ) );
-    HIVE_REQUIRE_THROW( convert( "dany", ASSET( "5000.000 TESTS" ) ), fc::exception );
-  }
-  FC_LOG_AND_RETHROW()
-
 }
 
 BOOST_AUTO_TEST_CASE( collateralized_convert_authorities )
@@ -3948,12 +3926,9 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: limit_order_create_apply" );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-
     ACTORS( (alice)(bob) )
     fund( "alice", ASSET( "1000.000 TESTS" ) );
-    fund( "bob", ASSET( "1000.000 TESTS" ) );
-    convert( "bob", ASSET("1000.000 TESTS" ) );
+    fund( "bob", ASSET( "1000.000 TBD" ) );
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
 
@@ -4257,12 +4232,9 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: limit_order_create2_apply" );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-
     ACTORS( (alice)(bob) )
     fund( "alice", ASSET( "1000.000 TESTS" ) );
-    fund( "bob", ASSET( "1000.000 TESTS" ) );
-    convert( "bob", ASSET("1000.000 TESTS" ) );
+    fund( "bob", ASSET( "1000.000 TBD" ) );
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
 
@@ -4541,8 +4513,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     BOOST_TEST_MESSAGE( "--- Test filling best order with multiple matches." );
     ACTORS( (sam)(dave) )
     fund( "sam", ASSET( "1000.000 TESTS" ) );
-    fund( "dave", ASSET( "1000.000 TESTS" ) );
-    convert( "dave", ASSET("1000.000 TESTS" ) );
+    fund( "dave", ASSET( "1000.000 TBD" ) );
 
     op.owner = "bob";
     op.orderid = 6;

@@ -124,6 +124,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     BOOST_TEST_MESSAGE( "Testing: limit_order_create_apply" );
 
     ACTORS( (alice)(bob) )
+    generate_block();
 
     //Create SMT and give some SMT to creators.
     signed_transaction tx;
@@ -134,9 +135,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
 
     asset alice_0 = asset( 0, alice_symbol );
 
-    fund( "bob", ASSET( "1000.000 TESTS" ) );
-    generate_block();
-    convert( "bob", ASSET("1000.000 TESTS" ) );
+    fund( "bob", ASSET( "1000.000 TBD" ) );
     generate_block();
 
     asset alice_smt_balance = asset( 1000000, alice_symbol );
@@ -566,9 +565,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
 
     asset alice_0 = asset( 0, alice_symbol );
 
-    fund( "bob", ASSET( "1000.000 TESTS" ) );
-    generate_block();
-    convert( "bob", ASSET("1000.000 TESTS" ) );
+    fund( "bob", ASSET( "1000.000 TBD" ) );
     generate_block();
 
     asset alice_smt_balance = asset( 1000000, alice_symbol );
@@ -1795,11 +1792,8 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_count )
 
     ACTORS( (alice) )
 
-    fund( "alice", ASSET( "10000.000 TESTS" ) );
+    fund( "alice", ASSET( "10000.000 TBD" ) );
     generate_block();
-
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    convert( "alice", ASSET( "10000.000 TESTS" ) );
 
     // Drain the NAI pool one at a time
     for ( unsigned int i = 1; i <= SMT_MAX_NAI_POOL_COUNT; i++ )
@@ -2154,14 +2148,10 @@ BOOST_AUTO_TEST_CASE( set_setup_parameters_apply )
 
     generate_block();
 
-    fund( "alice", ASSET( "5000.000 TESTS" ) );
+    fund( "alice", ASSET( "5000.000 TBD" ) );
     generate_block();
-    fund( "bob", ASSET( "5000.000 TESTS" ) );
+    fund( "bob", ASSET( "5000.000 TBD" ) );
     generate_block();
-
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-    convert( "alice", ASSET( "5000.000 TESTS" ) );
-    convert( "bob", ASSET( "5000.000 TESTS" ) );
 
     auto alice_symbol = create_smt( "alice", alice_private_key, 3 );
     auto bob_symbol = create_smt( "bob", bob_private_key, 3 );

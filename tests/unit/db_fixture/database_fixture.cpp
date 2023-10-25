@@ -427,29 +427,6 @@ void database_fixture::issue_funds(
   FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
 }
 
-void database_fixture::convert(
-  const string& account_name,
-  const asset& amount )
-{
-  try
-  {
-    if ( amount.symbol == HIVE_SYMBOL )
-    {
-      db->adjust_balance( account_name, -amount );
-      db->adjust_balance( account_name, db->to_hbd( amount ) );
-      db->adjust_supply( -amount );
-      db->adjust_supply( db->to_hbd( amount ) );
-    }
-    else if ( amount.symbol == HBD_SYMBOL )
-    {
-      db->adjust_balance( account_name, -amount );
-      db->adjust_balance( account_name, db->to_hive( amount ) );
-      db->adjust_supply( -amount );
-      db->adjust_supply( db->to_hive( amount ) );
-    }
-  } FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
-}
-
 void database_fixture::convert_hbd_to_hive( const std::string& owner, uint32_t requestid, const asset& amount, 
   const fc::ecc::private_key& key )
 {

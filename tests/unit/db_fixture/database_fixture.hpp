@@ -364,7 +364,6 @@ struct database_fixture {
   void transfer( const string& from, const string& to, const asset& amount, const std::string& memo, const fc::ecc::private_key& key );
   void recurrent_transfer( const string& from, const string& to, const asset& amount, const string& memo, uint16_t recurrence,
                            uint16_t executions, const fc::ecc::private_key& key );
-  void convert( const string& account_name, const asset& amount );
   void convert_hbd_to_hive( const std::string& owner, uint32_t requestid, const asset& amount, const fc::ecc::private_key& key );
   void collateralized_convert_hive_to_hbd( const std::string& owner, uint32_t requestid, const asset& amount, const fc::ecc::private_key& key );
   void vest( const string& from, const string& to, const asset& amount );
