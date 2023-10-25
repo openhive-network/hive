@@ -38,6 +38,7 @@
 #include <string>
 #include <typeindex>
 #include <typeinfo>
+#include <ranges>
 
 namespace bpo = boost::program_options;
 
@@ -1177,35 +1178,18 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
       rangeBegin = 1;
     uint32_t rangeEnd = _mainDb.head_block_num() + 1;
 
-    const auto reversibleOps = collectReversibleOps(&rangeBegin, &rangeEnd, &collectedIrreversibleBlock);
+    const std::vector<rocksdb_operation_object> reversibleOps = collectReversibleOps(&rangeBegin, &rangeEnd, &collectedIrreversibleBlock);
 
-    std::vector<rocksdb_operation_object> ops_for_this_account;
-    ops_for_this_account.reserve(reversibleOps.size());
-    for(const auto& obj : reversibleOps)
-    {
+    auto affects_this_account = [&name, this](const rocksdb_operation_object& obj) {
       hive::protocol::operation op = fc::raw::unpack_from_buffer< hive::protocol::operation >( obj.serialized_op );
-      auto impacted = getImpactedAccounts( op );
-      if( std::find( impacted.begin(), impacted.end(), name) != impacted.end() )
-        ops_for_this_account.push_back(obj);
+      std::vector<account_name_type> impacted = getImpactedAccounts( op );
+      return ranges::find(impacted, name) != ranges::end(impacted);
     };
 
-    // There's always at least one operation for each account: account_create_operation
-    FC_ASSERT(number_of_irreversible_ops + ops_for_this_account.size() > 0);
-    // Cannot be negative due to above
-    const uint64_t last_index_of_all_account_operations = (number_of_irreversible_ops + ops_for_this_account.size()) - 1l;
-    // this if protects from out_of_bound exception (e.x. start = static_cast<uint32_t>(-1))
-    const uint64_t start_min = std::min(start, last_index_of_all_account_operations);
-
-    /**
-     * Iterate over range [0, last) of ops_for_this_account and pass them to processor
-     * with indices [number_of_irreversible_ops, number_of_irreversible_ops+1, ...] in reverse order.
-     * last has +1, because we want to include element at index start_min.
-     */
-    const uint64_t last = start_min - number_of_irreversible_ops + 1;
-    FC_ASSERT(last <= ops_for_this_account.size());
-    using namespace boost::adaptors;
-    for (const auto [idx, oObj] : ops_for_this_account | sliced(0, last) | indexed(number_of_irreversible_ops) | reversed)
+    using namespace ranges::views;
+    for (const auto [i, oObj] : reversibleOps | filter(affects_this_account) | take(start - number_of_irreversible_ops + 1) | enumerate | reverse )
     {
+      const auto idx = i + number_of_irreversible_ops;
       if(processor(idx, oObj))
       {
         ++count;
@@ -1216,6 +1200,7 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
   }
   return count;
 }
+
 
 bool account_history_rocksdb_plugin::impl::find_operation_object(size_t opId, rocksdb_operation_object* op) const
 {
