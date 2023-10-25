@@ -564,8 +564,6 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
 
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
-
     const dynamic_global_property_object& dgpo = db->get_dynamic_global_properties();
     asset required_creation_fee = dgpo.smt_creation_fee;
     unsigned int test_amount = required_creation_fee.amount.value;
@@ -576,8 +574,6 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
     op.precision = op.symbol.decimals();
 
     BOOST_TEST_MESSAGE( " -- SMT create with insufficient HBD balance" );
-    // Fund with HIVE, and set fee with HBD.
-    fund( "alice", asset( test_amount, HIVE_SYMBOL ) );
     generate_block();
     // Declare fee in HBD/TBD though alice has none.
     op.smt_creation_fee = asset( test_amount, HBD_SYMBOL );
@@ -585,8 +581,8 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
     FAIL_WITH_OP(op, alice_private_key, fc::assert_exception);
 
     BOOST_TEST_MESSAGE( " -- SMT create with insufficient HIVE balance" );
-    // Now fund with HBD, and set fee with HIVE.
-    convert( "alice", asset( test_amount, HIVE_SYMBOL ) );
+    // Fund with HBD and set fee with HIVE.
+    fund( "alice", asset( test_amount, HBD_SYMBOL ) );
     // Declare fee in HIVE though alice has none.
     op.smt_creation_fee = asset( test_amount, HIVE_SYMBOL );
     // Throw due to insufficient balance of HIVE.
@@ -596,6 +592,11 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
     // Push valid operation.
     op.smt_creation_fee = asset( test_amount, HBD_SYMBOL );
     PUSH_OP( op, alice_private_key );
+
+    generate_block();
+    // Fund again for alice to have some since previous funds were consumed
+    fund( "alice", asset( test_amount, HIVE_SYMBOL ) );
+    fund( "alice", asset( test_amount, HBD_SYMBOL ) );
 
     BOOST_TEST_MESSAGE( " -- SMT cannot be created twice even with different precision" );
     create_conflicting_smt(op.symbol, "alice", alice_private_key);
@@ -628,7 +629,7 @@ BOOST_AUTO_TEST_CASE( smt_create_apply )
 
     BOOST_TEST_MESSAGE( " -- Check that we cannot create an SMT with an insufficent HBD creation fee" );
     // Check too low fee in HBD.
-    convert( "bob", asset( too_low_fee_amount, HIVE_SYMBOL ) );
+    fund( "bob", asset( too_low_fee_amount, HBD_SYMBOL ) );
     op.smt_creation_fee = asset( too_low_fee_amount, HBD_SYMBOL );
     FAIL_WITH_OP(op, bob_private_key, fc::assert_exception);
 
