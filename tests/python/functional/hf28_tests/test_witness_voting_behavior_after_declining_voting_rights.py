@@ -17,7 +17,7 @@ def test_decline_voting_rights_after_voting_for_witness(prepare_environment: tup
     wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    assert len(node.api.database.list_witness_votes(start=["", ""], limit=10, order="by_account_witness")["votes"]) == 0
+    assert len(node.api.database.list_witness_votes(start=["", ""], limit=10, order="by_account_witness").votes) == 0
 
 
 @run_for("testnet")
@@ -44,7 +44,7 @@ def test_vote_for_witness_when_decline_voting_rights_is_in_progress(
     head_block_number = wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)["block_num"]
     node.wait_for_block_with_number(head_block_number + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
     wallet.api.vote_for_witness(VOTER_ACCOUNT, "initminer", True)
-    assert len(node.api.database.list_witness_votes(start=["", ""], limit=10, order="by_account_witness")["votes"]) == 1
+    assert len(node.api.database.list_witness_votes(start=["", ""], limit=10, order="by_account_witness").votes) == 1
 
     node.wait_for_block_with_number(head_block_number + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
-    assert len(node.api.database.list_witness_votes(start=["", ""], limit=10, order="by_account_witness")["votes"]) == 0
+    assert len(node.api.database.list_witness_votes(start=["", ""], limit=10, order="by_account_witness").votes) == 0

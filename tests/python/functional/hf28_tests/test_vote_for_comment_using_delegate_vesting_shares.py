@@ -7,7 +7,7 @@ from hive_local_tools.functional.python.hf28 import post_comment
 
 
 @run_for("testnet")
-def test_delegate_vesting_shares_without_voting_rights(node: tt.InitNode | tt.RemoteNode) -> None:
+def test_delegate_vesting_shares_without_voting_rights(node: tt.InitNode) -> None:
     """
     Problem description: https://gitlab.syncad.com/hive/hive/-/issues/463
     """
@@ -29,9 +29,7 @@ def test_delegate_vesting_shares_without_voting_rights(node: tt.InitNode | tt.Re
 
 
 @run_for("testnet")
-def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_rights(
-    node: tt.InitNode | tt.RemoteNode,
-) -> None:
+def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_rights(node: tt.InitNode) -> None:
     node.restart(time_offset="+0h x5")
     wallet = tt.Wallet(attach_to=node)
 
@@ -56,7 +54,7 @@ def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_right
 
 @run_for("testnet")
 def test_vote_for_comment_with_vests_from_delegation_when_decline_voting_rights_is_being_executed(
-    node: tt.InitNode | tt.RemoteNode,
+    node: tt.InitNode,
 ) -> None:
     node.restart(time_offset="+0h x5")
     wallet = tt.Wallet(attach_to=node)
