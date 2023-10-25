@@ -133,17 +133,20 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef USE_ALTERNATE_CHAIN_ID
+  /// Mirrornet
   #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 28, 0) )
+  #define OLD_CHAIN_ID                          fc::sha256()
+  #define HIVE_CHAIN_ID                         fc::sha256("4200000000000000000000000000000000000000000000000000000000000000")
 #else
   /// Hive mainnet
   #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 27, 5) )
+  #define OLD_CHAIN_ID                          fc::sha256()
+  #define HIVE_CHAIN_ID                         fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000")
 #endif
 
 #ifndef HIVE_INIT_PUBLIC_KEY_STR
 # define HIVE_INIT_PUBLIC_KEY_STR              "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
 #endif
-#define OLD_CHAIN_ID                          fc::sha256()
-#define HIVE_CHAIN_ID                         fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000")
 #define HIVE_ADDRESS_PREFIX                   "STM"
 
 #ifdef USE_ALTERNATE_CHAIN_ID
