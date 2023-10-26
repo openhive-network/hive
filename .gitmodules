@@ -19,3 +19,6 @@
 [submodule "libraries/vendor/rocksdb"]
 	path = libraries/vendor/rocksdb
 	url = https://github.com/facebook/rocksdb.git
+[submodule "libraries/range-v3"]
+	path = libraries/range-v3
+	url = https://github.com/ericniebler/range-v3.git

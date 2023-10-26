@@ -161,6 +161,10 @@ LIST( APPEND  BOOST_COMPONENTS
       unit_test_framework )
 
 # external_plugins needs to be compiled first because libraries/app depends on HIVE_EXTERNAL_PLUGINS being fully populated
+set( RANGES_V3_DIR libraries/range-v3 )
+add_subdirectory( ${RANGES_V3_DIR} )
+include_directories(${RANGES_V3_DIR}/include)
+
 add_subdirectory( external_plugins )
 add_subdirectory( libraries )
 add_subdirectory( programs )
