@@ -397,6 +397,11 @@ formatting_with_black_check:
     paths:
       - "**/generated_during_*"
       - "**/generated_by_package_fixtures"
+    exclude:
+      - "**/generated_during_*/**/block_log"
+      - "**/generated_during_*/**/block_log.artifacts"
+      - "**/generated_during_*/**/shared_memory.bin"
+      - "**/generated_during_*/**/*.sst"
     when: always
     expire_in: 1 week
 
@@ -747,6 +752,11 @@ python_pattern_mainnet_tests:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
     - docker_entrypoint.log
+    exclude:
+    - "**/generated_during_*/**/block_log"
+    - "**/generated_during_*/**/block_log.artifacts"
+    - "**/generated_during_*/**/shared_memory.bin"
+    - "**/generated_during_*/**/*.sst"
     when: always
   tags:
     - data-cache-storage
@@ -819,6 +829,11 @@ message_format_mainnet_5m_tests:
     - "**/generated_during_*"
     - "**/generated_by_package_fixtures"
     - docker_entrypoint.log
+    exclude:
+    - "**/generated_during_*/**/block_log"
+    - "**/generated_during_*/**/block_log.artifacts"
+    - "**/generated_during_*/**/shared_memory.bin"
+    - "**/generated_during_*/**/*.sst"
     when: always
     expire_in: 1 week
   tags:
