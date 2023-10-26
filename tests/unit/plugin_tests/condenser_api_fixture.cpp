@@ -127,7 +127,7 @@ void condenser_api_fixture::hf12_scenario( check_point_tester_t check_point_test
 void condenser_api_fixture::hf13_scenario( check_point_tester_t check_point_1_tester, check_point_tester_t check_point_2_tester )
 {
   db->set_hardfork( HIVE_HARDFORK_0_13 );
-  vest( HIVE_INIT_MINER_NAME, HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
+  vest( HIVE_INIT_MINER_NAME, ASSET( "1000.000 TESTS" ) );
   generate_block();
   
   PREP_ACTOR( dan0ah )
@@ -264,7 +264,7 @@ void condenser_api_fixture::vesting_scenario( check_point_tester_t check_point_t
   issue_funds( "alice4ah", ASSET( "2.900 TESTS" ) );
   generate_block();
 
-  vest( "alice4ah", "alice4ah", asset(2000, HIVE_SYMBOL), alice4ah_private_key );
+  vest( "alice4ah", "alice4ah", ASSET( "2.000 TESTS" ), alice4ah_private_key );
   set_withdraw_vesting_route( "alice4ah", "ben4ah", HIVE_1_PERCENT * 50, true, alice4ah_private_key);
   delegate_vest( "alice4ah", "carol4ah", asset(3, VESTS_SYMBOL), alice4ah_private_key );
   withdraw_vesting( "alice4ah", asset( 123, VESTS_SYMBOL ), alice4ah_private_key );
@@ -388,8 +388,7 @@ void condenser_api_fixture::account_scenario( check_point_tester_t check_point_t
 
   ACTORS( (alice8ah)(carol8ah) );
   // We need elected witness for claim_account_operation to succeed.
-  fund( "alice8ah", ASSET( "5.000 TESTS" ) );
-  vest( "alice8ah", 5000 );
+  vest( "alice8ah", ASSET( "5.000 TESTS" ) );
   generate_block();
   witness_vote( "alice8ah", "initminer", alice8ah_private_key );
   // Generate number of blocks sufficient for the witness to be elected & scheduled (and get a subsidized account).
@@ -403,7 +402,7 @@ void condenser_api_fixture::account_scenario( check_point_tester_t check_point_t
   PREP_ACTOR( ben8ah )
   create_claimed_account( "alice8ah", "ben8ah", ben8ah_public_key, ben8ah_post_key.get_public_key(), R"~("{"go":"now"}")~", alice8ah_private_key );
 
-  vest( HIVE_INIT_MINER_NAME, "ben8ah", ASSET( "1000.000 TESTS" ) );
+  vest( "ben8ah", ASSET( "1000.000 TESTS" ) );
   change_recovery_account( "ben8ah", HIVE_INIT_MINER_NAME, ben8ah_private_key );
   account_update2( "ben8ah", authority(1, carol8ah_public_key,1), fc::optional<authority>(), fc::optional<authority>(),
                     ben8ah_private_key.get_public_key(), R"~("{"success":true}")~", R"~("{"winner":"me"}")~", ben8ah_private_key );

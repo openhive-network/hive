@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
 
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_single to a single account" );
     ACTORS( (alice)(bob)(dave) )
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
     int64_t alice_vests = alice.get_vesting().amount.value;
 
     // Delegating more rc than I have should fail
@@ -238,7 +238,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
 
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan) )
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
     int64_t alice_vests = alice.get_vesting().amount.value;
 
     // Delegating more rc than alice has should fail
@@ -399,7 +399,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
   {
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many_different to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan)(carol) )
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
     uint64_t alice_vests = alice.get_vesting().amount.value;
 
     std::string json = "[";
@@ -543,7 +543,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(dave)(eve)(martin) )
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
+    vest( "alice", ASSET( "0.010 TESTS" ) );
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
@@ -578,7 +578,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_before.get_delegated_rc() == uint64_t(vesting_amount) );
     BOOST_REQUIRE( alice_rc_before.get_received_rc() == 0 );
     BOOST_REQUIRE( alice_rc_before.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_before.rc_manabar.current_mana == creation_rc - ( 57287 + 57289 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
+    BOOST_REQUIRE( alice_rc_before.rc_manabar.current_mana == creation_rc - ( 57285 + 57287 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
 
     BOOST_REQUIRE( bob_rc_account_before.rc_manabar.current_mana == creation_rc + 10 );
     BOOST_REQUIRE( bob_rc_account_before.last_max_rc == creation_rc + 10 );
@@ -605,7 +605,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_after.get_delegated_rc() == uint64_t(vesting_amount) - 5 );
     BOOST_REQUIRE( alice_rc_after.get_received_rc() == 0 );
     BOOST_REQUIRE( alice_rc_after.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_after.rc_manabar.current_mana == creation_rc - 58046 );
+    BOOST_REQUIRE( alice_rc_after.rc_manabar.current_mana == creation_rc - 58044 );
 
     BOOST_REQUIRE( bob_rc_account_after.rc_manabar.current_mana == creation_rc + 5 );
     BOOST_REQUIRE( bob_rc_account_after.last_max_rc == creation_rc + 5 );
@@ -631,7 +631,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     BOOST_REQUIRE( alice_rc_after_two.get_delegated_rc() == uint64_t(vesting_amount) - 11 );
     BOOST_REQUIRE( alice_rc_after_two.get_received_rc() == 0 );
     BOOST_REQUIRE( alice_rc_after_two.last_max_rc == creation_rc );
-    BOOST_REQUIRE( alice_rc_after_two.rc_manabar.current_mana == creation_rc - ( 58046 + 58047 ) );
+    BOOST_REQUIRE( alice_rc_after_two.rc_manabar.current_mana == creation_rc - ( 58044 + 58045 ) );
 
     BOOST_REQUIRE( bob_rc_account_after_two.rc_manabar.current_mana == creation_rc );
     BOOST_REQUIRE( bob_rc_account_after_two.last_max_rc == creation_rc );
@@ -668,7 +668,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     ACTORS_DEFAULT_FEE( (alice)(bob) )
     generate_block();
 
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
+    vest( "alice", ASSET( "0.010 TESTS" ) );
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
@@ -811,7 +811,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     ACTORS_DEFAULT_FEE( (alice)(bob)(dave) )
     generate_block();
 
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
+    vest( "alice", ASSET( "0.010 TESTS" ) );
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
@@ -975,7 +975,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     ACTORS_DEFAULT_FEE( (alice)(bob)(dave) )
     generate_block();
 
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
+    vest( "alice", ASSET( "0.010 TESTS" ) );
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
@@ -1096,7 +1096,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     generate_block();
 
     fund( "bob", ASSET( "100.000 TBD" ) );
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1.000 TESTS" ) );
+    vest( "alice", ASSET( "1.000 TESTS" ) );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Fetching the baseLine with no RC delegations" );
@@ -1192,7 +1192,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     ACTORS_DEFAULT_FEE( (alice)(bob) )
     generate_block();
     fund( "bob", ASSET( "9000000.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1.000 TESTS" ) );
+    vest( "alice", ASSET( "1.000 TESTS" ) );
     generate_block();
 
     BOOST_TEST_MESSAGE( "delegating RC to bob" );
@@ -1256,9 +1256,9 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
 
     ACTORS( (delegator1)(delegator2)(delegator3)(delegatee)(pattern2)(pattern3) )
     generate_block();
-    vest( "initminer", "delegator1", ASSET( "1000.000 TESTS" ) );
-    vest( "initminer", "delegator2", ASSET( "1000.000 TESTS" ) );
-    vest( "initminer", "delegator3", ASSET( "1000.000 TESTS" ) );
+    vest( "delegator1", ASSET( "1000.000 TESTS" ) );
+    vest( "delegator2", ASSET( "1000.000 TESTS" ) );
+    vest( "delegator3", ASSET( "1000.000 TESTS" ) );
     int64_t full_vest = get_vesting( "delegator1" ).amount.value;
     BOOST_REQUIRE_EQUAL( full_vest, get_vesting( "delegator2" ).amount.value );
     BOOST_REQUIRE_EQUAL( full_vest, get_vesting( "delegator3" ).amount.value );
@@ -1365,7 +1365,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(dave)(eve)(martin) )
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "0.010 TESTS" ) );
+    vest( "alice", ASSET( "0.010 TESTS" ) );
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
@@ -1412,7 +1412,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     BOOST_REQUIRE( bob_rc_account_before.get_delegated_rc() == uint64_t(vesting_amount) );
     BOOST_REQUIRE( bob_rc_account_before.last_max_rc == creation_rc );
     BOOST_REQUIRE( bob_rc_account_before.get_received_rc() == 0 );
-    BOOST_REQUIRE( bob_rc_account_before.rc_manabar.current_mana == creation_rc - ( 57286 + 57288 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
+    BOOST_REQUIRE( bob_rc_account_before.rc_manabar.current_mana == creation_rc - ( 57284 + 57286 ) ); // cost of the two delegate rc ops (the one to dave costs more because more data is in the op)
 
     BOOST_REQUIRE( eve_rc_account_before.rc_manabar.current_mana == creation_rc + vesting_amount - 10 );
     BOOST_REQUIRE( eve_rc_account_before.last_max_rc == creation_rc + vesting_amount - 10 );
@@ -1471,7 +1471,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(carol) )
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "2000.000 TESTS" ) );
+    vest( "alice", ASSET( "2000.000 TESTS" ) );
     generate_block();
 
     const uint32_t nr_accounts = removal_limit * 4;
@@ -1597,8 +1597,8 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     time_checker( push_12, 100 ); // <- removes `removal_limit` delegations from carol, rest (1 limit) added postponed
     BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 4 * removal_limit );
 
-    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "1000.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "carol", ASSET( "1000.000 TESTS" ) );
+    vest( "bob", ASSET( "1000.000 TESTS" ) );
+    vest( "carol", ASSET( "1000.000 TESTS" ) );
     // even though delegators have new vests that could cover not-yet-removed delegations
     // we still continue to remove them (we could make it differently but that complicates
     // implementation - the mechanism is an safety trigger, so it should be simple)

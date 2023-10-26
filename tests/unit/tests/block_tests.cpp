@@ -1129,7 +1129,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, hived_fixture )
 
     generate_blocks( 2 );
 
-    vest( "initminer", 10000 );
+    vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
 
     // Fill up the rest of the required miners
     for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
