@@ -34,11 +34,16 @@
 #include <condition_variable>
 #include <mutex>
 
+#include <range/v3/algorithm/find.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/take.hpp>
+#include <range/v3/view/enumerate.hpp>
+#include <range/v3/view/reverse.hpp>
+
 #include <limits>
 #include <string>
 #include <typeindex>
 #include <typeinfo>
-#include <ranges>
 
 namespace bpo = boost::program_options;
 
