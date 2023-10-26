@@ -10,7 +10,7 @@ import test_tools as tt
 
 
 def __serialize_legacy(assets: Iterable) -> Iterable[str]:
-    return (str(asset) for asset in assets)
+    return (asset.as_legacy() for asset in assets)
 
 
 def __serialize_modern(assets: Iterable) -> Iterable[dict]:
