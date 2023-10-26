@@ -70,7 +70,7 @@ void block_producer::_generate_block( chain::generate_block_flow_control* genera
 
   try
   {
-    _db.push_block( *generate_block_ctrl, skip );
+    _chain.push_block( *generate_block_ctrl, skip );
   }
   catch (const fc::exception& e)
   {

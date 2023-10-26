@@ -14,7 +14,9 @@ namespace bpo = boost::program_options;
 
 namespace hive { namespace chain {
 
-hived_fixture::hived_fixture() {}
+hived_fixture::hived_fixture( bool remove_db_files /*= true*/ ) 
+  : _remove_db_files( remove_db_files )
+{}
 
 hived_fixture::~hived_fixture() 
 {
@@ -39,13 +41,26 @@ hived_fixture::~hived_fixture()
   exit(1);
 }
 
-void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg_overrides )
+void hived_fixture::set_logging_config( const fc::optional< fc::logging_config > common_logging_config )
+{
+  // If the config is filled by another hived_fixture...
+  if( common_logging_config )
+  {
+    // And postponed_init has not been called yet...
+    BOOST_ASSERT( _logging_config == false );
+    // Set common value to skip this phase during postponed init (see postponed_init_impl).
+    _logging_config = common_logging_config;
+  }
+}
+
+void hived_fixture::postponed_init_impl( bool remove_db_files,
+  const config_arg_override_t& config_arg_overrides )
 {
   try
   {
     bpo::variables_map option_overrides;
 
-    _data_dir = common_init( theApp, [&]( appbase::application& app, int argc, char** argv )
+    _data_dir = common_init( theApp, remove_db_files, [&]( appbase::application& app, int argc, char** argv )
     {
       
       // Global value should always default to true.
@@ -110,19 +125,24 @@ void hived_fixture::postponed_init_impl( const config_arg_override_t& config_arg
       BOOST_REQUIRE( db_plugin );
       db_plugin->logging = false;
 
-      auto& chain = app.get_plugin< hive::plugins::chain::chain_plugin >();
-      chain.disable_p2p(); // We don't want p2p plugin connections at all.
-      db = &chain.db();
-      _block_reader = &( chain.block_reader() );
+      _chain = &( app.get_plugin< hive::plugins::chain::chain_plugin >() );
+      _chain->disable_p2p(); // We don't want p2p plugin connections at all.
+      _block_reader = &( _chain->block_reader() );
+      db = &( _chain->db() );
       BOOST_REQUIRE( db );
       db->_log_hardforks = false;
 
-      thread_pool = &chain.get_thread_pool();
+      thread_pool = &_chain->get_thread_pool();
       BOOST_REQUIRE( thread_pool );
 
-      // Load configuration file into logging config structure, used to create loggers & appenders.
-      // Store the structure for further examination (in tests).
-      _logging_config = app.load_logging_config();
+      // Skip this phase when common logging config was provided by another fixture 
+      // (see set_logging_config).
+      if( not _logging_config )
+      {
+        // Load configuration file into logging config structure, used to create loggers & appenders.
+        // Store the structure for further examination (in tests).
+        _logging_config = app.load_logging_config();
+      }
 
       ah_plugin_type* ah_plugin = app.find_plugin< ah_plugin_type >();
       if( ah_plugin != nullptr )
@@ -147,6 +167,12 @@ const hive::chain::block_read_i& hived_fixture::get_block_reader() const
 {
   BOOST_ASSERT( _block_reader != nullptr );
   return *_block_reader;
+}
+
+hive::plugins::chain::chain_plugin& hived_fixture::get_chain_plugin() const
+{
+  BOOST_ASSERT( _chain != nullptr );
+  return *_chain;
 }
 
 json_rpc_database_fixture::json_rpc_database_fixture()
@@ -313,5 +339,30 @@ void json_rpc_database_fixture::make_positive_request( std::string& request )
 {
   make_request( request, 0/*code*/, false/*is_warning*/, false/*is_fail*/);
 }
+
+bool hived_fixture::push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
+{
+  return test::_push_block( get_chain_plugin(), b, skip_flags );
+}
+
+namespace test {
+
+bool _push_block(hive::plugins::chain::chain_plugin& chain, const block_header& header, 
+                 const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, 
+                 const fc::ecc::private_key& signer,
+                 uint32_t skip_flags /* = 0 */)
+{
+  std::shared_ptr<full_block_type> full_block( hive::chain::full_block_type::create_from_block_header_and_transactions( header, full_transactions, &signer ) );
+  existing_block_flow_control block_ctrl( full_block );
+  return chain.push_block( block_ctrl, skip_flags );
+}
+
+bool _push_block( hive::plugins::chain::chain_plugin& chain, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
+{
+  existing_block_flow_control block_ctrl( b );
+  return chain.push_block( block_ctrl, skip_flags);
+}
+
+} // namespace test
 
 } } // hive::chain

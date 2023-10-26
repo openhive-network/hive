@@ -120,11 +120,17 @@ void open_test_database( database& db, sync_block_writer& sbw,
   db.open( args );
 }
 
-#define SET_UP_DATABASE( NAME, APP, DATA_DIR_PATH, LOG_HARDFORKS ) \
-  database NAME( APP ); \
-  sync_block_writer sbw_ ## NAME ( NAME, APP ); \
-  NAME.set_block_writer( &sbw_ ## NAME ); \
-  open_test_database( NAME, sbw_ ## NAME, DATA_DIR_PATH, APP, LOG_HARDFORKS );
+#define SET_UP_FIXTURE( REMOVE_DB_FILES, DATA_DIR_PATH_STR ) \
+  hived_fixture fixture( REMOVE_DB_FILES ); \
+  fixture.postponed_init( \
+    { \
+      hived_fixture::config_line_t( { "shared-file-dir", \
+        { DATA_DIR_PATH_STR } } \
+      ) \
+    } \
+  ); \
+  database& db = *(fixture.db); \
+  hive::plugins::chain::chain_plugin& chain_plugin = fixture.get_chain_plugin();
 
 BOOST_AUTO_TEST_CASE( generate_empty_blocks )
 {
@@ -137,10 +143,9 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
     auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
     std::shared_ptr<full_block_type> cutoff_block;
     {
-      appbase::application app;
-      SET_UP_DATABASE( db, app, data_dir.path(), false )
-      const block_read_i& block_reader = sbw_db.get_block_reader();
-      witness::block_producer bp( db );
+      SET_UP_FIXTURE( true /*REMOVE_DB_FILES*/, data_dir.path().string() );
+      const block_read_i& block_reader = chain_plugin.block_reader();
+      witness::block_producer bp( chain_plugin );
       b = GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
         init_account_priv_key, database::skip_nothing );
 
@@ -162,12 +167,10 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
           break;
         }
       }
-      db.close();
     }
     {
-      appbase::application app;
-      SET_UP_DATABASE( db, app, data_dir.path(), false )
-      witness::block_producer bp( db );
+      SET_UP_FIXTURE( false /*REMOVE_DB_FILES*/, data_dir.path().string() );
+      witness::block_producer bp( chain_plugin );
 
       BOOST_CHECK_EQUAL( db.head_block_num(), cutoff_block->get_block_num() );
 
@@ -193,9 +196,8 @@ BOOST_AUTO_TEST_CASE( undo_block )
   try {
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     {
-      appbase::application app;
-      SET_UP_DATABASE( db, app, data_dir.path(), false )
-      witness::block_producer bp( db );
+      SET_UP_FIXTURE( true /*REMOVE_DB_FILES*/, data_dir.path().string() );
+      witness::block_producer bp( chain_plugin );
       fc::time_point_sec now( HIVE_TESTING_GENESIS_TIMESTAMP );
       std::vector< time_point_sec > time_stack;
 
@@ -239,19 +241,32 @@ BOOST_AUTO_TEST_CASE( undo_block )
   }
 }
 
+#define SET_UP_FIXTURE_SUFFIX( DATA_DIR_PATH_STR, SUFFIX, COMMON_LOGGING_CONFIG ) \
+  hived_fixture fixture ## SUFFIX; \
+  fixture ## SUFFIX.set_logging_config( COMMON_LOGGING_CONFIG ); \
+  fixture ## SUFFIX.postponed_init( \
+    { \
+      hived_fixture::config_line_t( { "shared-file-dir", \
+        { DATA_DIR_PATH_STR } } \
+      ) \
+    } \
+  ); \
+  database& db ## SUFFIX = *(fixture ## SUFFIX.db); \
+  hive::plugins::chain::chain_plugin& chain_plugin ## SUFFIX = fixture ## SUFFIX.get_chain_plugin();
+
 BOOST_AUTO_TEST_CASE( fork_blocks )
 {
   try {
     fc::temp_directory data_dir1( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE_SUFFIX( data_dir1.path().string(), 1, fc::optional< fc::logging_config >() );
+    auto common_logging_config = fixture1.get_logging_config();
     fc::temp_directory data_dir2( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE_SUFFIX( data_dir2.path().string(), 2, common_logging_config );
 
     //TODO This test needs 6-7 ish witnesses prior to fork
 
-    appbase::application app;
-    SET_UP_DATABASE( db1, app, data_dir1.path(), false )
-    witness::block_producer bp1( db1 );
-    SET_UP_DATABASE( db2, app, data_dir2.path(), false )
-    witness::block_producer bp2( db2 );
+    witness::block_producer bp1( chain_plugin1 );
+    witness::block_producer bp2( chain_plugin2 );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     for( uint32_t i = 0; i < 10; ++i )
@@ -259,7 +274,7 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
       auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
                                init_account_priv_key, database::skip_nothing );
       try {
-        PUSH_BLOCK( db2, b );
+        PUSH_BLOCK( chain_plugin2, b );
       } FC_CAPTURE_AND_RETHROW( ("db2") );
     }
     for( uint32_t i = 10; i < 13; ++i )
@@ -276,7 +291,7 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
       next_slot = 1;
       // notify both databases of the new block.
       // only db2 should switch to the new fork, db1 should not
-      PUSH_BLOCK( db1, b );
+      PUSH_BLOCK( chain_plugin1, b );
       BOOST_CHECK_EQUAL(db1.head_block_id().str(), db1_tip);
       BOOST_CHECK_EQUAL(db2.head_block_id().str(), b->get_block_id().str());
     }
@@ -298,14 +313,14 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
       tx.operations.emplace_back( transfer_operation() );
       bad_block_txs.emplace_back( full_transaction_type::create_from_signed_transaction( tx, pack_type::legacy, false ) );
       BOOST_CHECK_EQUAL(bad_block_header.block_num(), 14u);
-      HIVE_CHECK_THROW(PUSH_BLOCK( db1, bad_block_header, bad_block_txs, init_account_priv_key ), fc::exception);
+      HIVE_CHECK_THROW(PUSH_BLOCK( chain_plugin1, bad_block_header, bad_block_txs, init_account_priv_key ), fc::exception);
     }
     BOOST_CHECK_EQUAL(db1.head_block_num(), 13u);
     BOOST_CHECK_EQUAL(db1.head_block_id().str(), db2_block_13_id);
 
     // assert that db1 accepts the good version of block 14
     BOOST_CHECK_EQUAL(db2.head_block_num(), 14u);
-    PUSH_BLOCK( db1, good_block );
+    PUSH_BLOCK( chain_plugin1, good_block );
     BOOST_CHECK_EQUAL(db1.head_block_id().str(), db2.head_block_id().str());
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
@@ -318,11 +333,11 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
   try {
     fc::temp_directory dir1( hive::utilities::temp_directory_path() ),
                   dir2( hive::utilities::temp_directory_path() );
-    appbase::application app;  
-    SET_UP_DATABASE( db1, app, dir1.path(), false )
-    SET_UP_DATABASE( db2, app, dir2.path(), false )
-    witness::block_producer bp1( db1 ),
-                    bp2( db2 );
+    SET_UP_FIXTURE_SUFFIX( dir1.path().string(), 1, fc::optional< fc::logging_config >() );
+    auto common_logging_config = fixture1.get_logging_config();
+    SET_UP_FIXTURE_SUFFIX( dir2.path().string(), 2, common_logging_config );
+    witness::block_producer bp1( chain_plugin1 ),
+                    bp2( chain_plugin2 );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     public_key_type init_account_pub_key  = init_account_priv_key.get_public_key();
@@ -351,10 +366,10 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
 
     b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
-    PUSH_BLOCK( db1, b );
+    PUSH_BLOCK( chain_plugin1, b );
     b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
-    PUSH_BLOCK( db1, b );
+    PUSH_BLOCK( chain_plugin1, b );
     HIVE_REQUIRE_THROW(db2.get(alice_id), std::exception);
     db1.get(alice_id); /// it should be included in the pending state
     db1.clear_pending(); // clear it so that we can verify it was properly removed from pending state.
@@ -364,7 +379,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
 
     b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
-    PUSH_BLOCK( db1, b );
+    PUSH_BLOCK( chain_plugin1, b );
 
     BOOST_CHECK( db1.get(alice_id).get_name() == "alice");
     BOOST_CHECK( db2.get(alice_id).get_name() == "alice");
@@ -410,6 +425,13 @@ namespace
   }
 }
 
+#define SET_UP_CLEAN_DATABASE_FIXTURE_SUFFIX( SUFFIX ) \
+  clean_database_fixture fixture ## SUFFIX( \
+    database_fixture::shared_file_size_in_mb_512, \
+    fc::optional<uint32_t>(), \
+    false /*init_ah_plugin*/ ); \
+  database& db ## SUFFIX = *(fixture ## SUFFIX.db);
+
 // Normally, the only thing that will cause the blockchain to switch to a different for
 // is if the new fork is longer than the current fork.  But with the fast-confirmation
 // transactions, if we find that a supermajority of witnesses support a different fork
@@ -420,43 +442,47 @@ namespace
 // a flaky network might.
 // We'll assume this is a case where a single witness (on db2) gets disconnected from 
 // the network, while the other 20 witnesses remain connected (on db1)
-BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
+BOOST_AUTO_TEST_CASE(switch_forks_using_fast_confirm)
 {
   try
   {
+    SET_UP_CLEAN_DATABASE_FIXTURE_SUFFIX( 1 )
+    auto common_logging_config = fixture1.get_logging_config();
+    hive::plugins::chain::chain_plugin& chain_plugin1 = fixture1.get_chain_plugin();
+
     fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
 
     BOOST_TEST_MESSAGE("Generating several rounds of blocks to allow our real witnesses to become active");
-    BOOST_TEST_MESSAGE("db1 head_block_num = " << db->head_block_num());
-    generate_blocks(63);
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db1.head_block_num());
+    fixture1.generate_blocks(63);
     // dump_witnesses("db1", *db);
-     dump_blocks("db1", *db, get_block_reader());
-    BOOST_REQUIRE_EQUAL(db->head_block_num(), 65);
+     dump_blocks("db1", db1, fixture1.get_block_reader());
+    BOOST_REQUIRE_EQUAL(db1.head_block_num(), 65);
 
     fc::temp_directory dir2(hive::utilities::temp_directory_path());
     // create a second, empty, database that we will first bring in sync with the 
     // fixture's database, then we will trigger a fork and test how it resolves.
     // we'll call the fixture's database "db1"
-    SET_UP_DATABASE( db2, theApp, dir2.path(), true );
+    SET_UP_FIXTURE_SUFFIX( dir2.path().string(), 2, common_logging_config );
 
     BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
     // dump_witnesses("db2", db2);
     // dump_blocks("db2", db2);
 
     BOOST_TEST_MESSAGE("Copying initial blocks generated in db1 to db2");
-    for (uint32_t block_num = 1; block_num <= db->head_block_num(); ++block_num)
+    for (uint32_t block_num = 1; block_num <= db1.head_block_num(); ++block_num)
     {
-      std::shared_ptr<full_block_type> block = get_block_reader().fetch_block_by_number(block_num);
-      PUSH_BLOCK(db2, block);
+      std::shared_ptr<full_block_type> block = fixture1.get_block_reader().fetch_block_by_number(block_num);
+      PUSH_BLOCK(chain_plugin2, block);
       // the fixture applies the hardforks to db1 after block 1, do the same thing to db2 here
       if (block_num == 1)
         db2.set_hardfork(26);
     }
 
     BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
-    BOOST_REQUIRE_EQUAL(db->head_block_id(), db2.head_block_id());
-    BOOST_TEST_MESSAGE("db: head block is " << db->head_block_id().str());
-    BOOST_TEST_MESSAGE("db1 head_block_num = " << db->head_block_num());
+    BOOST_REQUIRE_EQUAL(db1.head_block_id(), db2.head_block_id());
+    BOOST_TEST_MESSAGE("db: head block is " << db1.head_block_id().str());
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db1.head_block_num());
     // dump_witnesses("db2", db2);
     // dump_blocks("db2", db2);
     BOOST_TEST_MESSAGE("db2 last_irreversible_block is " << db2.get_last_irreversible_block_num());
@@ -467,11 +493,11 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
     // representative of how the blockchains will look in real life)
     {
       BOOST_TEST_MESSAGE("Broadcasting fast-confirm transactions for all blocks " << db2.get_last_irreversible_block_num());
-      const witness_schedule_object& wso_for_irreversibility = db->get_witness_schedule_object_for_irreversibility();
+      const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
       const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
                                                                         wso_for_irreversibility.current_shuffled_witnesses.begin() + 
                                                                         wso_for_irreversibility.num_scheduled_witnesses);
-      std::shared_ptr<full_block_type> full_head_block = get_block_reader().fetch_block_by_number(db->head_block_num());
+      std::shared_ptr<full_block_type> full_head_block = fixture1.get_block_reader().fetch_block_by_number(db1.head_block_num());
       const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
       for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
         if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
@@ -480,7 +506,7 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
           witness_block_approve_operation fast_confirm_op;
           fast_confirm_op.witness = fast_confirming_witness;
           fast_confirm_op.block_id = full_head_block->get_block_id();
-          push_transaction(fast_confirm_op, init_account_priv_key);
+          fixture1.push_transaction(fast_confirm_op, init_account_priv_key);
 
           signed_transaction trx;
           trx.operations.push_back(fast_confirm_op);
@@ -488,13 +514,13 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
           PUSH_TX(db2, trx, init_account_priv_key);
         }
     }
-    BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), db->head_block_num());
+    BOOST_REQUIRE_EQUAL(db1.get_last_irreversible_block_num(), db1.head_block_num());
     BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
 
     // fork.  db2 will generate the next block, but we won't propagate it.
     // then db1 will generate the a block at the same height.
     BOOST_TEST_MESSAGE("Simulating a fork by generating a block in db2 that won't be shared with db1");
-    witness::block_producer block_producer2(db2);
+    witness::block_producer block_producer2( chain_plugin2 );
     const fc::time_point_sec head_block_time = db2.head_block_time();
     const fc::time_point_sec orphan_slot_time = head_block_time + HIVE_BLOCK_INTERVAL;
     const fc::time_point_sec real_slot_time = orphan_slot_time + HIVE_BLOCK_INTERVAL;
@@ -511,7 +537,7 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
                                                                    init_account_priv_key, database::skip_nothing);
     BOOST_TEST_MESSAGE("Generated block #" << orphan_block->get_block_num() << " with id " << orphan_block->get_block_id().str() <<
                        " generated by witness " << orphan_block->get_block_header().witness << ", pushing to db2");
-    PUSH_BLOCK(db2, orphan_block);
+    PUSH_BLOCK(chain_plugin2, orphan_block);
     BOOST_REQUIRE_EQUAL(orphan_block->get_block_num(), db2.head_block_num());
     BOOST_REQUIRE_EQUAL(orphan_block->get_block_id(), db2.head_block_id());
     BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num() - 1);
@@ -519,28 +545,28 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
 
     BOOST_TEST_MESSAGE("Creating the other side of the fork by generating a block in db1 that doesn't include db2's head block");
     db2.get_scheduled_witness(db2.head_block_num() + 1), 
-    generate_block(0, init_account_priv_key, 1 /* <-- skip one block */);
-    std::shared_ptr<full_block_type> real_block = get_block_reader().fetch_block_by_number(db->head_block_num());
+    fixture1.generate_block(0, init_account_priv_key, 1 /* <-- skip one block */);
+    std::shared_ptr<full_block_type> real_block = fixture1.get_block_reader().fetch_block_by_number(db1.head_block_num());
     BOOST_TEST_MESSAGE("Generated block #" << real_block->get_block_num() << " with id " << real_block->get_block_id().str() <<
                        " generated by witness " << real_block->get_block_header().witness << ", pushed to db1");
     BOOST_REQUIRE_EQUAL(real_block->get_block_num(), orphan_block->get_block_num());
     BOOST_REQUIRE_EQUAL(real_block->get_block_header().timestamp, real_slot_time);
     BOOST_REQUIRE_NE(orphan_block->get_block_id(), real_block->get_block_id());
-    BOOST_REQUIRE_EQUAL(db->head_block_num(), db2.head_block_num());
-    BOOST_REQUIRE_NE(db->head_block_id(), db2.head_block_id());
+    BOOST_REQUIRE_EQUAL(db1.head_block_num(), db2.head_block_num());
+    BOOST_REQUIRE_NE(db1.head_block_id(), db2.head_block_id());
 
     // reconnect
     BOOST_TEST_MESSAGE("Reconnecting the two networks");
-    PUSH_BLOCK(*db, orphan_block);
-    PUSH_BLOCK(db2, real_block);
+    PUSH_BLOCK(chain_plugin1, orphan_block);
+    PUSH_BLOCK(chain_plugin2, real_block);
     // nothing should happen yet
     BOOST_REQUIRE_EQUAL(orphan_block->get_block_id(), db2.head_block_id());
-    BOOST_REQUIRE_EQUAL(real_block->get_block_id(), db->head_block_id());
+    BOOST_REQUIRE_EQUAL(real_block->get_block_id(), db1.head_block_id());
 
     // now let db2 see the fast-confirm messages of all the 20 other witnesses that were on db1
     {
       BOOST_TEST_MESSAGE("Broadcasting fast-confirm for the new non-orphan head block");
-      const witness_schedule_object& wso_for_irreversibility = db->get_witness_schedule_object_for_irreversibility();
+      const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
       const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
                                                                         wso_for_irreversibility.current_shuffled_witnesses.begin() + 
                                                                         wso_for_irreversibility.num_scheduled_witnesses);
@@ -554,7 +580,7 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
           witness_block_approve_operation fast_confirm_op;
           fast_confirm_op.witness = fast_confirming_witness;
           fast_confirm_op.block_id = real_block->get_block_id();
-          push_transaction(fast_confirm_op, init_account_priv_key);
+          fixture1.push_transaction(fast_confirm_op, init_account_priv_key);
 
           signed_transaction trx;
           trx.operations.push_back(fast_confirm_op);
@@ -564,10 +590,10 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
     }
 
     BOOST_TEST_MESSAGE("Verifying that the forked node rejoins after receiving fast confirmations, even though the new chain isn't longer");
-    BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), db->head_block_num());
+    BOOST_REQUIRE_EQUAL(db1.get_last_irreversible_block_num(), db1.head_block_num());
     BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
-    BOOST_REQUIRE_EQUAL(db->head_block_id(), db2.head_block_id());
-    BOOST_REQUIRE_EQUAL(real_block->get_block_id(), db->head_block_id());
+    BOOST_REQUIRE_EQUAL(db1.head_block_id(), db2.head_block_id());
+    BOOST_REQUIRE_EQUAL(real_block->get_block_id(), db1.head_block_id());
   }
   catch (const fc::exception& e)
   {
@@ -576,24 +602,27 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
   }
 }
 
-BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fixture)
+BOOST_AUTO_TEST_CASE(fast_confirm_plus_out_of_order_blocks)
 {
   try
   {
+    SET_UP_CLEAN_DATABASE_FIXTURE_SUFFIX( 1 )
+    auto common_logging_config = fixture1.get_logging_config();
+
     fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
 
     BOOST_TEST_MESSAGE("Generating several rounds of blocks to allow our real witnesses to become active");
-    BOOST_TEST_MESSAGE("db1 head_block_num = " << db->head_block_num());
-    generate_blocks(63);
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db1.head_block_num());
+    fixture1.generate_blocks(63);
     // dump_witnesses("db1", *db);
     // dump_blocks("db1", *db);
-    BOOST_REQUIRE_EQUAL(db->head_block_num(), 65);
+    BOOST_REQUIRE_EQUAL(db1.head_block_num(), 65);
 
     fc::temp_directory dir2(hive::utilities::temp_directory_path());
     // create a second, empty, database that we will first bring in sync with the 
     // fixture's database, then we will trigger a fork and test how it resolves.
     // we'll call the fixture's database "db1"
-    SET_UP_DATABASE( db2, theApp, dir2.path(), true )
+    SET_UP_FIXTURE_SUFFIX( dir2.path().string(), 2, common_logging_config );
 
 
     BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
@@ -601,19 +630,19 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
     // dump_blocks("db2", db2);
 
     BOOST_TEST_MESSAGE("Copying initial blocks generated in db1 to db2");
-    for (uint32_t block_num = 1; block_num <= db->head_block_num(); ++block_num)
+    for (uint32_t block_num = 1; block_num <= db1.head_block_num(); ++block_num)
     {
-      std::shared_ptr<full_block_type> block = get_block_reader().fetch_block_by_number(block_num);
-      PUSH_BLOCK(db2, block);
+      std::shared_ptr<full_block_type> block = fixture1.get_block_reader().fetch_block_by_number(block_num);
+      PUSH_BLOCK(chain_plugin2, block);
       // the fixture applies the hardforks to db1 after block 1, do the same thing to db2 here
       if (block_num == 1)
         db2.set_hardfork(26);
     }
 
     BOOST_TEST_MESSAGE("db2 head_block_num = " << db2.head_block_num());
-    BOOST_REQUIRE_EQUAL(db->head_block_id(), db2.head_block_id());
-    BOOST_TEST_MESSAGE("db: head block is " << db->head_block_id().str());
-    BOOST_TEST_MESSAGE("db1 head_block_num = " << db->head_block_num());
+    BOOST_REQUIRE_EQUAL(db1.head_block_id(), db2.head_block_id());
+    BOOST_TEST_MESSAGE("db: head block is " << db1.head_block_id().str());
+    BOOST_TEST_MESSAGE("db1 head_block_num = " << db1.head_block_num());
     // dump_witnesses("db2", db2);
     // dump_blocks("db2", db2);
     BOOST_TEST_MESSAGE("db2 last_irreversible_block is " << db2.get_last_irreversible_block_num());
@@ -624,11 +653,11 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
     // representative of how the blockchains will look in real life)
     {
       BOOST_TEST_MESSAGE("Broadcasting fast-confirm transactions for all blocks " << db2.get_last_irreversible_block_num());
-      const witness_schedule_object& wso_for_irreversibility = db->get_witness_schedule_object_for_irreversibility();
+      const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
       const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
                                                                         wso_for_irreversibility.current_shuffled_witnesses.begin() + 
                                                                         wso_for_irreversibility.num_scheduled_witnesses);
-      std::shared_ptr<full_block_type> full_head_block = get_block_reader().fetch_block_by_number(db->head_block_num());
+      std::shared_ptr<full_block_type> full_head_block = fixture1.get_block_reader().fetch_block_by_number(db1.head_block_num());
       const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
       for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
         if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
@@ -637,7 +666,7 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
           witness_block_approve_operation fast_confirm_op;
           fast_confirm_op.witness = fast_confirming_witness;
           fast_confirm_op.block_id = full_head_block->get_block_id();
-          push_transaction(fast_confirm_op, init_account_priv_key);
+          fixture1.push_transaction(fast_confirm_op, init_account_priv_key);
 
           signed_transaction trx;
           trx.operations.push_back(fast_confirm_op);
@@ -645,7 +674,7 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
           PUSH_TX(db2, trx, init_account_priv_key);
         }
     }
-    BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), db->head_block_num());
+    BOOST_REQUIRE_EQUAL(db1.get_last_irreversible_block_num(), db1.head_block_num());
     BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), db2.head_block_num());
 
     // now we want to create the next two blocks, but simulate the case where the blocks arrive
@@ -655,14 +684,14 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
     // - we receive block 66
 
     // generate block 66 in db1, but don't propagate it to db2
-    generate_blocks(1);
+    fixture1.generate_blocks(1);
     {
       BOOST_TEST_MESSAGE("Broadcasting fast-confirm transactions for block 66 for all witnesses " << db2.get_last_irreversible_block_num());
-      const witness_schedule_object& wso_for_irreversibility = db->get_witness_schedule_object_for_irreversibility();
+      const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
       const auto fast_confirming_witnesses = boost::make_iterator_range(wso_for_irreversibility.current_shuffled_witnesses.begin(),
                                                                         wso_for_irreversibility.current_shuffled_witnesses.begin() + 
                                                                         wso_for_irreversibility.num_scheduled_witnesses);
-      std::shared_ptr<full_block_type> full_head_block = get_block_reader().fetch_block_by_number(db->head_block_num());
+      std::shared_ptr<full_block_type> full_head_block = fixture1.get_block_reader().fetch_block_by_number(db1.head_block_num());
       const account_name_type witness_for_head_block = full_head_block->get_block_header().witness;
       for (const account_name_type& fast_confirming_witness : fast_confirming_witnesses)
         if (fast_confirming_witness != witness_for_head_block) // the wit that generated the block doesn't fast-confirm their own block
@@ -671,7 +700,7 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
           witness_block_approve_operation fast_confirm_op;
           fast_confirm_op.witness = fast_confirming_witness;
           fast_confirm_op.block_id = full_head_block->get_block_id();
-          push_transaction(fast_confirm_op, init_account_priv_key);
+          fixture1.push_transaction(fast_confirm_op, init_account_priv_key);
 
           // push the fast-confirms to db2, which doesn't yet have block 66
           signed_transaction trx;
@@ -680,20 +709,20 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
           PUSH_TX(db2, trx, init_account_priv_key);
         }
     }
-    BOOST_REQUIRE_EQUAL(db->head_block_num(), 66);
+    BOOST_REQUIRE_EQUAL(db1.head_block_num(), 66);
     BOOST_REQUIRE_EQUAL(db2.head_block_num(), 65);
-    BOOST_REQUIRE_EQUAL(db->get_last_irreversible_block_num(), 66);
+    BOOST_REQUIRE_EQUAL(db1.get_last_irreversible_block_num(), 66);
     BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), 65);
 
     // generate block 67 in db1, propagate it to db2.  it will be pushed to the forkdb's unlinked index
-    generate_blocks(1);
-    BOOST_REQUIRE_THROW(PUSH_BLOCK(db2, get_block_reader().fetch_block_by_number(67)), hive::chain::unlinkable_block_exception);
+    fixture1.generate_blocks(1);
+    BOOST_REQUIRE_THROW(PUSH_BLOCK(chain_plugin2, fixture1.get_block_reader().fetch_block_by_number(67)), hive::chain::unlinkable_block_exception);
 
     // nothing should have changed
     BOOST_REQUIRE_EQUAL(db2.head_block_num(), 65);
     BOOST_REQUIRE_EQUAL(db2.get_last_irreversible_block_num(), 65);
 
-    PUSH_BLOCK(db2, get_block_reader().fetch_block_by_number(66));
+    PUSH_BLOCK(chain_plugin2, fixture1.get_block_reader().fetch_block_by_number(66));
 
     // pushing block 66 has linked in block 67, so db2 should apply both blocks.  It already has the
     // fast-confirms for block 66, so it should become irreverisble immediately.
@@ -713,9 +742,10 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
     fc::temp_directory dir1( hive::utilities::temp_directory_path() ),
                   dir2( hive::utilities::temp_directory_path() );
     appbase::application app;  
-    SET_UP_DATABASE( db1, app, dir1.path(), false )
-    SET_UP_DATABASE( db2, app, dir2.path(), false )
-    witness::block_producer bp1( db1 );
+    SET_UP_FIXTURE_SUFFIX( dir1.path().string(), 1, fc::optional< fc::logging_config >() );
+    auto common_logging_config = fixture1.get_logging_config();
+    SET_UP_FIXTURE_SUFFIX( dir2.path().string(), 2, common_logging_config );
+    witness::block_producer bp1( chain_plugin1 );
     BOOST_CHECK( db1.get_chain_id() == db2.get_chain_id() );
 
     auto skip_sigs = database::skip_transaction_signatures | database::skip_authority_check;
@@ -746,7 +776,7 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
 
     auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
       init_account_priv_key, skip_sigs );
-    PUSH_BLOCK( db2, b, skip_sigs );
+    PUSH_BLOCK( chain_plugin2, b, skip_sigs );
 
     HIVE_CHECK_THROW(PUSH_TX( db1, trx, init_account_priv_key, skip_sigs ), fc::exception);
     HIVE_CHECK_THROW(PUSH_TX( db2, trx, init_account_priv_key, skip_sigs ), fc::exception);
@@ -761,22 +791,21 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
 BOOST_AUTO_TEST_CASE( tapos )
 {
   try {
-    fc::temp_directory dir1( hive::utilities::temp_directory_path() );
-    appbase::application app;
-    SET_UP_DATABASE( db1, app, dir1.path(), false )
-    witness::block_producer bp1( db1 );
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE( true /*REMOVE_DB_FILES*/, data_dir.path().string() );
+    witness::block_producer bp1( chain_plugin );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     public_key_type init_account_pub_key  = init_account_priv_key.get_public_key();
 
-    auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+    auto b = GENERATE_BLOCK( bp1, db.get_slot_time(1), db.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
 
     BOOST_TEST_MESSAGE( "Creating a transaction with reference block" );
-    idump((db1.head_block_id()));
+    idump((db.head_block_id()));
     signed_transaction trx;
     //This transaction must be in the next block after its reference, or it is invalid.
-    trx.set_reference_block( db1.head_block_id() );
+    trx.set_reference_block( db.head_block_id() );
 
     account_create_operation cop;
     cop.new_account_name = "alice";
@@ -784,13 +813,13 @@ BOOST_AUTO_TEST_CASE( tapos )
     cop.owner = authority(1, init_account_pub_key, 1);
     cop.active = cop.owner;
     trx.operations.push_back(cop);
-    trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    trx.set_expiration( db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
     BOOST_TEST_MESSAGE( "Pushing Pending Transaction" );
     idump((trx));
-    PUSH_TX( db1, trx, init_account_priv_key );
+    PUSH_TX( db, trx, init_account_priv_key );
     BOOST_TEST_MESSAGE( "Generating a block" );
-    b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+    b = GENERATE_BLOCK( bp1, db.get_slot_time(1), db.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
     trx.clear();
 
@@ -799,14 +828,14 @@ BOOST_AUTO_TEST_CASE( tapos )
     t.to = "alice";
     t.amount = asset(50,HIVE_SYMBOL);
     trx.operations.push_back(t);
-    trx.set_expiration( db1.head_block_time() + fc::seconds(2) );
-    idump((trx)(db1.head_block_time()));
-    b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+    trx.set_expiration( db.head_block_time() + fc::seconds(2) );
+    idump((trx)(db.head_block_time()));
+    b = GENERATE_BLOCK( bp1, db.get_slot_time(1), db.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
     idump((b->get_block()));
-    b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+    b = GENERATE_BLOCK( bp1, db.get_slot_time(1), db.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
-    BOOST_REQUIRE_THROW( PUSH_TX(db1, trx, init_account_priv_key, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
+    BOOST_REQUIRE_THROW( PUSH_TX(db, trx, init_account_priv_key, 0/*database::skip_transaction_signatures | database::skip_authority_check*/), fc::exception );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
@@ -1091,7 +1120,7 @@ BOOST_FIXTURE_TEST_CASE( skip_block, clean_database_fixture )
     BOOST_TEST_MESSAGE( "Skipping blocks through db" );
     BOOST_REQUIRE( db->head_block_num() == 2 );
 
-    witness::block_producer bp( *db );
+    witness::block_producer bp( get_chain_plugin() );
     unsigned int init_block_num = db->head_block_num();
     int miss_blocks = fc::minutes( 1 ).to_seconds() / HIVE_BLOCK_INTERVAL;
     auto witness = db->get_scheduled_witness( miss_blocks );
@@ -1280,9 +1309,8 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
     BOOST_REQUIRE( HIVE_MAX_WITNESSES + 1 < HIVE_START_MINER_VOTING_BLOCK );
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    appbase::application app;
-    SET_UP_DATABASE( db, app, data_dir.path(), false )
-    witness::block_producer bp( db );
+    SET_UP_FIXTURE( true /*REMOVE_DB_FILES*/, data_dir.path().string() );
+    witness::block_producer bp( chain_plugin );
 
     auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
     {
@@ -1327,6 +1355,12 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
   FC_LOG_AND_RETHROW()
 }
 
+#define SET_UP_DATABASE( NAME, APP, DATA_DIR_PATH, LOG_HARDFORKS ) \
+  database NAME( APP ); \
+  sync_block_writer sbw_ ## NAME ( NAME, APP ); \
+  NAME.set_block_writer( &sbw_ ## NAME ); \
+  open_test_database( NAME, sbw_ ## NAME, DATA_DIR_PATH, APP, LOG_HARDFORKS );
+  
 BOOST_AUTO_TEST_CASE( safe_closing_database )
 {
   try {
@@ -1464,14 +1498,12 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_generation, clean_database_fixture )
   {
     BOOST_TEST_MESSAGE( "Testing block flow during generation" );
 
-    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    SET_UP_DATABASE( db, theApp, data_dir.path(), false )
-    witness::block_producer bp( db );
+    witness::block_producer bp( get_chain_plugin() );
 
     auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
 
-    test_block_flow_control<generate_block_flow_control> bfc( db.get_slot_time(1),
-      db.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing );
+    test_block_flow_control<generate_block_flow_control> bfc( db->get_slot_time(1),
+      db->get_scheduled_witness(1), init_account_priv_key, database::skip_nothing );
 
     bfc.expect( bfc.WRITE_QUEUE_POP );
     bfc.expect( bfc.FORK_DB_INSERT );
@@ -1513,22 +1545,23 @@ private:
   bool fulfilled = false;
 };
 
-BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
+BOOST_AUTO_TEST_CASE( block_flow_control_p2p )
 {
   try
   {
     BOOST_TEST_MESSAGE( "Testing block flow during p2p block push" );
 
     fc::temp_directory data_dir_bp1( hive::utilities::temp_directory_path() );
-    SET_UP_DATABASE( db_bp1, theApp, data_dir_bp1.path(), false )
-    witness::block_producer bp1( db_bp1 );
+    SET_UP_FIXTURE_SUFFIX( data_dir_bp1.path().string(), _bp1, fc::optional< fc::logging_config >() );
+    auto common_logging_config = fixture_bp1.get_logging_config();
+    witness::block_producer bp1( chain_plugin_bp1 );
 
     fc::temp_directory data_dir_bp2( hive::utilities::temp_directory_path() );
-    SET_UP_DATABASE( db_bp2, theApp, data_dir_bp2.path(), false )
-    witness::block_producer bp2( db_bp2 );
+    SET_UP_FIXTURE_SUFFIX( data_dir_bp2.path().string(), _bp2, common_logging_config );
+    witness::block_producer bp2( chain_plugin_bp2 );
 
-    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    SET_UP_DATABASE( db, theApp, data_dir.path(), false )
+    fc::temp_directory data_dir_( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE_SUFFIX( data_dir_.path().string(), _, common_logging_config );
 
     auto report_block = []( const database& db, const std::shared_ptr<full_block_type>& block, const char* suffix )
     {
@@ -1542,7 +1575,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
       init_account_priv_key, database::skip_nothing );
     report_block( db_bp1, block, "generated by BP1" );
 
-    PUSH_BLOCK( db_bp2, block );
+    PUSH_BLOCK( chain_plugin_bp2, block );
     report_block( db_bp2, block, "pushed to BP2" );
 
     {
@@ -1554,17 +1587,17 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
       bfc.expect( bfc.END_OF_BLOCK );
       bfc.expect( bfc.END_PROCESSING );
       bfc.expect( bfc.END );
-      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      fc::promise<void>::ptr promise( new test_promise( db_, bfc ) );
       bfc.attach_promise( promise );
 
       // since we are not running through full regular path (through p2p and chain plugin)
       // we have to manually call those phases (we can't just skip expectations because phase tracking
       // will not work correctly)
       bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
-      db.push_block( bfc );
-      bfc.on_worker_done( theApp ); //normally called by chain plugin
+      chain_plugin_.push_block( bfc );
+      bfc.on_worker_done( fixture_.theApp ); //normally called by chain plugin
       bfc.check_empty();
-      report_block( db, block, "pushed to DB" );
+      report_block( db_, block, "pushed to DB" );
     }
 
     // produce couple more blocks and push to all databases
@@ -1573,10 +1606,10 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
       block = GENERATE_BLOCK( bp1, db_bp1.get_slot_time( 1 ), db_bp1.get_scheduled_witness( 1 ),
         init_account_priv_key, database::skip_nothing );
       report_block( db_bp1, block, "generated by BP1" );
-      PUSH_BLOCK( db_bp2, block );
+      PUSH_BLOCK( chain_plugin_bp2, block );
       report_block( db_bp2, block, "pushed to BP2" );
-      PUSH_BLOCK( db, block );
-      report_block( db, block, "pushed to DB" );
+      PUSH_BLOCK( chain_plugin_, block );
+      report_block( db_, block, "pushed to DB" );
     }
 
     {
@@ -1598,8 +1631,8 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     auto block1 = GENERATE_BLOCK( bp1, db_bp1.get_slot_time( 1 ), db_bp1.get_scheduled_witness( 1 ),
       init_account_priv_key, database::skip_nothing );
     report_block( db_bp1, block1, "generated by BP1" );
-    PUSH_BLOCK( db, block1 );
-    report_block( db, block1, "pushed to DB" );
+    PUSH_BLOCK( chain_plugin_, block1 );
+    report_block( db_, block1, "pushed to DB" );
 
     BOOST_TEST_MESSAGE( "Testing block flow during duplicate block push" );
     // normally it should never happen because p2p only asks for the block from one peer, however
@@ -1615,14 +1648,14 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
       bfc.expect( bfc.END_OF_BLOCK );
       bfc.expect( bfc.END_PROCESSING );
       bfc.expect( bfc.END );
-      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      fc::promise<void>::ptr promise( new test_promise( db_, bfc ) );
       bfc.attach_promise( promise );
 
       bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
-      db.push_block( bfc );
-      bfc.on_worker_done( theApp ); //normally called by chain plugin
+      chain_plugin_.push_block( bfc );
+      bfc.on_worker_done( fixture_.theApp ); //normally called by chain plugin
       bfc.check_empty();
-      report_block( db, block1, "pushed to DB" );
+      report_block( db_, block1, "pushed to DB" );
     }
 
     auto block2 = GENERATE_BLOCK( bp2, db_bp2.get_slot_time( 1 ), db_bp2.get_scheduled_witness( 1 ),
@@ -1639,17 +1672,17 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
       bfc.expect( bfc.END_OF_BLOCK );
       bfc.expect( bfc.END_PROCESSING );
       bfc.expect( bfc.END );
-      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      fc::promise<void>::ptr promise( new test_promise( db_, bfc ) );
       bfc.attach_promise( promise );
 
       bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
-      db.push_block( bfc );
-      bfc.on_worker_done( theApp ); //normally called by chain plugin
+      chain_plugin_.push_block( bfc );
+      bfc.on_worker_done( fixture_.theApp ); //normally called by chain plugin
       bfc.check_empty();
-      report_block( db, block2, "pushed to DB" );
+      report_block( db_, block2, "pushed to DB" );
     }
 
-    PUSH_BLOCK( db_bp2, block1 );
+    PUSH_BLOCK( chain_plugin_bp2, block1 );
     report_block( db_bp2, block1, "pushed to BP2" );
     // db_bp1: block1 as main fork, block2 not present
     // db_bp2: block2 as main fork, block1 as ignored alternative
@@ -1671,14 +1704,14 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
       bfc.expect( bfc.END_OF_BLOCK );
       bfc.expect( bfc.END_PROCESSING );
       bfc.expect( bfc.END );
-      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      fc::promise<void>::ptr promise( new test_promise( db_, bfc ) );
       bfc.attach_promise( promise );
 
       bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
-      db.push_block( bfc );
-      bfc.on_worker_done( theApp ); //normally called by chain plugin
+      chain_plugin_.push_block( bfc );
+      bfc.on_worker_done( fixture_.theApp ); //normally called by chain plugin
       bfc.check_empty();
-      report_block( db, block2, "pushed to DB" );
+      report_block( db_, block2, "pushed to DB" );
     }
 
     BOOST_TEST_MESSAGE( "Testing block flow during unlinkable block push" );
@@ -1695,13 +1728,13 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
       bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
       try
       {
-        db_bp1.push_block( bfc );
+        chain_plugin_bp1.push_block( bfc );
       }
       catch( const unlinkable_block_exception& ex )
       {
         bfc.on_failure( ex ); //normally called by chain plugin
       }
-      bfc.on_worker_done( theApp ); //normally called by chain plugin
+      bfc.on_worker_done( fixture_bp1.theApp ); //normally called by chain plugin
       bfc.check_empty();
       report_block( db_bp1, block2, "pushed to BP1" );
       // now db_bp1 is still on its own fork but has block2 as unlinked item
@@ -1724,8 +1757,8 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
       bfc.attach_promise( promise );
 
       bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
-      db_bp1.push_block( bfc );
-      bfc.on_worker_done( theApp ); //normally called by chain plugin
+      chain_plugin_bp1.push_block( bfc );
+      bfc.on_worker_done( fixture_bp1.theApp ); //normally called by chain plugin
       bfc.check_empty();
       report_block( db_bp1, block, "pushed to BP1" );
     }
@@ -1735,29 +1768,29 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     block1 = GENERATE_BLOCK( bp1, db_bp1.get_slot_time( 1 ), db_bp1.get_scheduled_witness( 1 ),
       init_account_priv_key, database::skip_nothing );
     report_block( db_bp1, block1, "generated by BP1" );
-    PUSH_BLOCK( db_bp2, block1 );
+    PUSH_BLOCK( chain_plugin_bp2, block1 );
     report_block( db_bp2, block1, "pushed to BP2" );
     block2 = GENERATE_BLOCK( bp2, db_bp2.get_slot_time( 1 ), db_bp2.get_scheduled_witness( 1 ),
       init_account_priv_key, database::skip_nothing );
     report_block( db_bp2, block2, "generated by BP2" );
-    PUSH_BLOCK( db_bp1, block2 );
+    PUSH_BLOCK( chain_plugin_bp1, block2 );
     report_block( db_bp1, block2, "pushed to BP1" );
     block = block1; // save that block aside - it will be needed later
     block1 = GENERATE_BLOCK( bp1, db_bp1.get_slot_time( 1 ), db_bp1.get_scheduled_witness( 1 ),
       init_account_priv_key, database::skip_nothing );
     report_block( db_bp1, block1, "generated by BP1" );
-    PUSH_BLOCK( db_bp2, block1 );
+    PUSH_BLOCK( chain_plugin_bp2, block1 );
     report_block( db_bp2, block1, "pushed to BP2" );
 
     // db is missing block -> block2 -> block1; let's put them in but in reverse order
 
     try
     {
-      PUSH_BLOCK( db, block1 );
+      PUSH_BLOCK( chain_plugin_, block1 );
     }
     catch( const unlinkable_block_exception& ex )
     {
-      report_block( db, block1, "pushed to DB" );
+      report_block( db_, block1, "pushed to DB" );
     }
 
     BOOST_TEST_MESSAGE( "Testing block flow during unlinkable block push that can form link with other unlinkable" );
@@ -1768,21 +1801,21 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
       bfc.expect( bfc.END_PROCESSING );
       bfc.expect( bfc.FAILURE );
       bfc.expect( bfc.END );
-      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      fc::promise<void>::ptr promise( new test_promise( db_, bfc ) );
       bfc.attach_promise( promise );
 
       bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
       try
       {
-        db.push_block( bfc );
+        chain_plugin_.push_block( bfc );
       }
       catch( const unlinkable_block_exception& ex )
       {
         bfc.on_failure( ex ); //normally called by chain plugin
       }
-      bfc.on_worker_done( theApp ); //normally called by chain plugin
+      bfc.on_worker_done( fixture_.theApp ); //normally called by chain plugin
       bfc.check_empty();
-      report_block( db, block2, "pushed to DB" );
+      report_block( db_, block2, "pushed to DB" );
       // now db still have not moved, but has two blocks already that could form a link
     }
 
@@ -1797,19 +1830,19 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
       bfc.expect( bfc.END_OF_BLOCK );
       bfc.expect( bfc.END_PROCESSING );
       bfc.expect( bfc.END );
-      fc::promise<void>::ptr promise( new test_promise( db, bfc ) );
+      fc::promise<void>::ptr promise( new test_promise( db_, bfc ) );
       bfc.attach_promise( promise );
 
       bfc.on_write_queue_pop( 0, 0, 0, 0 ); //normally called by chain plugin
-      db.push_block( bfc );
-      bfc.on_worker_done( theApp ); //normally called by chain plugin
+      chain_plugin_.push_block( bfc );
+      bfc.on_worker_done( fixture_.theApp ); //normally called by chain plugin
       bfc.check_empty();
-      report_block( db, block, "pushed to DB" );
+      report_block( db_, block, "pushed to DB" );
     }
 
     // check if all nodes are on the same fork
-    BOOST_CHECK_EQUAL( db.head_block_id(), db_bp1.head_block_id() );
-    BOOST_CHECK_EQUAL( db.head_block_id(), db_bp2.head_block_id() );
+    BOOST_CHECK_EQUAL( db_.head_block_id(), db_bp1.head_block_id() );
+    BOOST_CHECK_EQUAL( db_.head_block_id(), db_bp2.head_block_id() );
   }
   FC_LOG_AND_RETHROW()
 }

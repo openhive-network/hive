@@ -11,6 +11,11 @@
 
 #define HIVE_CHAIN_PLUGIN_NAME "chain"
 
+namespace hive {
+  namespace chain {
+    class sync_block_writer;
+} }
+
 namespace hive { namespace plugins { namespace chain {
 
 class state_snapshot_provider;
@@ -60,6 +65,7 @@ public:
   void accept_transaction( const full_transaction_ptr& trx, const lock_type lock = lock_type::boost );
   void determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
     std::function< void( bool hf26_auth_fail )> on_full_trx = []( bool ){}, const lock_type lock = lock_type::boost );
+  bool push_block( const block_flow_control& block_ctrl, uint32_t skip = database::skip_nothing );
   void generate_block( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl );
 
   /**

@@ -54,7 +54,8 @@ autoscope set_mainnet_feed_values( bool auto_reset )
     return autoscope([](){});
 }
 
-fc::path common_init( appbase::application& app, const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer )
+fc::path common_init( appbase::application& app, bool remove_db_files,
+  const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer )
 {
   int argc = boost::unit_test::framework::master_test_suite().argc;
   char** argv = boost::unit_test::framework::master_test_suite().argv;
@@ -91,7 +92,8 @@ fc::path common_init( appbase::application& app, const std::function< void( appb
   // ditto with logs directory
   fc::remove_all( ( temp_data_dir + "/logs" ).c_str() );
   // and blockchain directory (including shared memory file)
-  fc::remove_all( ( temp_data_dir + "/blockchain" ).c_str() );
+  if( remove_db_files )
+    fc::remove_all( ( temp_data_dir + "/blockchain" ).c_str() );
 
   app_initializer( app, argc, (char**)argv_ext.data() );
   return _data_dir;
@@ -490,11 +492,6 @@ full_transaction_ptr database_fixture::push_transaction( const signed_transactio
   _tx->sign_transaction( keys, db->get_chain_id(), _sig_type, pack_type );
   db->push_transaction( _tx, skip_flags );
   return _tx;
-}
-
-bool database_fixture::push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
-{
-  return test::_push_block(*db, b, skip_flags);
 }
 
 void database_fixture::vest( const string& to, const asset& amount )
@@ -1244,22 +1241,6 @@ std::shared_ptr<full_block_type> _generate_block(hive::plugins::chain::abstract_
   generate_block_flow_control generate_block_ctrl( _block_ts, _wo, _key, _skip );
   bp.generate_block( &generate_block_ctrl );
   return generate_block_ctrl.get_full_block();
-}
-
-bool _push_block(database& db, const block_header& header, 
-                 const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, 
-                 const fc::ecc::private_key& signer,
-                 uint32_t skip_flags /* = 0 */)
-{
-  std::shared_ptr<full_block_type> full_block( hive::chain::full_block_type::create_from_block_header_and_transactions( header, full_transactions, &signer ) );
-  existing_block_flow_control block_ctrl( full_block );
-  return db.push_block( block_ctrl, skip_flags );
-}
-
-bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags /* = 0 */ )
-{
-  existing_block_flow_control block_ctrl( b );
-  return db.push_block( block_ctrl, skip_flags);
 }
 
 void _push_transaction( database& db, const signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags,

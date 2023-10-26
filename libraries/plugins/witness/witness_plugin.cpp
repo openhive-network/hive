@@ -60,9 +60,9 @@ namespace detail {
     witness_plugin_impl( boost::asio::io_service& io, appbase::application& app ) :
       _timer(io),
       _chain_plugin( app.get_plugin< hive::plugins::chain::chain_plugin >() ),
-      _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
-      _block_reader( app.get_plugin< chain::chain_plugin >().block_reader() ),
-      _block_producer( std::make_shared< witness::block_producer >( _db ) ),
+      _db( _chain_plugin.db() ),
+      _block_reader( _chain_plugin.block_reader() ),
+      _block_producer( std::make_shared< witness::block_producer >( _chain_plugin ) ),
       theApp( app )
       {}
 

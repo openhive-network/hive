@@ -23,7 +23,6 @@ namespace fc {
       bool configure_result = configure_logging();
       get_logger_map().clear();
       get_appender_map().clear();
-
       //slog( "\n%s", fc::json::to_pretty_string(cfg).c_str() );
       for( size_t i = 0; i < cfg.appenders.size(); ++i ) {
          appender::create( cfg.appenders[i].name, cfg.appenders[i].type, cfg.appenders[i].args );

@@ -4,6 +4,9 @@
 
 #include <fc/log/logger_config.hpp>
 
+#define PUSH_BLOCK \
+  hive::chain::test::_push_block
+
 namespace hive { namespace chain {
 
 /** @brief Fixture mimicking hived start/initialization as close as possible.
@@ -27,7 +30,7 @@ struct hived_fixture : public database_fixture
 
   public:
 
-  hived_fixture();
+  hived_fixture( bool remove_db_files = true );
   virtual ~hived_fixture();
 
   typedef std::vector< std::pair< std::string, std::vector< std::string > > > config_arg_override_t;
@@ -41,7 +44,7 @@ struct hived_fixture : public database_fixture
   template< typename... Plugin >
   void postponed_init( const config_arg_override_t& config_arg_overrides = config_arg_override_t(), Plugin**... plugin_ptr )
   {
-    postponed_init_impl( config_arg_overrides );
+    postponed_init_impl( _remove_db_files, config_arg_overrides );
     // If any plugin pointer is required ...
     if constexpr ( sizeof...( plugin_ptr ) > 0 )
     {
@@ -51,15 +54,30 @@ struct hived_fixture : public database_fixture
   }
 
   const fc::optional< fc::logging_config > get_logging_config() const { return _logging_config; }
+  /** Use before calling postponed_init, to share logging config between multiple fixtures used
+   *  in single test (to avoid problems with several logging threads).
+  */
+  void set_logging_config( const fc::optional< fc::logging_config > common_logging_config );
   const fc::path& get_data_dir() const { return _data_dir; };
 
   const hive::chain::block_read_i& get_block_reader() const;
+  hive::plugins::chain::chain_plugin& get_chain_plugin() const;
+
+  bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 
   private:
-    void postponed_init_impl( const config_arg_override_t& config_arg_overrides );
+    void postponed_init_impl( bool remove_db_files, const config_arg_override_t& config_arg_overrides );
   private:
+    hive::plugins::chain::chain_plugin* _chain = nullptr;
     const hive::chain::block_read_i* _block_reader = nullptr;
+    bool _remove_db_files = true;
 };
+
+namespace test
+{
+  bool _push_block( hive::plugins::chain::chain_plugin& chain, const block_header& header, const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, const fc::ecc::private_key& signer, uint32_t skip_flags = 0 );
+  bool _push_block( hive::plugins::chain::chain_plugin& chain, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
+}
 
 struct json_rpc_database_fixture : public hived_fixture
 {

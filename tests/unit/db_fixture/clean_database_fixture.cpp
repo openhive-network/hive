@@ -15,25 +15,42 @@ namespace bpo = boost::program_options;
 namespace hive { namespace chain {
 
 
-clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork )
+clean_database_fixture::clean_database_fixture( 
+  uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork, bool init_ah_plugin )
 {
   try {
 
   configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
   configuration_data.allow_not_enough_rc = true;
 
-  postponed_init(
-    {
-      config_line_t( { "plugin",
-        { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
-          HIVE_WITNESS_PLUGIN_NAME } }
-      ),
-      config_line_t( { "shared-file-size",
-        { std::to_string( 1024 * 1024 * shared_file_size_in_mb ) } }
-      )
-    },
-    &ah_plugin
-  );
+  if( init_ah_plugin )
+  {
+    postponed_init(
+      {
+        config_line_t( { "plugin",
+          { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME,
+            HIVE_WITNESS_PLUGIN_NAME } }
+        ),
+        config_line_t( { "shared-file-size",
+          { std::to_string( 1024 * 1024 * shared_file_size_in_mb ) } }
+        )
+      },
+      &ah_plugin
+    );
+  }
+  else
+  {
+    postponed_init(
+      {
+        config_line_t( { "plugin",
+          { HIVE_WITNESS_PLUGIN_NAME } }
+        ),
+        config_line_t( { "shared-file-size",
+          { std::to_string( 1024 * 1024 * shared_file_size_in_mb ) } }
+        )
+      }
+    );
+  }
 
   init_account_pub_key = init_account_priv_key.get_public_key();
 

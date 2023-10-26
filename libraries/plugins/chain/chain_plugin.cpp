@@ -2,9 +2,10 @@
 
 #include <appbase/application.hpp>
 
-#include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/db_with.hpp>
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
 
@@ -161,6 +162,12 @@ class chain_plugin_impl
     void write_default_database_config( bfs::path& p );
     void setup_benchmark_dumper();
 
+    bool push_block( const block_flow_control& block_ctrl, uint32_t skip );
+
+    void add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts, hive::chain::blockchain_worker_thread_pool& thread_pool );
+    const flat_map<uint32_t,block_id_type> get_checkpoints()const { return checkpoints; }
+    bool before_last_checkpoint()const;
+
     uint64_t                         shared_memory_size = 0;
     uint16_t                         shared_file_full_threshold = 0;
     uint16_t                         shared_file_scale_rate = 0;
@@ -187,7 +194,10 @@ class chain_plugin_impl
     bool                             enable_block_log_auto_fixing = true;
     bool                             load_snapshot = false;
     int                              block_log_compression_level = 15;
+    flat_map<uint32_t,block_id_type> checkpoints;
     flat_map<uint32_t,block_id_type> loaded_checkpoints;
+    bool                             last_pushed_block_was_before_checkpoint = false; // just used for logging
+
 
     uint32_t allow_future_time = 5;
 
@@ -244,6 +254,8 @@ class chain_plugin_impl
     appbase::application& theApp;
 
   private:
+    bool _push_block( const block_flow_control& block_ctrl );
+
     uint32_t reindex( const open_args& args, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
     uint32_t reindex_internal( const open_args& args, 
       const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
@@ -301,7 +313,7 @@ struct chain_plugin_impl::write_request_visitor
         this_->cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
         STATSD_STOP_TIMER("chain", "write_time", "push_block")
       } BOOST_SCOPE_EXIT_END
-      cp.db.push_block( *p2p_block_ctrl.get(), p2p_block_ctrl->get_skip_flags() );
+      cp.push_block( *p2p_block_ctrl.get(), p2p_block_ctrl->get_skip_flags() );
     }
     catch( const fc::exception& e )
     {
@@ -656,7 +668,7 @@ void chain_plugin_impl::initial_settings()
   }
 
   db.set_flush_interval( flush_interval );
-  db.add_checkpoints( loaded_checkpoints, thread_pool );
+  add_checkpoints( loaded_checkpoints, thread_pool  );
   db.set_require_locking( check_locks );
 
   const auto& abstract_index_cntr = db.get_abstract_index_cntr();
@@ -757,6 +769,104 @@ void chain_plugin_impl::open()
     exit(EXIT_FAILURE);
   }
 }
+
+void chain_plugin_impl::add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts, hive::chain::blockchain_worker_thread_pool& thread_pool )
+{
+  for( const auto& i : checkpts )
+    checkpoints[i.first] = i.second;
+  if (!checkpoints.empty())
+    thread_pool.set_last_checkpoint(checkpoints.rbegin()->first);
+}
+
+bool chain_plugin_impl::before_last_checkpoint()const
+{
+  return (checkpoints.size() > 0) && (checkpoints.rbegin()->first >= db.head_block_num());
+}
+
+bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32_t skip )
+{
+  const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
+  const signed_block& new_block = full_block->get_block();
+
+  uint32_t block_num = full_block->get_block_num();
+  if( checkpoints.size() && checkpoints.rbegin()->second != block_id_type() )
+  {
+    auto itr = checkpoints.find( block_num );
+    if( itr != checkpoints.end() )
+      FC_ASSERT(full_block->get_block_id() == itr->second, "Block did not match checkpoint", ("checkpoint", *itr)("block_id", full_block->get_block_id()));
+
+    if( checkpoints.rbegin()->first >= block_num )
+    {
+      skip = database::skip_witness_signature
+          | database::skip_transaction_signatures
+          | database::skip_transaction_dupe_check
+          /*| skip_fork_db Fork db cannot be skipped or else blocks will not be written out to block log */
+          | database::skip_block_size_check
+          | database::skip_tapos_check
+          | database::skip_authority_check
+          /* | skip_merkle_check While blockchain is being downloaded, txs need to be validated against block headers */
+          | database::skip_undo_history_check
+          | database::skip_witness_schedule_check
+          | database::skip_validate
+          | database::skip_validate_invariants
+          ;
+      if (!last_pushed_block_was_before_checkpoint)
+      {
+        // log something to let the node operator know that checkpoints are in force
+        ilog("checkpoints enabled, doing reduced validation until final checkpoint, block ${block_num}, id ${block_id}",
+             ("block_num", checkpoints.rbegin()->first)("block_id", checkpoints.rbegin()->second));
+        last_pushed_block_was_before_checkpoint = true;
+      }
+    }
+    else if (last_pushed_block_was_before_checkpoint)
+    {
+      ilog("final checkpoint reached, resuming normal block validation");
+      last_pushed_block_was_before_checkpoint = false;
+    }
+  }
+
+  bool result;
+  hive::chain::detail::with_skip_flags( db, skip, [&]()
+  {
+    hive::chain::detail::without_pending_transactions( db, block_ctrl, std::move(db._pending_tx), [&]()
+    {
+      try
+      {
+        result = _push_block( block_ctrl );
+        block_ctrl.on_end_of_apply_block();
+        db.notify_finish_push_block( full_block );
+      }
+      FC_CAPTURE_AND_RETHROW((new_block))
+
+      db.check_free_memory( false, full_block->get_block_num() );
+    });
+  });
+
+  //fc::time_point end_time = fc::time_point::now();
+  //fc::microseconds dt = end_time - begin_time;
+  //if( ( new_block.block_num() % 10000 ) == 0 )
+  //   ilog( "push_block ${b} took ${t} microseconds", ("b", new_block.block_num())("t", dt.count()) );
+  return result;
+}
+
+bool chain_plugin_impl::_push_block(const block_flow_control& block_ctrl)
+{ try {
+  const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
+  const uint32_t skip = db.get_node_skip_flags();
+
+  return default_block_writer.push_block( 
+    full_block,
+    block_ctrl,
+    db.head_block_num(),
+    db.head_block_id(),
+    skip,
+    [&] ( const std::shared_ptr< full_block_type >& fb,
+          uint32_t skip, const block_flow_control* block_ctrl )
+      { db.apply_block_extended(fb,skip,block_ctrl); },
+    [&] ( const block_id_type end_block ) -> uint32_t
+      { return db.pop_block_extended( end_block ); }
+    );
+} FC_CAPTURE_AND_RETHROW() }
 
 uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
@@ -1592,6 +1702,16 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
   }
 } FC_CAPTURE_AND_RETHROW() }
 
+/**
+  * Push block "may fail" in which case every partial change is unwound.  After
+  * push block is successful the block is appended to the chain database on disk.
+  *
+  * @return true if we switched forks as a result of this push.
+  */
+bool chain_plugin::push_block( const block_flow_control& block_ctrl, uint32_t skip )
+{
+  return my->push_block( block_ctrl, skip );
+}
 
 void chain_plugin::generate_block( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl )
 {
