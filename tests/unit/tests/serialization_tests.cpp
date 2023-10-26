@@ -55,6 +55,7 @@ BOOST_AUTO_TEST_CASE( serialization_raw_test )
     op.to = "bob";
     op.amount = asset(100,HIVE_SYMBOL);
 
+    signed_transaction trx;
     trx.operations.push_back( op );
     auto packed = fc::raw::pack_to_vector( trx );
     full_transaction_ptr unpacked = full_transaction_type::create_from_serialized_transaction( packed.data(), packed.size(), false/*use_transaction_cache*/);
@@ -82,6 +83,7 @@ BOOST_AUTO_TEST_CASE( serialization_json_test )
     auto tmp = test.as<asset>();
     BOOST_REQUIRE( tmp == op.amount );
 
+    signed_transaction trx;
     trx.operations.push_back( op );
     fc::variant packed(trx);
 

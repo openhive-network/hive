@@ -207,12 +207,7 @@ const account_object& database_fixture::account_create(
     op.memo_key = key;
     op.json_metadata = json_metadata;
 
-    trx.operations.push_back( op );
-
-    trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.validate();
-    push_transaction( trx, creator_key );
-    trx.clear();
+    push_transaction( op, creator_key );
 
     if( fee_remainder > 0 )
     {
@@ -289,11 +284,7 @@ const witness_object& database_fixture::witness_create(
     op.block_signing_key = signing_key;
     op.fee = asset( fee, HIVE_SYMBOL );
 
-    trx.operations.push_back( op );
-    trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.validate();
-    push_transaction( trx, owner_key );
-    trx.clear();
+    push_transaction( op, owner_key );
 
     return db->get_witness( owner );
   }
@@ -569,10 +560,7 @@ void database_fixture::set_price_feed( const price& new_price, bool stop_at_upda
     op.props[ "hbd_exchange_rate" ] = fc::raw::pack_to_vector( new_price );
     op.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
 
-    trx.operations.push_back( op );
-    trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( trx, fc::ecc::private_key(), ~0 );
-    trx.clear();
+    push_transaction( op, init_account_priv_key );
   }
 
   if( stop_at_update_block )
@@ -590,7 +578,6 @@ void database_fixture::set_price_feed( const price& new_price, bool stop_at_upda
 
 void database_fixture::set_witness_props( const flat_map< string, vector< char > >& props )
 {
-  trx.clear();
   for( size_t i=0; i<HIVE_MAX_WITNESSES; i++ )
   {
     witness_set_properties_operation op;
@@ -599,10 +586,7 @@ void database_fixture::set_witness_props( const flat_map< string, vector< char >
     if( props.find( "key" ) == props.end() )
       op.props["key"] = fc::raw::pack_to_vector( init_account_pub_key );
 
-    trx.operations.push_back( op );
-    trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    push_transaction( trx, fc::ecc::private_key(), ~0 );
-    trx.clear();
+    push_transaction( op, init_account_priv_key );
   }
 
   const witness_schedule_object* wso = &(db->get_witness_schedule_object());
