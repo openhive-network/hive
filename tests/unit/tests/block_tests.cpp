@@ -878,6 +878,7 @@ BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
   ACTOR(bob);
   share_type amount = 1000;
 
+  signed_transaction trx;
   transfer_operation t;
   t.from = HIVE_INIT_MINER_NAME;
   t.to = "bob";

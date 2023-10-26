@@ -243,7 +243,6 @@ struct database_fixture {
   // the reason we use an app is to exercise the indexes of built-in
   //   plugins
   chain::database* db = nullptr;
-  signed_transaction trx;
   fc::ecc::private_key private_key = fc::ecc::private_key::generate();
   fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
   string debug_key = init_account_priv_key.key_to_wif();
@@ -369,8 +368,8 @@ struct database_fixture {
   void set_withdraw_vesting_route(const string& from, const string& to, uint16_t percent, bool auto_vest, const fc::ecc::private_key& key);
   void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
   void proxy( const string& _account, const string& _proxy, const fc::ecc::private_key& _key );
-  void set_price_feed( const price& new_price, bool stop_at_update_block = false );
-  void set_witness_props( const flat_map< string, vector< char > >& new_props );
+  void set_price_feed( const price& new_price, bool stop_at_update_block = false ); //sets on initminer(s)
+  void set_witness_props( const flat_map< string, vector< char > >& new_props ); //sets on initminer(s)
   void witness_feed_publish( const string& publisher, const price& exchange_rate, const private_key_type& key );
   void witness_vote( account_name_type voter, account_name_type witness, const fc::ecc::private_key& key, bool approve = true );
   void limit_order_create( const string& owner, const asset& amount_to_sell, const asset& min_to_receive, bool fill_or_kill,
