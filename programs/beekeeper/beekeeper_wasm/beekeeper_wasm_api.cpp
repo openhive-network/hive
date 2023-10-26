@@ -238,11 +238,31 @@ namespace beekeeper {
     return exception_handler( _method );
   }
 
-  std::string beekeeper_api::get_public_keys( const std::string& token )
+  std::string beekeeper_api::get_public_keys_impl( const std::string& token, const std::optional<std::string>& wallet_name )
   {
     auto _method = [&, this]()
     {
-      get_public_keys_return _result = { utility::get_public_keys( _impl->app.get_wallet_manager()->get_public_keys( token ) ) };
+      get_public_keys_return _result = { utility::get_public_keys( _impl->app.get_wallet_manager()->get_public_keys( token, wallet_name ) ) };
+      return to_string( _result );
+    };
+    return exception_handler( _method );
+  }
+
+  std::string beekeeper_api::get_public_keys( const std::string& token )
+  {
+    return get_public_keys_impl( token, std::optional<std::string>() );
+  }
+
+  std::string beekeeper_api::get_public_keys( const std::string& token, const std::string& wallet_name )
+  {
+    return get_public_keys_impl( token, std::optional<std::string>( wallet_name ) );
+  }
+
+  std::string beekeeper_api::sign_digest_impl( const std::string& token, const std::string& sig_digest, const std::string& public_key, const std::optional<std::string>& wallet_name )
+  {
+    auto _method = [&, this]()
+    {
+      signature_return _result = { _impl->app.get_wallet_manager()->sign_digest( token, digest_type( sig_digest ), public_key, wallet_name ) };
       return to_string( _result );
     };
     return exception_handler( _method );
@@ -250,12 +270,12 @@ namespace beekeeper {
 
   std::string beekeeper_api::sign_digest( const std::string& token, const std::string& sig_digest, const std::string& public_key )
   {
-    auto _method = [&, this]()
-    {
-      signature_return _result = { _impl->app.get_wallet_manager()->sign_digest( token, digest_type( sig_digest ), public_key ) };
-      return to_string( _result );
-    };
-    return exception_handler( _method );
+    return sign_digest_impl( token, sig_digest, public_key, std::optional<std::string>() );
+  }
+
+  std::string beekeeper_api::sign_digest( const std::string& token, const std::string& sig_digest, const std::string& public_key, const std::string& wallet_name )
+  {
+    return sign_digest_impl( token, sig_digest, public_key, std::optional<std::string>( wallet_name ) );
   }
 
   std::string beekeeper_api::get_info( const std::string& token )

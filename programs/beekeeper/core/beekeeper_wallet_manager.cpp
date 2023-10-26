@@ -69,10 +69,10 @@ map<public_key_type, private_key_type> beekeeper_wallet_manager::list_keys( cons
   return sessions->get_wallet_manager( token )->list_keys( name, pw );
 }
 
-flat_set<public_key_type> beekeeper_wallet_manager::get_public_keys( const std::string& token )
+flat_set<public_key_type> beekeeper_wallet_manager::get_public_keys( const std::string& token, const std::optional<std::string>& wallet_name )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->get_public_keys();
+  return sessions->get_wallet_manager( token )->get_public_keys( wallet_name );
 }
 
 void beekeeper_wallet_manager::lock_all( const std::string& token )
@@ -104,10 +104,10 @@ void beekeeper_wallet_manager::remove_key( const std::string& token, const std::
   sessions->get_wallet_manager( token )->remove_key( name, password, public_key );
 }
 
-signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const digest_type& sig_digest, const std::string& public_key )
+signature_type beekeeper_wallet_manager::sign_digest( const std::string& token, const digest_type& sig_digest, const std::string& public_key, const std::optional<std::string>& wallet_name )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->sign_digest( sig_digest, create_public_key( public_key ) );
+  return sessions->get_wallet_manager( token )->sign_digest( sig_digest, create_public_key( public_key ), wallet_name );
 }
 
 info beekeeper_wallet_manager::get_info( const std::string& token )

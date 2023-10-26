@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
             }
             catch( const fc::exception& e )
             {
-              BOOST_REQUIRE(  e.to_string().find( "Public key not found in unlocked wallets" )  != std::string::npos );
+              BOOST_REQUIRE(  e.to_string().find( "not found in unlocked wallets" )  != std::string::npos );
             }
           }break;
           case 8:
@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
             }
             catch( const fc::exception& e )
             {
-              BOOST_REQUIRE(  e.to_string().find( "Public key not found in unlocked wallets" )            != std::string::npos ||
+              BOOST_REQUIRE(  e.to_string().find( "not found in unlocked wallets" )            != std::string::npos ||
                               e.to_string().find( "A session attached to " )  != std::string::npos
                           );
             }

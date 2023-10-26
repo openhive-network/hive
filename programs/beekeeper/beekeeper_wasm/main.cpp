@@ -172,13 +172,18 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
     /*
       ****listing of all public keys****
       PARAMS:
-        token:  a token representing a session
+        token:        a token representing a session
+        wallet_name:  a name of wallet where public keys are retrieved from
+                      If the name of wallet is:
+                       - not given, chosen is a version (1)
+                       -     given, chosen is a version (2)
       RESULT:
         {"keys":[{"public_key":"6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"},{"public_key":"6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"}]}
         keys: a set of all keys for all unlocked wallets. Every key has information:
           public_key: a public key corresponding to a private key that is stored in a wallet
     */
-    .function("get_public_keys(token)", &beekeeper_api::get_public_keys)
+    .function("get_public_keys(token)", select_overload<std::string(const std::string&)>(&beekeeper_api::get_public_keys))                                  //(1)
+    .function("get_public_keys(token, wallet_name)", select_overload<std::string(const std::string&, const std::string&)>(&beekeeper_api::get_public_keys)) //(2)
 
     /*
       ****signing a transaction by signing a digest of the transaction****
@@ -186,11 +191,16 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         token:      a token representing a session
         public_key: a public key corresponding to a private key that is stored in a wallet. It will be used for creation of a signature
         sig_digest: a digest of a transaction
+        wallet_name:  a name of wallet where public keys are searched
+                      If the name of wallet is:
+                       - not given, chosen is a version (1)
+                       -     given, chosen is a version (2)
       RESULT:
         { "signature":"1f69e091fc79b0e8d1812fc662f12076561f9e38ffc212b901ae90fe559f863ad266fe459a8e946cff9bbe7e56ce253bbfab0cccdde944edc1d05161c61ae86340"}
         signature: a signature of a transaction
     */
-    .function("sign_digest(token, sig_digest, public_key)", &beekeeper_api::sign_digest)
+    .function("sign_digest(token, sig_digest, public_key)", select_overload<std::string(const std::string&, const std::string&, const std::string&)>(&beekeeper_api::sign_digest))              //(1)
+    .function("sign_digest(token, sig_digest, public_key, wallet_name)", select_overload<std::string(const std::string&, const std::string&, const std::string&, const std::string&)>(&beekeeper_api::sign_digest)) //(2)
 
     /*
       ****information about a session****

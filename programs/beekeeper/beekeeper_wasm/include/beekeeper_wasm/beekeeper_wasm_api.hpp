@@ -34,6 +34,8 @@ class beekeeper_api final
     std::string exception_handler( std::function<std::string()>&& method, std::function<void(bool)>&& aux_init_method = std::function<void(bool)>() );
 
     std::string create_impl( const std::string& token, const std::string& wallet_name, const std::optional<std::string>& password );
+    std::string get_public_keys_impl( const std::string& token, const std::optional<std::string>& wallet_name );
+    std::string sign_digest_impl( const std::string& token, const std::string& sig_digest, const std::string& public_key, const std::optional<std::string>& wallet_name );
 
   public:
 
@@ -60,9 +62,12 @@ class beekeeper_api final
     std::string remove_key( const std::string& token, const std::string& wallet_name, const std::string& password, const std::string& public_key );
 
     std::string list_wallets( const std::string& token );
+
     std::string get_public_keys( const std::string& token );
+    std::string get_public_keys( const std::string& token, const std::string& wallet_name );
 
     std::string sign_digest( const std::string& token, const std::string& sig_digest, const std::string& public_key );
+    std::string sign_digest( const std::string& token, const std::string& sig_digest, const std::string& public_key, const std::string& wallet_name );
 
     std::string get_info( const std::string& token );
 };

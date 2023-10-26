@@ -49,7 +49,7 @@ public:
   /// @param key the public key of the corresponding private key to sign the digest with
   /// @return signature over the digest
   /// @throws fc::exception if corresponding private keys not found in unlocked wallets
-  signature_type sign_digest( const std::string& token, const digest_type& sig_digest, const std::string& public_key );
+  signature_type sign_digest( const std::string& token, const digest_type& sig_digest, const std::string& public_key, const std::optional<std::string>& wallet_name );
 
   /// Create a new wallet.
   /// A new wallet is created in file dir/{name}.wallet see set_dir.
@@ -82,7 +82,7 @@ public:
   map<public_key_type, private_key_type> list_keys( const std::string& token, const string& name, const string& pw );
 
   /// @return A set of public keys from all unlocked wallets, use with chain_controller::get_required_keys.
-  flat_set<public_key_type> get_public_keys( const std::string& token );
+  flat_set<public_key_type> get_public_keys( const std::string& token, const std::optional<std::string>& wallet_name );
 
   /// Locks all the unlocked wallets.
   void lock_all( const std::string& token );
