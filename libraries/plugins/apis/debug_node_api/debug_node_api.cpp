@@ -18,8 +18,9 @@ class debug_node_api_impl
 {
   public:
     debug_node_api_impl( appbase::application& app ) :
-      _db( app.get_plugin< chain::chain_plugin >().db() ),
-      _block_reader( app.get_plugin< chain::chain_plugin >().block_reader() ),
+      _chain( app.get_plugin< chain::chain_plugin >() ),
+      _db( _chain.db() ),
+      _block_reader( _chain.block_reader() ),
       _debug_node( app.get_plugin< debug_node_plugin >() ),
       theApp( app ) {}
 
@@ -38,11 +39,12 @@ class debug_node_api_impl
       (debug_throw_exception)
     )
 
-    chain::database& _db;
-    const hive::chain::block_read_i& _block_reader;
-    debug_node::debug_node_plugin& _debug_node;
+    chain::chain_plugin&              _chain;
+    chain::database&                  _db;
+    const hive::chain::block_read_i&  _block_reader;
+    debug_node::debug_node_plugin&    _debug_node;
 
-    appbase::application& theApp;
+    appbase::application&             theApp;
 };
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
@@ -86,7 +88,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_push_blocks )
       try
       {
         hive::chain::existing_block_flow_control block_ctrl( full_block );
-        _db.push_block( block_ctrl, skip_flags );
+        _chain.push_block( block_ctrl, skip_flags );
       }
       catch (const fc::exception& e)
       {

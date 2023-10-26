@@ -374,7 +374,7 @@ void debug_node_plugin::debug_generate_blocks(debug_generate_blocks_return& ret,
 
     if( immediate_generation )
     {
-      witness::block_producer bp(db);
+      witness::block_producer bp( my->_chain_plugin );
       bp.generate_block(generate_block_ctrl.get());
     }
     else

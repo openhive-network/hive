@@ -126,7 +126,6 @@ class database_impl
     evaluator_registry< operation >                   _evaluator_registry;
     std::map<account_name_type, block_id_type>        _last_fast_approved_block_by_witness;
     std::unique_ptr<util::decoded_types_data_storage> _decoded_types_data_storage;
-    bool                                              _last_pushed_block_was_before_checkpoint = false; // just used for logging
 };
 
 database_impl::database_impl( database& self ) : _self(self), _evaluator_registry(self) {}
@@ -667,91 +666,6 @@ uint32_t database::witness_participation_rate()const
   return uint64_t(HIVE_100_PERCENT) * fc::uint128_popcount(dpo.recent_slots_filled) / 128;
 }
 
-void database::add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts, hive::chain::blockchain_worker_thread_pool& thread_pool )
-{
-  for( const auto& i : checkpts )
-    _checkpoints[i.first] = i.second;
-  if (!_checkpoints.empty())
-    thread_pool.set_last_checkpoint(_checkpoints.rbegin()->first);
-}
-
-bool database::before_last_checkpoint()const
-{
-  return (_checkpoints.size() > 0) && (_checkpoints.rbegin()->first >= head_block_num());
-}
-
-/**
-  * Push block "may fail" in which case every partial change is unwound.  After
-  * push block is successful the block is appended to the chain database on disk.
-  *
-  * @return true if we switched forks as a result of this push.
-  */
-bool database::push_block( const block_flow_control& block_ctrl, uint32_t skip )
-{
-  const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
-  const signed_block& new_block = full_block->get_block();
-
-  uint32_t block_num = full_block->get_block_num();
-  if( _checkpoints.size() && _checkpoints.rbegin()->second != block_id_type() )
-  {
-    auto itr = _checkpoints.find( block_num );
-    if( itr != _checkpoints.end() )
-      FC_ASSERT(full_block->get_block_id() == itr->second, "Block did not match checkpoint", ("checkpoint", *itr)("block_id", full_block->get_block_id()));
-
-    if( _checkpoints.rbegin()->first >= block_num )
-    {
-      skip = skip_witness_signature
-          | skip_transaction_signatures
-          | skip_transaction_dupe_check
-          /*| skip_fork_db Fork db cannot be skipped or else blocks will not be written out to block log */
-          | skip_block_size_check
-          | skip_tapos_check
-          | skip_authority_check
-          /* | skip_merkle_check While blockchain is being downloaded, txs need to be validated against block headers */
-          | skip_undo_history_check
-          | skip_witness_schedule_check
-          | skip_validate
-          | skip_validate_invariants
-          ;
-      if (!_my->_last_pushed_block_was_before_checkpoint)
-      {
-        // log something to let the node operator know that checkpoints are in force
-        ilog("checkpoints enabled, doing reduced validation until final checkpoint, block ${block_num}, id ${block_id}",
-             ("block_num", _checkpoints.rbegin()->first)("block_id", _checkpoints.rbegin()->second));
-        _my->_last_pushed_block_was_before_checkpoint = true;
-      }
-    }
-    else if (_my->_last_pushed_block_was_before_checkpoint)
-    {
-      ilog("final checkpoint reached, resuming normal block validation");
-      _my->_last_pushed_block_was_before_checkpoint = false;
-    }
-  }
-
-  bool result;
-  detail::with_skip_flags( *this, skip, [&]()
-  {
-    detail::without_pending_transactions( *this, block_ctrl, std::move(_pending_tx), [&]()
-    {
-      try
-      {
-        result = _push_block( block_ctrl );
-        block_ctrl.on_end_of_apply_block();
-        notify_finish_push_block( full_block );
-      }
-      FC_CAPTURE_AND_RETHROW((new_block))
-
-      check_free_memory( false, full_block->get_block_num() );
-    });
-  });
-
-  //fc::time_point end_time = fc::time_point::now();
-  //fc::microseconds dt = end_time - begin_time;
-  //if( ( new_block.block_num() % 10000 ) == 0 )
-  //   ilog( "push_block ${b} took ${t} microseconds", ("b", new_block.block_num())("t", dt.count()) );
-  return result;
-}
-
 void database::switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num, const block_flow_control* pushed_block_ctrl )
 {
   uint32_t skip = get_node_skip_flags();
@@ -769,25 +683,6 @@ void database::switch_forks( const block_id_type& new_head_block_id, uint32_t ne
     );
   theApp.notify("switching forks", "id", new_head_block_id.str(), "num", new_head_block_num);
 }
-
-bool database::_push_block(const block_flow_control& block_ctrl)
-{ try {
-  const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
-  const uint32_t skip = get_node_skip_flags();
-
-  return _block_writer->push_block( 
-    full_block,
-    block_ctrl,
-    head_block_num(),
-    head_block_id(),
-    skip,
-    [&] ( const std::shared_ptr< full_block_type >& fb,
-          uint32_t skip, const block_flow_control* block_ctrl )
-      { this->apply_block_extended(fb,skip,block_ctrl); },
-    [&] ( const block_id_type end_block ) -> uint32_t
-      { return this->pop_block_extended( end_block ); }
-    );
-} FC_CAPTURE_AND_RETHROW() }
 
 bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 {

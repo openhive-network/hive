@@ -8,7 +8,10 @@ namespace hive { namespace chain {
 
 struct clean_database_fixture : public hived_fixture
 {
-  clean_database_fixture( uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512, fc::optional<uint32_t> hardfork = fc::optional<uint32_t>() );
+  clean_database_fixture( 
+    uint16_t shared_file_size_in_mb = shared_file_size_in_mb_512,
+    fc::optional<uint32_t> hardfork = fc::optional<uint32_t>(),
+    bool init_ah_plugin = true );
   virtual ~clean_database_fixture();
 
   void validate_database();

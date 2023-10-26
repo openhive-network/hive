@@ -231,8 +231,6 @@ namespace chain {
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
     public:
-      std::vector<block_id_type> get_block_ids_on_fork(block_id_type head_of_fork) const;
-
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
       /// Returns current chain-id being in use depending on applied HF
@@ -321,13 +319,7 @@ namespace chain {
         */
       uint32_t witness_participation_rate()const;
 
-      void                                   add_checkpoints( const flat_map<uint32_t,block_id_type>& checkpts, hive::chain::blockchain_worker_thread_pool& thread_pool );
-      const flat_map<uint32_t,block_id_type> get_checkpoints()const { return _checkpoints; }
-      bool                                   before_last_checkpoint()const;
-
-      bool push_block( const block_flow_control& block_ctrl, uint32_t skip = skip_nothing );
       void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = skip_nothing );
-      bool _push_block( const block_flow_control& block_ctrl );
       void _push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction );
 
       void pop_block();
@@ -797,8 +789,6 @@ namespace chain {
       const struct operation_notification* _current_applied_operation_info = nullptr;
 
       optional< block_id_type >     _currently_processing_block_id;
-
-      flat_map<uint32_t,block_id_type>  _checkpoints;
 
       node_property_object              _node_property_object;
 

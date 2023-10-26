@@ -30,9 +30,6 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
 #define PUSH_TX \
   hive::chain::test::_push_transaction
 
-#define PUSH_BLOCK \
-  hive::chain::test::_push_block
-
 #define GENERATE_BLOCK \
   hive::chain::test::_generate_block
 
@@ -237,7 +234,8 @@ autoscope set_mainnet_feed_values( bool auto_reset = true );
 
 //common code for preparing arguments and data path
 //caller needs to register plugins and call initialize() on given application object
-fc::path common_init( appbase::application& app, const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer );
+fc::path common_init( appbase::application& app, bool remove_db_files,
+  const std::function< void( appbase::application& app, int argc, char** argv ) >& app_initializer );
 
 struct database_fixture {
   // the reason we use an app is to exercise the indexes of built-in
@@ -352,8 +350,6 @@ struct database_fixture {
   full_transaction_ptr push_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
     uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(),
     fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
-
-  bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 
   void fund( const string& account_name, const asset& amount ); //transfer from initminer
   void issue_funds( const string& account_name, const asset& amount, bool update_print_rate = true );
@@ -516,8 +512,6 @@ namespace test
 {
   std::shared_ptr<full_block_type> _generate_block( hive::plugins::chain::abstract_block_producer& bp, const fc::time_point_sec _block_ts, const hive::protocol::account_name_type& _wo,
     const fc::ecc::private_key& _key, uint32_t _skip = 0 );
-  bool _push_block( database& db, const block_header& header, const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions, const fc::ecc::private_key& signer, uint32_t skip_flags = 0 );
-  bool _push_block( database& db, const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
   void _push_transaction( database& db, const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key(), uint32_t skip_flags = 0,
     hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
 }
