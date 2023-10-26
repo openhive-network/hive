@@ -551,18 +551,13 @@ void database_fixture::withdraw_vesting( const string& account, const asset& amo
   push_transaction( op, key );
 }
 
-void database_fixture::proxy( const string& account, const string& proxy )
+void database_fixture::proxy( const string& _account, const string& _proxy, const fc::ecc::private_key& _key )
 {
-  try
-  {
-    account_witness_proxy_operation op;
-    op.account = account;
-    op.proxy = proxy;
-    signed_transaction tx;
-    tx.operations.push_back( op );
-    tx.set_expiration(db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
-    push_transaction( tx, fc::ecc::private_key(), ~0 );
-  } FC_CAPTURE_AND_RETHROW( (account)(proxy) )
+  account_witness_proxy_operation op;
+  op.account = _account;
+  op.proxy = _proxy;
+
+  push_transaction( op, _key );
 }
 
 void database_fixture::set_price_feed( const price& new_price, bool stop_at_update_block )
@@ -1255,18 +1250,6 @@ void database_fixture::decline_voting_rights( const string& account, const bool 
   op.decline = decline;
 
   push_transaction( op, key );
-}
-
-void database_fixture::proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key )
-{
-  signed_transaction tx;
-  account_witness_proxy_operation op;
-  op.account = _account;
-  op.proxy = _proxy;
-
-  tx.operations.push_back( op );
-  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  push_transaction( tx, _key );
 }
 
 namespace test {

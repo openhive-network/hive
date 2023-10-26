@@ -2079,7 +2079,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_authorities )
     push_transaction( tx, bob_private_key );
 
     BOOST_TEST_MESSAGE( "--- Test failure with proxy signature" );
-    proxy( "bob", "sam" );
+    proxy( "bob", "sam", bob_private_key );
     HIVE_REQUIRE_THROW( push_transaction( tx, sam_private_key, database::skip_transaction_dupe_check ), tx_missing_active_auth );
 
     validate_database();
@@ -2135,7 +2135,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, alice.get_name() ) ) == witness_vote_idx.end() );
 
     BOOST_TEST_MESSAGE( "--- Test proxied vote" );
-    proxy( "alice", "bob" );
+    proxy( "alice", "bob", alice_private_key );
     tx.operations.clear();
     op.approve = true;
     op.account = "bob";
@@ -2257,7 +2257,7 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
     BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.get_name())) == witness_vote_idx.end());
 
     BOOST_TEST_MESSAGE("--- Test proxied vote");
-    proxy("alice", "bob");
+    proxy("alice", "bob", alice_private_key);
     tx.operations.clear();
     op.approve = true;
     op.account = "bob";
@@ -2749,13 +2749,13 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_too_long )
     generate_blocks( db->head_block_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
     generate_block();
 
-    proxy( "dave", "sam" );
-    proxy( "greg", "dave" );
-    proxy( "henry" , "greg" );
+    proxy( "dave", "sam", dave_private_key );
+    proxy( "greg", "dave", greg_private_key );
+    proxy( "henry" , "greg", henry_private_key );
     generate_block();
     //we have henry -> greg -> dave -> sam
 
-    HIVE_REQUIRE_ASSERT( proxy( "alice", "henry" ), "proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH" );
+    HIVE_REQUIRE_ASSERT( proxy( "alice", "henry", alice_private_key ), "proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH" );
     //ABW: above is actually a bug, because we have space for 4 proxy levels, but we've only covered three
     //so far, so above should still be possible (sam has only 3 of 4 elements of his proxied_vsf_votes
     //filled)
@@ -2767,7 +2767,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_too_long )
       BOOST_REQUIRE_EQUAL( top_proxied_votes[3].value, 0 );
     }
 
-    proxy( "sam", "bob" );
+    proxy( "sam", "bob", sam_private_key );
     //what didn't work from the bottom, works from the top (and rightfully so, after all sam had nothing
     //to say when he became proxy, so why would he be affected by it?)
 
@@ -2785,7 +2785,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_too_long )
     }
 
     //since above worked, why not try it once more
-    proxy( "bob", "alice" );
+    proxy( "bob", "alice", bob_private_key );
 
     generate_block();
     //we have henry -> greg -> dave -> sam -> bob -> alice
