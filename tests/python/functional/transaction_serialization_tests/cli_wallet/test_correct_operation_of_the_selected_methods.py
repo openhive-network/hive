@@ -8,7 +8,7 @@ def test_transfer_operation_legacy_serialization(wallet_with_legacy_serializatio
     wallet_with_legacy_serialization.api.transfer("initminer", "alice", tt.Asset.Test(1000), "memo")
     transaction = wallet_with_legacy_serialization.api.get_account("alice")
 
-    assert transaction["balance"] == tt.Asset.Test(1000)
+    assert tt.Asset.from_legacy(transaction["balance"]) == tt.Asset.Test(1000)
 
 
 def test_transfer_operation_hf26_serialization(wallet_with_hf26_serialization):
