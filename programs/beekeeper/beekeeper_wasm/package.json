@@ -19,8 +19,8 @@
     "api.md",
     "build/beekeeper_wasm.js",
     "build/beekeeper_wasm.d.ts",
-    "dist/*.d.ts",
-    "dist/*.js"
+    "dist/**/*.d.ts",
+    "dist/**/*.js"
   ],
   "devDependencies": {
     "@playwright/test": "^1.38.1",
