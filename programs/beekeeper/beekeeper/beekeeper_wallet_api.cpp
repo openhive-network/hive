@@ -133,7 +133,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, get_public_keys )
 {
   std::lock_guard<std::mutex> guard( mtx );
 
-  auto _keys = _wallet_mgr->get_public_keys( args.token );
+  auto _keys = _wallet_mgr->get_public_keys( args.token, args.wallet_name );
   return { utility::get_public_keys( _keys ) };
 }
 
@@ -142,7 +142,7 @@ DEFINE_API_IMPL( beekeeper_api_impl, sign_digest )
   std::lock_guard<std::mutex> guard( mtx );
 
   using namespace beekeeper;
-  return { _wallet_mgr->sign_digest( args.token, digest_type( args.sig_digest ), args.public_key ) };
+  return { _wallet_mgr->sign_digest( args.token, digest_type( args.sig_digest ), args.public_key, args.wallet_name ) };
 }
 
 DEFINE_API_IMPL( beekeeper_api_impl, get_info )

@@ -124,23 +124,39 @@ map<public_key_type, private_key_type> wallet_manager_impl::list_keys( const str
   return w->list_keys();
 }
 
-flat_set<public_key_type> wallet_manager_impl::get_public_keys()
+flat_set<public_key_type> wallet_manager_impl::get_public_keys( const std::optional<std::string>& wallet_name )
 {
   FC_ASSERT( !wallets.empty(), "You don't have any wallet");
 
   flat_set<public_key_type> result;
   bool is_all_wallet_locked = true;
 
-  for( const auto& i : wallets )
+  auto _process_wallet = [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet )
   {
-    if( !i.second->is_locked() )
+    if( !wallet->is_locked() )
     {
-      result.merge( i.second->list_public_keys() );
+      result.merge( wallet->list_public_keys() );
     }
-    is_all_wallet_locked &= i.second->is_locked();
+    is_all_wallet_locked &= wallet->is_locked();
+  };
+
+  if( wallet_name )
+  {
+    auto _it = wallets.find( *wallet_name );
+    if( _it != wallets.end() )
+      _process_wallet( _it->second );
+  }
+  else
+  {
+    for( const auto& i : wallets )
+      _process_wallet( i.second );
   }
 
-  FC_ASSERT( !is_all_wallet_locked, "You don't have any unlocked wallet");
+  if( wallet_name )
+    FC_ASSERT( !is_all_wallet_locked, "Wallet ${wallet_name} is locked", ("wallet_name", *wallet_name));
+  else
+    FC_ASSERT( !is_all_wallet_locked, "You don't have any unlocked wallet");
+
   return result;
 }
 
@@ -205,27 +221,47 @@ void wallet_manager_impl::remove_key( const std::string& name, const std::string
   w->remove_key(public_key);
 }
 
-signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const public_key_type& public_key )
+signature_type wallet_manager_impl::sign( std::function<std::optional<signature_type>(const std::unique_ptr<beekeeper_wallet_base>&)>&& sign_method, const public_key_type& public_key, const std::optional<std::string>& wallet_name )
 {
   try
   {
-    for( const auto& i : wallets )
+    auto _process_wallet = [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet )
     {
-      if( !i.second->is_locked() )
+      if( !wallet->is_locked() )
+        return sign_method( wallet );
+      return std::optional<signature_type>();
+    };
+
+    if( wallet_name )
+    {
+      auto _it = wallets.find( *wallet_name );
+      if( _it != wallets.end() )
       {
-        std::optional<signature_type> sig = sign_method( i.second );
-        if( sig )
-          return *sig;
+        auto _sig = _process_wallet( _it->second );
+        if( _sig )
+          return *_sig;
+      }
+    }
+    else
+    {
+      for( const auto& i : wallets )
+      {
+        auto _sig = _process_wallet( i.second );
+        if( _sig )
+          return *_sig;
       }
     }
   } FC_LOG_AND_RETHROW();
 
-  FC_ASSERT( false, "Public key not found in unlocked wallets ${public_key}", (utility::public_key::to_string( public_key )));
+  if( wallet_name )
+    FC_ASSERT( false, "Public key ${public_key} not found in ${wallet} wallet", ("wallet", *wallet_name)("public_key", utility::public_key::to_string( public_key )));
+  else
+    FC_ASSERT( false, "Public key ${public_key} not found in unlocked wallets", ("public_key", utility::public_key::to_string( public_key )));
 }
 
-signature_type wallet_manager_impl::sign_digest( const digest_type& sig_digest, const public_key_type& public_key )
+signature_type wallet_manager_impl::sign_digest( const digest_type& sig_digest, const public_key_type& public_key, const std::optional<std::string>& wallet_name )
 {
-  return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_digest( sig_digest, public_key ); }, public_key );
+  return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_digest( sig_digest, public_key ); }, public_key, wallet_name );
 }
 
 } //beekeeper

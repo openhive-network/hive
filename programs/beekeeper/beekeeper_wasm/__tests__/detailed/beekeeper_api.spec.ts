@@ -924,8 +924,7 @@ test.describe('WASM beekeeper_api tests', () => {
 
           error_message = api.signDigest(api.implicitSessionToken, "abCDe", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
           console.log(error_message);
-          assert.equal(error_message.includes("Public key not found in unlocked wallets"), true);
-          assert.equal(error_message.includes("6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"), true);
+          assert.equal(error_message.includes("Public key 6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm not found in unlocked wallets"), true);
         }
       }
       {

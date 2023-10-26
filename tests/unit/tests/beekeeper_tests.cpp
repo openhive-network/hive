@@ -119,7 +119,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   std::string _token = wm.create_session( "this is salt", "127.0.0.1:666" );
 
   BOOST_REQUIRE_EQUAL(0u, wm.list_wallets(_token).size());
-  BOOST_REQUIRE_THROW(wm.get_public_keys(_token), fc::exception);
+  BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>()), fc::exception);
+  BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>("avocado")), fc::exception);
   BOOST_REQUIRE_NO_THROW(wm.lock_all(_token));
 
   BOOST_REQUIRE_THROW(wm.lock(_token, "test"), fc::exception);
@@ -131,7 +132,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_EQUAL(0u, pw.find("PW")); // starts with PW
   BOOST_REQUIRE_EQUAL(1u, wm.list_wallets(_token).size());
   // wallet has no keys when it is created
-  BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token).size());
+  BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token, std::optional<std::string>()).size());
+  BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token, std::optional<std::string>("test")).size());
   BOOST_REQUIRE_EQUAL(0u, wm.list_keys(_token, "test", pw).size());
   BOOST_REQUIRE(wm.list_wallets(_token)[0].unlocked);
   wm.lock(_token, "test");
@@ -140,7 +142,9 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_THROW(wm.unlock(_token, "test", pw), fc::exception);
   BOOST_REQUIRE(wm.list_wallets(_token)[0].unlocked);
   wm.import_key(_token, "test", key1_str);
-  BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token).size());
+  BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>()).size());
+  BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>( "test" )).size());
+  BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>("avocado")), fc::exception);
   auto keys = wm.list_keys(_token, "test", pw);
 
   auto pub_pri_pair = []( const private_key_type& private_key ) -> auto
@@ -166,34 +170,34 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE( cmp_keys( key3, keys ) == keys.end() );
 
   wm.remove_key(_token, "test", pw, beekeeper::utility::public_key::to_string( pub_pri_pair(key2).first ) );
-  BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token).size());
+  BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key2, keys ) == keys.end() );
   wm.import_key(_token, "test", key2_str);
-  BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
+  BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   keys = wm.list_keys(_token, "test", pw);
   BOOST_REQUIRE( cmp_keys( key2, keys ) != keys.end() );
   BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", pw, beekeeper::utility::public_key::to_string( pub_pri_pair(key3).first ) ), fc::exception);
-  BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
+  BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   BOOST_REQUIRE_THROW(wm.remove_key(_token, "test", "PWnogood", beekeeper::utility::public_key::to_string( pub_pri_pair(key2).first ) ), fc::exception);
-  BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
+  BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token, std::optional<std::string>()).size());
 
   wm.lock(_token, "test");
   BOOST_REQUIRE_THROW(wm.list_keys(_token, "test", pw), fc::exception);
-  BOOST_REQUIRE_THROW(wm.get_public_keys(_token), fc::exception);
+  BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>()), fc::exception);
   wm.unlock(_token, "test", pw);
-  BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token).size());
+  BOOST_REQUIRE_EQUAL(2u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   BOOST_REQUIRE_EQUAL(2u, wm.list_keys(_token, "test", pw).size());
   wm.lock_all(_token);
-  BOOST_REQUIRE_THROW(wm.get_public_keys(_token), fc::exception);
+  BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>()), fc::exception);
   BOOST_REQUIRE(!wm.list_wallets(_token)[0].unlocked);
 
   auto pw2 = create(wm, _token, "test2");
   BOOST_REQUIRE_EQUAL(2u, wm.list_wallets(_token).size());
   // wallet has no keys when it is created
-  BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token).size());
+  BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   wm.import_key(_token, "test2", key3_str);
-  BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token).size());
+  BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   BOOST_REQUIRE_THROW(wm.import_key(_token, "test2", key3_str), fc::exception);
   keys = wm.list_keys(_token, "test2", pw2);
   BOOST_REQUIRE( cmp_keys( key1, keys ) == keys.end() );
@@ -210,9 +214,9 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 
   BOOST_REQUIRE_THROW(wm.list_keys(_token, "test2", "PWnogood"), fc::exception);
 
-  BOOST_REQUIRE_EQUAL(3u, wm.get_public_keys(_token).size());
+  BOOST_REQUIRE_EQUAL(3u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   wm.set_timeout(_token, 0);
-  BOOST_REQUIRE_THROW(wm.get_public_keys(_token), fc::exception);
+  BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>()), fc::exception);
   BOOST_REQUIRE_THROW(wm.list_keys(_token, "test", pw), fc::exception);
 
   wm.set_timeout(_token, 15);
@@ -698,12 +702,19 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
       BOOST_REQUIRE( _result.wallets[1].unlocked );
     }
 
-    auto _public_keys = extract_json( _obj.get_public_keys( _token ) );
-    BOOST_TEST_MESSAGE( _public_keys );
+    {
+      auto _keys_all = fc::json::from_string( extract_json( _obj.get_public_keys( _token ) ) ).as<beekeeper::get_public_keys_return>().keys;
+      auto _keys_wallet_0 = fc::json::from_string( extract_json( _obj.get_public_keys( _token, "wallet_0" ) ) ).as<beekeeper::get_public_keys_return>().keys;
+      auto _keys_wallet_1 = fc::json::from_string( extract_json( _obj.get_public_keys( _token, "wallet_1" ) ) ).as<beekeeper::get_public_keys_return>().keys;
+
+      BOOST_REQUIRE_EQUAL( _keys_all.size(), 3 );
+      BOOST_REQUIRE_EQUAL( _keys_wallet_0.size(), 1 );
+      BOOST_REQUIRE_EQUAL( _keys_wallet_1.size(), 2 );
+    }
 
     _obj.remove_key( _token, "wallet_1", _password_1, "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa" );
 
-    _public_keys = extract_json( _obj.get_public_keys( _token ) );
+    auto _public_keys = extract_json( _obj.get_public_keys( _token ) );
     BOOST_TEST_MESSAGE( _public_keys );
 
     _obj.close_session( _token );
@@ -825,11 +836,16 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
         auto _signature_local = _private_key.sign_compact( _sig_digest );
 
         auto _signature_beekeeper = fc::json::from_string( extract_json( _obj.sign_digest( _token, _sig_digest, _public_key_str ) ) ).as<beekeeper::signature_return>();
+        auto _error_message = _obj.sign_digest( _token, _sig_digest, _public_key_str, "avocado" );
+        BOOST_REQUIRE( _error_message.find( "not found in avocado wallet" ) != std::string::npos );
+        auto _signature_beekeeper_2 = fc::json::from_string( extract_json( _obj.sign_digest( _token, _sig_digest, _public_key_str, "wallet_0" ) ) ).as<beekeeper::signature_return>();
 
         auto _local = fc::json::to_string( _signature_local );
         auto _beekeeper = fc::json::to_string( _signature_beekeeper.signature );
+        auto _beekeeper_2 = fc::json::to_string( _signature_beekeeper_2.signature );
         BOOST_TEST_MESSAGE( _local );
         BOOST_TEST_MESSAGE( _beekeeper );
+        BOOST_REQUIRE( _beekeeper == _beekeeper_2 );
         BOOST_REQUIRE( _local.substr( 1, _local.size() - 2 )              == signature_pattern );
         BOOST_REQUIRE( _beekeeper.substr( 1, _beekeeper.size() - 2 )      == signature_pattern );
       };
