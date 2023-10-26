@@ -73,10 +73,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "0.001 TESTS" ) ) );
 
     for( const auto& voter : voters )
-    {
-      fund( voter.name, ASSET( "10.000 TESTS" ) );
-      vest( voter.name, 10000 );
-    }
+      vest( voter.name, ASSET( "10.000 TESTS" ) );
 
     // authors all write in the same block, but Bob declines payout
     for( const auto& author : authors )
@@ -161,8 +158,8 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
@@ -384,14 +381,10 @@ BOOST_AUTO_TEST_CASE( comment_payout )
   try
   {
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    vest( "alice", 10000 );
-    fund( "bob", ASSET( "7.500 TESTS" ) );
-    vest( "bob", 7500 );
-    fund( "sam", ASSET( "8.000 TESTS" ) );
-    vest( "sam", 8000 );
-    fund( "dave", ASSET( "5.000 TESTS" ) );
-    vest( "dave", 5000 );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "7.500 TESTS" ) );
+    vest( "sam", ASSET( "8.000 TESTS" ) );
+    vest( "dave", ASSET( "5.000 TESTS" ) );
 
     price exchange_rate( ASSET( "1.000 TESTS" ), ASSET( "1.000 TBD" ) );
     set_price_feed( exchange_rate );
@@ -531,14 +524,10 @@ BOOST_AUTO_TEST_CASE( comment_payout )
   try
   {
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    vest( "alice", 10000 );
-    fund( "bob", ASSET( "7.500 TESTS" ) );
-    vest( "bob", 7500 );
-    fund( "sam", ASSET( "8.000 TESTS" ) );
-    vest( "sam", 8000 );
-    fund( "dave", ASSET( "5.000 TESTS" ) );
-    vest( "dave", 5000 );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "7.500 TESTS" ) );
+    vest( "sam", ASSET( "8.000 TESTS" ) );
+    vest( "dave", ASSET( "5.000 TESTS" ) );
 
     price exchange_rate( ASSET( "1.000 TESTS" ), ASSET( "1.000 TBD" ) );
     set_price_feed( exchange_rate );
@@ -817,14 +806,10 @@ OOST_AUTO_TEST_CASE( nested_comments )
   try
   {
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    vest( "alice", 10000 );
-    fund( "bob", ASSET( "10.000 TESTS" ) );
-    vest( "bob", 10000 );
-    fund( "sam", ASSET( "10.000 TESTS" ) );
-    vest( "sam", 10000 );
-    fund( "dave", ASSET( "10.000 TESTS" ) );
-    vest( "dave", 10000 );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
+    vest( "sam", ASSET( "10.000 TESTS" ) );
+    vest( "dave", ASSET( "10.000 TESTS" ) );
 
     price exchange_rate( ASSET( "1.000 TESTS" ), ASSET( "1.000 TBD" ) );
     set_price_feed( exchange_rate );
@@ -1127,8 +1112,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     auto auto_reset( set_mainnet_cashout_values() ); // Test on mainnet values
 
     ACTORS( (alice) )
-    fund( "alice", ASSET( "100.000 TESTS" ) );
-    vest( "alice", 100000 );
+    vest( "alice", ASSET( "100.000 TESTS" ) );
 
     const auto& new_alice = db->get_account( "alice" );
 
@@ -1220,8 +1204,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
 
     auto original_vesting = alice.get_vesting();
 
-    fund( "alice", ASSET( "1040.000 TESTS" ) );
-    vest( "alice", 1040000 );
+    vest( "alice", ASSET( "1040.000 TESTS" ) );
 
     auto withdraw_amount = alice.get_vesting() - original_vesting;
 
@@ -1455,7 +1438,7 @@ BOOST_AUTO_TEST_CASE( convert_delay )
   {
     ACTORS( (alice) )
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
     issue_funds( "alice", ASSET( "25.000 TBD" ) );
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.250 TESTS" ) ) );
@@ -1689,8 +1672,8 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
   {
     ACTORS( (alice)(bob) )
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
@@ -1784,7 +1767,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
   {
     ACTORS((alice))
       generate_block();
-    vest(HIVE_INIT_MINER_NAME, "alice", ASSET("10.000 TESTS"));
+    vest("alice", ASSET("10.000 TESTS"));
 
     set_price_feed(price(ASSET("1.000 TBD"), ASSET("1.000 TESTS")));
 
@@ -1874,10 +1857,10 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
 
     ACTORS( (alice)(bob)(sam)(dave) )
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "sam", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "dave", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
+    vest( "sam", ASSET( "10.000 TESTS" ) );
+    vest( "dave", ASSET( "10.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "Rewarding Bob with TESTS" );
 
@@ -2461,8 +2444,7 @@ BOOST_AUTO_TEST_CASE( post_rate_limit )
   {
     ACTORS( (alice) )
 
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    vest( "alice", 10000 );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
 
     comment_operation op;
     op.author = "alice";
@@ -2521,15 +2503,10 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
   try
   {
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    fund( "bob", ASSET( "10.000 TESTS" ) );
-    fund( "sam", ASSET( "10.000 TESTS" ) );
-    fund( "dave", ASSET( "10.000 TESTS" ) );
-
-    vest( "alice", 10000 );
-    vest( "bob", 10000 );
-    vest( "sam", 10000 );
-    vest( "dave", 10000 );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
+    vest( "sam", ASSET( "10.000 TESTS" ) );
+    vest( "dave", ASSET( "10.000 TESTS" ) );
 
     auto exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( "1.250 TESTS" ) );
     set_price_feed( exchange_rate );
@@ -2642,11 +2619,8 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     ACTORS( (alice)(bob)(sam) );
 
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    fund( "bob", ASSET( "10.000 TESTS" ) );
-
-    vest( "alice", 10000 );
-    vest( "bob", 10000 );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
 
     auto exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( "10.000 TESTS" ) );
     set_price_feed( exchange_rate );
@@ -2776,7 +2750,7 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
   {
     ACTORS( (alice) );
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
 
     price exchange_rate( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) );
     set_price_feed( exchange_rate );

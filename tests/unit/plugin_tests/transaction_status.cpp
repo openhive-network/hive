@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
     generate_block();
     db->_log_hardforks = true;
 
-    vest( "initminer", 10000 );
+    vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
 
     // Fill up the rest of the required miners
     for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )

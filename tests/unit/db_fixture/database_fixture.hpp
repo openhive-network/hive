@@ -359,15 +359,14 @@ struct database_fixture {
 
   bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 
-  void fund( const string& account_name, const asset& amount );
+  void fund( const string& account_name, const asset& amount ); //transfer from initminer
   void issue_funds( const string& account_name, const asset& amount, bool update_print_rate = true );
   void transfer( const string& from, const string& to, const asset& amount, const std::string& memo, const fc::ecc::private_key& key );
   void recurrent_transfer( const string& from, const string& to, const asset& amount, const string& memo, uint16_t recurrence,
                            uint16_t executions, const fc::ecc::private_key& key );
   void convert_hbd_to_hive( const std::string& owner, uint32_t requestid, const asset& amount, const fc::ecc::private_key& key );
   void collateralized_convert_hive_to_hbd( const std::string& owner, uint32_t requestid, const asset& amount, const fc::ecc::private_key& key );
-  void vest( const string& from, const string& to, const asset& amount );
-  void vest( const string& from, const share_type& amount );
+  void vest( const string& to, const asset& amount ); //vesting from initminer
   void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
   void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
   void set_withdraw_vesting_route(const string& from, const string& to, uint16_t percent, bool auto_vest, const fc::ecc::private_key& key);

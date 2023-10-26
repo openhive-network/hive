@@ -216,7 +216,7 @@ const account_object& database_fixture::account_create(
 
     if( fee_remainder > 0 )
     {
-      vest( HIVE_INIT_MINER_NAME, name, asset( fee_remainder, HIVE_SYMBOL ) );
+      vest( name, asset( fee_remainder, HIVE_SYMBOL ) );
     }
 
     const account_object& acct = db->get_account( name );
@@ -506,42 +506,9 @@ bool database_fixture::push_block( const std::shared_ptr<full_block_type>& b, ui
   return test::_push_block(*db, b, skip_flags);
 }
 
-void database_fixture::vest( const string& from, const string& to, const asset& amount )
+void database_fixture::vest( const string& to, const asset& amount )
 {
-  try
-  {
-    FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Can only vest TESTS" );
-
-    transfer_to_vesting_operation op;
-    op.from = from;
-    op.to = to;
-    op.amount = amount;
-
-    trx.operations.push_back( op );
-    trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.validate();
-
-    push_transaction( trx, ( from == HIVE_INIT_MINER_NAME ) ? init_account_priv_key : fc::ecc::private_key(), ~0 );
-    trx.clear();
-  } FC_CAPTURE_AND_RETHROW( (from)(to)(amount) )
-}
-
-void database_fixture::vest( const string& from, const share_type& amount )
-{
-  try
-  {
-    transfer_to_vesting_operation op;
-    op.from = from;
-    op.to = "";
-    op.amount = asset( amount, HIVE_SYMBOL );
-
-    trx.operations.push_back( op );
-    trx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    trx.validate();
-
-    push_transaction( trx, ( from == HIVE_INIT_MINER_NAME ) ? init_account_priv_key : fc::ecc::private_key(), ~0 );
-    trx.clear();
-  } FC_CAPTURE_AND_RETHROW( (from)(amount) )
+  vest( HIVE_INIT_MINER_NAME, to, amount, init_account_priv_key );
 }
 
 void database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )

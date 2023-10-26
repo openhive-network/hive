@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE( update_operation )
       tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       executor->push_transaction( tx, alice_private_key );
 
-      executor->vest( HIVE_INIT_MINER_NAME, "bob", asset( 1000, HIVE_SYMBOL ) );
+      executor->vest( "bob", ASSET( "1.000 TESTS" ) );
 
       auto exec_update_op = [&]( const std::string& old_key,  const std::string& new_key, bool is_exception )
       {

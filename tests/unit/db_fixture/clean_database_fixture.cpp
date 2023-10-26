@@ -40,7 +40,7 @@ clean_database_fixture::clean_database_fixture( uint16_t shared_file_size_in_mb,
   inject_hardfork( hardfork.valid() ? ( *hardfork ) : HIVE_BLOCKCHAIN_VERSION.minor_v() );
   db->_log_hardforks = true;
 
-  vest( "initminer", 10000 );
+  vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
 
   // Fill up the rest of the required miners
   for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )

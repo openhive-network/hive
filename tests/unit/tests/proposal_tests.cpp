@@ -117,8 +117,8 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     auto voter_00 = "carol";
     auto voter_01 = "dan";
 
-    vest(HIVE_INIT_MINER_NAME, voter_00, ASSET( "1.000 TESTS" ));
-    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "3.100 TESTS" ));
+    vest( voter_00, ASSET( "1.000 TESTS" ) );
+    vest( voter_01, ASSET( "3.100 TESTS" ) );
 
     //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
     start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
@@ -280,14 +280,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
   {
     BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes" );
     ACTORS( (acc1)(acc2)(acc3)(acc4)(acc5)(acc6)(acc7)(acc8)(accw)(accw2)(accp)(pxy) )
-    fund( "acc1", ASSET( "1.000 TESTS" ) ); vest( "acc1", 1000 );
-    fund( "acc2", ASSET( "2.000 TESTS" ) ); vest( "acc2", 2000 );
-    fund( "acc3", ASSET( "3.000 TESTS" ) ); vest( "acc3", 3000 );
-    fund( "acc4", ASSET( "4.000 TESTS" ) ); vest( "acc4", 4000 );
-    fund( "acc5", ASSET( "5.000 TESTS" ) ); vest( "acc5", 5000 );
-    fund( "acc6", ASSET( "6.000 TESTS" ) ); vest( "acc6", 6000 );
-    fund( "acc7", ASSET( "7.000 TESTS" ) ); vest( "acc7", 7000 );
-    fund( "acc8", ASSET( "8.000 TESTS" ) ); vest( "acc8", 8000 );
+    vest( "acc1", ASSET( "1.000 TESTS" ) );
+    vest( "acc2", ASSET( "2.000 TESTS" ) );
+    vest( "acc3", ASSET( "3.000 TESTS" ) );
+    vest( "acc4", ASSET( "4.000 TESTS" ) );
+    vest( "acc5", ASSET( "5.000 TESTS" ) );
+    vest( "acc6", ASSET( "6.000 TESTS" ) );
+    vest( "acc7", ASSET( "7.000 TESTS" ) );
+    vest( "acc8", ASSET( "8.000 TESTS" ) );
 
     generate_block();
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
@@ -638,7 +638,7 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
   {
     BOOST_TEST_MESSAGE( "Testing: proposals_with_decline_voting_rights" );
     ACTORS((acc1)(acc2)(accp)(dwr))
-    fund( "dwr", ASSET( "1.000 TESTS" ) ); vest( "dwr", 1000 );
+    vest( "dwr", ASSET( "1.000 TESTS" ) );
 
     generate_block();
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
@@ -950,7 +950,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
 
     auto voter_01 = "carol";
 
-    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "1.000 TESTS" ));
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
 
     //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
     start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
@@ -1044,7 +1044,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     {
       ISSUE_FUNDS( item.account, ASSET( "400.000 TESTS" ) );
       ISSUE_FUNDS( item.account, ASSET( "400.000 TBD" ) );
-      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "300.000 TESTS" ));
+      vest( item.account, ASSET( "300.000 TESTS" ) );
     }
 
     auto start_date = db->head_block_time();
@@ -1140,7 +1140,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     {
       ISSUE_FUNDS( item.account, ASSET( "400.000 TESTS" ) );
       ISSUE_FUNDS( item.account, ASSET( "400.000 TBD" ) );
-      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "300.000 TESTS" ));
+      vest( item.account, ASSET( "300.000 TESTS" ) );
     }
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_proposal_id >();
@@ -1237,13 +1237,13 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       {
         ISSUE_FUNDS( item.first, ASSET( "41.000 TESTS" ) );
         ISSUE_FUNDS( item.first, ASSET( "41.000 TBD" ) );
-        vest(HIVE_INIT_MINER_NAME, item.first, ASSET( "31.000 TESTS" ));
+        vest( item.first, ASSET( "31.000 TESTS" ) );
       }
       else
       {
         ISSUE_FUNDS( item.first, ASSET( "40.000 TESTS" ) );
         ISSUE_FUNDS( item.first, ASSET( "40.000 TBD" ) );
-        vest(HIVE_INIT_MINER_NAME, item.first, ASSET( "30.000 TESTS" ));
+        vest( item.first, ASSET( "30.000 TESTS" ) );
       }
     }
 
@@ -1389,7 +1389,7 @@ try
 
     auto voter_01 = "carol";
 
-    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "1.000 TESTS" ));
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
 
     //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
     start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
@@ -1477,7 +1477,7 @@ try
 
     auto voter_01 = "carol";
 
-    vest(HIVE_INIT_MINER_NAME, voter_01, ASSET( "1.000 TESTS" ));
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
 
     //Due to the `delaying votes` algorithm, generate blocks for 30 days in order to activate whole votes' pool ( take a look at `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` )
     start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
@@ -4482,7 +4482,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       {
         ISSUE_FUNDS( item.account, ASSET( "11.000 TBD" ) );
       }
-      vest(HIVE_INIT_MINER_NAME, item.account, ASSET( "30.000 TESTS" ));
+      vest( item.account, ASSET( "30.000 TESTS" ) );
 
       call( i, 50, "${x} accounts got VESTS" );
     }

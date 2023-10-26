@@ -25,10 +25,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
         ACTORS_EXT( (*executor), (alice)(bob) );
-        executor->fund( "alice", ASSET( "1.000 TESTS" ) );
-        executor->fund( "bob", ASSET( "1.000 TESTS" ) );
-        executor->vest( "alice", 1000 );
-        executor->vest( "bob", 1000 );
+        executor->vest( "alice", ASSET( "1.000 TESTS" ) );
+        executor->vest( "bob", ASSET( "1.000 TESTS" ) );
 
         BOOST_TEST_MESSAGE( "--- Generating 'declined_voting_rights_operation'" );
 
@@ -98,8 +96,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic_2 )
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
         ACTORS_EXT( (*executor), (alice) );
-        executor->fund( "alice", ASSET( "1.000 TESTS" ) );
-        executor->vest( "alice", 1000 );
+        executor->vest( "alice", ASSET( "1.000 TESTS" ) );
 
         auto _create_decline_voting_rights_operation = []( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& key )
         {
@@ -157,12 +154,10 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes )
 
       executor->generate_block();
 
-      executor->fund( "alice", ASSET( "100.000 TESTS" ) );
-      executor->fund( "bob", ASSET( "100.000 TESTS" ) );
+      executor->vest( "alice", ASSET( "100.000 TESTS" ) );
+      executor->vest( "bob", ASSET( "100.000 TESTS" ) );
       executor->issue_funds( "alice", ASSET( "200.000 TBD" ) );
       executor->issue_funds( "bob", ASSET( "200.000 TBD" ) );
-      executor->vest( "alice", 100000 );
-      executor->vest( "bob", 100000 );
 
       executor->generate_block();
 
@@ -224,12 +219,10 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
 
       executor->generate_block();
 
-      executor->fund( "alice", ASSET( "100.000 TESTS" ) );
-      executor->fund( "bob", ASSET( "100.000 TESTS" ) );
+      executor->vest( "alice", ASSET( "100.000 TESTS" ) );
+      executor->vest( "bob", ASSET( "100.000 TESTS" ) );
       executor->issue_funds( "alice", ASSET( "200.000 TBD" ) );
       executor->issue_funds( "bob", ASSET( "200.000 TBD" ) );
-      executor->vest( "alice", 100000 );
-      executor->vest( "bob", 100000 );
 
       executor->generate_block();
 
@@ -523,9 +516,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
       std::vector<account_data> _actors = { { "alice", alice_private_key }, { "bob", bob_private_key }, { "carol", carol_private_key }, { "diana", diana_private_key } };
       for( auto& actor : _actors )
       {
-        executor->fund( actor.name, ASSET( "100.000 TESTS" ) );
+        executor->vest( actor.name, ASSET( "100.000 TESTS" ) );
         executor->issue_funds( actor.name, ASSET( "200.000 TBD" ) );
-        executor->vest( actor.name, 100000 );
       }
       executor->generate_block();
 
@@ -638,8 +630,8 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
       price( asset( 1000000, VESTS_SYMBOL ), asset( 1000, HIVE_SYMBOL ) ) );
 
     ACTORS_DEFAULT_FEE( (bob)(gil) );
-    vest( HIVE_INIT_MINER_NAME, "bob", asset( bob_amount / 1000, HIVE_SYMBOL ), init_account_priv_key );
-    vest( HIVE_INIT_MINER_NAME, "gil", asset( gil_amount / 1000, HIVE_SYMBOL ), init_account_priv_key );
+    vest( "bob", asset( bob_amount / 1000, HIVE_SYMBOL ) );
+    vest( "gil", asset( gil_amount / 1000, HIVE_SYMBOL ) );
     generate_block();
 
     BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, bob_amount );
@@ -755,8 +747,8 @@ BOOST_AUTO_TEST_CASE( vote_edit_limit )
     inject_hardfork( HIVE_HARDFORK_0_20 ); // we don't care about old voting rules
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(carol) );
-    vest( HIVE_INIT_MINER_NAME, "bob", asset( 1000, HIVE_SYMBOL ), init_account_priv_key );
-    vest( HIVE_INIT_MINER_NAME, "carol", asset( 1000, HIVE_SYMBOL ), init_account_priv_key );
+    vest( "bob", ASSET( "1.000 TESTS" ) );
+    vest( "carol", ASSET( "1.000 TESTS" ) );
     generate_block();
 
     post_comment( "alice", "test", "test", "test", "category", alice_post_key );
@@ -814,11 +806,11 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     //worth the time
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(carol)(dave)(eric) );
-    vest( HIVE_INIT_MINER_NAME, "alice", asset( 1000, HIVE_SYMBOL ), init_account_priv_key );
-    vest( HIVE_INIT_MINER_NAME, "bob", asset( 1000, HIVE_SYMBOL ), init_account_priv_key );
-    vest( HIVE_INIT_MINER_NAME, "carol", asset( 1000, HIVE_SYMBOL ), init_account_priv_key );
-    vest( HIVE_INIT_MINER_NAME, "dave", asset( 1000, HIVE_SYMBOL ), init_account_priv_key );
-    vest( HIVE_INIT_MINER_NAME, "eric", asset( 1000, HIVE_SYMBOL ), init_account_priv_key );
+    vest( "alice", ASSET( "1.000 TESTS" ) );
+    vest( "bob", ASSET( "1.000 TESTS" ) );
+    vest( "carol", ASSET( "1.000 TESTS" ) );
+    vest( "dave", ASSET( "1.000 TESTS" ) );
+    vest( "eric", ASSET( "1.000 TESTS" ) );
     generate_block();
 
     // vesting shares split puts artificial 1 on vesting withdraw rate on accounts with no power down

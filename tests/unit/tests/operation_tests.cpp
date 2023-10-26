@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     validate_database();
 
     issue_funds( HIVE_TEMP_ACCOUNT, ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, HIVE_TEMP_ACCOUNT, ASSET( "10.000 TESTS" ) );
+    vest( HIVE_TEMP_ACCOUNT, ASSET( "10.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "--- Test account creation with temp account does not set recovery account" );
     op.creator = HIVE_TEMP_ACCOUNT;
@@ -599,7 +599,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
     ACTORS( (alice) )
     generate_block();
 
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
 
     generate_block();
 
@@ -722,11 +722,11 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     ACTORS( (alice)(bob)(sam)(dave) )
     generate_block();
 
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
     validate_database();
-    vest( HIVE_INIT_MINER_NAME, "bob" , ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "sam" , ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "dave" , ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
+    vest( "sam", ASSET( "10.000 TESTS" ) );
+    vest( "dave", ASSET( "10.000 TESTS" ) );
     generate_block();
 
     const auto& vote_idx = db->get_index< comment_vote_index >().indices().get< by_comment_voter >();
@@ -1179,7 +1179,7 @@ BOOST_AUTO_TEST_CASE( vote_weights )
     };
 
     for( auto& voter : voters )
-      vest( HIVE_INIT_MINER_NAME, voter.name, ASSET( "1000.000 TESTS" ) );
+      vest( voter.name, ASSET( "1000.000 TESTS" ) );
     generate_block();
 
     comment_operation comment_op;
@@ -1737,8 +1737,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_authorities )
     BOOST_TEST_MESSAGE( "Testing: withdraw_vesting_authorities" );
 
     ACTORS( (alice)(bob) )
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    vest( "alice", 10000 );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
 
     withdraw_vesting_operation op;
     op.account = "alice";
@@ -1776,7 +1775,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
     ACTORS( (alice)(bob) )
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "--- Test failure withdrawing negative VESTS" );
 
@@ -2095,8 +2094,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     BOOST_TEST_MESSAGE( "Testing: account_witness_vote_apply" );
 
     ACTORS( (alice)(bob)(sam) )
-    fund( "alice" , ASSET( "5.000 TESTS" ) );
-    vest( "alice", 5000 );
+    vest( "alice" , ASSET( "5.000 TESTS" ) );
     fund( "sam", ASSET( "1.000 TESTS" ) );
 
     private_key_type sam_witness_key = generate_private_key( "sam_key" );
@@ -2204,8 +2202,7 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
     BOOST_TEST_MESSAGE("Testing: account_witness_vote_apply_delay");
 
     ACTORS((alice)(bob)(sam))
-    fund("alice", ASSET( "5.000 TESTS" ));
-    vest("alice", 5000);
+    vest("alice", ASSET( "5.000 TESTS" ));
     //vests are going to vote after HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS
     //note that account creation also vests a bit for new account
     fund("sam", ASSET( "1.000 TESTS" ));
@@ -2459,14 +2456,10 @@ BOOST_AUTO_TEST_CASE( proxy_cleared_operation_basic )
     BOOST_TEST_MESSAGE( "Testing: 'proxy_cleared_operation' virtual operation" );
 
     ACTORS( (alice)(bob)(carol)(dan) )
-    fund( "alice", ASSET( "1.000 TESTS" ) );
-    vest( "alice", 1000 );
-    fund( "bob", ASSET( "3.000 TESTS" ) );
-    vest( "bob", 3000 );
-    fund( "carol", ASSET( "3.000 TESTS" ) );
-    vest( "carol", 3000 );
-    fund( "dan", ASSET( "3.000 TESTS" ) );
-    vest( "dan", 3000 );
+    vest( "alice", ASSET( "1.000 TESTS" ) );
+    vest( "bob", ASSET( "3.000 TESTS" ) );
+    vest( "carol", ASSET( "3.000 TESTS" ) );
+    vest( "dan", ASSET( "3.000 TESTS" ) );
 
     {
       BOOST_TEST_MESSAGE( "--- Test setting proxy to another account" );
@@ -2596,14 +2589,10 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     BOOST_TEST_MESSAGE( "Testing: account_witness_proxy_apply" );
 
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", ASSET( "1.000 TESTS" ) );
-    vest( "alice", 1000 );
-    fund( "bob", ASSET( "3.000 TESTS" ) );
-    vest( "bob", 3000 );
-    fund( "sam", ASSET( "5.000 TESTS" ) );
-    vest( "sam", 5000 );
-    fund( "dave", ASSET( "7.000 TESTS" ) );
-    vest( "dave", 7000 );
+    vest( "alice", ASSET( "1.000 TESTS" ) );
+    vest( "bob", ASSET( "3.000 TESTS" ) );
+    vest( "sam", ASSET( "5.000 TESTS" ) );
+    vest( "dave", ASSET( "7.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "--- Test setting proxy to another account from self." );
     // bob -> alice
@@ -2749,18 +2738,12 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_too_long )
     BOOST_TEST_MESSAGE( "Testing: account_witness_proxy too long chain" );
 
     ACTORS( (alice)(bob)(sam)(dave)(greg)(henry) )
-    fund( "alice", ASSET( "1.000 TESTS" ) );
-    vest( "alice", 1000 );
-    fund( "bob", ASSET( "3.000 TESTS" ) );
-    vest( "bob", 3000 );
-    fund( "sam", ASSET( "5.000 TESTS" ) );
-    vest( "sam", 5000 );
-    fund( "dave", ASSET( "7.000 TESTS" ) );
-    vest( "dave", 7000 );
-    fund( "greg", ASSET( "9.000 TESTS" ) );
-    vest( "greg", 9000 );
-    fund( "henry", ASSET( "11.000 TESTS" ) );
-    vest( "henry", 11000 );
+    vest( "alice", ASSET( "1.000 TESTS" ) );
+    vest( "bob", ASSET( "3.000 TESTS" ) );
+    vest( "sam", ASSET( "5.000 TESTS" ) );
+    vest( "dave", ASSET( "7.000 TESTS" ) );
+    vest( "greg", ASSET( "9.000 TESTS" ) );
+    vest( "henry", ASSET( "11.000 TESTS" ) );
 
     //wait for delayed votes to become active
     generate_blocks( db->head_block_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
@@ -2814,8 +2797,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_too_long )
     BOOST_REQUIRE_EQUAL( top_proxied_votes[3].value, get_vesting( "greg" ).amount.value );
 
     //let's change voting power of henry and see what happens (should be reflected up to bob, but not alice)
-    fund( "henry", ASSET( "0.100 TESTS" ) );
-    vest( "henry", 100 );
+    vest( "henry", ASSET( "0.100 TESTS" ) );
     //wait for delayed votes to become active
     generate_blocks( db->head_block_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS, true );
     generate_block();
@@ -2847,16 +2829,12 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
     BOOST_TEST_MESSAGE( "Testing: account_witness_proxy_apply_delay" );
 
     ACTORS( (alice)(bob)(sam)(dave) )
-    fund( "alice", ASSET( "1.000 TESTS" ) );
-    vest( "alice", 1000 );
+    vest( "alice", ASSET( "1.000 TESTS" ) );
     //vests are going to vote after HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS
     //note that account creation also vests a bit for new account
-    fund( "bob", ASSET( "3.000 TESTS" ) );
-    vest( "bob", 3000 );
-    fund( "sam", ASSET( "5.000 TESTS" ) );
-    vest( "sam", 5000 );
-    fund( "dave", ASSET( "7.000 TESTS" ) );
-    vest( "dave", 7000 );
+    vest( "bob", ASSET( "3.000 TESTS" ) );
+    vest( "sam", ASSET( "5.000 TESTS" ) );
+    vest( "dave", ASSET( "7.000 TESTS" ) );
 
     generate_block();
     //above variables: alice etc. are invalid past that point
@@ -4750,7 +4728,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    vest( HIVE_INIT_MINER_NAME, "bob", asset( 1000, HIVE_SYMBOL ) );
+    vest( "bob", ASSET( "1.000 TESTS" ) );
 
     const auto& bob_auth = db->get< account_authority_object, by_account >( "bob" );
     BOOST_REQUIRE( bob_auth.owner == acc_create.owner );
@@ -7127,8 +7105,8 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
 
     ACTORS( (alice)(bob) );
     generate_block();
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "bob", ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
     generate_block();
 
     account_witness_proxy_operation proxy;
@@ -7374,8 +7352,8 @@ BOOST_AUTO_TEST_CASE( account_create_with_delegation_apply )
     // 150 * fee = ( 5 * HIVE ) + SP
     //auto& gpo = db->get_dynamic_global_properties();
     generate_blocks(1);
-    issue_funds( "alice", ASSET("1510.000 TESTS") );
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET("1000.000 TESTS") );
+    issue_funds( "alice", ASSET( "1510.000 TESTS" ) );
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
 
     private_key_type priv_key = generate_private_key( "temp_key" );
 
@@ -7525,10 +7503,10 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_authorities )
     BOOST_TEST_MESSAGE( "Testing: delegate_vesting_shares_authorities" );
     signed_transaction tx;
     ACTORS( (alice)(bob) )
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "10000.000 TESTS" ) );
+    vest( "alice", ASSET( "10000.000 TESTS" ) );
 
     delegate_vesting_shares_operation op;
-    op.vesting_shares = ASSET( "300.000000 VESTS");
+    op.vesting_shares = ASSET( "300.000000 VESTS" );
     op.delegator = "alice";
     op.delegatee = "bob";
 
@@ -7566,7 +7544,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     ACTORS( (alice)(bob)(charlie) )
     generate_block();
 
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
 
     generate_block();
 
@@ -7711,7 +7689,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     const account_object& sam_acc = db->get_account( "sam" );
     const account_object& dave_acc = db->get_account( "dave" );
 
-    vest( HIVE_INIT_MINER_NAME, "sam", ASSET( "1000.000 TESTS" ) );
+    vest( "sam", ASSET( "1000.000 TESTS" ) );
 
     generate_block();
 
@@ -7891,7 +7869,7 @@ BOOST_AUTO_TEST_CASE( issue_971_vesting_removal )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    vest( HIVE_INIT_MINER_NAME, "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
 
     generate_block();
 
@@ -9058,7 +9036,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_TEST_MESSAGE( "Testing: create_claimed_account_apply" );
 
     ACTORS( (alice) )
-    vest( HIVE_INIT_MINER_NAME, HIVE_TEMP_ACCOUNT, ASSET( "10.000 TESTS" ) );
+    vest( HIVE_TEMP_ACCOUNT, ASSET( "10.000 TESTS" ) );
     generate_block();
 
     signed_transaction tx;
@@ -9162,9 +9140,9 @@ BOOST_AUTO_TEST_CASE( account_auth_tests )
     issue_funds( "alice", ASSET( "20.000 TESTS" ) );
     issue_funds( "bob", ASSET( "20.000 TESTS" ) );
     issue_funds( "charlie", ASSET( "20.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "alice" , ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "bob" , ASSET( "10.000 TESTS" ) );
-    vest( HIVE_INIT_MINER_NAME, "charlie" , ASSET( "10.000 TESTS" ) );
+    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
+    vest( "charlie", ASSET( "10.000 TESTS" ) );
     generate_block();
 
     private_key_type bob_active_private_key = bob_private_key;
@@ -10627,34 +10605,24 @@ struct timeshare_test_fixture : clean_database_fixture
     for (unsigned i = 1; i <= 10; ++i)
       timeshare_witness_names.insert("timeshare" + std::to_string(i));
 
-    // one account that votes for all voted witnesses
-    ACTORS((staticvoter))
-    fund("staticvoter", ASSET( "100000.000 TESTS" ));
-    vest("staticvoter", 100000000);
+    ACTOR(staticvoter) // one account that votes for all voted witnesses
+    ACTOR(timesharevoter1) // one account that votes for all timeshare witnesses
+    ACTORS((timesharevoter2)(timesharevoter3))
+    generate_block();
 
-    // one account that votes for all timeshare witnesses
-    ACTORS((timesharevoter1))
-    fund("timesharevoter1", ASSET( "10000.000 TESTS" ));
-    vest("timesharevoter1", 10000000);
-
-    ACTORS((timesharevoter2))
-    fund("timesharevoter2", ASSET( "10000.000 TESTS" ));
-    vest("timesharevoter2", 10000000);
-
-    ACTORS((timesharevoter3))
-    fund("timesharevoter3", ASSET( "0.100 TESTS" ));
-    vest("timesharevoter3", 100);
+    vest( "staticvoter", ASSET( "100000.000 TESTS" ) );
+    vest( "timesharevoter1", ASSET( "10000.000 TESTS" ) );
+    vest( "timesharevoter2", ASSET( "10000.000 TESTS" ) );
+    vest( "timesharevoter3", ASSET( "0.100 TESTS" ) );
 
     ACTORS((littlevoter1)(littlevoter2)(littlevoter3)(littlevoter4)(littlevoter5)(littlevoter6)(littlevoter7)(littlevoter8)(littlevoter9)(littlevoter10))
-    for (unsigned i = 1; i <= 10; ++i)
-    {
-      fund("littlevoter" + std::to_string(i), ASSET( "0.001 TESTS" ));
-      vest("littlevoter" + std::to_string(i), 1);
-    }
+    for( unsigned i = 1; i <= 10; ++i )
+      vest( "littlevoter" + std::to_string(i), ASSET( "0.001 TESTS" ) );
 
     generate_blocks(28800); // wait 1 day until the newly-vested funds have passed the delay period and can vote
 
-    const auto create_witness = [&](const std::string& witness_name) {
+    const auto create_witness = [&](const std::string& witness_name)
+    {
       const private_key_type account_key = generate_private_key(witness_name);
       const private_key_type witness_key = generate_private_key(witness_name + "_witness");
       witness_create(witness_name, account_key, witness_name + ".com", witness_key.get_public_key(), 1000);
