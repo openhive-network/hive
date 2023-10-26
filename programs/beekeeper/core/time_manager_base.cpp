@@ -12,31 +12,60 @@ time_manager_base::~time_manager_base()
 
 void time_manager_base::run()
 {
-  const auto& now = std::chrono::system_clock::now();
+  std::vector<std::string> _modified_items;
 
-  auto& _idx = items.get<by_time>();
-
-  auto _it = _idx.begin();
-  while( _it != _idx.end() )
   {
-    if( now >= _it->time )
+    const auto& _now = std::chrono::system_clock::now();
+
+    auto& _idx_time = items.get<by_time>();
+    auto _it = _idx_time.begin();
+
+    while( _it != _idx_time.end() )
     {
-      auto _result = exception::exception_handler([&]()
-                                                  {
-                                                    _idx.modify( _it, []( session_data &sd ){ sd.time = types::timepoint_t::max(); });
-                                                    _it->notification_method( _it->token );
-                                                    _it->lock_method( _it->token );
-                                                    return "";
-                                                  }
-                                                );
-      if( !_result.second )
+      if( _now >= _it->time )
       {
-        send_auto_lock_error_message( _result.first );
-        continue;
+        auto _microseconds = std::chrono::duration_cast<std::chrono::microseconds>( _now - _it->time );
+        if( _microseconds.count() / 1000 > 0 )
+          dlog("lock activated: actual time is longer ${differ}[ms] than timeout time", ("differ", _microseconds.count() / 1000));
+        else
+          dlog("lock activated: actual time is equals to timeout time");
+        auto _result = exception::exception_handler([&]()
+                                                    {
+                                                      _modified_items.emplace_back( _it->token );
+                                                      return "";
+                                                    }
+                                                  );
+        if( !_result.second )
+        {
+          send_auto_lock_error_message( _result.first );
+          return; //First error during locking finishes whole procedure
+        }
       }
+      ++_it;
     }
-    ++_it;
   }
+
+  if( _modified_items.empty() )
+    return;
+
+  auto& _idx_token = items.get<by_token>();
+  auto _result = exception::exception_handler([&]()
+                                              {
+                                                for( auto& token : _modified_items )
+                                                {
+                                                  auto _found = _idx_token.find( token );
+                                                  FC_ASSERT( _found != _idx_token.end() );
+
+                                                  _idx_token.modify( _found, []( session_data &sd ){ sd.time = types::timepoint_t::max(); });
+
+                                                  _found->notification_method( _found->token );
+                                                  _found->lock_method( _found->token );
+                                                }
+                                                return "";
+                                              }
+                                            );
+  if( !_result.second )
+    send_auto_lock_error_message( _result.first );
 }
 
 void time_manager_base::add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method )
