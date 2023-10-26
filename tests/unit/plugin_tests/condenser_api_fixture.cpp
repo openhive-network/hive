@@ -287,7 +287,7 @@ void condenser_api_fixture::witness_scenario( check_point_tester_t check_point_t
   
   witness_create( "alice5ah", alice5ah_private_key, "foo.bar", alice5ah_private_key.get_public_key(), 1000 );
   witness_feed_publish( "alice5ah", price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ), alice5ah_private_key );
-  proxy( "ben5ah", "carol5ah" );
+  proxy( "ben5ah", "carol5ah", ben5ah_private_key );
   witness_vote( "carol5ah", "alice5ah", carol5ah_private_key, true ); // mistakenly voted
   witness_vote( "carol5ah", "alice5ah", carol5ah_private_key, false ); // fixed the mistake
   // Note that we don't use existing database_fixture::set_witness_props function below,
@@ -467,7 +467,7 @@ void condenser_api_fixture::decline_voting_rights_scenario( check_point_tester_t
   ACTORS( (alice11ah)(ben11ah) );
   generate_block();
 
-  proxy( "alice11ah", "ben11ah" );
+  proxy( "alice11ah", "ben11ah", alice11ah_private_key );
   decline_voting_rights( "alice11ah", true, alice11ah_private_key );
 
   // decline_voting_rights_operation can be checked in 5th block and declined_voting_rights_operation in the 23rd,

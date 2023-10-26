@@ -371,8 +371,7 @@ struct database_fixture {
   void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
   void set_withdraw_vesting_route(const string& from, const string& to, uint16_t percent, bool auto_vest, const fc::ecc::private_key& key);
   void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
-  void proxy( const string& account, const string& proxy );
-  void proxy( account_name_type _account, account_name_type _proxy, const fc::ecc::private_key& _key );
+  void proxy( const string& _account, const string& _proxy, const fc::ecc::private_key& _key );
   void set_price_feed( const price& new_price, bool stop_at_update_block = false );
   void set_witness_props( const flat_map< string, vector< char > >& new_props );
   void witness_feed_publish( const string& publisher, const price& exchange_rate, const private_key_type& key );
