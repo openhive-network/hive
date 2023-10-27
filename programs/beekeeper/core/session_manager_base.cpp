@@ -37,20 +37,16 @@ std::string session_manager_base::create_session( const std::string& salt, const
 
   FC_ASSERT( time );
   time->add(  _token,
-              [_session]()
+              [this]( const std::string& token )
               {
-                FC_ASSERT( _session, "lock: session is empty." );
-
-                auto _wallet_mgr = _session->get_wallet_manager();
+                auto _wallet_mgr = get_session( token )->get_wallet_manager();
                 FC_ASSERT( _wallet_mgr, "wallet manager is empty." );
 
                 _wallet_mgr->lock_all();
               },
-              [&bk_instance, notifications_endpoint, _session, directory, extension]()
+              [this, &bk_instance, notifications_endpoint, directory, extension]( const std::string& token )
               {
-                FC_ASSERT( _session, "notification: session is empty." );
-
-                _session->prepare_notifications( bk_instance, directory, extension );
+                get_session( token )->prepare_notifications( bk_instance, directory, extension );
               }
               );
 

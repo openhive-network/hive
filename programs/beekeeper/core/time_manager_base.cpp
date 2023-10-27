@@ -24,8 +24,8 @@ void time_manager_base::run()
       auto _result = exception::exception_handler([&]()
                                                   {
                                                     _idx.modify( _it, []( session_data &sd ){ sd.time = types::timepoint_t::max(); });
-                                                    _it->notification_method();
-                                                    _it->lock_method();
+                                                    _it->notification_method( _it->token );
+                                                    _it->lock_method( _it->token );
                                                     return "";
                                                   }
                                                 );
