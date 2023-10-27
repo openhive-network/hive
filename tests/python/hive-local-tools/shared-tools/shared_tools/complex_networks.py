@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import socket
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
@@ -13,7 +14,7 @@ import test_tools as tt
 
 from .complex_networks_helper_functions import connect_sub_networks
 
-last_used_port_number = None
+last_used_port_number = 0
 
 
 class NodesPreparer:
@@ -347,23 +348,49 @@ def create_block_log_directory_name(block_log_directory_name: str):
     return Path(__file__).parent.absolute() / "block_logs" / block_log_directory_name
 
 
-def generate_port_ranges(worker: str, number_of_nodes: int) -> list[int]:
+def generate_port_ranges(number_of_nodes: int) -> list[int]:
     global last_used_port_number
+
+    worker_id = get_worker_id()
+    start = last_used_port_number + 1 if last_used_port_number else 2000 + worker_id * 1000
+
+    port = start
+    ports = []
+    while len(ports) < number_of_nodes:
+        if is_port_open(port):
+            ports.append(port)
+        port += 1
+
+    last_used_port_number = ports[-1]
+    assert (
+        last_used_port_number < 3000 + worker_id * 1000
+    ), f"The pool of available ports for worker {worker_id} has been depleted."
+    assert last_used_port_number <= 65535, "The maximum value of available ports has been depleted."
+    return ports
+
+
+def get_worker_id() -> int:
+    worker = os.getenv("PYTEST_XDIST_WORKER", None)
+    if worker is None or worker == "master":
+        return 0
     match = re.match(r"gw(\d+)", worker)
     assert match is not None
-    worker_id = int(match.group(1))
-    start = 2000 + worker_id * 1000 if last_used_port_number is None else last_used_port_number
-    end = start + number_of_nodes
-    last_used_port_number = end
-    return list(range(start, end))
+    return int(match.group(1))
 
 
 def generate_free_addresses(number_of_nodes: int) -> list[str]:
-    worker_id = os.getenv("PYTEST_XDIST_WORKER")
-    if worker_id:
-        ports_range = generate_port_ranges(worker_id, number_of_nodes)
-        free_ports = ports_range[:number_of_nodes]
-        addresses = ["127.0.0.1:" + str(port) for port in free_ports]
+    ports = generate_port_ranges(number_of_nodes)
+    return ["127.0.0.1:" + str(port) for port in ports]
+
+
+def is_port_open(port: int) -> bool:
+    sock = socket.socket()
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, b"\0" * 8)
+    try:
+        sock.bind(("127.0.0.1", port))
+    except OSError:
+        return False
     else:
-        addresses = ["127.0.0.1:" + str(port) for port in range(2000, 2000 + number_of_nodes)]
-    return addresses
+        return True
+    finally:
+        sock.close()
