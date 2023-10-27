@@ -142,7 +142,7 @@ namespace fc {
        }
 
        ~default_io_service_scope()
-       {}
+       { cleanup(); }
     };
 
     /// If cleanup is true, do not use the return value; it is a null reference
