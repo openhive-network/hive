@@ -16,6 +16,8 @@ beekeeper_wasm_app::beekeeper_wasm_app()
 
 beekeeper_wasm_app::~beekeeper_wasm_app()
 {
+  if( enable_logs )
+    fc::configure_logging( fc::logging_config() );//destroy explicitly created appenders
 }
 
 void beekeeper_wasm_app::set_program_options()
@@ -52,7 +54,9 @@ void beekeeper_wasm_app::setup_logger( const boost::program_options::variables_m
 {
   FC_ASSERT( args.count("enable-logs") );
 
-  if( args.at( "enable-logs" ).as<bool>() )
+  enable_logs = args.at( "enable-logs" ).as<bool>();
+
+  if( enable_logs )
     fc::configure_logging( fc::logging_config::default_config( "stdout" ) );
   else
     fc::configure_logging( fc::logging_config() );
