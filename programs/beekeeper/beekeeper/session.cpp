@@ -12,11 +12,12 @@ session::session( const std::string& notifications_endpoint, const std::string& 
   notification_handler.register_endpoints( { notifications_endpoint } );
 }
 
-void session::prepare_notifications(const beekeeper_instance_base& bk_instance, const boost::filesystem::path& directory, const std::string& extension )
+void session::prepare_notifications(const beekeeper_instance_base& bk_instance )
 {
   fc::variant _v;
 
-  auto _wallets = get_wallet_manager()->list_wallets([&](const std::string& name) { return bk_instance.create_wallet_filename(name); }, list_all_wallets( directory, extension ) );
+  auto _wallets = get_wallet_manager()->list_wallets( [&](const std::string& name) { return bk_instance.create_wallet_filename(name); },
+                                                      list_all_wallets( bk_instance.get_wallet_directory(), bk_instance.get_extension() ) );
   fc::to_variant( _wallets, _v );
 
   appbase::application::dynamic_notify( notification_handler, "Attempt of closing all wallets", "token", get_token(), "wallets", _v );

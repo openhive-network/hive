@@ -29,9 +29,6 @@ std::string session_manager_base::create_session( const std::string& salt, const
 {
   auto _token = token_generator::generate_token( salt, token_length );
 
-  const boost::filesystem::path& directory = bk_instance.get_wallet_directory();
-  const std::string& extension = bk_instance.get_extension();
-
   std::shared_ptr<session_base> _session = create_session( notifications_endpoint, _token, time );
   sessions.emplace( _token, _session );
 
@@ -44,9 +41,9 @@ std::string session_manager_base::create_session( const std::string& salt, const
 
                 _wallet_mgr->lock_all();
               },
-              [this, &bk_instance, notifications_endpoint, directory, extension]( const std::string& token )
+              [this, &bk_instance]( const std::string& token )
               {
-                get_session( token )->prepare_notifications( bk_instance, directory, extension );
+                get_session( token )->prepare_notifications( bk_instance );
               }
               );
 
