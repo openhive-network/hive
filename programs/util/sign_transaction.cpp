@@ -115,7 +115,7 @@ int main(int argc, char** argv, char** envp)
 
     try
     {
-      fc::variant v = fc::json::from_string( line, fc::json::strict_parser );
+      fc::variant v = fc::json::from_string( line, true, fc::json::strict_parser );
       tx_signing_request sreq;
 
       try
