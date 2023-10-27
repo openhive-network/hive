@@ -8,6 +8,8 @@ class beekeeper_wasm_app: public beekeeper_app_init
 {
   private:
 
+    bool enable_logs = true;
+
     boost::program_options::variables_map args;
 
   protected:
