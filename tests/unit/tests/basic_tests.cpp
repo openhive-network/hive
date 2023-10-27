@@ -940,7 +940,11 @@ BOOST_AUTO_TEST_CASE( create_array_from_fc_json )
   }
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\", \"object_4\",]";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
+    BOOST_CHECK_NO_THROW(fc::json::from_string(json, false /* strict_validation */).get_array());
+  }
+  {
+    const std::string json = "[\"object_1\", \"object_2\", \"object_3\", \"object_4\",]";
+    BOOST_CHECK_THROW(fc::json::from_string(json /* strict_validation == true */).get_array(), fc::parse_error_exception);
   }
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\" , \"object_4\"";

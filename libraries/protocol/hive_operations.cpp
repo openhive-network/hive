@@ -19,7 +19,7 @@ namespace hive { namespace protocol {
       if (!fc::json::fast_is_valid(json))
       {
         FC_ASSERT(fc::is_utf8(json), "JSON not formatted in UTF8");
-        FC_ASSERT(fc::json::is_valid(json), "JSON is not valid JSON");
+        FC_ASSERT(fc::json::is_valid(json, false /* strict_validation */), "JSON is not valid JSON");
       }
     }
   }
