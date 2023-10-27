@@ -70,7 +70,7 @@ struct blockchain_worker_thread_pool::impl
   void lazy_init( uint32_t new_thread_pool_size );
 };
 
-blockchain_worker_thread_pool::impl::impl( appbase::application& app, enqueue_work_type&& enqueue_work ): theApp( app )
+blockchain_worker_thread_pool::impl::impl( appbase::application& app, enqueue_work_type&& enqueue_work ): theApp( app ), enqueue_work( enqueue_work )
 {
 
 }
