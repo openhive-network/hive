@@ -627,26 +627,40 @@ namespace fc { namespace json_relaxed
       {
         if( in.peek() != '[' )
            FC_THROW_EXCEPTION( parse_error_exception, "Expected '['" );
+
         in.get();
         skip_white_space( in, depth );
+        bool expecting_new_element = true;
 
         while( in.peek() != ']' )
         {
            if( in.peek() == ',' )
            {
+              if (ar.empty())
+                FC_THROW_EXCEPTION( parse_error_exception, "Invalid leading comma.");
+              if (expecting_new_element)
+                FC_THROW_EXCEPTION( parse_error_exception, "Found invalid comma instead of new array element.");
+
               in.get();
+              expecting_new_element = true;
               continue;
            }
-           if( skip_white_space( in, depth ) ) continue;
+           if( skip_white_space( in, depth ) )
+              continue;
+          if (!expecting_new_element)
+            FC_THROW_EXCEPTION( parse_error_exception, "Missing ',' after object in json array.");
+
            ar.push_back( json_relaxed::variant_from_stream<T, strict>( in, depth ) );
+           expecting_new_element = false;
            skip_white_space( in, depth );
         }
-        if( in.peek() != ']' )
-           FC_THROW_EXCEPTION( parse_error_exception, "Expected ']' after parsing ${variant}",
-                                    ("variant", ar) );
+
+        if (expecting_new_element && !ar.empty())
+          FC_THROW_EXCEPTION( parse_error_exception, "Detected ',' after last array object. Expected ']'");
 
         in.get();
-      } FC_RETHROW_EXCEPTIONS( warn, "Attempting to parse array ${array}",
+      }
+      FC_RETHROW_EXCEPTIONS( warn, "Attempting to parse array ${array}",
                                          ("array", ar ) );
       return ar;
    }
