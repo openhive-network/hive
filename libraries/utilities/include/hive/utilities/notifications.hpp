@@ -156,7 +156,12 @@ class notification_handler_wrapper
     {
       handler.setup( address_pool );
     }
-    
+
+    void register_endpoint( const std::string& endpoint )
+    {
+      register_endpoints( endpoint.empty() ? std::vector<std::string>() : std::vector<std::string>{ endpoint } );
+    }
+
     void register_endpoints( const std::vector<std::string>& pool )
     {
       handler.register_endpoints( pool );
