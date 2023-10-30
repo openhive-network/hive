@@ -960,6 +960,18 @@ private:
     return decltype(_authority->key_auths)();
   }
 
+  hive::protocol::authority::account_authority_map get_account_auths(const authority& _authority)
+  {
+    return _authority.account_auths;
+  }
+
+  hive::protocol::authority::account_authority_map get_account_auths(const optional<authority>& _authority)
+  {
+    if(_authority)
+      return _authority->account_auths;
+    return {};
+  }
+
   template<typename T>
   fc::ecc::public_key_data get_memo_key(const T& _op, public_key_type memo_key)
   {
@@ -983,25 +995,40 @@ private:
     std::string _account_name
     )
   {
-    collected_keyauth_t collected_item;
-    collected_item.account_name   = _account_name;
-    collected_item.key_kind = _key_kind;
-    collected_item.weight_threshold = get_weight_threshold(_authority);
-
-    for(const auto& pair: get_key_auths(_authority))
     {
-      collected_item.key_auth = pair.first;
-      hive::protocol::weight_type w = pair.second;
-      collected_item.w = w;
-      collected_keyauths.emplace_back(collected_item);
+      collected_keyauth_t collected_item;
+      collected_item.account_name   = _account_name;
+      collected_item.key_kind = _key_kind;
+      collected_item.weight_threshold = get_weight_threshold(_authority);
+
+      for(const auto& pair: get_key_auths(_authority))
+      {
+        collected_item.key_auth = pair.first;
+        hive::protocol::weight_type w = pair.second;
+        collected_item.w = w;
+          //mtlk todo - null
+        collected_keyauths.emplace_back(collected_item);
+      }
     }
 
-    // for(const auto& key_data: get_accounts(_authority))
     // {
-    //   collected_item.account_auth.insert(static_cast<std::string>(key_data));
+    //     collected_keyauth_t collected_item;
+    //     collected_item.account_name   = _account_name;
+    //     collected_item.key_kind = _key_kind;
+    //     collected_item.weight_threshold = get_weight_threshold(_authority);
+
+    //     for(const auto& pair: get_account_auths(_authority))
+    //     {
+    //       collected_item.account_auth = pair.first;
+    //       hive::protocol::weight_type w = pair.second;
+    //       collected_item.w = w;
+    //       //collected_item.is_keyauth = false;
+    //       //mtlk todo - null
+    //       collected_keyauths.emplace_back(collected_item);
+    //     }
     // }
 
-    // collected_keyauths.emplace_back(collected_item);
+
   }
 
   template<typename T>
