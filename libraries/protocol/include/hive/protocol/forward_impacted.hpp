@@ -28,7 +28,7 @@ struct collected_keyauth_t
 {
   std::string account_name;
   key_t key_kind;
-  std::string key_auth;
+  fc::ecc::public_key_data key_auth;
   uint32_t weight_threshold = 0;
   hive::protocol::weight_type w = 0;
 
