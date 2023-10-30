@@ -69,6 +69,9 @@ void notification_handler::setup(const std::vector<std::string> &address_pool)
 
 void notification_handler::register_endpoints( const std::vector<std::string> &pool )
 {
+  if( pool.empty() )
+    return;
+
   if( !network )
     network = std::make_unique<network_broadcaster>(create_endpoints(pool), on_send);
   else

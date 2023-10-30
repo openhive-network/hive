@@ -139,7 +139,7 @@ namespace beekeeper {
     auto __pid = _map_pid["pid"];
 
     hive::utilities::notifications::notification_handler_wrapper _notification_handler;
-    _notification_handler.register_endpoints( { error_notifications_endpoint } );
+    _notification_handler.register_endpoint( error_notifications_endpoint );
 
     appbase::application::dynamic_notify( _notification_handler, "Opening beekeeper failed", "pid", __pid, "connection", _connection );
   }
