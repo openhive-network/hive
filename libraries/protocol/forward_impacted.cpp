@@ -936,6 +936,30 @@ private:
     return vector< account_name_type >();
   }
 
+  uint32_t get_weight_threshold(const authority& _authority)
+  {
+      return _authority.weight_threshold;
+  }
+
+  uint32_t get_weight_threshold(const optional<authority>& _authority)
+  {
+    if(_authority)
+      return _authority->weight_threshold;
+    return 0;
+  }
+
+  hive::protocol::authority::key_authority_map get_key_auths(const authority& _authority)
+  {
+    return _authority.key_auths;
+  }
+
+  hive::protocol::authority::key_authority_map get_key_auths(const optional<authority>& _authority)
+  {
+    if(_authority)
+      return _authority->key_auths;
+    return decltype(_authority->key_auths)();
+  }
+
   template<typename T>
   std::string get_memo_key(const T& _op, public_key_type memo_key)
   {
@@ -950,28 +974,35 @@ private:
     return "";
   }
 
+
   template<typename T, typename AT>
   void collect_one(
     const T& _op,
     const AT& _authority,
     key_t _key_kind,
-    std::string _account_name)
+    std::string _account_name
+    )
   {
     collected_keyauth_t collected_item;
     collected_item.account_name   = _account_name;
     collected_item.key_kind = _key_kind;
+    collected_item.weight_threshold = get_weight_threshold(_authority);
 
-    for(const auto& key_data: get_keys(_authority))
+    for(const auto& pair: get_key_auths(_authority))
     {
-      collected_item.key_auth.insert(static_cast<std::string>(key_data));
+      std::string s = static_cast<std::string>(pair.first);
+      hive::protocol::weight_type w = pair.second;
+      collected_item.key_auth = s;
+      collected_item.w = w;
+      collected_keyauths.emplace_back(collected_item);
     }
 
-    for(const auto& key_data: get_accounts(_authority))
-    {
-      collected_item.account_auth.insert(static_cast<std::string>(key_data));
-    }
+    // for(const auto& key_data: get_accounts(_authority))
+    // {
+    //   collected_item.account_auth.insert(static_cast<std::string>(key_data));
+    // }
 
-    collected_keyauths.emplace_back(collected_item);
+    // collected_keyauths.emplace_back(collected_item);
   }
 
   template<typename T>
@@ -983,7 +1014,7 @@ private:
 
     if(std::string memo_key = get_memo_key(op, op.memo_key); !memo_key.empty())
     {
-      collected_item.key_auth.insert(memo_key);
+      collected_item.key_auth = memo_key;
       collected_keyauths.emplace_back(collected_item);
     }
   }

@@ -28,8 +28,11 @@ struct collected_keyauth_t
 {
   std::string account_name;
   key_t key_kind;
-  std::set<std::string> key_auth;
-  std::set<std::string> account_auth;
+  std::string key_auth;
+  uint32_t weight_threshold = 0;
+  hive::protocol::weight_type w = 0;
+
+//  std::set<std::string> account_auth;
 };
 
 typedef std::set<std::string> stringset;
