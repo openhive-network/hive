@@ -6,6 +6,12 @@ export default defineConfig({
     ['junit', { outputFile: 'results.xml' }],
     ['json',  { outputFile: 'results.json' }]
   ],
+  projects: [
+    {
+      name: "beekeeper_testsuite",
+      testDir: "./__tests__/"
+    }
+  ],
   // Run your local dev server before starting the tests
   webServer: {
     command: 'npx http-server'
