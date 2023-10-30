@@ -961,17 +961,17 @@ private:
   }
 
   template<typename T>
-  std::string get_memo_key(const T& _op, public_key_type memo_key)
+  fc::ecc::public_key_data get_memo_key(const T& _op, public_key_type memo_key)
   {
-    return static_cast<std::string>(_op.memo_key);
+    return _op.memo_key;
   }
 
   template<typename T>
-  std::string get_memo_key(const T& _op, optional< public_key_type > memo_key)
+  fc::ecc::public_key_data get_memo_key(const T& _op, optional< public_key_type > memo_key)
   {
     if(memo_key)
-      return static_cast<std::string>(*_op.memo_key);
-    return "";
+      return (*_op.memo_key);
+    return fc::ecc::public_key_data();
   }
 
 
@@ -990,9 +990,8 @@ private:
 
     for(const auto& pair: get_key_auths(_authority))
     {
-      std::string s = static_cast<std::string>(pair.first);
+      collected_item.key_auth = pair.first;
       hive::protocol::weight_type w = pair.second;
-      collected_item.key_auth = s;
       collected_item.w = w;
       collected_keyauths.emplace_back(collected_item);
     }
@@ -1012,7 +1011,7 @@ private:
     collected_item.account_name   = _account_name;
     collected_item.key_kind = hive::app::key_t::MEMO;
 
-    if(std::string memo_key = get_memo_key(op, op.memo_key); !memo_key.empty())
+    if(auto memo_key = get_memo_key(op, op.memo_key); memo_key.size() != 0)
     {
       collected_item.key_auth = memo_key;
       collected_keyauths.emplace_back(collected_item);
