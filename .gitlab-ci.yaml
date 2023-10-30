@@ -518,6 +518,7 @@ cli_wallet_extended_tests:
 fork_tests_1_of_3:
   extends: .fork_test_base
   variables:
+    PYTEST_NUMBER_OF_PROCESSES: 0
     PYTEST_ARGS: "-m fork_tests_group_1"
     JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/fork_tests/report_group_1.xml
 
