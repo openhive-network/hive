@@ -28,7 +28,7 @@ void time_manager::send_auto_lock_error_message( const std::string& message )
   auto _result = exception::exception_handler( [&, this]()
                                                 {
                                                   hive::utilities::notifications::notification_handler_wrapper _notification_handler;
-                                                  _notification_handler.register_endpoints( { error_notifications_endpoint } );
+                                                  _notification_handler.register_endpoint( error_notifications_endpoint );
 
                                                   appbase::application::dynamic_notify( _notification_handler, "Automatic lock error", "message", message );
                                                   return "";

@@ -51,7 +51,7 @@ struct beekeeper_mgr
 
   beekeeper_wallet_manager create_wallet( appbase::application& app, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, std::function<void()>&& method = [](){} )
   {
-    return beekeeper_wallet_manager( std::make_shared<session_manager>( "127.0.0.1:666" ), std::make_shared<beekeeper_instance>( app, dir, "127.0.0.1:666" ),
+    return beekeeper_wallet_manager( std::make_shared<session_manager>( "" ), std::make_shared<beekeeper_instance>( app, dir, "" ),
                                       dir, cmd_unlock_timeout, cmd_session_limit, std::move( method ) );
   }
 };
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   beekeeper_wallet_manager wm = b_mgr.create_wallet( app, 900, 3 );
 
   BOOST_REQUIRE( wm.start() );
-  std::string _token = wm.create_session( "this is salt", "127.0.0.1:666" );
+  std::string _token = wm.create_session( "this is salt", "" );
 
   BOOST_REQUIRE_EQUAL(0u, wm.list_wallets(_token).size());
   BOOST_REQUIRE_THROW(wm.get_public_keys(_token, std::optional<std::string>()), fc::exception);
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test)
     beekeeper_wallet_manager wm = b_mgr.create_wallet( app, 900, 3 );
 
     BOOST_REQUIRE( wm.start() );
-    std::string _token = wm.create_session( "this is salt", "127.0.0.1:666" );
+    std::string _token = wm.create_session( "this is salt", "" );
 
     wm.create(_token, "test", std::optional<std::string>());
     constexpr auto key1 = "5JktVNHnRX48BUdtewU7N1CyL4Z886c42x7wYW7XhNWkDQRhdcS";
