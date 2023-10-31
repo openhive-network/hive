@@ -31,11 +31,33 @@ using beekeeper_wallet          = beekeeper::beekeeper_wallet;
 using session_manager           = beekeeper::session_manager;
 using beekeeper_instance        = beekeeper::beekeeper_instance;
 
+struct beekeeper_mgr
+{
+  fc::path dir;
+
+  beekeeper_mgr()
+    : dir( fc::current_path() / "beekeeper-storage" )
+  {
+    fc::create_directories( dir );
+  }
+
+  void remove_wallets()
+  {
+    boost::filesystem::directory_iterator _end_itr;
+
+    for( boost::filesystem::directory_iterator itr( dir ); itr != _end_itr; ++itr )
+      boost::filesystem::remove_all( itr->path() );
+  }
+};
+
 BOOST_AUTO_TEST_SUITE(beekeeper_tests)
 
 /// Test creating the wallet
 BOOST_AUTO_TEST_CASE(wallet_test)
 { try {
+  beekeeper_mgr b_mgr;
+  b_mgr.remove_wallets();
+
   wallet_data d;
   beekeeper_wallet wallet(d);
   BOOST_REQUIRE(wallet.is_locked());
@@ -46,8 +68,10 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   wallet.unlock("pass");
   BOOST_REQUIRE(!wallet.is_locked());
 
-  wallet.set_wallet_filename("test");
-  BOOST_REQUIRE_EQUAL("test", wallet.get_wallet_filename());
+  auto _wallet_file_name = ( b_mgr.dir / "test" ).string();
+
+  wallet.set_wallet_filename( _wallet_file_name );
+  BOOST_REQUIRE_EQUAL( _wallet_file_name , wallet.get_wallet_filename() );
 
   BOOST_REQUIRE_EQUAL(0u, wallet.list_keys().size());
 
@@ -64,14 +88,14 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   BOOST_REQUIRE(wallet.is_locked());
   wallet.unlock("pass");
   BOOST_REQUIRE_EQUAL(1u, wallet.list_keys().size());
-  wallet.save_wallet_file("wallet_test.json");
-  BOOST_REQUIRE(fc::exists("wallet_test.json"));
+  wallet.save_wallet_file( _wallet_file_name );
+  BOOST_REQUIRE(fc::exists( _wallet_file_name ));
 
   wallet_data d2;
   beekeeper_wallet wallet2(d2);
 
   BOOST_REQUIRE(wallet2.is_locked());
-  wallet2.load_wallet_file("wallet_test.json");
+  wallet2.load_wallet_file( _wallet_file_name );
   BOOST_REQUIRE(wallet2.is_locked());
 
   wallet2.unlock("pass");
@@ -80,7 +104,6 @@ BOOST_AUTO_TEST_CASE(wallet_test)
   auto privCopy2 = wallet2.get_private_key(pub);
   BOOST_REQUIRE_EQUAL(wif, privCopy2.key_to_wif());
 
-  fc::remove("wallet_test.json");
 } FC_LOG_AND_RETHROW() }
 
 
@@ -98,12 +121,10 @@ std::string create( beekeeper_wallet_manager& mgr, const std::string& token, con
 /// Test wallet manager
 BOOST_AUTO_TEST_CASE(wallet_manager_test)
 { try {
+  beekeeper_mgr b_mgr;
+  b_mgr.remove_wallets();
 
   appbase::application app;
-
-  if (fc::exists("test.wallet")) fc::remove("test.wallet");
-  if (fc::exists("test2.wallet")) fc::remove("test2.wallet");
-  if (fc::exists("testgen.wallet")) fc::remove("testgen.wallet");
 
   const auto key1_str = "5JktVNHnRX48BUdtewU7N1CyL4Z886c42x7wYW7XhNWkDQRhdcS";
   const auto key2_str = "5Ju5RTcVDo35ndtzHioPMgebvBM6LkJ6tvuU6LTNQv8yaz3ggZr";
@@ -113,7 +134,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   const auto key2 = private_key_type::wif_to_key( key2_str ).value();
   const auto key3 = private_key_type::wif_to_key( key3_str ).value();
 
-  beekeeper_wallet_manager wm = create_wallet( app, ".", 900, 3 );
+  beekeeper_wallet_manager wm = create_wallet( app, b_mgr.dir.string(), 900, 3 );
 
   BOOST_REQUIRE( wm.start() );
   std::string _token = wm.create_session( "this is salt", "127.0.0.1:666" );
@@ -223,18 +244,12 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 
   create(wm, _token, "testgen");
   wm.lock(_token, "testgen");
-  fc::remove("testgen.wallet");
+  fc::remove( b_mgr.dir / "testgen.wallet" );
 
   pw = create(wm, _token, "testgen");
 
   wm.lock(_token, "testgen");
-  BOOST_REQUIRE(fc::exists("testgen.wallet"));
-  fc::remove("testgen.wallet");
-
-  BOOST_REQUIRE(fc::exists("test.wallet"));
-  BOOST_REQUIRE(fc::exists("test2.wallet"));
-  fc::remove("test.wallet");
-  fc::remove("test2.wallet");
+  BOOST_REQUIRE(fc::exists( b_mgr.dir / "testgen.wallet" ));
 
 } FC_LOG_AND_RETHROW() }
 
@@ -242,11 +257,12 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
 BOOST_AUTO_TEST_CASE(wallet_manager_create_test)
 {
   try {
-    if (fc::exists("test.wallet")) fc::remove("test.wallet");
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
 
     appbase::application app;
 
-    beekeeper_wallet_manager wm = create_wallet( app, ".", 900, 3 );
+    beekeeper_wallet_manager wm = create_wallet( app, b_mgr.dir.string(), 900, 3 );
 
     BOOST_REQUIRE( wm.start() );
     std::string _token = wm.create_session( "this is salt", "127.0.0.1:666" );
@@ -269,26 +285,23 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test)
     BOOST_REQUIRE_THROW(create(wm, _token, ",<<"),         fc::exception);
     BOOST_REQUIRE_THROW(create(wm, _token, ""),            fc::exception);
 
-    fc::remove("test.wallet");
-
     create(wm, _token, ".test");
-    BOOST_REQUIRE(fc::exists(".test.wallet"));
-    fc::remove(".test.wallet");
+    BOOST_REQUIRE(fc::exists( b_mgr.dir / ".test.wallet" ));
+
     create(wm, _token, "..test");
-    BOOST_REQUIRE(fc::exists("..test.wallet"));
-    fc::remove("..test.wallet");
+    BOOST_REQUIRE(fc::exists( b_mgr.dir / "..test.wallet" ));
+
     create(wm, _token, "...test");
-    BOOST_REQUIRE(fc::exists("...test.wallet"));
-    fc::remove("...test.wallet");
+    BOOST_REQUIRE(fc::exists( b_mgr.dir / "...test.wallet" ));
+
     create(wm, _token, ".");
-    BOOST_REQUIRE(fc::exists("..wallet"));
-    fc::remove("..wallet");
+    BOOST_REQUIRE(fc::exists( b_mgr.dir / "..wallet" ));
+
     create(wm, _token, "__test_test");
-    BOOST_REQUIRE(fc::exists("__test_test.wallet"));
-    fc::remove("__test_test.wallet");
+    BOOST_REQUIRE(fc::exists( b_mgr.dir / "__test_test.wallet" ));
+
     create(wm, _token, "t-t");
-    BOOST_REQUIRE(fc::exists("t-t.wallet"));
-    fc::remove("t-t.wallet");
+    BOOST_REQUIRE(fc::exists( b_mgr.dir / "t-t.wallet" ));
 
   } FC_LOG_AND_RETHROW()
 }
@@ -296,8 +309,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_create_test)
 BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
 {
   try {
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
     const std::string _port = "127.0.0.1:666";
-    const std::string _dir = ".";
+    const std::string _dir = b_mgr.dir.string();
     const uint64_t _timeout = 90;
     const uint32_t _limit = 3;
 
@@ -330,24 +346,25 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
       auto _token_00 = wm.create_session( "aaaa", _port );
       auto _token_01 = wm.create_session( "bbbb", _port );
 
-      if (fc::exists("avocado.wallet")) fc::remove("avocado.wallet");
-      if (fc::exists("banana.wallet")) fc::remove("banana.wallet");
-      if (fc::exists("cherry.wallet")) fc::remove("cherry.wallet");
-
       std::string _pass_00 = create(wm,  _token_00, "avocado" );
       std::string _pass_01 = create(wm,  _token_01, "banana" );
       std::string _pass_02 = create(wm,  _token_01, "cherry" );
 
       BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token" ), fc::exception );
+      BOOST_REQUIRE_THROW( wm.list_created_wallets( "not existed token" ), fc::exception );
       BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_00 ).size(), 1 );
       BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_01 ).size(), 2 );
+      BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token_00 ).size(), 3 );
+      BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token_01 ).size(), 3 );
 
       wm.close_session( _token_00 );
       BOOST_REQUIRE( !_checker );
 
       BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token" ), fc::exception );
       BOOST_REQUIRE_THROW( wm.list_wallets( _token_00 ), fc::exception );
-      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_01 ).size(), 2 );
+      BOOST_REQUIRE_EQUAL( wm.list_wallets( _token_01 ).size(), 3 );
+      BOOST_REQUIRE_THROW( wm.list_created_wallets( _token_00 ), fc::exception );
+      BOOST_REQUIRE_EQUAL( wm.list_created_wallets( _token_01 ).size(), 3 );
 
       wm.close_session( _token_01 );
       BOOST_REQUIRE( _checker );
@@ -355,6 +372,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
       BOOST_REQUIRE_THROW( wm.list_wallets( "not existed token" ), fc::exception );
       BOOST_REQUIRE_THROW( wm.list_wallets( _token_00 ), fc::exception );
       BOOST_REQUIRE_THROW( wm.list_wallets( _token_01 ), fc::exception );
+      BOOST_REQUIRE_THROW( wm.list_created_wallets( _token_00 ), fc::exception );
+      BOOST_REQUIRE_THROW( wm.list_created_wallets( _token_01 ), fc::exception );
     }
 
   } FC_LOG_AND_RETHROW()
@@ -363,6 +382,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sessions)
 BOOST_AUTO_TEST_CASE(wallet_manager_info)
 {
   try {
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
 
     const std::string _port = "127.0.0.1:666";
     const std::string _dir = ".";
@@ -421,6 +442,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_info)
 BOOST_AUTO_TEST_CASE(wallet_manager_session_limit)
 {
   try {
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
 
     const std::string _port = "127.0.0.1:666";
     const std::string _dir = ".";
@@ -472,25 +495,23 @@ BOOST_AUTO_TEST_CASE(wallet_manager_session_limit)
 BOOST_AUTO_TEST_CASE(wallet_manager_close)
 {
   try {
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
 
     const std::string _port = "127.0.0.1:666";
-    const std::string _dir = ".";
     const uint64_t _timeout = 90;
     const uint32_t _session_limit = 64;
 
     appbase::application app;
 
     bool _checker = false;
-    beekeeper_wallet_manager wm = create_wallet( app, _dir, _timeout, _session_limit, [&_checker](){ _checker = true; } );
+    beekeeper_wallet_manager wm = create_wallet( app, b_mgr.dir, _timeout, _session_limit, [&_checker](){ _checker = true; } );
     BOOST_REQUIRE( wm.start() );
 
     auto wallet_name_0 = "0";
     auto wallet_name_1 = "1";
 
     {
-      if (fc::exists("0.wallet")) fc::remove("0.wallet");
-      if (fc::exists("1.wallet")) fc::remove("1.wallet");
-
       auto _token = wm.create_session( "salt", _port );
       create(wm,  _token, wallet_name_0 );
 
@@ -504,7 +525,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
       _wallets = wm.list_wallets( _token );
       BOOST_REQUIRE( _wallets.size() == 0 );
 
-      create(wm,  _token, wallet_name_1 );
+      create(wm, _token, wallet_name_1 );
 
       _wallets = wm.list_wallets( _token );
       BOOST_REQUIRE( _wallets.size() == 1 );
@@ -517,8 +538,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
     }
 
     {
-      if (fc::exists("0.wallet")) fc::remove("0.wallet");
-      if (fc::exists("1.wallet")) fc::remove("1.wallet");
+      fc::remove( b_mgr.dir / "0.wallet" );
+      fc::remove( b_mgr.dir / "1.wallet" );
 
       auto _token = wm.create_session( "salt", _port );
       create(wm,  _token, wallet_name_0 );
@@ -536,8 +557,8 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
     }
 
     {
-      if (fc::exists("0.wallet")) fc::remove("0.wallet");
-      if (fc::exists("1.wallet")) fc::remove("1.wallet");
+      fc::remove( b_mgr.dir / "0.wallet" );
+      fc::remove( b_mgr.dir / "1.wallet" );
 
       auto _token = wm.create_session( "salt", _port );
       create(wm,  _token, wallet_name_0 );
@@ -574,11 +595,11 @@ BOOST_AUTO_TEST_CASE(wallet_manager_close)
 BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
 {
   try {
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
 
     {
       hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
-
-      if (fc::exists("0.wallet")) fc::remove("0.wallet");
 
       auto _private_key_str = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
       auto _public_key_str  = "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
@@ -587,13 +608,12 @@ BOOST_AUTO_TEST_CASE(wallet_manager_sign_transaction)
       const auto _public_key = public_key_type::from_base58( _public_key_str, false/*is_sha256*/ );
 
       const std::string _port = "127.0.0.1:666";
-      const std::string _dir = ".";
       const uint64_t _timeout = 90;
       const uint32_t _session_limit = 64;
 
       appbase::application app;
 
-      beekeeper_wallet_manager wm = create_wallet( app, _dir, _timeout, _session_limit, [](){} );
+      beekeeper_wallet_manager wm = create_wallet( app, b_mgr.dir, _timeout, _session_limit, [](){} );
       BOOST_REQUIRE( wm.start() );
 
       auto _token = wm.create_session( "salt", _port );
@@ -644,19 +664,10 @@ std::string extract_json( const std::string& str )
 BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 {
   try {
-    auto _current_path = fc::current_path();
-    fc::path _dir("./beekeeper-storage/"); 
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
 
-    auto _wallet_0_path = _current_path / _dir / "wallet_0.wallet";
-    auto _wallet_1_path = _current_path / _dir / "wallet_1.wallet";
-
-    if( fc::exists( _wallet_0_path ) )
-      fc::remove( _wallet_0_path );
-
-    if( fc::exists( _wallet_1_path ) )
-      fc::remove( _wallet_1_path );
-
-    beekeeper::beekeeper_api _obj( { "--wallet-dir", _dir.string() } );
+    beekeeper::beekeeper_api _obj( { "--wallet-dir", b_mgr.dir.string() } );
 
     BOOST_REQUIRE( fc::json::from_string( extract_json( _obj.init() ) ).as<beekeeper::init_data>().status );
 
@@ -865,6 +876,8 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper)
 BOOST_AUTO_TEST_CASE(wasm_beekeeper_false)
 {
   try {
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
 
     beekeeper::beekeeper_api _obj( { "--unknown-parameter", "value_without_sense" } );
 
@@ -882,6 +895,9 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper_false)
 BOOST_AUTO_TEST_CASE(wallet_manager_brute_force_protection_test)
 {
   try {
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
     beekeeper::extended_api _api;
 
     const uint32_t _nr_threads = 10;

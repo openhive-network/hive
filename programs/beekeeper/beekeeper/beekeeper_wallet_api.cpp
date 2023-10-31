@@ -38,6 +38,7 @@ class beekeeper_api_impl
       (import_key)
       (remove_key)
       (list_wallets)
+      (list_created_wallets)
       (get_public_keys)
       (sign_digest)
       (get_info)
@@ -129,6 +130,13 @@ DEFINE_API_IMPL( beekeeper_api_impl, list_wallets )
   return { _wallet_mgr->list_wallets( args.token ) };
 }
 
+DEFINE_API_IMPL( beekeeper_api_impl, list_created_wallets )
+{
+  std::lock_guard<std::mutex> guard( mtx );
+
+  return { _wallet_mgr->list_created_wallets( args.token ) };
+}
+
 DEFINE_API_IMPL( beekeeper_api_impl, get_public_keys )
 {
   std::lock_guard<std::mutex> guard( mtx );
@@ -187,6 +195,7 @@ DEFINE_LOCKLESS_APIS( beekeeper_wallet_api,
   (import_key)
   (remove_key)
   (list_wallets)
+  (list_created_wallets)
   (get_public_keys)
   (sign_digest)
   (get_info)

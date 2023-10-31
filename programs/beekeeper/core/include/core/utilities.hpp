@@ -156,6 +156,9 @@ struct list_wallets_return
   std::vector<wallet_details> wallets;
 };
 
+using list_created_wallets_args = list_wallets_args;
+using list_created_wallets_return = list_wallets_return;
+
 struct get_public_keys_args: public session_token_type
 {
   std::optional<std::string> wallet_name;
