@@ -11,4 +11,5 @@ message transaction {
     required string            expiration = 3;
     repeated operation         operations = 4;
     repeated future_extensions extensions = 5;
+    repeated string            signatures = 6; // for signed_transaction
 }
