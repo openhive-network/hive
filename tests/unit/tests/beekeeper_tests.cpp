@@ -926,7 +926,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_brute_force_protection_test)
     auto _duration = std::chrono::duration_cast<std::chrono::milliseconds>( _stop - _start );
 
     BOOST_TEST_MESSAGE( std::to_string( _duration.count() ) + " [ms]" );
-    //BOOST_REQUIRE( _duration.count() >= 5000 );
+    BOOST_REQUIRE( _duration.count() >= 5000 );
 
   } FC_LOG_AND_RETHROW()
 }
