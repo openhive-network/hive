@@ -13,11 +13,11 @@ namespace beekeeper {
   {
     std::atomic<uint64_t> _end( get_milliseconds() );
 
-    if( _end.load() - start.load() > interval )
+    if( _end.load() > start.load() && _end.load() - start.load() > interval )
     {
       std::unique_lock<std::mutex> _lock( mtx );
 
-      if( _end.load() - start.load() > interval )
+      if( _end.load() > start.load() && _end.load() - start.load() > interval )
       {
         start.store( get_milliseconds() );
         return true;
