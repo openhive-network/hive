@@ -38,6 +38,7 @@ class beekeeper_wallet_api
       (import_key)
       (remove_key)
       (list_wallets)
+      (list_created_wallets)
       (get_public_keys)
       (sign_digest)
       (get_info)
