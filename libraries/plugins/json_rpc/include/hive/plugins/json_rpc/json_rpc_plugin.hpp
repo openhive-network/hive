@@ -39,8 +39,16 @@
 
 #define JSON_RPC_REGISTER_API( API_NAME )                                                       \
 {                                                                                               \
-  hive::plugins::json_rpc::detail::register_api_method_visitor vtor( API_NAME, app );              \
-  for_each_api( vtor );                                                                        \
+  hive::plugins::json_rpc::detail::register_api_method_visitor vtor( API_NAME, app );           \
+  for_each_api( vtor );                                                                         \
+}
+
+// This variant registers an API that will be available immediately, not waiting for all other
+// plugins to finish initializing
+#define JSON_RPC_REGISTER_EARLY_API( API_NAME )                                                 \
+{                                                                                               \
+  hive::plugins::json_rpc::detail::register_early_api_method_visitor vtor( API_NAME, app );     \
+  for_each_api( vtor );                                                                         \
 }
 
 #define JSON_RPC_PARSE_ERROR        (-32700)
@@ -103,6 +111,7 @@ class json_rpc_plugin : public appbase::plugin< json_rpc_plugin >
     virtual void plugin_finalize_startup() override;
 
     void add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig );
+    void add_early_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig );
     string call( const string& body );
 
     void add_serialization_status( const std::function<bool()>& serialization_status );
@@ -113,10 +122,11 @@ class json_rpc_plugin : public appbase::plugin< json_rpc_plugin >
 
 namespace detail {
 
-  class register_api_method_visitor
+  template <void (json_rpc_plugin::*add_api_method_function)(const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig)>
+  class register_api_method_visitor_template
   {
     public:
-      register_api_method_visitor( const std::string& api_name, appbase::application& app )
+      register_api_method_visitor_template( const std::string& api_name, appbase::application& app )
         : _api_name( api_name ),
           _json_rpc_plugin( app.get_plugin< hive::plugins::json_rpc::json_rpc_plugin >() )
       {}
@@ -129,7 +139,7 @@ namespace detail {
         Args* args,
         Ret* ret )
       {
-        _json_rpc_plugin.add_api_method( _api_name, method_name,
+        (_json_rpc_plugin.*add_api_method_function)( _api_name, method_name,
           [&plugin,method]( const fc::variant& args ) -> fc::variant
           {
             return fc::variant( (plugin.*method)( args.as< Args >(), /* lock= */ true ) ); //lock=true means it will lock if not in DEFINE_LOCKLESS_API
@@ -142,6 +152,8 @@ namespace detail {
       hive::plugins::json_rpc::json_rpc_plugin& _json_rpc_plugin;
   };
 
+  using register_api_method_visitor = register_api_method_visitor_template<&json_rpc_plugin::add_api_method>;
+  using register_early_api_method_visitor = register_api_method_visitor_template<&json_rpc_plugin::add_early_api_method>;
 }
 
 } } } // hive::plugins::json_rpc

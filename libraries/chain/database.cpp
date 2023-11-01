@@ -127,6 +127,12 @@ class database_impl
     std::map<account_name_type, block_id_type>        _last_fast_approved_block_by_witness;
     std::unique_ptr<util::decoded_types_data_storage> _decoded_types_data_storage;
     bool                                              _last_pushed_block_was_before_checkpoint = false; // just used for logging
+    
+    // these used for the node_status API, which reads these values from another thread
+    // they're only used to determine if the node is in sync, and nothing particulary bad
+    // will happen if we get mismatched values
+    std::atomic<uint32_t>                             _last_pushed_block_number = {0};
+    std::atomic<uint32_t>                             _last_pushed_block_time = {0}; // the value from a time_point_sec
 };
 
 database_impl::database_impl( database& self ) : _self(self), _evaluator_registry(self) {}
@@ -4089,6 +4095,9 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   // last call of applying a block because it is the only thing that is not
   // reversible.
   migrate_irreversible_state(old_last_irreversible);
+
+  _my->_last_pushed_block_number.store(gprops.head_block_number, std::memory_order_release);
+  _my->_last_pushed_block_time.store(gprops.time.sec_since_epoch(), std::memory_order_release);
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) ) }
 
 struct process_header_visitor
@@ -6810,6 +6819,14 @@ void database::remove_expired_governance_votes()
 void database::set_block_writer( block_write_i* writer )
 {
   _block_writer = writer;
+}
+
+database::node_status_t database::get_node_status()
+{
+  node_status_t result;
+  result.last_processed_block_num = _my->_last_pushed_block_number.load(std::memory_order_consume);
+  result.last_processed_block_time = fc::time_point_sec(_my->_last_pushed_block_time.load(std::memory_order_consume));
+  return result;
 }
 
 } } //hive::chain
