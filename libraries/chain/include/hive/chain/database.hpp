@@ -643,6 +643,11 @@ namespace chain {
       void apply_block_extended(  const std::shared_ptr<full_block_type>& full_block,
                                   uint32_t skip = skip_nothing,
                                   const block_flow_control* block_ctrl = nullptr );
+      struct node_status_t {
+        uint32_t last_processed_block_num;
+        fc::time_point_sec last_processed_block_time;
+      };
+      node_status_t get_node_status();
     protected:
       //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
       //void pop_undo() { object_database::pop_undo(); }
