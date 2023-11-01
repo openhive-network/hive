@@ -155,6 +155,7 @@ namespace detail
       ~json_rpc_plugin_impl();
 
       void add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig );
+      void add_early_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig );
       void plugin_finalize_startup();
       void plugin_pre_shutdown();
 
@@ -196,12 +197,24 @@ namespace detail
 
   void json_rpc_plugin_impl::add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig )
   {
+    wdump((api_name)(method_name));
     proxy_data._registered_apis[ api_name ][ method_name ] = api;
     proxy_data._method_sigs[ api_name ][ method_name ] = sig;
 
     std::stringstream canonical_name;
     canonical_name << api_name << '.' << method_name;
     proxy_data._methods.push_back( canonical_name.str() );
+  }
+
+  void json_rpc_plugin_impl::add_early_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig )
+  {
+    data._registered_apis[api_name][method_name] = api;
+    data._method_sigs[api_name][method_name] = sig;
+    std::stringstream canonical_name;
+    canonical_name << api_name << '.' << method_name;
+    data._methods.push_back(canonical_name.str());
+
+    add_api_method(api_name, method_name, api, sig);
   }
 
   void json_rpc_plugin_impl::plugin_finalize_startup()
@@ -544,6 +557,11 @@ void json_rpc_plugin::plugin_finalize_startup()
 void json_rpc_plugin::add_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig )
 {
   my->add_api_method( api_name, method_name, api, sig );
+}
+
+void json_rpc_plugin::add_early_api_method( const string& api_name, const string& method_name, const api_method& api, const api_method_signature& sig )
+{
+  my->add_early_api_method( api_name, method_name, api, sig );
 }
 
 string json_rpc_plugin::call( const string& message )
