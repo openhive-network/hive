@@ -54,7 +54,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     FC_ASSERT( op.max_rc >= min_delegation, "Cannot delegate less than ${min_delegation} rc", (min_delegation) );
   }
 
-  uint32_t now = gpo.time.sec_since_epoch();
+  auto now = gpo.time;
   const account_object& from_account = _db.get_account( op.from );
   _db.rc.regenerate_rc_mana( from_account, now );
   FC_ASSERT( !_db.is_in_control() || !_db.rc.has_expired_delegation( from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );

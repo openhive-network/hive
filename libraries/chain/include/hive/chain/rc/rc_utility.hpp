@@ -95,18 +95,18 @@ class resource_credits
     static hive::protocol::account_name_type get_resource_user( const hive::protocol::signed_transaction& tx );
 
     // regenerates RC mana on given account - must be called before any operation that changes max RC mana
-    void regenerate_rc_mana( const account_object& account, uint32_t now ) const;
+    void regenerate_rc_mana( const account_object& account, const fc::time_point_sec now ) const;
 
     // updates RC related data on account after change in RC delegation
     void update_account_after_rc_delegation(
       const account_object& account,
-      uint32_t now,
+      const fc::time_point_sec now,
       int64_t delta,
       bool regenerate_mana = false ) const;
     // updates RC related data on account after change in vesting
     void update_account_after_vest_change(
       const account_object& account,
-      uint32_t now,
+      const fc::time_point_sec now,
       bool _fill_new_mana = true,
       bool _check_for_rc_delegation_overflow = false ) const;
 
@@ -129,7 +129,7 @@ class resource_credits
     void remove_delegations(
       int64_t& delegation_overflow,
       account_id_type delegator_id,
-      uint32_t now,
+      const fc::time_point_sec now,
       remove_guard& obj_perf ) const;
 
     // generates RC stats report and rotates data
