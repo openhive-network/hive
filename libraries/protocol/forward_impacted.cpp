@@ -912,60 +912,60 @@ struct keyauth_collector
 
 private:
 
-  auto get_keys(const authority& _authority)
+  auto get_keys(const authority& _authority) const
   {
     return _authority.get_keys();
   }
 
-  auto get_keys(const optional<authority>& _authority)
+  auto get_keys(const optional<authority>& _authority) const
   {
     if(_authority)
       return _authority->get_keys();
     return std::vector<public_key_type>();
   }
 
-  auto get_accounts(const authority& _authority)
+  auto get_accounts(const authority& _authority) const
   {
     return _authority.get_accounts();
   }
 
-  auto get_accounts(const optional<authority>& _authority)
+  auto get_accounts(const optional<authority>& _authority) const
   {
     if(_authority)
       return _authority->get_accounts();
     return vector< account_name_type >();
   }
 
-  uint32_t get_weight_threshold(const authority& _authority)
+  uint32_t get_weight_threshold(const authority& _authority) const
   {
       return _authority.weight_threshold;
   }
 
-  uint32_t get_weight_threshold(const optional<authority>& _authority)
+  uint32_t get_weight_threshold(const optional<authority>& _authority) const
   {
     if(_authority)
       return _authority->weight_threshold;
     return 0;
   }
 
-  hive::protocol::authority::key_authority_map get_key_auths(const authority& _authority)
+  hive::protocol::authority::key_authority_map get_key_auths(const authority& _authority) const
   {
     return _authority.key_auths;
   }
 
-  hive::protocol::authority::key_authority_map get_key_auths(const optional<authority>& _authority)
+  hive::protocol::authority::key_authority_map get_key_auths(const optional<authority>& _authority) const
   {
     if(_authority)
       return _authority->key_auths;
     return decltype(_authority->key_auths)();
   }
 
-  hive::protocol::authority::account_authority_map get_account_auths(const authority& _authority)
+  hive::protocol::authority::account_authority_map get_account_auths(const authority& _authority) const
   {
     return _authority.account_auths;
   }
 
-  hive::protocol::authority::account_authority_map get_account_auths(const optional<authority>& _authority)
+  hive::protocol::authority::account_authority_map get_account_auths(const optional<authority>& _authority) const
   {
     if(_authority)
       return _authority->account_auths;
@@ -973,13 +973,13 @@ private:
   }
 
   template<typename T>
-  fc::ecc::public_key_data get_memo_key(const T& _op, public_key_type memo_key)
+  fc::ecc::public_key_data get_memo_key(const T& _op, public_key_type memo_key) const
   {
     return _op.memo_key;
   }
 
   template<typename T>
-  fc::ecc::public_key_data get_memo_key(const T& _op, optional< public_key_type > memo_key)
+  fc::ecc::public_key_data get_memo_key(const T& _op, optional< public_key_type > memo_key) const
   {
     if(memo_key)
       return (*_op.memo_key);
