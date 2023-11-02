@@ -761,8 +761,6 @@ struct pre_apply_operation_visitor
     _db.rc.regenerate_rc_mana( account, _current_time );
   }
 
-  //void operator()( const account_create_with_delegation_operation& op )const //not needed, RC not active when this op was active
-
   void operator()( const transfer_to_vesting_operation& op )const
   {
     account_name_type target = op.to.size() ? op.to : op.from;
@@ -774,19 +772,11 @@ struct pre_apply_operation_visitor
     regenerate( op.account );
   }
 
-  //void operator()( const set_withdraw_vesting_route_operation& op )const //not needed - there is no change in VESTS
-
   void operator()( const delegate_vesting_shares_operation& op )const
   {
     regenerate( op.delegator );
     regenerate( op.delegatee );
   }
-
-  //void operator()( const author_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
-
-  //void operator()( const curation_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
-
-  //void operator()( const comment_reward_operation& op )const //it was never needed
 
   void operator()( const fill_vesting_withdraw_operation& op )const
   {
@@ -808,8 +798,6 @@ struct pre_apply_operation_visitor
   }
 #endif
 
-  //void operator()( const hardfork_operation& op )const //the code that was here never worked (called before RC was active)
-
   void operator()( const hardfork_hive_operation& op )const
   {
     //see comment in pre_apply_operation
@@ -823,8 +811,6 @@ struct pre_apply_operation_visitor
     regenerate( op.account );
   }
 
-  //void operator()( const comment_benefactor_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
-
   void operator()( const producer_reward_operation& op )const
   {
     regenerate( op.producer );
@@ -835,14 +821,6 @@ struct pre_apply_operation_visitor
     //we could just always set RC value on 'null' to 0
     regenerate( HIVE_NULL_ACCOUNT );
   }
-
-  //void operator()( const consolidate_treasury_balance_operation& op )const //not needed for treasury accounts, leave default
-
-  //void operator()( const delayed_voting_operation& op )const //not needed, only voting power changes, not amount of VESTs
-
-  //void operator()( const pow_operation& op )const //not needed, RC not active when pow was active
-
-  //void operator()( const pow2_operation& op )const //not needed, RC not active when pow2 was active
 
   template< typename Op >
   void operator()( const Op& op )const {}
@@ -894,12 +872,6 @@ struct post_apply_operation_visitor
       _check_for_rc_delegation_overflow );
   }
 
-  //void operator()( const account_create_with_delegation_operation& op )const //not needed, RC not active when this op was active
-
-  //void operator()( const pow_operation& op )const //not needed, RC not active when this op was active
-
-  //void operator()( const pow2_operation& op )const //not needed, RC not active when this op was active
-
   void operator()( const transfer_to_vesting_operation& op )
   {
     account_name_type target = op.to.size() ? op.to : op.from;
@@ -916,10 +888,6 @@ struct post_apply_operation_visitor
     update_after_vest_change( op.delegator, true, true );
     update_after_vest_change( op.delegatee, true, true );
   }
-
-  //void operator()( const author_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
-
-  //void operator()( const curation_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
 
   void operator()( const fill_vesting_withdraw_operation& op )const
   {
@@ -940,8 +908,6 @@ struct post_apply_operation_visitor
   }
 #endif
 
-  //void operator()( const hardfork_operation& op )const //the code that was here never worked (called before RC was active)
-
   void operator()( const hardfork_hive_operation& op )const
   {
     //TODO: when moving this code to actual operation make sure the problem in AH is fixed
@@ -956,8 +922,6 @@ struct post_apply_operation_visitor
     update_after_vest_change( op.account );
   }
 
-  //void operator()( const comment_benefactor_reward_operation& op )const //not needed - since HF17 rewards need to be claimed
-
   void operator()( const producer_reward_operation& op )const
   {
     update_after_vest_change( op.producer );
@@ -967,21 +931,6 @@ struct post_apply_operation_visitor
   {
     update_after_vest_change( HIVE_NULL_ACCOUNT );
   }
-
-  //not needed for treasury accounts (?)
-  //void operator()( const consolidate_treasury_balance_operation& op )const
-
-  //changes power of governance vote, not vest balance
-  //void operator()( const delayed_voting_operation& op )const
-
-  //pays fee in hbd, vest balance not touched
-  //void operator()( const create_proposal_operation& op )const
-
-  //no change in vest balance
-  //void operator()( const update_proposal_votes_operation& op )const
-
-  //no change in vest balance
-  //void operator()( const remove_proposal_operation& op )const
 
   template< typename Op >
   void operator()( const Op& op )const {}
