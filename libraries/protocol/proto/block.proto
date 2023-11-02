@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+import "future_extensions.proto";
+import "transaction.proto";
+
+package hive.protocol.buffers;
+
+message hardfork_version_vote {
+  required string hf_version = 1 [json_name = "hf_version"];
+  required string hf_time = 2 [json_name = "hf_time"];
+}
+
+message block_header_extensions {
+  oneof extension {
+    void_t void_t = 1 [json_name = "void_t"];
+    string version = 2;
+    hardfork_version_vote hardfork_version_vote = 3 [json_name = "hardfork_version_vote"];
+  }
+}
+
+message block {
+  required string                  previous = 1;
+  required string                  timestamp = 2;
+  required string                  witness = 3;
+  required string                  transaction_merkle_root = 4 [json_name = "transaction_merkle_root"];
+  repeated block_header_extensions extensions = 5;
+  required string                  witness_signature = 6 [json_name = "witness_signature"];
+  repeated transaction             transactions = 7;
+  required string                  block_id = 8 [json_name = "block_id"];
+  required string                  signing_key = 9 [json_name = "signing_key"];
+  repeated string                  transaction_ids = 10 [json_name = "transaction_ids"];
+}
