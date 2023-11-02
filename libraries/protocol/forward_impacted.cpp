@@ -1000,7 +1000,7 @@ private:
       collected_item.account_name   = _account_name;
       collected_item.key_kind = _key_kind;
       collected_item.weight_threshold = get_weight_threshold(_authority);
-      collected_item.key_auth_is_null = false;
+      collected_item.keyauth_variant = true;
 
       for(const auto& pair: get_key_auths(_authority))
       {
@@ -1016,7 +1016,7 @@ private:
         collected_item.account_name   = _account_name;
         collected_item.key_kind = _key_kind;
         collected_item.weight_threshold = get_weight_threshold(_authority);
-        collected_item.key_auth_is_null = true;
+        collected_item.keyauth_variant = false;
 
         for(const auto& pair: get_account_auths(_authority))
         {
