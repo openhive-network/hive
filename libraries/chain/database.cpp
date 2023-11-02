@@ -5238,13 +5238,16 @@ void database::clear_expired_delegations()
 
     modify( delegator, [&]( account_object& a )
     {
-      if( has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
+      if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       {
         util::update_manabar( gpo, a, itr->get_vesting().amount.value );
+        rc.regenerate_rc_mana( a, now );
       }
 
       a.delegated_vesting_shares -= itr->get_vesting();
     });
+    if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+      rc.update_account_after_vest_change( delegator, now );
 
     post_push_virtual_operation( vop );
 

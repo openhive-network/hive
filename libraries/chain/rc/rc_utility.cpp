@@ -806,11 +806,6 @@ struct pre_apply_operation_visitor
       regenerate( account );
   }
 
-  void operator()( const return_vesting_delegation_operation& op )const
-  {
-    regenerate( op.account );
-  }
-
   void operator()( const producer_reward_operation& op )const
   {
     regenerate( op.producer );
@@ -909,11 +904,6 @@ struct post_apply_operation_visitor
     update_after_vest_change( op.account, true, true );
     for( auto& account : op.other_affected_accounts )
       update_after_vest_change( account, true, true );
-  }
-
-  void operator()( const return_vesting_delegation_operation& op )const
-  {
-    update_after_vest_change( op.account );
   }
 
   void operator()( const producer_reward_operation& op )const
