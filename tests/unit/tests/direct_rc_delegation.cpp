@@ -1337,7 +1337,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     generate_block();
     //pattern2 RC regeneration used to be triggered by author_reward_operation, but since it doesn't modify RC, that was removed
     //we need to trigger regeneration manually
-    db->rc.regenerate_rc_mana( pattern2_rc, db->head_block_time().sec_since_epoch() );
+    db->rc.regenerate_rc_mana( pattern2_rc, db->head_block_time() );
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern2_rc.rc_manabar.current_mana - undelegated );
     //pattern3 undelegated exactly the same amount of RC as was dropped from delegatee by delegator1 powering down
     BOOST_REQUIRE_EQUAL( delegatee_rc.rc_manabar.current_mana, pattern3_rc.rc_manabar.current_mana );

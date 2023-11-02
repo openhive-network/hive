@@ -208,7 +208,7 @@ int64_t resource_credits::compute_cost( rc_transaction_info* usage_info ) const
   return total_cost;
 }
 
-void resource_credits::regenerate_rc_mana( const account_object& account, uint32_t now ) const
+void resource_credits::regenerate_rc_mana( const account_object& account, const fc::time_point_sec now ) const
 {
   // Since RC tracking is non-consensus, we must rely on consensus to forbid
   // transferring / delegating VESTS that haven't regenerated voting power.
@@ -243,7 +243,7 @@ void resource_credits::regenerate_rc_mana( const account_object& account, uint32
 }
 
 void resource_credits::update_account_after_rc_delegation( const account_object& account,
-  uint32_t now, int64_t delta, bool regenerate_mana ) const
+  const fc::time_point_sec now, int64_t delta, bool regenerate_mana ) const
 {
   db.modify< account_object >( account, [&]( account_object& acc )
   {
@@ -253,7 +253,7 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
     {
       acc.rc_manabar.regenerate_mana< true >( manabar_params, now );
     }
-    else if( acc.rc_manabar.last_update_time != now )
+    else if( acc.rc_manabar.last_update_time != now.sec_since_epoch() )
     {
       //most likely cause: there is no regenerate() call in corresponding pre_apply_operation_visitor handler
       wlog( "NOTIFYALERT! Account ${a} not regenerated prior to RC change, noticed on block ${b}",
@@ -269,9 +269,9 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
 }
 
 void resource_credits::update_account_after_vest_change( const account_object& account,
-  uint32_t now, bool _fill_new_mana, bool _check_for_rc_delegation_overflow ) const
+  const fc::time_point_sec now, bool _fill_new_mana, bool _check_for_rc_delegation_overflow ) const
 {
-  if( account.rc_manabar.last_update_time != now )
+  if( account.rc_manabar.last_update_time != now.sec_since_epoch() )
   {
     //most likely cause: there is no regenerate() call in corresponding pre_apply_operation_visitor handler
     wlog( "NOTIFYALERT! Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
@@ -347,7 +347,7 @@ void resource_credits::update_account_after_vest_change( const account_object& a
 void resource_credits::update_rc_for_custom_action( std::function<void()>&& callback,
   const account_object& account ) const
 {
-  uint32_t now = db.head_block_time().sec_since_epoch();
+  auto now = db.head_block_time();
   regenerate_rc_mana( account, now );
   callback();
   update_account_after_vest_change( account, now );
@@ -438,7 +438,7 @@ void resource_credits::handle_expired_delegations() const
   if( expired_it == expired_idx.end() )
     return;
 
-  uint32_t now = db.head_block_time().sec_since_epoch();
+  auto now = db.head_block_time();
   int16_t remove_limit = db.get_remove_threshold();
   remove_guard obj_perf( remove_limit );
 
@@ -469,7 +469,7 @@ void resource_credits::handle_expired_delegations() const
 }
 
 void resource_credits::remove_delegations( int64_t& delegation_overflow, account_id_type delegator_id,
-  uint32_t now, remove_guard& obj_perf ) const
+  const fc::time_point_sec now, remove_guard& obj_perf ) const
 {
   const auto& rc_del_idx = db.get_index<rc_direct_delegation_index, by_from_to>();
   // Maybe add a new index to sort by from / amount delegated so it's always the bigger delegations that is modified first instead of the id order ?
@@ -747,12 +747,12 @@ struct pre_apply_operation_visitor
   typedef void result_type;
 
   database& _db;
-  uint32_t  _current_time = 0;
+  fc::time_point_sec _current_time;
 
   pre_apply_operation_visitor( database& db ) : _db( db )
   {
     const auto& dgpo = _db.get_dynamic_global_properties();
-    _current_time = dgpo.time.sec_since_epoch();
+    _current_time = dgpo.time;
   }
 
   void regenerate( const account_name_type& name )const
@@ -878,12 +878,12 @@ struct post_apply_operation_visitor
   typedef void result_type;
 
   database& _db;
-  uint32_t  _current_time = 0;
+  fc::time_point_sec _current_time;
 
   post_apply_operation_visitor( database& db ) : _db( db )
   {
     const auto& dgpo = _db.get_dynamic_global_properties();
-    _current_time = dgpo.time.sec_since_epoch();
+    _current_time = dgpo.time;
   }
 
   void update_after_vest_change( const account_name_type& account_name,
