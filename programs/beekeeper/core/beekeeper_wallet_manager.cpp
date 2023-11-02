@@ -82,13 +82,11 @@ void beekeeper_wallet_manager::lock_all( const std::string& token )
 
 void beekeeper_wallet_manager::lock( const std::string& token, const std::string& name )
 {
-  sessions->check_timeout( token );
   sessions->get_wallet_manager( token )->lock( name );
 }
 
 void beekeeper_wallet_manager::unlock( const std::string& token, const std::string& name, const std::string& password )
 {
-  sessions->check_timeout( token );
   sessions->get_wallet_manager( token )->unlock( [this]( const std::string& name ){ return instance->create_wallet_filename( name ); }, name, password );
 }
 
