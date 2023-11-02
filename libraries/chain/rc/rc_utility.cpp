@@ -816,12 +816,6 @@ struct pre_apply_operation_visitor
     regenerate( op.producer );
   }
 
-  void operator()( const clear_null_account_balance_operation& op )const
-  {
-    //we could just always set RC value on 'null' to 0
-    regenerate( HIVE_NULL_ACCOUNT );
-  }
-
   template< typename Op >
   void operator()( const Op& op )const {}
 };
@@ -925,11 +919,6 @@ struct post_apply_operation_visitor
   void operator()( const producer_reward_operation& op )const
   {
     update_after_vest_change( op.producer );
-  }
-
-  void operator()( const clear_null_account_balance_operation& op )const
-  {
-    update_after_vest_change( HIVE_NULL_ACCOUNT );
   }
 
   template< typename Op >
