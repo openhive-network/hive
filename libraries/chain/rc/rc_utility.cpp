@@ -761,12 +761,6 @@ struct pre_apply_operation_visitor
     _db.rc.regenerate_rc_mana( account, _current_time );
   }
 
-  void operator()( const transfer_to_vesting_operation& op )const
-  {
-    account_name_type target = op.to.size() ? op.to : op.from;
-    regenerate( target );
-  }
-
   void operator()( const withdraw_vesting_operation& op )const
   {
     regenerate( op.account );
@@ -804,11 +798,6 @@ struct pre_apply_operation_visitor
     regenerate( op.account );
     for( auto& account : op.other_affected_accounts )
       regenerate( account );
-  }
-
-  void operator()( const producer_reward_operation& op )const
-  {
-    regenerate( op.producer );
   }
 
   template< typename Op >
@@ -861,12 +850,6 @@ struct post_apply_operation_visitor
       _check_for_rc_delegation_overflow );
   }
 
-  void operator()( const transfer_to_vesting_operation& op )
-  {
-    account_name_type target = op.to.size() ? op.to : op.from;
-    update_after_vest_change( target );
-  }
-
   void operator()( const withdraw_vesting_operation& op )const
   {
     update_after_vest_change( op.account, false, true );
@@ -904,11 +887,6 @@ struct post_apply_operation_visitor
     update_after_vest_change( op.account, true, true );
     for( auto& account : op.other_affected_accounts )
       update_after_vest_change( account, true, true );
-  }
-
-  void operator()( const producer_reward_operation& op )const
-  {
-    update_after_vest_change( op.producer );
   }
 
   template< typename Op >
