@@ -1393,6 +1393,7 @@ void database::clear_null_account_balance()
   if( null_account.get_vesting().amount > 0 )
   {
     const auto& gpo = get_dynamic_global_properties();
+    auto _now = gpo.time;
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
@@ -1400,12 +1401,16 @@ void database::clear_null_account_balance()
       g.total_vesting_fund_hive -= vesting_shares_hive_value;
     });
 
+    if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+      rc.regenerate_rc_mana( null_account, _now ); //we could just always set RC value on 'null' to 0
     modify( null_account, [&]( account_object& a )
     {
       a.vesting_shares.amount = 0;
       a.sum_delayed_votes = 0;
       a.delayed_votes.clear();
     });
+    if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+      rc.update_account_after_vest_change( null_account, _now );
   }
 
   if( null_account.get_rewards().amount > 0 )
