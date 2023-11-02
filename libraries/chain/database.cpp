@@ -1118,6 +1118,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
     // Add new vesting to owner's balance.
 
     const auto& cprops = get_dynamic_global_properties();
+    auto _now = cprops.time;
 
     if( to_reward_balance )
     {
@@ -1125,15 +1126,17 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
     }
     else
     {
-      if( has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
+      if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       {
         modify( to_account, [&]( account_object& a )
         {
           util::update_manabar( cprops, a, new_vesting.amount.value );
         });
+        rc.regenerate_rc_mana( to_account, _now );
       }
-
       adjust_balance( to_account, new_vesting );
+      if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+        rc.update_account_after_vest_change( to_account, _now );
     }
     // Update global vesting pool numbers.
     modify( cprops, [&]( dynamic_global_property_object& props )
