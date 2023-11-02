@@ -995,27 +995,18 @@ private:
     std::string _account_name
     )
   {
-    collected_keyauth_t collected_item;
-    collected_item.account_name   = _account_name;
-    collected_item.key_kind = _key_kind;
-    collected_item.weight_threshold = get_weight_threshold(_authority);
+    auto weight_threshold = get_weight_threshold(_authority);
 
-    collected_item.keyauth_variant = true;
-    for(const auto& pair: get_key_auths(_authority))
+    // For key authorizations
+    for(const auto& [key, weight]: get_key_auths(_authority))
     {
-      collected_item.key_auth = pair.first;
-      hive::protocol::weight_type w = pair.second;
-      collected_item.w = w;
-      collected_keyauths.emplace_back(collected_item);
+      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, weight_threshold, true, key, {}, weight});
     }
 
-    collected_item.keyauth_variant = false;
-    for(const auto& pair: get_account_auths(_authority))
+    // For account authorizations
+    for(const auto& [account, weight]: get_account_auths(_authority))
     {
-      collected_item.account_auth = pair.first;
-      hive::protocol::weight_type w = pair.second;
-      collected_item.w = w;
-      collected_keyauths.emplace_back(collected_item);
+      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, weight_threshold, false, {}, account, weight});
     }
   }
 
