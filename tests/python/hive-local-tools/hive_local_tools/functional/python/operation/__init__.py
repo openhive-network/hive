@@ -540,8 +540,13 @@ class Comment:
 
     def __create_comment_account(self) -> Account:
         author = f"account-{Comment.account_counter}"
-        sample_vests_amount = 50
-        self.__wallet.create_account(author, vests=sample_vests_amount)
+        sample_vests_amount = 10000
+        sample_hive_amount = 10000
+        sample_hbds_amount = 10000
+
+        self.__wallet.create_account(
+            author, hives=sample_hive_amount, hbds=sample_hbds_amount, vests=sample_vests_amount
+        )
         Comment.account_counter += 1
         return Account(author, self.__node, self.__wallet)
 
