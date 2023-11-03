@@ -133,6 +133,13 @@ public:
    */
   void close_session( const string& token, bool allow_close_all_sessions_action = true );
 
+  /// Tests if a private key corresponding to a public key exists in a wallet
+  /// The wallet must be opened and unlocked.
+  /// @param name the name of the wallet to test a private key.
+  /// @param public_key a public key corresponding to a private key that is stored in the wallet
+  /// @returns true if a private key exists otherwise false
+  bool has_matching_private_key( const std::string& token, const std::string& name, const std::string& public_key );
+
 private:
 
   seconds_type unlock_timeout = 900;

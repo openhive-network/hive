@@ -115,6 +115,13 @@ class BeekeeperInstanceHelper {
     return this.#extract(returnedValue);
   }
 
+  hasMatchingPrivateKey(token, walletName, publicKey) {
+    const returnedValue = this.instance.has_matching_private_key(token, walletName, publicKey);
+    const value = this.#extract(returnedValue);
+
+    return value.exists;
+  }
+
   create(sessionToken, walletName) {
     const returnedValue = this.instance.create(sessionToken, walletName);
 

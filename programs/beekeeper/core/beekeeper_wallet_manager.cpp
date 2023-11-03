@@ -136,6 +136,12 @@ void beekeeper_wallet_manager::close_session( const string& token, bool allow_cl
   --session_cnt;
 }
 
+bool beekeeper_wallet_manager::has_matching_private_key( const std::string& token, const std::string& name, const std::string& public_key )
+{
+  sessions->check_timeout( token );
+  return sessions->get_wallet_manager( token )->has_matching_private_key( name, create_public_key( public_key ) );
+}
+
 public_key_type beekeeper_wallet_manager::create_public_key( const std::string& public_key )
 {
   FC_ASSERT( public_key_size == public_key.size(), "Incorrect size of public key. Expected ${public_key_size}, but got ${public_key_size_2}",

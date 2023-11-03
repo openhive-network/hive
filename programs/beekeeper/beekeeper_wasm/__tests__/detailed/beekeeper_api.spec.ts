@@ -956,6 +956,24 @@ test.describe('WASM beekeeper_api tests', () => {
         }
       }
 
+      {
+        console.log();
+        console.log("**************************************************************************************");
+        console.log("Check `has_matching_private_key` endpoint.");
+        console.log("**************************************************************************************");
+
+        /** @type {BeekeeperInstanceHelper} */
+        const api = new beekeper(args);
+
+        {
+          const walletNo = 1;
+          api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+          assert.equal(api.hasMatchingPrivateKey(api.implicitSessionToken, walletNames[walletNo], keys[0][1]), false);
+          api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
+          assert.equal(api.hasMatchingPrivateKey(api.implicitSessionToken, walletNames[walletNo], keys[0][1]), true);
+        }
+      }
+
       console.log('##########################################################################################');
       console.log('##                             ALL TESTS PASSED                                         ##');
       console.log('##########################################################################################');

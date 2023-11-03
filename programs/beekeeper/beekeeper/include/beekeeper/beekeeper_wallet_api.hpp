@@ -44,6 +44,7 @@ class beekeeper_wallet_api
       (get_info)
       (create_session)
       (close_session)
+      (has_matching_private_key)
     )
 
   private:

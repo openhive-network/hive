@@ -156,7 +156,7 @@ class beekeeper_wallet final : public beekeeper_wallet_base
 
       /** Removes a key from the wallet.
        *
-       * example: remove_key EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
+       * example: remove_key 6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
        *
        * @param key the Public Key to remove
        */
@@ -168,6 +168,14 @@ class beekeeper_wallet final : public beekeeper_wallet_base
 
       std::shared_ptr<detail::beekeeper_impl> my;
       void encrypt_keys();
+
+      /** Tests if a private key corresponding to a public key exists in a wallet
+       *
+       * example: has_matching_private_key 6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
+       *
+       * @param key the Public Key to remove
+       */
+      bool has_matching_private_key( const public_key_type& public_key ) override;
 };
 
 struct plain_keys {

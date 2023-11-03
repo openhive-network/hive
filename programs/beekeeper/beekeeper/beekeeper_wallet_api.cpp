@@ -44,6 +44,7 @@ class beekeeper_api_impl
       (get_info)
       (create_session)
       (close_session)
+      (has_matching_private_key)
     )
 
     std::shared_ptr<beekeeper::beekeeper_wallet_manager> _wallet_mgr;
@@ -175,6 +176,13 @@ DEFINE_API_IMPL( beekeeper_api_impl, close_session )
   return close_session_return();
 }
 
+DEFINE_API_IMPL( beekeeper_api_impl, has_matching_private_key )
+{
+  std::lock_guard<std::mutex> guard( mtx );
+
+  return { _wallet_mgr->has_matching_private_key( args.token, args.wallet_name, args.public_key ) };
+}
+
 } // detail
 
 beekeeper_wallet_api::beekeeper_wallet_api( std::shared_ptr<beekeeper::beekeeper_wallet_manager> wallet_mgr, appbase::application& app ): my( new detail::beekeeper_api_impl( wallet_mgr ) )
@@ -201,6 +209,7 @@ DEFINE_LOCKLESS_APIS( beekeeper_wallet_api,
   (get_info)
   (create_session)
   (close_session)
+  (has_matching_private_key)
   )
 
 } // beekeeper

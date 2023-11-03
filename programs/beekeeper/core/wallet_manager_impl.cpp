@@ -264,4 +264,14 @@ signature_type wallet_manager_impl::sign_digest( const digest_type& sig_digest, 
   return sign( [&]( const std::unique_ptr<beekeeper_wallet_base>& wallet ){ return wallet->try_sign_digest( sig_digest, public_key ); }, public_key, wallet_name );
 }
 
+bool wallet_manager_impl::has_matching_private_key( const std::string& name, const public_key_type& public_key )
+{
+  FC_ASSERT( wallets.count(name), "Wallet not found: ${w}", ("w", name));
+
+  auto& w = wallets.at(name);
+  FC_ASSERT( !w->is_locked(), "Wallet is locked: ${w}", ("w", name));
+
+  return w->has_matching_private_key( public_key );
+}
+
 } //beekeeper

@@ -1231,6 +1231,53 @@ BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(has_matching_private_key_endpoint_test)
+{
+  try {
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::hf26 );
+
+    auto _private_key_str = "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n";
+    auto _public_key_str  = "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4";
+
+    auto _private_key_str_2 = "5J8C7BMfvMFXFkvPhHNk2NHGk4zy3jF4Mrpf5k5EzAecuuzqDnn";
+    auto _public_key_str_2  = "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm";
+
+    const std::string _host = "127.0.0.1:666";
+    const uint64_t _timeout = 90;
+    const uint32_t _session_limit = 64;
+
+    appbase::application app;
+
+    beekeeper_wallet_manager wm = b_mgr.create_wallet( app, _timeout, _session_limit, [](){} );
+    BOOST_REQUIRE( wm.start() );
+
+    auto _token = wm.create_session( "salt", _host );
+    auto _password = wm.create( _token, "0", std::optional<std::string>() );
+
+    wm.import_key( _token, "0", _private_key_str );
+
+    BOOST_REQUIRE_THROW( wm.has_matching_private_key( _token, "pear", _public_key_str ), fc::exception );
+    BOOST_REQUIRE_THROW( wm.has_matching_private_key( "_token", "0", _public_key_str ), fc::exception );
+
+    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str ), true );
+    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str_2 ), false );
+
+    wm.import_key( _token, "0", _private_key_str_2 );
+
+    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str ), true );
+    BOOST_REQUIRE_EQUAL( wm.has_matching_private_key( _token, "0", _public_key_str_2 ), true );
+
+    wm.close( _token, "0" );
+
+    BOOST_REQUIRE_THROW( wm.has_matching_private_key( _token, "0", _public_key_str ), fc::exception );
+    BOOST_REQUIRE_THROW( wm.has_matching_private_key( _token, "0", _public_key_str_2 ), fc::exception );
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif

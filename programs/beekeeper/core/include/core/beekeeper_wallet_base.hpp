@@ -79,7 +79,7 @@ class beekeeper_wallet_base
 
       /** Removes a key from the wallet.
        *
-       * example: remove_key EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
+       * example: remove_key 6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
        *
        * @param key the Public Key to remove
        */
@@ -88,6 +88,15 @@ class beekeeper_wallet_base
       /** Returns a signature given the digest and public_key, if this wallet can sign via that public key
        */
       virtual std::optional<signature_type> try_sign_digest( const digest_type& sig_digest, const public_key_type& public_key ) = 0;
+
+      /** Tests if a private key corresponding to a public key exists in a wallet
+       *
+       * example: has_matching_private_key 6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
+       *
+       * @param a public key to test
+       * @returns informatio if a private key exists
+       */
+      virtual bool has_matching_private_key( const public_key_type& public_key ) = 0;
 };
 
 }

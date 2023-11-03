@@ -212,6 +212,18 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         timeout_time: time when wallets will be automatically closed
     */
     .function("get_info(token)", &beekeeper_api::get_info)
+
+    /*
+      ****testing if a private key corresponding to a public key exists in a wallet****
+      PARAMS:
+        token:        a token representing a session
+        wallet_name:  a name of wallet
+        public_key:   a public key corresponding to a private key that is stored in a wallet
+      RESULT:
+        {"exists":true}
+        exists: true if a private key exists otherwise false
+    */
+    .function("has_matching_private_key(token, wallet_name, public_key)", &beekeeper_api::has_matching_private_key)
     ;
 }
 

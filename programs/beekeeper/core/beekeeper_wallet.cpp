@@ -384,6 +384,11 @@ void beekeeper_wallet::set_wallet_filename(string wallet_filename)
   my->_wallet_filename = wallet_filename;
 }
 
+bool beekeeper_wallet::has_matching_private_key( const public_key_type& public_key )
+{
+  return my->try_get_private_key( public_key ).has_value();
+}
+
 } //beekeeper_wallet
 
 namespace fc
