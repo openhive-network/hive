@@ -531,3 +531,11 @@ class Proposal:
 
     def update_proposal_info(self):
         self.__init__(self._node, self.proposal_id)
+
+
+def publish_feeds(node: tt.InitNode, wallet: tt.Wallet, base: int, quote: int) -> None:
+    response = node.api.database.list_witnesses(start=None, limit=100, order="by_name").witnesses
+    witnesses = [element["owner"] for element in response]
+    for witness in witnesses:
+        exchange_rate = {"base": tt.Asset.Tbd(base), "quote": tt.Asset.Test(quote)}
+        wallet.api.publish_feed(witness, exchange_rate, True)
