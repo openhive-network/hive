@@ -25,7 +25,7 @@ test.describe('Beekeeper factory tests', () => {
     await page.evaluate(async () => {
       const beekeeper = await factory();
 
-      await beekeeper.createSession("my.salt");
+      beekeeper.createSession("my.salt");
 
       await beekeeper.delete();
     });
@@ -35,9 +35,9 @@ test.describe('Beekeeper factory tests', () => {
     const info = await page.evaluate(async () => {
       const beekeeper = await factory();
 
-      const session = await beekeeper.createSession("my.salt");
+      const session = beekeeper.createSession("my.salt");
 
-      return await session.getInfo();
+      return session.getInfo();
     });
 
     expect(info).toHaveProperty('now');
@@ -57,9 +57,9 @@ test.describe('Beekeeper factory tests', () => {
         unlockTimeout
       });
 
-      const session = await beekeeper.createSession("my.salt");
+      const session = beekeeper.createSession("my.salt");
 
-      return await session.getInfo();
+      return session.getInfo();
     }, timeoutSeconds);
 
     expect(new Date(info.timeout_time).getTime()).toBe(new Date(info.now).getTime() + (timeoutSeconds * 1000 ));
@@ -69,8 +69,8 @@ test.describe('Beekeeper factory tests', () => {
     await page.evaluate(async () => {
       const beekeeper = await factory();
 
-      const session1 = await beekeeper.createSession("avocado1");
-      const session2 = await beekeeper.createSession("avocado2");
+      const session1 = beekeeper.createSession("avocado1");
+      const session2 = beekeeper.createSession("avocado2");
 
       await session1.createWallet('w0');
       await session2.createWallet('w1');
@@ -83,7 +83,7 @@ test.describe('Beekeeper factory tests', () => {
     const info = await page.evaluate(async () => {
       const beekeeper = await factory();
 
-      const session = await beekeeper.createSession("my.salt");
+      const session = beekeeper.createSession("my.salt");
 
       const { wallet: unlocked } = await session.createWallet('w0', 'mypassword');
 
@@ -92,7 +92,7 @@ test.describe('Beekeeper factory tests', () => {
 
       await unlocked.removeKey('mypassword', '6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa');
 
-      return await unlocked.getPublicKeys();
+      return unlocked.getPublicKeys();
     });
 
     expect(info).toStrictEqual(['5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh']);
@@ -102,11 +102,11 @@ test.describe('Beekeeper factory tests', () => {
     const threw = await page.evaluate(async () => {
       const beekeeper = await factory();
 
-      const session = await beekeeper.createSession("my.salt");
+      const session = beekeeper.createSession("my.salt");
 
       const { wallet: unlocked } = await session.createWallet('w0', 'mypassword');
 
-      await unlocked.close();
+      unlocked.close();
 
       try {
         await unlocked.importKey('5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT'); // This should fail
@@ -124,13 +124,13 @@ test.describe('Beekeeper factory tests', () => {
     const info = await page.evaluate(async () => {
       const beekeeper = await factory();
 
-      const session = await beekeeper.createSession("my.salt");
+      const session = beekeeper.createSession("my.salt");
 
       await session.createWallet('w0', 'mypassword');
       await session.createWallet('w1', 'mypassword');
       await session.createWallet('w2', 'mypassword');
 
-      return (await session.listWallets()).map(value => value.name);
+      return session.listWallets().map(value => value.name);
     });
 
     expect(info).toStrictEqual(['w0','w1','w2']);

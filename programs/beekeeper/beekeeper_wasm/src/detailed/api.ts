@@ -50,13 +50,11 @@ export class BeekeeperApi implements IBeekeeperInstance {
     this.extract(this.api.init() as string);
   }
 
-  public async createSession(salt: string): Promise<IBeekeeperSession> {
+  public createSession(salt: string): IBeekeeperSession {
     const { token } = this.extract(this.api.create_session(salt) as string) as { token: string };
     const session = new BeekeeperSession(this, token);
 
     this.sessions.set(token, session);
-
-    await this.fs.sync();
 
     return session;
   }
@@ -69,11 +67,11 @@ export class BeekeeperApi implements IBeekeeperInstance {
   }
 
   public async delete(): Promise<void> {
-    await this.fs.sync();
-
     for(const session of this.sessions.values())
       await session.close();
 
     this.api.delete();
+
+    await this.fs.sync();
   }
 }
