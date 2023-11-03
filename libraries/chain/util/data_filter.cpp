@@ -95,7 +95,7 @@ bool operation_helper::create( const std::string& name, operation& op ) const
   if( itr != _details.end() )
   {
     int64_t which = itr->second;
-    op.set_which( which );
+    op = operation( which );
 
     return true;
   }

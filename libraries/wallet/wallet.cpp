@@ -225,12 +225,11 @@ class wallet_api_impl
 
     void init_prototype_ops()
     {
-      operation op;
-      for( int t=0; t<op.count(); t++ )
-      {
-        op.set_which( t );
-        op.visit( op_prototype_visitor(t, _prototype_ops) );
-      }
+      for( int t=0; t<operation::count(); t++ )
+        {
+        op_prototype_visitor  visitor(t, _prototype_ops);
+        operation op(t, visitor);
+        }
       return;
     }
 

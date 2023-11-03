@@ -193,8 +193,7 @@ DEFINE_API_IMPL( rc_api_impl, get_rc_operation_stats )
   int op_id = 0;
   for( ; op_id < HIVE_RC_NUM_OPERATIONS; ++op_id )
   {
-    hive::protocol::operation op;
-    op.set_which( op_id );
+    hive::protocol::operation op( static_cast<int64_t>(op_id) );
     std::string op_name = op.get_stored_type_name( true );
     if( strcmp( op_name.c_str(), args.operation.c_str() ) == 0 )
       break;

@@ -19,13 +19,12 @@ struct stub_visitor
 
 BOOST_AUTO_TEST_CASE( visit_performance ) {
   try {
-    hive::protocol::operation operation_under_test;
     stub_visitor visitor;
 
     BOOST_TEST_MESSAGE( "Start of visit_performance test" );
-    for ( auto type_id = 0; type_id < operation_under_test.count(); ++type_id)
+    for ( int64_t type_id = 0; type_id < hive::protocol::operation::count(); ++type_id)
     {
-      operation_under_test.set_which(type_id);
+      hive::protocol::operation operation_under_test(type_id);
       auto start = std::chrono::high_resolution_clock::now();
       for (auto j = 0; j < 100'000'000; j++) {
         operation_under_test.visit(visitor);

@@ -89,8 +89,7 @@ fc::variant_object resource_credits::get_report( report_type rt, const rc_stats_
       }
       else
       {
-        hive::protocol::operation _op;
-        _op.set_which(i);
+        hive::protocol::operation _op(static_cast<int64_t>(i));
         std::string op_name = _op.get_stored_type_name( true );
         ops( op_name, op.get() );
       }

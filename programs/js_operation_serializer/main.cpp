@@ -291,13 +291,10 @@ struct serializer< fc::static_variant<T...>, false >
     static bool init = false;
     if( !init )
     {
+      register_type_visitor visitor;
       init = true;
-      fc::static_variant<T...> var;
-      for( int i = 0; i < var.count(); ++i )
-      {
-        var.set_which(i);
-        var.visit( register_type_visitor() );
-      }
+      for( int i = 0; i < fc::static_variant<T...>::count(); ++i )
+        fc::static_variant<T...>(i, visitor);
       register_serializer( js_name<fc::static_variant<T...>>::name(), [=](){ generate(); } );
     }
   }
@@ -371,14 +368,12 @@ struct serializer
 int main( int argc, char** argv )
 {
   try {
-    operation op;
-
     std::cout << "ChainTypes.operations=\n";
-    for( int i = 0; i < op.count(); ++i )
-    {
-      op.set_which(i);
-      op.visit( detail_ns::serialize_type_visitor(i) );
-    }
+    for( int i = 0; i < operation::count(); ++i )
+      {
+      detail_ns::serialize_type_visitor visitor(i);
+      operation op(i, visitor);
+      }
     std::cout << "\n";
 
     detail_ns::js_name<operation>::name("operation");
