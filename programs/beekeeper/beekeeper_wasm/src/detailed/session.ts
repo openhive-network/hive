@@ -22,23 +22,19 @@ export class BeekeeperSession implements IBeekeeperSession {
 
   public readonly wallets: Map<string, BeekeeperLockedWallet> = new Map();
 
-  public async getInfo(): Promise<IBeekeeperInfo> {
+  public getInfo(): IBeekeeperInfo {
     const result = this.api.extract(this.api.api.get_info(this.token) as string) as IBeekeeperInfo;
-
-    await this.api.fs.sync();
 
     return result;
   }
 
-  public async listWallets(): Promise<Array<IBeekeeperWallet>> {
+  public listWallets(): Array<IBeekeeperWallet> {
     const result = this.api.extract(this.api.api.list_wallets(this.token) as string) as IBeekeeperWallets;
-
-    await this.api.fs.sync();
 
     const wallets: IBeekeeperWallet[] = [];
 
     for(const value of result.wallets) {
-      const wallet = await this.openWallet(value.name);
+      const wallet = this.openWallet(value.name);
 
       wallets.push(wallet);
     }
@@ -67,41 +63,37 @@ export class BeekeeperSession implements IBeekeeperSession {
     };
   }
 
-  public async openWallet(name: string): Promise<IBeekeeperWallet> {
+  public openWallet(name: string): IBeekeeperWallet {
     if(this.wallets.has(name))
       return this.wallets.get(name) as BeekeeperLockedWallet;
 
     this.api.extract(this.api.api.open(this.token, name) as string);
     const wallet = new BeekeeperLockedWallet(this.api, this, name);
 
-    await this.api.fs.sync();
-
     this.wallets.set(name, wallet);
 
     return wallet;
   }
 
-  public async closeWallet(name: string): Promise<void> {
+  public closeWallet(name: string): void {
     if(!this.wallets.delete(name))
       throw new BeekeeperError(`This Beekeeper API session is not the owner of wallet identified by name: "${name}"`);
 
     this.api.extract(this.api.api.close(this.token, name) as string);
-
-    await this.api.fs.sync();
   }
 
-  public async lockAll(): Promise<Array<IBeekeeperWallet>> {
+  public lockAll(): Array<IBeekeeperWallet> {
     const wallets = Array.from(this.wallets.values());
     for(const wallet of wallets)
       if(typeof wallet.unlocked !== 'undefined')
-        await wallet.unlocked.lock();
+        wallet.unlocked.lock();
 
     return wallets;
   }
 
-  public async close(): Promise<IBeekeeperInstance> {
+  public close(): IBeekeeperInstance {
     for(const wallet of this.wallets.values())
-      await wallet.close();
+      wallet.close();
 
     this.api.closeSession(this.token);
 
