@@ -566,10 +566,9 @@ hive::app::stringset run_all_visitor_overloads(Collector& k)
 
     for( int i = 0; i < hive::protocol::operation::count(); ++i )
     {
-        hive::protocol::operation variant;
-        variant.set_which(i);
         string operation_name;
-        variant.visit( get_static_variant_name_with_prefix( operation_name ) );
+        get_static_variant_name_with_prefix visitor( operation_name );
+        hive::protocol::operation variant(i, visitor);
         string_variant_map[operation_name] = variant;
     }
 

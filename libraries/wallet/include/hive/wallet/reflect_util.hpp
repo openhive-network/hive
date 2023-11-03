@@ -98,8 +98,7 @@ template< typename T >
 T from_which_variant( int which, const variant& v )
 {
   // Parse a variant for a known which()
-  T dummy;
-  dummy.set_which( which );
+  T dummy( which );
   impl::from_which_visitor< T > vtor(v);
   return dummy.visit( vtor );
 }
@@ -107,14 +106,12 @@ T from_which_variant( int which, const variant& v )
 template<typename T>
 static_variant_map create_static_variant_map()
 {
-  T dummy;
-  int n = dummy.count();
+  int n = T::count();
   impl::static_variant_map_visitor vtor;
   for( int i=0; i<n; i++ )
   {
-    dummy.set_which(i);
     vtor.which = i;
-    dummy.visit( vtor );
+    T dummy(i, vtor);
   }
   return vtor.m;
 }

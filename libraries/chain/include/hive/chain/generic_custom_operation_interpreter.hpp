@@ -64,10 +64,9 @@ void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, co
     std::map<string,int64_t> name_map;
     for( int i = 0; i < CustomOperationType::count(); ++i )
     {
-      CustomOperationType tmp;
-      tmp.set_which(i);
       string n;
-      tmp.visit( get_legacy_custom_operation_name(n) );
+      get_legacy_custom_operation_name  visitor(n);
+      CustomOperationType tmp(i, visitor);
       name_map[n] = i;
     }
     return name_map;
@@ -78,10 +77,9 @@ void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, co
     std::map< string, int64_t > name_map;
     for( int i = 0; i < CustomOperationType::count(); ++i )
     {
-      CustomOperationType tmp;
-      tmp.set_which(i);
       string n;
-      tmp.visit( get_custom_operation_name( n ) );
+      get_custom_operation_name  visitor(n);
+      CustomOperationType tmp(i, visitor);
       name_map[n] = i;
     }
     return name_map;
@@ -100,17 +98,18 @@ void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, co
       }
       dlog( "Dangling elements of custom operation ignored @${b} ${var}", ( "b", db.head_block_num() + 1 )( var ) );
     }
+
+    fc::to_static_variant visitor( ar[1] );
     if( ar[0].is_uint64() )
     {
-      vo.set_which( ar[0].as_uint64() );
+      vo = CustomOperationType( ar[0].as_uint64(), visitor );
     }
     else
     {
       auto itr = to_legacy_tag.find(ar[0].as_string());
       FC_ASSERT( itr != to_legacy_tag.end(), "Invalid operation name: ${n}", ("n", ar[0]) );
-      vo.set_which( itr->second );
+      vo = CustomOperationType( itr->second, visitor );
     }
-    vo.visit( fc::to_static_variant( ar[1] ) );
   }
   else // new serialization
   {
@@ -138,8 +137,8 @@ void custom_op_from_variant( const fc::variant& var, CustomOperationType& vo, co
       which = itr->second;
     }
 
-    vo.set_which( which );
-    vo.visit( fc::to_static_variant( v_object[ "value" ] ) );
+    fc::to_static_variant visitor( v_object[ "value" ] );
+    vo = CustomOperationType( which, visitor );
   }
 }
 

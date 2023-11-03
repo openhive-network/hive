@@ -68,9 +68,6 @@ int main( int argc, char** argv )
 {
   try
   {
-    hive::protocol::operation op;
-
-
     std::vector<uint64_t> witnesses; witnesses.resize(50);
     for( uint32_t i = 0; i < 60*60*24*30; ++i )
     {
@@ -84,11 +81,11 @@ int main( int argc, char** argv )
 
     idump( (witnesses) );
 
-    for( int32_t i = 0; i < op.count(); ++i )
-    {
-      op.set_which(i);
-      op.visit( size_check_type_visitor(i) );
-    }
+    for( int32_t i = 0; i < operation::count(); ++i )
+      {
+      size_check_type_visitor visitor(i);
+      hive::protocol::operation op(i, visitor);
+      }
 
     // sort them by mem size
     std::stable_sort( g_op_types.begin(), g_op_types.end(),

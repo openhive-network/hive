@@ -399,12 +399,6 @@ public:
     }
 
     static int64_t count() { return static_cast< int64_t >( impl::type_info<Types...>::count ); }
-    void set_which( int64_t w ) {
-      FC_ASSERT( w < count() && w >= 0 );
-      clear_storage();
-      _tag = w;
-      impl::storage_ops<0, Types...>::con(_tag, storage);
-    }
 
     int64_t which() const {return _tag;}
 private:

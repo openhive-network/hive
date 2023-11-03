@@ -97,10 +97,9 @@ struct extended_serialization_functor
         std::map< string, int64_t > name_map;
         for( int i = 0; i < static_variant::count(); ++i )
         {
-          static_variant tmp;
-          tmp.set_which(i);
           string n;
-          tmp.visit( get_legacy_static_variant_name( n ) );
+          get_legacy_static_variant_name  visitor( n );
+          static_variant tmp( i, visitor );
           name_map[n] = i;
         }
         return name_map;
@@ -111,15 +110,16 @@ struct extended_serialization_functor
 
     auto ar = v.get_array();
     if( ar.size() < 2 ) return true;
+
+    fc::to_static_variant visitor( ar[1] );
     if( ar[0].is_uint64() )
-      s.set_which( ar[0].as_uint64() );
+      s = static_variant( ar[0].as_uint64(), visitor );
     else
     {
       auto itr = to_legacy_tag.find(ar[0].as_string());
       FC_ASSERT( itr != to_legacy_tag.end(), "Invalid operation name: ${n}", ("n", ar[0]) );
-      s.set_which( itr->second );
+      s = static_variant( itr->second, visitor );
     }
-    s.visit( fc::to_static_variant( ar[1] ) );
 
     return true;
   }
