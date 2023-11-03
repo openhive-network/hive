@@ -5,11 +5,11 @@ export interface IWallet {
   /**
    * Ensures that this wallet is locked, then closes it
    *
-   * @returns {Promise<IBeekeeperSession>} Beekeeper session owning the closed wallet
+   * @returns {IBeekeeperSession} Beekeeper session owning the closed wallet
    *
    * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  close(): Promise<IBeekeeperSession>;
+  close(): IBeekeeperSession;
 
   /**
    * Name of this wallet
@@ -71,11 +71,11 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
   /**
    * Locks the current wallet
    *
-   * @returns {Promise<IBeekeeperWallet>} Locked beekeeper wallet
+   * @returns {IBeekeeperWallet} Locked beekeeper wallet
    *
    * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  lock(): Promise<IBeekeeperWallet>;
+  lock(): IBeekeeperWallet;
 
   /**
    * Imports given private key to this wallet
@@ -104,20 +104,20 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
    * @param {TPublicKey} publicKey public key in WIF format to match the private key in the wallet. It will be used to sign the provided data
    * @param {string} sigDigest digest of a transaction in hex format
    *
-   * @returns {Promise<TSignature>} signed data in hex format
+   * @returns {TSignature} signed data in hex format
    *
    * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  signDigest(publicKey: TPublicKey, sigDigest: string): Promise<TSignature>;
+  signDigest(publicKey: TPublicKey, sigDigest: string): TSignature;
 
   /**
    * Lists all of the public keys
    *
-   * @returns {Promise<TPublicKey[]>} a set of all keys for all unlocked wallets
+   * @returns {TPublicKey[]} a set of all keys for all unlocked wallets
    *
    * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  getPublicKeys(): Promise<TPublicKey[]>;
+  getPublicKeys(): TPublicKey[];
 }
 
 export interface IBeekeeperWallet extends IWallet {
@@ -126,11 +126,11 @@ export interface IBeekeeperWallet extends IWallet {
    *
    * @param {string} password password to the wallet
    *
-   * @returns {Promise<IBeekeeperUnlockedWallet>} Unlocked Beekeeper wallet
+   * @returns {IBeekeeperUnlockedWallet} Unlocked Beekeeper wallet
    *
    * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  unlock(password: string): Promise<IBeekeeperUnlockedWallet>;
+  unlock(password: string): IBeekeeperUnlockedWallet;
 
   /**
    * Indicates if the wallet is unlocked. If the wallet is locked, this property will be undefined. IBeekeeperUnlockedWallet type otherwise
@@ -161,20 +161,20 @@ export interface IBeekeeperSession {
   /**
    * Retrieves the current session info
    *
-   * @returns {Promise<IBeekeeperInfo>} Current session information
+   * @returns {IBeekeeperInfo} Current session information
    *
    * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  getInfo(): Promise<IBeekeeperInfo>;
+  getInfo(): IBeekeeperInfo;
 
   /**
    * Lists all of the opened wallets
    *
-   * @returns {Promise<Array<IBeekeeperWallet>>} array of opened Beekeeper wallets (either unlocked or locked)
+   * @returns {Array<IBeekeeperWallet>} array of opened Beekeeper wallets (either unlocked or locked)
    *
    * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  listWallets(): Promise<Array<IBeekeeperWallet>>;
+  listWallets(): Array<IBeekeeperWallet>;
 
   /**
    * Creates a new Beekeeper wallet object owned by this session
@@ -191,20 +191,20 @@ export interface IBeekeeperSession {
   /**
    * Locks all of the unlocked wallets owned by this session
    *
-   * @returns {Promise<Array<IBeekeeperWallet>>} array of the locked Beekeeper wallets
+   * @returns {Array<IBeekeeperWallet>} array of the locked Beekeeper wallets
    *
    * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  lockAll(): Promise<Array<IBeekeeperWallet>>;
+  lockAll(): Array<IBeekeeperWallet>;
 
   /**
    * Locks all of the unlocked wallets, closes them, closes this session and makes it unusable
    *
-   * @returns {Promise<IBeekeeperInstance>} Beekeeper instance owning the closed session
+   * @returns {IBeekeeperInstance} Beekeeper instance owning the closed session
    *
    * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  close(): Promise<IBeekeeperInstance>;
+  close(): IBeekeeperInstance;
 }
 
 export interface IBeekeeperInstance {
@@ -213,11 +213,11 @@ export interface IBeekeeperInstance {
    *
    * @param {string} salt a salt used for creation of a token
    *
-   * @returns {Promise<IBeekeeperSession>} a beekeeper session created explicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
+   * @returns {IBeekeeperSession} a beekeeper session created explicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
    *
    * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  createSession(salt: string): Promise<IBeekeeperSession>;
+  createSession(salt: string): IBeekeeperSession;
 
   /**
    * Locks all of the unlocked wallets, closes them, closes opened sessions and deletes the current Beekeeper API instance making it unusable
