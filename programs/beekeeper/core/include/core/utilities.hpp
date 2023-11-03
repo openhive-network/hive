@@ -192,6 +192,16 @@ using create_session_return = session_token_type;
 using close_session_args = session_token_type;
 using close_session_return = void_type;
 
+struct has_matching_private_key_args : public wallet_args
+{
+  std::string public_key;
+};
+
+struct has_matching_private_key_return
+{
+  bool exists = false;
+};
+
 struct exception
 {
   static std::pair<std::string, bool> exception_handler( std::function<std::string()>&& method, const std::string& additional_message = "" )
@@ -239,6 +249,7 @@ namespace fc
   void to_variant( const beekeeper::public_key_details& var, fc::variant& vo );
   void to_variant( const beekeeper::signature_return& var, fc::variant& vo );
   void to_variant( const beekeeper::init_data& var, fc::variant& vo );
+  void to_variant( const beekeeper::has_matching_private_key_return& var, fc::variant& vo );
 }
 
 FC_REFLECT( beekeeper::init_data, (status)(version) )
@@ -263,3 +274,5 @@ FC_REFLECT_DERIVED( beekeeper::sign_digest_args, (beekeeper::session_token_type)
 FC_REFLECT( beekeeper::signature_return, (signature) )
 FC_REFLECT( beekeeper::create_session_args, (salt)(notifications_endpoint) )
 FC_REFLECT_DERIVED( beekeeper::get_public_keys_args, (beekeeper::session_token_type), (wallet_name) )
+FC_REFLECT_DERIVED( beekeeper::has_matching_private_key_args, (beekeeper::wallet_args), (public_key) )
+FC_REFLECT( beekeeper::has_matching_private_key_return, (exists) )

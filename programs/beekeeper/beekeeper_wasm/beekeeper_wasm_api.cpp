@@ -287,4 +287,14 @@ namespace beekeeper {
     };
     return exception_handler( _method );
   }
+
+  std::string beekeeper_api::has_matching_private_key( const std::string& token, const std::string& wallet_name, const std::string& public_key )
+  {
+    auto _method = [&, this]()
+    {
+      has_matching_private_key_return _result{ _impl->app.get_wallet_manager()->has_matching_private_key( token, wallet_name, public_key ) };
+      return to_string( _result );
+    };
+    return exception_handler( _method );
+  }
 };
