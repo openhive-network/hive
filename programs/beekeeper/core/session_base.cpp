@@ -17,7 +17,7 @@ void session_base::set_timeout( const std::chrono::seconds& t )
 void session_base::check_timeout()
 {
   FC_ASSERT( time );
-  time->run();
+  time->run( token );
 
   refresh_timeout( true/*refresh_only_active*/ );
 }
