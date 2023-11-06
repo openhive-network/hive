@@ -55,7 +55,7 @@ class time_manager_base
     virtual ~time_manager_base();
 
     void add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method );
-    void change( const std::string& token, const types::timepoint_t& time );
+    void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active );
 
     void run();
 

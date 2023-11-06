@@ -11,19 +11,27 @@ session_base::session_base( const std::string& token, std::shared_ptr<time_manag
 void session_base::set_timeout( const std::chrono::seconds& t )
 {
   timeout = t;
-  auto now = std::chrono::system_clock::now();
-  timeout_time = now + timeout;
-  FC_ASSERT( timeout_time >= now && timeout_time.time_since_epoch().count() > 0, "Overflow on timeout_time, specified ${t}, now ${now}, timeout_time ${timeout_time}",
-         ("t", t.count())("now", now.time_since_epoch().count())("timeout_time", timeout_time.time_since_epoch().count()));
-
-  FC_ASSERT( time );
-  time->change( token, timeout_time );
+  refresh_timeout( false/*refresh_only_active*/ );
 }
 
 void session_base::check_timeout()
 {
   FC_ASSERT( time );
   time->run();
+
+  refresh_timeout( true/*refresh_only_active*/ );
+}
+
+void session_base::refresh_timeout( bool refresh_only_active )
+{
+  auto _now = std::chrono::system_clock::now();
+  timeout_time = _now + timeout;
+
+  FC_ASSERT( timeout_time >= _now && timeout_time.time_since_epoch().count() > 0, "Overflow on timeout_time, specified ${t}, now ${now}, timeout_time ${timeout_time}",
+         ("t", timeout.count())("now", _now.time_since_epoch().count())("timeout_time", timeout_time.time_since_epoch().count()));
+
+  FC_ASSERT( time );
+  time->change( token, timeout_time, refresh_only_active );
 }
 
 info session_base::get_info()

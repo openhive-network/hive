@@ -21,9 +21,11 @@ class session_base
 
     std::shared_ptr<wallet_manager_impl> wallet_mgr;
 
+    std::shared_ptr<time_manager_base> time;
+
     void check_timeout_impl( bool allow_update_timeout_time );
 
-    std::shared_ptr<time_manager_base> time;
+    void refresh_timeout( bool refresh_only_active );
 
   protected:
 
@@ -36,6 +38,7 @@ class session_base
 
     void set_timeout( const std::chrono::seconds& t );
     void check_timeout();
+
     info get_info();
 
     std::shared_ptr<wallet_manager_impl> get_wallet_manager();
