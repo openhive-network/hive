@@ -43,24 +43,6 @@ namespace hive { namespace chain {
     using pop_block_t = std::function< uint32_t ( const block_id_type end_block ) >;
 
     /**
-     * @brief A new block arrived and is being pushed into state. Check whether it extends current
-     *        fork or creates another (longer one). Switch forks if necessary. Call provided
-     *        callbacks to apply or pop any block in the process.
-     * @param full_block the new block
-     * @param block_ctrl use to report appropriate events
-     * @param state_head_block_num refers to head block as stored in state
-     * @param state_head_block_id refers to head block as stored in state
-     * @param skip flags to be passed to apply block callback
-     * @param apply_block_extended call when trying to build a fork
-     * @param pop_block_extended call when trying to rewind a fork
-     * @return true if the forks have been switched as a result of this push.
-     */
-    virtual bool push_block( const std::shared_ptr<full_block_type>& full_block,
-      const block_flow_control& block_ctrl, uint32_t state_head_block_num,
-      block_id_type state_head_block_id, const uint32_t skip, apply_block_t apply_block_extended,
-      pop_block_t pop_block_extended ) = 0;
-
-    /**
      * @brief Exposed due to explicit call in database::update_last_irreversible_block only.
      *        Other than that a part of push_block implementation.
      * @param new_head_block_id id of the new (fork) head candidate
