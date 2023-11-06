@@ -74,12 +74,16 @@ void time_manager_base::add( const std::string& token, types::lock_method_type&&
   _idx.emplace( session_data{ token, lock_method, notification_method } );
 }
 
-void time_manager_base::change( const std::string& token, const types::timepoint_t& time )
+void time_manager_base::change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active )
 {
   auto& _idx = items.get<by_token>();
   const auto& _found = _idx.find( token );
 
-  _idx.modify( _found, [&time]( session_data &sd ){ sd.time = time; });
+  _idx.modify( _found, [&time, &refresh_only_active]( session_data &sd )
+    {
+      if( !refresh_only_active || ( refresh_only_active && sd.time != types::timepoint_t::max() ) )
+        sd.time = time;
+    });
 }
 
 void time_manager_base::close( const std::string& token )

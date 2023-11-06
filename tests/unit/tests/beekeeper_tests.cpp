@@ -950,7 +950,7 @@ class timeout_simulation
     std::string create( bekeeper_type& beekeeper_obj, const std::string& token, const std::string& name );
     std::vector<beekeeper::wallet_details> list_wallets( bekeeper_type& beekeeper_obj, const std::string& token );
 
-    simulation create( bekeeper_type& beekeeper_obj, const std::string& name, size_t nr_sessions, size_t nr_wallets, std::vector<size_t> timeouts )
+    simulation create( bekeeper_type& beekeeper_obj, const std::string& name, size_t nr_sessions, size_t nr_wallets, const std::vector<size_t>& timeouts )
     {
       BOOST_TEST_MESSAGE("*********************" + name + "*********************");
 
@@ -981,14 +981,11 @@ class timeout_simulation
       return _sim;
     };
 
-    void test( bekeeper_type& beekeeper_obj, const std::string& name, const simulation& sim, size_t& time, size_t timeout )
+    void test( bekeeper_type& beekeeper_obj, const std::string& name, const simulation& sim, size_t timeout )
     {
       BOOST_TEST_MESSAGE("=============" + name + "=============");
 
       std::this_thread::sleep_for( std::chrono::seconds( timeout ) );
-      time += timeout;
-
-      BOOST_TEST_MESSAGE( "+++++  time: " + std::to_string( time ) + " +++++ " );
 
       for( size_t session_cnt = 0; session_cnt < sim.sessions.size(); ++session_cnt )
       {
@@ -1002,7 +999,7 @@ class timeout_simulation
           if( _s.wallets.find( wallet{ wallet_item.name } ) != _s.wallets.end() )
           {
             BOOST_TEST_MESSAGE( "+++++ " + wallet_item.name + " +++++" );
-            BOOST_REQUIRE( time >= _s.timeout ? !wallet_item.unlocked : wallet_item.unlocked );
+            BOOST_REQUIRE( timeout >= _s.timeout ? !wallet_item.unlocked : wallet_item.unlocked );
           }
         }
         BOOST_TEST_MESSAGE( "" );
@@ -1049,145 +1046,157 @@ std::vector<beekeeper::wallet_details> timeout_simulation<beekeeper_wallet_manag
   return beekeeper_obj.list_wallets( token );
 }
 
+class wasm_simulation_executor
+{
+  beekeeper_mgr b_mgr;
+  timeout_simulation<beekeeper::beekeeper_api> _sim;
+
+  public:
+
+    void run( const std::string& simulation_name, const uint32_t nr_sessions, const uint32_t nr_wallets, const std::vector<size_t>& timeouts, const std::vector<size_t>& stage_timeouts )
+    {
+      for( auto& stage_timeout : stage_timeouts )
+      {
+        beekeeper::beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
+        BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ) ).as<beekeeper::init_data>().status );
+
+        auto _details = _sim.create( _beekeeper, simulation_name, nr_sessions, nr_wallets, timeouts );
+        _sim.test( _beekeeper, "Stage: " + std::to_string( stage_timeout ), _details, stage_timeout );
+      }
+    }
+};
+
+class simulation_executor
+{
+  beekeeper_mgr b_mgr;
+  timeout_simulation<beekeeper_wallet_manager> _sim;
+
+  appbase::application app;
+
+  uint64_t _unlock_timeout  = 900;
+  int32_t _session_limit    = 64;
+
+  public:
+
+    void run( const std::string& simulation_name, const uint32_t nr_sessions, const uint32_t nr_wallets, const std::vector<size_t>& timeouts, const std::vector<size_t>& stage_timeouts )
+    {
+      for( auto& stage_timeout : stage_timeouts )
+      {
+        beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _unlock_timeout, _session_limit );
+
+        auto _details = _sim.create( _beekeeper, simulation_name, nr_sessions, nr_wallets, timeouts );
+        _sim.test( _beekeeper, "Stage: " + std::to_string( stage_timeout ), _details, stage_timeout );
+      }
+    }
+};
+
 BOOST_AUTO_TEST_CASE(wasm_beekeeper_timeout)
 {
   try {
-
-    beekeeper_mgr b_mgr;
-    timeout_simulation<beekeeper::beekeeper_api> _sim;
-
     {
-      beekeeper::beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
-      BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ) ).as<beekeeper::init_data>().status );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "a-sim", 2/*nr_sessions*/, 3/*nr_wallets*/, {1, 1}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 0 );
+      wasm_simulation_executor _executer;
+      _executer.run( "a-sim", 2/*nr_sessions*/, 3/*nr_wallets*/, {1, 1}/*timeouts*/, {0}/*stage_timeouts*/ );
     }
 
     {
-      beekeeper::beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
-      BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ) ).as<beekeeper::init_data>().status );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "b-sim", 2/*nr_sessions*/, 2/*nr_wallets*/, {1, 3}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 1 );
+      wasm_simulation_executor _executer;
+      _executer.run( "b-sim", 2/*nr_sessions*/, 2/*nr_wallets*/, {1, 3}/*timeouts*/, {1}/*stage_timeouts*/ );
     }
 
     {
-      beekeeper::beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
-      BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ) ).as<beekeeper::init_data>().status );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "c-sim", 3/*nr_sessions*/, 1/*nr_wallets*/, {3, 1, 2}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 0 );
-      _sim.test( _beekeeper, "B", _details, time, 1 );
-      _sim.test( _beekeeper, "C", _details, time, 3 );
+      wasm_simulation_executor _executer;
+      _executer.run( "c-sim", 3/*nr_sessions*/, 1/*nr_wallets*/, {3, 1, 2}/*timeouts*/, {0, 1, 3}/*stage_timeouts*/ );
     }
 
     {
-      beekeeper::beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
-      BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ) ).as<beekeeper::init_data>().status );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "d-sim", 5/*nr_sessions*/, 1/*nr_wallets*/, {4, 3, 2, 1, 0}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 1 );
-      _sim.test( _beekeeper, "B", _details, time, 2 );
-      _sim.test( _beekeeper, "C", _details, time, 1 );
-      _sim.test( _beekeeper, "D", _details, time, 1 );
-      _sim.test( _beekeeper, "E", _details, time, 1 );
+      wasm_simulation_executor _executer;
+      _executer.run( "d-sim", 5/*nr_sessions*/, 1/*nr_wallets*/, {4, 3, 2, 1, 0}/*timeouts*/, {1, 2, 1, 1, 1}/*stage_timeouts*/ );
     }
 
     {
-      beekeeper::beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
-      BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ) ).as<beekeeper::init_data>().status );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "e-sim", 4/*nr_sessions*/, 3/*nr_wallets*/, {3, 3, 3, 1}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 1 );
-      _sim.test( _beekeeper, "B", _details, time, 1 );
-      _sim.test( _beekeeper, "C", _details, time, 1 );
+      wasm_simulation_executor _executer;
+      _executer.run( "e-sim", 4/*nr_sessions*/, 3/*nr_wallets*/, {3, 3, 3, 1}/*timeouts*/, {1, 1, 1}/*stage_timeouts*/ );
     }
 
     {
-      beekeeper::beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
-      BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ) ).as<beekeeper::init_data>().status );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "f-sim", 4/*nr_sessions*/, 2/*nr_wallets*/, {1, 1, 1, 1}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 2 );
-      _sim.test( _beekeeper, "B", _details, time, 1 );
+      wasm_simulation_executor _executer;
+      _executer.run( "f-sim", 4/*nr_sessions*/, 2/*nr_wallets*/, {1, 1, 1, 1}/*timeouts*/, {2, 1}/*stage_timeouts*/ );
     }
+
+    {
+      wasm_simulation_executor _executer;
+      _executer.run( "g-sim", 4/*nr_sessions*/, 1/*nr_wallets*/, {3, 1, 3, 1}/*timeouts*/, {2}/*stage_timeouts*/ );
+    }
+
   } FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_CASE(beekeeper_timeout)
 {
   try {
+    {
+      simulation_executor _executer;
+      _executer.run( "a-sim", 2/*nr_sessions*/, 3/*nr_wallets*/, {1, 1}/*timeouts*/, {0}/*stage_timeouts*/ );
+    }
+
+    {
+      simulation_executor _executer;
+      _executer.run( "b-sim", 2/*nr_sessions*/, 2/*nr_wallets*/, {1, 3}/*timeouts*/, {1}/*stage_timeouts*/ );
+    }
+
+    {
+      simulation_executor _executer;
+      _executer.run( "c-sim", 3/*nr_sessions*/, 1/*nr_wallets*/, {3, 1, 2}/*timeouts*/, {0, 1, 3}/*stage_timeouts*/ );
+    }
+
+    {
+      simulation_executor _executer;
+      _executer.run( "d-sim", 5/*nr_sessions*/, 1/*nr_wallets*/, {4, 3, 2, 1, 0}/*timeouts*/, {1, 2, 1, 1, 1}/*stage_timeouts*/ );
+    }
+
+    {
+      simulation_executor _executer;
+      _executer.run( "e-sim", 4/*nr_sessions*/, 3/*nr_wallets*/, {3, 3, 3, 1}/*timeouts*/, {1, 1, 1}/*stage_timeouts*/ );
+    }
+
+    {
+      simulation_executor _executer;
+      _executer.run( "f-sim", 4/*nr_sessions*/, 2/*nr_wallets*/, {1, 1, 1, 1}/*timeouts*/, {2, 1}/*stage_timeouts*/ );
+    }
+
+    {
+      simulation_executor _executer;
+      _executer.run( "g-sim", 4/*nr_sessions*/, 1/*nr_wallets*/, {3, 1, 3, 1}/*timeouts*/, {2}/*stage_timeouts*/ );
+    }
+
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(wasm_beekeeper_refresh_timeout)
+{
+  try {
+
     beekeeper_mgr b_mgr;
-    timeout_simulation<beekeeper_wallet_manager> _sim;
+    b_mgr.remove_wallets();
 
-    appbase::application app;
+    beekeeper::beekeeper_api _beekeeper( { "--wallet-dir", b_mgr.dir.string() } );
+    BOOST_REQUIRE( fc::json::from_string( extract_json( _beekeeper.init() ) ).as<beekeeper::init_data>().status );
 
-    uint64_t _unlock_timeout = 900;
-    int32_t _session_limit = 64;
+    auto _token = get_wasm_data( extract_json( _beekeeper.create_session( "salt" ) ) );
+    _beekeeper.create( _token, "w0" );
 
+    _beekeeper.set_timeout( _token, 1 );
+
+    for( uint32_t i = 0; i < 4; ++i )
     {
-      beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _unlock_timeout, _session_limit );
+      std::this_thread::sleep_for( std::chrono::milliseconds(500) );
 
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "a-sim", 2/*nr_sessions*/, 3/*nr_wallets*/, {1, 1}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 0 );
+      auto _result = extract_json( _beekeeper.list_wallets( _token ) );
+      auto _wallets = fc::json::from_string( _result ).as<beekeeper::list_wallets_return>().wallets;
+      BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
+      BOOST_REQUIRE_EQUAL( _wallets[0].unlocked, true );
     }
 
-    {
-      beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _unlock_timeout, _session_limit );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "b-sim", 2/*nr_sessions*/, 2/*nr_wallets*/, {1, 3}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 1 );
-    }
-
-    {
-      beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _unlock_timeout, _session_limit );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "c-sim", 3/*nr_sessions*/, 1/*nr_wallets*/, {3, 1, 2}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 0 );
-      _sim.test( _beekeeper, "B", _details, time, 1 );
-      _sim.test( _beekeeper, "C", _details, time, 3 );
-    }
-
-    {
-      beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _unlock_timeout, _session_limit );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "d-sim", 5/*nr_sessions*/, 1/*nr_wallets*/, {4, 3, 2, 1, 0}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 1 );
-      _sim.test( _beekeeper, "B", _details, time, 2 );
-      _sim.test( _beekeeper, "C", _details, time, 1 );
-      _sim.test( _beekeeper, "D", _details, time, 1 );
-      _sim.test( _beekeeper, "E", _details, time, 1 );
-    }
-
-    {
-      beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _unlock_timeout, _session_limit );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "e-sim", 4/*nr_sessions*/, 3/*nr_wallets*/, {3, 3, 3, 1}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 1 );
-      _sim.test( _beekeeper, "B", _details, time, 1 );
-      _sim.test( _beekeeper, "C", _details, time, 1 );
-    }
-
-    {
-      beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _unlock_timeout, _session_limit );
-
-      size_t time = 0;
-      auto _details = _sim.create( _beekeeper, "f-sim", 4/*nr_sessions*/, 2/*nr_wallets*/, {1, 1, 1, 1}/*timeouts*/ );
-      _sim.test( _beekeeper, "A", _details, time, 2 );
-      _sim.test( _beekeeper, "B", _details, time, 1 );
-    }
   } FC_LOG_AND_RETHROW()
 }
 
