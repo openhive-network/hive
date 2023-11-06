@@ -45,6 +45,9 @@ class time_manager_base
 
     session_data_index items;
 
+  bool run( const types::timepoint_t& now, const session_data& s_data, std::vector<std::string>& modified_items );
+  void modify_times( const std::vector<std::string>& modified_items );
+
   protected:
 
     virtual void send_auto_lock_error_message( const std::string& message ){ /*not implemented here*/ };
@@ -58,6 +61,7 @@ class time_manager_base
     void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active );
 
     void run();
+    void run( const std::string& token );
 
     void close( const std::string& token );
 };
