@@ -937,6 +937,20 @@ private:
     return {};
   }
 
+  void collect_key_auths(const authority& _authority, std::string _account_name, key_t _key_kind, uint32_t _weight_threshold)
+  {
+    for(const auto& [key, weight]: _authority.key_auths)
+    {
+      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, _weight_threshold, true, key, {}, weight});
+    }
+  }
+
+  void collect_key_auths(const optional<authority>& _authority, std::string _account_name, key_t _key_kind, uint32_t _weight_threshold)
+  {
+    if(_authority)
+      collect_key_auths(*_authority, _account_name, _key_kind, _weight_threshold);
+  }
+
   void collect_account_auths(const authority& _authority, std::string _account_name, key_t _key_kind, uint32_t _weight_threshold)
   {
     for(const auto& [account, weight]: _authority.account_auths)
@@ -976,13 +990,10 @@ private:
     auto weight_threshold = get_weight_threshold(_authority);
 
     // For key authorizations
-    for(const auto& [key, weight]: get_key_auths(_authority))
-    {
-      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, weight_threshold, true, key, {}, weight});
-    }
+    collect_key_auths(_authority, _account_name, _key_kind, weight_threshold);
 
     // For account authorizations
-    collect_account_auths(_authority, _account_name, _key_kind,   weight_threshold);
+    collect_account_auths(_authority, _account_name, _key_kind, weight_threshold);
   }
 
   template<typename T>
