@@ -27,7 +27,7 @@ enum class key_t : std::int32_t
 struct collected_keyauth_t
 {
   std::string account_name;
-  key_t key_kind;
+  key_t key_kind = key_t::OWNER;
   uint32_t weight_threshold = 0;
   bool keyauth_variant = true;
   fc::ecc::public_key_data key_auth;
