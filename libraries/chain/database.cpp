@@ -1669,11 +1669,14 @@ void database::clear_accounts( const std::set< std::string >& cleared_accounts )
 
 void database::clear_account( const account_object& account )
 {
+  FC_ASSERT( has_hardfork( HIVE_HARDFORK_0_20 ) ); // routine assumes RC is already active
+
   const auto& account_name = account.get_name();
   FC_ASSERT( account_name != get_treasury_name(), "Can't clear treasury account" );
 
   const auto& treasury_account = get_treasury();
   const auto& cprops = get_dynamic_global_properties();
+  auto now = cprops.time;
 
   hardfork_hive_operation vop( account_name, treasury_account.get_name() );
 
@@ -1684,29 +1687,22 @@ void database::clear_account( const account_object& account )
 
   if( account.get_vesting().amount > 0 )
   {
-    // Collect delegations and their delegatees to capture all affected accounts before delegations are deleted
-    std::vector< std::pair< const vesting_delegation_object&, const account_object& > > delegations;
+    rc.regenerate_rc_mana( account, now );
+
+    // Remove all active delegations
+    asset freed_delegations = asset( 0, VESTS_SYMBOL );
 
     const auto& delegation_idx = get_index< vesting_delegation_index, by_delegation >();
     auto delegation_itr = delegation_idx.lower_bound( account.get_id() );
     while( delegation_itr != delegation_idx.end() && delegation_itr->get_delegator() == account.get_id() )
     {
-      delegations.emplace_back( *delegation_itr, get_account( delegation_itr->get_delegatee() ) );
-      vop.other_affected_accounts.emplace_back( delegations.back().second.get_name() );
+      const auto& delegation = *delegation_itr;
+      const auto& delegatee = get_account( delegation_itr->get_delegatee() );
       ++delegation_itr;
-    }
 
-    // emit vop with other_affected_accounts filled but before any change happened on the accounts
-    pre_push_virtual_operation( vop );
+      vop.other_affected_accounts.emplace_back( delegatee.get_name() );
 
-    // Remove all delegations
-    asset freed_delegations = asset( 0, VESTS_SYMBOL );
-
-    for( auto& delegation_pair : delegations )
-    {
-      const auto& delegation = delegation_pair.first;
-      const auto& delegatee = delegation_pair.second;
-
+      rc.regenerate_rc_mana( delegatee, now );
       modify( delegatee, [&]( account_object& a )
       {
         util::update_manabar( cprops, a );
@@ -1716,11 +1712,13 @@ void database::clear_account( const account_object& account )
         a.voting_manabar.use_mana( delegation.get_vesting().amount.value );
 
         a.downvote_manabar.use_mana(
-          fc::uint128_to_int64((uint128_t(delegation.get_vesting().amount.value) * cprops.downvote_pool_percent) /
-          HIVE_100_PERCENT));
+          fc::uint128_to_int64( ( uint128_t( delegation.get_vesting().amount.value ) * cprops.downvote_pool_percent ) /
+          HIVE_100_PERCENT ) );
       } );
 
       remove( delegation );
+
+      rc.update_account_after_vest_change( delegatee, now, true, true );
     }
 
     // Remove pending expired delegations
@@ -1760,6 +1758,8 @@ void database::clear_account( const account_object& account )
         a.delayed_votes.clear();
         a.sum_delayed_votes = 0;
       }
+
+      rc.update_account_after_vest_change( account, now, true, true );
     } );
 
     adjust_balance( treasury_account, asset( converted_hive, HIVE_SYMBOL ) );
@@ -1768,11 +1768,6 @@ void database::clear_account( const account_object& account )
       o.total_vesting_fund_hive -= converted_hive;
       o.total_vesting_shares -= vests_to_convert;
     } );
-  }
-  else
-  {
-    // just emit empty vop, since there was nothing to fill it with so far
-    pre_push_virtual_operation( vop );
   }
 
   // Remove pending escrows (return balance to account - compare with expire_escrow_ratification())
@@ -1915,7 +1910,7 @@ void database::clear_account( const account_object& account )
 
   gather_balance( account_name, vop.hive_transferred, vop.hbd_transferred );
 
-  post_push_virtual_operation( vop );
+  push_virtual_operation( vop );
 }
 
 void database::process_proposals( const block_notification& note )

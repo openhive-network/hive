@@ -784,14 +784,6 @@ struct pre_apply_operation_visitor
   }
 #endif
 
-  void operator()( const hardfork_hive_operation& op )const
-  {
-    //see comment in pre_apply_operation
-    regenerate( op.account );
-    for( auto& account : op.other_affected_accounts )
-      regenerate( account );
-  }
-
   template< typename Op >
   void operator()( const Op& op )const {}
 };
@@ -864,15 +856,6 @@ struct post_apply_operation_visitor
     update_after_vest_change( op.account );
   }
 #endif
-
-  void operator()( const hardfork_hive_operation& op )const
-  {
-    //TODO: when moving this code to actual operation make sure the problem in AH is fixed
-    //(final values of funds taken never showing up in history - always with zeros)
-    update_after_vest_change( op.account, true, true );
-    for( auto& account : op.other_affected_accounts )
-      update_after_vest_change( account, true, true );
-  }
 
   template< typename Op >
   void operator()( const Op& op )const {}
