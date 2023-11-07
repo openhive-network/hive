@@ -2141,11 +2141,12 @@ void database::process_vesting_withdrawals()
   auto current = widx.begin();
 
   const auto& cprops = get_dynamic_global_properties();
+  auto now = cprops.time;
 
   int count = 0;
   if( _benchmark_dumper.is_enabled() )
     _benchmark_dumper.begin();
-  while( current != widx.end() && current->next_vesting_withdrawal <= head_block_time() )
+  while( current != widx.end() && current->next_vesting_withdrawal <= now )
   {
     const auto& from_account = *current; ++current; ++count;
 
@@ -2200,13 +2201,22 @@ void database::process_vesting_withdrawals()
             modify( to_account, [&]( account_object& a )
             {
               if( auto_vest_mode )
+              {
+                if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+                  rc.regenerate_rc_mana( a, now );
                 a.vesting_shares += routed;
+              }
               else
+              {
                 a.balance += routed;
+              }
             });
 
             if( auto_vest_mode )
             {
+              if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+                rc.update_account_after_vest_change( to_account, now );
+
               if( has_hardfork( HIVE_HARDFORK_1_24 ) )
               {
                 FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
@@ -2250,6 +2260,8 @@ void database::process_vesting_withdrawals()
     //and only now we are going to update that account's VESTS (see issue #337)
     pre_push_virtual_operation( vop );
 
+    if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+      rc.regenerate_rc_mana( from_account, now );
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
       FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
@@ -2280,6 +2292,9 @@ void database::process_vesting_withdrawals()
       }
     });
 
+    if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+      rc.update_account_after_vest_change( from_account, now, true, true );
+
     modify( cprops, [&]( dynamic_global_property_object& o )
     {
       o.total_vesting_fund_hive -= converted_hive;
@@ -2290,7 +2305,7 @@ void database::process_vesting_withdrawals()
     {
       FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
 
-      fc::optional< ushare_type > leftover = dv->update_votes( _votes_update_data_items, head_block_time() );
+      fc::optional< ushare_type > leftover = dv->update_votes( _votes_update_data_items, now );
       FC_ASSERT( leftover.valid(), "Something went wrong" );
       if( leftover.valid() && ( *leftover ) > 0 )
         adjust_proxied_witness_votes( from_account, -( ( *leftover ).value ) );

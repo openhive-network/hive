@@ -772,14 +772,6 @@ struct pre_apply_operation_visitor
     regenerate( op.delegatee );
   }
 
-  void operator()( const fill_vesting_withdraw_operation& op )const
-  {
-    //TODO: when that code is moved to direct handling of the operation remember to fix workaround for
-    //implied route in case all the power down is distributed to other defined routes (also in AH and possibly HAF)
-    regenerate( op.from_account );
-    regenerate( op.to_account );
-  }
-
   void operator()( const claim_reward_balance_operation& op )const
   {
     regenerate( op.account );
@@ -859,13 +851,6 @@ struct post_apply_operation_visitor
   {
     update_after_vest_change( op.delegator, true, true );
     update_after_vest_change( op.delegatee, true, true );
-  }
-
-  void operator()( const fill_vesting_withdraw_operation& op )const
-  {
-    //see comment in pre_apply_operation
-    update_after_vest_change( op.from_account, true, true );
-    update_after_vest_change( op.to_account );
   }
 
   void operator()( const claim_reward_balance_operation& op )const
