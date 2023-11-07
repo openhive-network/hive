@@ -937,16 +937,18 @@ private:
     return {};
   }
 
-  hive::protocol::authority::account_authority_map get_account_auths(const authority& _authority) const
+  void collect_account_auths(const authority& _authority, std::string _account_name, key_t _key_kind, uint32_t _weight_threshold)
   {
-    return _authority.account_auths;
+    for(const auto& [account, weight]: _authority.account_auths)
+    {
+      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, _weight_threshold, false, {}, account, weight});
+    }
   }
 
-  hive::protocol::authority::account_authority_map get_account_auths(const optional<authority>& _authority) const
+  void collect_account_auths(const optional<authority>& _authority, std::string _account_name, key_t _key_kind, uint32_t _weight_threshold)
   {
     if(_authority)
-      return _authority->account_auths;
-    return {};
+      collect_account_auths(*_authority, _account_name, _key_kind, _weight_threshold);
   }
 
   void collect_memo_key(public_key_type memo_key, collected_keyauth_t& collected_item) 
@@ -980,10 +982,7 @@ private:
     }
 
     // For account authorizations
-    for(const auto& [account, weight]: get_account_auths(_authority))
-    {
-      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, weight_threshold, false, {}, account, weight});
-    }
+    collect_account_auths(_authority, _account_name, _key_kind,   weight_threshold);
   }
 
   template<typename T>
