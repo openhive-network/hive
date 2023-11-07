@@ -949,18 +949,17 @@ private:
     return {};
   }
 
-  template<typename T>
-  fc::ecc::public_key_data get_memo_key(const T& _op, public_key_type memo_key) const
+  void collect_memo_key(public_key_type memo_key, collected_keyauth_t& collected_item) 
   {
-    return _op.memo_key;
+      collected_item.key_auth = memo_key;
+      collected_keyauths.emplace_back(collected_item);
   }
 
-  template<typename T>
-  fc::ecc::public_key_data get_memo_key(const T& _op, optional< public_key_type > memo_key) const
+
+  void collect_memo_key(optional< public_key_type > memo_key, collected_keyauth_t& collected_item) 
   {
     if(memo_key)
-      return (*_op.memo_key);
-    return {};
+      collect_memo_key(*memo_key, collected_item);
   }
 
 
@@ -994,11 +993,7 @@ private:
     collected_item.account_name   = _account_name;
     collected_item.key_kind = hive::app::key_t::MEMO;
 
-    if(auto memo_key = get_memo_key(op, op.memo_key); memo_key.size() != 0)
-    {
-      collected_item.key_auth = memo_key;
-      collected_keyauths.emplace_back(collected_item);
-    }
+    collect_memo_key(op.memo_key, collected_item);
   }
 
   public:
