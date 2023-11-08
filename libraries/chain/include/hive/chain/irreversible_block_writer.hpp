@@ -16,8 +16,6 @@ namespace hive { namespace chain {
 
     virtual block_read_i& get_block_reader() override;
 
-    virtual void set_is_at_live_sync() override { FC_ASSERT( false, "Wrong writer bro" ); }
-
     /**
      * 
      */

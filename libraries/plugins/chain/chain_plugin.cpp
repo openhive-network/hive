@@ -541,6 +541,7 @@ void chain_plugin_impl::start_write_processing()
         {
           is_syncing = false;
           db.notify_end_of_syncing();
+          default_block_writer.set_is_at_live_sync();
           theApp.notify_status("entering live mode");
           wlog("entering live mode");
         }
