@@ -1271,6 +1271,56 @@ BOOST_AUTO_TEST_CASE(beekeeper_refresh_timeout)
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
+{
+  try {
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    const std::string _host = "";
+    const uint64_t _timeout = 90;
+    const uint32_t _session_limit = 64;
+
+    appbase::application app;
+
+    beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
+    BOOST_REQUIRE( _beekeeper.start() );
+
+    auto _token = _beekeeper.create_session( "salt", _host );
+
+    struct wallet
+    {
+      std::string name;
+      std::string password;
+    };
+    std::vector<wallet> _wallets{ { "0" }, { "1" }, { "2" } };
+
+    for( auto& wallet : _wallets )
+    {
+      wallet.password = _beekeeper.create( _token, wallet.name, std::optional<std::string>() );
+      _beekeeper.close( _token, wallet.name );
+    }
+    {
+      auto _wallets = _beekeeper.list_wallets( _token );
+      BOOST_REQUIRE_EQUAL( _wallets.size(), 0 );
+    }
+    {
+      const size_t _wallet_cnt = 1;
+      _beekeeper.unlock( _token, _wallets[_wallet_cnt].name, _wallets[_wallet_cnt].password );
+    }
+    {
+      _beekeeper.set_timeout( _token, 1 );
+      std::this_thread::sleep_for( std::chrono::milliseconds(1200) );
+    }
+    {
+      auto _wallets = _beekeeper.list_wallets( _token );
+      BOOST_REQUIRE_EQUAL( _wallets.size(), 1 );
+      const size_t _wallet_cnt = 0;
+      BOOST_REQUIRE_EQUAL( _wallets[_wallet_cnt].unlocked, false );
+    }
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
