@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
 # This script installs all packages required to build and run a hived instance.
 # After changing it, be sure to update and push to the registry a docker image defined in https://gitlab.syncad.com/hive/hive/-/blob/develop/Dockerfile
 
@@ -37,6 +39,11 @@ install_all_runtime_packages() {
   assert_is_root
 
   apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget && apt-get clean && rm -r /var/lib/apt/lists/*
+
+  #Additionally fix OpenSSL configuration issues caused by OpenSSL 3.0 
+  # TODO REMOVE the additional openssl configuaration when OpenSSL 3.0.7 or above will be distributed by Ubuntu.
+  cp "${SCRIPTPATH}/openssl.conf" /etc/ssl/hive-openssl.conf
+  echo -e "\n.include /etc/ssl/hive-openssl.conf\n" >> /etc/ssl/openssl.cnf
 }
 
 install_all_dev_packages() {
