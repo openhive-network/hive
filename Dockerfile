@@ -2,7 +2,7 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=:ubuntu22.04-7
+ARG CI_IMAGE_TAG=:ubuntu22.04-8
 ARG BUILD_IMAGE_TAG
 
 FROM phusion/baseimage:jammy-1.0.1 AS runtime
@@ -13,7 +13,7 @@ SHELL ["/bin/bash", "-c"]
 
 USER root
 WORKDIR /usr/local/src
-ADD ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
+ADD ./scripts/openssl.conf ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
 
 # Install base runtime packages
 RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hived-account="hived"
@@ -31,12 +31,8 @@ SHELL ["/bin/bash", "-c"]
 USER root
 WORKDIR /usr/local/src
 
-COPY scripts/openssl.conf /etc/ssl/hive-openssl.conf
-
 # Install additionally development packages
-# TODO REMOVE the additional openssl configuaration when OpenSSL 3.0.7 or above will be distributed by Ubuntu.
-RUN echo -e "\n.include /etc/ssl/hive-openssl.conf\n" >> /etc/ssl/openssl.cnf && \
-   ./scripts/setup_ubuntu.sh --dev --hived-admin-account="hived_admin" --hived-account="hived"
+RUN ./scripts/setup_ubuntu.sh --dev --hived-admin-account="hived_admin" --hived-account="hived"
 
 USER hived_admin
 WORKDIR /home/hived_admin
