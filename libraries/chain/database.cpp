@@ -1680,17 +1680,17 @@ void database::clear_account( const account_object& account )
 
   hardfork_hive_operation vop( account_name, treasury_account.get_name() );
 
-  asset total_transferred_hive = asset( 0, HIVE_SYMBOL );
-  asset total_transferred_hbd = asset( 0, HBD_SYMBOL );
-  asset total_converted_vests = asset( 0, VESTS_SYMBOL );
-  asset total_hive_from_vests = asset( 0, HIVE_SYMBOL );
+  HIVE_asset total_transferred_hive( 0 );
+  HBD_asset total_transferred_hbd( 0 );
+  VEST_asset total_converted_vests( 0 );
+  HIVE_asset total_hive_from_vests( 0 );
 
   if( account.get_vesting().amount > 0 )
   {
     rc.regenerate_rc_mana( account, now );
 
     // Remove all active delegations
-    asset freed_delegations = asset( 0, VESTS_SYMBOL );
+    VEST_asset freed_delegations( 0 );
 
     const auto& delegation_idx = get_index< vesting_delegation_index, by_delegation >();
     auto delegation_itr = delegation_idx.lower_bound( account.get_id() );
@@ -1733,10 +1733,10 @@ void database::clear_account( const account_object& account )
       remove( delegation );
     }
 
-    auto vests_to_convert = account.get_vesting();
-    auto converted_hive = vests_to_convert * cprops.get_vesting_share_price();
+    VEST_asset vests_to_convert = account.get_vesting();
+    HIVE_asset converted_hive = vests_to_convert * cprops.get_vesting_share_price();
     total_converted_vests += account.get_vesting();
-    total_hive_from_vests += asset( converted_hive, HIVE_SYMBOL );
+    total_hive_from_vests += converted_hive;
 
     adjust_proxied_witness_votes( account, -account.get_vesting().amount );
 
@@ -1745,9 +1745,9 @@ void database::clear_account( const account_object& account )
       util::update_manabar( cprops, a );
       a.voting_manabar.current_mana = 0;
       a.downvote_manabar.current_mana = 0;
-      a.vesting_shares = asset( 0, VESTS_SYMBOL );
+      a.vesting_shares = VEST_asset( 0 );
       //FC_ASSERT( a.delegated_vesting_shares == freed_delegations, "Inconsistent amount of delegations" );
-      a.delegated_vesting_shares = asset( 0, VESTS_SYMBOL );
+      a.delegated_vesting_shares = VEST_asset( 0 );
       a.vesting_withdraw_rate.amount = 0;
       a.next_vesting_withdrawal = fc::time_point_sec::maximum();
       a.to_withdraw.amount = 0;
@@ -1762,7 +1762,7 @@ void database::clear_account( const account_object& account )
       rc.update_account_after_vest_change( account, now, true, true );
     } );
 
-    adjust_balance( treasury_account, asset( converted_hive, HIVE_SYMBOL ) );
+    adjust_balance( treasury_account, converted_hive );
     modify( cprops, [&]( dynamic_global_property_object& o )
     {
       o.total_vesting_fund_hive -= converted_hive;
@@ -1857,9 +1857,9 @@ void database::clear_account( const account_object& account )
   // Touch HBD balances (to be sure all interests are added to balances)
   if( has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
-    adjust_balance( account, asset( 0, HBD_SYMBOL ) );
-    adjust_savings_balance( account, asset( 0, HBD_SYMBOL ) );
-    adjust_reward_balance( account, asset( 0, HBD_SYMBOL ) );
+    adjust_balance( account, HBD_asset( 0 ) );
+    adjust_savings_balance( account, HBD_asset( 0 ) );
+    adjust_reward_balance( account, HBD_asset( 0 ) );
   }
 
   // Remove remaining savings balances
@@ -1899,8 +1899,8 @@ void database::clear_account( const account_object& account )
 
   modify( account, []( account_object &a )
   {
-    a.reward_vesting_balance = asset( 0, VESTS_SYMBOL );
-    a.reward_vesting_hive = asset( 0, HIVE_SYMBOL );
+    a.reward_vesting_balance = VEST_asset( 0 );
+    a.reward_vesting_hive = HIVE_asset( 0 );
   } );
 
   vop.hbd_transferred = total_transferred_hbd;
