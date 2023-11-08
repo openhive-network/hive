@@ -922,7 +922,6 @@ void database::notify_comment_reward(const comment_reward_notification& note)
 void database::notify_end_of_syncing()
 {
   HIVE_TRY_NOTIFY(_end_of_syncing_signal)
-  _block_writer->set_is_at_live_sync();
 }
 
 void database::notify_pre_apply_custom_operation( const custom_operation_notification& note )

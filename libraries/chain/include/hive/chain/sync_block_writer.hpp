@@ -21,8 +21,6 @@ namespace hive { namespace chain {
 
     virtual block_read_i& get_block_reader() override;
 
-    virtual void set_is_at_live_sync() override { _is_at_live_sync = true; }
-
     virtual void store_block( uint32_t current_irreversible_block_num,
                               uint32_t state_head_block_number ) override;
 
@@ -39,6 +37,7 @@ namespace hive { namespace chain {
       const unsigned witnesses_required_for_irreversiblity,
       const uint32_t old_last_irreversible ) const override;
 
+    void set_is_at_live_sync() { _is_at_live_sync = true; }
     void on_reindex_start();
     void on_reindex_end( const std::shared_ptr<full_block_type>& end_block );
     void open(  const fc::path& file, bool enable_compression,
