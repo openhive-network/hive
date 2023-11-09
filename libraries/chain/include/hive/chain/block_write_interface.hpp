@@ -33,29 +33,6 @@ namespace hive { namespace chain {
      */
     virtual void pop_block() = 0;  
 
-    using apply_block_t = std::function<
-      void ( const std::shared_ptr< full_block_type >& full_block,
-            uint32_t skip, const block_flow_control* block_ctrl ) >;
-    /// Returns number of block on head after popping.
-    using pop_block_t = std::function< uint32_t ( const block_id_type end_block ) >;
-
-    /**
-     * @brief Exposed due to explicit call in database::update_last_irreversible_block only.
-     *        Other than that a part of push_block implementation.
-     * @param new_head_block_id id of the new (fork) head candidate
-     * @param new_head_block_num num of the new (fork) head candidate
-     * @param skip flags to be passed to apply block callback
-     * @param pushed_block_ctrl use to report appropriate events
-     * @param original_head_block_id id of current/former (fork) head
-     * @param original_head_block_number num of current/former (fork) head
-     * @param apply_block_extended call when trying to build a fork
-     * @param pop_block_extended call when trying to rewind a fork
-     */
-    virtual void switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
-      uint32_t skip, const block_flow_control* pushed_block_ctrl,
-      const block_id_type original_head_block_id, const uint32_t original_head_block_number,
-      apply_block_t apply_block_extended, pop_block_t pop_block_extended ) = 0;
-
     struct new_last_irreversible_block_t
     {
       uint32_t new_last_irreversible_block_num = 0;

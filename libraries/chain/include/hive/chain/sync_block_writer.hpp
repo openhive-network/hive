@@ -26,11 +26,6 @@ namespace hive { namespace chain {
 
     virtual void pop_block() override;
 
-    virtual void switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
-      uint32_t skip, const block_flow_control* pushed_block_ctrl,
-      const block_id_type original_head_block_id, const uint32_t original_head_block_number,
-      apply_block_t apply_block_extended, pop_block_t pop_block_extended ) override;
-
     virtual std::optional<new_last_irreversible_block_t> find_new_last_irreversible_block(
       const std::vector<const witness_object*>& scheduled_witness_objects,
       const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
@@ -45,6 +40,12 @@ namespace hive { namespace chain {
                 hive::chain::blockchain_worker_thread_pool& thread_pool );
     void close();
     const block_log& get_block_log() const { return _block_log; }
+
+    using apply_block_t = std::function<
+      void ( const std::shared_ptr< full_block_type >& full_block,
+            uint32_t skip, const block_flow_control* block_ctrl ) >;
+    /// Returns number of block on head after popping.
+    using pop_block_t = std::function< uint32_t ( const block_id_type end_block ) >;
 
     /**
      * @brief A new block arrived and is being pushed into state. Check whether it extends current
@@ -63,6 +64,23 @@ namespace hive { namespace chain {
       const block_flow_control& block_ctrl, uint32_t state_head_block_num,
       block_id_type state_head_block_id, const uint32_t skip, apply_block_t apply_block_extended,
       pop_block_t pop_block_extended );
+
+    /**
+     * @brief Used during transaction fast confirmation.
+     *        Other than that a part of push_block implementation.
+     * @param new_head_block_id id of the new (fork) head candidate
+     * @param new_head_block_num num of the new (fork) head candidate
+     * @param skip flags to be passed to apply block callback
+     * @param pushed_block_ctrl use to report appropriate events
+     * @param original_head_block_id id of current/former (fork) head
+     * @param original_head_block_number num of current/former (fork) head
+     * @param apply_block_extended call when trying to build a fork
+     * @param pop_block_extended call when trying to rewind a fork
+     */
+    void switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
+      uint32_t skip, const block_flow_control* pushed_block_ctrl,
+      const block_id_type original_head_block_id, const uint32_t original_head_block_number,
+      apply_block_t apply_block_extended, pop_block_t pop_block_extended );
 
   private:
     block_log             _block_log;
