@@ -34,7 +34,7 @@ class beekeeper_impl
 
 public:
   beekeeper_wallet& self;
-  beekeeper_impl( beekeeper_wallet& s, const wallet_data& initial_data )
+  beekeeper_impl( beekeeper_wallet& s )
    : self( s )
   {
   }
@@ -230,8 +230,8 @@ public:
 
 }
 
-beekeeper_wallet::beekeeper_wallet(const wallet_data& initial_data)
-  : my(new detail::beekeeper_impl(*this, initial_data))
+beekeeper_wallet::beekeeper_wallet()
+  : my(new detail::beekeeper_impl( *this ))
 {}
 
 beekeeper_wallet::~beekeeper_wallet() {}

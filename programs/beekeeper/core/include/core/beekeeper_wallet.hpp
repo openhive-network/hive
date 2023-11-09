@@ -24,7 +24,7 @@ class beekeeper_impl;
 class beekeeper_wallet final : public beekeeper_wallet_base
 {
    public:
-      beekeeper_wallet( const wallet_data& initial_data );
+      beekeeper_wallet();
 
       ~beekeeper_wallet() override;
 
