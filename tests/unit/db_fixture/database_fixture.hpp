@@ -260,6 +260,8 @@ struct database_fixture {
   database_fixture() {}
   virtual ~database_fixture() {}
 
+  virtual hive::plugins::chain::chain_plugin& get_chain_plugin() const = 0;
+
   static fc::ecc::private_key generate_private_key( string seed = "init_key" );
 #ifdef HIVE_ENABLE_SMT
   static asset_symbol_type get_new_smt_symbol( uint8_t token_decimal_places, chain::database* db );
@@ -513,8 +515,10 @@ namespace test
 {
   std::shared_ptr<full_block_type> _generate_block( hive::plugins::chain::abstract_block_producer& bp, const fc::time_point_sec _block_ts, const hive::protocol::account_name_type& _wo,
     const fc::ecc::private_key& _key, uint32_t _skip = 0 );
-  void _push_transaction( database& db, const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key(), uint32_t skip_flags = 0,
-    hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(), fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
+  void _push_transaction( hive::plugins::chain::chain_plugin& cp, const signed_transaction& tx,
+    const fc::ecc::private_key& key = fc::ecc::private_key(), uint32_t skip_flags = 0,
+    hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack(),
+    fc::ecc::canonical_signature_type _sig_type = fc::ecc::fc_canonical );
 }
 
 namespace performance

@@ -1321,27 +1321,28 @@ BOOST_AUTO_TEST_CASE( signature_stripping )
     std::vector< signature_type > signatures_a;
     std::vector< signature_type > signatures_b;
 
+    auto& cp = get_chain_plugin();
     full_transaction_ptr _ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy, false );
     _ftx->sign_transaction( {alice_private_key}, db->get_chain_id(), fc::ecc::fc_canonical, hive::protocol::pack_type::legacy );
-    HIVE_REQUIRE_THROW( db->push_transaction( _ftx, 0 ), tx_missing_active_auth );
+    HIVE_REQUIRE_THROW( cp.push_transaction( _ftx, 0 ), tx_missing_active_auth );
     _ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy, false );
     _ftx->sign_transaction( { alice_private_key, bob_private_key, sam_private_key }, db->get_chain_id(), fc::ecc::fc_canonical, hive::protocol::pack_type::legacy );
     tx = _ftx->get_transaction();
     signature_type alice_sig = tx.signatures[0];
     signature_type bob_sig = tx.signatures[1];
     signature_type sam_sig = tx.signatures[2];
-    HIVE_REQUIRE_THROW( db->push_transaction( _ftx, 0 ), tx_irrelevant_sig );
+    HIVE_REQUIRE_THROW( cp.push_transaction( _ftx, 0 ), tx_irrelevant_sig );
     tx.signatures.clear();
     tx.signatures.push_back( alice_sig );
     tx.signatures.push_back( bob_sig );
     _ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy, false );
-    db->push_transaction( _ftx, 0 );
+    cp.push_transaction( _ftx, 0 );
 
     tx.signatures.clear();
     tx.signatures.push_back( alice_sig );
     tx.signatures.push_back( sam_sig );
     _ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::legacy, false );
-    HIVE_REQUIRE_THROW( db->push_transaction( _ftx, 0 ), fc::exception );
+    HIVE_REQUIRE_THROW( cp.push_transaction( _ftx, 0 ), fc::exception );
   }
   FC_LOG_AND_RETHROW()
 }

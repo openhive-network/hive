@@ -501,7 +501,7 @@ full_transaction_ptr database_fixture::push_transaction( const signed_transactio
 {
   full_transaction_ptr _tx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
   _tx->sign_transaction( keys, db->get_chain_id(), _sig_type, pack_type );
-  db->push_transaction( _tx, skip_flags );
+  get_chain_plugin().push_transaction( _tx, skip_flags );
   return _tx;
 }
 
@@ -1254,16 +1254,17 @@ std::shared_ptr<full_block_type> _generate_block(hive::plugins::chain::abstract_
   return generate_block_ctrl.get_full_block();
 }
 
-void _push_transaction( database& db, const signed_transaction& tx, const fc::ecc::private_key& key, uint32_t skip_flags,
-  hive::protocol::pack_type pack_type, fc::ecc::canonical_signature_type _sig_type )
+void _push_transaction( hive::plugins::chain::chain_plugin& cp, const signed_transaction& tx,
+  const fc::ecc::private_key& key, uint32_t skip_flags, hive::protocol::pack_type pack_type,
+  fc::ecc::canonical_signature_type _sig_type )
 { try {
   full_transaction_ptr _ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
 
   if( key == fc::ecc::private_key() )
-    _ftx->sign_transaction( std::vector<fc::ecc::private_key>(), db.get_chain_id(), _sig_type, pack_type );
+    _ftx->sign_transaction( std::vector<fc::ecc::private_key>(), cp.db().get_chain_id(), _sig_type, pack_type );
   else
-    _ftx->sign_transaction( std::vector<fc::ecc::private_key>{ key }, db.get_chain_id(), _sig_type, pack_type );
-  db.push_transaction( _ftx, skip_flags );
+    _ftx->sign_transaction( std::vector<fc::ecc::private_key>{ key }, cp.db().get_chain_id(), _sig_type, pack_type );
+  cp.push_transaction( _ftx, skip_flags );
 } FC_CAPTURE_AND_RETHROW((tx)) }
 
 } // hive::chain::test

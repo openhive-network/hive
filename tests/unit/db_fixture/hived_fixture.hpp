@@ -61,7 +61,7 @@ struct hived_fixture : public database_fixture
   const fc::path& get_data_dir() const { return _data_dir; };
 
   const hive::chain::block_read_i& get_block_reader() const;
-  hive::plugins::chain::chain_plugin& get_chain_plugin() const;
+  virtual hive::plugins::chain::chain_plugin& get_chain_plugin() const override;
 
   bool push_block( const std::shared_ptr<full_block_type>& b, uint32_t skip_flags = 0 );
 

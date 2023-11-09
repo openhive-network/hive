@@ -236,13 +236,15 @@ BOOST_AUTO_TEST_CASE( debug_update_with_explicit_hook )
   BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 0 );
   BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 0 );
 
-  db->push_transaction( alice_to_bob );
+  auto& cp = get_chain_plugin();
+
+  cp.push_transaction( alice_to_bob );
   BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 3100 - 1000 ); // direct from initminer / normal to bob
   BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 ); // normal from alice
   BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 0 );
   BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 0 );
 
-  db->push_transaction( alice_to_carol );
+  cp.push_transaction( alice_to_carol );
   BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 3100 - 1000 - 2000 ); // ... / normal to carol
   BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 );
   BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 200 + 2000 ); // direct from initminer / normal from alice
@@ -257,14 +259,14 @@ BOOST_AUTO_TEST_CASE( debug_update_with_explicit_hook )
   BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 0 );
 
   // since bob was already given tokens by alice, he can transfer now
-  db->push_transaction( bob_to_dan );
+  cp.push_transaction( bob_to_dan );
   BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 3100 - 1000 - 2000 + 10 ); // ... / direct from bob
   BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 - 10 - 700 ); // ... / direct to alice / normal to dan
   BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 200 + 2000 );
   BOOST_REQUIRE_EQUAL( get_balance( "dan" ).amount.value, 700 ); // normal from bob
 
   // carol has not enough balance to make transfer - hooked callback will also have no lasting effect
-  BOOST_REQUIRE_THROW( db->push_transaction( carol_to_dan ), fc::assert_exception );
+  BOOST_REQUIRE_THROW( cp.push_transaction( carol_to_dan ), fc::assert_exception );
   BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, 3100 - 1000 - 2000 + 10 );
   BOOST_REQUIRE_EQUAL( get_balance( "bob" ).amount.value, 1000 - 10 - 700 );
   BOOST_REQUIRE_EQUAL( get_balance( "carol" ).amount.value, 200 + 2000 );
@@ -344,7 +346,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   BOOST_REQUIRE( get_balance( "greg" ) == zero );
 
   // bob -> carol -> dan
-  db->push_transaction( carol_to_dan );
+  get_chain_plugin().push_transaction( carol_to_dan );
   BOOST_REQUIRE( get_balance( "alice" ) == ( step * 1 ) );
   BOOST_REQUIRE( get_balance( "bob" ) == ( step * 2 ) );
   BOOST_REQUIRE( get_balance( "carol" ) == ( step * 3 ) );
