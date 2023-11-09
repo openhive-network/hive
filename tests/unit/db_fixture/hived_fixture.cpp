@@ -47,7 +47,7 @@ void hived_fixture::set_logging_config( const fc::optional< fc::logging_config >
   if( common_logging_config )
   {
     // And postponed_init has not been called yet...
-    BOOST_ASSERT( _logging_config == false );
+    BOOST_ASSERT( !_logging_config.valid() );
     // Set common value to skip this phase during postponed init (see postponed_init_impl).
     _logging_config = common_logging_config;
   }
