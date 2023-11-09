@@ -29,14 +29,14 @@ void wallet_manager_impl::valid_filename( const string& name )
           "Name of wallet is incorrect. Name: ${name}. File creation with given name is impossible.", (name) );
 }
 
-std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_filename_creator, const std::string& name, const std::optional<std::string>& password )
+std::string wallet_manager_impl::create( const std::string& name, const std::optional<std::string>& password )
 {
   FC_ASSERT( !password || password->size() < max_password_length,
             "Got ${password_size} bytes, but a password limit has ${max_password_length} bytes", ("password_size", password->size())(max_password_length) );
 
   valid_filename(name);
 
-  auto wallet_filename = wallet_filename_creator( name );
+  auto wallet_filename = create_wallet_filename( name );
   FC_ASSERT( !bfs::exists(wallet_filename), "Wallet with name: '${n}' already exists at ${path}", ("n", name)("path", fc::path(wallet_filename)) );
 
   std::string _password = password ? ( *password ) : gen_password();
@@ -64,13 +64,13 @@ std::string wallet_manager_impl::create( wallet_filename_creator_type wallet_fil
   return _password;
 }
 
-void wallet_manager_impl::open( wallet_filename_creator_type wallet_filename_creator, const std::string& name )
+void wallet_manager_impl::open( const std::string& name )
 {
   valid_filename(name);
 
   wallet_data d;
   auto wallet = std::make_unique<beekeeper_wallet>(d);
-  auto wallet_filename = wallet_filename_creator( name );
+  auto wallet_filename = create_wallet_filename( name );
   wallet->set_wallet_filename(wallet_filename.string());
   FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));
 
@@ -94,8 +94,7 @@ void wallet_manager_impl::close( const std::string& name )
   wallets.erase( name );
 }
 
-std::vector<wallet_details> wallet_manager_impl::list_wallets(wallet_filename_creator_type wallet_filename_creator,
-  const std::vector< std::string >& wallet_files )
+std::vector<wallet_details> wallet_manager_impl::list_wallets_impl( const std::vector< std::string >& wallet_files )
 {
   std::vector<wallet_details> _result;
 
@@ -103,8 +102,8 @@ std::vector<wallet_details> wallet_manager_impl::list_wallets(wallet_filename_cr
   {
     auto it = wallets.find(wallet_file_name);
     /// For each not opened wallet perform implicit open - this is needed to correctly support a close method
-    if (it == wallets.end())
-      open(wallet_filename_creator, wallet_file_name);
+    if( it == wallets.end() )
+      open( wallet_file_name );
   }
 
   for(const auto& w : wallets)
@@ -113,6 +112,42 @@ std::vector<wallet_details> wallet_manager_impl::list_wallets(wallet_filename_cr
   }
 
   return _result;
+}
+
+std::vector< std::string > wallet_manager_impl::list_created_wallets_impl( const boost::filesystem::path& directory, const std::string& extension ) const
+{
+  std::vector< std::string > _result;
+
+  boost::filesystem::directory_iterator _end_itr;
+  for( boost::filesystem::directory_iterator itr( directory ); itr != _end_itr; ++itr )
+  {
+    if( boost::filesystem::is_regular_file( itr->path() ) )
+    {
+      if( itr->path().extension() == extension )
+      {
+        std::vector<std::string> _path_parts;
+        boost::split( _path_parts, itr->path().c_str(), boost::is_any_of("/") );
+        if( !_path_parts.empty() )
+        {
+          std::vector<std::string> _file_parts;
+          boost::split( _file_parts, *_path_parts.rbegin(), boost::is_any_of(".") );
+          if( !_file_parts.empty() )
+            _result.emplace_back( *_file_parts.begin() );
+        }
+      }
+    }
+  }
+  return _result;
+}
+
+std::vector<wallet_details> wallet_manager_impl::list_wallets()
+{
+  return list_wallets_impl( std::vector< std::string >() );
+}
+
+std::vector<wallet_details> wallet_manager_impl::list_created_wallets()
+{
+  return list_wallets_impl( list_created_wallets_impl( get_wallet_directory(), get_extension() ) );
 }
 
 map<public_key_type, private_key_type> wallet_manager_impl::list_keys( const string& name, const string& pw )
@@ -188,11 +223,11 @@ void wallet_manager_impl::lock( const std::string& name )
   w->lock();
 }
 
-void wallet_manager_impl::unlock( wallet_filename_creator_type wallet_filename_creator, const std::string& name, const std::string& password )
+void wallet_manager_impl::unlock( const std::string& name, const std::string& password )
 {
   if (wallets.count(name) == 0)
   {
-    open( wallet_filename_creator, name );
+    open( name );
   }
   auto& w = wallets.at(name);
   FC_ASSERT( w->is_locked(), "Wallet is already unlocked: ${w}", ("w", name));

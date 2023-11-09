@@ -20,16 +20,16 @@ std::shared_ptr<session_base> session_manager_base::get_session( const std::stri
   return _found->second;
 }
 
-std::shared_ptr<session_base> session_manager_base::create_session( const std::string& notifications_endpoint/*not used here*/, const std::string& token, std::shared_ptr<time_manager_base> time )
+std::shared_ptr<session_base> session_manager_base::create_session( const std::string& notifications_endpoint/*not used here*/, const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory )
 {
-  return std::make_shared<session_base>( token, time );
+  return std::make_shared<session_base>( token, time, wallet_directory );
 }
 
-std::string session_manager_base::create_session( const std::string& salt, const std::string& notifications_endpoint, const beekeeper_instance_base& bk_instance )
+std::string session_manager_base::create_session( const std::string& salt, const std::string& notifications_endpoint, const boost::filesystem::path& wallet_directory )
 {
   auto _token = token_generator::generate_token( salt, token_length );
 
-  std::shared_ptr<session_base> _session = create_session( notifications_endpoint, _token, time );
+  std::shared_ptr<session_base> _session = create_session( notifications_endpoint, _token, time, wallet_directory );
   sessions.emplace( _token, _session );
 
   FC_ASSERT( time );
@@ -41,9 +41,9 @@ std::string session_manager_base::create_session( const std::string& salt, const
 
                 _wallet_mgr->lock_all();
               },
-              [this, &bk_instance]( const std::string& token )
+              [this]( const std::string& token )
               {
-                get_session( token )->prepare_notifications( bk_instance );
+                get_session( token )->prepare_notifications();
               }
               );
 

@@ -33,7 +33,7 @@ class session_base
 
   public:
 
-    session_base( const std::string& token, std::shared_ptr<time_manager_base> time );
+    session_base( const std::string& token, std::shared_ptr<time_manager_base> time, const boost::filesystem::path& wallet_directory );
     virtual ~session_base(){}
 
     void set_timeout( const std::chrono::seconds& t );
@@ -43,7 +43,7 @@ class session_base
 
     std::shared_ptr<wallet_manager_impl> get_wallet_manager();
 
-    virtual void prepare_notifications( const beekeeper_instance_base& bk_instance ){};
+    virtual void prepare_notifications(){};
 };
 
 } //beekeeper

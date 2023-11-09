@@ -234,8 +234,6 @@ struct exception
   }
 };
 
-std::vector< std::string > list_all_wallets( const boost::filesystem::path& directory, const std::string& extension );
-
 }
 namespace fc
 {
