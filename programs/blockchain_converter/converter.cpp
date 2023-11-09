@@ -415,7 +415,8 @@ namespace hive { namespace converter {
           calculate_transaction_expiration( head_block_time.sec_since_epoch(), _signed_block.timestamp.sec_since_epoch(), trx.expiration.sec_since_epoch(), block_offset, trx_time_offset )
         };
       }
-      while(!tapos_scope_tx_ids.insert( trx.id() ).second);
+      /// use same id computation scheme as the one used inside convert_signed_transaction.
+      while(!tapos_scope_tx_ids.insert( trx.id(hp::pack_type::legacy) ).second);
     };
 
     std::set<size_t> already_signed_transaction_pos;
