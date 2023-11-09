@@ -45,7 +45,7 @@ namespace beekeeper
 
     public:
 
-      beekeeper_instance( appbase::application& _app, const boost::filesystem::path& _wallet_directory, const std::string& _notifications_endpoint );
+      beekeeper_instance( appbase::application& app, const boost::filesystem::path& wallet_directory, const std::string& notifications_endpoint );
       ~beekeeper_instance() override;
 
       bool start() override;

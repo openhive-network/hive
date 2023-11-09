@@ -7,6 +7,7 @@ beekeeper_wallet_manager::beekeeper_wallet_manager( std::shared_ptr<session_mana
                                                   )
                           : unlock_timeout( cmd_unlock_timeout ), session_limit( cmd_session_limit ),
                             public_key_size( private_key_type::generate().get_public_key().to_base58().size() ),
+                            wallet_directory( cmd_wallet_dir ),
                             close_all_sessions_action( method ),
                             sessions( sessions ), instance( instance )
 {
@@ -31,14 +32,14 @@ std::string beekeeper_wallet_manager::create( const std::string& token, const st
 {
   sessions->check_timeout( token );
 
-  return sessions->get_wallet_manager( token )->create( [this]( const std::string& name ){ return instance->create_wallet_filename( name ); }, name, password );
+  return sessions->get_wallet_manager( token )->create( name, password );
 }
 
 void beekeeper_wallet_manager::open( const std::string& token, const std::string& name )
 {
   sessions->check_timeout( token );
 
-  sessions->get_wallet_manager( token )->open( [this]( const std::string& name ){ return instance->create_wallet_filename( name ); }, name );
+  sessions->get_wallet_manager( token )->open( name );
 }
 
 void beekeeper_wallet_manager::close( const std::string& token, const std::string& name )
@@ -51,16 +52,14 @@ void beekeeper_wallet_manager::close( const std::string& token, const std::strin
 std::vector<wallet_details> beekeeper_wallet_manager::list_wallets( const std::string& token )
 {
   sessions->check_timeout( token );
-  return sessions->get_wallet_manager( token )->list_wallets([this](const std::string& name) { return instance->create_wallet_filename(name); },
-    std::vector<std::string>() );
+  return sessions->get_wallet_manager( token )->list_wallets();
 }
 
 std::vector<wallet_details> beekeeper_wallet_manager::list_created_wallets(const std::string& token)
 {
   sessions->check_timeout(token);
 
-  return sessions->get_wallet_manager(token)->list_wallets([this](const std::string& name) { return instance->create_wallet_filename(name); },
-    list_all_wallets(instance->get_wallet_directory(), instance->get_extension()));
+  return sessions->get_wallet_manager(token)->list_created_wallets();
 }
 
 map<public_key_type, private_key_type> beekeeper_wallet_manager::list_keys( const std::string& token, const string& name, const string& pw )
@@ -87,7 +86,7 @@ void beekeeper_wallet_manager::lock( const std::string& token, const std::string
 
 void beekeeper_wallet_manager::unlock( const std::string& token, const std::string& name, const std::string& password )
 {
-  sessions->get_wallet_manager( token )->unlock( [this]( const std::string& name ){ return instance->create_wallet_filename( name ); }, name, password );
+  sessions->get_wallet_manager( token )->unlock( name, password );
 }
 
 string beekeeper_wallet_manager::import_key( const std::string& token, const std::string& name, const std::string& wif_key )
@@ -117,7 +116,7 @@ string beekeeper_wallet_manager::create_session( const string& salt, const strin
 {
   FC_ASSERT( session_cnt < session_limit, "Number of concurrent sessions reached a limit ==`${session_limit}`. Close previous sessions so as to open the new one.", (session_limit) );
 
-  auto _token = sessions->create_session( salt, notifications_endpoint, *instance.get() );
+  auto _token = sessions->create_session( salt, notifications_endpoint, wallet_directory );
   set_timeout_impl( _token, unlock_timeout );
 
   ++session_cnt;

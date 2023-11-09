@@ -149,6 +149,8 @@ private:
 
   uint32_t public_key_size = 0;
 
+  const boost::filesystem::path wallet_directory;
+
   close_all_sessions_action_method  close_all_sessions_action;
 
   std::shared_ptr<session_manager_base> sessions;

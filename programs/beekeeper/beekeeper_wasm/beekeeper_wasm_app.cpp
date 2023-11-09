@@ -64,7 +64,7 @@ void beekeeper_wasm_app::setup_logger( const boost::program_options::variables_m
 
 std::shared_ptr<beekeeper::beekeeper_wallet_manager> beekeeper_wasm_app::create_wallet( const boost::filesystem::path& cmd_wallet_dir, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit )
 {
-  return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager_base>(), std::make_shared<beekeeper_instance_base>( cmd_wallet_dir ),
+  return std::make_shared<beekeeper::beekeeper_wallet_manager>( std::make_shared<session_manager_base>(), std::make_shared<beekeeper_instance_base>(),
                                                                       cmd_wallet_dir, cmd_unlock_timeout, cmd_session_limit );
 }
 

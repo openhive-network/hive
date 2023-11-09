@@ -9,32 +9,6 @@ namespace beekeeper {
     return public_key < obj.public_key;
   }
 
-  std::vector< std::string > list_all_wallets( const boost::filesystem::path& directory, const std::string& extension )
-  {
-    std::vector< std::string > _result;
-
-    boost::filesystem::directory_iterator _end_itr;
-    for( boost::filesystem::directory_iterator itr( directory ); itr != _end_itr; ++itr )
-    {
-      if( boost::filesystem::is_regular_file( itr->path() ) )
-      {
-        if( itr->path().extension() == extension )
-        {
-          std::vector<std::string> _path_parts;
-          boost::split( _path_parts, itr->path().c_str(), boost::is_any_of("/") );
-          if( !_path_parts.empty() )
-          {
-            std::vector<std::string> _file_parts;
-            boost::split( _file_parts, *_path_parts.rbegin(), boost::is_any_of(".") );
-            if( !_file_parts.empty() )
-              _result.emplace_back( *_file_parts.begin() );
-          }
-        }
-      }
-    }
-    return _result;
-  }
-
 }
 namespace fc
 {
