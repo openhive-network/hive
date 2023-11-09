@@ -790,8 +790,6 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
           std::move( db._pending_tx ), [&]() {
             try
             {
-              //switch_forks( new_head_block->get_block_id(), new_head_block->get_block_num() );
-
               const block_id_type& new_head_block_id = new_head_block->get_block_id();
               uint32_t new_head_block_num = new_head_block->get_block_num();
 
