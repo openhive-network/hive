@@ -121,7 +121,7 @@ namespace detail {
           {
             converter.touch(_full_block->get_block_id());
 
-            ilog("Comparing signatures in trx ${trx_id} in block ${block_num}:", ("trx_id", tx.id())("block_num", _full_block->get_block_num()));
+            ilog("Comparing signatures in trx ${trx_id} in block ${block_num}:", ("trx_id", tx.id(hp::pack_type::legacy))("block_num", _full_block->get_block_num()));
 
             const auto& sig = *tx.signatures.begin();
             ilog("Previous signature: ${sig}", ("sig", sig));
