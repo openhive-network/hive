@@ -319,7 +319,10 @@ namespace chain {
         */
       uint32_t witness_participation_rate()const;
 
-      void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = skip_nothing );
+      bool is_fast_confirm_transaction( const std::shared_ptr<full_transaction_type>& full_transaction) ;
+      using switch_forks_t = std::function< std::optional< uint32_t >( std::shared_ptr<full_block_type>, uint32_t ) >;
+      void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, switch_forks_t sf);
+      void process_non_fast_confirm_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = skip_nothing );
       void _push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction );
 
       void pop_block();
@@ -656,8 +659,6 @@ namespace chain {
     private:
       optional< chainbase::database::session > _pending_tx_session;
 
-      void switch_forks(const block_id_type& new_head_block_id, uint32_t new_head_block_num,
-                        const block_flow_control* pushed_block_ctrl = nullptr);
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, const block_flow_control* block_ctrl = nullptr );
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
@@ -688,8 +689,7 @@ namespace chain {
 
       void update_global_dynamic_data( const signed_block& b );
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
-      void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
-      uint32_t update_last_irreversible_block(bool currently_applying_a_block);
+      uint32_t update_last_irreversible_block(std::optional<switch_forks_t> sf);
       void migrate_irreversible_state(uint32_t old_last_irreversible);
       void clear_expired_transactions();
       void clear_expired_orders();

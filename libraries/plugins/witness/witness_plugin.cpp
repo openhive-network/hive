@@ -330,7 +330,7 @@ namespace detail {
                 //ilog("Broadcasting fast-confirm transaction for ${witness_name}, block #${block_num}", (witness_name)("block_num", note.block_num));
                 uint32_t skip = _db.get_node_skip_flags();
 
-                _db.push_transaction(full_transaction, skip);
+                _chain_plugin.push_transaction(full_transaction, skip);
                 theApp.get_plugin<hive::plugins::p2p::p2p_plugin>().broadcast_transaction(full_transaction);
               }
               else

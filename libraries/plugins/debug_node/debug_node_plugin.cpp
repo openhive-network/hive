@@ -133,7 +133,7 @@ const protocol::transaction_id_type& debug_node_plugin::make_artificial_transact
   const auto pack_type = hive::protocol::serialization_mode_controller::get_current_pack();
   hive::chain::full_transaction_ptr ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
   ftx->sign_transaction( std::vector<fc::ecc::private_key>{}, database().get_chain_id(), fc::ecc::fc_canonical, pack_type );
-  database().push_transaction( ftx, 0 );
+  my->_chain_plugin.push_transaction( ftx, 0 );
 
   // if we have internal transaction(s) and are here it means there was regular transaction
   // between last debug_update() and this one while there were no blocks;
