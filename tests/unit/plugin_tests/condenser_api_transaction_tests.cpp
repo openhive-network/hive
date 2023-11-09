@@ -34,7 +34,7 @@ void test_get_transaction( const condenser_api_fixture& caf, uint32_t block_num,
   for( size_t transaction_index = 0; transaction_index < expected_transactions.size(); ++transaction_index )
   {
     const auto& trx = block.transactions[ transaction_index ];
-    const auto& trx_id = trx.id();
+    const auto& trx_id = trx.id(hive::protocol::pack_type::legacy);
     BOOST_REQUIRE( trx_id != hive::protocol::transaction_id_type() );
     const auto& expected_transaction = expected_transactions[ transaction_index ];
 
