@@ -11,12 +11,15 @@
 namespace hive { namespace chain {
 
 sync_block_writer::sync_block_writer( database& db, application& app )
-  : _block_log( app ), _reader( _fork_db, _block_log ), _db(db), _app(app)
+  : _block_log( app ), /*_reader( _fork_db, _block_log ),*/ _db(db), _app(app)
 {}
+
 
 block_read_i& sync_block_writer::get_block_reader()
 {
-  return _reader;
+  FC_ASSERT(0);
+  block_read_i* ptr = nullptr;
+  return (*ptr);
 }
 
 void sync_block_writer::store_block( uint32_t current_irreversible_block_num,

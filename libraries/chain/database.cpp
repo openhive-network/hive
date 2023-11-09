@@ -45,6 +45,9 @@
 
 #include <fc/io/fstream.hpp>
 
+#include <hive/chain/sync_block_writer.hpp>
+
+
 #include <boost/scope_exit.hpp>
 
 #include <iostream>
@@ -211,6 +214,24 @@ void database::initialize_state_independent_data(const open_args& args)
   init_hardforks();
 }
 
+
+static auto volatile stop_in_load_state_initial_data = false;
+
+void stop_in_by_undo_all()
+{
+  static auto volatile  stop_in_by_undo_all_b = false;
+
+  wlog("mtlk stop_in_by_undo_all");
+  wlog("pid= ${pid}", ("pid" , getpid() ));
+
+  while(stop_in_by_undo_all_b)
+  {
+    int a = 0;
+    a=a;
+  }
+}
+
+
 void database::load_state_initial_data(const open_args& args)
 {
   uint32_t hb = head_block_num();
@@ -223,7 +244,9 @@ void database::load_state_initial_data(const open_args& args)
   // Rewind all undo state. This should return us to the state at the last irreversible block.
   with_write_lock([&]() {
     ilog("Attempting to rewind all undo state...");
-
+    
+    stop_in_by_undo_all();
+    
     undo_all();
 
     ilog("Rewind undo state done.");
@@ -247,12 +270,32 @@ void database::load_state_initial_data(const open_args& args)
 
   if (head_block_num())
   {
+    wlog("mtlk stop_in_load_state_initial_data");
+    wlog("pid= ${pid}", ("pid" , getpid() ));
+    while(stop_in_load_state_initial_data)
+    {
+      int a = 0;
+      a=a;
+    }
+
     std::shared_ptr<full_block_type> head_block = 
       _block_writer->get_block_reader().read_block_by_num(head_block_num());
     // This assertion should be caught and a reindex should occur
     FC_ASSERT(head_block && head_block->get_block_id() == head_block_id(),
     "Chain state {\"block-number\": ${block_number1} \"id\":\"${block_hash1}\"} does not match block log {\"block-number\": ${block_number2} \"id\":\"${block_hash2}\"}. Please reindex blockchain.",
     ("block_number1", head_block_num())("block_hash1", head_block_id())("block_number2", head_block ? head_block->get_block_num() : 0)("block_hash2", head_block ? head_block->get_block_id() : block_id_type()));
+
+    hive::chain::sync_block_writer* sbw = dynamic_cast<sync_block_writer*>(_block_writer);
+    if(sbw)
+      sbw->on_reindex_end(head_block);
+
+//     _fork_db.start_block    
+
+//     void sync_block_writer::on_reindex_end( const std::shared_ptr<full_block_type>& end_block )
+// {
+//   _fork_db.start_block( end_block );
+// }
+
   }
 
   with_read_lock([&]() {
@@ -3895,6 +3938,16 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   const signed_block& block = full_block->get_block();
   const uint32_t block_num = full_block->get_block_num();
   block_notification note(full_block);
+
+
+  dlog("mtlk _apply_block block_num=${num} pid= ${pid}", ("num", block_num)("pid" , getpid() ));
+
+  if(block_num == 22)
+  {
+    int a = 0 ;
+    a = a;
+  }
+
 
   try {
   notify_pre_apply_block( note );

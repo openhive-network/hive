@@ -8,6 +8,8 @@ namespace hive { namespace chain {
 
 fork_database::fork_database()
 {
+  int a = 0;
+  a=a;
 }
 void fork_database::reset()
 {
