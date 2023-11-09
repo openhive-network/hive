@@ -41,8 +41,7 @@ std::string wallet_manager_impl::create( const std::string& name, const std::opt
 
   std::string _password = password ? ( *password ) : gen_password();
 
-  wallet_data d;
-  auto wallet = make_unique<beekeeper_wallet>(d);
+  auto wallet = make_unique<beekeeper_wallet>();
   wallet->set_password( _password );
   wallet->set_wallet_filename(wallet_filename.string());
   wallet->unlock( _password );
@@ -68,8 +67,7 @@ void wallet_manager_impl::open( const std::string& name )
 {
   valid_filename(name);
 
-  wallet_data d;
-  auto wallet = std::make_unique<beekeeper_wallet>(d);
+  auto wallet = std::make_unique<beekeeper_wallet>();
   auto wallet_filename = create_wallet_filename( name );
   wallet->set_wallet_filename(wallet_filename.string());
   FC_ASSERT( wallet->load_wallet_file(), "Unable to open file: ${f}", ("f", wallet_filename.string()));
