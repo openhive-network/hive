@@ -3940,7 +3940,7 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   block_notification note(full_block);
 
 
-  dlog("mtlk _apply_block block_num=${num} pid= ${pid}", ("num", block_num)("pid" , getpid() ));
+  //dlog("mtlk _apply_block block_num=${num} pid= ${pid}", ("num", block_num)("pid" , getpid() ));
 
   if(block_num == 22)
   {

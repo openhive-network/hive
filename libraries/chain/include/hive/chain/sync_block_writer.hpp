@@ -19,7 +19,7 @@ namespace hive { namespace chain {
     sync_block_writer( database& db, application& app );
     virtual ~sync_block_writer() = default;
 
-    virtual block_read_i& get_block_reader();
+    virtual block_read_i& get_block_reader() override;
 
     virtual void set_is_at_live_sync() override { _is_at_live_sync = true; }
 
@@ -53,9 +53,8 @@ namespace hive { namespace chain {
 
   private:
   protected:  block_log             _block_log; private:
-    //fork_db_block_reader  _reader;
+    fork_db_block_reader  _reader;
   protected:   fork_database         _fork_db; private:
-  
     bool                  _is_at_live_sync = false;
     database&             _db; /// Needed only for notification purposes.
     application&          _app; /// Needed only for notification purposes.
