@@ -194,21 +194,6 @@ def drop_keys_from(container: dict, *keys_to_drop) -> None:
         del container[key]
 
 
-def build_alternate_chain_spec(
-    hardfork_schedule: list,
-    init_witnesses: list | None = None,
-    init_supply: int | None = None,
-    hbd_init_supply: int | None = None,
-) -> dict:
-    return {
-        "genesis_time": int(time.time()),
-        "hardfork_schedule": hardfork_schedule,
-        **({"init_witnesses": init_witnesses} if init_witnesses else {}),
-        **({"init_supply": init_supply} if init_supply else {}),
-        **({"hbd_init_supply": hbd_init_supply} if hbd_init_supply else {}),
-    }
-
-
 def write_to_json(alternate_chain_spec_content: dict) -> None:
     directory = tt.context.get_current_directory()
     directory.mkdir(parents=True, exist_ok=True)
