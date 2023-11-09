@@ -10,17 +10,17 @@
 
 namespace hive { namespace protocol {
 
-digest_type signed_transaction::merkle_digest()const
+digest_type signed_transaction::merkle_digest(hive::protocol::pack_type pack)const
 {
-  hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
+  hive::protocol::serialization_mode_controller::pack_guard guard( pack );
   digest_type::encoder enc;
   fc::raw::pack( enc, *this );
   return enc.result();
 }
 
-digest_type transaction::digest()const
+digest_type transaction::digest(hive::protocol::pack_type pack)const
 {
-  hive::protocol::serialization_mode_controller::pack_guard guard( hive::protocol::pack_type::legacy );
+  hive::protocol::serialization_mode_controller::pack_guard guard( pack );
   digest_type::encoder enc;
   fc::raw::pack( enc, *this );
   return enc.result();
@@ -55,9 +55,9 @@ void transaction::validate( const std::function<void( const operation& op, bool 
   }
 }
 
-transaction_id_type transaction::id() const
+transaction_id_type transaction::id(hive::protocol::pack_type pack) const
 {
-  auto h = digest();
+  auto h = digest(pack);
   transaction_id_type result;
   memcpy(result._hash, h._hash, std::min(sizeof(result), sizeof(h)));
   return result;
