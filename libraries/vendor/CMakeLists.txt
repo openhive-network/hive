@@ -16,7 +16,7 @@ SET(WITH_TOOLS OFF CACHE BOOL "build with tools")
 SET(WITH_TRACE_TOOLS OFF CACHE BOOL "build with trace tools")
 SET(WITH_GFLAGS OFF CACHE BOOL "build with GFlags")
 SET(USE_RTTI ON CACHE BOOL "build with RTTI")
-SET(PORTABLE ON CACHE BOOL "build a portable binary")
+SET(PORTABLE 1 CACHE BOOL "build a portable binary")
 SET(WITH_TESTS OFF CACHE BOOL "build with tests")
 SET(WITH_TOOLS OFF CACHE BOOL "build with tools")
 
