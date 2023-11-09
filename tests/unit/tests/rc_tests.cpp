@@ -763,7 +763,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
       _ftx->sign_transaction( _keys, db->get_chain_id(), fc::ecc::fc_canonical, pack_type::hf26 );
       uint64_t start_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
-      db->push_transaction( _ftx, 0 );
+      get_chain_plugin().push_transaction( _ftx, 0 );
       uint64_t stop_time = std::chrono::duration_cast< std::chrono::nanoseconds >(
         std::chrono::system_clock::now().time_since_epoch() ).count();
       time += stop_time - start_time;

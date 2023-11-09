@@ -666,25 +666,7 @@ uint32_t database::witness_participation_rate()const
   return uint64_t(HIVE_100_PERCENT) * fc::uint128_popcount(dpo.recent_slots_filled) / 128;
 }
 
-void database::switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num, const block_flow_control* pushed_block_ctrl )
-{
-  uint32_t skip = get_node_skip_flags();
-  _block_writer->switch_forks( 
-    new_head_block_id,
-    new_head_block_num,
-    skip,
-    pushed_block_ctrl,
-    head_block_id(), head_block_num(), 
-    [&] ( const std::shared_ptr< full_block_type >& fb,
-          uint32_t skip, const block_flow_control* block_ctrl )
-      { this->apply_block_extended(fb,skip,block_ctrl); },
-    [&] ( const block_id_type end_block ) -> uint32_t
-      { return this->pop_block_extended( end_block ); }
-    );
-  theApp.notify("switching forks", "id", new_head_block_id.str(), "num", new_head_block_num);
-}
-
-bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
+bool database::is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 {
   const signed_transaction& trx = full_transaction->get_transaction();
   return trx.operations.size() == 1 && trx.operations.front().which() == operation::tag<witness_block_approve_operation>::value;
@@ -699,17 +681,13 @@ bool is_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& f
   * queues full as well, it will be kept in the queue to be propagated later when a new block flushes out the pending
   * queues.
   */
-void database::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
+void database::process_non_fast_confirm_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
 {
   const signed_transaction& trx = full_transaction->get_transaction(); // just for the rethrow
   try
   {
-    if (is_fast_confirm_transaction(full_transaction))
-    {
-      // fast-confirm transactions are just processed in memory, they're not added to the blockchain
-      process_fast_confirm_transaction(full_transaction);
-      return;
-    }
+    FC_ASSERT( not is_fast_confirm_transaction(full_transaction),
+               "Use chain_plugin::push_transaction for transaction ${trx}", (trx) );
 
     size_t trx_size = full_transaction->get_transaction_size();
     //ABW: why is that limit related to block size and not HIVE_MAX_TRANSACTION_SIZE?
@@ -3937,7 +3915,7 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   update_global_dynamic_data(block);
   update_signing_witness(signing_witness, block);
 
-  uint32_t old_last_irreversible = update_last_irreversible_block(true);
+  uint32_t old_last_irreversible = update_last_irreversible_block( std::optional<switch_forks_t>() );
 
   create_block_summary(full_block);
   clear_expired_transactions();
@@ -4759,9 +4737,16 @@ const witness_schedule_object& database::get_witness_schedule_object_for_irrever
     return get_witness_schedule_object();
 }
 
-void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
+void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction,
+  switch_forks_t sf)
 { try {
   FC_ASSERT(has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION), "Fast confirmation transactions not valid until HF26");
+
+  signed_transaction trx = full_transaction->get_transaction();
+
+  FC_ASSERT( is_fast_confirm_transaction(full_transaction),
+             "Use chain_plugin::push_transaction for transaction ${trx}", (trx) );
+
   // fast-confirm transactions are processed outside of the normal transaction processing flow,
   // so we need to explicitly call validation here.
   // Skip the tapos check for these transactions -- a witness could be on a different fork from
@@ -4769,8 +4754,6 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   // If we have that block in our fork database and a supermajority of witnesses approve it, we
   // want to try to switch to it.
   validate_transaction(full_transaction, skip_tapos_check);
-
-  signed_transaction trx = full_transaction->get_transaction();
 
   const witness_block_approve_operation& block_approve_op = trx.operations.front().get<witness_block_approve_operation>();
   // dlog("Processing fast-confirm transaction from witness ${witness}", ("witness", block_approve_op.witness));
@@ -4806,11 +4789,12 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
        (new_approved_block_number)("id", block_approve_op.block_id));
   // ddump((_my->_last_fast_approved_block_by_witness));
 
-  uint32_t old_last_irreversible_block = update_last_irreversible_block(false);
+  uint32_t old_last_irreversible_block = update_last_irreversible_block( std::optional<switch_forks_t>( sf ) );
+
   migrate_irreversible_state(old_last_irreversible_block);
 } FC_CAPTURE_AND_RETHROW() }
 
-uint32_t database::update_last_irreversible_block(const bool currently_applying_a_block)
+uint32_t database::update_last_irreversible_block( std::optional<switch_forks_t> sf )
 { try {
   uint32_t old_last_irreversible = get_last_irreversible_block_num();
   /**
@@ -4892,32 +4876,17 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
       return old_last_irreversible;
     }
 
-    if (currently_applying_a_block)
+    if( sf )
+    {
+      std::optional<uint32_t> return_value = (*sf)( new_lib_info->new_head_block, old_last_irreversible );
+      if( return_value )
+        return *return_value;
+    }
+    else
     {
       // we shouldn't ever trigger a fork switch when this function is called near the end of
       // _apply_block().  If it ever happens, we'll just delay the fork switch until the next
       // time we get a new block or a fast-confirm operation.
-      return old_last_irreversible;
-    }
-
-    try
-    {
-      detail::without_pending_transactions( *this, existing_block_flow_control(new_lib_info->new_head_block),
-        std::move(_pending_tx), [&]() {
-          try
-          {
-            dlog("calling switch_forks() from update_last_irreversible_block()");
-            switch_forks( new_lib_info->new_head_block->get_block_id(),
-                          new_lib_info->new_head_block->get_block_num() );
-            // when we switch forks, irreversibility will be re-evaluated at the end of every block pushed
-            // on the new fork, so we don't need to mark the block as irreversible here
-            return old_last_irreversible;
-          }
-          FC_CAPTURE_AND_RETHROW()
-      });
-    }
-    catch (const fc::exception&)
-    {
       return old_last_irreversible;
     }
   }

@@ -162,6 +162,7 @@ class chain_plugin_impl
     void write_default_database_config( bfs::path& p );
     void setup_benchmark_dumper();
 
+    void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip );
     bool push_block( const block_flow_control& block_ctrl, uint32_t skip );
 
     void add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts, hive::chain::blockchain_worker_thread_pool& thread_pool );
@@ -334,7 +335,7 @@ struct chain_plugin_impl::write_request_visitor
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f, cp.theApp)
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
       ++count_tx_pushed;
-      cp.db.push_transaction( tx_ctrl->get_full_transaction() );
+      cp.push_transaction( tx_ctrl->get_full_transaction(), database::skip_nothing );
       cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
@@ -769,6 +770,64 @@ void chain_plugin_impl::open()
     /// this exit shall be eliminated and exception caught inside application::startup, then force app exit with given code (but without calling exit function).
     exit(EXIT_FAILURE);
   }
+}
+
+void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
+{
+  const signed_transaction& trx = full_transaction->get_transaction(); // just for the rethrow
+  try
+  {
+    if( not db.is_fast_confirm_transaction( full_transaction ) )
+    {
+      db.process_non_fast_confirm_transaction( full_transaction, skip );
+      return;
+    }
+
+    auto sf = [&]( std::shared_ptr<full_block_type> new_head_block, uint32_t old_last_irreversible )-> std::optional< uint32_t > {
+      try
+      {
+        hive::chain::detail::without_pending_transactions( db, existing_block_flow_control( new_head_block ),
+          std::move( db._pending_tx ), [&]() {
+            try
+            {
+              //switch_forks( new_head_block->get_block_id(), new_head_block->get_block_num() );
+
+              const block_id_type& new_head_block_id = new_head_block->get_block_id();
+              uint32_t new_head_block_num = new_head_block->get_block_num();
+
+              uint32_t skip = db.get_node_skip_flags();
+              default_block_writer.switch_forks( 
+                new_head_block_id,
+                new_head_block_num,
+                skip,
+                nullptr /*pushed_block_ctrl*/,
+                db.head_block_id(), db.head_block_num(), 
+                [&] ( const std::shared_ptr< full_block_type >& fb,
+                      uint32_t skip, const block_flow_control* block_ctrl )
+                  { db.apply_block_extended(fb,skip,block_ctrl); },
+                [&] ( const block_id_type end_block ) -> uint32_t
+                  { return db.pop_block_extended( end_block ); }
+                );
+              theApp.notify("switching forks", "id", new_head_block_id.str(), "num", new_head_block_num);
+
+              // when we switch forks, irreversibility will be re-evaluated at the end of every block pushed
+              // on the new fork, so we don't need to mark the block as irreversible here
+              return std::optional< uint32_t >( old_last_irreversible );
+            }
+            FC_CAPTURE_AND_RETHROW()
+        });
+      }
+      catch( const fc::exception& )
+      {
+        return std::optional< uint32_t >( old_last_irreversible );
+      }
+      return std::optional< uint32_t >();
+    }; // end sf lambda
+
+    // fast-confirm transactions are just processed in memory, they're not added to the blockchain
+    db.process_fast_confirm_transaction( full_transaction, sf );
+  }
+  FC_CAPTURE_AND_RETHROW((trx))
 }
 
 void chain_plugin_impl::add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts, hive::chain::blockchain_worker_thread_pool& thread_pool )
@@ -1704,6 +1763,11 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
     }
   }
 } FC_CAPTURE_AND_RETHROW() }
+
+void chain_plugin::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
+{
+  my->push_transaction( full_transaction, skip );
+}
 
 /**
   * Push block "may fail" in which case every partial change is unwound.  After
