@@ -13,8 +13,8 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   CI_DEBUG_SERVICES: "true"
   # pin to specific docker images for build repeatability
-  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu22.04-7
-  TEST_IMAGE_TAG: "@sha256:8f68baf07c6e581e1e8034a1447c4ff1268239fc886bfe4b02aa3f4182bf78bb"
+  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu22.04-8
+  TEST_IMAGE_TAG: "@sha256:e9f16040010ad24fffeabec66abca109b24baa79d912eba3118da58e8130fb26"
 
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
@@ -38,7 +38,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: ae2ec71af47184cdd9567ae85ff821d133c3343f
+    ref: b88236917be3759ae358bf3c16dd9850b0a50d62
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
@@ -352,6 +352,14 @@ plugin_test:
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
     - !reference [.project_develop_configuration_template, before_script]
     - cd $CI_PROJECT_DIR
+
+verify_poetry_lock_sanity:
+  extends: .verify_poetry_lock_sanity_template
+  stage: static_code_analysis
+  variables:
+    PYPROJECT_DIR: "$CI_PROJECT_DIR/tests/python/hive-local-tools"
+  tags:
+    - public-runner-docker
 
 .python_static_analysis_configuration:
   extends: .python_based
