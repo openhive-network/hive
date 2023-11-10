@@ -3,6 +3,7 @@
 #include <fc/io/json.hpp>
 #include <fc/stacktrace.hpp>
 #include <fc/git_revision.hpp>
+#include <fc/value_set.hpp>
 
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/filesystem.hpp>
@@ -32,15 +33,13 @@ void beekeeper_app_init::set_program_options()
       "The path of the wallet files (absolute path or relative to application data dir)")
 
     ("unlock-timeout", bpo::value<uint64_t>()->default_value(900),
-      "Timeout for unlocked wallet in seconds (default 900 (15 minutes)). "
-      "Wallets will automatically lock after specified number of seconds of inactivity. "
+      "Timeout for unlocked wallet in seconds (default 900 (15 minutes))."
+      "Wallets will be automatically locked after specified number of seconds of inactivity."
       "Activity is defined as any wallet command e.g. list-wallets.")
 
-    ("export-keys-wallet-name", bpo::value<std::string>()->default_value(""),
-      "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required. By default is empty." )
-
-    ("export-keys-wallet-password", bpo::value<std::string>()->default_value(""),
-      "Export explicitly private keys to a local file `wallet_name.keys`. Both (name/password) are required. By default is empty." )
+    ("export-keys-wallet", boost::program_options::value< std::vector<std::string> >()->composing()->multitoken(),
+      "Export explicitly private keys to a local file `wallet_name.keys`. Both [name, password] are required for every wallet. By default is empty."
+      "Two wallets example: --export-keys-wallet \"[\"blue-wallet\", \"PW5JViFn5gd4rt6ohk7DQMgHzQN6Z9FuMRfKoE5Ysk25mkjy5AY1b\"]\" --export-keys-wallet \"[\"green-wallet\", \"PW5KYF9Rt4ETnuP4uheHSCm9kLbCuunf6RqeKgQ8QRoxZmGeZUhhk\"]\" ")
 
     ("backtrace", bpo::value<std::string>()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" )
     ;
@@ -188,9 +187,18 @@ init_data beekeeper_app_init::initialize_program_options()
         ilog( "Backtrace on segfault is enabled." );
       }
 
-      FC_ASSERT( _args.count("export-keys-wallet-name") );
-      FC_ASSERT( _args.count("export-keys-wallet-password") );
-      bool _result = save_keys( _notification, _args.at( "export-keys-wallet-name" ).as<std::string>(), _args.at( "export-keys-wallet-password" ).as<std::string>() );
+      bool _result = true;
+
+      using _strings_pair_type = std::pair< string, string >;
+      fc::flat_map< string, string > _items;
+      fc::load_value_set<_strings_pair_type>( _args, "export-keys-wallet", _items );
+
+      for( auto& item : _items )
+      {
+        _result = save_keys( _notification, item.first, item.second );
+        if( !_result )
+          break;
+      }
 
       return { _result, fc::git_revision_sha };
   } FC_LOG_AND_RETHROW()
