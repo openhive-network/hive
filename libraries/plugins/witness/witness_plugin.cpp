@@ -551,7 +551,7 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 
   my->_chain_plugin.register_block_generator( get_name(), my->_block_producer );
 
-  LOAD_VALUE_SET( options, "witness", my->_witnesses, hive::protocol::account_name_type )
+  fc::load_value_set<hive::protocol::account_name_type>( options, "witness", my->_witnesses);
 
   if( options.count("private-key") )
   {
