@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import json
-import time
 
 import pytest
 
 import test_tools as tt
+from hive_local_tools import create_alternate_chain_spec_file
 from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 
 
@@ -17,23 +17,24 @@ def test_simply_hardfork_schedule():
     To make compensation of blocks delay is used blocks_delay_margin.
     """
     blocks_delay_margin = 3
-
-    init_supply = 1000000
-    hbd_init_supply = 2000000
-    hardfork_schedule = [
-        {"hardfork": 2, "block_num": 0},
-        {"hardfork": 20, "block_num": 20},
-        {"hardfork": 27, "block_num": 380},
-    ]
     witnesses_required_for_hf06_and_later = [f"witness-{witness_num}" for witness_num in range(16)]
-    alternate_chain_spec = build_alternate_chain_spec(
-        hardfork_schedule, witnesses_required_for_hf06_and_later, init_supply, hbd_init_supply
+
+    create_alternate_chain_spec_file(
+        genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+        hardfork_schedule=[
+            {"hardfork": 2, "block_num": 0},
+            {"hardfork": 20, "block_num": 20},
+            {"hardfork": 27, "block_num": 380},
+        ],
+        init_supply=1000000,
+        hbd_init_supply=2000000,
+        init_witnesses=witnesses_required_for_hf06_and_later,
     )
 
     init_node = tt.InitNode()
     for witness in witnesses_required_for_hf06_and_later:
         init_node.config.witness.append(witness)
-    write_to_json(alternate_chain_spec)
+
     init_node.run(
         time_offset="+0 x20",
         arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)],
@@ -94,10 +95,12 @@ def test_simply_hardfork_schedule():
     ],
 )
 def test_incorrect_hardfork_schedules(hardfork_schedule):
-    alternate_chain_spec = build_alternate_chain_spec(hardfork_schedule)
+    create_alternate_chain_spec_file(
+        genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+        hardfork_schedule=hardfork_schedule,
+    )
 
     init_node = tt.InitNode()
-    write_to_json(alternate_chain_spec)
     with pytest.raises(TimeoutError):
         init_node.run(
             arguments=[
@@ -115,15 +118,14 @@ def test_incorrect_hardfork_schedules(hardfork_schedule):
     ],
 )
 def test_alternate_chain_spec_necessary_keys(keys_to_drop):
-    hardfork_schedule = [
-        {"hardfork": 2, "block_num": 0},
-    ]
+    alternate_chain_spec = {
+        "genesis_time": int(tt.Time.now(serialize=False).timestamp()),
+        "hardfork_schedule": [{"hardfork": 2, "block_num": 0}],
+    }
 
-    alternate_chain_spec = build_alternate_chain_spec(hardfork_schedule)
     drop_keys_from(alternate_chain_spec, *keys_to_drop)
 
     init_node = tt.InitNode()
-    write_to_json(alternate_chain_spec)
     with pytest.raises(TimeoutError):
         init_node.run(
             arguments=[
@@ -146,22 +148,21 @@ def test_alternate_chain_spec_necessary_keys(keys_to_drop):
     ],
 )
 def test_alternate_chain_spec_optional_keys(keys_to_drop):
-    init_supply = 1000000
-    hbd_init_supply = 2000000
-    hardfork_schedule = [
-        {"hardfork": 2, "block_num": 0},
-    ]
-    witnesses_required_for_hf06_and_later = [f"witness-{witness_num}" for witness_num in range(16)]
-    alternate_chain_spec = build_alternate_chain_spec(
-        hardfork_schedule, witnesses_required_for_hf06_and_later, init_supply, hbd_init_supply
-    )
+    alternate_chain_spec = {
+        "genesis_time": int(tt.Time.now(serialize=False).timestamp()),
+        "hardfork_schedule": [{"hardfork": 2, "block_num": 0}],
+        "init_witnesses": [f"witness-{witness_num}" for witness_num in range(16)],
+        "init_supply": 1000000,
+        "hbd_init_supply": 2000000,
+    }
     drop_keys_from(alternate_chain_spec, *keys_to_drop)
+    create_alternate_chain_spec_file(**alternate_chain_spec)
 
     init_node = tt.InitNode()
-    write_to_json(alternate_chain_spec)
     init_node.run(
         arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)]
     )
+    assert init_node.is_running()
 
 
 @pytest.mark.parametrize(
@@ -174,12 +175,14 @@ def test_alternate_chain_spec_optional_keys(keys_to_drop):
     ],
 )
 def test_invalid_witness_names(witnesses):
-    hardfork_schedule = [
-        {"hardfork": 2, "block_num": 0},
-    ]
-    alternate_chain_spec = build_alternate_chain_spec(hardfork_schedule, witnesses)
+    alternate_chain_spec = {
+        "genesis_time": int(tt.Time.now(serialize=False).timestamp()),
+        "hardfork_schedule": [{"hardfork": 2, "block_num": 0}],
+        "init_witnesses": witnesses,
+    }
+    create_alternate_chain_spec_file(**alternate_chain_spec)
+
     init_node = tt.InitNode()
-    write_to_json(alternate_chain_spec)
     with pytest.raises(TimeoutError):
         init_node.run(
             arguments=[

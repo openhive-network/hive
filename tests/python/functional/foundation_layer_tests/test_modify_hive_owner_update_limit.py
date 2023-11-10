@@ -3,14 +3,21 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from hive_local_tools import create_alternate_chain_spec_file
 from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
-from hive_local_tools.functional.python import change_hive_owner_update_limit
 
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize("limit", [6, 15, 30, 45, 90, 180, 360, 720])
 def test_modify_hive_owner_update_limit(limit):
-    change_hive_owner_update_limit(seconds_limit=limit)
+    node = tt.InitNode()
+    current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
+
+    create_alternate_chain_spec_file(
+        genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+        hardfork_schedule=[{"hardfork": current_hardfork_number, "block_num": 1}],
+        hive_owner_update_limit=limit,
+    )
 
     node = tt.InitNode()
     node.run(
@@ -30,9 +37,15 @@ def test_modify_hive_owner_update_limit(limit):
     ],
 )
 def test_invalid_hive_owner_update_limit_modification(limit):
-    change_hive_owner_update_limit(seconds_limit=limit)
-
     node = tt.InitNode()
+    current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
+
+    create_alternate_chain_spec_file(
+        genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+        hardfork_schedule=[{"hardfork": current_hardfork_number, "block_num": 1}],
+        hive_owner_update_limit=limit,
+    )
+
     with pytest.raises(TimeoutError):
         node.run(
             arguments=[
