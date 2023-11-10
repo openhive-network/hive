@@ -57,13 +57,13 @@ class time_manager_base
     time_manager_base();
     virtual ~time_manager_base();
 
-    void add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method );
-    void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active );
+    virtual void add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method );
+    virtual void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active );
 
-    void run();
-    void run( const std::string& token );
+    virtual void run();
+    virtual void run( const std::string& token );
 
-    void close( const std::string& token );
+    virtual void close( const std::string& token );
 };
 
 } //beekeeper
