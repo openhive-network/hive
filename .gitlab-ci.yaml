@@ -1,6 +1,6 @@
 stages:
-- build
 - static_code_analysis
+- build
 - test
 - cleanup
 - publish
@@ -346,7 +346,6 @@ plugin_test:
 .python_based:
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   extends:
-    - .job-defaults
     - .project_develop_configuration_template
   before_script:
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
