@@ -3,8 +3,6 @@
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/operations.hpp>
 
-#include <hive/utilities/plugin_utilities.hpp>
-
 #include <hive/chain/util/operation_extractor.hpp>
 
 #include <boost/container/flat_map.hpp>

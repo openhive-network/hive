@@ -2,7 +2,6 @@
 
 #include <hive/chain/util/impacted.hpp>
 #include <hive/protocol/config.hpp>
-#include <hive/utilities/plugin_utilities.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/smart_ref_impl.hpp>
