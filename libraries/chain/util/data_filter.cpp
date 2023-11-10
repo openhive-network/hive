@@ -1,7 +1,7 @@
 #include <hive/chain/util/data_filter.hpp>
-#include <hive/utilities/plugin_utilities.hpp>
 
 #include <fc/exception/exception.hpp>
+#include <fc/value_set.hpp>
 
 #include <boost/algorithm/string.hpp>
 
@@ -78,7 +78,7 @@ bool account_filter::is_tracked_account( const account_name_type& name ) const
 void account_filter::fill( const boost::program_options::variables_map& options, const string& option_name )
 {
   typedef std::pair< account_name_type, account_name_type > pairstring;
-  HIVE_LOAD_VALUE_SET(options, option_name, tracked_accounts, pairstring);
+  LOAD_VALUE_SET(options, option_name, tracked_accounts, pairstring);
 }
 
 operation_helper::operation_helper( const type_extractor::operation_extractor& _op_extractor )
@@ -273,7 +273,7 @@ void operation_body_filter::fill( const boost::program_options::variables_map& o
   flat_map< string, string > _items;
 
   //psql-track-body-operations = ["transfer_operation","test"]
-  HIVE_LOAD_VALUE_SET(options, option_name, _items, pairstring);
+  LOAD_VALUE_SET(options, option_name, _items, pairstring);
 
   for( auto& item : _items )
   {

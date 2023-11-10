@@ -14,7 +14,6 @@
 #include <hive/plugins/chain/state_snapshot_provider.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
-#include <hive/utilities/plugin_utilities.hpp>
 
 #include <appbase/application.hpp>
 

@@ -9,13 +9,12 @@
 #include <hive/chain/util/impacted.hpp>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
-#include <hive/utilities/plugin_utilities.hpp>
-
 #include <hive/protocol/transaction_util.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/macros.hpp>
 #include <fc/smart_ref_impl.hpp>
+#include <fc/value_set.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -552,7 +551,7 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
 
   my->_chain_plugin.register_block_generator( get_name(), my->_block_producer );
 
-  HIVE_LOAD_VALUE_SET( options, "witness", my->_witnesses, hive::protocol::account_name_type )
+  LOAD_VALUE_SET( options, "witness", my->_witnesses, hive::protocol::account_name_type )
 
   if( options.count("private-key") )
   {
