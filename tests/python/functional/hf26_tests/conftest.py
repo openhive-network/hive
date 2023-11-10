@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from hive_local_tools import create_alternate_chain_spec_file
 from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
-from hive_local_tools.functional.python import change_hive_owner_update_limit
 from shared_tools.complex_networks import init_network
 
 
@@ -23,7 +23,11 @@ def node_hf25() -> tt.InitNode:
 
 @pytest.fixture()
 def node_hf26() -> tt.InitNode:
-    change_hive_owner_update_limit(seconds_limit=60)
+    create_alternate_chain_spec_file(
+        genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+        hardfork_schedule=[{"hardfork": 26, "block_num": 1}, {"hardfork": 26 + 1, "block_num": 2000}],
+        hive_owner_update_limit=60,
+    )
 
     node = tt.InitNode()
     node.run(
