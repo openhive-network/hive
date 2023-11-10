@@ -16,6 +16,8 @@ class time_manager: public time_manager_base
 
     std::unique_ptr<std::thread> notification_thread;
 
+    std::mutex mtx;
+
   protected:
 
     void send_auto_lock_error_message( const std::string& message ) override;
@@ -24,6 +26,14 @@ class time_manager: public time_manager_base
 
     time_manager( const std::string& notifications_endpoint );
     ~time_manager() override;
+
+    void add( const std::string& token, types::lock_method_type&& lock_method, types::notification_method_type&& notification_method ) override;
+    void change( const std::string& token, const types::timepoint_t& time, bool refresh_only_active ) override;
+
+    void run() override;
+    void run( const std::string& token ) override;
+
+    void close( const std::string& token ) override;
 };
 
 } //beekeeper
