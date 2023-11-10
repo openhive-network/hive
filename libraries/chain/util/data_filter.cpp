@@ -78,7 +78,7 @@ bool account_filter::is_tracked_account( const account_name_type& name ) const
 void account_filter::fill( const boost::program_options::variables_map& options, const string& option_name )
 {
   typedef std::pair< account_name_type, account_name_type > pairstring;
-  LOAD_VALUE_SET(options, option_name, tracked_accounts, pairstring);
+  fc::load_value_set<pairstring>(options, option_name, tracked_accounts);
 }
 
 operation_helper::operation_helper( const type_extractor::operation_extractor& _op_extractor )
@@ -273,7 +273,7 @@ void operation_body_filter::fill( const boost::program_options::variables_map& o
   flat_map< string, string > _items;
 
   //psql-track-body-operations = ["transfer_operation","test"]
-  LOAD_VALUE_SET(options, option_name, _items, pairstring);
+  fc::load_value_set<pairstring>(options, option_name, _items);
 
   for( auto& item : _items )
   {
