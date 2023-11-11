@@ -13,8 +13,8 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   CI_DEBUG_SERVICES: "true"
   # pin to specific docker images for build repeatability
-  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu22.04-8
-  TEST_IMAGE_TAG: "@sha256:e9f16040010ad24fffeabec66abca109b24baa79d912eba3118da58e8130fb26"
+  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu23.10-2
+  TEST_IMAGE_TAG: "@sha256:358f47db6eb6760f5971cc1d50a28a6ee96be428bebf23c2a9750087d26e7140"
 
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
@@ -38,7 +38,7 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - project: 'hive/common-ci-configuration'
-    ref: 9fa33bb79897140891a724422c3507a523cd3e34
+    ref: fb8d7f542778a451250bcb69239bbf2a7e28a9b0
     file:
     - '/templates/wasm_build.gitlab-ci.yml'
     - '/templates/python_projects.gitlab-ci.yml'
