@@ -38,12 +38,7 @@ install_all_runtime_packages() {
   echo "Attempting to install all runtime packages..."
   assert_is_root
 
-  apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget && apt-get clean && rm -r /var/lib/apt/lists/*
-
-  #Additionally fix OpenSSL configuration issues caused by OpenSSL 3.0 
-  # TODO REMOVE the additional openssl configuaration when OpenSSL 3.0.7 or above will be distributed by Ubuntu.
-  cp "${SCRIPTPATH}/openssl.conf" /etc/ssl/hive-openssl.conf
-  echo -e "\n.include /etc/ssl/hive-openssl.conf\n" >> /etc/ssl/openssl.cnf
+  apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget curl && apt-get clean && rm -r /var/lib/apt/lists/*
 }
 
 install_all_dev_packages() {
@@ -59,7 +54,7 @@ install_all_dev_packages() {
   python3-dev p7zip-full \
   && \
   apt-get clean && rm -r /var/lib/apt/lists/* && \
-  pip3 install -U secp256k1prp
+  pip3 install --break-system-packages -U secp256k1prp
 }
 
 preconfigure_faketime() {
