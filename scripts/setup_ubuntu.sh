@@ -36,7 +36,7 @@ install_all_runtime_packages() {
   echo "Attempting to install all runtime packages..."
   assert_is_root
 
-  apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget && apt-get clean && rm -r /var/lib/apt/lists/*
+  apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget curl && apt-get clean && rm -r /var/lib/apt/lists/*
 }
 
 install_all_dev_packages() {
@@ -52,7 +52,7 @@ install_all_dev_packages() {
   python3-dev \
   && \
   apt-get clean && rm -r /var/lib/apt/lists/* && \
-  pip3 install -U secp256k1prp
+  pip3 install --break-system-packages -U secp256k1prp
 }
 
 preconfigure_faketime() {
