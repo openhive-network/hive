@@ -3713,7 +3713,6 @@ void database::apply_block( const std::shared_ptr<full_block_type>& full_block, 
       chainbase::database::flush();
     }
   }
-
 } FC_CAPTURE_AND_RETHROW((full_block->get_block())) }
 
 void database::apply_block_extended(
@@ -3727,6 +3726,7 @@ void database::apply_block_extended(
 
   auto session = start_undo_session();
   apply_block( full_block, skip, block_ctrl );
+  
   session.push();
 }
 
@@ -3915,8 +3915,6 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   update_global_dynamic_data(block);
   update_signing_witness(signing_witness, block);
 
-  uint32_t old_last_irreversible = update_last_irreversible_block( std::optional<switch_forks_t>() );
-
   create_block_summary(full_block);
   clear_expired_transactions();
   clear_expired_orders();
@@ -3955,13 +3953,13 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   notify_post_apply_block( note );
 
   notify_changed_objects();
-
-  // This moves newly irreversible blocks from the fork db to the block log
-  // and commits irreversible state to the database. This should always be the
-  // last call of applying a block because it is the only thing that is not
-  // reversible.
-  migrate_irreversible_state(old_last_irreversible);
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) ) }
+
+void database::update_irreversible_block_and_state( std::optional<switch_forks_t> sf )
+{
+  uint32_t old_last_irreversible = update_last_irreversible_block( sf );
+  migrate_irreversible_state(old_last_irreversible);
+}
 
 struct process_header_visitor
 {
@@ -4737,8 +4735,7 @@ const witness_schedule_object& database::get_witness_schedule_object_for_irrever
     return get_witness_schedule_object();
 }
 
-void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction,
-  switch_forks_t sf)
+void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
 { try {
   FC_ASSERT(has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION), "Fast confirmation transactions not valid until HF26");
 
@@ -4788,10 +4785,6 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   dlog("Accepted fast-confirm from witness ${witness} for block #${new_approved_block_number} (${id})", ("witness", block_approve_op.witness)
        (new_approved_block_number)("id", block_approve_op.block_id));
   // ddump((_my->_last_fast_approved_block_by_witness));
-
-  uint32_t old_last_irreversible_block = update_last_irreversible_block( std::optional<switch_forks_t>( sf ) );
-
-  migrate_irreversible_state(old_last_irreversible_block);
 } FC_CAPTURE_AND_RETHROW() }
 
 uint32_t database::update_last_irreversible_block( std::optional<switch_forks_t> sf )

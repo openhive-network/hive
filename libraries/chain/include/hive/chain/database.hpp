@@ -320,8 +320,7 @@ namespace chain {
       uint32_t witness_participation_rate()const;
 
       bool is_fast_confirm_transaction( const std::shared_ptr<full_transaction_type>& full_transaction) ;
-      using switch_forks_t = std::function< std::optional< uint32_t >( std::shared_ptr<full_block_type>, uint32_t ) >;
-      void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, switch_forks_t sf);
+      void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       void process_non_fast_confirm_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = skip_nothing );
       void _push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction );
 
@@ -646,6 +645,8 @@ namespace chain {
       void apply_block_extended(  const std::shared_ptr<full_block_type>& full_block,
                                   uint32_t skip = skip_nothing,
                                   const block_flow_control* block_ctrl = nullptr );
+      using switch_forks_t = std::function< std::optional< uint32_t >( std::shared_ptr<full_block_type>, uint32_t ) >;
+      void update_irreversible_block_and_state( std::optional<switch_forks_t> sf );
     protected:
       //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
       //void pop_undo() { object_database::pop_undo(); }

@@ -162,6 +162,9 @@ class chain_plugin_impl
     void write_default_database_config( bfs::path& p );
     void setup_benchmark_dumper();
 
+    void combined_apply_block_extended( const std::shared_ptr< full_block_type >& fb,
+      uint32_t skip, const block_flow_control* block_ctrl );
+
     void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip );
     bool push_block( const block_flow_control& block_ctrl, uint32_t skip );
 
@@ -772,6 +775,23 @@ void chain_plugin_impl::open()
   }
 }
 
+void chain_plugin_impl::combined_apply_block_extended(
+  const std::shared_ptr< full_block_type >& fb, uint32_t skip,
+  const block_flow_control* block_ctrl )
+{
+  db.apply_block_extended( fb, skip, block_ctrl );
+  // Purposefully separated irreversible block manipulation from apply_block
+  // to allow HAF skipping the latter call.
+  hive::chain::detail::with_skip_flags( db, skip, [&]()
+  {
+    // This moves newly irreversible blocks from the fork db to the block log
+    // and commits irreversible state to the database. This should always be the
+    // last call of applying a block because it is the only thing that is not
+    // reversible.
+    db.update_irreversible_block_and_state( std::optional<database::switch_forks_t>() );
+  } );
+}
+
 void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
 {
   const signed_transaction& trx = full_transaction->get_transaction(); // just for the rethrow
@@ -802,7 +822,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
                 db.head_block_id(), db.head_block_num(), 
                 [&] ( const std::shared_ptr< full_block_type >& fb,
                       uint32_t skip, const block_flow_control* block_ctrl )
-                  { db.apply_block_extended(fb,skip,block_ctrl); },
+                  { combined_apply_block_extended(fb,skip,block_ctrl); },
                 [&] ( const block_id_type end_block ) -> uint32_t
                   { return db.pop_block_extended( end_block ); }
                 );
@@ -823,7 +843,8 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
     }; // end sf lambda
 
     // fast-confirm transactions are just processed in memory, they're not added to the blockchain
-    db.process_fast_confirm_transaction( full_transaction, sf );
+    db.process_fast_confirm_transaction( full_transaction );
+    db.update_irreversible_block_and_state( std::optional<database::switch_forks_t>( sf ) );
   }
   FC_CAPTURE_AND_RETHROW((trx))
 }
@@ -920,7 +941,7 @@ bool chain_plugin_impl::_push_block(const block_flow_control& block_ctrl)
     skip,
     [&] ( const std::shared_ptr< full_block_type >& fb,
           uint32_t skip, const block_flow_control* block_ctrl )
-      { db.apply_block_extended(fb,skip,block_ctrl); },
+      { combined_apply_block_extended(fb,skip,block_ctrl); },
     [&] ( const block_id_type end_block ) -> uint32_t
       { return db.pop_block_extended( end_block ); }
     );
@@ -1068,6 +1089,17 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
     }
 
     db.apply_block(full_block, skip_flags);
+    // Purposefully separated irreversible block manipulation from apply_block
+    // to allow HAF skipping the latter call.
+    hive::chain::detail::with_skip_flags( db, skip_flags, [&]()
+    {
+      // This moves newly irreversible blocks from the fork db to the block log
+      // and commits irreversible state to the database. This should always be the
+      // last call of applying a block because it is the only thing that is not
+      // reversible.
+      db.update_irreversible_block_and_state( std::optional<database::switch_forks_t>() );
+    } );
+
     last_applied_block = full_block;
 
     return !theApp.is_interrupt_request();
