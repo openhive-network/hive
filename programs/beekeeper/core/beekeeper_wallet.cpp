@@ -121,7 +121,7 @@ public:
   // given account name.
   // @returns true if the key matches a current active/owner/memo key for the named
   //     account, false otherwise (but it is stored either way)
-  string import_key(string wif_key)
+  std::pair<string, bool> import_key(string wif_key)
   {
     auto priv = private_key_type::wif_to_key( wif_key );
     if( !priv.valid() )
@@ -130,14 +130,19 @@ public:
     }
 
     public_key_type wif_pub_key = priv->get_public_key();
+    std::string _str_wif_pub_key = utility::public_key::to_string( wif_pub_key );
 
     auto itr = _keys.find(wif_pub_key);
     if( itr == _keys.end() )
     {
       _keys[wif_pub_key] = *priv;
-      return utility::public_key::to_string( wif_pub_key );
+      return { _str_wif_pub_key, true };
     }
-    FC_ASSERT( false, "Key already in wallet" );
+
+    //An attempt of inserting again the same key shouldn't be treated as an error.
+    ilog( "A key '${wif_pub_key}' is already in a wallet", ("wif_pub_key", _str_wif_pub_key) );
+
+    return { _str_wif_pub_key, false };
   }
 
   // Removes a key from the wallet
@@ -250,9 +255,12 @@ string beekeeper_wallet::import_key(string wif_key)
 {
   FC_ASSERT( !is_locked(), "Unable to import key on a locked wallet");
 
-  const auto result = my->import_key(wif_key);
-  save_wallet_file();
-  return result;
+  const auto _result = my->import_key( wif_key );
+
+  if( _result.second )//Save a file only when a key is really imported.
+    save_wallet_file();
+
+  return _result.first;
 }
 
 bool beekeeper_wallet::remove_key(string key)

@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(wallet_manager_test)
   BOOST_REQUIRE_EQUAL(0u, wm.get_public_keys(_token, std::optional<std::string>()).size());
   wm.import_key(_token, "test2", key3_str);
   BOOST_REQUIRE_EQUAL(1u, wm.get_public_keys(_token, std::optional<std::string>()).size());
-  BOOST_REQUIRE_THROW(wm.import_key(_token, "test2", key3_str), fc::exception);
+  wm.import_key(_token, "test2", key3_str);
   keys = wm.list_keys(_token, "test2", pw2);
   BOOST_REQUIRE( cmp_keys( key1, keys ) == keys.end() );
   BOOST_REQUIRE( cmp_keys( key2, keys ) == keys.end() );

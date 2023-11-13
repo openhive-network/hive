@@ -865,11 +865,7 @@ test.describe('WASM beekeeper_api tests', () => {
 
           api.setAcceptError = false;
           api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
-
-          api.setAcceptError = true;
-          error_message = api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
-          console.log(error_message);
-          assert.equal(error_message.includes("Key already in wallet"), true, "NEGATIVE TESTCASE 5C FAILED");
+          api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);//Importing a key that already exists in a wallet doesn't raise an exception
         }
         {
           const walletNo = 1;

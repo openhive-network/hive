@@ -124,8 +124,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
             catch( const fc::exception& e )
             {
               BOOST_REQUIRE(  e.to_string().find( "Wallet not found" )      != std::string::npos ||
-                              e.to_string().find( "Wallet is locked" )      != std::string::npos ||
-                              e.to_string().find( "Key already in wallet" ) != std::string::npos
+                              e.to_string().find( "Wallet is locked" )      != std::string::npos
                           );
             }
           }break;
