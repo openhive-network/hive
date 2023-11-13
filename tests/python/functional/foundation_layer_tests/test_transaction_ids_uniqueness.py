@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from hive_local_tools import run_for
 
+if TYPE_CHECKING:
+    import test_tools as tt
+
 
 @run_for("testnet")
-def test_uniqueness_of_transaction_ids_generated_by_wallet(node, wallet):
+def test_uniqueness_of_transaction_ids_generated_by_wallet(node: tt.InitNode | tt.RemoteNode, wallet: tt.Wallet):
     already_generated_transaction_ids = set()
 
     for name in [f"account-{i:02d}" for i in range(100)]:
@@ -22,7 +27,9 @@ def test_uniqueness_of_transaction_ids_generated_by_wallet(node, wallet):
 # In this case, the test is repeated.
 @pytest.mark.flaky(reruns=5, reruns_delay=30)
 @run_for("testnet")
-def test_if_transaction_ids_order_corresponds_to_transactions_order(node, wallet):
+def test_if_transaction_ids_order_corresponds_to_transactions_order(
+    node: tt.InitNode | tt.RemoteNode, wallet: tt.Wallet
+):
     names = [f"account-{i:02d}" for i in range(20)]
 
     # transactions created in this loop are sent to single block (it's ensured by assert below)
