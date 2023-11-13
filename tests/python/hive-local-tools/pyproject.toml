@@ -49,6 +49,12 @@ exclude = "test-tools|tests_api"
 [tool.ruff]
 preview = true
 line-length = 120
+exclude = [
+    "/**/test-tools/**",
+    "/**/tests_api/**",
+    "/**/helpy/**",
+    "/**/schemas/**"
+]
 select = [  # https://docs.astral.sh/ruff/rules/
     "F",
     "E",
@@ -102,9 +108,9 @@ ignore = [
 "/**/tests/python/**/decentralized_hive_fund*/**" = [
     "PIE804", # TODO: Consider fixing
 ]
-# ignore submodules:
-"/**/test-tools/**" = ["ALL"]
-"/**/tests_api/**" = ["ALL"]
+
+
+
 
 [tool.ruff.isort]
 known-first-party = [
