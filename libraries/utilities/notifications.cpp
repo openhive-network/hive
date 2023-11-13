@@ -4,6 +4,7 @@
 #include <fc/log/logger.hpp>
 #include <fc/network/http/connection.hpp>
 #include <fc/network/resolve.hpp>
+#include <fc/network/url.hpp>
 
 namespace hive { namespace utilities { namespace notifications {
 
@@ -89,7 +90,16 @@ std::vector<fc::ip::endpoint> notification_handler::create_endpoints( const std:
   epool.reserve(address_pool.size());
 
   for(const fc::string& x : address_pool)
-    epool.emplace_back( fc::resolve_string_to_ip_endpoints(x)[0] );
+  {
+    auto _url = fc::url{ x };
+    if( _url.proto() == "http" || _url.proto() == "https" )
+    {
+      if( _url.host() && _url.port() )
+        epool.emplace_back( fc::resolve( *_url.host(), *_url.port() )[0] );
+    }
+    else
+      epool.emplace_back( fc::resolve_string_to_ip_endpoints(x)[0] );
+  }
 
   return epool;
 }
