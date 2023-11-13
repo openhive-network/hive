@@ -200,6 +200,9 @@ init_data beekeeper_app_init::initialize_program_options()
           break;
       }
 
+      if( _args.count("export-keys-wallet") )
+        return { false, fc::git_revision_sha };
+  
       return { _result, fc::git_revision_sha };
   } FC_LOG_AND_RETHROW()
 }

@@ -51,7 +51,10 @@ init_data beekeeper_app::initialize( int argc, char** argv )
   {
     auto _initialization = initialize_program_options();
     if( !_initialization.status )
+    {
+      start_loop = false;
       return _initialization;
+    }
 
     api_ptr = std::make_unique<beekeeper::beekeeper_wallet_api>( wallet_manager_ptr, app );
 
