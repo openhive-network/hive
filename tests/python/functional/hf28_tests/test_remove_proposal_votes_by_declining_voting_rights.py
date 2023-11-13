@@ -24,7 +24,7 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights(
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT]).accounts[0].can_vote is False
-    assert len(get_virtual_operations(node, True, None, DeclinedVotingRightsOperation)) == 1
+    assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
     assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 0
 
 

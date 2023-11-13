@@ -15,7 +15,7 @@ def replayed_node():
 
 
 @pytest.fixture()
-def wallet_with_pattern_name(replayed_node, request):
+def wallet_with_pattern_name(replayed_node: tt.ApiNode, request: pytest.FixtureRequest) -> tuple[tt.Wallet, str]:
     if "cli_wallet_method" in request.fixturenames:
         pattern_name = request.getfixturevalue("cli_wallet_method")
     else:

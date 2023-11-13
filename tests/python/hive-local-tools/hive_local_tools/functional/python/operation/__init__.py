@@ -16,6 +16,7 @@ from schemas.operations import (
     CommentOperation,
     DeleteCommentOperation,
 )
+from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
 from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
     TransferToVestingCompletedOperation,
 )
@@ -30,6 +31,7 @@ from schemas.virtual_operation import (
 if TYPE_CHECKING:
     from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
     from schemas.operations import AnyLegacyOperation
+    from schemas.operations.representations.legacy_representation import LegacyRepresentation
 
 
 @dataclass
@@ -192,7 +194,7 @@ class _RcManabar:
 
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
-    payout_vops = get_virtual_operations(node, "fill_transfer_from_savings_operation")
+    payout_vops = get_virtual_operations(node, FillTransferFromSavingsOperation)
     return any(vop["op"]["value"]["memo"] == memo for vop in payout_vops)
 
 
@@ -264,15 +266,15 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.TestT, price: float, tolera
     :param tolerance: The tolerance percent for the VEST conversion, defaults its 5%.
     :return: The equivalent amount of VEST resources after the conversion, within the specified tolerance.
     """
-    vests = tt.Asset.Vest(hive_amount.amount * price)
+    vests = tt.Asset.VestT(amount=(int(hive_amount.amount) * price))
     return tt.Asset.Range(vests, tolerance=tolerance)
 
 
 def get_virtual_operations(
     node: tt.InitNode,
+    *vops: type[SchemaVirtualOperation],
     skip_price_stabilization: bool = True,
     start_block: int | None = None,
-    *vops: type[SchemaVirtualOperation],
 ) -> list:
     """
     :param vop: name of the virtual operation,
@@ -327,7 +329,7 @@ def get_rc_manabar(node: tt.InitNode, account_name: str) -> ExtendedManabar:
 
 
 class CommentTransaction(TransactionLegacy):
-    operations: list[CommentOperation]
+    operations: list[LegacyRepresentation[CommentOperation]]
     rc_cost: int
 
 
@@ -392,7 +394,8 @@ class Comment:
 
     @property
     def author_obj(self) -> Account:
-        assert self.__author is not None
+        if self.__author is None:
+            self.__author = self.__create_comment_account()
         return self.__author
 
     @property
@@ -470,7 +473,7 @@ class Comment:
             assert self.parent is not None
             if self.__author is None:
                 self.__author = self.__create_comment_account()
-            self.permlink = f"{self.author}-response-{self.parent.permlink}"
+            self.__permlink = f"{self.author}-response-{self.parent.permlink}"
 
         set_reply = {
             "no_reply": new_post,
@@ -491,8 +494,9 @@ class Comment:
                 title=f"tittle-{self.permlink}",
                 body=f"body-{self.permlink}",
                 json="{}",
+                only_result=False,
             ),
-        )
+        ).result
 
     def reply(self, reply_type: Literal["reply_own_comment", "reply_another_comment"]) -> Comment:
         self.assert_comment_exists()
@@ -518,7 +522,7 @@ class Comment:
         self.author_obj.update_account_info()  # Refresh RC mana before update
         self.__comment_transaction = get_response_model(
             CommentTransaction,
-            self.__wallet.api.post_comment(
+            **self.__wallet.api.post_comment(
                 author=self.author,
                 permlink=self.permlink,
                 parent_author=self.__force_get_parent().author,
@@ -526,8 +530,9 @@ class Comment:
                 title=f"update-title-{self.author}",
                 body=f"update-body-{self.permlink}",
                 json='{"tags":["hiveio","example","tags"]}',
+                only_result=False,
             ),
-        )
+        ).result
 
     def vote(self) -> None:
         self.assert_comment_exists()
@@ -545,7 +550,7 @@ class Comment:
             block_num=self.comment_trx.block_num, include_reversible=True
         )
         for operation in ops_in_block.ops:
-            if operation.op["type"] == "comment_operation" and operation.op["value"] == comment_operation:
+            if operation.op.type == "comment_operation" and operation.op.value == comment_operation.value:
                 return
         raise AssertionError
 

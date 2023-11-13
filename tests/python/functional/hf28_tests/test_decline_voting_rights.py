@@ -25,7 +25,7 @@ def test_decline_voting_rights(prepare_environment: tuple[tt.InitNode, tt.Wallet
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT])["requests"]) == 0
     assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT]).accounts[0].can_vote is False
-    assert len(get_virtual_operations(node, True, None, DeclinedVotingRightsOperation)) == 1
+    assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
 
 @run_for("testnet")
@@ -54,7 +54,7 @@ def test_create_two_decline_voting_rights_requests(prepare_environment: tuple[tt
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT]).requests) == 0
     assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT]).accounts[0].can_vote is False
-    assert len(get_virtual_operations(node, True, None, DeclinedVotingRightsOperation)) == 1
+    assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
 
 @run_for("testnet")
@@ -81,4 +81,4 @@ def test_remove_decline_voting_rights_request(prepare_environment: tuple[tt.Init
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT]).requests) == 0
     assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT]).accounts[0].can_vote is True
-    assert len(get_virtual_operations(node, True, None, DeclinedVotingRightsOperation)) == 0
+    assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 0

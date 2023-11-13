@@ -21,7 +21,7 @@ def test_proxy_before_waiving_voting_rights(prepare_environment: tuple[tt.InitNo
     assert voter.proxy == PROXY_ACCOUNT
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    assert len(get_virtual_operations(node, True, None, ProxyClearedOperation)) == 1
+    assert len(get_virtual_operations(node, ProxyClearedOperation)) == 1
     assert (voter := node.api.wallet_bridge.get_account(VOTER_ACCOUNT)) is not None
     assert voter.proxy == ""
 
@@ -54,7 +54,7 @@ def test_set_proxy_when_decline_voting_rights_is_in_progress(
     wallet.api.set_voting_proxy(VOTER_ACCOUNT, PROXY_ACCOUNT)
     node.wait_for_block_with_number(head_block_number + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    assert len(get_virtual_operations(node, True, None, ProxyClearedOperation)) == 1
+    assert len(get_virtual_operations(node, ProxyClearedOperation)) == 1
     node.restart(time_offset="+25h")
 
     assert (voter := node.api.wallet_bridge.get_account(VOTER_ACCOUNT)) is not None
@@ -83,7 +83,7 @@ def test_proxied_vsf_votes_when_principal_account_declined_its_voting_rights(
 
     assert (voter := node.api.wallet_bridge.get_account(VOTER_ACCOUNT)) is not None
     assert voter.proxy == ""
-    assert len(get_virtual_operations(node, True, None, ProxyClearedOperation)) == 1
+    assert len(get_virtual_operations(node, ProxyClearedOperation)) == 1
 
     assert (proxy := node.api.wallet_bridge.get_account(PROXY_ACCOUNT)) is not None
     assert not any(proxy.proxied_vsf_votes)

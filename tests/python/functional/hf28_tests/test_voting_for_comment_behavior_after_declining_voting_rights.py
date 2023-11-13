@@ -46,7 +46,7 @@ def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_ac
     node.wait_for_irreversible_block()
     node.restart(time_offset="+62m")
 
-    assert len(get_virtual_operations(node, True, None, CurationRewardOperation)) == 1
+    assert len(get_virtual_operations(node, CurationRewardOperation)) == 1
     assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_balance > tt.Asset.Vest(0)
     assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_hive > tt.Asset.Test(0)
 
@@ -72,7 +72,7 @@ def test_vote_for_comment_when_decline_voting_rights_is_being_executed(
     node.wait_for_irreversible_block()
     node.restart(time_offset="+62m")
 
-    assert len(get_virtual_operations(node, True, None, CurationRewardOperation)) == 1
+    assert len(get_virtual_operations(node, CurationRewardOperation)) == 1
     assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_balance > tt.Asset.Vest(0)
     assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_hive > tt.Asset.Test(0)
 
@@ -139,7 +139,7 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node: tt.InitNode
 
     # The virtual operation confirms that decline_voting_rights_operation was done.
     assert vops.ops[2].op.type == "declined_voting_rights_operation"
-    assert len(get_virtual_operations(node, True, None, DeclinedVotingRightsOperation)) == 1
+    assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
     assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_balance > tt.Asset.Vest(0)
     assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_hive > tt.Asset.Test(0)

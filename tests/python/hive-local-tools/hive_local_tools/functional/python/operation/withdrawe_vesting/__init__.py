@@ -11,6 +11,7 @@ from hive_local_tools.functional.python.operation import (
     get_vesting_price,
     get_virtual_operations,
 )
+from schemas.operations.virtual.fill_vesting_withdraw_operation import FillVestingWithdrawOperation
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -26,7 +27,7 @@ class PowerDown(Operation):
         self._transaction = self._wallet.api.withdraw_vesting(self._name, self._total_power_down_vesting_shares)
         self._timestamp = get_transaction_timestamp(node, self._transaction)
         self._rc_cost = self._transaction["rc_cost"]
-        self._vests_to_power_down = tt.Asset.from_(self._transaction["operations"][0][1]["vesting_shares"])
+        self._vests_to_power_down = tt.Asset.from_legacy(self._transaction["operations"][0][1]["vesting_shares"])
         self._weekly_vest_reduction = self._vests_to_power_down / VESTING_WITHDRAW_INTERVALS
         self._remaining_executions = 13
         self._update_timestamp = get_transaction_timestamp(self._node, self._transaction) if update else None
@@ -36,12 +37,8 @@ class PowerDown(Operation):
             else self.__get_tranche_schedule(self._timestamp)
         )
         self._virtual_operation_counter = 0
-        self._weekly_hive_income = tt.Asset.from_(
-            {
-                "amount": self._weekly_vest_reduction.amount / get_vesting_price(self._node),
-                "precision": 3,
-                "nai": "@@000000021",
-            }
+        self._weekly_hive_income = tt.Asset.TestT(
+            amount=int(int(self._weekly_vest_reduction.amount) / get_vesting_price(self._node))
         )
 
     @property
@@ -53,11 +50,11 @@ class PowerDown(Operation):
         return self._timestamp
 
     @property
-    def weekly_vest_reduction(self) -> tt.Asset.Vest:
+    def weekly_vest_reduction(self) -> tt.Asset.VestT:
         return self._weekly_vest_reduction
 
     @property
-    def weekly_hive_income(self) -> tt.Asset.Test:
+    def weekly_hive_income(self) -> tt.Asset.TestT:
         return self._weekly_hive_income
 
     @property
@@ -65,8 +62,8 @@ class PowerDown(Operation):
         return self._update_timestamp
 
     @staticmethod
-    def convert_to_vest(node, hive: tt.Asset.TestT) -> tt.Asset.Vest:
-        return tt.Asset.from_({"amount": hive.amount * get_vesting_price(node), "precision": 6, "nai": "@@000000037"})
+    def convert_to_vest(node, hive: tt.Asset.TestT) -> tt.Asset.VestT:
+        return tt.Asset.VestT(amount=int(hive.amount) * get_vesting_price(node))
 
     @staticmethod
     def __get_tranche_schedule(operation_timestamp: datetime) -> list[datetime]:
@@ -110,13 +107,13 @@ class PowerDown(Operation):
     ) -> None:
         week = 13 - self._remaining_executions
         assert (
-            len(get_virtual_operations(self._node, "fill_vesting_withdraw_operation", start_block=start_block)) == week
+            len(get_virtual_operations(self._node, FillVestingWithdrawOperation, start_block=start_block)) == week
         ), "The virtual operation: fill_vesting_withdraw_operation is not generated."
 
 
 class PowerDownAccount(Account):
     def assert_hive_power_is_unchanged(self) -> None:
-        assert self.get_hive_power() == self._vest, "Hive Power has been changed."
+        assert self.get_hive_power() == self.vest, "Hive Power has been changed."
 
     def assert_hive_power_balance_is_reduced_by_weekly_amount(self, weekly_vest_reduction) -> None:
         error_message = f"{self._name} HP balance is not reduced by {weekly_vest_reduction}."

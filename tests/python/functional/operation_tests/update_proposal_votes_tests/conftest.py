@@ -17,7 +17,7 @@ def node() -> tt.InitNode:
         timestamp = tt.Time.parse(file.read())
 
     node.run(
-        time_offset=f"{tt.Time.serialize(timestamp, format_=tt.Time.TIME_OFFSET_FORMAT)}",
+        time_offset=f"{tt.Time.serialize(timestamp, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)}",
         replay_from=block_log_directory / "block_log",
     )
     return node
