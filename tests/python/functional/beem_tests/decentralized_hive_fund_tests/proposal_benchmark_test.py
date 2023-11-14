@@ -120,7 +120,7 @@ def create_posts(node, accounts):
     logger.info("Creating posts...")
     i = 0
     for acnt in accounts:
-        node.commit.post(
+        node.commit.send(
             f"Hivepy proposal title [{acnt['name']}]",
             f"Hivepy proposal body [{acnt['name']}]",
             acnt["name"],

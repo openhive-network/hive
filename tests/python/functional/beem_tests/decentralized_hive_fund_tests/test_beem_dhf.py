@@ -35,7 +35,7 @@ def create_proposal(node, creator_account, receiver_account, wif, subject):
         tt.logger.error(f"Account: {receiver_account} not found. {ex}")
         raise
 
-    ret = node.post(
+    ret = node.send(
         "Hivepy proposal title",
         "Hivepy proposal body",
         creator["name"],
