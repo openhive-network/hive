@@ -86,7 +86,7 @@ def create_posts(node, accounts, wif=None):
             ),
             stacklevel=STACK_LEVEL,
         )
-        node.post(
+        node.send(
             f"Hivepy proposal title [{acnt['name']}]",
             f"Hivepy proposal body [{acnt['name']}]",
             acnt["name"],

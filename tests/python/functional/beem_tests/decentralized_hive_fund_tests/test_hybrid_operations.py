@@ -93,7 +93,7 @@ def test_hybrid_operations(node_client: NodeClientMaker):
         )
     )
 
-    node_client.post(
+    node_client.send(
         f"Hivepy proposal title [{accounts[0]['name']}]",
         f"Hivepy proposal body [{accounts[0]['name']}]",
         accounts[0]["name"],
