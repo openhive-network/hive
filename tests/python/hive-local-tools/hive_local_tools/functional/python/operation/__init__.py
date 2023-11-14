@@ -16,6 +16,7 @@ from schemas.operations import (
     CommentOperation,
     DeleteCommentOperation,
 )
+from schemas.operations.representations.legacy_representation import LegacyRepresentation
 from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
 from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
     TransferToVestingCompletedOperation,
@@ -31,7 +32,6 @@ from schemas.virtual_operation import (
 if TYPE_CHECKING:
     from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
     from schemas.operations import AnyLegacyOperation
-    from schemas.operations.representations.legacy_representation import LegacyRepresentation
 
 
 @dataclass
