@@ -453,10 +453,10 @@ class Comment:
             author=parent_account,
             child=self,
         )
-        self.__parent.post(reply_type="no_reply")
+        self.__parent.send(reply_type="no_reply")
         return self.parent
 
-    def post(
+    def send(
         self,
         reply_type: Literal["no_reply", "reply_own_comment", "reply_another_comment"],
     ) -> None:
@@ -514,7 +514,7 @@ class Comment:
             author=reply_account,
             parent=self,
         )
-        reply.post(reply_type=reply_type)
+        reply.send(reply_type=reply_type)
         self.__children.append(reply)
         return reply
 
