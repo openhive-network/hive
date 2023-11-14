@@ -112,3 +112,7 @@ ALTERNATE_CHAIN_JSON_FILENAME: Final[str] = "alternate-chain-spec.json"
 HIVE_MIN_ROOT_COMMENT_INTERVAL: Final[int] = 5  # 5 min - minimum time between creating comments ( posts )
 
 HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD: Final[int] = 60 * 60 * 24 * 5  # // seconds, originally 5 days
+
+HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS: Final[int] = 60 * 60 * 24 * 1  # 1 day in testnet and 30 days in mainnet
+
+HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD: Final[int] = 60 * 60  # 1 hour in testnet and 1 day in mainnet
