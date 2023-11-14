@@ -14,6 +14,7 @@
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/global_property_object.hpp>
+#include <hive/chain/last_irreversible_block_interface.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/hive_objects.hpp>
@@ -3955,9 +3956,9 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   notify_changed_objects();
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) ) }
 
-void database::update_irreversible_block_and_state( std::optional<switch_forks_t> sf )
+void database::update_irreversible_block_and_state( last_irreversible_block_i& lib_i )
 {
-  uint32_t old_last_irreversible = update_last_irreversible_block( sf );
+  uint32_t old_last_irreversible = update_last_irreversible_block( lib_i );
   migrate_irreversible_state(old_last_irreversible);
 }
 
@@ -4787,7 +4788,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   // ddump((_my->_last_fast_approved_block_by_witness));
 } FC_CAPTURE_AND_RETHROW() }
 
-uint32_t database::update_last_irreversible_block( std::optional<switch_forks_t> sf )
+uint32_t database::update_last_irreversible_block( last_irreversible_block_i& lib_i )
 { try {
   uint32_t old_last_irreversible = get_last_irreversible_block_num();
   /**
@@ -4847,10 +4848,10 @@ uint32_t database::update_last_irreversible_block( std::optional<switch_forks_t>
                  });
   const unsigned witnesses_required_for_irreversiblity = scheduled_witnesses.size() - offset;
   auto new_lib_info =
-    _block_writer->find_new_last_irreversible_block(  scheduled_witness_objects,
-                                                      _my->_last_fast_approved_block_by_witness,
-                                                      witnesses_required_for_irreversiblity,
-                                                      old_last_irreversible );
+    lib_i.find_new_last_irreversible_block( scheduled_witness_objects,
+                                            _my->_last_fast_approved_block_by_witness,
+                                            witnesses_required_for_irreversiblity,
+                                            old_last_irreversible );
   if( not new_lib_info )
   {
     return old_last_irreversible;
@@ -4869,11 +4870,12 @@ uint32_t database::update_last_irreversible_block( std::optional<switch_forks_t>
       return old_last_irreversible;
     }
 
-    if( sf )
+    std::optional<uint32_t> new_fork_lib_num;
+    if( lib_i.is_fork_switching_enabled(  new_lib_info->new_head_block, old_last_irreversible,
+                                          new_fork_lib_num ) )
     {
-      std::optional<uint32_t> return_value = (*sf)( new_lib_info->new_head_block, old_last_irreversible );
-      if( return_value )
-        return *return_value;
+      if( new_fork_lib_num )
+        return *new_fork_lib_num;
     }
     else
     {

@@ -3,6 +3,7 @@
 #include <hive/chain/block_write_interface.hpp>
 
 #include <hive/chain/fork_db_block_reader.hpp>
+#include <hive/chain/last_irreversible_block_interface.hpp>
 
 #include <hive/chain/database.hpp>
 #include <appbase/application.hpp>
@@ -25,12 +26,6 @@ namespace hive { namespace chain {
                               uint32_t state_head_block_number ) override;
 
     virtual void pop_block() override;
-
-    virtual std::optional<new_last_irreversible_block_t> find_new_last_irreversible_block(
-      const std::vector<const witness_object*>& scheduled_witness_objects,
-      const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
-      const unsigned witnesses_required_for_irreversiblity,
-      const uint32_t old_last_irreversible ) const override;
 
     void set_is_at_live_sync() { _is_at_live_sync = true; }
     void on_reindex_start();
@@ -81,6 +76,14 @@ namespace hive { namespace chain {
       uint32_t skip, const block_flow_control* pushed_block_ctrl,
       const block_id_type original_head_block_id, const uint32_t original_head_block_number,
       apply_block_t apply_block_extended, pop_block_t pop_block_extended );
+
+    using new_last_irreversible_block_t = last_irreversible_block_i::new_last_irreversible_block_t;
+
+    std::optional<new_last_irreversible_block_t> find_new_last_irreversible_block(
+      const std::vector<const witness_object*>& scheduled_witness_objects,
+      const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
+      const unsigned witnesses_required_for_irreversiblity,
+      const uint32_t old_last_irreversible ) const;
 
   private:
     block_log             _block_log;

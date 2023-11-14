@@ -260,7 +260,7 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
   ilog("done pushing blocks from new fork");
 } // switch_forks
 
-std::optional<block_write_i::new_last_irreversible_block_t> 
+std::optional<sync_block_writer::new_last_irreversible_block_t> 
 sync_block_writer::find_new_last_irreversible_block(
   const std::vector<const witness_object*>& scheduled_witness_objects,
   const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,

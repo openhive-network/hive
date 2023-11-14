@@ -64,6 +64,7 @@ namespace chain {
   class database_impl;
   class custom_operation_interpreter;
   class custom_operation_notification;
+  class last_irreversible_block_i;
 
   class blockchain_worker_thread_pool;
 
@@ -645,8 +646,7 @@ namespace chain {
       void apply_block_extended(  const std::shared_ptr<full_block_type>& full_block,
                                   uint32_t skip = skip_nothing,
                                   const block_flow_control* block_ctrl = nullptr );
-      using switch_forks_t = std::function< std::optional< uint32_t >( std::shared_ptr<full_block_type>, uint32_t ) >;
-      void update_irreversible_block_and_state( std::optional<switch_forks_t> sf );
+      void update_irreversible_block_and_state( last_irreversible_block_i& lib_i );
     protected:
       //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
       //void pop_undo() { object_database::pop_undo(); }
@@ -685,7 +685,7 @@ namespace chain {
 
       void update_global_dynamic_data( const signed_block& b );
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
-      uint32_t update_last_irreversible_block(std::optional<switch_forks_t> sf);
+      uint32_t update_last_irreversible_block( last_irreversible_block_i& lib_i );
       void migrate_irreversible_state(uint32_t old_last_irreversible);
       void clear_expired_transactions();
       void clear_expired_orders();
