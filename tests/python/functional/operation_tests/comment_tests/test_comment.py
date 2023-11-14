@@ -11,7 +11,7 @@ def test_if_comment_exist(prepared_node: tt.InitNode, wallet: tt.Wallet) -> None
     Test case 1 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
     comment_0 = Comment(prepared_node, wallet)
-    comment_0.post(reply_type="no_reply")
+    comment_0.send(reply_type="no_reply")
     comment_0.assert_is_rc_mana_decreased_after_post_or_update()
 
     comment_0.assert_is_comment_sent_or_update()
@@ -26,7 +26,7 @@ def test_if_comment_with_parent_exist(prepared_node: tt.InitNode, wallet: tt.Wal
     """
     comment_0 = Comment(prepared_node, wallet)
     comment_0.create_parent_comment()
-    comment_0.post(reply_type=reply_type)
+    comment_0.send(reply_type=reply_type)
     comment_0.assert_is_rc_mana_decreased_after_post_or_update()
 
     comment_0.assert_is_comment_sent_or_update()
@@ -41,7 +41,7 @@ def test_update_comment_without_replies(prepared_node: tt.InitNode, wallet: tt.W
     if reply_type == "reply_another_comment":
         comment_0.create_parent_comment()
 
-    comment_0.post(reply_type=reply_type)
+    comment_0.send(reply_type=reply_type)
 
     comment_0.update()
     comment_0.assert_is_rc_mana_decreased_after_post_or_update()
@@ -58,7 +58,7 @@ def test_update_comment_with_replies(prepared_node: tt.InitNode, wallet: tt.Wall
     if reply_type == "reply_another_comment":
         comment_0.create_parent_comment()
 
-    comment_0.post(reply_type=reply_type)
+    comment_0.send(reply_type=reply_type)
 
     comment_0.reply(reply_type="reply_another_comment")
 
@@ -88,7 +88,7 @@ def test_update_comment_with_replies_votes_and_downvotes(
 
     for comment in comments:
         comment.create_parent_comment()
-        comment.post(reply_type=reply_type)
+        comment.send(reply_type=reply_type)
         comment.reply(reply_type="reply_another_comment")
 
     # Not in single transaction, because it is possible to vote every 3 seconds.
@@ -134,7 +134,7 @@ def test_update_comment_with_replies_after_cashout(
     if reply_type == "reply_another_comment":
         comment_0.create_parent_comment()
 
-    comment_0.post(reply_type=reply_type)
+    comment_0.send(reply_type=reply_type)
 
     comment_0.reply(reply_type="reply_another_comment")
 

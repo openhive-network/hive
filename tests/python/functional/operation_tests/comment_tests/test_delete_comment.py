@@ -15,7 +15,7 @@ def test_delete_comment(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_typ
     if reply_type == "reply_another_comment":
         comment_0.create_parent_comment()
 
-    comment_0.post(reply_type=reply_type)
+    comment_0.send(reply_type=reply_type)
     comment_0.delete()
 
     comment_0.assert_comment("deleted")
@@ -31,7 +31,7 @@ def test_delete_comment_with_downvotes(prepared_node: tt.InitNode, wallet: tt.Wa
     if reply_type == "reply_another_comment":
         comment_0.create_parent_comment()
 
-    comment_0.post(reply_type=reply_type)
+    comment_0.send(reply_type=reply_type)
     comment_0.downvote()
     comment_0.delete()
 
@@ -48,7 +48,7 @@ def test_try_to_delete_comment_with_votes(prepared_node: tt.InitNode, wallet: tt
     if reply_type == "reply_another_comment":
         comment_0.create_parent_comment()
 
-    comment_0.post(reply_type=reply_type)
+    comment_0.send(reply_type=reply_type)
     comment_0.vote()
 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
@@ -67,7 +67,7 @@ def test_try_to_delete_comment_with_top_comment(prepared_node: tt.InitNode, wall
     if reply_type == "reply_another_comment":
         comment_0.create_parent_comment()
 
-    comment_0.post(reply_type=reply_type)
+    comment_0.send(reply_type=reply_type)
     comment_0.reply(reply_type="reply_another_comment")
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment_0.delete()
@@ -85,7 +85,7 @@ def test_try_to_delete_comment_after_payout(prepared_node: tt.InitNode, wallet: 
     if reply_type == "reply_another_comment":
         comment_0.create_parent_comment()
 
-    comment_0.post(reply_type=reply_type)
+    comment_0.send(reply_type=reply_type)
     # waiting for payout 7 days
     prepared_node.restart(time_offset="+7d")
 
@@ -105,16 +105,15 @@ def test_reuse_deleted_permlink(prepared_node: tt.InitNode, wallet: tt.Wallet, r
     if reply_type == "reply_another_comment":
         comment_0.create_parent_comment()
 
-    comment_0.post(reply_type=reply_type)
+    comment_0.send(reply_type=reply_type)
     comment_0.delete()
 
     comment_0.assert_comment("deleted")
     comment_0.assert_is_rc_mana_decreased_after_comment_delete()
 
     # Skip 1 hour to create post again
-    if reply_type == "reply_another_comment":
-        prepared_node.restart(time_offset="+1h")
-    comment_0.post(reply_type=reply_type)
+    prepared_node.restart(time_offset="+1h")
+    comment_0.send(reply_type=reply_type)
 
     comment_0.assert_is_rc_mana_decreased_after_post_or_update()
     comment_0.assert_is_comment_sent_or_update()
