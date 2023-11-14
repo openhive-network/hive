@@ -867,15 +867,24 @@ BOOST_AUTO_TEST_CASE(wasm_beekeeper_false)
     beekeeper_mgr b_mgr;
     b_mgr.remove_wallets();
 
-    beekeeper_api _obj( { "--unknown-parameter", "value_without_sense" } );
+    {
+      beekeeper_api _obj( { "--unknown-parameter", "value_without_sense" } );
 
-    auto _init_error_msg = extract_json( _obj.init() );
-    BOOST_REQUIRE( _init_error_msg.find( "unrecognised option" ) != std::string::npos );
-    BOOST_REQUIRE( _init_error_msg.find( "--unknown-parameter" ) != std::string::npos );
-    BOOST_REQUIRE( _init_error_msg.find( "value_without_sense" ) != std::string::npos );
+      auto _init_error_msg = extract_json( _obj.init() );
+      BOOST_REQUIRE( _init_error_msg.find( "unrecognised option" ) != std::string::npos );
+      BOOST_REQUIRE( _init_error_msg.find( "--unknown-parameter" ) != std::string::npos );
+      BOOST_REQUIRE( _init_error_msg.find( "value_without_sense" ) != std::string::npos );
 
-    auto _create_session_error_msg = extract_json( _obj.create_session( "banana" ) );
-    BOOST_REQUIRE( _create_session_error_msg.find( "Initialization failed. API call aborted." ) != std::string::npos );
+      auto _create_session_error_msg = extract_json( _obj.create_session( "banana" ) );
+      BOOST_REQUIRE( _create_session_error_msg.find( "Initialization failed. API call aborted." ) != std::string::npos );
+    }
+
+    {
+      beekeeper_api _obj( { "--export-keys-wallet", "[\"2\", \"PW5JViFn5gd4rt6ohk7DQMgHzQN6Z9FuMRfKoE5Ysk25mkjy5AY1b\"]" } );
+
+      auto _init_error_msg = extract_json( _obj.init() );
+      BOOST_REQUIRE( _init_error_msg.find( "unrecognised option" ) != std::string::npos );
+    }
 
   } FC_LOG_AND_RETHROW()
 }

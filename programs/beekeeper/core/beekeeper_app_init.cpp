@@ -3,11 +3,9 @@
 #include <fc/io/json.hpp>
 #include <fc/stacktrace.hpp>
 #include <fc/git_revision.hpp>
-#include <fc/value_set.hpp>
 
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/scope_exit.hpp>
 
 namespace bfs = boost::filesystem;
 
@@ -37,119 +35,8 @@ void beekeeper_app_init::set_program_options()
       "Wallets will be automatically locked after specified number of seconds of inactivity."
       "Activity is defined as any wallet command e.g. list-wallets.")
 
-    ("export-keys-wallet", boost::program_options::value< std::vector<std::string> >()->composing()->multitoken(),
-      "Export explicitly private keys to a local file `wallet_name.keys`. Both [name, password] are required for every wallet. By default is empty."
-      "Two wallets example: --export-keys-wallet \"[\"blue-wallet\", \"PW5JViFn5gd4rt6ohk7DQMgHzQN6Z9FuMRfKoE5Ysk25mkjy5AY1b\"]\" --export-keys-wallet \"[\"green-wallet\", \"PW5KYF9Rt4ETnuP4uheHSCm9kLbCuunf6RqeKgQ8QRoxZmGeZUhhk\"]\" ")
-
     ("backtrace", bpo::value<std::string>()->default_value( "yes" ), "Whether to print backtrace on SIGSEGV" )
     ;
-}
-
-struct keys_container
-{
-  std::string public_key;
-  std::string private_key;
-};
-
-bool beekeeper_app_init::save_keys( const std::string& notification, const std::string& wallet_name, const std::string& wallet_password )
-{
-  bool _result = true;
-
-  if( wallet_name.empty() || wallet_password.empty() )
-    return _result;
-
-  const std::string _filename = wallet_name + ".keys";
-
-  ilog( "*****Saving keys into `${_filename}` file*****", (_filename) );
-
-  ilog( "Create a session" );
-  std::string _token = wallet_manager_ptr->create_session( "salt", notification );
-
-  auto _save_keys = [&]()
-  {
-    ilog( "Unlock the wallet" );
-    wallet_manager_ptr->unlock( _token, wallet_name, wallet_password );
-
-    ilog( "Get keys" );
-    auto _keys = wallet_manager_ptr->list_keys( _token, wallet_name, wallet_password );
-
-    std::vector<keys_container> _v;
-    std::transform( _keys.begin(), _keys.end(), std::back_inserter( _v ),
-    []( const std::pair<beekeeper::public_key_type, beekeeper::private_key_type>& item )
-    {
-      return keys_container{ beekeeper::utility::public_key::to_string( item.first ), item.second.key_to_wif() };
-    } );
-    
-    ilog( "Save keys into `${_filename}` file", (_filename) );
-    fc::path _file( _filename );
-    fc::json::save_to_file( _v, _file );
-  };
-
-  auto _finish = [this, &_token, &wallet_name]()
-  {
-    ilog( "Lock the wallet" );
-    wallet_manager_ptr->lock( _token, wallet_name );
-
-    ilog( "Close a session" );
-    wallet_manager_ptr->close_session( _token, false/*allow_close_all_sessions_action*/ );
-  };
-
-  auto _exec_action = [&_filename, &_result]( std::function<void()>&& call )
-  {
-    try
-    {
-      call();
-    }
-    catch ( const boost::exception& e )
-    {
-      _result = false;
-      elog( boost::diagnostic_information(e) );
-    }
-    catch ( const fc::exception& e )
-    {
-      _result = false;
-      elog( e.to_detail_string() );
-    }
-    catch ( const std::exception& e )
-    {
-      _result = false;
-      elog( e.what() );
-    }
-    catch ( ... )
-    {
-      _result = false;
-      elog( "Unknown error" );
-    }
-  };
-
-  BOOST_SCOPE_EXIT(&wallet_manager_ptr, &_exec_action, &_finish, &_result)
-  {
-    _exec_action( _finish );
-
-    if ( _result )
-      ilog( "*****Keys have been saved*****" );
-    else
-      elog( "*****Saving keys failed*****" );
-
-  } BOOST_SCOPE_EXIT_END
-
-  _exec_action( _save_keys );
-
-  return _result;
-}
-
-std::string beekeeper_app_init::get_notifications_endpoint( const boost::program_options::variables_map& args )
-{
-  std::string _notification;
-
-  if( args.count("notifications-endpoint") )
-  {
-    auto _notifications = args.at("notifications-endpoint").as<std::vector<std::string>>();
-    if( !_notifications.empty() )
-      _notification = *_notifications.begin();
-  }
-
-  return _notification;
 }
 
 init_data beekeeper_app_init::initialize_program_options()
@@ -162,8 +49,6 @@ init_data beekeeper_app_init::initialize_program_options()
       ilog("initializing options");
 
       setup_notifications( _args );
-
-      std::string _notification = get_notifications_endpoint( _args );
 
       FC_ASSERT( _args.count("wallet-dir") );
       boost::filesystem::path _dir( _args.at("wallet-dir").as<std::string>() );
@@ -187,43 +72,14 @@ init_data beekeeper_app_init::initialize_program_options()
         ilog( "Backtrace on segfault is enabled." );
       }
 
-      bool _result = true;
+      return save_keys( _args );
 
-      using _strings_pair_type = std::pair< string, string >;
-      fc::flat_map< string, string > _items;
-      fc::load_value_set<_strings_pair_type>( _args, "export-keys-wallet", _items );
-
-      for( auto& item : _items )
-      {
-        _result = save_keys( _notification, item.first, item.second );
-        if( !_result )
-          break;
-      }
-
-      if( _args.count("export-keys-wallet") )
-        return { false, fc::git_revision_sha };
-  
-      return { _result, fc::git_revision_sha };
   } FC_LOG_AND_RETHROW()
 }
 
-std::string beekeeper_app_init::check_version()
+std::string beekeeper_app_init::get_revision() const
 {
-  std::string _version = "{\"version\":\"";
-  _version += fc::git_revision_sha;
-  _version += "\"}";
-
-  return _version;
+  return fc::git_revision_sha;
 }
 
 }
-namespace fc
-{
-  void to_variant( const beekeeper::keys_container& var, fc::variant& vo )
-  {
-    variant v = mutable_variant_object( "public_key", var.public_key )( "private_key", var.private_key );
-    vo = v;
-  }
-}
-
-FC_REFLECT( beekeeper::keys_container, (public_key)(private_key) )
