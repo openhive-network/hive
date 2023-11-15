@@ -13,7 +13,7 @@ from hive_local_tools import run_for
 def test_broadcast_account_creating_with_correct_values(node, wallet, max_block_age_value):
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
     node.api.network_broadcast.broadcast_transaction(trx=transaction, max_block_age=max_block_age_value)
-    node.wait_for_irreversible_block()
+    node.wait_number_of_blocks(1)
 
     assert transaction != node.api.account_history.get_transaction(
         id=transaction["transaction_id"], include_reversible=True
@@ -28,7 +28,7 @@ def test_broadcast_account_creating_with_incorrect_value(node, wallet):
             transaction = wallet.api.create_account("initminer", f"alice{i}", "{}", broadcast=False)
             node.api.network_broadcast.broadcast_transaction(trx=transaction, max_block_age=0)
             sleep(1)
-    node.wait_for_irreversible_block()
+    node.wait_number_of_blocks(1)
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.account_history.get_transaction(id=transaction["transaction_id"], include_reversible=True)
@@ -41,7 +41,7 @@ def test_broadcast_account_creating_with_incorrect_value(node, wallet):
 def test_broadcast_same_transaction_twice(node, wallet):
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
     node.api.network_broadcast.broadcast_transaction(trx=transaction)
-    node.wait_for_irreversible_block()
+    node.wait_number_of_blocks(1)
 
     assert transaction != node.api.account_history.get_transaction(
         id=transaction["transaction_id"], include_reversible=True

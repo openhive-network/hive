@@ -1901,6 +1901,11 @@ std::string to_string(hive::chain::database::transaction_status txs)
 
 void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operation_notification& n)
 {
+  if ( _mainDb.is_reapplying_tx() || _mainDb.is_validating_one_tx() )
+  {
+    return;
+  }
+
   if( n.block % 10000 == 0 && n.trx_in_block == 0 && n.op_in_trx == 0 && !n.virtual_op)
   {
     ilog("RocksDb data import processed blocks: ${n}, containing: ${tx} transactions and ${op} operations.\n"
@@ -1945,7 +1950,6 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
   else
   {
     auto txs = _mainDb.get_tx_status();
-    //const auto& newOp =
     _mainDb.create< volatile_operation_object >( [&]( volatile_operation_object& o )
     {
       o.trx_id = n.trx_id;
