@@ -87,35 +87,6 @@ std::deque<block_id_type>::const_iterator fork_db_block_reader::find_first_item_
   });
 }
 
-block_id_type fork_db_block_reader::find_block_id_for_num( uint32_t block_num )const
-{
-  block_id_type result;
-
-  try
-  {
-    if( block_num != 0 )
-    {
-      // See if fork DB has the item
-      shared_ptr<fork_item> fitem = _fork_db.fetch_block_on_main_branch_by_number( block_num );
-      if( fitem )
-      {
-        result = fitem->get_block_id();
-      }
-      else
-      {
-        // Next we check if block_log has it. Irreversible blocks are there.
-        result = block_log_reader::find_block_id_for_num( block_num );
-      }
-    }
-  }
-  FC_CAPTURE_AND_RETHROW( (block_num) )
-
-  if( result == block_id_type() )
-    FC_THROW_EXCEPTION(fc::key_not_found_exception, "block number not found");
-
-  return result;
-}
-
 std::vector<std::shared_ptr<full_block_type>> fork_db_block_reader::fetch_block_range( 
   const uint32_t starting_block_num, const uint32_t count, 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
@@ -308,7 +279,7 @@ block_id_type fork_db_block_reader::get_block_id_for_num( uint32_t block_num ) c
   block_id_type read_block_id;
   try
   {
-    read_block_id = block_log_reader::find_block_id_for_num( block_num );
+    read_block_id = find_block_id_for_num( block_num );
   }
   catch (fc::key_not_found_exception&)
   { /*leave read_block_id empty*/ }
