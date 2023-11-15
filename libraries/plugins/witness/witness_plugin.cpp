@@ -1,6 +1,7 @@
 #include <hive/plugins/witness/witness_plugin.hpp>
 #include <hive/plugins/witness/witness_plugin_objects.hpp>
 
+#include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/comment_object.hpp>
@@ -314,11 +315,16 @@ namespace detail {
 
                 transaction tx;
                 uint32_t last_irreversible_block = _db.get_last_irreversible_block_num();
-                const block_id_type reference_block_id = 
-                  last_irreversible_block ?
-                    _block_reader.find_block_id_for_num(last_irreversible_block) :
-                    _db.head_block_id();
-                tx.set_reference_block(reference_block_id);
+                if( last_irreversible_block )
+                {
+                  block_summary_object::id_type bsid( last_irreversible_block & 0xffff );
+                  const auto& tapos_block_summary = _db.get<block_summary_object>(bsid);
+                  tx.set_reference_block( tapos_block_summary.block_id );
+                }
+                else
+                {
+                  tx.set_reference_block(_db.head_block_id());
+                }
                 tx.set_expiration(_db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION/2);
                 tx.operations.push_back( op );
 

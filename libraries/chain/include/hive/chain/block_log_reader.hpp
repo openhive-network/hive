@@ -35,8 +35,6 @@ namespace hive { namespace chain {
     virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(
       const std::deque<block_id_type>& item_hashes_received ) const override;
 
-    virtual block_id_type find_block_id_for_num( uint32_t block_num ) const override;
-
     virtual std::vector<std::shared_ptr<full_block_type>> fetch_block_range( 
       const uint32_t starting_block_num, const uint32_t count, 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
@@ -49,6 +47,8 @@ namespace hive { namespace chain {
       const std::vector<block_id_type>& blockchain_synopsis,
       uint32_t& remaining_item_count,
       uint32_t limit) const override;
+
+    block_id_type find_block_id_for_num( uint32_t block_num ) const;
 
   private:
     const block_log& _block_log;
