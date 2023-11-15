@@ -178,6 +178,125 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_endpoints)
   } FC_LOG_AND_RETHROW()
 }
 
+struct password
+{
+  std::mutex mtx;
+  std::vector<std::string> tokens;
+
+  auto add( const std::string& token )
+  {
+    std::lock_guard<std::mutex> _guard( mtx );
+    tokens.emplace_back( token );
+  };
+
+  auto get( bool remove = true )
+  {
+    std::string _token;
+    std::lock_guard<std::mutex> _guard( mtx );
+    if( !tokens.empty() )
+    {
+      auto _idx = rand() % tokens.size();
+      _token = tokens[ _idx ];
+
+      if( remove )
+        tokens.erase( tokens.begin() + _idx );
+    }
+    return _token;
+  };
+};
+
+BOOST_AUTO_TEST_CASE(beekeeper_api_sessions_create_close)
+{
+  try {
+    beekeeper::beekeeper_wallet_api _api( create_wallet_ptr( theApp, ".", 900, 64, [](){} ), theApp );
+
+    std::srand( time(0) );
+
+    struct counters
+    {
+      size_t limit = 1000;
+
+      std::atomic_size_t create_session_cnt       = { 0 };
+      std::atomic_size_t create_session_error_cnt = { 0 };
+      std::atomic_size_t close_session_cnt        = { 0 };
+      std::atomic_size_t close_session_error_cnt  = { 0 };
+
+      void inc( std::atomic_size_t& val )
+      {
+        val.store( val.load() + 1 );
+      }
+    };
+    counters _cnts;
+    password _password;
+
+    const uint32_t _nr_threads = 10;
+
+    std::vector<std::shared_ptr<std::thread>> threads;
+
+    auto _create_session = [&]()
+    {
+      while( _cnts.create_session_cnt + _cnts.close_session_cnt < _cnts.limit )
+      {
+        _cnts.inc( _cnts.create_session_cnt );
+
+        try
+        {
+          _password.add( _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token );
+        }
+        catch( const fc::exception& e )
+        {
+          BOOST_TEST_MESSAGE( e.to_detail_string() );
+          BOOST_REQUIRE(  e.to_string().find( "Number of concurrent sessions reached a limit" )  != std::string::npos );
+          _cnts.inc( _cnts.create_session_error_cnt );
+        }
+      }
+    };
+
+    auto _close_session = [&]()
+    {
+      while( _cnts.create_session_cnt + _cnts.close_session_cnt < _cnts.limit )
+      {
+        _cnts.inc( _cnts.close_session_cnt );
+
+        try
+        {
+          _api.close_session( beekeeper::close_session_args{ _password.get() } );
+        }
+        catch( const fc::exception& e )
+        {
+          BOOST_TEST_MESSAGE( e.to_detail_string() );
+          BOOST_REQUIRE( e.to_string().find( "A session attached to" )  != std::string::npos );
+          _cnts.inc( _cnts.close_session_error_cnt );
+        }
+      }
+    };
+
+    for( size_t i = 0; i < _nr_threads; ++i )
+      threads.emplace_back( std::make_shared<std::thread>( [&]()
+      {
+        if( i % 2 == 0 )
+          _create_session();
+        else
+          _close_session();
+      } ) );
+
+    BOOST_SCOPE_EXIT( &threads, &_cnts )
+    {
+      for( auto& thread : threads )
+        thread->join();
+
+      BOOST_TEST_MESSAGE("_create_session_cnt: " + std::to_string( _cnts.create_session_cnt.load() ) );
+      BOOST_TEST_MESSAGE("_close_session_cnt: " + std::to_string( _cnts.close_session_cnt.load() ) );
+
+      BOOST_TEST_MESSAGE("_create_session_error_cnt: " + std::to_string( _cnts.create_session_error_cnt.load() ) );
+      BOOST_TEST_MESSAGE("_close_session_error_cnt: " + std::to_string( _cnts.close_session_error_cnt.load() ) );
+
+      BOOST_REQUIRE_EQUAL( _cnts.create_session_cnt.load() + _cnts.close_session_cnt.load(), _cnts.limit );
+    } BOOST_SCOPE_EXIT_END
+
+  } FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
 {
   try
@@ -187,32 +306,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
 
     beekeeper::beekeeper_wallet_api _api( create_wallet_ptr( theApp, ".", 900, 3, [](){} ), theApp );
 
-    std::mutex _mtx;
-
-    std::vector<std::string> _v;
-
-    auto _add_password = [&]( std::string&& password )
-    {
-      std::lock_guard<std::mutex> guard( _mtx );
-      _v.emplace_back( password );
-    };
-
-    auto _get_password = [&]( bool remove = true )
-    {
-      std::lock_guard<std::mutex> guard( _mtx );
-
-      if( _v.empty() )
-        return std::string( "lackofpassword" );
-
-      auto _idx = std::rand() % _v.size();
-      std::string _result = _v[ _idx ];
-
-      if( remove )
-        _v.erase( _v.begin() + _idx );
-
-      return _result;
-      
-    };
+    password _password;
 
     const uint32_t _nr_threads = 10;
 
@@ -239,7 +333,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
           {
             try
             {
-              _add_password( _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token );
+              _password.add( _api.create_session( beekeeper::create_session_args{ "this is salt", "127.0.0.1:666" } ).token );
             }
             catch( const fc::exception& e )
             {
@@ -251,7 +345,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
           {
             try
             {
-              _api.set_timeout( beekeeper::set_timeout_args{ _get_password( false/*remove*/ ), 100 } );
+              _api.set_timeout( beekeeper::set_timeout_args{ _password.get( false/*remove*/ ), 100 } );
             }
             catch( const fc::exception& e )
             {
@@ -263,7 +357,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
           {
             try
             {
-              _api.get_info( beekeeper::get_info_args{ _get_password( false/*remove*/ ) } );
+              _api.get_info( beekeeper::get_info_args{ _password.get( false/*remove*/ ) } );
             }
             catch( const fc::exception& e )
             {
@@ -275,7 +369,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
           {
             try
             {
-              _api.close_session( beekeeper::close_session_args{ _get_password() } );
+              _api.close_session( beekeeper::close_session_args{ _password.get() } );
             }
             catch( const fc::exception& e )
             {
@@ -287,7 +381,7 @@ BOOST_AUTO_TEST_CASE(beekeeper_api_sessions)
           {
             try
             {
-              _api.sign_digest( beekeeper::sign_digest_args{ _get_password( false/*remove*/ ), _sig_digest, _public_key } );
+              _api.sign_digest( beekeeper::sign_digest_args{ _password.get( false/*remove*/ ), _sig_digest, _public_key } );
             }
             catch( const fc::exception& e )
             {
