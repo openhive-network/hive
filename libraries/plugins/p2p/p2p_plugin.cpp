@@ -96,7 +96,6 @@ public:
     theApp.notify_status("P2P stopped");
   }
 
-  bool is_included_block(const block_id_type& block_id);
   virtual hive::protocol::chain_id_type get_old_chain_id() const override;
   virtual hive::protocol::chain_id_type get_new_chain_id() const override;
   virtual hive::protocol::chain_id_type get_chain_id() const override;
@@ -356,21 +355,6 @@ void p2p_plugin_impl::request_precomputing_transaction_signatures_if_useful()
 fc::time_point_sec p2p_plugin_impl::get_blockchain_now()
 { try {
   return fc::time_point::now();
-} FC_CAPTURE_AND_RETHROW() }
-
-bool p2p_plugin_impl::is_included_block(const block_id_type& block_id)
-{ try {
-  uint32_t block_num = block_header::num_from_id(block_id);
-  try
-  {
-    block_id_type block_id_in_preferred_chain = 
-      chain.block_reader().find_block_id_for_num(block_num);
-    return block_id == block_id_in_preferred_chain;
-  }
-  catch (fc::key_not_found_exception&)
-  {
-    return false;
-  }
 } FC_CAPTURE_AND_RETHROW() }
 
 ////////////////////////////// End node_delegate Implementation //////////////////////////////
