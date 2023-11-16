@@ -111,6 +111,8 @@ namespace chain {
     public:
       database();
       virtual ~database();
+      
+      void public_reset_fork_db();
 
       enum transaction_status
       {
