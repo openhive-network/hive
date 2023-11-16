@@ -6,7 +6,7 @@ namespace hive { namespace chain {
 
   class block_log;
 
-  class block_log_reader : public block_read_i
+  class block_log_reader : public replay_block_read_i
   {
   public:
     block_log_reader( const block_log& the_log );
