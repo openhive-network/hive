@@ -323,10 +323,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     for( auto& item : _index_list ) {
       _sub_sessions.push_back( item->start_undo_session() );
     }
-
-    wlog("mtlk database::start_undo_session _undo_session_count = ${_undo_session_count}", ("_undo_session_count", _undo_session_count));
-
-
     return session( std::move( _sub_sessions ), _undo_session_count );
   }
 
