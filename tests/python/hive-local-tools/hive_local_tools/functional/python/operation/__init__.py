@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import test_tools as tt
 import wax
 from hive_local_tools.constants import (
+    HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS,
     get_transaction_model,
 )
 from schemas.apis.database_api.fundaments_of_reponses import AccountItemFundament
@@ -91,6 +92,27 @@ class Account:
     def vest(self) -> tt.Asset.VestsT:
         return self._acc_info.vesting_shares
 
+    @property
+    def proxy(self):
+        return self._acc_info.proxy
+
+    def get_governance_vote_power(self) -> tt.Asset.Vest:
+        return self.get_direct_governance_vote_power() + tt.Asset.Vest(
+            sum(self._acc_info.proxied_vsf_votes) / 1_000_000
+        )
+
+    def get_direct_governance_vote_power(self) -> tt.Asset.Vest:
+        return tt.Asset.from_nai(
+            {
+                "amount": str(
+                    int(self._acc_info.vesting_shares.amount)
+                    - sum([vote["val"] for vote in self._acc_info.delayed_votes])
+                ),
+                "precision": 6,
+                "nai": "@@000000037",
+            }
+        )
+
     def fund_vests(self, tests: tt.Asset.Test) -> None:
         self._wallet.api.transfer_to_vesting(
             "initminer",
@@ -114,6 +136,9 @@ class Account:
     def get_rc_max_mana(self) -> int:
         return get_rc_max_mana(self._node, self._name)
 
+    def get_proxy(self) -> str:
+        return get_proxy(self._node, self._name)
+
     def update_account_info(self) -> None:
         self._acc_info = _find_account(self._node, self._name)
         self._rc_manabar.update()
@@ -121,6 +146,28 @@ class Account:
     def top_up(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
         self._wallet.api.transfer("initminer", self._name, amount, "{}")
         self.update_account_info()
+
+    def unlock_delayed_votes(self) -> None:
+        delayed_votes = self._node.api.database.find_accounts(accounts=[self._acc_info.name]).accounts[0].delayed_votes
+        if len(delayed_votes) == 0:
+            return
+
+        last_unlock_date = max(
+            [
+                tt.Time.parse(delay_vote["time"])
+                for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
+                .accounts[0]
+                .delayed_votes
+            ]
+        )
+        self._node.restart(
+            time_offset=tt.Time.serialize(
+                last_unlock_date + tt.Time.seconds(HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS),
+                format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
+            )
+        )
+        assert len(self._node.api.database.find_accounts(accounts=[self.name]).accounts[0].delayed_votes) == 0
+        self._acc_info.delayed_votes.clear()
 
 
 class _RcManabar:
@@ -331,6 +378,10 @@ def get_rc_manabar(node: tt.InitNode, account_name: str) -> ExtendedManabar:
 class CommentTransaction(TransactionLegacy):
     operations: list[LegacyRepresentation[CommentOperation]]
     rc_cost: int
+
+
+def get_proxy(node: tt.InitNode, account_name: str) -> str:
+    return node.api.database.find_accounts(accounts=[account_name]).accounts[0].proxy
 
 
 def list_votes_for_all_proposals(node):
