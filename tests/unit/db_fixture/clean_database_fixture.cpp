@@ -385,17 +385,6 @@ time_point_sec delayed_vote_database_fixture::move_forward_with_update( const fc
     return db->head_block_time();
 };
 
-share_type delayed_vote_database_fixture::get_votes( const string& witness_name )
-{
-  const auto& idx = db->get_index< witness_index >().indices().get< by_name >();
-  auto found = idx.find( witness_name );
-
-  if( found == idx.end() )
-    return 0;
-  else
-    return found->votes.value;
-}
-
 int32_t delayed_vote_database_fixture::get_user_voted_witness_count( const account_name_type& name )
 {
   int32_t res = 0;
