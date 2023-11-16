@@ -587,3 +587,30 @@ class Comment:
             assert vote_send is True, "Vote not send. Comment is deleted"
         else:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+
+class Proposal:
+    def __init__(self, node, proposal_id):
+        self._node = node
+        self._proposal_info = node.api.database.list_proposals(
+            start=[""],
+            limit=1,
+            order="by_start_date",
+            order_direction="ascending",
+            status="all",
+            last_id=proposal_id,
+        ).proposals[0]
+        self.id = self._proposal_info["id"]
+        self.proposal_id = self._proposal_info["proposal_id"]
+        self.creator = self._proposal_info["creator"]
+        self.receiver = self._proposal_info["receiver"]
+        self.start_date = self._proposal_info["start_date"]
+        self.end_date = self._proposal_info["end_date"]
+        self.daily_pay = self._proposal_info["daily_pay"]
+        self.subject = self._proposal_info["subject"]
+        self.permlink = self._proposal_info["permlink"]
+        self.total_votes = tt.Asset.Vest(self._proposal_info["total_votes"] / 1_000_000)
+        self.status = self._proposal_info["status"]
+
+    def update_proposal_info(self):
+        self.__init__(self._node, self.proposal_id)
