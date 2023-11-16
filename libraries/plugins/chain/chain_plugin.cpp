@@ -153,7 +153,8 @@ class chain_plugin_impl
 
     void initial_settings();
     void open();
-    bool replay_blockchain( const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
+    bool replay_blockchain( const replay_block_read_i& replay_block_reader, 
+                            hive::chain::blockchain_worker_thread_pool& thread_pool );
     void process_snapshot();
     bool check_data_consistency( const block_read_i& block_reader );
 
@@ -260,9 +261,12 @@ class chain_plugin_impl
   private:
     bool _push_block( const block_flow_control& block_ctrl );
 
-    uint32_t reindex( const open_args& args, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
-    uint32_t reindex_internal( const open_args& args,
-      const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
+    uint32_t reindex( const open_args& args, const replay_block_read_i& replay_block_reader,
+                      hive::chain::blockchain_worker_thread_pool& thread_pool );
+    uint32_t reindex_internal( const open_args& args, 
+                               const std::shared_ptr<full_block_type>& start_block,
+                               const replay_block_read_i& replay_block_reader,
+                               hive::chain::blockchain_worker_thread_pool& thread_pool );
     /**
       * @brief Check if replaying was finished and all blocks from `block_reader` were processed.
       *
@@ -645,7 +649,8 @@ bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_
   } BOOST_SCOPE_EXIT_END
 
   theApp.notify_status("replaying");
-  bool replay_is_last_operation = replay_blockchain( reindex_block_writer.get_block_reader(), thread_pool );
+  bool replay_is_last_operation = 
+    replay_blockchain( reindex_block_writer.get_replay_block_reader(), thread_pool );
   theApp.notify_status("finished replaying");
 
   if( replay_is_last_operation )
@@ -951,7 +956,9 @@ bool chain_plugin_impl::_push_block(const block_flow_control& block_ctrl)
     );
 } FC_CAPTURE_AND_RETHROW() }
 
-uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool )
+uint32_t chain_plugin_impl::reindex( const open_args& args,
+  const replay_block_read_i& replay_block_reader,
+  hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   reindex_notification note( args );
 
@@ -969,7 +976,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
 
     uint32_t _head_block_num = db.head_block_num();
 
-    std::shared_ptr<full_block_type> _head = block_reader.head_block();
+    std::shared_ptr<full_block_type> _head = replay_block_reader.head_block();
     if( _head )
     {
       if( args.stop_replay_at == 0 )
@@ -1001,11 +1008,11 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
       if( _head_block_num > 0 )
       {
         if( args.stop_replay_at == 0 || args.stop_replay_at > _head_block_num )
-          start_block = block_reader.read_block_by_num( _head_block_num + 1 );
+          start_block = replay_block_reader.read_block_by_num( _head_block_num + 1 );
 
         if( !start_block )
         {
-          start_block = block_reader.read_block_by_num( _head_block_num );
+          start_block = replay_block_reader.read_block_by_num( _head_block_num );
           FC_ASSERT( start_block, "Head block number for state: ${h} but for `block_log` this block doesn't exist", ( "h", _head_block_num ) );
 
           replay_required = false;
@@ -1013,7 +1020,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
       }
       else
       {
-        start_block = block_reader.read_block_by_num( 1 );
+        start_block = replay_block_reader.read_block_by_num( 1 );
       }
 
       if( replay_required )
@@ -1022,7 +1029,8 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
         if( _last_block_number && !args.force_replay )
           ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
 
-        note.last_block_number = reindex_internal( args, start_block, block_reader, thread_pool );
+        note.last_block_number = 
+          reindex_internal( args, start_block, replay_block_reader, thread_pool );
       }
       else
       {
@@ -1034,8 +1042,8 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
       //get_index< account_index >().indices().print_stats();
     });
 
-    FC_ASSERT( block_reader.head_block()->get_block_num(), "this should never happen" );
-    default_block_writer.on_reindex_end( block_reader.head_block() );
+    FC_ASSERT( replay_block_reader.head_block()->get_block_num(), "this should never happen" );
+    default_block_writer.on_reindex_end( replay_block_reader.head_block() );
 
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
@@ -1049,7 +1057,9 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
 }
 
 uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
-  const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool )
+  const std::shared_ptr<full_block_type>& start_block,
+  const replay_block_read_i& replay_block_reader,
+  hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   uint64_t skip_flags = chain::database::skip_validate_invariants | chain::database::skip_block_log;
   if (args.validate_during_replay)
@@ -1066,7 +1076,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
       chain::database::skip_validate; /// no need to validate operations
   }
 
-  uint32_t last_block_num = block_reader.head_block()->get_block_num();
+  uint32_t last_block_num = replay_block_reader.head_block()->get_block_num();
   if( args.stop_replay_at > 0 && args.stop_replay_at < last_block_num )
     last_block_num = args.stop_replay_at;
 
@@ -1102,7 +1112,7 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
   process_block(start_block);
 
   if (start_block_number < last_block_num)
-    block_reader.process_blocks(start_block_number + 1, last_block_num, process_block, thread_pool);
+    replay_block_reader.process_blocks(start_block_number + 1, last_block_num, process_block, thread_pool);
 
   if (theApp.is_interrupt_request())
     ilog("Replaying is interrupted on user request. Last applied: (block number: ${n}, id: ${id})",
@@ -1118,7 +1128,7 @@ bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklo
   uint64_t* head_block_num_in_db, const block_read_i& block_reader ) const
 {
   irreversible_block_writer reindex_block_writer( default_block_writer.get_block_log() );
-  std::shared_ptr<full_block_type> head = reindex_block_writer.get_block_reader().head_block();
+  std::shared_ptr<full_block_type> head = reindex_block_writer.get_replay_block_reader().head_block();
   uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
   uint32_t head_block_num_state = db.head_block_num();
   ilog( "head_block_num_origin: ${o}, head_block_num_state: ${s}",
@@ -1137,13 +1147,14 @@ bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklo
   return head_block_num_origin == head_block_num_state;
 }
 
-bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool )
+bool chain_plugin_impl::replay_blockchain( const replay_block_read_i& replay_block_reader,
+  hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
   try
   {
     ilog("Replaying blockchain on user request.");
     uint32_t last_block_number = 0;
-    last_block_number = reindex( db_open_args, block_reader, thread_pool );
+    last_block_number = reindex( db_open_args, replay_block_reader, thread_pool );
 
     if( benchmark_interval > 0 )
     {

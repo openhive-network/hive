@@ -17,7 +17,6 @@ namespace hive { namespace chain {
     virtual ~block_read_i() = default;
 
   public:
-    virtual std::shared_ptr<full_block_type> head_block() const = 0;
     virtual uint32_t head_block_num( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
     virtual block_id_type head_block_id( 
@@ -65,6 +64,16 @@ namespace hive { namespace chain {
       uint32_t& remaining_item_count,
       uint32_t limit) const = 0;
   };
+
+class replay_block_read_i : public block_read_i
+  {
+  protected:
+    virtual ~replay_block_read_i() = default;
+
+  public:
+    virtual std::shared_ptr<full_block_type> head_block() const = 0;
+  };
+
 
 } }
 

@@ -31,6 +31,8 @@ namespace hive { namespace chain {
       const uint32_t old_last_irreversible ) const override
       { FC_ASSERT( false, "Wrong writer bro" ); }
 
+    replay_block_read_i& get_replay_block_reader();
+
   private:
     block_log_reader _reader;
   };
