@@ -18,5 +18,10 @@ void irreversible_block_writer::store_block( uint32_t current_irreversible_block
   uint32_t state_head_block_number )
 {}
 
+replay_block_read_i& irreversible_block_writer::get_replay_block_reader()
+{
+  return _reader;
+}
+
 } } //hive::chain
 
