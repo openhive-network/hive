@@ -105,8 +105,7 @@ class Account:
         return tt.Asset.from_nai(
             {
                 "amount": str(
-                    int(self._acc_info.vesting_shares.amount)
-                    - sum([vote["val"] for vote in self._acc_info.delayed_votes])
+                    int(self._acc_info.vesting_shares.amount) - sum([vote.val for vote in self._acc_info.delayed_votes])
                 ),
                 "precision": 6,
                 "nai": "@@000000037",
