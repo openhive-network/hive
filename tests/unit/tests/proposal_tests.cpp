@@ -631,6 +631,115 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
   }
   FC_LOG_AND_RETHROW()
 }
+
+BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
+{
+  try
+  {
+    ACTORS( (witness)(witness2)(propcreator)(propcreator2)(alice)(bobproxy)(carol) )
+
+    vest( "witness",      ASSET( "1.000 TESTS" ) );
+    vest( "witness2",     ASSET( "1.000 TESTS" ) );
+
+    vest( "propcreator",  ASSET( "3.000 TESTS" ) );
+    vest( "propcreator2", ASSET( "3.000 TESTS" ) );
+
+    vest( "alice",        ASSET( "5.000 TESTS" ) );
+    vest( "bobproxy",     ASSET( "5.000 TESTS" ) );
+    vest( "carol",        ASSET( "5.000 TESTS" ) );
+
+    generate_block();
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    proxy( "carol", "bobproxy", carol_private_key );
+    generate_block();
+
+    const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
+
+    generate_blocks( db->head_block_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+
+    ISSUE_FUNDS( "propcreator",   ASSET( "10000.000 TBD" ) );
+    ISSUE_FUNDS( "propcreator2",  ASSET( "10000.000 TBD" ) );
+
+    const auto& _proposal_idx = db->get_index< proposal_index, by_proposal_id >();
+
+    auto _start = db->head_block_time();
+    auto _end = LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS + fc::days( 100 );
+
+    int64_t _id_proposal_00 = create_proposal( "propcreator", "propcreator", _start, _end, asset( 100, HBD_SYMBOL ), propcreator_private_key );
+    int64_t _id_proposal_01 = create_proposal( "propcreator2", "propcreator2", _start, _end, asset( 101, HBD_SYMBOL ), propcreator2_private_key );
+
+    witness_create( "witness", witness_private_key, "http://something.com", witness_public_key, 1000 );
+    witness_create( "witness2", witness2_private_key, "http://something.com", witness2_public_key, 1000 );
+    generate_block();
+
+    {
+      BOOST_TEST_MESSAGE( "vesting: [alice, bobproxy, carol]: " +
+                    std::to_string( get_vesting( "alice" ).amount.value ) + ", " +
+                    std::to_string( get_vesting( "bobproxy" ).amount.value ) + ", " +
+                    std::to_string( get_vesting( "carol" ).amount.value ) );
+    }
+    {
+      witness_vote( "alice", "witness", alice_private_key );
+      witness_vote( "bobproxy", "witness2", bobproxy_private_key );
+      generate_block();
+      BOOST_TEST_MESSAGE( "witness votes(0): " + std::to_string( get_votes( "witness" ).value ) );
+      BOOST_TEST_MESSAGE( "witness2 votes(0): " + std::to_string( get_votes( "witness2" ).value ) );
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ).value, get_vesting( "alice" ).amount.value );
+      BOOST_REQUIRE_EQUAL( get_votes( "witness2" ).value, get_vesting( "bobproxy" ).amount.value + get_vesting( "carol" ).amount.value );
+    }
+    {
+      vote_proposal( "alice", { _id_proposal_00 }, true, alice_private_key );
+      vote_proposal( "bobproxy", { _id_proposal_01 }, true, bobproxy_private_key );
+      generate_block();
+      BOOST_TEST_MESSAGE("proposal_00 total votes(0): " + std::to_string( calc_total_votes( _proposal_idx, _id_proposal_00 ) ) );
+      BOOST_TEST_MESSAGE("proposal_01 total votes(0): " + std::to_string( calc_total_votes( _proposal_idx, _id_proposal_01 ) ) );
+      BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_00 ), 0 );
+      BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_01 ), 0 );
+    }
+    {
+      auto _next_block = get_nr_blocks_until_proposal_maintenance_block();
+      BOOST_TEST_MESSAGE("next_block(0): " + std::to_string( _next_block ));
+      generate_blocks( _next_block );
+      BOOST_TEST_MESSAGE("proposal_00 total votes(1): " + std::to_string( calc_total_votes( _proposal_idx, _id_proposal_00 ) ) );
+      BOOST_TEST_MESSAGE("proposal_01 total votes(1): " + std::to_string( calc_total_votes( _proposal_idx, _id_proposal_01 ) ) );
+      BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_00 ), get_vesting( "alice" ).amount.value );
+      BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_01 ), get_vesting( "bobproxy" ).amount.value + get_vesting( "carol" ).amount.value );
+    }
+    {
+      BOOST_REQUIRE( db->get_account( "alice" ).get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() );
+      BOOST_REQUIRE( db->get_account( "bobproxy" ).get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() );
+    }
+    {
+      generate_blocks( LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
+      BOOST_TEST_MESSAGE( "witness votes(1): " + std::to_string( get_votes( "witness" ).value ) );
+      BOOST_TEST_MESSAGE( "witness2 votes(1): " + std::to_string( get_votes( "witness2" ).value ) );
+      BOOST_TEST_MESSAGE("proposal_00 total votes(2): " + std::to_string( calc_total_votes( _proposal_idx, _id_proposal_00 ) ) );
+      BOOST_TEST_MESSAGE("proposal_01 total votes(2): " + std::to_string( calc_total_votes( _proposal_idx, _id_proposal_01 ) ) );
+      BOOST_REQUIRE_EQUAL( get_votes( "witness" ).value, 0 );
+      BOOST_REQUIRE_EQUAL( get_votes( "witness2" ).value, 0 );
+      BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_00 ), get_vesting( "alice" ).amount.value );
+      BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_01 ), get_vesting( "bobproxy" ).amount.value + get_vesting( "carol" ).amount.value );
+    }
+    {
+      BOOST_REQUIRE( db->get_account( "alice" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+      BOOST_REQUIRE( db->get_account( "bobproxy" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+    }
+    {
+      auto _next_block = get_nr_blocks_until_proposal_maintenance_block();
+      BOOST_TEST_MESSAGE("next_block(1): " + std::to_string( _next_block ));
+      generate_blocks( _next_block );
+      BOOST_TEST_MESSAGE("proposal_00 total votes(3): " + std::to_string( calc_total_votes( _proposal_idx, _id_proposal_00 ) ) );
+      BOOST_TEST_MESSAGE("proposal_01 total votes(3): " + std::to_string( calc_total_votes( _proposal_idx, _id_proposal_01 ) ) );
+      BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_00 ), 0 );
+      BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_01 ), 0 );
+    }
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 /*
 BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
 {
