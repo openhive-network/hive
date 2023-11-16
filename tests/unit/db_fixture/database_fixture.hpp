@@ -367,6 +367,7 @@ struct database_fixture {
   void set_price_feed( const price& new_price, bool stop_at_update_block = false ); //sets on initminer(s)
   void set_witness_props( const flat_map< string, vector< char > >& new_props ); //sets on initminer(s)
   void witness_feed_publish( const string& publisher, const price& exchange_rate, const private_key_type& key );
+  share_type get_votes( const string& witness_name );
   void witness_vote( account_name_type voter, account_name_type witness, const fc::ecc::private_key& key, bool approve = true );
   void limit_order_create( const string& owner, const asset& amount_to_sell, const asset& min_to_receive, bool fill_or_kill,
                            const fc::microseconds& expiration_shift, uint32_t orderid, const fc::ecc::private_key& key);

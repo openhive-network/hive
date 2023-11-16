@@ -142,7 +142,6 @@ struct delayed_vote_database_fixture : public config_database_fixture
 
     void witness_vote( const std::string& account, const std::string& witness, const bool approve, const fc::ecc::private_key& key );
 
-    share_type get_votes( const string& witness_name );
     int32_t get_user_voted_witness_count( const account_name_type& name );
 
     asset to_vest( const asset& liquid, const bool to_reward_balance = false );

@@ -335,7 +335,18 @@ void database_fixture::witness_feed_publish(
   push_transaction( op, key );
 }
 
-void database_fixture::witness_vote( account_name_type voter, account_name_type witness, const fc::ecc::private_key& key, bool approve )
+share_type database_fixture::get_votes( const string& witness_name )
+{
+  const auto& idx = db->get_index< witness_index >().indices().get< by_name >();
+  auto found = idx.find( witness_name );
+
+  if( found == idx.end() )
+    return 0;
+  else
+    return found->votes.value;
+}
+
+void database_fixture:: witness_vote( account_name_type voter, account_name_type witness, const fc::ecc::private_key& key, bool approve )
 {
   signed_transaction tx;
   account_witness_vote_operation op;
