@@ -645,7 +645,7 @@ bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_
   } BOOST_SCOPE_EXIT_END
 
   theApp.notify_status("replaying");
-  bool replay_is_last_operation = replay_blockchain( default_block_writer.get_block_reader(), thread_pool );
+  bool replay_is_last_operation = replay_blockchain( reindex_block_writer.get_block_reader(), thread_pool );
   theApp.notify_status("finished replaying");
 
   if( replay_is_last_operation )
@@ -1117,7 +1117,8 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
 bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklog,
   uint64_t* head_block_num_in_db, const block_read_i& block_reader ) const
 {
-  std::shared_ptr<full_block_type> head = block_reader.head_block();
+  irreversible_block_writer reindex_block_writer( default_block_writer.get_block_log() );
+  std::shared_ptr<full_block_type> head = reindex_block_writer.get_block_reader().head_block();
   uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
   uint32_t head_block_num_state = db.head_block_num();
   ilog( "head_block_num_origin: ${o}, head_block_num_state: ${s}",
