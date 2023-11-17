@@ -1,7 +1,7 @@
 #pragma once
 #include <hive/chain/hive_fwd.hpp>
 #include <appbase/application.hpp>
-#include <hive/chain/full_database.hpp>
+#include <hive/chain/database.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
