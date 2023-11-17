@@ -6984,5 +6984,10 @@ void database::remove_expired_governance_votes()
   }
 }
 
+void database::public_reset_fork_db()
+{
+  _fork_db.reset();
+}
+ 
 } } //hive::chain
 

@@ -111,9 +111,6 @@ namespace chain {
     public:
       database();
       virtual ~database();
-      
-      void public_reset_fork_db();
-
       enum transaction_status
       {
         TX_STATUS_NONE       = 0x00, //outside any transaction processing
@@ -346,6 +343,8 @@ namespace chain {
       void push_virtual_operation( const operation& op );
       void pre_push_virtual_operation( const operation& op );
       void post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& op_in_trx = fc::optional<uint64_t>() );
+
+      void public_reset_fork_db();
 
       /**
         *  This method is used to track applied operations during the evaluation of a block, these
