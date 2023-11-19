@@ -6,9 +6,9 @@
   "type": "module",
   "private": false,
   "scripts": {
-    "postinstall": "playwright install",
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
     "build": "tsc",
+    "pretest": "playwright install",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=beekeeper_testsuite",
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
   },
