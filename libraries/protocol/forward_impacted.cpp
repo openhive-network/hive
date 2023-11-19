@@ -1009,6 +1009,14 @@ private:
 
 
   // ops
+  result_type operator()( const pow_operation& op )
+  {
+    collected_keyauths.emplace_back(collected_keyauth_t{op.worker_account, hive::app::key_t::OWNER, 0, true, /*key*/ op.work.worker, {}, 0});
+    collected_keyauths.emplace_back(collected_keyauth_t{op.worker_account, hive::app::key_t::ACTIVE, 0, true, /*key*/ op.work.worker, {}, 0});
+    collected_keyauths.emplace_back(collected_keyauth_t{op.worker_account, hive::app::key_t::POSTING, 0, true, /*key*/ op.work.worker, {}, 0});
+    collected_keyauths.emplace_back(collected_keyauth_t{op.worker_account, hive::app::key_t::MEMO, 0, true, /*key*/ op.work.worker, {}, 0});
+  }
+
   result_type operator()( const account_create_operation& op )
   {
     collect_one(op, op.owner,   hive::app::key_t::OWNER,   op.new_account_name);
