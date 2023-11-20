@@ -1823,13 +1823,19 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   used_mana = ( used_mana + max_vote_denom - 1 ) / max_vote_denom;
   if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) && dgpo.downvote_pool_percent && o.weight < 0 )
   {
-    FC_ASSERT( voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64(used_mana),
+    // note that downvote requires more mana than necessary, which prevents accounts with no stake from downvoting;
+    // while the effect might be unintentional, it was like that for long time and there is enough drama with
+    // downvotes as it is, enabling "no effect" downvotes is not necessary, so we are not correcting it
+    FC_ASSERT( voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana ),
       "Account does not have enough mana to downvote. voting_mana: ${v} downvote_mana: ${d} required_mana: ${r}",
-      ("v", voter.voting_manabar.current_mana)("d", voter.downvote_manabar.current_mana)("r", fc::uint128_to_int64(used_mana)) );
+      ( "v", voter.voting_manabar.current_mana )( "d", voter.downvote_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
   else
   {
-    FC_ASSERT( voter.voting_manabar.has_mana( fc::uint128_to_int64(used_mana) ), "Account does not have enough mana to vote." );
+    // even after HF28 it is not possible to burn all mana in one 50 vote transaction due to "round up" code above
+    FC_ASSERT( voter.voting_manabar.has_mana( fc::uint128_to_int64( used_mana ) ),
+      "Account does not have enough mana to vote. voting_mana: ${v} required_mana: ${r}",
+      ( "v", voter.voting_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
 
   int64_t abs_rshares = fc::uint128_to_int64(used_mana);
