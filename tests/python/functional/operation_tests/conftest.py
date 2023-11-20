@@ -13,12 +13,18 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
 )
 from schemas.fields.compound import Authority, HbdExchangeRate
+from schemas.operations.account_update2_operation import AccountUpdate2Operation
+from schemas.operations.account_update_operation import AccountUpdateOperation
 from schemas.operations.limit_order_create2_operation import (
     LimitOrderCreate2OperationLegacy,
 )
 
 if TYPE_CHECKING:
     from schemas.fields.basic import PublicKey
+
+
+class UnknownKeyAuthsFormatError(Exception):
+    """Raised if given Key Auths are in invalid format"""
 
 
 @dataclass
@@ -149,6 +155,17 @@ class TransferAccount(Account):
 class UpdateAccount(Account):
     __key_generation_counter = 0
 
+    @classmethod
+    def authority_changed(cls, new_key: str | list | dict[str, Any], old_key: list[tuple[PublicKey, int]]) -> bool:
+        old_public_key = old_key[0][0]
+        if isinstance(new_key, str):
+            return old_public_key == new_key
+        if isinstance(new_key, dict):
+            return cls.authority_changed(new_key["key_auths"], old_key)
+        if isinstance(new_key, list | tuple):
+            return cls.authority_changed(new_key[0], old_key)
+        raise UnknownKeyAuthsFormatError
+
     def assert_account_details_were_changed(
         self,
         *,
@@ -161,21 +178,18 @@ class UpdateAccount(Account):
     ):
         self.update_account_info()
 
-        def unify_type(new_key: str | list, old_key: list[tuple[PublicKey, int]]) -> str | list:
-            return list(old_key[0]) if isinstance(new_key, list) else old_key[0][0]
-
         if new_owner is not None:
-            assert new_owner == unify_type(
+            assert self.authority_changed(
                 new_owner, self._acc_info.owner.key_auths
             ), f"Owner authority of account {self._name} wasn't changed."
 
         if new_active is not None:
-            assert new_active == unify_type(
+            assert self.authority_changed(
                 new_active, self._acc_info.active.key_auths
             ), f"Active authority of account {self._name} wasn't changed."
 
         if new_posting is not None:
-            assert new_posting == unify_type(
+            assert self.authority_changed(
                 new_posting, self._acc_info.posting.key_auths
             ), f"Posting authority of account {self._name} wasn't changed."
 
@@ -220,6 +234,26 @@ class UpdateAccount(Account):
         self._wallet.api.update_account(
             self._name, json_meta=json_meta, owner=owner, active=active, posting=posting, memo=memo, broadcast=True
         )
+
+    def update_account(
+        self,
+        *,
+        use_account_update2: bool = False,
+        json_metadata: str | None = None,
+        owner: str | None = None,
+        active: str | None = None,
+        posting: str | None = None,
+        memo_key: str | None = None,
+        posting_json_metadata: str | None = None,
+    ) -> dict:
+        arguments = locals()
+        to_pass = {
+            element: arguments[element]
+            for element in arguments
+            if arguments[element] is not None and element not in ("arguments", "self", "use_account_update2")
+        }
+        operation = AccountUpdate2Operation if use_account_update2 else AccountUpdateOperation
+        return create_transaction_with_any_operation(self._wallet, operation(account=self.name, **to_pass))
 
     def update_single_account_detail(
         self,

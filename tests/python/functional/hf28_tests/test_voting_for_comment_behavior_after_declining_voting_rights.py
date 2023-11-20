@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
-from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
-from schemas.operations.virtual import CurationRewardOperation, DeclinedVotingRightsOperation
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -10,6 +10,9 @@ from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import post_comment
 from hive_local_tools.functional.python.operation import get_virtual_operations
 from schemas.operations.virtual import CurationRewardOperation, DeclinedVotingRightsOperation
+
+if TYPE_CHECKING:
+    from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
 
 
 @run_for("testnet")
