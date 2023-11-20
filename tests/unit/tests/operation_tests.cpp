@@ -768,7 +768,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     BOOST_REQUIRE( itr->get_rshares() == ( old_mana - _alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
     validate_database();
 
-    BOOST_TEST_MESSAGE( "--- Test reduced power for quick voting" );
+    BOOST_TEST_MESSAGE( "--- Test reduced power for quick voting" ); // no such feature (anymore) - even more true after HF28
 
     generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
 
@@ -923,7 +923,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     old_manabar.last_update_time = _alice.voting_manabar.last_update_time;
     old_manabar.regenerate_mana( params, db->head_block_time() );
     old_downvote_manabar.regenerate_mana( params, db->head_block_time() );
-    alice_weight = old_manabar.current_mana * 60 * 60 * 24;
+    alice_weight = params.max_mana * 60 * 60 * 24;
     max_vote_denom = db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
     alice_weight = ( alice_weight + max_vote_denom - 1 ) / max_vote_denom;
 

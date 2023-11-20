@@ -128,8 +128,8 @@ namespace hive { namespace chain {
 
       /**
         * The number of votes regenerated per day.  Any user voting slower than this rate will be
-        * "wasting" voting power through spillover; any user voting faster than this rate will have
-        * their votes reduced.
+        * "wasting" voting power through spillover; any user voting faster than this rate will
+        * eventually exhaust their voting mana (since HF28, previously their vote was reduced).
         */
       uint32_t vote_power_reserve_rate = HIVE_INITIAL_VOTE_POWER_RATE;
 

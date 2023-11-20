@@ -958,7 +958,7 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
       ilog( "${i}: downvote with ${p} BP of full power", ( i )( "p", last_power * HIVE_100_PERCENT / full_power ) );
     }
     generate_block();
-    /*
+
     BOOST_TEST_MESSAGE( "Testing consecutive single block votes and downvotes after HF28" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
@@ -1022,7 +1022,7 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
     ++i;
     HIVE_REQUIRE_ASSERT( vote_reply( i, -HIVE_100_PERCENT, "anticarol", anticarol_post_key ),
       "voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana )" );
-    */
+
     validate_database();
   }
   FC_LOG_AND_RETHROW()
