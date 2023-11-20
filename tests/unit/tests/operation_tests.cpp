@@ -756,17 +756,19 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       op.weight = HIVE_100_PERCENT;
       tx.operations.push_back( op );
 
-      HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
+      HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "comment_ptr != nullptr" );
 
       validate_database();
 
       BOOST_TEST_MESSAGE( "--- Testing voting with a weight of 0" );
 
+      op.voter = "bob";
+      op.author = "alice";
       op.weight = (int16_t) 0;
       tx.operations.clear();
       tx.operations.push_back( op );
 
-      HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
+      HIVE_REQUIRE_ASSERT( push_transaction( tx, bob_private_key ), "o.weight != 0" );
 
       validate_database();
 
@@ -775,7 +777,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
       auto old_mana = alice.voting_manabar.current_mana;
 
       op.weight = HIVE_100_PERCENT;
-      op.author = "alice";
+      op.voter = "alice";
       tx.operations.clear();
       tx.operations.push_back( op );
 
