@@ -54,39 +54,6 @@ public:
     }
   }
 
-  bool copy_wallet_file( string destination_filename )
-  {
-    fc::path src_path = get_wallet_filename();
-    if( !fc::exists( src_path ) )
-      return false;
-    fc::path dest_path = destination_filename + _wallet_filename_extension;
-    int suffix = 0;
-    while( fc::exists(dest_path) )
-    {
-      ++suffix;
-      dest_path = destination_filename + "-" + std::to_string( suffix ) + _wallet_filename_extension;
-    }
-    wlog( "backing up wallet ${src} to ${dest}",
-      ("src", src_path)
-      ("dest", dest_path) );
-
-    fc::path dest_parent = fc::absolute(dest_path).parent_path();
-    try
-    {
-      enable_umask_protection();
-      if( !fc::exists( dest_parent ) )
-        fc::create_directories( dest_parent );
-      fc::copy( src_path, dest_path );
-      disable_umask_protection();
-    }
-    catch(...)
-    {
-      disable_umask_protection();
-      throw;
-    }
-    return true;
-  }
-
   bool is_locked()const
   {
     return _checksum == fc::sha512();
@@ -240,11 +207,6 @@ beekeeper_wallet::beekeeper_wallet()
 {}
 
 beekeeper_wallet::~beekeeper_wallet() {}
-
-bool beekeeper_wallet::copy_wallet_file(string destination_filename)
-{
-  return my->copy_wallet_file(destination_filename);
-}
 
 string beekeeper_wallet::get_wallet_filename() const
 {
