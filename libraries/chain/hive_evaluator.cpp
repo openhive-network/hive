@@ -1796,8 +1796,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   int16_t abs_weight = abs( o.weight );
   uint128_t used_mana = 0;
 
-  FC_TODO( "This hardfork check should not be needed. Remove after HF21 if that is the case." );
-  if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) && dgpo.downvote_pool_percent && o.weight < 0 )
+  if( dgpo.downvote_pool_percent && o.weight < 0 )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
     {
@@ -1821,7 +1820,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   FC_ASSERT( max_vote_denom > 0 );
 
   used_mana = ( used_mana + max_vote_denom - 1 ) / max_vote_denom;
-  if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) && dgpo.downvote_pool_percent && o.weight < 0 )
+  if( dgpo.downvote_pool_percent && o.weight < 0 )
   {
     // note that downvote requires more mana than necessary, which prevents accounts with no stake from downvoting;
     // while the effect might be unintentional, it was like that for long time and there is enough drama with
@@ -1852,7 +1851,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   _db.modify( voter, [&]( account_object& a )
   {
-    if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) && dgpo.downvote_pool_percent > 0 && o.weight < 0 )
+    if( dgpo.downvote_pool_percent && o.weight < 0 )
     {
       if( fc::uint128_to_int64(used_mana) > a.downvote_manabar.current_mana )
       {
