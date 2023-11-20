@@ -28,8 +28,6 @@ class beekeeper_wallet final : public beekeeper_wallet_base
 
       ~beekeeper_wallet() override;
 
-      bool copy_wallet_file( string destination_filename );
-
       /** Returns the current wallet filename.
        *
        * This is the filename that will be used when automatically saving the wallet.
