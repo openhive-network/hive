@@ -1796,7 +1796,11 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   int16_t abs_weight = abs( o.weight );
   uint128_t used_mana = 0;
 
-  if( dgpo.downvote_pool_percent && o.weight < 0 )
+  if( _db.has_hardfork( HIVE_HARDFORK_1_28_STABLE_VOTE ) )
+  {
+    used_mana = ( uint128_t( voter.get_effective_vesting_shares().value ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
+  }
+  else if( dgpo.downvote_pool_percent && o.weight < 0 )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
     {
