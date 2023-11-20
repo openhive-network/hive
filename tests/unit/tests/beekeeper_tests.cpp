@@ -50,6 +50,24 @@ struct beekeeper_mgr
       boost::filesystem::remove_all( itr->path() );
   }
 
+  void remove_wallet( const std::string& wallet_name )
+  {
+    try
+    {
+      auto _wallet_name = wallet_name + ".wallet";
+      fc::remove( dir / _wallet_name );
+    }
+    catch(...)
+    {
+    }
+  }
+
+  bool exists_wallet( const std::string& wallet_name )
+  {
+    auto _wallet_name = wallet_name + ".wallet";
+    return fc::exists( dir / _wallet_name );
+  }
+
   beekeeper_wallet_manager create_wallet( appbase::application& app, uint64_t cmd_unlock_timeout, uint32_t cmd_session_limit, std::function<void()>&& method = [](){} )
   {
     return beekeeper_wallet_manager( std::make_shared<session_manager>( "" ), std::make_shared<beekeeper_instance>( app, dir, "" ),
@@ -1372,6 +1390,110 @@ BOOST_AUTO_TEST_CASE(beekeeper_timeout_list_wallets)
       const size_t _wallet_cnt = 0;
       BOOST_REQUIRE_EQUAL( _wallets[_wallet_cnt].unlocked, false );
     }
+  } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE(data_reliability_when_file_with_wallet_is_removed)
+{
+  try
+  {
+    beekeeper_mgr b_mgr;
+    b_mgr.remove_wallets();
+
+    const std::string _host = "";
+    const uint64_t _timeout = 90;
+    const uint32_t _session_limit = 64;
+
+    appbase::application app;
+
+    beekeeper_wallet_manager _beekeeper = b_mgr.create_wallet( app, _timeout, _session_limit );
+    BOOST_REQUIRE( _beekeeper.start() );
+
+    auto _token = _beekeeper.create_session( "salt", _host );
+
+    struct keys
+    {
+      std::string private_key;
+      std::string public_key;
+    };
+    std::vector<keys> _keys_a =
+    {
+      {"5J15npVK6qABGsbdsLnJdaF5esrEWxeejeE3KUx6r534ug4tyze", "6TqSJaS1aRj6p6yZEo5xicX7bvLhrfdVqi5ToNrKxHU3FRBEdW"},
+      {"5K1gv5rEtHiACVTFq9ikhEijezMh4rkbbTPqu4CAGMnXcTLC1su", "8LbCRyqtXk5VKbdFwK1YBgiafqprAd7yysN49PnDwAsyoMqQME"},
+      {"5KLytoW1AiGSoHHBA73x1AmgZnN16QDgU1SPpG9Vd2dpdiBgSYw", "8FDsHdPkHbY8fuUkVLyAmrnKMvj6DddLopi3YJ51dVqsG9vZa4"},
+      {"5KXNQP5feaaXpp28yRrGaFeNYZT7Vrb1PqLEyo7E3pJiG1veLKG", "6a34GANY5LD8deYvvfySSWGd7sPahgVNYoFPapngMUD27pWb45"},
+      {"5KKvoNaCPtN9vUEU1Zq9epSAVsEPEtocbJsp7pjZndt9Rn4dNRg", "8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5"}
+    };
+    std::vector<keys> _keys_b =
+    {
+      {"5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT", "5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh"},
+      {"5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78", "6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"},
+      {"5KNbAE7pLwsLbPUkz6kboVpTR24CycqSNHDG95Y8nbQqSqd6tgS", "7j1orEPpWp4bU2SuH46eYXuXkFKEMeJkuXkZVJSaru2zFDGaEH"},
+      {"5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n", "6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"},
+      {"5J8C7BMfvMFXFkvPhHNk2NHGk4zy3jF4Mrpf5k5EzAecuuzqDnn", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm"}
+    };
+
+    struct wallet
+    {
+      std::string name;
+      std::string password;
+    };
+    std::vector<wallet> _wallets{ { "0" }, { "1" }, { "2" } };
+
+    for( auto& wallet : _wallets )
+    {
+      wallet.password = _beekeeper.create( _token, wallet.name, std::optional<std::string>() );
+      for( auto& item : _keys_a )
+      {
+        _beekeeper.import_key( _token, wallet.name, item.private_key );
+      }
+    }
+
+  b_mgr.remove_wallet( _wallets[0].name );
+  b_mgr.remove_wallet( _wallets[1].name );
+
+  auto _cmp = []( const flat_set<public_key_type>& a, const flat_set<public_key_type>& b )
+  {
+    if( a.size() != b.size() )
+      return false;
+
+    for( auto& item : a )
+    {
+      if( b.find( item ) == b.end() )
+      {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  {
+    for( auto& item : _keys_a )
+      _beekeeper.import_key( _token, _wallets[0].name, item.private_key );
+
+    auto _public_keys_0 = _beekeeper.get_public_keys( _token, _wallets[0].name );
+    auto _public_keys_2 = _beekeeper.get_public_keys( _token, _wallets[2].name );
+    BOOST_REQUIRE_EQUAL( _public_keys_0.size(), 5 );
+    BOOST_REQUIRE( _cmp( _public_keys_0, _public_keys_2 ) );
+  }
+  {
+    for( auto& item : _keys_b )
+    {
+      _beekeeper.import_key( _token, _wallets[1].name, item.private_key );
+      _beekeeper.import_key( _token, _wallets[2].name, item.private_key );
+    }
+
+    auto _public_keys_1 = _beekeeper.get_public_keys( _token, _wallets[1].name );
+    auto _public_keys_2 = _beekeeper.get_public_keys( _token, _wallets[2].name );
+    BOOST_REQUIRE_EQUAL( _public_keys_1.size(), 10 );
+    BOOST_REQUIRE( _cmp( _public_keys_1, _public_keys_2 ) );
+  }
+
+  BOOST_REQUIRE( !b_mgr.exists_wallet( _wallets[0].name ) );
+  BOOST_REQUIRE( b_mgr.exists_wallet( _wallets[1].name ) );
+  BOOST_REQUIRE( b_mgr.exists_wallet( _wallets[2].name ) );
+
   } FC_LOG_AND_RETHROW()
 }
 
