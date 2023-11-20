@@ -56,7 +56,7 @@ def create_posts(node, account):
         f"New post ==> (Hivepy proposal title [{account['name']}],Hivepy proposal body"
         f" [{account['name']}],{account['name']},{get_permlink(account['name'])},proposals)"
     )
-    node.send(
+    node.post(
         f"Hivepy proposal title [{account['name']}]",
         f"Hivepy proposal body [{account['name']}]",
         account["name"],

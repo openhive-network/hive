@@ -42,7 +42,7 @@ def create_proposals(node_client, creator_account, receiver_account):
         raise
 
     tt.logger.info("Creating initial post...")
-    node_client.send(
+    node_client.post(
         "Hivepy proposal title",
         "Hivepy proposal body",
         creator["name"],
