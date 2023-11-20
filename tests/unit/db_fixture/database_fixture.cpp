@@ -991,16 +991,16 @@ void database_fixture::post_comment_internal( const std::string& _author, const 
   push_transaction( comment, _key );
 }
 
-void database_fixture::post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key)
+void database_fixture::post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _category, const fc::ecc::private_key& _key)
 {
   generate_blocks( db->head_block_time() + HIVE_MIN_ROOT_COMMENT_INTERVAL + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
-  post_comment_internal( _author, _permlink, _title, _body, "", _parent_permlink, _key );
+  post_comment_internal( _author, _permlink, _title, _body, "", _category, _key );
 }
 
-void database_fixture::post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key)
+void database_fixture::post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _category, const fc::ecc::private_key& _key)
 {
-  post_comment_internal( _author, _permlink, _title, _body, "", _parent_permlink, _key );
+  post_comment_internal( _author, _permlink, _title, _body, "", _category, _key );
 }
 
 void database_fixture::post_comment_to_comment( const std::string& author, const std::string& permlink, const std::string& title, const std::string& body,
