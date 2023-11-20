@@ -26,7 +26,7 @@ void beekeeper_wasm_app::set_program_options()
     ("enable-logs", boost::program_options::value<bool>()->default_value( true ), "Whether logs can be written. By default logs are enabled" )
     ;
 
-  beekeeper_app_init::set_program_options();
+  beekeeper_app_base::set_program_options();
 }
 
 init_data beekeeper_wasm_app::initialize( int argc, char** argv )

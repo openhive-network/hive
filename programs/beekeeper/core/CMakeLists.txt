@@ -8,7 +8,6 @@ add_library( beekeeper_core
              ./session_manager_base.cpp
              ./wallet_manager_impl.cpp
              ./beekeeper_app_base.cpp
-             ./beekeeper_app_init.cpp
              ./utilities.cpp
              ./time_manager_base.cpp
              ${HEADERS}
