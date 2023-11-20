@@ -1,10 +1,10 @@
 #pragma once
 
-#include <core/beekeeper_app_init.hpp>
+#include <core/beekeeper_app_base.hpp>
 
 namespace beekeeper {
 
-class beekeeper_wasm_app: public beekeeper_app_init
+class beekeeper_wasm_app: public beekeeper_app_base
 {
   private:
 

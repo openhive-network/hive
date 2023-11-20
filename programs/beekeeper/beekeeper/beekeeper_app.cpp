@@ -32,7 +32,7 @@ void beekeeper_app::set_program_options()
       "Two wallets example: --export-keys-wallet \"[\"blue-wallet\", \"PW5JViFn5gd4rt6ohk7DQMgHzQN6Z9FuMRfKoE5Ysk25mkjy5AY1b\"]\" --export-keys-wallet \"[\"green-wallet\", \"PW5KYF9Rt4ETnuP4uheHSCm9kLbCuunf6RqeKgQ8QRoxZmGeZUhhk\"]\" ")
     ;
 
-  beekeeper_app_init::set_program_options();
+  beekeeper_app_base::set_program_options();
 }
 
 std::string beekeeper_app::get_notifications_endpoint( const boost::program_options::variables_map& args )

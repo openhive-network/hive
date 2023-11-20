@@ -5,11 +5,11 @@
 #include <beekeeper/beekeeper_instance.hpp>
 #include <beekeeper/beekeeper_wallet_api.hpp>
 
-#include <core/beekeeper_app_init.hpp>
+#include <core/beekeeper_app_base.hpp>
 
 namespace beekeeper {
 
-class beekeeper_app: public beekeeper_app_init
+class beekeeper_app: public beekeeper_app_base
 {
   private:
 
