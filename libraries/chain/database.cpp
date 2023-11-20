@@ -425,9 +425,11 @@ const comment_object* database::find_comment( const account_id_type& author, con
 }
 
 const comment_object& database::get_comment( const account_name_type& author, const shared_string& permlink )const
-{ try {
-  return get_comment( get_account(author).get_id(), permlink );
-} FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
+{
+  const comment_object* comment_ptr = find_comment( get_account( author ).get_id(), permlink );
+  FC_ASSERT( comment_ptr != nullptr, "Comment ${author}/${permlink} not found", (author)(permlink) );
+  return *comment_ptr;
+}
 
 const comment_object* database::find_comment( const account_name_type& author, const shared_string& permlink )const
 {
@@ -449,9 +451,11 @@ const comment_object* database::find_comment( const account_id_type& author, con
 }
 
 const comment_object& database::get_comment( const account_name_type& author, const string& permlink )const
-{ try {
-  return get_comment( get_account(author).get_id(), permlink );
-} FC_CAPTURE_AND_RETHROW( (author)(permlink) ) }
+{
+  const comment_object* comment_ptr = find_comment( get_account( author ).get_id(), permlink );
+  FC_ASSERT( comment_ptr != nullptr, "Comment ${author}/${permlink} not found", (author)(permlink) );
+  return *comment_ptr;
+}
 
 const comment_object* database::find_comment( const account_name_type& author, const string& permlink )const
 {
