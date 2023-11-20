@@ -41,7 +41,7 @@ namespace hive { namespace chain {
         voting_manabar.last_update_time = _creation_time.sec_since_epoch();
         downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
         if( _fill_mana )
-          voting_manabar.current_mana = HIVE_100_PERCENT; //nonsense, but that's what was in the original code
+          voting_manabar.current_mana = HIVE_100_PERCENT; //looks like nonsense, but that's because pre-HF20 manabars carried percentage, not actual value
         if( rc_adjustment.value )
         {
           rc_manabar.last_update_time = _creation_time.sec_since_epoch();
