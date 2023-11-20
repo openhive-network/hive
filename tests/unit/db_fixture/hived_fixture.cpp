@@ -47,7 +47,7 @@ void hived_fixture::set_logging_config( const fc::optional< fc::logging_config >
   if( common_logging_config )
   {
     // And postponed_init has not been called yet...
-    BOOST_ASSERT( !_logging_config.valid() );
+    FC_ASSERT( _logging_config.valid() == false );
     // Set common value to skip this phase during postponed init (see postponed_init_impl).
     _logging_config = common_logging_config;
   }
@@ -154,7 +154,7 @@ void hived_fixture::postponed_init_impl( bool remove_db_files,
       app.startup();
     } );
 
-    BOOST_ASSERT( _data_dir != fc::path() );
+    FC_ASSERT( _data_dir != fc::path() );
 
   } catch ( const fc::exception& e )
   {
@@ -165,13 +165,13 @@ void hived_fixture::postponed_init_impl( bool remove_db_files,
 
 const hive::chain::block_read_i& hived_fixture::get_block_reader() const
 {
-  BOOST_ASSERT( _block_reader != nullptr );
+  FC_ASSERT( _block_reader != nullptr );
   return *_block_reader;
 }
 
 hive::plugins::chain::chain_plugin& hived_fixture::get_chain_plugin() const
 {
-  BOOST_ASSERT( _chain != nullptr );
+  FC_ASSERT( _chain != nullptr );
   return *_chain;
 }
 

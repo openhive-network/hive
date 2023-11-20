@@ -15,7 +15,7 @@ void verify_logging_config_against_pattern( const hived_fixture& cf,
 {
   const auto logging_config = cf.get_logging_config();
 
-  BOOST_ASSERT( logging_config.valid() && "Logging config should have been filled by now" );
+  FC_ASSERT( logging_config.valid() && "Logging config should have been filled by now" );
   if( not appender_pattern.empty() )
   {
     BOOST_REQUIRE_EQUAL( logging_config->appenders.size(), appender_pattern.size() );
