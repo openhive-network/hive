@@ -448,8 +448,8 @@ private:
 
 public:
 
-  void post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key );
-  void post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _parent_permlink, const fc::ecc::private_key& _key);
+  void post_comment_with_block_generation( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _category, const fc::ecc::private_key& _key );
+  void post_comment( std::string _author, std::string _permlink, std::string _title, std::string _body, std::string _category, const fc::ecc::private_key& _key);
   void post_comment_to_comment( const std::string& author, const std::string& permlink, const std::string& title, const std::string& body,
                                 const std::string& parent_author, const std::string& parent_permlink, const fc::ecc::private_key& key );
   void delete_comment( std::string _author, std::string _permlink, const fc::ecc::private_key& _key );
