@@ -887,6 +887,202 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( vote_stabilization )
+{
+  try
+  {
+    autoscope reset( set_mainnet_cashout_values() );
+
+    BOOST_TEST_MESSAGE( "Testing consecutive single block votes and downvotes before HF28" );
+
+    inject_hardfork( HIVE_HARDFORK_1_27 );
+
+    ACTORS_DEFAULT_FEE( (alice)(bob)(carol)(antibob)(anticarol) );
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "bob", ASSET( "1000.000 TESTS" ) );
+    vest( "carol", ASSET( "1000.000 TESTS" ) );
+    vest( "antibob", ASSET( "1000.000 TESTS" ) );
+    vest( "anticarol", ASSET( "1000.000 TESTS" ) );
+    generate_block();
+
+    // create root post
+    post_comment( "alice", "test", "test", "test", "category", alice_post_key );
+    generate_block();
+
+    int i;
+    // create replies (there is a cooldown on root posts, replies can be posted block by block)
+    for( i = 0; i < 200; ++i )
+    {
+      auto permlink = "reply" + std::to_string( i );
+      post_comment_to_comment( "alice", permlink, "reply", permlink, "alice", "test", alice_post_key );
+      generate_block();
+    }
+
+    const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
+
+    auto vote_reply = [&]( int i, int16_t weight, const std::string& voter, const fc::ecc::private_key& key ) -> int64_t
+    {
+      auto permlink = "reply" + std::to_string( i );
+      vote( "alice", permlink, voter, weight, key );
+      auto reply_id = db->get_comment( "alice", permlink ).get_id();
+      const auto& vote_obj = *vote_idx.find( boost::make_tuple( reply_id, get_account_id( voter ) ) );
+      return vote_obj.get_rshares();
+    };
+
+    // upvote all replies with 'bob'
+    int64_t full_power = 0, last_power = 0;
+    for( i = 0; i < 200; ++i )
+    {
+      auto rshares = vote_reply( i, HIVE_100_PERCENT, "bob", bob_post_key );
+      if( !full_power )
+        full_power = rshares;
+      else
+        BOOST_REQUIRE_LT( rshares, last_power ); // power drops with every vote, but never reaches zero (at least not within 200 votes)
+      last_power = rshares;
+      ilog( "${i}: upvote with ${p} BP of full power", ( i )( "p", last_power * HIVE_100_PERCENT / full_power ) );
+    }
+    generate_block();
+
+    // downvote all replies with 'antibob'
+    for( i = 0; i < 13; ++i )
+    {
+      auto rshares = vote_reply( i, - HIVE_100_PERCENT, "antibob", antibob_post_key );
+      BOOST_REQUIRE_EQUAL( -rshares, full_power ); // since antibob has full upvote mana, downvotes will be of equal power until he starts consuming upvote mana
+    }
+    last_power = full_power;
+    for( ; i < 200; ++i )
+    {
+      auto rshares = vote_reply( i, -HIVE_100_PERCENT, "antibob", antibob_post_key );
+      BOOST_REQUIRE_LT( -rshares, last_power ); // now power drops with every downvote, because all downvote mana was consumed
+      last_power = -rshares;
+      ilog( "${i}: downvote with ${p} BP of full power", ( i )( "p", last_power * HIVE_100_PERCENT / full_power ) );
+    }
+    generate_block();
+    /*
+    BOOST_TEST_MESSAGE( "Testing consecutive single block votes and downvotes after HF28" );
+
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+
+    // upvote replies with 'carol' - she can only cast 49 full powered votes before her mana
+    // is gone
+    // NOTE: due to "round-up" code a tiny bit more mana is used, therefore when all votes are
+    // in single block, 50th one will be a tiny bit short on mana
+    for( i = 0; i < 49; ++i )
+    {
+      auto rshares = vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key );
+      BOOST_REQUIRE_EQUAL( rshares, full_power ); // power stays the same on all votes
+    }
+    HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
+      "voter.voting_manabar.has_mana( fc::uint128_to_int64( used_mana ) )" );
+
+    generate_block();
+    // after single block 'carol' should regenerate enough mana to counter "round-up" mentioned above
+    vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key );
+    // but further voting is not possible, unless she waits or lowers weight significantly
+    ++i;
+    HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
+      "voter.voting_manabar.has_mana( fc::uint128_to_int64( used_mana ) )" );
+
+    generate_blocks( HIVE_BLOCKS_PER_DAY / 10 - 1 );
+    HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
+      "voter.voting_manabar.has_mana( fc::uint128_to_int64( used_mana ) )" );
+    generate_block();
+    vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key );
+    // only one full vote is possible after 1/10 of day of mana regen
+    ++i;
+    HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
+      "voter.voting_manabar.has_mana( fc::uint128_to_int64( used_mana ) )" );
+
+    // downvote all replies with 'anticarol'
+    for( i = 0; i < 12+1+49; ++i )
+    {
+      auto rshares = vote_reply( i, -HIVE_100_PERCENT, "anticarol", anticarol_post_key );
+      BOOST_REQUIRE_EQUAL( -rshares, full_power ); // downvote power no longer relies on upvote manabar
+    }
+    // 13'th downvote started to eat upvote mana, eating half-vote worth, however due to "round-up" code
+    // mentioned earlier, it will come couple points short
+    HIVE_REQUIRE_ASSERT( vote_reply( i, -50 * HIVE_1_PERCENT, "anticarol", anticarol_post_key ),
+      "voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana )" );
+    generate_block();
+    // after single block 'anticarol' should regenerate enough mana to counter "round-up" mentioned above
+    vote_reply( i, -50 * HIVE_1_PERCENT, "anticarol", anticarol_post_key );
+    // but further downvoting is not possible, unless she waits or lowers weight significantly
+    ++i;
+    HIVE_REQUIRE_ASSERT( vote_reply( i, -HIVE_100_PERCENT, "anticarol", anticarol_post_key ),
+      "voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana )" );
+
+    generate_blocks( HIVE_BLOCKS_PER_DAY * 10 / 125 - 1 );
+    // since downvote can burn both downvote and upvote mana at the same time and they regenerate concurrently,
+    // with downvote manabar being 1/4 of upvote, we need to wait less to be able to cast next downvote
+    HIVE_REQUIRE_ASSERT( vote_reply( i, -HIVE_100_PERCENT, "anticarol", anticarol_post_key ),
+      "voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana )" );
+    generate_block();
+    vote_reply( i, -HIVE_100_PERCENT, "anticarol", anticarol_post_key );
+    // only one full downvote is possible after (1/10 of day / 125%) of mana regen
+    ++i;
+    HIVE_REQUIRE_ASSERT( vote_reply( i, -HIVE_100_PERCENT, "anticarol", anticarol_post_key ),
+      "voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana )" );
+    */
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( empty_voting )
+{
+  try
+  {
+    autoscope reset( set_mainnet_cashout_values() );
+
+    BOOST_TEST_MESSAGE( "Testing voting and downvoting with no mana before HF28" );
+
+    inject_hardfork( HIVE_HARDFORK_1_27 );
+
+    ACTORS_DEFAULT_FEE( (alice)(bob)(carol)(antibob)(anticarol) );
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    generate_block();
+
+    // create post
+    post_comment( "alice", "test", "test", "test", "category", alice_post_key );
+    generate_block();
+
+    // voting requires exactly as much mana as is used - zero in this case since bob has no stake
+    vote( "alice", "test", "bob", HIVE_100_PERCENT, bob_post_key );
+    // downvoting requires more than is used - it is probably a bug
+    HIVE_REQUIRE_ASSERT( vote( "alice", "test", "antibob", -HIVE_100_PERCENT, antibob_post_key ),
+      "voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana )" );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "Testing voting and downvoting with no mana after HF28" );
+
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+
+    vote( "alice", "test", "carol", HIVE_100_PERCENT, carol_post_key );
+    // even though it is probably a bug and it was actually fixed briefly, final decision was to not change it
+    HIVE_REQUIRE_ASSERT( vote( "alice", "test", "anticarol", -HIVE_100_PERCENT, anticarol_post_key ),
+      "voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana )" );
+    generate_block();
+
+    auto post_id = db->get_comment( "alice", std::string( "test" ) ).get_id();
+    const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
+    auto voteI = vote_idx.find( boost::make_tuple( post_id, bob_id ) );
+    BOOST_REQUIRE( voteI != vote_idx.end() );
+    BOOST_REQUIRE_EQUAL( voteI->get_rshares(), 0 );
+    BOOST_REQUIRE_EQUAL( voteI->get_vote_percent(), HIVE_100_PERCENT );
+    voteI = vote_idx.find( boost::make_tuple( post_id, antibob_id ) );
+    BOOST_REQUIRE( voteI == vote_idx.end() );
+    voteI = vote_idx.find( boost::make_tuple( post_id, carol_id ) );
+    BOOST_REQUIRE( voteI != vote_idx.end() );
+    BOOST_REQUIRE_EQUAL( voteI->get_rshares(), 0 );
+    BOOST_REQUIRE_EQUAL( voteI->get_vote_percent(), HIVE_100_PERCENT );
+    voteI = vote_idx.find( boost::make_tuple( post_id, anticarol_id ) );
+    BOOST_REQUIRE( voteI == vote_idx.end() );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
