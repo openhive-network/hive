@@ -14,7 +14,7 @@ from schemas.operations.virtual import DeclinedVotingRightsOperation
 @run_for("testnet")
 def test_if_proposal_votes_were_removed_after_declining_voting_rights(
     prepare_environment: tuple[tt.InitNode, tt.Wallet]
-):
+) -> None:
     node, wallet = prepare_environment
     create_proposal(wallet)
 
@@ -31,7 +31,7 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights(
 @run_for("testnet")
 def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights(
     prepare_environment: tuple[tt.InitNode, tt.Wallet]
-):
+) -> None:
     node, wallet = prepare_environment
     create_proposal(wallet)
 
@@ -46,7 +46,7 @@ def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights(
 @run_for("testnet")
 def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed(
     prepare_environment: tuple[tt.InitNode, tt.Wallet]
-):
+) -> None:
     node, wallet = prepare_environment
     create_proposal(wallet)
 

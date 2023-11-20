@@ -65,7 +65,7 @@ def create_posts(node, accounts):
                 "firstpost",
             )
         )
-        node.send(
+        node.post(
             f"Post title [{acnt['name']}]",
             f"Post body [{acnt['name']}]",
             author=acnt["name"],

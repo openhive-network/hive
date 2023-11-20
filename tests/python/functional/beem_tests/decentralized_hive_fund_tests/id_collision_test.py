@@ -140,7 +140,7 @@ if __name__ == "__main__":
         )
     )
 
-    node_client.send(
+    node_client.post(
         f"Hivepy proposal title [{args.creator}]",
         f"Hivepy proposal body [{args.creator}]",
         args.creator,
