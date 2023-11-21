@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from hive_local_tools import run_for
-import pytest
 from requests import post
+
+from hive_local_tools import run_for
 
 if TYPE_CHECKING:
     import test_tools as tt
@@ -25,7 +25,6 @@ def test_uniqueness_of_transaction_ids_generated_by_wallet(node: tt.InitNode | t
 # We are unable to guarantee this due to the race between blocks production and generating transactions.
 # If the transactions do not enter a single block, they will be split between two blocks.
 # In this case, the test is repeated.
-@pytest.mark.flaky(reruns=5, reruns_delay=30)
 @run_for("testnet")
 def test_if_transaction_ids_order_corresponds_to_transactions_order(
     node: tt.InitNode | tt.RemoteNode, wallet: tt.Wallet
@@ -33,9 +32,7 @@ def test_if_transaction_ids_order_corresponds_to_transactions_order(
     names = [f"account-{i:02d}" for i in range(20)]
 
     # transactions created in this loop are sent to single block (it's ensured by assert below)
-    for name in names:
-        transaction = wallet.api.create_account("initminer", name, "{}", broadcast=False)
-        node.api.condenser.broadcast_transaction(transaction)
+    batch_send(node, [wallet.api.create_account("initminer", name, "{}", broadcast=False) for name in names])
 
     node.wait_number_of_blocks(1)  # waiting for the above transactions to be in the block log
     block = node.api.condenser.get_block(node.get_last_block_number())
