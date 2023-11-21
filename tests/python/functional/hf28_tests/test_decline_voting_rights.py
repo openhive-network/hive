@@ -49,8 +49,7 @@ def test_create_two_decline_voting_rights_requests(prepare_environment: tuple[tt
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
 
-    response = exception.value.response
-    assert "Cannot create new request because one already exists." in response["error"]["message"]
+    assert "Cannot create new request because one already exists." in exception.value.error
 
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT]).requests) == 0
