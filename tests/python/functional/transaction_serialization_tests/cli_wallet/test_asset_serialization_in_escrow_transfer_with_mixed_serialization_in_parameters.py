@@ -101,7 +101,7 @@ def test_fee_in_legacy_serialization_with_hf26_wallet(wallet_with_hf26_serializa
         99,
         tt.Asset.Tbd(1).as_nai(),
         tt.Asset.Test(2).as_nai(),
-        tt.Asset.Tbd(1),
+        tt.Asset.Tbd(1).as_nai(),
         tt.Time.from_now(weeks=16),
         tt.Time.from_now(weeks=20),
         "{}",

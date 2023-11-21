@@ -23,8 +23,12 @@ def test_get_order_book_json_format(node: tt.InitNode | tt.FullApiNode, wallet_w
     assert_that_bids_are_equal(order_book["bids"], initial_orders[0:2], "hf26")
     assert_that_asks_are_equal(order_book["asks"], initial_orders[2:4], "hf26")
 
-    assert order_book["bid_total"] == sum([order["amount_to_sell"] for order in initial_orders[0:2]], tt.Asset.Tbd(0))
-    assert order_book["ask_total"] == sum([order["min_to_receive"] for order in initial_orders[2:4]], tt.Asset.Tbd(0))
+    assert tt.Asset.is_same(
+        order_book["bid_total"], sum([order["amount_to_sell"] for order in initial_orders[0:2]], tt.Asset.Tbd(0))
+    )
+    assert tt.Asset.is_same(
+        order_book["ask_total"], sum([order["min_to_receive"] for order in initial_orders[2:4]], tt.Asset.Tbd(0))
+    )
 
 
 def test_get_order_book_text_format(node: tt.InitNode | tt.FullApiNode, wallet_with_text_formatter: tt.Wallet):
@@ -35,8 +39,12 @@ def test_get_order_book_text_format(node: tt.InitNode | tt.FullApiNode, wallet_w
     assert_that_bids_are_equal(order_book["bids"], initial_orders[0:2], "legacy")
     assert_that_asks_are_equal(order_book["asks"], initial_orders[2:4], "legacy")
 
-    assert order_book["bid_total"] == sum([order["amount_to_sell"] for order in initial_orders[0:2]], tt.Asset.Tbd(0))
-    assert order_book["ask_total"] == sum([order["min_to_receive"] for order in initial_orders[2:4]], tt.Asset.Tbd(0))
+    assert tt.Asset.is_same(
+        order_book["bid_total"], sum([order["amount_to_sell"] for order in initial_orders[0:2]], tt.Asset.Tbd(0))
+    )
+    assert tt.Asset.is_same(
+        order_book["ask_total"], sum([order["min_to_receive"] for order in initial_orders[2:4]], tt.Asset.Tbd(0))
+    )
 
 
 def test_json_format_pattern(node: tt.InitNode | tt.FullApiNode, wallet_with_json_formatter: tt.Wallet):
@@ -120,9 +128,9 @@ def assert_that_bids_are_equal(
     for order, reference_order in zip(orders_bids, reference_orders_bids):
         sum_hbd_from_bids += reference_order["amount_to_sell"]
 
-        assert order["hive"] == __serialize_asset(reference_order["min_to_receive"], asset_format)
-        assert order["hbd"] == __serialize_asset(reference_order["amount_to_sell"], asset_format)
-        assert order["sum_hbd"] == __serialize_asset(sum_hbd_from_bids, asset_format)
+        assert tt.Asset.is_same(order["hive"], __serialize_asset(reference_order["min_to_receive"], asset_format))
+        assert tt.Asset.is_same(order["hbd"], __serialize_asset(reference_order["amount_to_sell"], asset_format))
+        assert tt.Asset.is_same(order["sum_hbd"], __serialize_asset(sum_hbd_from_bids, asset_format))
         assert are_close(float(order["price"]), reference_order["price"])
 
 
@@ -132,9 +140,9 @@ def assert_that_asks_are_equal(
     sum_hbd_from_asks = tt.Asset.Tbd(0)
     for order, reference_order in zip(orders_asks, reference_orders_asks):
         sum_hbd_from_asks += reference_order["min_to_receive"]
-        assert order["hive"] == __serialize_asset(reference_order["amount_to_sell"], asset_format)
-        assert order["hbd"] == __serialize_asset(reference_order["min_to_receive"], asset_format)
-        assert order["sum_hbd"] == __serialize_asset(sum_hbd_from_asks, asset_format)
+        assert tt.Asset.is_same(order["hive"], __serialize_asset(reference_order["amount_to_sell"], asset_format))
+        assert tt.Asset.is_same(order["hbd"], __serialize_asset(reference_order["min_to_receive"], asset_format))
+        assert tt.Asset.is_same(order["sum_hbd"], __serialize_asset(sum_hbd_from_asks, asset_format))
         assert are_close(float(order["price"]), reference_order["price"])
 
 

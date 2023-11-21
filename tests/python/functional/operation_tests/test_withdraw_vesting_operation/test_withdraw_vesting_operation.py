@@ -19,7 +19,7 @@ def test_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerD
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1,
+        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount) + 1,
         operation_timestamp=power_down.timestamp,
     )
     alice.update_account_info()
@@ -53,7 +53,7 @@ def test_cancel_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice:
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1,
+        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount) + 1,
         operation_timestamp=power_down.timestamp,
     )
     alice.update_account_info()
@@ -74,7 +74,9 @@ def test_cancel_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice:
     alice.assert_hive_power_is_unchanged()
     alice.assert_hive_balance_is_unchanged()
     err_message = "Max rc mana did not return to the state before the canceled `power down`."
-    assert alice.get_rc_max_mana() == alice.rc_manabar.max_rc + power_down.weekly_vest_reduction.amount + 1, err_message
+    assert (
+        alice.get_rc_max_mana() == alice.rc_manabar.max_rc + int(power_down.weekly_vest_reduction.amount) + 1
+    ), err_message
 
 
 @pytest.mark.testnet()
@@ -94,7 +96,7 @@ def test_modify_power_down_amount(
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + power_down.weekly_vest_reduction.amount + 1,
+        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount) + 1,
         operation_timestamp=power_down.timestamp,
     )
     alice.update_account_info()

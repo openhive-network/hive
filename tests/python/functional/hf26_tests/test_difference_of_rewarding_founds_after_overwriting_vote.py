@@ -8,8 +8,8 @@ def test_getting_rewards_after_vote_overwriting_on_hf25(node_hf25: tt.InitNode, 
 
     bob = wallet_hf25.api.get_account("bob")
 
-    assert bob["reward_vesting_balance"] == tt.Asset.Vest(0)
-    assert bob["reward_vesting_hive"] == tt.Asset.Test(0)
+    assert tt.Asset.from_legacy(bob["reward_vesting_balance"]) == tt.Asset.Vest(0)
+    assert tt.Asset.from_legacy(bob["reward_vesting_hive"]) == tt.Asset.Test(0)
 
 
 def test_getting_rewards_after_vote_overwriting_on_hf26(node_hf26: tt.Wallet, wallet_hf26: tt.Wallet):
