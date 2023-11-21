@@ -53,6 +53,7 @@ def test_handling_sensitive_data_in_the_memo_field(
 
     memo_message = get_memo_message(memo_type, role, private_key)
 
+    error_message = "#"
     with pytest.raises(tt.exceptions.CommunicationError) as error:  # noqa: PT012
         match broadcast_way:
             case "api":
@@ -61,8 +62,8 @@ def test_handling_sensitive_data_in_the_memo_field(
             case "wallet":
                 error_message = f"Detected private {role} key in memo field. Cancelling transaction."
                 broadcast_transaction_by_wallet(wallet, operation, memo_message)
-    response = error.value.response
-    assert error_message in response["error"]["message"]
+
+    assert error_message in error.value.error
 
 
 @run_for("testnet")
@@ -82,8 +83,7 @@ def test_handle_by_wallet_additional_private_key_in_memo_field(
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         broadcast_transaction_by_wallet(wallet, operation, memo=extra_private_key)
 
-    response = error.value.response
-    assert "Detected imported private key in memo field. Cancelling transaction." in response["error"]["message"]
+    assert "Detected imported private key in memo field. Cancelling transaction." in error.value.error
 
 
 def broadcast_transaction_by_api(

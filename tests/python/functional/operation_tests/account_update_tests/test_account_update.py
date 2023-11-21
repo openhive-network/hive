@@ -29,7 +29,7 @@ def test_update_account_owner_authority(alice: UpdateAccount, authority_type: st
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
             alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
         alice.assert_if_rc_current_mana_was_unchanged()
-        error_response = exception.value.response["error"]["message"]
+        error_response = exception.value.error
         assert "Missing Owner Authority" in error_response
     else:
         transaction = alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
@@ -55,7 +55,7 @@ def test_update_account_active_authority(alice: UpdateAccount, authority_type: s
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
             alice.update_account(active=new_auth, use_account_update2=use_account_update2)
         alice.assert_if_rc_current_mana_was_unchanged()
-        error_response = exception.value.response["error"]["message"]
+        error_response = exception.value.error
         assert "Missing Active Authority" in error_response
     else:
         transaction = alice.update_account(active=new_auth, use_account_update2=use_account_update2)
@@ -81,7 +81,7 @@ def test_update_account_posting_authority(alice: UpdateAccount, authority_type: 
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
             alice.update_account(posting=new_auth, use_account_update2=use_account_update2)
         alice.assert_if_rc_current_mana_was_unchanged()
-        error_response = exception.value.response["error"]["message"]
+        error_response = exception.value.error
         assert "Missing Active Authority" in error_response
     else:
         transaction = alice.update_account(posting=new_auth, use_account_update2=use_account_update2)
@@ -107,7 +107,7 @@ def test_update_account_memo_key(alice: UpdateAccount, authority_type: str, use_
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
             alice.update_account(memo_key=new_key, use_account_update2=use_account_update2)
         alice.assert_if_rc_current_mana_was_unchanged()
-        error_response = exception.value.response["error"]["message"]
+        error_response = exception.value.error
         assert "Missing Active Authority" in error_response
     else:
         transaction = alice.update_account(memo_key=new_key, use_account_update2=use_account_update2)
@@ -133,7 +133,7 @@ def test_update_json_metadata(alice: UpdateAccount, authority_type: str, use_acc
         with pytest.raises(tt.exceptions.CommunicationError) as exception:
             alice.update_account(json_metadata=new_json_meta, use_account_update2=use_account_update2)
         alice.assert_if_rc_current_mana_was_unchanged()
-        error_response = exception.value.response["error"]["message"]
+        error_response = exception.value.error
         assert "Missing Active Authority" in error_response
     else:
         transaction = alice.update_account(json_metadata=new_json_meta, use_account_update2=use_account_update2)
@@ -276,7 +276,7 @@ def test_update_owner_authority_two_and_three_times_within_one_hour(
             with pytest.raises(tt.exceptions.CommunicationError) as exception:
                 alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
             alice.assert_if_rc_current_mana_was_unchanged()
-            error_response = exception.value.response["error"]["message"]
+            error_response = exception.value.error
             assert "Owner authority can only be updated twice an hour" in error_response
         else:
             transaction = alice.update_account(owner=new_auth, use_account_update2=use_account_update2)

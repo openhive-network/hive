@@ -824,4 +824,4 @@ def test_recurrent_transfer_cases_27_and_28(
         )
 
     expected_error_message = "Cannot set a transfer that would last for longer than 730 days"
-    assert expected_error_message in exception.value.response["error"]["message"]
+    assert expected_error_message in exception.value.error

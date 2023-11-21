@@ -65,8 +65,7 @@ def test_remove_non_existent_decline_voting_rights_request(prepare_environment: 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, False)
 
-    response = exception.value.response
-    assert "Cannot cancel the request because it does not exist." in response["error"]["message"]
+    assert "Cannot cancel the request because it does not exist." in exception.value.error
 
 
 @run_for("testnet")
