@@ -30,7 +30,7 @@ def node(chain_id, skeleton_key):
     init_node.config.plugin.append("condenser_api")
 
     init_node.run(
-        time_offset=tt.Time.serialize(timestamp, format_=tt.Time.TIME_OFFSET_FORMAT),
+        time_offset=tt.Time.serialize(timestamp, format_=tt.TimeFormats.TIME_OFFSET_FORMAT),
         wait_for_live=True,
         replay_from=block_log_path,
         arguments=[f"--chain-id={chain_id}", f"--skeleton-key={skeleton_key}"],

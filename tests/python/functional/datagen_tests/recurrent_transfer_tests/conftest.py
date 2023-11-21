@@ -28,7 +28,7 @@ def replayed_node() -> ReplayedNodeMaker:
 
         absolute_start_time -= tt.Time.seconds(5)
 
-        time_offset = tt.Time.serialize(absolute_start_time, format_=tt.Time.TIME_OFFSET_FORMAT)
+        time_offset = tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
         if time_multiplier is not None:
             time_offset += f" x{time_multiplier}"
 

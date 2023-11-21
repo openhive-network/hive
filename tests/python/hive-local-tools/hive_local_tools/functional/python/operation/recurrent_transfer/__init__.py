@@ -126,7 +126,7 @@ class RecurrentTransfer:
         self._node.restart(
             time_offset=tt.Time.serialize(
                 self._current_schedule[-1] + tt.Time.hours(self._recurrence),
-                format_=tt.Time.TIME_OFFSET_FORMAT,
+                format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
             )
         )
 
@@ -138,7 +138,7 @@ class RecurrentTransfer:
                     self._node.restart(
                         time_offset=tt.Time.serialize(
                             self._current_schedule[num],
-                            format_=tt.Time.TIME_OFFSET_FORMAT,
+                            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
                         )
                     )
                     time_after_restart = self._node.get_head_block_time()
@@ -149,7 +149,7 @@ class RecurrentTransfer:
             self._node.restart(
                 time_offset=tt.Time.serialize(
                     execution_date,
-                    format_=tt.Time.TIME_OFFSET_FORMAT,
+                    format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
                 )
             )
 
@@ -157,7 +157,7 @@ class RecurrentTransfer:
         self._node.restart(
             time_offset=tt.Time.serialize(
                 self._current_schedule[-1],
-                format_=tt.Time.TIME_OFFSET_FORMAT,
+                format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
             )
         )
         self._node.wait_number_of_blocks(1)
