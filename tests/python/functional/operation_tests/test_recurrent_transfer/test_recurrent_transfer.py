@@ -247,11 +247,11 @@ def test_recurrent_transfer_cases_9_and_10(
 
     recurrent_transfer.move_after_last_transfer()
 
-    if isinstance(amount, tt.Asset.Test):
+    if isinstance(amount, tt.Asset.TestT):
         assert sender.hive == tt.Asset.Test(10)
         # 2 executions from first transfer and 5 executions from second transfer
         assert receiver.hive == (2 + 5) * amount
-    if isinstance(amount, tt.Asset.Tbd):
+    if isinstance(amount, tt.Asset.TbdT):
         assert sender.hbd == tt.Asset.Tbd(10)
         # 2 executions from first transfer and 5 executions from second transfer
         assert receiver.hbd == (2 + 5) * amount

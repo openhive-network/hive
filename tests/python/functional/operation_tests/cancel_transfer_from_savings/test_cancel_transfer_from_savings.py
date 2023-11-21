@@ -60,8 +60,9 @@ def test_cancel_transfer_from_savings_simplest_scenario(
 
     # TODO: ADD RC CHECK WHEN ISSUE WILL BE RESOLVED: https://gitlab.syncad.com/hive/hive/-/issues/507
     assert (
-        savings_balance_before_withdrawal_cancellation + currency(50) == savings_balance_after_withdrawal_cancellation
-    ), f"{currency.token}S from cancelled withdrawal didn't come back to savings balance"
+        savings_balance_before_withdrawal_cancellation + currency(amount=50)
+        == savings_balance_after_withdrawal_cancellation
+    ), f"{currency.token()}S from cancelled withdrawal didn't come back to savings balance"
 
     prepared_node.restart(
         time_offset=tt.Time.serialize(
@@ -94,7 +95,7 @@ def test_cancel_all_transfers_from_savings(
     check_balance,
 ):
     create_three_savings_withdrawals_from_fresh_account(
-        prepared_node, currency, alice, check_savings_balance, currency.token
+        prepared_node, currency, alice, check_savings_balance, currency.token()
     )
     funds_after_transfer_to_savings = getattr(alice, check_balance)()
     for withdrawal_to_cancel in range(3):
