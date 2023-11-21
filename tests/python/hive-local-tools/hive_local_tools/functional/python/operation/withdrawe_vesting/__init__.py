@@ -11,6 +11,7 @@ from hive_local_tools.functional.python.operation import (
     get_vesting_price,
     get_virtual_operations,
 )
+from schemas.operations.virtual import FillVestingWithdrawOperation
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -106,7 +107,7 @@ class PowerDown(Operation):
     ) -> None:
         week = 13 - self._remaining_executions
         assert (
-            len(get_virtual_operations(self._node, "fill_vesting_withdraw_operation", start_block=start_block)) == week
+            len(get_virtual_operations(self._node, FillVestingWithdrawOperation, start_block=start_block)) == week
         ), "The virtual operation: fill_vesting_withdraw_operation is not generated."
 
 
