@@ -17,34 +17,34 @@ if TYPE_CHECKING:
 
 class RecurrentTransferAccount(Account):
     def assert_balance_is_reduced_by_transfer(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
-        if isinstance(amount, tt.Asset.Test):
-            assert self._hive - amount == get_hive_balance(
+        if isinstance(amount, tt.Asset.TestT):
+            assert self.hive - amount == get_hive_balance(
                 self._node, self._name
             ), f"The `{self._name}` account balance has not been reduced."
-        elif isinstance(amount, tt.Asset.Tbd):
-            assert self._hbd - amount == get_hbd_balance(
+        elif isinstance(amount, tt.Asset.TbdT):
+            assert self.hbd - amount == get_hbd_balance(
                 self._node, self._name
             ), f"The `{self._name}` account hbd_balance has not been reduced."
         else:
             raise TypeError("Invalid argument type.")
 
-    def assert_balance_is_increased_by_transfer(self, amount: tt.Asset.Test | tt.Asset.Tbd) -> None:
-        if isinstance(amount, tt.Asset.Test):
-            assert self._hive + amount == get_hive_balance(
+    def assert_balance_is_increased_by_transfer(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
+        if isinstance(amount, tt.Asset.TestT):
+            assert self.hive + amount == get_hive_balance(
                 self._node, self._name
             ), f"The `{self._name}` account balance has not been increased."
-        elif isinstance(amount, tt.Asset.Tbd):
-            assert self._hbd + amount == get_hbd_balance(
+        elif isinstance(amount, tt.Asset.TbdT):
+            assert self.hbd + amount == get_hbd_balance(
                 self._node, self._name
             ), f"The `{self._name}` account hbd_balance has not been increased."
         else:
             raise TypeError("Invalid argument type.")
 
     def assert_hives_and_hbds_are_not_changed(self):
-        assert self._hive == get_hive_balance(
+        assert self.hive == get_hive_balance(
             self._node, self._name
         ), f"The {self._name}` account balance has been changed."
-        assert self._hbd == get_hbd_balance(
+        assert self.hbd == get_hbd_balance(
             self._node, self._name
         ), f"The {self._name}` account hbd_balance has been changed."
 
@@ -217,7 +217,7 @@ class RecurrentTransfer:
             self._executions = new_executions_number
             self._recurrence = new_recurrence_time
         elif not new_executions_number and not new_recurrence_time and amount:
-            if amount == type(amount)(0):
+            if amount == amount.clone(amount=0):
                 self._current_schedule = []
             else:
                 self._current_schedule = self.__get_transfer_schedule(self.get_next_execution_date())
@@ -225,7 +225,7 @@ class RecurrentTransfer:
         self._executions_schedules.append(self._current_schedule)
 
     def cancel(self) -> None:
-        self.update(amount=tt.Asset.Test(0) if isinstance(self._amount, tt.Asset.Test) else tt.Asset.Tbd(0))
+        self.update(amount=tt.Asset.Test(0) if isinstance(self._amount, tt.Asset.TestT) else tt.Asset.Tbd(0))
 
 
 class RecurrentTransferDefinition:

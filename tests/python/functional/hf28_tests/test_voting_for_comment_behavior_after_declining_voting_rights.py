@@ -47,8 +47,8 @@ def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_ac
     node.restart(time_offset="+62m")
 
     assert len(get_virtual_operations(node, "curation_reward_operation")) == 1
-    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
-    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_balance > tt.Asset.Vest(0)
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_hive > tt.Asset.Test(0)
 
 
 @run_for("testnet")
@@ -73,8 +73,8 @@ def test_vote_for_comment_when_decline_voting_rights_is_being_executed(
     node.restart(time_offset="+62m")
 
     assert len(get_virtual_operations(node, "curation_reward_operation")) == 1
-    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_balance"] > tt.Asset.Vest(0)
-    assert node.api.wallet_bridge.get_accounts(["alice"])[0]["reward_vesting_hive"] > tt.Asset.Test(0)
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_balance > tt.Asset.Vest(0)
+    assert node.api.wallet_bridge.get_accounts(["alice"])[0].reward_vesting_hive > tt.Asset.Test(0)
 
 
 @run_for("testnet")

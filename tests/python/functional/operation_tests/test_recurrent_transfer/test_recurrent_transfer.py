@@ -387,8 +387,8 @@ def test_recurrent_transfer_cases_13_14_15_16(
 ):
     wallet.create_account(
         "sender",
-        hives=6 * amount if isinstance(amount, tt.Asset.Test) else None,
-        hbds=6 * amount if isinstance(amount, tt.Asset.Tbd) else None,
+        hives=6 * amount if isinstance(amount, tt.Asset.TestT) else None,
+        hbds=6 * amount if isinstance(amount, tt.Asset.TbdT) else None,
         vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)
@@ -594,8 +594,8 @@ def test_recurrent_transfer_cases_19_and_20(
     """
     wallet.create_account(
         "sender",
-        hives=transfer_amount if isinstance(transfer_amount, tt.Asset.Test) else None,
-        hbds=transfer_amount if isinstance(transfer_amount, tt.Asset.Tbd) else None,
+        hives=transfer_amount if isinstance(transfer_amount, tt.Asset.TestT) else None,
+        hbds=transfer_amount if isinstance(transfer_amount, tt.Asset.TbdT) else None,
         vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)
@@ -650,8 +650,8 @@ def test_recurrent_transfer_cases_21_and_22(
     """
     wallet.create_account(
         "sender",
-        hives=10 if isinstance(amount, tt.Asset.Test) else None,
-        hbds=10 if isinstance(amount, tt.Asset.Tbd) else None,
+        hives=10 if isinstance(amount, tt.Asset.TestT) else None,
+        hbds=10 if isinstance(amount, tt.Asset.TbdT) else None,
         vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)
@@ -712,8 +712,8 @@ def test_recurrent_transfer_cases_23_and_24(
     """
     wallet.create_account(
         "sender",
-        hives=amount if isinstance(amount, tt.Asset.Test) else None,
-        hbds=amount if isinstance(amount, tt.Asset.Tbd) else None,
+        hives=amount if isinstance(amount, tt.Asset.TestT) else None,
+        hbds=amount if isinstance(amount, tt.Asset.TbdT) else None,
         vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)

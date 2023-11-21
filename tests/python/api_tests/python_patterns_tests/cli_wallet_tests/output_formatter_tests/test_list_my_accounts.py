@@ -43,11 +43,11 @@ def test_list_my_accounts_text_format(wallet_with_text_formatter: tt.Wallet):
         block_log.CREATED_ACCOUNTS, block_log.ACCOUNTS_BALANCES, accounts_summary["accounts"]
     ):
         assert returned_account["name"] == name
-        assert returned_account["balance"] == balances["hives"]
-        assert returned_account["hbd_balance"] == balances["hbds"]
+        assert tt.Asset.from_legacy(returned_account["balance"]) == balances["hives"]
+        assert tt.Asset.from_legacy(returned_account["hbd_balance"]) == balances["hbds"]
 
-    assert accounts_summary["total_hive"] == TOTAL_BALANCES["hives"]
-    assert accounts_summary["total_hbd"] == TOTAL_BALANCES["hbds"]
+    assert tt.Asset.from_legacy(accounts_summary["total_hive"]) == TOTAL_BALANCES["hives"]
+    assert tt.Asset.from_legacy(accounts_summary["total_hbd"]) == TOTAL_BALANCES["hbds"]
 
 
 @pytest.mark.replayed_node()
