@@ -55,9 +55,7 @@ def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
     """
     This place have to be removed after solving issue https://gitlab.syncad.com/hive/test-tools/-/issues/10
     """
-    from test_tools.__private.user_handles.get_implementation import get_implementation
-
-    second_node.config.p2p_seed_node = get_implementation(first_node).get_p2p_endpoint()
+    second_node.config.p2p_seed_node = first_node.p2p_endpoint.as_string()
 
 
 def get_last_proposal_id(node: tt.AnyNode) -> int:

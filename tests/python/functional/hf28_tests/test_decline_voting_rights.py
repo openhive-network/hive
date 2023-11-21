@@ -53,9 +53,9 @@ def test_create_two_decline_voting_rights_requests(prepare_environment: tuple[tt
     assert "Cannot create new request because one already exists." in response["error"]["message"]
 
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT])["requests"]) == 0
-    assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])["accounts"][0]["can_vote"] is False
-    assert len(get_virtual_operations(node, "declined_voting_rights_operation")) == 1
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT]).requests) == 0
+    assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT]).accounts[0].can_vote is False
+    assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
 
 @run_for("testnet")
@@ -80,6 +80,6 @@ def test_remove_decline_voting_rights_request(prepare_environment: tuple[tt.Init
     assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])["accounts"][0]["can_vote"] is True
 
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT])["requests"]) == 0
-    assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT])["accounts"][0]["can_vote"] is True
-    assert len(get_virtual_operations(node, "declined_voting_rights_operation")) == 0
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT]).requests) == 0
+    assert node.api.database.find_accounts(accounts=[VOTER_ACCOUNT]).accounts[0].can_vote is True
+    assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 0

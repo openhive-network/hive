@@ -13,6 +13,7 @@ from hive_local_tools.constants import (
 )
 from hive_local_tools.functional.python.operation import get_virtual_operations
 from hive_local_tools.functional.python.operation.recurrent_transfer import RecurrentTransfer, RecurrentTransferAccount
+from schemas.operations.virtual import FailedRecurrentTransferOperation
 
 
 @pytest.mark.testnet()
@@ -619,7 +620,7 @@ def test_recurrent_transfer_cases_19_and_20(
     sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=transaction_rc_cost)
 
     error_message = "Virtual operation - `failed_recurrent_transfer_operation` has not been generated."
-    assert len(get_virtual_operations(node, "failed_recurrent_transfer_operation")) == 1, error_message
+    assert len(get_virtual_operations(node, FailedRecurrentTransferOperation)) == 1, error_message
 
     sender.update_account_info()
     receiver.update_account_info()
@@ -631,7 +632,7 @@ def test_recurrent_transfer_cases_19_and_20(
             format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
     )
-    assert len(get_virtual_operations(node, "failed_recurrent_transfer_operation")) == 2, error_message
+    assert len(get_virtual_operations(node, FailedRecurrentTransferOperation)) == 2, error_message
     sender.assert_hives_and_hbds_are_not_changed()
     receiver.assert_hives_and_hbds_are_not_changed()
 
