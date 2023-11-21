@@ -21,6 +21,13 @@ from hive_local_tools.functional.python.operation import (
     get_virtual_operations,
     jump_to_date,
 )
+from schemas.operations.virtual.delayed_voting_operation import DelayedVotingOperation
+from schemas.operations.virtual.transfer_to_vesting_completed_operation import TransferToVestingCompletedOperation
+
+if TYPE_CHECKING:
+    from schemas.virtual_operation import (
+        VirtualOperation as SchemaVirtualOperation,
+    )
 
 if TYPE_CHECKING:
     from schemas.virtual_operation import (
@@ -54,7 +61,7 @@ def test_transfer_vests(prepared_node: tt.InitNode, wallet: tt.Wallet, sender: s
     __assert_hive_power_balance_is_increased(prepared_node, receiver, tt.Asset.Vest(0))
     __assert_power_up_exchange_rate(prepared_node, receiver, amount, price, tolerance=5)
     __assert_virtual_operation_was_generated(
-        prepared_node, "transfer_to_vesting_completed_operation", expected_number_of_virtual_operations=1
+        prepared_node, TransferToVestingCompletedOperation, expected_number_of_virtual_operations=1
     )
     __assert_governance_voting_power_is_not_increased(
         prepared_node, wallet, receiver, initial_governance_voting_power=0
@@ -81,7 +88,7 @@ def test_transfer_vests(prepared_node: tt.InitNode, wallet: tt.Wallet, sender: s
     __assert_governance_voting_power_is_increased(prepared_node, wallet, receiver, initial_governance_voting_power=0)
     # The first virtual operation `delayed_voting_operation` is generated during the preparation of the test environment
     __assert_virtual_operation_was_generated(
-        prepared_node, "delayed_voting_operation", expected_number_of_virtual_operations=2
+        prepared_node, DelayedVotingOperation, expected_number_of_virtual_operations=2
     )
 
 
@@ -111,7 +118,7 @@ def test_transfer_vests_twice(prepared_node: tt.InitNode, wallet: tt.Wallet):
     __assert_hive_power_balance_is_increased(prepared_node, receiver, receiver_initial_hive_power_balance)
     __assert_power_up_exchange_rate(prepared_node, receiver, first_amount, initial_price, tolerance=5)
     __assert_virtual_operation_was_generated(
-        prepared_node, "transfer_to_vesting_completed_operation", expected_number_of_virtual_operations=1
+        prepared_node, TransferToVestingCompletedOperation, expected_number_of_virtual_operations=1
     )
     __assert_governance_voting_power_is_not_increased(prepared_node, wallet, receiver, 0)
     __assert_rc_max_mana_is_increased(prepared_node, receiver, initial_rc_max_mana=receiver_initial_max_mana)
@@ -136,7 +143,7 @@ def test_transfer_vests_twice(prepared_node: tt.InitNode, wallet: tt.Wallet):
         prepared_node, receiver, first_amount + second_amount, price_after_time_change, tolerance=5
     )
     __assert_virtual_operation_was_generated(
-        prepared_node, "transfer_to_vesting_completed_operation", expected_number_of_virtual_operations=2
+        prepared_node, TransferToVestingCompletedOperation, expected_number_of_virtual_operations=2
     )
     __assert_rc_max_mana_is_increased(prepared_node, receiver, initial_rc_max_mana=receiver_rc_max_mana)
     __assert_minimal_operation_rc_cost(second_transaction)
@@ -161,7 +168,7 @@ def test_transfer_vests_twice(prepared_node: tt.InitNode, wallet: tt.Wallet):
     __assert_governance_voting_power_is_increased(prepared_node, wallet, receiver, initial_governance_voting_power=0)
     # The first virtual operation `delayed_voting_operation` is generated during the preparation of the test environment
     __assert_virtual_operation_was_generated(
-        prepared_node, "delayed_voting_operation", expected_number_of_virtual_operations=2
+        prepared_node, DelayedVotingOperation, expected_number_of_virtual_operations=2
     )
 
     # Jump to day 34 (29 days after second power up operation)
@@ -179,7 +186,7 @@ def test_transfer_vests_twice(prepared_node: tt.InitNode, wallet: tt.Wallet):
     )
     # The first virtual operation `delayed_voting_operation` is generated during the preparation of the test environment
     __assert_virtual_operation_was_generated(
-        prepared_node, "delayed_voting_operation", expected_number_of_virtual_operations=3
+        prepared_node, DelayedVotingOperation, expected_number_of_virtual_operations=3
     )
 
 
@@ -224,6 +231,5 @@ def __assert_rc_max_mana_is_increased(node: tt.InitNode, account: str, initial_r
 def __assert_virtual_operation_was_generated(
     node: tt.InitNode, virtual_operation: type[SchemaVirtualOperation], expected_number_of_virtual_operations: int
 ) -> None:
-    virtual_operation_name = virtual_operation.get_name()
-    err = f"The virtual operation: {virtual_operation_name} is not generated."
-    assert len(get_virtual_operations(node, f"{virtual_operation_name}")) == expected_number_of_virtual_operations, err
+    err = f"The virtual operation: {virtual_operation.get_name()} is not generated."
+    assert len(get_virtual_operations(node, virtual_operation)) == expected_number_of_virtual_operations, err
