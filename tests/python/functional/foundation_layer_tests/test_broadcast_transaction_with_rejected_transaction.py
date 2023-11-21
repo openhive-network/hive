@@ -47,11 +47,7 @@ def test_broadcast_transaction_with_rejected_transaction(
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         broadcast(node, transaction)
 
-    error_response = exception.value.response
-    assert (
-        f"Account {ACCOUNT} does not have sufficient funds for balance adjustment."
-        in error_response["error"]["message"]
-    )
+    assert f"Account {ACCOUNT} does not have sufficient funds for balance adjustment." in exception.value.error
 
 
 @pytest.mark.parametrize(
@@ -72,8 +68,4 @@ def test_broadcast_transaction_synchronous_with_rejected_transaction(
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         getattr(node.api, api).broadcast_transaction_synchronous(transaction)
 
-    error_response = exception.value.response
-    assert (
-        f"Account {ACCOUNT} does not have sufficient funds for balance adjustment."
-        in error_response["error"]["message"]
-    )
+    assert f"Account {ACCOUNT} does not have sufficient funds for balance adjustment." in exception.value.error

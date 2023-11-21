@@ -12,6 +12,6 @@ def test_sending_transaction_with_duplicated_signature(node: tt.InitNode | tt.Re
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         node.api.wallet_bridge.broadcast_transaction(transaction)
 
-    response = error.value.response
-    assert "duplicate signature included:" in response["error"]["message"]
-    assert "Duplicate Signature detected" in response["error"]["message"]
+    response = error.value.error
+    assert "duplicate signature included:" in response
+    assert "Duplicate Signature detected" in response

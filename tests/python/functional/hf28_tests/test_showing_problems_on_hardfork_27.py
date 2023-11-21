@@ -31,15 +31,13 @@ def test_decline_voting_rights_more_than_once_on_hf_27(
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_27:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
-    response_from_hf_27 = exception_from_hf_27.value.response
-    assert error_message in response_from_hf_27["error"]["message"]
+    assert error_message in exception_from_hf_27.value.error
 
     wait_for_hardfork_28_application(node)
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_28:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
-    response_from_hf_28 = exception_from_hf_28.value.response
-    assert error_message in response_from_hf_28["error"]["message"]
+    assert error_message in exception_from_hf_28.value.error
 
 
 @run_for("testnet")
@@ -88,15 +86,13 @@ def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights_on_h
     error_message = "Voter declined voting rights, therefore casting votes is forbidden."
     with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_27:
         wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
-    response_from_hf_27 = exception_from_hf_27.value.response
-    assert error_message in response_from_hf_27["error"]["message"]
+    assert error_message in exception_from_hf_27.value.error
 
     wait_for_hardfork_28_application(node)
 
     with pytest.raises(tt.exceptions.CommunicationError) as exception_from_hf_28:
         wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
-    response_from_hf_28 = exception_from_hf_28.value.response
-    assert error_message in response_from_hf_28["error"]["message"]
+    assert error_message in exception_from_hf_28.value.error
 
 
 @run_for("testnet")

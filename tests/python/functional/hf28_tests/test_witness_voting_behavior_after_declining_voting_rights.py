@@ -31,8 +31,7 @@ def test_vote_with_declined_voting_rights(prepare_environment: tuple[tt.InitNode
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.vote_for_witness(VOTER_ACCOUNT, "initminer", approve=True)
 
-    error_response = exception.value.response["error"]["message"]
-    assert "Account has declined its voting rights." in error_response
+    assert "Account has declined its voting rights." in exception.value.error
 
 
 @run_for("testnet")

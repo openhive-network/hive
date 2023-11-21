@@ -54,7 +54,7 @@ def test_try_to_delete_comment_with_votes(prepared_node: tt.InitNode, wallet: tt
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment_0.delete()
 
-    assert "Cannot delete a comment with net positive votes" in error.value.response["error"]["message"]
+    assert "Cannot delete a comment with net positive votes" in error.value.error
     comment_0.assert_comment("not_deleted")
 
 
@@ -72,7 +72,7 @@ def test_try_to_delete_comment_with_top_comment(prepared_node: tt.InitNode, wall
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment_0.delete()
 
-    assert "Cannot delete a comment with replies" in error.value.response["error"]["message"]
+    assert "Cannot delete a comment with replies" in error.value.error
     comment_0.assert_comment("not_deleted")
 
 
@@ -92,7 +92,7 @@ def test_try_to_delete_comment_after_payout(prepared_node: tt.InitNode, wallet: 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment_0.delete()
 
-    assert "Cannot delete comment after payout" in error.value.response["error"]["message"]
+    assert "Cannot delete comment after payout" in error.value.error
     comment_0.assert_comment("not_deleted")
 
 
