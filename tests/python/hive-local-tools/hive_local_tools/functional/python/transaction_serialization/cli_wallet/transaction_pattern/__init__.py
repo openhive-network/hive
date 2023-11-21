@@ -5,30 +5,34 @@ import json
 import os
 import shutil
 from distutils.util import strtobool
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Callable, Final
 
+import test_tools as tt
 from hive_local_tools import PYTHON_TESTS_DIR
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+
 PATTERNS_DIR: Final[Path] = (
     PYTHON_TESTS_DIR / "functional/transaction_serialization_tests/cli_wallet/transaction_pattern_tests"
 )
 
+VerifyPatternFunctionT = Callable[[tt.Wallet, str], None]
 
-def __get_path_of_pattern_file(extension, type_of_serialization, pattern_name):
+
+def __get_path_of_pattern_file(extension: str, type_of_serialization: str, pattern_name: str) -> str:
     return PATTERNS_DIR / f"dumped_files_{type_of_serialization}_wallet" / f"{pattern_name}.{extension}"
 
 
-def __able_to_generate_pattern(validate_function):
+def __able_to_generate_pattern(validate_function: VerifyPatternFunctionT) -> VerifyPatternFunctionT:
     """
     This decorator, depending on `GENERATE_PATTERNS` environment variable, decides
     whether to call a wrapped function, which should validate a given transaction,
     or set newly generated file as new pattern
     """
 
-    def impl(wallet, pattern_name):
+    def impl(wallet: tt.Wallet, pattern_name: str) -> None:
         generate_patterns = strtobool(os.environ.get("GENERATE_PATTERNS", "OFF"))
         if not generate_patterns:
             return validate_function(wallet, pattern_name)
@@ -44,7 +48,7 @@ def __able_to_generate_pattern(validate_function):
 
 
 @__able_to_generate_pattern
-def verify_generated_transaction_with_json_pattern(wallet, pattern_name):
+def verify_generated_transaction_with_json_pattern(wallet: tt.Wallet, pattern_name: str) -> None:
     source_path_file = wallet.directory / f"{pattern_name}.json"
     target_path_file = __get_path_of_pattern_file("json", wallet.transaction_serialization, pattern_name)
 
@@ -57,7 +61,7 @@ def verify_generated_transaction_with_json_pattern(wallet, pattern_name):
 
 
 @__able_to_generate_pattern
-def verify_generated_transaction_with_binary_pattern(wallet, pattern_name):
+def verify_generated_transaction_with_binary_pattern(wallet: tt.Wallet, pattern_name: str) -> None:
     source_path_file = wallet.directory / f"{pattern_name}.bin"
     target_path_file = __get_path_of_pattern_file("bin", wallet.transaction_serialization, pattern_name)
 

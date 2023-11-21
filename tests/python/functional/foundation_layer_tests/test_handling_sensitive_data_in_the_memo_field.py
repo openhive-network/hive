@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import Any
 
 import pytest
 
@@ -18,7 +19,9 @@ ALICE_MASTER_PASSWORD = "Alice has a cat"
 @pytest.mark.parametrize(
     "operation", ["transfer", "recurrent_transfer", "transfer_to_savings", "transfer_from_savings"]
 )
-def test_handling_sensitive_data_in_the_memo_field(node, wallet, broadcast_way, memo_type, operation, role):
+def test_handling_sensitive_data_in_the_memo_field(
+    node: tt.InitNode | tt.RemoteNode, wallet: tt.Wallet, broadcast_way: str, memo_type: str, operation: str, role: str
+) -> None:
     keys = {
         "owner": tt.PublicKey("alice", secret="owner"),
         "active": tt.PublicKey("alice", secret="active"),
@@ -66,7 +69,11 @@ def test_handling_sensitive_data_in_the_memo_field(node, wallet, broadcast_way, 
 @pytest.mark.parametrize(
     "operation", ["transfer", "recurrent_transfer", "transfer_to_savings", "transfer_from_savings"]
 )
-def test_handle_by_wallet_additional_private_key_in_memo_field(node, wallet, operation):
+def test_handle_by_wallet_additional_private_key_in_memo_field(
+    node: tt.InitNode | tt.RemoteNode,
+    wallet: tt.Wallet,
+    operation: str,
+) -> None:
     extra_private_key = tt.PrivateKey("alice", secret="extra_key")
     wallet.api.import_key(extra_private_key)
 
@@ -79,14 +86,19 @@ def test_handle_by_wallet_additional_private_key_in_memo_field(node, wallet, ope
     assert "Detected imported private key in memo field. Cancelling transaction." in response["error"]["message"]
 
 
-def broadcast_transaction_by_api(node, wallet, op, memo_type):
+def broadcast_transaction_by_api(
+    node: tt.InitNode | tt.RemoteNode,
+    wallet: tt.Wallet,
+    op: dict[str, Any],
+    memo_type: str,
+) -> None:
     transaction = deepcopy(TRANSACTION_TEMPLATE)
     transaction["operations"] = generate_operation(op, memo_type)
     signed_transaction = wallet.api.sign_transaction(tx=transaction, broadcast=False)
     node.api.network_broadcast.broadcast_transaction(trx=signed_transaction)
 
 
-def broadcast_transaction_by_wallet(wallet, operation_type, memo):
+def broadcast_transaction_by_wallet(wallet: tt.Wallet, operation_type: str, memo: str) -> None:
     match operation_type:
         case "transfer":
             wallet.api.transfer("alice", "initminer", tt.Asset.Test(1), memo)
@@ -98,7 +110,7 @@ def broadcast_transaction_by_wallet(wallet, operation_type, memo):
             wallet.api.transfer_from_savings("alice", 1, "alice", tt.Asset.Test(1), memo)
 
 
-def generate_operation(operation_type, memo):
+def generate_operation(operation_type: str, memo: str) -> list[Any]:
     match operation_type:
         case "transfer":
             return [
@@ -154,7 +166,7 @@ def generate_operation(operation_type, memo):
             ]
 
 
-def get_extended_private_key(role):
+def get_extended_private_key(role: str) -> str:
     """
     Generating extended private keys is not possible using Python test-tools. The hardcoded keys in this method were
     generated using methods from C++ binaries.
@@ -169,7 +181,7 @@ def get_extended_private_key(role):
     return extended_keys[role]
 
 
-def get_memo_message(memo_type, role, private_key):
+def get_memo_message(memo_type: str, role: str, private_key: str) -> str:
     match memo_type:
         case "master_password":
             return ALICE_MASTER_PASSWORD

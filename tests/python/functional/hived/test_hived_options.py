@@ -30,7 +30,7 @@ def test_no_warning_about_deprecated_flag_exit_after_replay_when_it_is_not_used(
     assert warning not in stderr
 
 
-def test_warning_about_deprecated_flag_exit_after_replay(block_log):
+def test_warning_about_deprecated_flag_exit_after_replay(block_log: Path):
     node = tt.ApiNode()
 
     node.run(replay_from=block_log, arguments=["--exit-after-replay"])
@@ -49,7 +49,7 @@ def test_warning_about_deprecated_flag_exit_after_replay(block_log):
         {"exit_before_synchronization": True},
     ],
 )
-def test_stop_after_replay(way_to_stop, block_log: Path, block_log_length: int):
+def test_stop_after_replay(way_to_stop: dict[str, list[str]] | dict[str, bool], block_log: Path, block_log_length: int):
     network = tt.Network()
     node_which_should_not_synchronize = tt.ApiNode(network=network)
     node_with_new_blocks = tt.InitNode(network=network)
@@ -75,7 +75,7 @@ def test_stop_after_replay(way_to_stop, block_log: Path, block_log_length: int):
         {"exit_before_synchronization": True},
     ],
 )
-def test_stop_after_replay_in_load_from_snapshot(way_to_stop, block_log: Path):
+def test_stop_after_replay_in_load_from_snapshot(way_to_stop: dict[str, list[str]] | dict[str, bool], block_log: Path):
     node = tt.ApiNode()
     node.run(replay_from=block_log, **way_to_stop)
     snap = node.dump_snapshot(close=True)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -21,6 +22,11 @@ from hive_local_tools.functional.python.operation import (
     jump_to_date,
 )
 
+if TYPE_CHECKING:
+    from schemas.virtual_operation import (
+        VirtualOperation as SchemaVirtualOperation,
+    )
+
 
 @pytest.mark.parametrize(
     ("sender", "receiver"),
@@ -30,7 +36,7 @@ from hive_local_tools.functional.python.operation import (
         ("alice", "bob"),  # User converts Hive to HP and transfers them to someone else account.
     ],
 )
-def test_transfer_vests(prepared_node, wallet, sender, receiver):
+def test_transfer_vests(prepared_node: tt.InitNode, wallet: tt.Wallet, sender: str, receiver: str):
     price = get_vesting_price(prepared_node)
     amount = tt.Asset.Test(0.001)
     wallet.create_account(sender, hives=1000)
@@ -79,7 +85,7 @@ def test_transfer_vests(prepared_node, wallet, sender, receiver):
     )
 
 
-def test_transfer_vests_twice(prepared_node, wallet):
+def test_transfer_vests_twice(prepared_node: tt.InitNode, wallet: tt.Wallet):
     """
     User converts Hive to HP (Power Up 1) and after 5 days user converts Hive to HP again (Power Up 2).
     """
@@ -196,7 +202,7 @@ def __assert_hive_balance_is_reduced_by_amount(node: tt.InitNode, account: str, 
     assert get_hive_balance(node, account) + amount == initial_balance, error_message
 
 
-def __assert_hive_power_balance_is_increased(node, account: str, amount: tt.Asset.Vest) -> None:
+def __assert_hive_power_balance_is_increased(node: tt.InitNode, account: str, amount: tt.Asset.VestT) -> None:
     assert get_hive_power(node, account) > amount, f"{account} HP balance is not increased by {amount}."
 
 
@@ -205,7 +211,7 @@ def __assert_minimal_operation_rc_cost(transaction) -> None:
 
 
 def __assert_power_up_exchange_rate(
-    node: tt.InitNode, account: str, amount: tt.Asset.Test, price: int, tolerance: int
+    node: tt.InitNode, account: str, amount: tt.Asset.TestT, price: int, tolerance: int
 ) -> None:
     err = "The conversion is done using the wrong exchange rate."
     assert get_hive_power(node, account) in convert_hive_to_vest_range(amount, price, tolerance=tolerance), err
@@ -216,7 +222,8 @@ def __assert_rc_max_mana_is_increased(node: tt.InitNode, account: str, initial_r
 
 
 def __assert_virtual_operation_was_generated(
-    node: tt.InitNode, virtual_operation_name: str, expected_number_of_virtual_operations: int
+    node: tt.InitNode, virtual_operation: type[SchemaVirtualOperation], expected_number_of_virtual_operations: int
 ) -> None:
+    virtual_operation_name = virtual_operation.get_name()
     err = f"The virtual operation: {virtual_operation_name} is not generated."
     assert len(get_virtual_operations(node, f"{virtual_operation_name}")) == expected_number_of_virtual_operations, err

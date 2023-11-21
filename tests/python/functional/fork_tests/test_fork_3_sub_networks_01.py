@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 from functools import partial
+from typing import TYPE_CHECKING
 
 import pytest
 
 import shared_tools.complex_networks_helper_functions as sh
 import test_tools as tt
 
+if TYPE_CHECKING:
+    from shared_tools.networks_architecture import NetworksBuilder
+
 
 @pytest.mark.fork_tests_group_2()
-def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01):
+def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01: NetworksBuilder):
     # start - A network consists of a 'minority_7a' network(7 witnesses), a 'minority_7b' network(7 witnesses), a 'minority_7c' network(7 witnesses).
 
     # - the network is split into 2 sub networks: (7 witnesses(the 'minority_7a' network)) and (7 witnesses(the 'minority_7b' network), 7 witnesses(the 'minority_7c' network))

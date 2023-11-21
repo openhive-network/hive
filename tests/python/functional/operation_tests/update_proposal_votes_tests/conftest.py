@@ -24,11 +24,11 @@ def node() -> tt.InitNode:
 
 
 @pytest.fixture()
-def wallet(node) -> tt.Wallet:
+def wallet(node: tt.InitNode) -> tt.Wallet:
     return tt.Wallet(attach_to=node)
 
 
 @pytest.fixture()
-def voter(node, wallet):
+def voter(node: tt.InitNode, wallet: tt.Wallet):
     wallet.create_account("voter", vests=tt.Asset.Test(10))
     return Account("voter", node, wallet)

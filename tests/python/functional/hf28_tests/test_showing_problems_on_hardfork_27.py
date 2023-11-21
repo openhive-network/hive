@@ -16,7 +16,9 @@ from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
 
 
 @run_for("testnet")
-def test_decline_voting_rights_more_than_once_on_hf_27(prepare_environment_on_hf_27):
+def test_decline_voting_rights_more_than_once_on_hf_27(
+    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet]
+) -> None:
     node, wallet = prepare_environment_on_hf_27
 
     wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
@@ -41,7 +43,9 @@ def test_decline_voting_rights_more_than_once_on_hf_27(prepare_environment_on_hf
 
 
 @run_for("testnet")
-def test_if_proposal_votes_were_removed_after_declining_voting_rights_on_hf_27(prepare_environment_on_hf_27):
+def test_if_proposal_votes_were_removed_after_declining_voting_rights_on_hf_27(
+    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet]
+) -> None:
     node, wallet = prepare_environment_on_hf_27
     create_proposal(wallet)
 
@@ -71,7 +75,9 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights_on_hf_27(p
 
 
 @run_for("testnet")
-def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights_on_hf_27(prepare_environment_on_hf_27):
+def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights_on_hf_27(
+    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet]
+) -> None:
     node, wallet = prepare_environment_on_hf_27
     create_proposal(wallet)
 
@@ -94,7 +100,9 @@ def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights_on_h
 
 
 @run_for("testnet")
-def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed_on_hf_27(prepare_environment_on_hf_27):
+def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed_on_hf_27(
+    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet]
+) -> None:
     node, wallet = prepare_environment_on_hf_27
     create_proposal(wallet)
 

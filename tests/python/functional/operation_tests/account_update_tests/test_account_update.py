@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_transaction_timestamp
+
+if TYPE_CHECKING:
+    from python.functional.operation_tests.conftest import UpdateAccount
 
 
 @pytest.mark.testnet()
@@ -13,7 +18,7 @@ from hive_local_tools.functional.python.operation import get_transaction_timesta
 )
 # When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
 @pytest.mark.parametrize("use_account_update2", [(True, False)])
-def test_update_account_owner_authority(alice: str, authority_type: str, use_account_update2: bool) -> None:
+def test_update_account_owner_authority(alice: UpdateAccount, authority_type: str, use_account_update2: bool) -> None:
     """
     Test cases 1, 2 and 3 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519 and
     https://gitlab.syncad.com/hive/hive/-/issues/520
@@ -39,7 +44,7 @@ def test_update_account_owner_authority(alice: str, authority_type: str, use_acc
 )
 # When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
 @pytest.mark.parametrize("use_account_update2", [(True, False)])
-def test_update_account_active_authority(alice: str, authority_type: str, use_account_update2: bool) -> None:
+def test_update_account_active_authority(alice: UpdateAccount, authority_type: str, use_account_update2: bool) -> None:
     """
     Test cases 4,5 and 6 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519 and
     https://gitlab.syncad.com/hive/hive/-/issues/520
@@ -65,7 +70,7 @@ def test_update_account_active_authority(alice: str, authority_type: str, use_ac
 )
 # When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
 @pytest.mark.parametrize("use_account_update2", [(True, False)])
-def test_update_account_posting_authority(alice: str, authority_type: str, use_account_update2: bool) -> None:
+def test_update_account_posting_authority(alice: UpdateAccount, authority_type: str, use_account_update2: bool) -> None:
     """
     Test cases 7,8 and 9 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519 and
     https://gitlab.syncad.com/hive/hive/-/issues/520
@@ -91,7 +96,7 @@ def test_update_account_posting_authority(alice: str, authority_type: str, use_a
 )
 # When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
 @pytest.mark.parametrize("use_account_update2", [(True, False)])
-def test_update_account_memo_key(alice: str, authority_type: str, use_account_update2: bool) -> None:
+def test_update_account_memo_key(alice: UpdateAccount, authority_type: str, use_account_update2: bool) -> None:
     """
     Test cases 10, 11 and 12 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519 and
     https://gitlab.syncad.com/hive/hive/-/issues/520
@@ -117,7 +122,7 @@ def test_update_account_memo_key(alice: str, authority_type: str, use_account_up
 )
 # When parameter use_account_update2 is False test creates account_update operation otherwise - account_update2
 @pytest.mark.parametrize("use_account_update2", [(True, False)])
-def test_update_json_metadata(alice: str, authority_type: str, use_account_update2: bool) -> None:
+def test_update_json_metadata(alice: UpdateAccount, authority_type: str, use_account_update2: bool) -> None:
     """
     Test cases 13, 14 and 15 from issue: https://gitlab.syncad.com/hive/hive/-/issues/519,
     https://gitlab.syncad.com/hive/hive/-/issues/520
@@ -141,7 +146,7 @@ def test_update_json_metadata(alice: str, authority_type: str, use_account_updat
     "authority_type",
     ["active", "posting", "owner"],
 )
-def test_update_posting_json_metadata(alice: str, authority_type: str) -> None:
+def test_update_posting_json_metadata(alice: UpdateAccount, authority_type: str) -> None:
     """
     Test cases 16, 17 and 18 from issue: https://gitlab.syncad.com/hive/hive/-/issues/520
     """
@@ -164,7 +169,7 @@ def test_update_posting_json_metadata(alice: str, authority_type: str) -> None:
     ],
 )
 def test_update_all_account_parameters_using_owner_authority(
-    alice: str, use_account_update2: bool, posting_json_meta: dict, assert_posting_json: dict
+    alice: UpdateAccount, use_account_update2: bool, posting_json_meta: dict, assert_posting_json: dict
 ) -> None:
     alice.use_authority("owner")
     new_json_meta = '{"foo": "bar"}'
@@ -208,7 +213,7 @@ def test_update_all_account_parameters_using_owner_authority(
     ],
 )
 def test_update_all_account_parameters_except_owner_key_using_active_authority(
-    alice: str, use_account_update2: bool, posting_json_meta: dict, assert_posting_json: dict
+    alice: UpdateAccount, use_account_update2: bool, posting_json_meta: dict, assert_posting_json: dict
 ) -> None:
     alice.use_authority("active")
     new_json_meta = '{"foo": "bar"}'
@@ -261,7 +266,7 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(
     ],
 )
 def test_update_owner_authority_two_and_three_times_within_one_hour(
-    alice: str, iterations: int, use_account_update2: bool
+    alice: UpdateAccount, iterations: int, use_account_update2: bool
 ) -> None:
     alice.use_authority("owner")
     current_key = alice.get_current_key("owner")
