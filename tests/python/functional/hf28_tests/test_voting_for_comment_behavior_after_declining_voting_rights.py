@@ -22,8 +22,7 @@ def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(node:
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 100)
 
-    error_message = exception.value.response["error"]["message"]
-    assert "Voter has declined their voting rights." in error_message
+    assert "Voter has declined their voting rights." in exception.value.error
 
 
 @run_for("testnet")

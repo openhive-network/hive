@@ -49,8 +49,7 @@ def test_create_two_decline_voting_rights_requests(prepare_environment: tuple[tt
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
 
-    response = exception.value.response
-    assert "Cannot create new request because one already exists." in response["error"]["message"]
+    assert "Cannot create new request because one already exists." in exception.value.error
 
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[VOTER_ACCOUNT])["requests"]) == 0
@@ -65,8 +64,7 @@ def test_remove_non_existent_decline_voting_rights_request(prepare_environment: 
     with pytest.raises(tt.exceptions.CommunicationError) as exception:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, False)
 
-    response = exception.value.response
-    assert "Cannot cancel the request because it does not exist." in response["error"]["message"]
+    assert "Cannot cancel the request because it does not exist." in exception.value.error
 
 
 @run_for("testnet")
