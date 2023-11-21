@@ -128,3 +128,7 @@ def print_balance(node, accounts):
         table.add_row(data)
     print(table)
     return balances
+
+
+def test_nothing() -> None:
+    pass
