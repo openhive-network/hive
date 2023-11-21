@@ -39,14 +39,14 @@ def test_transfer_to_savings_account(
     sender_balance_before_transfer = getattr(alice, check_balance)()
     receiver_savings_balance_before_transfer = getattr(receiver_account_object, check_savings_balance)()
 
-    wallet.api.transfer_to_savings("alice", receiver, currency(5), "transfer to savings")
+    wallet.api.transfer_to_savings("alice", receiver, currency(amount=5), "transfer to savings")
     prepared_node.wait_for_irreversible_block()
 
     prepared_node.restart(time_offset="+45d")
     prepared_node.wait_number_of_blocks(21)
     # Give blockchain chance to trigger interest_operation. There have to be change in savings balance
     # (at first transfer there were no interests to pay out - savings balance was 0)
-    wallet.api.transfer_to_savings("alice", receiver, currency(5), "second transfer to savings")
+    wallet.api.transfer_to_savings("alice", receiver, currency(amount=5), "second transfer to savings")
 
     rc_amount_after_sending_op = alice.get_rc_current_mana()
     sender_balance_after_transfer = getattr(alice, check_balance)()
@@ -60,21 +60,21 @@ def test_transfer_to_savings_account(
         group_by_block=False,
     )["ops"]
 
-    if currency.token == "TBD":
+    if currency.token() == "TBD":
         assert len(interests) == 1, "interest_operation wasn't generated."
         assert (
             receiver_savings_balance_before_transfer
-            == receiver_savings_balance_after_transfer - currency(10) - interests[0]["op"]["value"]["interest"]
+            == receiver_savings_balance_after_transfer - currency(amount=10) - interests[0]["op"]["value"]["interest"]
         ), "Receiver savings balance wasn't increased by transfers and one interest."
     else:
         assert len(interests) == 0, "interest_operation was generated (it shouldn't be)"
         assert receiver_savings_balance_before_transfer == receiver_savings_balance_after_transfer - currency(
-            10
+            amount=10
         ), "Receiver savings balance wasn't increased by transfers."
 
     assert (
-        sender_balance_before_transfer - currency(10) == sender_balance_after_transfer
-    ), f"{currency.token} balance of sender wasn't decreased."
+        sender_balance_before_transfer - currency(amount=10) == sender_balance_after_transfer
+    ), f"{currency.token()} balance of sender wasn't decreased."
     assert (
         rc_amount_before_sending_op > rc_amount_after_sending_op
     ), "RC amount after sending transfers wasn't decreased."
