@@ -419,7 +419,9 @@ def test_recurrent_transfer_cases_13_14_15_16(
     receiver.update_account_info()
 
     # Update recurrence after second transfer and before third one.
-    node.restart(time_offset=tt.Time.serialize(node.get_head_block_time() + offset, format_=tt.Time.TIME_OFFSET_FORMAT))
+    node.restart(
+        time_offset=tt.Time.serialize(node.get_head_block_time() + offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
+    )
     recurrent_transfer.update(new_recurrence_time=update_recurrence_time)
     sender.rc_manabar.assert_rc_current_mana_is_reduced(
         operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
@@ -506,7 +508,9 @@ def test_recurrent_transfer_cases_17_and_18(
 
     # Update first time - increase the number of executions and the frequency of recurrent transfers.
     node.restart(
-        time_offset=tt.Time.serialize(node.get_head_block_time() + tt.Time.days(2), format_=tt.Time.TIME_OFFSET_FORMAT)
+        time_offset=tt.Time.serialize(
+            node.get_head_block_time() + tt.Time.days(2), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
+        )
     )
 
     recurrent_transfer.update(
@@ -537,7 +541,9 @@ def test_recurrent_transfer_cases_17_and_18(
     receiver.update_account_info()
 
     node.restart(
-        time_offset=tt.Time.serialize(node.get_head_block_time() + tt.Time.days(1), format_=tt.Time.TIME_OFFSET_FORMAT)
+        time_offset=tt.Time.serialize(
+            node.get_head_block_time() + tt.Time.days(1), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
+        )
     )
     assert node.get_head_block_time() < recurrent_transfer.get_next_execution_date()
 
@@ -622,7 +628,7 @@ def test_recurrent_transfer_cases_19_and_20(
     node.restart(
         time_offset=tt.Time.serialize(
             node.get_head_block_time() + tt.Time.hours(MIN_RECURRENT_TRANSFERS_RECURRENCE),
-            format_=tt.Time.TIME_OFFSET_FORMAT,
+            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
     )
     assert len(get_virtual_operations(node, "failed_recurrent_transfer_operation")) == 2, error_message

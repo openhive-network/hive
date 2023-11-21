@@ -35,7 +35,7 @@ def prepare_environment_on_hf_27(node):
         absolute_start_time = tt.Time.parse(file.read())
 
     absolute_start_time -= tt.Time.seconds(5)
-    time_offset = tt.Time.serialize(absolute_start_time, format_=tt.Time.TIME_OFFSET_FORMAT)
+    time_offset = tt.Time.serialize(absolute_start_time, format_=tt.TimeFormats.TIME_OFFSET_FORMAT)
     node.run(
         replay_from=block_log_directory / "block_log",
         time_offset=time_offset,
