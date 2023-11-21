@@ -33,7 +33,6 @@ types-PyYAML = "6.0.12.11"
 shared-tools = { path = "shared-tools", develop = true }
 test-tools = { path = "test-tools", develop = true }
 tests_api = { path = "tests_api", develop = true }
-wax = "0.0.1a4+277cf4f"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "3.4.0"
@@ -50,6 +49,12 @@ exclude = "test-tools|tests_api"
 [tool.ruff]
 preview = true
 line-length = 120
+exclude = [
+    "/**/test-tools/**",
+    "/**/tests_api/**",
+    "/**/helpy/**",
+    "/**/schemas/**"
+]
 select = [  # https://docs.astral.sh/ruff/rules/
     "F",
     "E",
@@ -103,9 +108,9 @@ ignore = [
 "/**/tests/python/**/decentralized_hive_fund*/**" = [
     "PIE804", # TODO: Consider fixing
 ]
-# ignore submodules:
-"/**/test-tools/**" = ["ALL"]
-"/**/tests_api/**" = ["ALL"]
+
+
+
 
 [tool.ruff.isort]
 known-first-party = [
