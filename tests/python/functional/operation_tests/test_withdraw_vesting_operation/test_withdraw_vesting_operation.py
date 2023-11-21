@@ -6,11 +6,11 @@ import pytest
 import test_tools as tt
 from hive_local_tools.constants import VESTING_WITHDRAW_INTERVAL_SECONDS, VESTING_WITHDRAW_INTERVALS
 from hive_local_tools.functional.python.operation import jump_to_date
-from hive_local_tools.functional.python.operation.withdrawe_vesting import PowerDown
+from hive_local_tools.functional.python.operation.withdrawe_vesting import PowerDown, PowerDownAccount
 
 
 @pytest.mark.testnet()
-def test_power_down(prepared_node, wallet, alice):
+def test_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerDownAccount):
     """
     User creates Power down
     """
@@ -44,7 +44,7 @@ def test_power_down(prepared_node, wallet, alice):
 
 
 @pytest.mark.testnet()
-def test_cancel_power_down(prepared_node, wallet, alice):
+def test_cancel_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerDownAccount):
     """
     User wants to stop Power down a few days after creating Power down.
     """
@@ -85,7 +85,9 @@ def test_cancel_power_down(prepared_node, wallet, alice):
         (tt.Asset.Test(10_000), tt.Asset.Test(3_000)),  # User wants to decrease the amount of Power down.
     ],
 )
-def test_modify_power_down_amount(prepared_node, wallet, alice, first_pd_amount, second_pd_amount):
+def test_modify_power_down_amount(
+    prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerDownAccount, first_pd_amount, second_pd_amount
+):
     first_pd_vest_amount = PowerDown.convert_to_vest(prepared_node, first_pd_amount)
     power_down = PowerDown(prepared_node, wallet, alice.name, first_pd_vest_amount)
 

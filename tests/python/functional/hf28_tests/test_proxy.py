@@ -7,7 +7,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet")
-def test_appoint_a_proxy(node):
+def test_appoint_a_proxy(node: tt.InitNode | tt.RemoteNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("alice", vests=tt.Asset.Test(1))
@@ -32,7 +32,7 @@ def test_appoint_a_proxy(node):
 
 
 @run_for("testnet")
-def test_vote_power_value_after_proxy_removal(node):
+def test_vote_power_value_after_proxy_removal(node: tt.InitNode | tt.RemoteNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     with wallet.in_single_transaction():
@@ -54,7 +54,7 @@ def test_vote_power_value_after_proxy_removal(node):
 
 
 @run_for("testnet")
-def test_sum_of_vesting_shares_on_first_layer_of_proxy(node):
+def test_sum_of_vesting_shares_on_first_layer_of_proxy(node: tt.InitNode | tt.RemoteNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("alice")
@@ -76,7 +76,7 @@ def test_sum_of_vesting_shares_on_first_layer_of_proxy(node):
 
 
 @run_for("testnet")
-def test_too_long_proxy_chain(node):
+def test_too_long_proxy_chain(node: tt.InitNode | tt.RemoteNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     with wallet.in_single_transaction():
@@ -95,7 +95,7 @@ def test_too_long_proxy_chain(node):
 
 
 @run_for("testnet")
-def test_proxy_change(node):
+def test_proxy_change(node: tt.InitNode | tt.RemoteNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("alice", vests=tt.Asset.Test(1))
@@ -115,7 +115,7 @@ def test_proxy_change(node):
 
 
 @run_for("testnet")
-def test_set_the_proxy_on_the_same_account_twice(node):
+def test_set_the_proxy_on_the_same_account_twice(node: tt.InitNode | tt.RemoteNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("alice", vests=tt.Asset.Test(1))
@@ -131,7 +131,7 @@ def test_set_the_proxy_on_the_same_account_twice(node):
 
 
 @run_for("testnet")
-def test_long_single_layer_proxy_chain(node):
+def test_long_single_layer_proxy_chain(node: tt.InitNode | tt.RemoteNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     number_of_accounts = 10_000
@@ -159,7 +159,7 @@ def test_long_single_layer_proxy_chain(node):
 
 
 @run_for("testnet")
-def test_vesting_shares_values_on_four_proxy_layers(node):
+def test_vesting_shares_values_on_four_proxy_layers(node: tt.InitNode | tt.RemoteNode) -> None:
     node.restart(time_offset="+0 x5")
     wallet = tt.Wallet(attach_to=node)
 

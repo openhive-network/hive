@@ -7,7 +7,7 @@ from hive_local_tools import run_for
 
 
 @run_for("testnet")
-def test_change_vesting_price(node):
+def test_change_vesting_price(node: tt.InitNode | tt.RemoteNode) -> None:
     vest_per_hive_ratio: Final[int] = 100
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account(name="alice", hives=tt.Asset.Test(1))
@@ -21,7 +21,7 @@ def test_change_vesting_price(node):
     assert node.api.condenser.get_accounts(["alice"])[0]["vesting_shares"] == tt.Asset.Vest(vest_per_hive_ratio)
 
 
-def report_vest_price(node, msg: str):
+def report_vest_price(node: tt.InitNode | tt.RemoteNode, msg: str) -> None:
     dgpo = node.api.database.get_dynamic_global_properties()
 
     tt.logger.info(f"{msg} vests price (from dgpo): {dgpo['total_vesting_shares']}/{dgpo['total_vesting_fund_hive']}.")

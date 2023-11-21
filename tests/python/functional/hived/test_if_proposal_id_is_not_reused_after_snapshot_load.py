@@ -60,13 +60,13 @@ def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
     second_node.config.p2p_seed_node = get_implementation(first_node).get_p2p_endpoint()
 
 
-def get_last_proposal_id(node) -> int:
+def get_last_proposal_id(node: tt.AnyNode) -> int:
     return node.api.database.list_proposals(
         start=["alice"], limit=100, order="by_creator", order_direction="ascending", status="all"
     )["proposals"][-1]["id"]
 
 
-def create_proposal(wallet) -> None:
+def create_proposal(wallet: tt.Wallet) -> None:
     wallet.api.create_proposal(
         "alice",
         "alice",

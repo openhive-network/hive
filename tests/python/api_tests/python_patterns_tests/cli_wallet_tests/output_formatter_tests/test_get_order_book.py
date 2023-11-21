@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import test_tools as tt
 from hive_local_tools.api.message_format.cli_wallet import verify_json_patterns, verify_text_patterns
@@ -15,7 +15,7 @@ from hive_local_tools.api.message_format.cli_wallet.output_formater import (
 __PATTERNS_DIRECTORY = Path(__file__).with_name("response_patterns")
 
 
-def test_get_order_book_json_format(node, wallet_with_json_formatter):
+def test_get_order_book_json_format(node: tt.InitNode | tt.FullApiNode, wallet_with_json_formatter: tt.Wallet):
     initial_orders = prepare_accounts_and_orders(wallet_with_json_formatter)
 
     order_book = wallet_with_json_formatter.api.get_order_book(len(initial_orders))
@@ -27,7 +27,7 @@ def test_get_order_book_json_format(node, wallet_with_json_formatter):
     assert order_book["ask_total"] == sum([order["min_to_receive"] for order in initial_orders[2:4]], tt.Asset.Tbd(0))
 
 
-def test_get_order_book_text_format(node, wallet_with_text_formatter):
+def test_get_order_book_text_format(node: tt.InitNode | tt.FullApiNode, wallet_with_text_formatter: tt.Wallet):
     initial_orders = prepare_accounts_and_orders(wallet_with_text_formatter)
 
     order_book = parse_text_response(wallet_with_text_formatter.api.get_order_book(len(initial_orders)))
@@ -39,7 +39,7 @@ def test_get_order_book_text_format(node, wallet_with_text_formatter):
     assert order_book["ask_total"] == sum([order["min_to_receive"] for order in initial_orders[2:4]], tt.Asset.Tbd(0))
 
 
-def test_json_format_pattern(node, wallet_with_json_formatter):
+def test_json_format_pattern(node: tt.InitNode | tt.FullApiNode, wallet_with_json_formatter: tt.Wallet):
     initial_orders = prepare_accounts_and_orders(wallet_with_json_formatter)
 
     order_book = wallet_with_json_formatter.api.get_order_book(len(initial_orders))
@@ -47,7 +47,7 @@ def test_json_format_pattern(node, wallet_with_json_formatter):
     verify_json_patterns(__PATTERNS_DIRECTORY, "get_order_book", order_book)
 
 
-def test_text_format_pattern(node, wallet_with_text_formatter):
+def test_text_format_pattern(node: tt.InitNode | tt.FullApiNode, wallet_with_text_formatter: tt.Wallet):
     initial_orders = prepare_accounts_and_orders(wallet_with_text_formatter)
 
     order_book = wallet_with_text_formatter.api.get_order_book(len(initial_orders))
@@ -55,7 +55,7 @@ def test_text_format_pattern(node, wallet_with_text_formatter):
     verify_text_patterns(__PATTERNS_DIRECTORY, "get_order_book", order_book)
 
 
-def parse_text_response(text):
+def parse_text_response(text: str) -> dict[str, Any]:
     def parse_lines_with_bid_and_ask(lines_to_parse: list) -> dict:
         bids = []
         asks = []
@@ -98,7 +98,7 @@ def parse_text_response(text):
     }
 
 
-def prepare_accounts_and_orders(wallet):
+def prepare_accounts_and_orders(wallet: tt.Wallet):
     for account in ["alice", "bob", "carol", "dan"]:
         wallet.create_account(
             account, hives=tt.Asset.Test(1000000), hbds=tt.Asset.Tbd(1000000), vests=tt.Asset.Test(1000000)
@@ -138,5 +138,5 @@ def assert_that_asks_are_equal(
         assert are_close(float(order["price"]), reference_order["price"])
 
 
-def __serialize_asset(asset: tt.AnyAsset, asset_format: Literal["hf26", "legacy"]) -> str | dict:
-    return asset.as_nai() if asset_format == "hf26" else str(asset)
+def __serialize_asset(asset: tt.Asset.AnyT, asset_format: Literal["hf26", "legacy"]) -> str | dict:
+    return asset.as_nai() if asset_format == "hf26" else asset.as_legacy()

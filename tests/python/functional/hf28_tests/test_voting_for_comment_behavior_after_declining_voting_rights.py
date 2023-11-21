@@ -10,7 +10,7 @@ from hive_local_tools.functional.python.operation import get_virtual_operations
 
 
 @run_for("testnet")
-def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(node):
+def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(node: tt.InitNode | tt.RemoteNode) -> None:
     wallet = tt.Wallet(attach_to=node)
 
     wallet.create_account("alice", vests=100)
@@ -27,7 +27,9 @@ def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(node)
 
 
 @run_for("testnet")
-def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_active(prepare_environment):
+def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_active(
+    prepare_environment: tuple[tt.InitNode, tt.Wallet]
+) -> None:
     node, wallet = prepare_environment
 
     wallet.create_account("alice", vests=100)
@@ -50,7 +52,9 @@ def test_if_vote_for_comment_made_before_declining_voting_rights_has_remained_ac
 
 
 @run_for("testnet")
-def test_vote_for_comment_when_decline_voting_rights_is_being_executed(prepare_environment):
+def test_vote_for_comment_when_decline_voting_rights_is_being_executed(
+    prepare_environment: tuple[tt.InitNode, tt.Wallet]
+) -> None:
     node, wallet = prepare_environment
 
     wallet.create_account("alice", vests=100)
@@ -74,7 +78,7 @@ def test_vote_for_comment_when_decline_voting_rights_is_being_executed(prepare_e
 
 
 @run_for("testnet")
-def test_edit_comment_vote_without_voting_rights_before_comment_reward_pay_out(node):
+def test_edit_comment_vote_without_voting_rights_before_comment_reward_pay_out(node: tt.InitNode | tt.RemoteNode):
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=100)
 
@@ -89,7 +93,7 @@ def test_edit_comment_vote_without_voting_rights_before_comment_reward_pay_out(n
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_payout_rewards_for_comment_vote_without_voting_rights(node):
+def test_payout_rewards_for_comment_vote_without_voting_rights(node: tt.InitNode | tt.RemoteNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=100_000_000)
 

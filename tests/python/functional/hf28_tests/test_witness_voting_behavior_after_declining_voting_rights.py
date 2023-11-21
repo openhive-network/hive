@@ -9,7 +9,7 @@ from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
 
 
 @run_for("testnet")
-def test_decline_voting_rights_after_voting_for_witness(prepare_environment):
+def test_decline_voting_rights_after_voting_for_witness(prepare_environment: tuple[tt.InitNode, tt.Wallet]) -> None:
     node, wallet = prepare_environment
 
     wallet.api.vote_for_witness(VOTER_ACCOUNT, "initminer", approve=True)
@@ -21,7 +21,7 @@ def test_decline_voting_rights_after_voting_for_witness(prepare_environment):
 
 
 @run_for("testnet")
-def test_vote_with_declined_voting_rights(prepare_environment):
+def test_vote_with_declined_voting_rights(prepare_environment: tuple[tt.InitNode, tt.Wallet]) -> None:
     node, wallet = prepare_environment
 
     # decline voting rights -> wait 30 days (60s in testnet) for approval decline voting rights -> vote for witness
@@ -36,7 +36,9 @@ def test_vote_with_declined_voting_rights(prepare_environment):
 
 
 @run_for("testnet")
-def test_vote_for_witness_when_decline_voting_rights_is_in_progress(prepare_environment):
+def test_vote_for_witness_when_decline_voting_rights_is_in_progress(
+    prepare_environment: tuple[tt.InitNode, tt.Wallet]
+) -> None:
     node, wallet = prepare_environment
 
     # decline voting rights -> vote for witness (before approving the waiver of voting rights) -> wait remaining time

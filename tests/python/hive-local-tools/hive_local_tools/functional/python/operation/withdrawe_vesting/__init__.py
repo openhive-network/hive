@@ -13,7 +13,7 @@ from hive_local_tools.functional.python.operation import (
 )
 
 if TYPE_CHECKING:
-    import datetime
+    from datetime import datetime
 
 
 class PowerDown(Operation):
@@ -53,11 +53,11 @@ class PowerDown(Operation):
         return self._timestamp
 
     @property
-    def weekly_vest_reduction(self) -> tt.Asset.Vest:
+    def weekly_vest_reduction(self) -> tt.Asset.VestT:
         return self._weekly_vest_reduction
 
     @property
-    def weekly_hive_income(self) -> tt.Asset.Test:
+    def weekly_hive_income(self) -> tt.Asset.TestT:
         return self._weekly_hive_income
 
     @property
@@ -77,7 +77,7 @@ class PowerDown(Operation):
     def cancel(self) -> None:
         self._wallet.api.withdraw_vesting(self._name, tt.Asset.Vest(0))
 
-    def update(self, vesting_shares: tt.Asset.Vest):
+    def update(self, vesting_shares: tt.Asset.VestT):
         self.__init__(self._node, self._wallet, self._name, vesting_shares, update=True)
 
     def execute_next_withdraw(self) -> None:

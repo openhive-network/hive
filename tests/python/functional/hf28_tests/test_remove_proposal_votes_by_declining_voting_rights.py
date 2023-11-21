@@ -11,7 +11,9 @@ from hive_local_tools.functional.python.operation import get_virtual_operations
 
 
 @run_for("testnet")
-def test_if_proposal_votes_were_removed_after_declining_voting_rights(prepare_environment):
+def test_if_proposal_votes_were_removed_after_declining_voting_rights(
+    prepare_environment: tuple[tt.InitNode, tt.Wallet]
+):
     node, wallet = prepare_environment
     create_proposal(wallet)
 
@@ -26,7 +28,9 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights(prepare_en
 
 
 @run_for("testnet")
-def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights(prepare_environment):
+def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights(
+    prepare_environment: tuple[tt.InitNode, tt.Wallet]
+):
     node, wallet = prepare_environment
     create_proposal(wallet)
 
@@ -39,7 +43,9 @@ def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights(prep
 
 
 @run_for("testnet")
-def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed(prepare_environment):
+def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed(
+    prepare_environment: tuple[tt.InitNode, tt.Wallet]
+):
     node, wallet = prepare_environment
     create_proposal(wallet)
 

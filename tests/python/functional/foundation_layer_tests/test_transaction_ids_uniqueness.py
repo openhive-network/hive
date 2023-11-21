@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING, Any
 
 from hive_local_tools import run_for
+import pytest
+from requests import post
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 
 @run_for("testnet")
-def test_uniqueness_of_transaction_ids_generated_by_wallet(node, wallet):
+def test_uniqueness_of_transaction_ids_generated_by_wallet(node: tt.InitNode | tt.RemoteNode, wallet: tt.Wallet):
     already_generated_transaction_ids = set()
 
     for name in [f"account-{i:02d}" for i in range(100)]:
@@ -22,7 +27,9 @@ def test_uniqueness_of_transaction_ids_generated_by_wallet(node, wallet):
 # In this case, the test is repeated.
 @pytest.mark.flaky(reruns=5, reruns_delay=30)
 @run_for("testnet")
-def test_if_transaction_ids_order_corresponds_to_transactions_order(node, wallet):
+def test_if_transaction_ids_order_corresponds_to_transactions_order(
+    node: tt.InitNode | tt.RemoteNode, wallet: tt.Wallet
+):
     names = [f"account-{i:02d}" for i in range(20)]
 
     # transactions created in this loop are sent to single block (it's ensured by assert below)
@@ -37,3 +44,12 @@ def test_if_transaction_ids_order_corresponds_to_transactions_order(node, wallet
 
     for transaction_id, transaction in zip(block["transaction_ids"], block["transactions"]):
         assert transaction_id == transaction["transaction_id"]
+
+
+def batch_send(node: tt.InitNode | tt.RemoteNode, requests: list[dict[str, Any]]) -> None:
+    batch_request = [
+        {"jsonrpc": "2.0", "method": "condenser_api.broadcast_transaction", "id": id_, "params": [request]}
+        for id_, request in enumerate(requests)
+    ]
+    assert post(node.http_endpoint.as_string(), json=batch_request).status_code == 200
+    # TODO: Update this with batch send

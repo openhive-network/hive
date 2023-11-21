@@ -6,7 +6,7 @@ import test_tools as tt
 from hive_local_tools.functional.python.operation import Comment
 
 
-def test_if_comment_exist(prepared_node: tt.InitNode, wallet: tt.Wallet):
+def test_if_comment_exist(prepared_node: tt.InitNode, wallet: tt.Wallet) -> None:
     """
     Test case 1 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
@@ -20,7 +20,7 @@ def test_if_comment_exist(prepared_node: tt.InitNode, wallet: tt.Wallet):
 @pytest.mark.parametrize(
     "reply_type", ["reply_own_comment", "reply_another_comment"], ids=["comment own post", "comment someone else post"]
 )
-def test_if_comment_with_parent_exist(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type):
+def test_if_comment_with_parent_exist(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str) -> None:
     """
     Test cases 2, 3 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
@@ -33,7 +33,7 @@ def test_if_comment_with_parent_exist(prepared_node: tt.InitNode, wallet: tt.Wal
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["update comment", "update post"])
-def test_update_comment_without_replies(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type):
+def test_update_comment_without_replies(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str) -> None:
     """
     Test cases 4, 5 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
@@ -50,7 +50,7 @@ def test_update_comment_without_replies(prepared_node: tt.InitNode, wallet: tt.W
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["update comment", "update post"])
-def test_update_comment_with_replies(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type):
+def test_update_comment_with_replies(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str) -> None:
     """
     Test cases 6, 7 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
@@ -69,7 +69,9 @@ def test_update_comment_with_replies(prepared_node: tt.InitNode, wallet: tt.Wall
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["update comment", "update post"])
-def test_update_comment_with_replies_votes_and_downvotes(wallet, prepared_node, reply_type):
+def test_update_comment_with_replies_votes_and_downvotes(
+    wallet: tt.Wallet, prepared_node: tt.InitNode, reply_type: str
+) -> None:
     """
     Test cases 8, 9 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
 
@@ -122,7 +124,9 @@ def test_update_comment_with_replies_votes_and_downvotes(wallet, prepared_node, 
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["update comment", "update post"])
-def test_update_comment_with_replies_after_cashout(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type):
+def test_update_comment_with_replies_after_cashout(
+    prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str
+) -> None:
     """
     Test cases 10, 11 from issue: https://gitlab.syncad.com/hive/hive/-/issues/503
     """
