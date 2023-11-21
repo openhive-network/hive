@@ -49,7 +49,8 @@ def test_cancel_transfer_from_savings_simplest_scenario(
 
     prepared_node.restart(
         time_offset=tt.Time.serialize(
-            prepared_node.get_head_block_time() + tt.Time.days(2), format_=tt.Time.TIME_OFFSET_FORMAT
+            prepared_node.get_head_block_time() + tt.Time.days(2),
+            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
     )
 
@@ -65,7 +66,8 @@ def test_cancel_transfer_from_savings_simplest_scenario(
 
     prepared_node.restart(
         time_offset=tt.Time.serialize(
-            prepared_node.get_head_block_time() + tt.Time.days(1), format_=tt.Time.TIME_OFFSET_FORMAT
+            prepared_node.get_head_block_time() + tt.Time.days(1),
+            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
     )
 
@@ -102,7 +104,8 @@ def test_cancel_all_transfers_from_savings(
 
     prepared_node.restart(
         time_offset=tt.Time.serialize(
-            prepared_node.get_head_block_time() + tt.Time.days(3), format_=tt.Time.TIME_OFFSET_FORMAT
+            prepared_node.get_head_block_time() + tt.Time.days(3),
+            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
     )
 
@@ -140,7 +143,8 @@ def test_cancel_all_transfers_from_savings_except_one(
 
     prepared_node.restart(
         time_offset=tt.Time.serialize(
-            prepared_node.get_head_block_time() + tt.Time.days(3), format_=tt.Time.TIME_OFFSET_FORMAT
+            prepared_node.get_head_block_time() + tt.Time.days(3),
+            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
     )
 
@@ -178,6 +182,7 @@ def create_three_savings_withdrawals_from_fresh_account(
         withdrawal_id += 1
         node.restart(
             time_offset=tt.Time.serialize(
-                node.get_head_block_time() + tt.Time.hours(time_offset), format_=tt.Time.TIME_OFFSET_FORMAT
+                node.get_head_block_time() + tt.Time.hours(time_offset),
+                format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
             )
         )

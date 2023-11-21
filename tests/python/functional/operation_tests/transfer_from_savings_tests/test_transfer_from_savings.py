@@ -59,7 +59,7 @@ def test_transfer_from_savings_account(
     prepared_node.wait_for_irreversible_block()
     prepared_node.restart(
         time_offset=tt.Time.serialize(
-            prepared_node.get_head_block_time() + tt.Time.days(3), format_=tt.Time.TIME_OFFSET_FORMAT
+            prepared_node.get_head_block_time() + tt.Time.days(3), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
         )
     )
     receiver_balance_after_withdrawal = getattr(receiver_account_object, check_balance)()
@@ -136,6 +136,6 @@ def test_transfer_from_savings_during_few_days(
 
         prepared_node.restart(
             time_offset=tt.Time.serialize(
-                prepared_node.get_head_block_time() + tt.Time.days(1), format_=tt.Time.TIME_OFFSET_FORMAT
+                prepared_node.get_head_block_time() + tt.Time.days(1), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
             )
         )

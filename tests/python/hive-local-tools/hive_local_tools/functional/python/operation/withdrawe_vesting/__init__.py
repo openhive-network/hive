@@ -83,7 +83,7 @@ class PowerDown(Operation):
                 self._node.restart(
                     time_offset=tt.Time.serialize(
                         self._tranche_schedule[num],
-                        format_=tt.Time.TIME_OFFSET_FORMAT,
+                        format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
                     )
                 )
                 self._remaining_executions -= 1
@@ -94,7 +94,7 @@ class PowerDown(Operation):
         self._node.restart(
             time_offset=tt.Time.serialize(
                 self._tranche_schedule[-1],
-                format_=tt.Time.TIME_OFFSET_FORMAT,
+                format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
             )
         )
         self._remaining_executions = 0
