@@ -31,7 +31,7 @@ def test_exceed_max_consecutive_recurrent_transfer_failures(node: tt.InitNode | 
     node.run(
         time_offset=tt.Time.serialize(
             tt.Time.from_now(days=MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES + 1, serialize=False),
-            format_=tt.Time.TIME_OFFSET_FORMAT,
+            format_=tt.TimeFormats.TIME_OFFSET_FORMAT,
         )
     )
 

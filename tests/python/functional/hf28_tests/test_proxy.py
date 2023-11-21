@@ -25,7 +25,9 @@ def test_appoint_a_proxy(node: tt.InitNode | tt.RemoteNode) -> None:
 
     # restart node with future date. The approval process takes 24 hours.
     node.restart(
-        time_offset=tt.Time.serialize(tt.Time.parse(timestamp) + tt.Time.hours(24), format_=tt.Time.TIME_OFFSET_FORMAT)
+        time_offset=tt.Time.serialize(
+            tt.Time.parse(timestamp) + tt.Time.hours(24), format_=tt.TimeFormats.TIME_OFFSET_FORMAT
+        )
     )
 
     assert any(node.api.wallet_bridge.get_account("bob")["proxied_vsf_votes"])
