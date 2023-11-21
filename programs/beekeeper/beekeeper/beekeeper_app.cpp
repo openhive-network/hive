@@ -232,7 +232,7 @@ init_data beekeeper_app::save_keys( const boost::program_options::variables_map&
   }
 
   if( args.count("export-keys-wallet") )
-    return { false, get_revision() };
+    start_loop = false;
 
   return { _result, get_revision() };
 }
