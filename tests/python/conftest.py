@@ -13,12 +13,12 @@ if TYPE_CHECKING:
     from _pytest.mark import Mark
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser):
     parser.addoption("--http-endpoint", action="store", type=str, help="specifies http_endpoint of reference node")
 
 
 @pytest.fixture()
-def node(request) -> tt.InitNode | tt.RemoteNode:  # noqa: C901
+def node(request: pytest.FixtureRequest) -> tt.InitNode | tt.RemoteNode:  # noqa: C901
     """
     This fixture returns a node depending on the arguments passed to the @run_for decorator.
     Tests marking is described in the @run_for definition (located in `tests/local_tools.py`).
@@ -146,7 +146,7 @@ def node(request) -> tt.InitNode | tt.RemoteNode:  # noqa: C901
 
 
 @pytest.fixture()
-def should_prepare(node) -> bool:
+def should_prepare(node: tt.InitNode | tt.RemoteNode) -> bool:
     """
     When tests are run on mainnet or mirrornet node, where block log contains operations and blockchain state reflects
     real world blockchain, there is no need to perform any additional preparation for most of test cases. Tests usually

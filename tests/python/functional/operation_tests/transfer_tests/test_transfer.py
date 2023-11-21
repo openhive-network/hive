@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_virtual_operations
+
+if TYPE_CHECKING:
+    from python.functional.operation_tests.conftest import TransferAccount
 
 
 @pytest.mark.parametrize(
@@ -24,7 +29,15 @@ from hive_local_tools.functional.python.operation import get_virtual_operations
     ],
 )
 @pytest.mark.testnet()
-def test_transfer(alice, bob, prepared_node, wallet, amount, memo, check_balance):
+def test_transfer(
+    alice: TransferAccount,
+    bob: TransferAccount,
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    memo: str,
+    check_balance: str,
+):
     sender_balance_before_transfer = getattr(alice, check_balance)()
     receiver_balance_before_transfer = getattr(bob, check_balance)()
     rc_amount_before_sending_op = alice.get_rc_current_mana()
@@ -47,7 +60,9 @@ def test_transfer(alice, bob, prepared_node, wallet, amount, memo, check_balance
 
 
 @pytest.mark.testnet()
-def test_transfer_hives_to_hive_fund_account(prepared_node, wallet, alice, hive_fund):
+def test_transfer_hives_to_hive_fund_account(
+    prepared_node: tt.InitNode, wallet: tt.Wallet, alice: TransferAccount, hive_fund: TransferAccount
+):
     sender_balance_before_sending_hives = alice.get_hive_balance()
     receiver_balance_before_sending_hives = hive_fund.get_hbd_balance()
     rc_amount_before_sending_op = alice.get_rc_current_mana()

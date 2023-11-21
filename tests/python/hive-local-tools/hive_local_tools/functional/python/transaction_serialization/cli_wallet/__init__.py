@@ -9,15 +9,15 @@ import pytest
 import test_tools as tt
 
 
-def __serialize_legacy(assets: Iterable) -> Iterable[str]:
-    return (str(asset) for asset in assets)
+def __serialize_legacy(assets: Iterable[tt.Asset.AnyT]) -> Iterable[str]:
+    return (asset.as_legacy() for asset in assets)
 
 
-def __serialize_modern(assets: Iterable) -> Iterable[dict]:
+def __serialize_modern(assets: Iterable[tt.Asset.AnyT]) -> Iterable[dict[str, str]]:
     return (asset.as_nai() for asset in assets)
 
 
-def run_for_all_cases(**assets: tt.AnyAsset):
+def run_for_all_cases(**assets: tt.Asset.AnyT):
     """
     Runs decorated test four times:
     - asserts that wallet with matching assets doesn't raise any exception:
@@ -62,7 +62,7 @@ def run_for_all_cases(**assets: tt.AnyAsset):
     return __decorator
 
 
-def create_alice_and_bob_accounts_with_received_rewards(node, wallet):
+def create_alice_and_bob_accounts_with_received_rewards(node: tt.InitNode, wallet: tt.Wallet):
     # Transfer to vest huge amount of test to give power to accounts.
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100000), hbds=tt.Asset.Tbd(100))
     wallet.create_account("bob", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100000))

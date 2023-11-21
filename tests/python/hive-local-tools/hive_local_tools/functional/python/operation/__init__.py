@@ -1,13 +1,37 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import test_tools as tt
 import wax
-from hive_local_tools.constants import TRANSACTION_TEMPLATE, filters_enum_virtual_ops
+from hive_local_tools.constants import (
+    get_transaction_model,
+)
+from schemas.apis.database_api.fundaments_of_reponses import AccountItemFundament
+from schemas.fields.compound import Manabar
+from schemas.jsonrpc import get_response_model
+from schemas.operations import (
+    CommentOperation,
+    DeleteCommentOperation,
+)
+from schemas.operations.representations.legacy_representation import LegacyRepresentation  # noqa: TCH001
+from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
+from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
+    TransferToVestingCompletedOperation,
+)
+from schemas.transaction import TransactionLegacy
+from schemas.virtual_operation import (
+    VirtualOperation as SchemaVirtualOperation,
+)
+from schemas.virtual_operation import (
+    build_vop_filter,
+)
+
+if TYPE_CHECKING:
+    from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
+    from schemas.operations import AnyLegacyOperation
 
 
 @dataclass
@@ -26,40 +50,39 @@ class Operation:
 
 @dataclass
 class Account:
-    _acc_info: dict = field(init=False, default_factory=dict)
     _name: str
     _node: tt.InitNode
     _wallet: tt.Wallet
-    _hive: tt.Asset.Test = field(init=False, default=None)
-    _vest: tt.Asset.Vest = field(init=False, default=None)
-    _hbd: tt.Asset.Tbd = field(init=False, default=None)
+    _acc_info: ApiAccountItem = field(init=False)
+    _rc_manabar: _RcManabar = field(init=False)
 
     def __post_init__(self):
-        self._rc_manabar = _RcManabar(self._node, self._name)
+        if self._name:
+            self._rc_manabar = _RcManabar(self._node, self._name)
 
     @property
-    def node(self):
+    def node(self) -> tt.InitNode:
         return self._node
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def hive(self):
-        return self._hive
+    def hive(self) -> tt.Asset.TestT:
+        return self._acc_info.balance
 
     @property
-    def hbd(self):
-        return self._hbd
+    def hbd(self) -> tt.Asset.TbdT:
+        return self._acc_info.hbd_balance
 
     @property
-    def rc_manabar(self):
+    def rc_manabar(self) -> _RcManabar:
         return self._rc_manabar
 
     @property
-    def vest(self):
-        return self._vest
+    def vest(self) -> tt.Asset.VestsT:
+        return self._acc_info.vesting_shares
 
     def fund_vests(self, tests: tt.Asset.Test) -> None:
         self._wallet.api.transfer_to_vesting(
@@ -69,41 +92,53 @@ class Account:
         )
         self.update_account_info()
 
-    def get_hbd_balance(self):
+    def get_hbd_balance(self) -> tt.Asset.TbdT:
         return get_hbd_balance(self._node, self._name)
 
-    def get_hive_balance(self):
+    def get_hive_balance(self) -> tt.Asset.TestT:
         return get_hive_balance(self._node, self._name)
 
-    def get_hive_power(self):
+    def get_hive_power(self) -> tt.Asset.VestsT:
         return get_hive_power(self._node, self._name)
 
-    def get_rc_current_mana(self):
+    def get_rc_current_mana(self) -> int:
         return get_rc_current_mana(self._node, self._name)
 
-    def get_rc_max_mana(self):
+    def get_rc_max_mana(self) -> int:
         return get_rc_max_mana(self._node, self._name)
 
-    def update_account_info(self):
-        self._acc_info = self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]
-        self._hive = tt.Asset.from_(self._acc_info["balance"])
-        self._hbd = tt.Asset.from_(self._acc_info["hbd_balance"])
-        self._vest = tt.Asset.from_(self._acc_info["vesting_shares"])
+    def update_account_info(self) -> None:
+        self._acc_info = _find_account(self._node, self._name)
         self._rc_manabar.update()
 
-    def top_up(self, amount: tt.Asset.Test | tt.Asset.Tbd):
+    def top_up(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
         self._wallet.api.transfer("initminer", self._name, amount, "{}")
         self.update_account_info()
 
 
 class _RcManabar:
-    def __init__(self, node, name):
+    def __init__(self, node: tt.InitNode, name: str):
         self._node = node
         self._name = name
-        self.current_rc_mana = None
-        self.last_update_time = None
-        self.max_rc = None
+        self.__manabar: ExtendedManabar | None = None
         self.update()
+
+    @property
+    def manabar(self) -> ExtendedManabar:
+        assert self.__manabar is not None
+        return self.__manabar
+
+    @property
+    def current_rc_mana(self) -> int:
+        return self.manabar.current_mana
+
+    @property
+    def last_update_time(self) -> datetime:
+        return self.manabar.last_update_time
+
+    @property
+    def max_rc(self) -> int:
+        return self.manabar.maximum
 
     def __str__(self):
         return (
@@ -111,7 +146,7 @@ class _RcManabar:
             f" {datetime.fromtimestamp(self.last_update_time)}"
         )
 
-    def calculate_current_value(self, head_block_time):
+    def calculate_current_value(self, head_block_time: datetime) -> int:
         return int(
             wax.calculate_current_manabar_value(
                 now=int(head_block_time.timestamp()),
@@ -121,18 +156,17 @@ class _RcManabar:
             ).result
         )
 
-    def update(self):
-        rc_manabar = get_rc_manabar(self._node, self._name)
-        self.current_rc_mana = rc_manabar["current_mana"]
-        self.last_update_time = rc_manabar["last_update_time"]
-        self.max_rc = rc_manabar["max_rc"]
+    def update(self) -> None:
+        self.__manabar = get_rc_manabar(self._node, self._name)
 
-    def assert_rc_current_mana_is_unchanged(self):
+    def assert_rc_current_mana_is_unchanged(self) -> None:
         assert (
             get_rc_current_mana(self._node, self._name) == self.current_rc_mana
         ), f"The {self._name} account rc_current_mana has been changed."
 
-    def assert_rc_current_mana_is_reduced(self, operation_rc_cost: int, operation_timestamp=None):
+    def assert_rc_current_mana_is_reduced(
+        self, operation_rc_cost: int, operation_timestamp: datetime | None = None
+    ) -> None:
         err = f"The account {self._name} did not incur the operation cost."
         if operation_timestamp:
             mana_before_operation = self.calculate_current_value(operation_timestamp - tt.Time.seconds(3))
@@ -140,7 +174,7 @@ class _RcManabar:
         else:
             assert get_rc_current_mana(self._node, self._name) + operation_rc_cost == self.current_rc_mana, err
 
-    def assert_max_rc_mana_state(self, state: Literal["reduced", "unchanged", "increased"]):
+    def assert_max_rc_mana_state(self, state: Literal["reduced", "unchanged", "increased"]) -> None:
         actual_max_rc_mana = get_rc_max_mana(self._node, self._name)
         error_message = f"The {self._name} account `rc_max_mana` has been not {state}"
         match state:
@@ -157,7 +191,7 @@ def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, mem
     return any(vop["op"]["value"]["memo"] == memo for vop in payout_vops)
 
 
-def create_transaction_with_any_operation(wallet, operation_name, **kwargs):
+def create_transaction_with_any_operation(wallet: tt.Wallet, *operations: AnyLegacyOperation) -> dict[str, Any]:
     # function creates transaction manually because some operations are not added to wallet
     transaction = deepcopy(TRANSACTION_TEMPLATE)
     transaction["operations"].append([operation_name, kwargs])
@@ -196,7 +230,7 @@ def get_rc_current_mana(node: tt.InitNode, account_name: str) -> int:
     return int(node.api.rc.find_rc_accounts(accounts=[account_name])["rc_accounts"][0]["rc_manabar"]["current_mana"])
 
 
-def get_number_of_fill_order_operations(node):
+def get_number_of_fill_order_operations(node: tt.InitNode) -> int:
     return len(
         node.api.account_history.enum_virtual_ops(
             block_range_begin=1,
@@ -219,7 +253,7 @@ def get_vesting_price(node: tt.InitNode) -> int:
     return int(total_vesting_shares) // int(total_vesting_fund_hive)
 
 
-def convert_hive_to_vest_range(hive_amount: tt.Asset.Test, price: float, tolerance: int = 5) -> tt.Asset.Range:
+def convert_hive_to_vest_range(hive_amount: tt.Asset.TestT, price: float, tolerance: int = 5) -> tt.Asset.Range:
     """
      Converts Hive to VEST resources at the current exchange rate provided in the `price` parameter.
     :param hive_amount: The amount of Hive resources to convert.
@@ -232,7 +266,10 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.Test, price: float, toleran
 
 
 def get_virtual_operations(
-    node: tt.InitNode, vop: str, skip_price_stabilization: bool = True, start_block: int | None = None
+    node: tt.InitNode,
+    *vops: type[SchemaVirtualOperation],
+    skip_price_stabilization: bool = True,
+    start_block: int | None = None,
 ) -> list:
     """
     :param vop: name of the virtual operation,
@@ -271,13 +308,22 @@ def jump_to_date(node: tt.InitNode, time_offset: datetime) -> None:
     )
 
 
-def get_rc_manabar(node: tt.InitNode, account_name: str) -> dict:
-    response = node.api.rc.find_rc_accounts(accounts=[account_name])["rc_accounts"][0]
-    return {
-        "current_mana": int(response["rc_manabar"]["current_mana"]),
-        "last_update_time": response["rc_manabar"]["last_update_time"],
-        "max_rc": int(response["max_rc"]),
-    }
+class ExtendedManabar(Manabar):
+    maximum: int
+
+
+def get_rc_manabar(node: tt.InitNode, account_name: str) -> ExtendedManabar:
+    response = node.api.rc.find_rc_accounts(accounts=[account_name]).rc_accounts[0]
+    return ExtendedManabar(
+        current_mana=response.rc_manabar.current_mana,
+        last_update_time=response.rc_manabar.last_update_time,
+        maximum=response.max_rc,
+    )
+
+
+class CommentTransaction(TransactionLegacy):
+    operations: list[LegacyRepresentation[CommentOperation]]
+    rc_cost: int
 
 
 def list_votes_for_all_proposals(node):

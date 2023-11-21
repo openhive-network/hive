@@ -1,26 +1,38 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 import test_tools as tt
+
+if TYPE_CHECKING:
+    from python.functional.operation_tests.conftest import TransferAccount
 
 
 @pytest.mark.parametrize(
     ("receiver", "currency", "check_savings_balance", "check_balance"),
     [
         # transfer to savings in HIVES, receiver is the same person as sender
-        ("alice", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        ("alice", tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
         # transfer to savings in HIVES, receiver is other account
-        ("bob", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        ("bob", tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
         # transfer to savings in HBDS, receiver is the same person as sender
-        ("alice", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        ("alice", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
         # transfer to savings in HBDS, receiver is other account
-        ("bob", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        ("bob", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()
 def test_transfer_to_savings_account(
-    prepared_node, wallet, alice, bob, receiver, currency, check_savings_balance, check_balance
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    alice: TransferAccount,
+    bob: TransferAccount,
+    receiver: str,
+    currency: tt.Asset.AnyT,
+    check_savings_balance: str,
+    check_balance: str,
 ):
     receiver_account_object = alice if receiver == "alice" else bob
     rc_amount_before_sending_op = alice.get_rc_current_mana()

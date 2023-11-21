@@ -27,18 +27,20 @@ def test_the_maximum_number_of_recurring_transfers_allowed_for_one_account(repla
         timestamp = tt.Time.parse(file.read())
 
     # during this replay, before entering live mode node processes a lots of recurrent transfers, therefore the timeout has been increased.
-    replayed_node = replayed_node(
-        block_log_directory, absolute_start_time=timestamp + tt.Time.days(2), time_multiplier=45, timeout=600
+    replayed_node: tt.InitNode = replayed_node(
+        block_log_directory, absolute_start_time=timestamp + tt.Time.days(2), time_multiplier=45, timeout=1200
     )
     wallet = tt.Wallet(attach_to=replayed_node)
 
     all_accounts_names = wallet.list_accounts()
 
-    block_number = math.ceil(len(all_accounts_names) * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK)
-    tt.logger.info(
-        f"start waiting, headblock: {replayed_node.get_last_block_number()}, blocks to wait for: {block_number}"
+    blocks_to_wait = math.ceil(
+        len(all_accounts_names) * MAX_OPEN_RECURRENT_TRANSFERS / MAX_RECURRENT_TRANSFERS_PER_BLOCK
     )
-    replayed_node.wait_number_of_blocks(block_number)
+    tt.logger.info(
+        f"start waiting, headblock: {replayed_node.get_last_block_number()}, blocks to wait for: {blocks_to_wait}"
+    )
+    replayed_node.wait_number_of_blocks(blocks_to_wait)
     tt.logger.info(f"finish waiting, headblock: {replayed_node.get_last_block_number()}")
 
     for account_name in all_accounts_names:

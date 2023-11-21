@@ -10,7 +10,7 @@ from hive_local_tools.functional.python.operation import get_virtual_operations
 
 
 @run_for("testnet")
-def test_proxy_before_waiving_voting_rights(prepare_environment):
+def test_proxy_before_waiving_voting_rights(prepare_environment: tuple[tt.InitNode, tt.Wallet]) -> None:
     node, wallet = prepare_environment
 
     wallet.api.set_voting_proxy(VOTER_ACCOUNT, PROXY_ACCOUNT)
@@ -27,7 +27,7 @@ def test_proxy_before_waiving_voting_rights(prepare_environment):
 
 
 @run_for("testnet")
-def test_set_proxy_after_waiving_voting_rights(prepare_environment):
+def test_set_proxy_after_waiving_voting_rights(prepare_environment: tuple[tt.InitNode, tt.Wallet]) -> None:
     node, wallet = prepare_environment
 
     wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
@@ -41,7 +41,9 @@ def test_set_proxy_after_waiving_voting_rights(prepare_environment):
 
 
 @run_for("testnet")
-def test_set_proxy_when_decline_voting_rights_is_in_progress(prepare_environment):
+def test_set_proxy_when_decline_voting_rights_is_in_progress(
+    prepare_environment: tuple[tt.InitNode, tt.Wallet]
+) -> None:
     node, wallet = prepare_environment
 
     head_block_number = wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)["block_num"]
@@ -56,7 +58,9 @@ def test_set_proxy_when_decline_voting_rights_is_in_progress(prepare_environment
 
 
 @run_for("testnet")
-def test_proxied_vsf_votes_when_principal_account_declined_its_voting_rights(prepare_environment):
+def test_proxied_vsf_votes_when_principal_account_declined_its_voting_rights(
+    prepare_environment: tuple[tt.InitNode, tt.Wallet]
+) -> None:
     node, wallet = prepare_environment
 
     wallet.api.set_voting_proxy(VOTER_ACCOUNT, PROXY_ACCOUNT)

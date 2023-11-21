@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Iterable
+
 import pytest
 
 import test_tools as tt
-from hive_local_tools.functional.python.operation import get_number_of_fill_order_operations
+from hive_local_tools.functional.python.operation import (
+    get_number_of_fill_order_operations,
+)
+
+if TYPE_CHECKING:
+    from python.functional.operation_tests.conftest import LimitOrderAccount
 
 """
 All test cases are from spreadsheet: https://gitlab.syncad.com/hive/hive/-/issues/485#note_123196
@@ -15,8 +22,12 @@ Every test is executed with following parametrization variables:
 In both cases - create_main_order and create_normal_order operation limit_order_create_operation or
 limit_order_create2_operation may be used.
 """
-parametrize_variables = "use_hbd_in_matching_order, create_main_order, create_normal_order"
-parametrize_values = (
+parametrize_variables: tuple[str, str, str] = (
+    "use_hbd_in_matching_order",
+    "create_main_order",
+    "create_normal_order",
+)
+parametrize_values: Iterable[tuple[bool, str, str]] = (
     (True, "create_order", "create_order"),
     (True, "create_order_2", "create_order_2"),
     (True, "create_order", "create_order_2"),
@@ -31,8 +42,13 @@ parametrize_values = (
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_not_matching_orders_with_fill_or_kill(
-    prepared_node, alice, bob, use_hbd_in_matching_order, create_main_order, create_normal_order
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 1, 2 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -47,8 +63,14 @@ def test_not_matching_orders_with_fill_or_kill(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_match_third_order_with_kill_or_fill(
-    prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order, create_normal_order
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 3 and 4 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -73,16 +95,16 @@ def test_match_third_order_with_kill_or_fill(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_match_fifth_order(
-    prepared_node,
-    alice,
-    bob,
-    carol,
-    daisy,
-    elizabeth,
-    use_hbd_in_matching_order,
-    create_main_order,
-    create_normal_order,
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    daisy: LimitOrderAccount,
+    elizabeth: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 5 and 6 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -113,8 +135,13 @@ def test_match_fifth_order(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_not_matching_orders(
-    prepared_node, alice, bob, use_hbd_in_matching_order, create_main_order, create_normal_order
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 7, 8 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -134,8 +161,14 @@ def test_not_matching_orders(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_full_match_third_order(
-    prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order, create_normal_order
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 9, 10 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -167,8 +200,14 @@ def test_full_match_third_order(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_full_match_first_order(
-    prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order, create_normal_order
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 11, 12 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -201,8 +240,15 @@ def test_full_match_first_order(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_partial_match_third_order(
-    prepared_node, alice, bob, carol, daisy, use_hbd_in_matching_order, create_main_order, create_normal_order
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    daisy: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 13, 14 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -245,16 +291,16 @@ def test_partial_match_third_order(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_partially_match_every_next_order(
-    prepared_node,
-    alice,
-    bob,
-    carol,
-    daisy,
-    elizabeth,
-    use_hbd_in_matching_order,
-    create_main_order,
-    create_normal_order,
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    daisy: LimitOrderAccount,
+    elizabeth: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 15, 16 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -322,8 +368,14 @@ def test_partially_match_every_next_order(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_match_third_order_partially_and_wait_for_expiration(
-    prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order, create_normal_order
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 17, 18 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -354,8 +406,14 @@ def test_match_third_order_partially_and_wait_for_expiration(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_match_third_order_partially_and_wait_for_expiration_scenario_2(
-    prepared_node, alice, bob, carol, use_hbd_in_matching_order, create_main_order, create_normal_order
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 19, 20 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -392,16 +450,16 @@ def test_match_third_order_partially_and_wait_for_expiration_scenario_2(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_match_fifth_order_partially(
-    prepared_node,
-    alice,
-    bob,
-    carol,
-    daisy,
-    elizabeth,
-    use_hbd_in_matching_order,
-    create_main_order,
-    create_normal_order,
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    daisy: LimitOrderAccount,
+    elizabeth: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 21, 22 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -436,16 +494,16 @@ def test_match_fifth_order_partially(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_full_match_fifth_order(
-    prepared_node,
-    alice,
-    bob,
-    carol,
-    daisy,
-    elizabeth,
-    use_hbd_in_matching_order,
-    create_main_order,
-    create_normal_order,
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    daisy: LimitOrderAccount,
+    elizabeth: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 23, 24 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492
@@ -500,8 +558,15 @@ def test_full_match_fifth_order(
 @pytest.mark.parametrize(parametrize_variables, parametrize_values)
 @pytest.mark.testnet()
 def test_full_match_fourth_order(
-    prepared_node, alice, bob, carol, daisy, use_hbd_in_matching_order, create_main_order, create_normal_order
-):
+    prepared_node: tt.InitNode,
+    alice: LimitOrderAccount,
+    bob: LimitOrderAccount,
+    carol: LimitOrderAccount,
+    daisy: LimitOrderAccount,
+    use_hbd_in_matching_order: str,
+    create_main_order: str,
+    create_normal_order: str,
+) -> None:
     """
     test case 25, 26 from https://gitlab.syncad.com/hive/hive/-/issues/485 and
     https://gitlab.syncad.com/hive/hive/-/issues/487 and https://gitlab.syncad.com/hive/hive/-/issues/492

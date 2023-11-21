@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -19,7 +20,7 @@ __PATTERNS_DIRECTORY = Path(__file__).with_name("response_patterns")
 
 
 @pytest.mark.replayed_node()
-def test_list_my_accounts_json_format(wallet_with_json_formatter):
+def test_list_my_accounts_json_format(wallet_with_json_formatter: tt.Wallet):
     import_private_keys_for_accounts(wallet_with_json_formatter, block_log.CREATED_ACCOUNTS)
     accounts_summary = wallet_with_json_formatter.api.list_my_accounts()
     for name, balances, returned_account in zip(
@@ -34,7 +35,7 @@ def test_list_my_accounts_json_format(wallet_with_json_formatter):
 
 
 @pytest.mark.replayed_node()
-def test_list_my_accounts_text_format(wallet_with_text_formatter):
+def test_list_my_accounts_text_format(wallet_with_text_formatter: tt.Wallet):
     import_private_keys_for_accounts(wallet_with_text_formatter, block_log.CREATED_ACCOUNTS)
     accounts_summary = parse_text_response(wallet_with_text_formatter.api.list_my_accounts())
 
@@ -50,7 +51,7 @@ def test_list_my_accounts_text_format(wallet_with_text_formatter):
 
 
 @pytest.mark.replayed_node()
-def test_list_my_accounts_json_format_pattern_comparison(wallet_with_json_formatter):
+def test_list_my_accounts_json_format_pattern_comparison(wallet_with_json_formatter: tt.Wallet):
     import_private_keys_for_accounts(wallet_with_json_formatter, block_log.CREATED_ACCOUNTS)
     accounts_summary = wallet_with_json_formatter.api.list_my_accounts()
 
@@ -58,14 +59,14 @@ def test_list_my_accounts_json_format_pattern_comparison(wallet_with_json_format
 
 
 @pytest.mark.replayed_node()
-def test_list_my_accounts_text_format_pattern_comparison(wallet_with_text_formatter):
+def test_list_my_accounts_text_format_pattern_comparison(wallet_with_text_formatter: tt.Wallet):
     import_private_keys_for_accounts(wallet_with_text_formatter, block_log.CREATED_ACCOUNTS)
     accounts_summary = wallet_with_text_formatter.api.list_my_accounts()
 
     verify_text_patterns(__PATTERNS_DIRECTORY, "list_my_accounts", accounts_summary)
 
 
-def parse_text_response(text):
+def parse_text_response(text: str) -> dict[str, Any]:
     def parse_single_line_with_account_balances(line_to_parse: str) -> dict:
         splitted_values = re.split(r"\s{2,}", line_to_parse.strip())
         return {
@@ -90,6 +91,6 @@ def parse_text_response(text):
     }
 
 
-def import_private_keys_for_accounts(wallet, account_names: list[str]) -> None:
+def import_private_keys_for_accounts(wallet: tt.Wallet, account_names: list[str]) -> None:
     for name in account_names:
         wallet.api.import_key(tt.PrivateKey(name))

@@ -34,7 +34,7 @@ def block_log_length(block_log_helper) -> int:
 
 
 @pytest.fixture()
-def node_with_20k_proposal_votes():
+def node_with_20k_proposal_votes() -> tt.InitNode:
     block_log_directory = Path(__file__).parent / "block_log"
     block_log_path = block_log_directory / "block_log"
     timestamp_path = block_log_directory / "timestamp"

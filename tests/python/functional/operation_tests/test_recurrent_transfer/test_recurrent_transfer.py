@@ -17,7 +17,14 @@ from hive_local_tools.functional.python.operation.recurrent_transfer import Recu
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize(("amount", "executions"), [(tt.Asset.Test(10), 3), (tt.Asset.Tbd(10), 3)])
-def test_recurrent_transfer_cases_1_and_2(node, wallet, sender, receiver, amount, executions):
+def test_recurrent_transfer_cases_1_and_2(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount,
+    executions,
+):
     """
     User creates a recurrent transfer in Hive / HBD to be sent once a day for three days
     """
@@ -53,7 +60,14 @@ def test_recurrent_transfer_cases_1_and_2(node, wallet, sender, receiver, amount
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize(("amount", "executions"), [(tt.Asset.Test(10), 3), (tt.Asset.Tbd(10), 3)])
-def test_recurrent_transfer_cases_3_and_4(node, wallet, sender, receiver, amount, executions):
+def test_recurrent_transfer_cases_3_and_4(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount,
+    executions,
+):
     """
     User removes a defined recurrent transfer in Hive / HBD.
     """
@@ -110,7 +124,14 @@ def test_recurrent_transfer_cases_3_and_4(node, wallet, sender, receiver, amount
     ],
 )
 def test_recurrent_transfer_cases_5_6_7_8(
-    node, wallet, sender, receiver, amount_1, amount_2, executions_1, executions_2
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount_1,
+    amount_2,
+    executions_1,
+    executions_2,
 ):
     for execution in range(executions_1 // 2):
         if execution == 0:
@@ -166,7 +187,15 @@ def test_recurrent_transfer_cases_5_6_7_8(
         (tt.Asset.Tbd(10), 3, 5),
     ],
 )
-def test_recurrent_transfer_cases_9_and_10(node, wallet, sender, receiver, amount, executions, update_executions):
+def test_recurrent_transfer_cases_9_and_10(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount,
+    executions,
+    update_executions,
+):
     """
     User increases a number of defined recurrent transfer in Hive / HBD.
     """
@@ -235,7 +264,15 @@ def test_recurrent_transfer_cases_9_and_10(node, wallet, sender, receiver, amoun
         (tt.Asset.Tbd(10), 4, 3),
     ],
 )
-def test_recurrent_transfer_cases_11_and_12(node, wallet, sender, receiver, amount, executions, update_executions):
+def test_recurrent_transfer_cases_11_and_12(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount,
+    executions,
+    update_executions,
+):
     """
     User decreases a number of defined recurrent transfer in Hive / HBD.
     """
@@ -339,7 +376,14 @@ def test_recurrent_transfer_cases_11_and_12(node, wallet, sender, receiver, amou
     ],
 )
 def test_recurrent_transfer_cases_13_14_15_16(
-    node, wallet, receiver, amount, executions, base_recurrence_time, update_recurrence_time, offset
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    receiver: RecurrentTransferAccount,
+    amount,
+    executions,
+    base_recurrence_time,
+    update_recurrence_time,
+    offset,
 ):
     wallet.create_account(
         "sender",
@@ -421,16 +465,16 @@ def test_recurrent_transfer_cases_13_14_15_16(
     ],
 )
 def test_recurrent_transfer_cases_17_and_18(
-    node,
-    wallet,
-    receiver,
-    sender,
-    amount_1,
-    amount_2,
-    amount_3,
-    executions,
-    first_update_executions,
-    second_update_executions,
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    receiver: RecurrentTransferAccount,
+    sender: RecurrentTransferAccount,
+    amount_1: tt.Asset.TestT | tt.Asset.TbdT,
+    amount_2: tt.Asset.TestT | tt.Asset.TbdT,
+    amount_3: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+    first_update_executions: int,
+    second_update_executions: int,
 ):
     """
     User increases a frequency of defined recurrent transfer in Hive / HBD.
@@ -538,7 +582,13 @@ def test_recurrent_transfer_cases_17_and_18(
         (tt.Asset.Tbd(10), tt.Asset.Tbd(20)),
     ],
 )
-def test_recurrent_transfer_cases_19_and_20(node, wallet, receiver, recurrent_transfer_amount, transfer_amount):
+def test_recurrent_transfer_cases_19_and_20(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    receiver: RecurrentTransferAccount,
+    recurrent_transfer_amount: tt.Asset.TestT | tt.Asset.TbdT,
+    transfer_amount: tt.Asset.TestT | tt.Asset.TbdT,
+):
     """
     User creates a recurrent transfer in Hive / HBD, but the first transfer is not created because the lack of funds.
     """
@@ -588,7 +638,13 @@ def test_recurrent_transfer_cases_19_and_20(node, wallet, receiver, recurrent_tr
         (tt.Asset.Tbd(10), 3),
     ],
 )
-def test_recurrent_transfer_cases_21_and_22(node, wallet, receiver, amount, executions):
+def test_recurrent_transfer_cases_21_and_22(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    receiver: RecurrentTransferAccount,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+):
     """
     User creates a recurrent transfer in Hive / HBD with expected second execution to fail (lack of funds).
     """
@@ -647,7 +703,9 @@ def test_recurrent_transfer_cases_21_and_22(node, wallet, receiver, amount, exec
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize("amount", [(tt.Asset.Test(10)), (tt.Asset.Tbd(10))])
-def test_recurrent_transfer_cases_23_and_24(node, wallet, receiver, amount):
+def test_recurrent_transfer_cases_23_and_24(
+    node: tt.InitNode, wallet: tt.Wallet, receiver: RecurrentTransferAccount, amount: tt.Asset.TestT | tt.Asset.TbdT
+):
     """
     User creates a recurrent transfer in Hive / HBD and the next execution fails
     HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES times, because of the lack of funds.
@@ -700,7 +758,15 @@ def test_recurrent_transfer_cases_23_and_24(node, wallet, receiver, amount):
         (tt.Asset.Tbd(10), 3, MAX_RECURRENT_TRANSFER_END_DATE / 2 * 24),
     ],
 )
-def test_recurrent_transfer_cases_25_and_26(node, wallet, sender, receiver, amount, executions, recurrence):
+def test_recurrent_transfer_cases_25_and_26(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+    recurrence: int,
+):
     """
     User creates a recurrent transfer in Hive / HBD to be executed 3 times every year.
     """
@@ -736,7 +802,15 @@ def test_recurrent_transfer_cases_25_and_26(node, wallet, sender, receiver, amou
         (tt.Asset.Tbd(10), 3, (MAX_RECURRENT_TRANSFER_END_DATE / 2 + 1) * 24),
     ],
 )
-def test_recurrent_transfer_cases_27_and_28(node, wallet, sender, receiver, amount, executions, recurrence):
+def test_recurrent_transfer_cases_27_and_28(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+    recurrence: int,
+):
     """
     User tries to create a recurrent transfer in Hive / HBD to be executed 3 times every 366 days.
     """
