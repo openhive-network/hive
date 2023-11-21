@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-from typing import Literal
 
 import pytest
 
@@ -29,9 +28,7 @@ def test_exceed_time_range(node: tt.InitNode | tt.RemoteNode):
 @pytest.mark.parametrize("bucket_seconds", [1, 14, 32, 59, 61, 299, 301, 3599, 86405])
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/450")
 @run_for("testnet")
-def test_get_market_history_with_wrong_bucket_seconds_value(
-    node: tt.InitNode | tt.RemoteNode, bucket_seconds: Literal[1, 14, 32, 59, 61, 299, 301, 3599, 86405]
-):
+def test_get_market_history_with_wrong_bucket_seconds_value(node: tt.InitNode | tt.RemoteNode, bucket_seconds: int):
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.market_history.get_market_history(
             bucket_seconds=bucket_seconds, start=tt.Time.from_now(weeks=-1), end=tt.Time.from_now(weeks=1)

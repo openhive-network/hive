@@ -7,7 +7,7 @@ from hive_local_tools.functional.python.operation import Comment
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["delete comment", "delete post"])
-def test_delete_comment(prepared_node, wallet, reply_type):
+def test_delete_comment(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str) -> None:
     """
     Test cases 1, 2 from issue: https://gitlab.syncad.com/hive/hive/-/issues/504
     """

@@ -128,8 +128,8 @@ def test_cancel_all_transfers_from_savings_except_one(
     wallet: tt.Wallet,
     alice: TransferAccount,
     currency: tt.Asset.AnyT,
-    check_savings_balance,
-    check_balance,
+    check_savings_balance: str,
+    check_balance: str,
 ):
     create_three_savings_withdrawals_from_fresh_account(
         prepared_node, currency, alice, check_savings_balance, currency.token()
@@ -158,7 +158,7 @@ def test_cancel_all_transfers_from_savings_except_one(
 
 
 def create_three_savings_withdrawals_from_fresh_account(
-    node: tt.InitNode, currency: tt.Asset.AnyT, account, check_savings_balance, token
+    node: tt.InitNode, currency: tt.Asset.AnyT, account: TransferAccount, check_savings_balance: str, token: str
 ):
     account.transfer_to_savings("alice", currency(amount=30), "transfer to savings")
 

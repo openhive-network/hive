@@ -84,7 +84,7 @@ def recurrent_transfer_setup(
 
     sender.top_up(asset(amount=sum(rtd.amount * rtd.executions for rtd in RECURRENT_TRANSFER_DEFINITIONS)))
 
-    recurrent_transfers = []
+    recurrent_transfers: list[RecurrentTransfer] = []
     for iteration in range(3):
         recurrent_transfers.append(
             RecurrentTransfer(

@@ -764,7 +764,15 @@ def test_recurrent_transfer_cases_23_and_24(
         (tt.Asset.Tbd(10), 3, MAX_RECURRENT_TRANSFER_END_DATE / 2 * 24),
     ],
 )
-def test_recurrent_transfer_cases_25_and_26(node, wallet, sender, receiver, amount, executions, recurrence):
+def test_recurrent_transfer_cases_25_and_26(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    amount: tt.Asset.TestT | tt.Asset.TbdT,
+    executions: int,
+    recurrence: int,
+):
     """
     User creates a recurrent transfer in Hive / HBD to be executed 3 times every year.
     """
