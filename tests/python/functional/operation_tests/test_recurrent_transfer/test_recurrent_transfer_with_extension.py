@@ -8,6 +8,7 @@ from hive_local_tools.constants import MIN_RECURRENT_TRANSFERS_RECURRENCE
 from hive_local_tools.functional.python.operation import jump_to_date
 from hive_local_tools.functional.python.operation.recurrent_transfer import (
     RecurrentTransfer,
+    RecurrentTransferAccount,
     RecurrentTransferDefinition,
 )
 
@@ -19,8 +20,19 @@ RECURRENT_TRANSFER_DEFINITIONS = [
 
 
 @pytest.mark.testnet()
-@pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
-def test_recurrent_transfer_with_extension_cases_1_and_2(asset, recurrent_transfer_setup):
+@pytest.mark.parametrize("asset", [tt.Asset.TestT, tt.Asset.TbdT])
+def test_recurrent_transfer_with_extension_cases_1_and_2(
+    asset: tt.Asset.AnyT,
+    recurrent_transfer_setup: tuple[
+        tt.InitNode,
+        tt.Wallet,
+        RecurrentTransferAccount,
+        RecurrentTransferAccount,
+        RecurrentTransfer,
+        RecurrentTransfer,
+        RecurrentTransfer,
+    ],
+):
     """
     User A creates three recurrent transfers in Hive / HBD to user B.
     """
@@ -47,7 +59,18 @@ def test_recurrent_transfer_with_extension_cases_1_and_2(asset, recurrent_transf
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
-def test_recurrent_transfer_with_extension_cases_3_and_4(asset, recurrent_transfer_setup):
+def test_recurrent_transfer_with_extension_cases_3_and_4(
+    asset: tt.Asset.AnyT,
+    recurrent_transfer_setup: tuple[
+        tt.InitNode,
+        tt.Wallet,
+        RecurrentTransferAccount,
+        RecurrentTransferAccount,
+        RecurrentTransfer,
+        RecurrentTransfer,
+        RecurrentTransfer,
+    ],
+):
     """
     User A creates three recurrent transfers in Hive/ HBD to user B and removes two of them.
     """
@@ -76,7 +99,18 @@ def test_recurrent_transfer_with_extension_cases_3_and_4(asset, recurrent_transf
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
-def test_recurrent_transfer_with_extension_cases_5_and_6(asset, recurrent_transfer_setup):
+def test_recurrent_transfer_with_extension_cases_5_and_6(
+    asset: tt.Asset.AnyT,
+    recurrent_transfer_setup: tuple[
+        tt.InitNode,
+        tt.Wallet,
+        RecurrentTransferAccount,
+        RecurrentTransferAccount,
+        RecurrentTransfer,
+        RecurrentTransfer,
+        RecurrentTransfer,
+    ],
+):
     """
     User A creates three recurrent transfers in Hive/ HBD to user B and updates their amounts.
     """
@@ -110,7 +144,18 @@ def test_recurrent_transfer_with_extension_cases_5_and_6(asset, recurrent_transf
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
-def test_recurrent_transfer_with_extension_cases_7_and_8(asset, recurrent_transfer_setup):
+def test_recurrent_transfer_with_extension_cases_7_and_8(
+    asset: tt.Asset.AnyT,
+    recurrent_transfer_setup: tuple[
+        tt.InitNode,
+        tt.Wallet,
+        RecurrentTransferAccount,
+        RecurrentTransferAccount,
+        RecurrentTransfer,
+        RecurrentTransfer,
+        RecurrentTransfer,
+    ],
+):
     """
     User updates a number of defined recurrent transfer in Hive/ HBD.
     """
@@ -155,7 +200,18 @@ def test_recurrent_transfer_with_extension_cases_7_and_8(asset, recurrent_transf
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
-def test_recurrent_transfer_with_extension_cases_9_and_10(asset, recurrent_transfer_setup):
+def test_recurrent_transfer_with_extension_cases_9_and_10(
+    asset: tt.Asset.AnyT,
+    recurrent_transfer_setup: tuple[
+        tt.InitNode,
+        tt.Wallet,
+        RecurrentTransferAccount,
+        RecurrentTransferAccount,
+        RecurrentTransfer,
+        RecurrentTransfer,
+        RecurrentTransfer,
+    ],
+):
     """
     User updates a frequency of defined recurrent transfers in Hive/ HBD.
     """
@@ -213,7 +269,13 @@ def test_recurrent_transfer_with_extension_cases_9_and_10(asset, recurrent_trans
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize("asset", [tt.Asset.Test, tt.Asset.Tbd])
-def test_recurrent_transfer_with_extension_cases_11_and_12(node, wallet, sender, receiver, asset):
+def test_recurrent_transfer_with_extension_cases_11_and_12(
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+    asset: tt.Asset.AnyT,
+):
     """
     User A creates three recurrent transfers in Hive/ HBD, but there is not enough funds for one to be started
     and for second to be executed second time.

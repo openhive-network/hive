@@ -23,7 +23,7 @@ def test_delete_comment(prepared_node, wallet, reply_type):
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["delete comment", "delete post"])
-def test_delete_comment_with_downvotes(prepared_node, wallet, reply_type):
+def test_delete_comment_with_downvotes(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str) -> None:
     """
     Test cases 3, 4 from issue: https://gitlab.syncad.com/hive/hive/-/issues/504
     """
@@ -40,7 +40,7 @@ def test_delete_comment_with_downvotes(prepared_node, wallet, reply_type):
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["delete comment", "delete post"])
-def test_try_to_delete_comment_with_votes(prepared_node, wallet, reply_type):
+def test_try_to_delete_comment_with_votes(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str) -> None:
     """
     Test cases 5, 6 from issue: https://gitlab.syncad.com/hive/hive/-/issues/504
     """
@@ -59,7 +59,7 @@ def test_try_to_delete_comment_with_votes(prepared_node, wallet, reply_type):
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["delete comment", "delete post"])
-def test_try_to_delete_comment_with_top_comment(prepared_node, wallet, reply_type):
+def test_try_to_delete_comment_with_top_comment(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str) -> None:
     """
     Test cases 7, 8 from issue: https://gitlab.syncad.com/hive/hive/-/issues/504
     """
@@ -77,7 +77,7 @@ def test_try_to_delete_comment_with_top_comment(prepared_node, wallet, reply_typ
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["delete comment", "delete post"])
-def test_try_to_delete_comment_after_payout(prepared_node, wallet, reply_type):
+def test_try_to_delete_comment_after_payout(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str) -> None:
     """
     Test cases 9, 10 from issue: https://gitlab.syncad.com/hive/hive/-/issues/504
     """
@@ -97,7 +97,7 @@ def test_try_to_delete_comment_after_payout(prepared_node, wallet, reply_type):
 
 
 @pytest.mark.parametrize("reply_type", ["reply_another_comment", "no_reply"], ids=["delete comment", "delete post"])
-def test_reuse_deleted_permlink(prepared_node, wallet, reply_type):
+def test_reuse_deleted_permlink(prepared_node: tt.InitNode, wallet: tt.Wallet, reply_type: str) -> None:
     """
     Test cases 11, 12 from issue: https://gitlab.syncad.com/hive/hive/-/issues/504
     """

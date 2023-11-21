@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 import pytest
 
@@ -22,7 +22,7 @@ class LimitOrderAccount(Account):
         amount: float,
         check_hbd: bool,
         message: Literal["expiration", "creation", "order_match", "no_match"],
-    ):
+    ) -> None:
         super().update_account_info()
         get_balance = self.get_hbd_balance if check_hbd else self.get_hive_balance
         currency = tt.Asset.Tbd if check_hbd else tt.Asset.Test
@@ -63,7 +63,7 @@ class LimitOrderAccount(Account):
         fill_or_kill: bool = False,
         expiration: int = 60,
         buy_hbd: bool | None = None,
-    ):
+    ) -> dict[str, Any]:
         return self._wallet.api.create_order(
             self._name,
             order_id,
@@ -82,7 +82,7 @@ class LimitOrderAccount(Account):
         fill_or_kill: bool = False,
         expiration: int = 60,
         buy_hbd: bool | None = None,
-    ):
+    ) -> None:
         expiration_time = tt.Time.serialize(
             self._node.get_head_block_time() + tt.Time.seconds(expiration), format_=tt.Time.DEFAULT_FORMAT
         )
@@ -104,27 +104,29 @@ class LimitOrderAccount(Account):
 @dataclass
 class TransferAccount(Account):
     # class with account representation created for transfer, transfer_to/from_savings tests
-    def transfer(self, receiver, amount, memo):
+    def transfer(self, receiver: str, amount: tt.Asset.TestT | tt.Asset.TbdT, memo: str) -> None:
         self._wallet.api.transfer(self._name, receiver, amount, memo)
 
-    def transfer_to_savings(self, receiver, amount, memo):
+    def transfer_to_savings(self, receiver: str, amount: tt.Asset.TestT | tt.Asset.TbdT, memo: str) -> None:
         self._wallet.api.transfer_to_savings(self._name, receiver, amount, memo)
 
-    def transfer_from_savings(self, transfer_id, receiver, amount, memo):
+    def transfer_from_savings(
+        self,
+        transfer_id: int,
+        receiver: str,
+        amount: tt.Asset.TestT | tt.Asset.TbdT,
+        memo: str,
+    ) -> None:
         self._wallet.api.transfer_from_savings(self._name, transfer_id, receiver, amount, memo)
 
-    def cancel_transfer_from_savings(self, transfer_id):
+    def cancel_transfer_from_savings(self, transfer_id: int) -> None:
         self._wallet.api.cancel_transfer_from_savings(self._wallet, transfer_id)
 
-    def get_hbd_savings_balance(self) -> tt.Asset.Tbd:
-        return tt.Asset.from_(
-            self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]["savings_hbd_balance"]
-        )
+    def get_hbd_savings_balance(self) -> tt.Asset.TbdT:
+        return self._node.api.database.find_accounts(accounts=[self._name]).accounts[0].savings_hbd_balance
 
-    def get_hive_savings_balance(self) -> tt.Asset.Test:
-        return tt.Asset.from_(
-            self._node.api.database.find_accounts(accounts=[self._name])["accounts"][0]["savings_balance"]
-        )
+    def get_hive_savings_balance(self) -> tt.Asset.TestT:
+        return self._node.api.database.find_accounts(accounts=[self._name]).accounts[0].savings_balance
 
 
 @dataclass
@@ -211,42 +213,66 @@ class UpdateAccount(Account):
 
 
 @pytest.fixture()
-def create_account_object():
+def create_account_object() -> type[TransferAccount]:
     return TransferAccount
 
 
 @pytest.fixture()
-def alice(prepared_node, wallet, create_account_object):
+def alice(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     wallet.create_account("alice", hives=450, hbds=450, vests=50)
     return create_account_object("alice", prepared_node, wallet)
 
 
 @pytest.fixture()
-def bob(prepared_node, wallet, create_account_object):
+def bob(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     wallet.create_account("bob", hives=300, hbds=300, vests=50)
     return create_account_object("bob", prepared_node, wallet)
 
 
 @pytest.fixture()
-def carol(prepared_node, wallet, create_account_object):
+def carol(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     wallet.create_account("carol", hives=400, hbds=400, vests=50)
     return create_account_object("carol", prepared_node, wallet)
 
 
 @pytest.fixture()
-def daisy(prepared_node, wallet, create_account_object):
+def daisy(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     wallet.create_account("daisy", hives=480, hbds=480, vests=50)
     return create_account_object("daisy", prepared_node, wallet)
 
 
 @pytest.fixture()
-def elizabeth(prepared_node, wallet, create_account_object):
+def elizabeth(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     wallet.create_account("elizabeth", hives=600, hbds=600, vests=50)
     return create_account_object("elizabeth", prepared_node, wallet)
 
 
 @pytest.fixture()
-def hive_fund(prepared_node, wallet, create_account_object):
+def hive_fund(
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    create_account_object: type[TransferAccount],
+) -> TransferAccount:
     return create_account_object("hive.fund", prepared_node, wallet)
 
 

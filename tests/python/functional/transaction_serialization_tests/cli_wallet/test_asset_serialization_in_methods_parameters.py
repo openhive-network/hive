@@ -10,7 +10,7 @@ from hive_local_tools.functional.python.transaction_serialization.cli_wallet imp
 
 @run_for("testnet")
 @run_for_all_cases(transfer_amount=tt.Asset.Test(100))
-def test_transfer_of_hives(prepared_wallet, transfer_amount):
+def test_transfer_of_hives(prepared_wallet: tt.Wallet, transfer_amount: tt.Asset.TestT):
     prepared_wallet.api.create_account("initminer", "alice", "{}")
 
     prepared_wallet.api.transfer("initminer", "alice", transfer_amount, "memo")
@@ -18,7 +18,7 @@ def test_transfer_of_hives(prepared_wallet, transfer_amount):
 
 @run_for("testnet")
 @run_for_all_cases(transfer_amount=tt.Asset.Tbd(100))
-def test_transfer_of_hbds(prepared_wallet, transfer_amount):
+def test_transfer_of_hbds(prepared_wallet: tt.Wallet, transfer_amount: tt.Asset.TbdT):
     prepared_wallet.api.create_account("initminer", "alice", "{}")
 
     prepared_wallet.api.transfer("initminer", "alice", transfer_amount, "memo")
@@ -26,7 +26,7 @@ def test_transfer_of_hbds(prepared_wallet, transfer_amount):
 
 @run_for("testnet")
 @run_for_all_cases(transfer_amount=tt.Asset.Test(100))
-def test_transfer_nonblocking_of_hives(prepared_wallet, transfer_amount):
+def test_transfer_nonblocking_of_hives(prepared_wallet: tt.Wallet, transfer_amount: tt.Asset.TestT):
     prepared_wallet.api.create_account("initminer", "alice", "{}")
 
     prepared_wallet.api.transfer_nonblocking("initminer", "alice", transfer_amount, "memo")
@@ -34,7 +34,7 @@ def test_transfer_nonblocking_of_hives(prepared_wallet, transfer_amount):
 
 @run_for("testnet")
 @run_for_all_cases(transfer_amount=tt.Asset.Tbd(100))
-def test_transfer_nonblocking_of_hbds(prepared_wallet, transfer_amount):
+def test_transfer_nonblocking_of_hbds(prepared_wallet: tt.Wallet, transfer_amount: tt.Asset.TbdT):
     prepared_wallet.api.create_account("initminer", "alice", "{}")
 
     prepared_wallet.api.transfer_nonblocking("initminer", "alice", transfer_amount, "memo")
@@ -42,7 +42,9 @@ def test_transfer_nonblocking_of_hbds(prepared_wallet, transfer_amount):
 
 @run_for("testnet")
 @run_for_all_cases(escrow_tbd_amount=tt.Asset.Tbd(1), escrow_tests_amount=tt.Asset.Test(2))
-def test_escrow_transfer(prepared_wallet, escrow_tbd_amount, escrow_tests_amount):
+def test_escrow_transfer(
+    prepared_wallet: tt.Wallet, escrow_tbd_amount: tt.Asset.TbdT, escrow_tests_amount: tt.Asset.TestT
+):
     with prepared_wallet.in_single_transaction():
         prepared_wallet.api.create_account("initminer", "alice", "{}")
         prepared_wallet.api.create_account("initminer", "bob", "{}")
@@ -63,7 +65,9 @@ def test_escrow_transfer(prepared_wallet, escrow_tbd_amount, escrow_tests_amount
 
 @run_for("testnet")
 @run_for_all_cases(escrow_tbd_amount=tt.Asset.Tbd(1), escrow_tests_amount=tt.Asset.Test(2))
-def test_escrow_release(prepared_wallet, escrow_tbd_amount, escrow_tests_amount):
+def test_escrow_release(
+    prepared_wallet: tt.Wallet, escrow_tbd_amount: tt.Asset.TbdT, escrow_tests_amount: tt.Asset.TestT
+):
     prepared_wallet.create_account("alice", vests=tt.Asset.Test(50))
     prepared_wallet.create_account("bob", vests=tt.Asset.Test(50))
 
@@ -93,21 +97,27 @@ def test_escrow_release(prepared_wallet, escrow_tbd_amount, escrow_tests_amount)
 
 @run_for("testnet")
 @run_for_all_cases(claim_test_amount=tt.Asset.Test(0))
-def test_claim_account_creation(node, prepared_wallet, claim_test_amount):
+def test_claim_account_creation(
+    node: tt.InitNode | tt.RemoteNode, prepared_wallet: tt.Wallet, claim_test_amount: tt.Asset.TestT
+):
     node.wait_number_of_blocks(18)
     prepared_wallet.api.claim_account_creation("initminer", claim_test_amount)
 
 
 @run_for("testnet")
 @run_for_all_cases(claim_test_amount=tt.Asset.Test(0))
-def test_claim_account_creation_nonblocking(node, prepared_wallet, claim_test_amount):
+def test_claim_account_creation_nonblocking(
+    node: tt.InitNode | tt.RemoteNode, prepared_wallet: tt.Wallet, claim_test_amount: tt.Asset.TestT
+):
     node.wait_number_of_blocks(18)
     prepared_wallet.api.claim_account_creation_nonblocking("initminer", claim_test_amount)
 
 
 @run_for("testnet")
 @run_for_all_cases(create_account_test_amount=tt.Asset.Test(2))
-def test_create_funded_account_with_keys(node, prepared_wallet, create_account_test_amount):
+def test_create_funded_account_with_keys(
+    node: tt.InitNode | tt.RemoteNode, prepared_wallet: tt.Wallet, create_account_test_amount
+):
     key = "TST8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
     prepared_wallet.api.create_funded_account_with_keys(
         "initminer", "alice", create_account_test_amount, "memo", "{}", key, key, key, key
@@ -116,7 +126,9 @@ def test_create_funded_account_with_keys(node, prepared_wallet, create_account_t
 
 @run_for("testnet")
 @run_for_all_cases(delegate_vest_amount=tt.Asset.Vest(1))
-def test_delegate_vesting_shares(node, prepared_wallet, delegate_vest_amount):
+def test_delegate_vesting_shares(
+    node: tt.InitNode | tt.RemoteNode, prepared_wallet: tt.Wallet, delegate_vest_amount: tt.Asset.VestsT
+):
     prepared_wallet.create_account("alice", vests=tt.Asset.Test(50))
     prepared_wallet.api.create_account("initminer", "bob", "{}")
 
@@ -125,7 +137,9 @@ def test_delegate_vesting_shares(node, prepared_wallet, delegate_vest_amount):
 
 @run_for("testnet")
 @run_for_all_cases(delegate_vest_amount=tt.Asset.Vest(1))
-def test_delegate_vesting_shares_nonblocking(node, prepared_wallet, delegate_vest_amount):
+def test_delegate_vesting_shares_nonblocking(
+    node: tt.InitNode | tt.RemoteNode, prepared_wallet: tt.Wallet, delegate_vest_amount: tt.Asset.VestsT
+):
     prepared_wallet.create_account("alice", vests=tt.Asset.Test(50))
     prepared_wallet.api.create_account("initminer", "bob", "{}")
 
@@ -134,7 +148,12 @@ def test_delegate_vesting_shares_nonblocking(node, prepared_wallet, delegate_ves
 
 @run_for("testnet")
 @run_for_all_cases(delegate_vest_amount=tt.Asset.Vest(1), transfer_test_amount=tt.Asset.Test(6))
-def test_delegate_vesting_shares_and_transfer(node, prepared_wallet, delegate_vest_amount, transfer_test_amount):
+def test_delegate_vesting_shares_and_transfer(
+    node: tt.InitNode | tt.RemoteNode,
+    prepared_wallet: tt.Wallet,
+    delegate_vest_amount: tt.Asset.VestsT,
+    transfer_test_amount: tt.Asset.TestT,
+):
     prepared_wallet.create_account("alice", hives=tt.Asset.Test(50), vests=tt.Asset.Test(50))
     prepared_wallet.api.create_account("initminer", "bob", "{}")
 
@@ -146,7 +165,10 @@ def test_delegate_vesting_shares_and_transfer(node, prepared_wallet, delegate_ve
 @run_for("testnet")
 @run_for_all_cases(delegate_vest_amount=tt.Asset.Vest(1), transfer_test_amount=tt.Asset.Test(6))
 def test_delegate_vesting_shares_and_transfer_nonblocking(
-    node, prepared_wallet, delegate_vest_amount, transfer_test_amount
+    node: tt.InitNode | tt.RemoteNode,
+    prepared_wallet: tt.Wallet,
+    delegate_vest_amount: tt.Asset.VestsT,
+    transfer_test_amount: tt.Asset.TestT,
 ):
     prepared_wallet.create_account("alice", hives=tt.Asset.Test(50), vests=tt.Asset.Test(50))
     prepared_wallet.api.create_account("initminer", "bob", "{}")
@@ -158,7 +180,7 @@ def test_delegate_vesting_shares_and_transfer_nonblocking(
 
 @run_for("testnet")
 @run_for_all_cases(transfer_test_amount=tt.Asset.Test(100))
-def test_transfer_to_vesting(prepared_wallet, transfer_test_amount):
+def test_transfer_to_vesting(prepared_wallet: tt.Wallet, transfer_test_amount: tt.Asset.TestT):
     prepared_wallet.api.create_account("initminer", "alice", "{}")
 
     prepared_wallet.api.transfer_to_vesting("initminer", "alice", transfer_test_amount)
@@ -166,7 +188,7 @@ def test_transfer_to_vesting(prepared_wallet, transfer_test_amount):
 
 @run_for("testnet")
 @run_for_all_cases(transfer_test_amount=tt.Asset.Test(100))
-def test_transfer_to_vesting_nonblocking(prepared_wallet, transfer_test_amount):
+def test_transfer_to_vesting_nonblocking(prepared_wallet: tt.Wallet, transfer_test_amount: tt.Asset.TestT):
     prepared_wallet.api.create_account("initminer", "alice", "{}")
 
     prepared_wallet.api.transfer_to_vesting_nonblocking("initminer", "alice", transfer_test_amount)
@@ -174,7 +196,7 @@ def test_transfer_to_vesting_nonblocking(prepared_wallet, transfer_test_amount):
 
 @run_for("testnet")
 @run_for_all_cases(transfer_test_amount=tt.Asset.Test(100))
-def test_transfer_to_savings_tests(prepared_wallet, transfer_test_amount):
+def test_transfer_to_savings_tests(prepared_wallet: tt.Wallet, transfer_test_amount: tt.Asset.TestT):
     prepared_wallet.api.create_account("initminer", "alice", "{}")
 
     prepared_wallet.api.transfer_to_savings("initminer", "alice", transfer_test_amount, "memo")
@@ -182,7 +204,7 @@ def test_transfer_to_savings_tests(prepared_wallet, transfer_test_amount):
 
 @run_for("testnet")
 @run_for_all_cases(transfer_tbd_amount=tt.Asset.Tbd(100))
-def test_transfer_to_savings_tbds(prepared_wallet, transfer_tbd_amount):
+def test_transfer_to_savings_tbds(prepared_wallet: tt.Wallet, transfer_tbd_amount: tt.Asset.TbdT):
     prepared_wallet.api.create_account("initminer", "alice", "{}")
 
     prepared_wallet.api.transfer_to_savings("initminer", "alice", transfer_tbd_amount, "memo")
@@ -190,7 +212,7 @@ def test_transfer_to_savings_tbds(prepared_wallet, transfer_tbd_amount):
 
 @run_for("testnet")
 @run_for_all_cases(transfer_test_amount=tt.Asset.Test(1))
-def test_transfer_from_savings_tests(prepared_wallet, transfer_test_amount):
+def test_transfer_from_savings_tests(prepared_wallet: tt.Wallet, transfer_test_amount: tt.Asset.TestT):
     prepared_wallet.create_account("alice", vests=tt.Asset.Test(10))
     prepared_wallet.api.create_account("initminer", "bob", "{}")
 
@@ -203,7 +225,7 @@ def test_transfer_from_savings_tests(prepared_wallet, transfer_test_amount):
 
 @run_for("testnet")
 @run_for_all_cases(transfer_tbd_amount=tt.Asset.Tbd(1))
-def test_transfer_from_savings_tbds(prepared_wallet, transfer_tbd_amount):
+def test_transfer_from_savings_tbds(prepared_wallet: tt.Wallet, transfer_tbd_amount: tt.Asset.TbdT):
     prepared_wallet.create_account("alice", vests=tt.Asset.Test(10))
     prepared_wallet.api.create_account("initminer", "bob", "{}")
 
@@ -216,7 +238,7 @@ def test_transfer_from_savings_tbds(prepared_wallet, transfer_tbd_amount):
 
 @run_for("testnet")
 @run_for_all_cases(withdraw_vests_amount=tt.Asset.Vest(10))
-def test_withdraw_vesting(prepared_wallet, withdraw_vests_amount):
+def test_withdraw_vesting(prepared_wallet: tt.Wallet, withdraw_vests_amount: tt.Asset.VestsT):
     prepared_wallet.create_account("alice", vests=tt.Asset.Test(500000))
 
     prepared_wallet.api.withdraw_vesting("alice", withdraw_vests_amount)
@@ -224,7 +246,7 @@ def test_withdraw_vesting(prepared_wallet, withdraw_vests_amount):
 
 @run_for("testnet")
 @run_for_all_cases(convert_test_amount=tt.Asset.Test(100))
-def test_convert_hive_with_collateral(prepared_wallet, convert_test_amount):
+def test_convert_hive_with_collateral(prepared_wallet: tt.Wallet, convert_test_amount: tt.Asset.TestT):
     prepared_wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
     prepared_wallet.api.convert_hive_with_collateral("alice", convert_test_amount)
@@ -232,7 +254,7 @@ def test_convert_hive_with_collateral(prepared_wallet, convert_test_amount):
 
 @run_for("testnet")
 @run_for_all_cases(convert_tbd_amount=tt.Asset.Tbd(10))
-def test_convert_hbd(prepared_wallet, convert_tbd_amount):
+def test_convert_hbd(prepared_wallet: tt.Wallet, convert_tbd_amount: tt.Asset.TbdT):
     prepared_wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
     prepared_wallet.api.convert_hive_with_collateral("alice", tt.Asset.Test(100))
@@ -241,13 +263,15 @@ def test_convert_hbd(prepared_wallet, convert_tbd_amount):
 
 @run_for("testnet")
 @run_for_all_cases(estimate_hive_amount=tt.Asset.Test(100))
-def test_estimate_hive_collateral(prepared_wallet, estimate_hive_amount):
+def test_estimate_hive_collateral(prepared_wallet: tt.Wallet, estimate_hive_amount: tt.Asset.TestT):
     prepared_wallet.api.estimate_hive_collateral(estimate_hive_amount)
 
 
 @run_for("testnet")
 @run_for_all_cases(create_order_tests_amount=tt.Asset.Test(100), create_order_tbds_amount=tt.Asset.Tbd(100))
-def test_create_order(prepared_wallet, create_order_tests_amount, create_order_tbds_amount):
+def test_create_order(
+    prepared_wallet: tt.Wallet, create_order_tests_amount: tt.Asset.TestT, create_order_tbds_amount: tt.Asset.TbdT
+):
     prepared_wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
     prepared_wallet.api.create_order("alice", 1000, create_order_tests_amount, create_order_tbds_amount, False, 1000)
@@ -255,7 +279,7 @@ def test_create_order(prepared_wallet, create_order_tests_amount, create_order_t
 
 @run_for("testnet")
 @run_for_all_cases(create_proposal_tbds_amount=tt.Asset.Tbd(1000000))
-def test_create_proposal(prepared_wallet, create_proposal_tbds_amount):
+def test_create_proposal(prepared_wallet: tt.Wallet, create_proposal_tbds_amount: tt.Asset.TbdT):
     prepared_wallet.create_account("alice", hbds=tt.Asset.Tbd(1000000), vests=tt.Asset.Test(1000000))
 
     prepared_wallet.api.post_comment("alice", "permlink", "", "parent-permlink", "title", "body", "{}")
@@ -273,7 +297,7 @@ def test_create_proposal(prepared_wallet, create_proposal_tbds_amount):
 
 @run_for("testnet")
 @run_for_all_cases(update_proposal_tbd_amount=tt.Asset.Tbd(10))
-def test_update_proposal(prepared_wallet, update_proposal_tbd_amount):
+def test_update_proposal(prepared_wallet: tt.Wallet, update_proposal_tbd_amount: tt.Asset.TbdT):
     prepared_wallet.create_account("alice", hbds=tt.Asset.Tbd(1000000), vests=tt.Asset.Test(1000000))
 
     prepared_wallet.api.post_comment("alice", "permlink", "", "parent-permlink", "title", "body", "{}")
@@ -295,7 +319,7 @@ def test_update_proposal(prepared_wallet, update_proposal_tbd_amount):
 
 @run_for("testnet")
 @run_for_all_cases(transfer_test_amount=tt.Asset.Test(1000000))
-def test_recurrent_transfer_matched(prepared_wallet, transfer_test_amount):
+def test_recurrent_transfer_matched(prepared_wallet: tt.Wallet, transfer_test_amount: tt.Asset.TestT):
     prepared_wallet.create_account("alice", hives=tt.Asset.Test(1000000), vests=tt.Asset.Test(1000000))
     prepared_wallet.api.create_account("initminer", "bob", "{}")
 
@@ -313,7 +337,13 @@ funds in the reward balance, you must receive a reward. This takes 1 hour on the
 @run_for_all_cases(
     claim_test_amount=tt.Asset.Test(0), claim_tbd_amount=tt.Asset.Tbd(0.01), claim_vest_amount=tt.Asset.Vest(0.01)
 )
-def test_claim_reward_balance_matched(node, prepared_wallet, claim_test_amount, claim_tbd_amount, claim_vest_amount):
+def test_claim_reward_balance_matched(
+    node: tt.InitNode | tt.RemoteNode,
+    prepared_wallet: tt.Wallet,
+    claim_test_amount: tt.Asset.TestT,
+    claim_tbd_amount: tt.Asset.TbdT,
+    claim_vest_amount: tt.Asset.VestsT,
+):
     create_alice_and_bob_accounts_with_received_rewards(node, prepared_wallet)
 
     prepared_wallet.api.claim_reward_balance("alice", claim_test_amount, claim_tbd_amount, claim_vest_amount)

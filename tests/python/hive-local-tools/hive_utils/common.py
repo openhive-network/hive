@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from junit_xml import TestCase
 
-from test_tools.__private.communication import CustomJsonEncoder
+from test_tools.__private.communication import LegacyJsonEncoder
 
 if TYPE_CHECKING:
     import test_tools as tt
@@ -27,7 +27,7 @@ def send_rpc_query(target_node: str, payload: dict) -> dict:
 
     from requests import post
 
-    resp = post(target_node, data=dumps(payload, cls=CustomJsonEncoder))
+    resp = post(target_node, data=dumps(payload, cls=LegacyJsonEncoder))
     if resp.status_code != 200:
         print(resp.json())
         raise Exception(f"{payload['method']} returned non 200 code")  # noqa: TRY002
@@ -53,7 +53,7 @@ def get_current_block_number(source_node) -> int:
     from requests import post
 
     try:
-        resp = post(source_node, data=dumps(payload, cls=CustomJsonEncoder))
+        resp = post(source_node, data=dumps(payload, cls=LegacyJsonEncoder))
         if resp.status_code != 200:
             return -1
         data = resp.json()["result"]

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class RecurrentTransferAccount(Account):
-    def assert_balance_is_reduced_by_transfer(self, amount: tt.Asset.Test | tt.Asset.Tbd) -> None:
+    def assert_balance_is_reduced_by_transfer(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
         if isinstance(amount, tt.Asset.Test):
             assert self._hive - amount == get_hive_balance(
                 self._node, self._name
@@ -50,15 +50,25 @@ class RecurrentTransferAccount(Account):
 
 
 class RecurrentTransfer:
-    def __init__(self, node, wallet, from_, to, amount, recurrence, executions, pair_id=None):
-        self._wallet: tt.Wallet = wallet
-        self._node: tt.InitNode = node
-        self._from_: str = from_
-        self._to: str = to
-        self._amount: tt.Asset.Test | tt.Asset.Tbd = amount
+    def __init__(
+        self,
+        node: tt.InitNode,
+        wallet: tt.Wallet,
+        from_: str,
+        to: str,
+        amount: tt.Asset.TestT | tt.Asset.TbdT,
+        recurrence: int,
+        executions: int,
+        pair_id: int | None = None,
+    ):
+        self._wallet = wallet
+        self._node = node
+        self._from_ = from_
+        self._to = to
+        self._amount = amount
         self._memo: str = "{}"
-        self._recurrence: int = recurrence
-        self._executions: int = executions
+        self._recurrence = recurrence
+        self._executions = executions
 
         if pair_id is not None:
             self._operation_name = "recurrent_transfer_with_id"
@@ -169,7 +179,10 @@ class RecurrentTransfer:
         assert self._rc_cost > 0, "RC cost is less than or equal to zero."
 
     def update(
-        self, amount: tt.Asset = None, new_executions_number: int | None = None, new_recurrence_time: int | None = None
+        self,
+        amount: tt.Asset.AnyT = None,
+        new_executions_number: int | None = None,
+        new_recurrence_time: int | None = None,
     ):
         self._transaction = getattr(self._wallet.api, self._operation_name)(
             from_=self._from_,
@@ -211,29 +224,29 @@ class RecurrentTransfer:
             self._amount = amount
         self._executions_schedules.append(self._current_schedule)
 
-    def cancel(self):
+    def cancel(self) -> None:
         self.update(amount=tt.Asset.Test(0) if isinstance(self._amount, tt.Asset.Test) else tt.Asset.Tbd(0))
 
 
 class RecurrentTransferDefinition:
-    def __init__(self, amount, recurrence, executions, pair_id):
+    def __init__(self, amount: tt.Asset.AnyT, recurrence: int, executions: int, pair_id: int) -> None:
         self._amount = amount
         self._executions = executions
         self._pair_id = pair_id
         self._recurrence = recurrence
 
     @property
-    def amount(self):
+    def amount(self) -> tt.Asset.AnyT:
         return self._amount
 
     @property
-    def executions(self):
+    def executions(self) -> int:
         return self._executions
 
     @property
-    def pair_id(self):
+    def pair_id(self) -> int:
         return self._pair_id
 
     @property
-    def recurrence(self):
+    def recurrence(self) -> int:
         return self._recurrence

@@ -4,25 +4,28 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import jump_to_date
-from hive_local_tools.functional.python.operation.recurrent_transfer import RecurrentTransfer, RecurrentTransferAccount
+from hive_local_tools.functional.python.operation.recurrent_transfer import (
+    RecurrentTransfer,
+    RecurrentTransferAccount,
+)
 
 from .test_recurrent_transfer_with_extension import RECURRENT_TRANSFER_DEFINITIONS
 
 
 @pytest.fixture()
-def node(speed_up_node) -> tt.InitNode:
+def node(speed_up_node: tt.InitNode) -> tt.InitNode:
     speed_up_node.set_vest_price(quote=tt.Asset.Vest(1800))
     speed_up_node.wait_for_block_with_number(30)
     return speed_up_node
 
 
 @pytest.fixture()
-def wallet(node) -> tt.Wallet:
+def wallet(node: tt.InitNode) -> tt.Wallet:
     return tt.Wallet(attach_to=node)
 
 
 @pytest.fixture()
-def receiver(node, wallet):
+def receiver(node: tt.InitNode, wallet: tt.Wallet) -> RecurrentTransferAccount:
     wallet.create_account("receiver")
     receiver = RecurrentTransferAccount("receiver", node, wallet)
     receiver.update_account_info()
@@ -30,7 +33,7 @@ def receiver(node, wallet):
 
 
 @pytest.fixture()
-def sender(request, node, wallet):
+def sender(request: pytest.FixtureRequest, node: tt.InitNode, wallet: tt.Wallet) -> RecurrentTransferAccount:
     params = request.node.callspec.params
     amount = [params[amount] for amount in params if "amount" in amount]
     execution = [params[execution] for execution in params if "execution" in execution]
@@ -40,8 +43,8 @@ def sender(request, node, wallet):
 
     wallet.create_account(
         name="sender",
-        hives=top_up_sum if isinstance(top_up_sum, tt.Asset.Test) else None,
-        hbds=top_up_sum if isinstance(top_up_sum, tt.Asset.Tbd) else None,
+        hives=top_up_sum if isinstance(top_up_sum, tt.Asset.TestT) else None,
+        hbds=top_up_sum if isinstance(top_up_sum, tt.Asset.TbdT) else None,
         vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)
@@ -50,7 +53,21 @@ def sender(request, node, wallet):
 
 
 @pytest.fixture()
-def recurrent_transfer_setup(request, node, wallet, sender, receiver):
+def recurrent_transfer_setup(
+    request: pytest.FixtureRequest,
+    node: tt.InitNode,
+    wallet: tt.Wallet,
+    sender: RecurrentTransferAccount,
+    receiver: RecurrentTransferAccount,
+) -> tuple[
+    tt.InitNode,
+    tt.Wallet,
+    RecurrentTransferAccount,
+    RecurrentTransferAccount,
+    RecurrentTransfer,
+    RecurrentTransfer,
+    RecurrentTransfer,
+]:
     """
     Part of the common for recurrent_transfer_with_extensions test scenarios.
     Timeline:

@@ -6,26 +6,27 @@ import pytest
 from beem import Hive
 
 if TYPE_CHECKING:
+    import test_tools as tt
     from hive_local_tools.functional.python.beem import NodeClientMaker
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption("--chain-id", type=int, help="chain-id used for converting and running node")
     parser.addoption("--skeleton-key", type=str, help="skeleton-key used for converting and running node")
 
 
 @pytest.fixture()
-def chain_id(request):
+def chain_id(request: pytest.FixtureRequest) -> str | int:
     return request.config.getoption("--chain-id") or 42
 
 
 @pytest.fixture()
-def skeleton_key(request):
+def skeleton_key(request: type[pytest.FixtureRequest]) -> str:
     return request.config.getoption("--skeleton-key") or "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
 
 
 @pytest.fixture()
-def node_client(node, worker_id) -> NodeClientMaker:
+def node_client(node: tt.InitNode | tt.RemoteNode, worker_id) -> NodeClientMaker:
     def _node_client(accounts: list[dict] | None = None) -> Hive:
         accounts = accounts or []
 

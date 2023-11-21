@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 import test_tools as tt
@@ -8,23 +10,33 @@ from hive_local_tools.functional.python.operation import (
     get_virtual_operations,
 )
 
+if TYPE_CHECKING:
+    from python.functional.operation_tests.conftest import TransferAccount
+
 
 @pytest.mark.parametrize(
     ("receiver_of_savings_withdrawal", "currency", "check_savings_balance", "check_balance"),
     [
         # transfer from savings in HIVES, receiver is the same person as sender
-        ("alice", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        ("alice", tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
         # transfer from savings in HIVES, receiver is other account
-        ("bob", tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        ("bob", tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
         # transfer from savings in HBDS, receiver is the same person as sender
-        ("alice", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        ("alice", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
         # transfer from savings in HBDS, receiver is other account
-        ("bob", tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        ("bob", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()
 def test_transfer_from_savings_account(
-    prepared_node, wallet, alice, bob, receiver_of_savings_withdrawal, currency, check_balance, check_savings_balance
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    alice: TransferAccount,
+    bob: TransferAccount,
+    receiver_of_savings_withdrawal: str,
+    currency: tt.Asset.AnyT,
+    check_balance: str,
+    check_savings_balance: str,
 ):
     receiver_account_object = alice if receiver_of_savings_withdrawal == "alice" else bob
     alice.transfer_to_savings("alice", currency(5), "transfer to savings")
@@ -64,14 +76,19 @@ def test_transfer_from_savings_account(
     ("currency", "check_savings_balance", "check_balance"),
     [
         # transfers from savings in HIVES
-        (tt.Asset.Test, "get_hive_savings_balance", "get_hive_balance"),
+        (tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
-        (tt.Asset.Tbd, "get_hbd_savings_balance", "get_hbd_balance"),
+        (tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()
 def test_transfer_from_savings_during_few_days(
-    prepared_node, wallet, alice, currency, check_savings_balance, check_balance
+    prepared_node: tt.InitNode,
+    wallet: tt.Wallet,
+    alice: TransferAccount,
+    currency: tt.Asset.AnyT,
+    check_savings_balance: str,
+    check_balance: str,
 ):
     alice.transfer_to_savings("alice", currency(75), "transfer to savings")
     funds_after_transfer_to_savings = getattr(alice, check_balance)()
