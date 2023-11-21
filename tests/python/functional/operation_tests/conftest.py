@@ -204,34 +204,62 @@ class UpdateAccount(Account):
     def generate_new_authority(self) -> dict:
         return {"account_auths": [], "key_auths": [(self.generate_new_key(), 1)], "weight_threshold": 1}
 
-    def generate_new_key(self):
+    def generate_new_key(self) -> PublicKey:
         self.__key_generation_counter += 1
         return tt.Account(self._name, secret=f"other_than_previous_{self.__key_generation_counter}").public_key
 
-    def get_current_key(self, type_: str):
+    def get_current_key(self, type_: Literal["owner", "active", "posting", "memo"]) -> str:
         assert type_ in ("owner", "active", "posting", "memo"), "Wrong key type."
+        if type_ == "memo":
+            type_ = "memo_key"
         self.update_account_info()
-        return self._acc_info[type_]["key_auths"][0][0] if type_ != "memo" else self._acc_info[type_ + "_key"]
+        authority: Authority = self._acc_info[type_]
+        return authority.key_auths[0][0]
 
-    def update_account(
+    def update_all_account_details(self, *, json_meta: str, owner: str, active: str, posting: str, memo: str) -> None:
+        self._wallet.api.update_account(
+            self._name, json_meta=json_meta, owner=owner, active=active, posting=posting, memo=memo, broadcast=True
+        )
+
+    def update_single_account_detail(
         self,
         *,
-        use_account_update2: bool = False,
-        json_metadata: str | None = None,
-        owner: str | None = None,
-        active: str | None = None,
-        posting: str | None = None,
-        memo_key: str | None = None,
-        posting_json_metadata: str | None = None,
-    ) -> dict:
-        arguments = locals()
-        to_pass = {
-            element: arguments[element]
-            for element in arguments
-            if arguments[element] is not None and element not in ("arguments", "self", "use_account_update2")
-        }
-        operation_name = "account_update2" if use_account_update2 else "account_update"
-        return create_transaction_with_any_operation(self._wallet, operation_name, account=self._name, **to_pass)
+        json_meta: str | None = None,
+        key_type: str | None = None,
+        key: tt.PublicKey = None,
+        weight: int | None = 1,
+    ) -> dict[str, Any]:
+        """
+        Swapping only one key owner/active/posting require firstly adding new key and then deleting old one
+        (setting weight equal to zero). This has to be done because update account requires all 5 arguments. Methods
+        changing only one variable like update_account_auth_key, update_account_meta and  update_account_memo_key call
+        update_account anyway, so it's still being tested.
+        """
+        if json_meta is not None:
+            transaction = self._wallet.api.update_account_meta(self._name, json_meta, broadcast=True)
+            tt.logger.info(f"json meta RC COST {transaction['rc_cost']}")
+            return transaction
+        assert key_type in ("owner", "active", "posting", "memo"), "Wrong authority type."
+        if key_type == "memo":
+            transaction = self._wallet.api.update_account_memo_key(self._name, key, broadcast=True)
+            tt.logger.info(f"change memo RC COST {transaction['rc_cost']}")
+            return transaction
+        self.update_account_info()
+        current_key = self._acc_info[key_type]["key_auths"][0][0]
+        # add new / update weight of existing key
+        transaction = self._wallet.api.update_account_auth_key(self._name, key_type, key, weight, broadcast=True)
+        tt.logger.info(f"add new / update weight of existing key RC COST {transaction['rc_cost']}")
+        if current_key != key:
+            # generate private key corresponding given public key
+            new_private = tt.Account(
+                self._name, secret=f"other_than_previous_{self.__key_generation_counter}"
+            ).private_key
+            # delete old one - make weight equal to zero
+            transaction = self._wallet.api.update_account_auth_key(self._name, key_type, current_key, 0, broadcast=True)
+            tt.logger.info(f"delete old key RC COST {transaction['rc_cost']}")
+            self._wallet.api.import_key(new_private)
+            return transaction
+        return transaction
 
     def use_authority(self, authority_type: str):
         self._wallet.api.use_authority(authority_type, self._name)
