@@ -76,11 +76,11 @@ def assert_account_resources(node: tt.InitNode, account_name: str, relate: opera
     """
     for value in list(__get_resources_from_account(node, account_name).values()):
         asset = tt.Asset.from_(value)
-        if isinstance(asset, tt.Asset.Test):
+        if isinstance(asset, tt.Asset.TestT):
             assert relate(asset.as_nai(), tt.Asset.Test(0))
-        if isinstance(asset, tt.Asset.Vest):
+        if isinstance(asset, tt.Asset.VestT):
             assert relate(asset.as_nai(), tt.Asset.Vest(0))
-        if isinstance(asset, tt.Asset.Tbd):
+        if isinstance(asset, tt.Asset.TbdT):
             assert relate(asset.as_nai(), tt.Asset.Tbd(0))
 
 
@@ -110,9 +110,9 @@ def assert_cleared_resources_in_hardfork_hive_operation(node: tt.InitNode, accou
         for value in op.values():
             if isinstance(value, dict) and list(value.keys()) == asset_keys:
                 asset = tt.Asset.from_(value)
-                if isinstance(asset, tt.Asset.Test):
+                if isinstance(asset, tt.Asset.TestT):
                     assert asset > tt.Asset.Test(0)
-                if isinstance(asset, tt.Asset.Vest):
+                if isinstance(asset, tt.Asset.VestT):
                     assert asset > tt.Asset.Vest(0)
-                if isinstance(asset, tt.Asset.Tbd):
+                if isinstance(asset, tt.Asset.TbdT):
                     assert asset > tt.Asset.Tbd(0)

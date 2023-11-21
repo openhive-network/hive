@@ -25,33 +25,36 @@ class LimitOrderAccount(Account):
     ) -> None:
         super().update_account_info()
         get_balance = self.get_hbd_balance if check_hbd else self.get_hive_balance
-        currency = tt.Asset.Tbd if check_hbd else tt.Asset.Test
+        asset = tt.Asset.Tbd if check_hbd else tt.Asset.Test
+        currency = asset(0).get_asset_information()
         messages = {
             "expiration": (
-                f"Something went wrong after expiration of orders. {self._name} should have {amount} {currency.token}."
+                f"Something went wrong after expiration of orders. {self._name} should have"
+                f" {amount} {currency.get_symbol()}."
             ),
             "creation": f"{currency} balance of {self._name} wasn't reduced after creating order.",
             "order_match": (
-                f"Something went wrong in completing a trade. {currency.token} balance of {self._name} should be equal"
-                f" to {amount}."
+                f"Something went wrong in completing a trade. {currency.get_symbol()} balance of {self._name} should be"
+                f" equal to {amount}."
             ),
             "no_match": (
-                f"Something went wrong after order creation - it shouldn't be matched. {currency.token} balance of"
-                f" {self._name} should be equal to {amount}."
+                f"Something went wrong after order creation - it shouldn't be matched. {currency.get_symbol()} balance"
+                f" of {self._name} should be equal to {amount}."
             ),
         }
 
-        assert get_balance() == currency(amount), messages[message]
+        assert get_balance() == asset(amount), messages[message]
 
-    def assert_not_completed_order(self, amount: int, hbd: bool):
-        query = self._node.api.database.find_limit_orders(account=self._name)["orders"][0]
-        for_sale = query["for_sale"]
-        nai = query["sell_price"]["base"]
-        nai["amount"] = for_sale
+    def assert_not_completed_order(self, amount: int, hbd: bool) -> None:
+        query = self._node.api.database.find_limit_orders(account=self._name).orders[0]
+        for_sale = query.for_sale
+        nai = query.sell_price.base
+        nai = nai.clone(amount=for_sale)
         currency = tt.Asset.Tbd if hbd else tt.Asset.Test
-        assert tt.Asset.from_(nai) == currency(amount), (
-            f"Amount of {currency.token} that are still available for sale "
-            f"is not correct. {self._name} should have now {amount} {currency.token}"
+        token = currency(0).get_asset_information().get_symbol()
+        assert nai == currency(amount), (
+            f"Amount of {token} that are still available for sale "
+            f"is not correct. {self._name} should have now {amount} {token}"
         )
 
     def create_order(
@@ -86,18 +89,23 @@ class LimitOrderAccount(Account):
         expiration_time = tt.Time.serialize(
             self._node.get_head_block_time() + tt.Time.seconds(expiration), format_=tt.Time.DEFAULT_FORMAT
         )
+
+        base = tt.Asset.Test if buy_hbd else tt.Asset.Tbd
+        quote = tt.Asset.Test if not buy_hbd else tt.Asset.Tbd
+
         create_transaction_with_any_operation(
             self._wallet,
-            "limit_order_create2",
-            owner=self._name,
-            orderid=order_id,
-            amount_to_sell=tt.Asset.Test(amount_to_sell) if buy_hbd else tt.Asset.Tbd(amount_to_sell),
-            exchange_rate={
-                "base": tt.Asset.Test(amount_to_sell) if buy_hbd else tt.Asset.Tbd(amount_to_sell),
-                "quote": tt.Asset.Tbd(min_to_receive) if buy_hbd else tt.Asset.Test(min_to_receive),
-            },
-            fill_or_kill=fill_or_kill,
-            expiration=expiration_time,
+            LimitOrderCreate2OperationLegacy(
+                owner=self._name,
+                order_id=order_id,
+                amount_to_sell=base(amount_to_sell).as_legacy(),
+                exchange_rate=HbdExchangeRate(
+                    base=base(amount_to_sell).as_legacy(),
+                    quote=quote(min_to_receive).as_legacy(),
+                ),
+                fill_or_kill=fill_or_kill,
+                expiration=expiration_time,
+            ),
         )
 
 
