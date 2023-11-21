@@ -122,7 +122,9 @@ def test_match_fifth_order(
     check_hbd = (0, 0, 0, 0, 1, 0) if use_hbd_in_matching_order else (1, 1, 1, 1, 0, 1)
 
     for account, amount, condition in zip(
-        (alice, bob, carol, daisy, elizabeth, elizabeth), (550, 400, 500, 480, 836.666, 300), check_hbd
+        (alice, bob, carol, daisy, elizabeth, elizabeth),
+        (550, 400, 500, 480, 836.666, 300),
+        check_hbd,
     ):
         account.assert_balance(amount=amount, check_hbd=condition, message="order_match")
 
@@ -263,7 +265,9 @@ def test_partial_match_third_order(
         account.assert_balance(amount=amount, check_hbd=condition, message="order_match")
 
     for account, amount, condition in zip(
-        (bob, carol), (100, 140), (not use_hbd_in_matching_order, use_hbd_in_matching_order)
+        (bob, carol),
+        (100, 140),
+        (not use_hbd_in_matching_order, use_hbd_in_matching_order),
     ):
         account.assert_not_completed_order(amount=amount, hbd=condition)
 
@@ -317,7 +321,9 @@ def test_partially_match_every_next_order(
     getattr(carol, create_normal_order)(100, 120, buy_hbd=use_hbd_in_matching_order)
 
     for account, amount, condition in zip(
-        (alice, bob), (300, 100), (use_hbd_in_matching_order, not use_hbd_in_matching_order)
+        (alice, bob),
+        (300, 100),
+        (use_hbd_in_matching_order, not use_hbd_in_matching_order),
     ):
         account.assert_not_completed_order(amount=amount, hbd=condition)
 
@@ -334,12 +340,16 @@ def test_partially_match_every_next_order(
     # check if rc was not reduced after fixing issue: https://gitlab.syncad.com/hive/hive/-/issues/507
 
     for account, amount, condition in zip(
-        (alice, bob), (150, 100), (use_hbd_in_matching_order, not use_hbd_in_matching_order)
+        (alice, bob),
+        (150, 100),
+        (use_hbd_in_matching_order, not use_hbd_in_matching_order),
     ):
         account.assert_not_completed_order(amount=amount, hbd=condition)
 
     for account, amount, condition in zip(
-        (alice, daisy), (650, 630), (not use_hbd_in_matching_order, use_hbd_in_matching_order)
+        (alice, daisy),
+        (650, 630),
+        (not use_hbd_in_matching_order, use_hbd_in_matching_order),
     ):
         account.assert_balance(amount=amount, check_hbd=condition, message="order_match")
 
@@ -352,7 +362,9 @@ def test_partially_match_every_next_order(
         account.assert_not_completed_order(amount=amount, hbd=not use_hbd_in_matching_order)
 
     for account, amount, condition in zip(
-        (alice, elizabeth), (750, 750), (not use_hbd_in_matching_order, use_hbd_in_matching_order)
+        (alice, elizabeth),
+        (750, 750),
+        (not use_hbd_in_matching_order, use_hbd_in_matching_order),
     ):
         account.assert_balance(amount=amount, check_hbd=condition, message="order_match")
 
@@ -386,12 +398,16 @@ def test_match_third_order_partially_and_wait_for_expiration(
     getattr(carol, create_main_order)(300, 450, buy_hbd=not use_hbd_in_matching_order)
 
     for account, amount, condition in zip(
-        (bob, carol), (100, 140), (not use_hbd_in_matching_order, use_hbd_in_matching_order)
+        (bob, carol),
+        (100, 140),
+        (not use_hbd_in_matching_order, use_hbd_in_matching_order),
     ):
         account.assert_not_completed_order(amount=amount, hbd=condition)
 
     for account, amount, condition in zip(
-        (alice, carol), (610, 700), (use_hbd_in_matching_order, not use_hbd_in_matching_order)
+        (alice, carol),
+        (610, 700),
+        (use_hbd_in_matching_order, not use_hbd_in_matching_order),
     ):
         account.assert_balance(amount=amount, check_hbd=condition, message="order_match")
 
@@ -429,12 +445,16 @@ def test_match_third_order_partially_and_wait_for_expiration_scenario_2(
     getattr(carol, create_normal_order)(100, 120, buy_hbd=use_hbd_in_matching_order)
 
     for account, amount, condition in zip(
-        (alice, bob), (300, 100), (use_hbd_in_matching_order, not use_hbd_in_matching_order)
+        (alice, bob),
+        (300, 100),
+        (use_hbd_in_matching_order, not use_hbd_in_matching_order),
     ):
         account.assert_not_completed_order(amount=amount, hbd=condition)
 
     for account, amount, condition in zip(
-        (alice, carol), (550, 550), (not use_hbd_in_matching_order, use_hbd_in_matching_order)
+        (alice, carol),
+        (550, 550),
+        (not use_hbd_in_matching_order, use_hbd_in_matching_order),
     ):
         account.assert_balance(amount=amount, check_hbd=condition, message="order_match")
 
@@ -581,7 +601,9 @@ def test_full_match_fourth_order(
         account.assert_not_completed_order(amount=amount, hbd=condition)
 
     for account, amount, condition in zip(
-        (alice, carol), (610, 700), (use_hbd_in_matching_order, not use_hbd_in_matching_order)
+        (alice, carol),
+        (610, 700),
+        (use_hbd_in_matching_order, not use_hbd_in_matching_order),
     ):
         account.assert_balance(amount=amount, check_hbd=condition, message="order_match")
 
