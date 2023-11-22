@@ -520,6 +520,12 @@ namespace chainbase {
         return session( *this, _revision );
       }
 
+      session start_empty_undo_session()
+      {
+        ++_revision;
+        return session( *this, _revision );
+      }
+
       const index_type& indicies()const { return _indices; }
       int64_t revision()const { return _revision; }
 
@@ -852,7 +858,7 @@ namespace chainbase {
       index_extensions   _extensions;
   };
 
-  template<typename BaseIndex>
+  template<typename BaseIndex, bool HandleUndo=true>
   class index_impl : public abstract_index {
     public:
       using abstract_index::statistic_info;
@@ -860,15 +866,18 @@ namespace chainbase {
       index_impl( BaseIndex& base ):abstract_index( &base ),_base(base){}
 
       virtual unique_ptr<abstract_session> start_undo_session() override {
-        return unique_ptr<abstract_session>(new session_impl<typename BaseIndex::session>( _base.start_undo_session() ) );
+        if constexpr ( HandleUndo )
+          return unique_ptr<abstract_session>(new session_impl<typename BaseIndex::session>( _base.start_undo_session() ) );
+        else
+          return unique_ptr<abstract_session>(new session_impl<typename BaseIndex::session>( _base.start_empty_undo_session() ) );
       }
 
       virtual void     set_revision( int64_t revision ) override { _base.set_revision( revision ); }
       virtual int64_t  revision()const  override { return _base.revision(); }
-      virtual void     undo()const  override { _base.undo(); }
-      virtual void     squash()const  override { _base.squash(); }
-      virtual void     commit( int64_t revision )const  override { _base.commit(revision); }
-      virtual void     undo_all() const override {_base.undo_all(); }
+      virtual void     undo()const  override { if(HandleUndo) _base.undo(); }
+      virtual void     squash()const  override { if(HandleUndo) _base.squash(); }
+      virtual void     commit( int64_t revision )const  override { if(HandleUndo) _base.commit(revision); }
+      virtual void     undo_all() const override { if(HandleUndo) _base.undo_all(); }
       virtual uint32_t type_id()const override { return BaseIndex::value_type::type_id; }
 
       virtual statistic_info get_statistics(bool onlyStaticInfo) const override final
@@ -906,10 +915,10 @@ namespace chainbase {
       BaseIndex& _base;
   };
 
-  template<typename IndexType>
-  class index : public index_impl<IndexType> {
+  template<typename IndexType, bool HandleUndo=true>
+  class index : public index_impl<IndexType, HandleUndo> {
     public:
-      index( IndexType& i ):index_impl<IndexType>( i ){}
+      index( IndexType& i ):index_impl<IndexType, HandleUndo>( i ){}
   };
 
   struct lock_exception : public std::exception
@@ -935,12 +944,12 @@ namespace chainbase {
           virtual void add_index( database& db ) = 0;
       };
 
-      template< typename IndexType >
+      template< typename IndexType, bool HandleUndo=true >
       class index_type_impl : public abstract_index_type
       {
         virtual void add_index( database& db ) override
         {
-          db.add_index_helper< IndexType >();
+          db.add_index_helper< IndexType, HandleUndo >();
         }
       };
 
@@ -1019,6 +1028,7 @@ namespace chainbase {
       };
 
       session start_undo_session();
+      session start_empty_undo_session();
 
       int64_t revision()const {
           if( _index_list.size() == 0 ) return -1;
@@ -1037,10 +1047,10 @@ namespace chainbase {
           for( const auto& i : _index_list ) i->set_revision( revision );
       }
 
-      template<typename MultiIndexType>
+      template<typename MultiIndexType, bool HandleUndo=true>
       void add_index()
       {
-        _index_types.push_back( unique_ptr< abstract_index_type >( new index_type_impl< MultiIndexType >() ) );
+        _index_types.push_back( unique_ptr< abstract_index_type >( new index_type_impl< MultiIndexType, HandleUndo >() ) );
         _index_types.back()->add_index( *this );
       }
 
@@ -1319,7 +1329,7 @@ namespace chainbase {
         { return _is_open; }
 
     private:
-      template<typename MultiIndexType>
+      template<typename MultiIndexType, bool HandleUndo=true>
       void add_index_helper() {
         const uint16_t type_id = generic_index<MultiIndexType>::value_type::type_id;
         typedef generic_index<MultiIndexType>          index_type;
@@ -1363,7 +1373,7 @@ namespace chainbase {
         if( type_id >= _index_map.size() )
           _index_map.resize( type_id + 1 );
 
-        auto new_index = new index<index_type>( *idx_ptr );
+        auto new_index = new index<index_type, HandleUndo>( *idx_ptr );
 
         _index_map[ type_id ].reset( new_index );
         _index_list.push_back( new_index );
