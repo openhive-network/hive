@@ -34,20 +34,20 @@ struct index_info_impl
   std::shared_ptr< abstract_schema > _schema;
 };
 
-template< typename MultiIndexType >
+template< typename MultiIndexType, bool HandleUndo=true >
 void _add_index_impl( database& db )
 {
-  db.add_index< MultiIndexType >();
+  db.add_index< MultiIndexType, HandleUndo >();
   std::shared_ptr< chainbase::index_extension > ext =
     std::make_shared< index_info_impl< MultiIndexType > >();
   db.add_index_extension< MultiIndexType >( ext );
   db.register_new_type<MultiIndexType>();
 }
 
-template< typename MultiIndexType >
+template< typename MultiIndexType, bool HandleUndo=true  >
 void add_core_index( database& db )
 {
-  _add_index_impl< MultiIndexType >( db );
+  _add_index_impl< MultiIndexType, HandleUndo >( db );
 }
 
 template< typename MultiIndexType >
@@ -60,6 +60,9 @@ void add_plugin_index( database& db )
 
 #define HIVE_ADD_CORE_INDEX(db, index_name) \
   hive::chain::add_core_index< index_name >( db )
+
+#define HIVE_ADD_NON_REVERTABLE_CORE_INDEX(db, index_name) \
+  hive::chain::add_core_index< index_name, false /*HandleUndo*/ >( db )
 
 #define HIVE_ADD_PLUGIN_INDEX(db, index_name) \
   hive::chain::add_plugin_index< index_name >( db )
