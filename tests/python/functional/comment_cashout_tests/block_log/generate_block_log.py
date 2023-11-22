@@ -45,6 +45,7 @@ def prepare_blocklog_with_comments_and_votes():
     3) Accounts are created that vote for comments (AMOUNT_OF_ALL_VOTERS)
     4) Voting takes place (each account casts a vote). The time from the beginning to the end of voting does not exceed
        one hour.
+    5) To get all the votes at the required cashout time ( 1h ), you need to slow down node "x0.5"
     """
     architecture = networks.NetworksArchitecture(False)
     architecture.load(CONFIG)
@@ -158,7 +159,7 @@ def __vote_for_comment(voter: str, creator_number: str) -> list:
                 "voter": f"{voter}",
                 "author": f"creator-{creator_number}",
                 "permlink": f"post-creator-{creator_number}",
-                "weight": 10000,
+                "weight": int(50 * 10000 / AMOUNT_OF_ALL_COMMENTS),
             },
         ]
     ]
@@ -205,7 +206,9 @@ def __create_and_fund_voter(voter: str) -> list:
 
 
 if __name__ == "__main__":
+    # Step 1 generate network with witnesses
     os.environ["GENERATE_NEW_BLOCK_LOG"] = "1"
     prepare_blocklog_network()
+    # Step 2 generate accounts, comments and votes
     os.environ.pop("GENERATE_NEW_BLOCK_LOG")
     prepare_blocklog_with_comments_and_votes()
