@@ -75,7 +75,7 @@ def test_cancel_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice:
     alice.assert_hive_balance_is_unchanged()
     err_message = "Max rc mana did not return to the state before the canceled `power down`."
     assert (
-        alice.get_rc_max_mana() == alice.rc_manabar.max_rc + int(power_down.weekly_vest_reduction.amount) + 1
+        alice.get_rc_max_mana() == alice.rc_manabar.max_mana + int(power_down.weekly_vest_reduction.amount) + 1
     ), err_message
 
 
