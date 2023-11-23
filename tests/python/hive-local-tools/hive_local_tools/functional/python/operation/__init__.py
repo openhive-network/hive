@@ -293,6 +293,14 @@ def get_number_of_fill_order_operations(node: tt.InitNode) -> int:
     )
 
 
+def get_number_of_active_proposals(node):
+    return len(
+        node.api.database.list_proposals(
+            start=[""], limit=100, order="by_creator", order_direction="ascending", status="all"
+        ).proposals
+    )
+
+
 def get_vesting_price(node: tt.InitNode) -> int:
     """
     Current exchange rate - `1` Hive to Vest conversion price.
