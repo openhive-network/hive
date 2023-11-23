@@ -123,3 +123,5 @@ HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD: Final[int] = 60 * 60 * 24 * 5  # // seco
 HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS: Final[int] = 60 * 60 * 24 * 1  # 1 day in testnet and 30 days in mainnet
 
 HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD: Final[int] = 60 * 60  # 1 hour in testnet and 1 day in mainnet
+
+HIVE_TREASURY_FEE = 10
