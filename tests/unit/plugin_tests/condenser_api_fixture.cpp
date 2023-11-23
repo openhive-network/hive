@@ -301,6 +301,7 @@ void condenser_api_fixture::witness_scenario( check_point_tester_t check_point_t
   op.owner = "alice5ah";
   op.props = props;
   push_transaction( op, alice5ah_private_key );
+  generate_block();
 
   // Now all the operations mentioned above can be checked. All of them will appear in 4th block, regardless of the fixture configuration.
   check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.

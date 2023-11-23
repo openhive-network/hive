@@ -1760,14 +1760,6 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     push_transaction( tx, alice_private_key );
     tx.operations.clear();
 
-    {
-      auto recent_ops = get_last_operations( 1 );
-      auto fee_op = recent_ops.back().get< proposal_fee_operation >();
-      BOOST_REQUIRE( fee_op.creator == creator );
-      BOOST_REQUIRE( fee_op.treasury == db->get_treasury_name() );
-      BOOST_REQUIRE( fee_op.fee == fee );
-    }
-
     const auto& after_treasury_account = db->get_treasury();
     const account_object& after_alice_account = db->get_account( creator );
     const account_object& after_bob_account = db->get_account( receiver );
@@ -1775,6 +1767,16 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     auto after_alice_hbd_balance = after_alice_account.hbd_balance;
     auto after_bob_hbd_balance = after_bob_account.hbd_balance;
     auto after_treasury_balance = after_treasury_account.hbd_balance;
+
+    generate_block();
+
+    {
+      auto recent_ops = get_last_operations( 2 );
+      auto fee_op = recent_ops[1].get< proposal_fee_operation >();
+      BOOST_REQUIRE( fee_op.creator == creator );
+      BOOST_REQUIRE( fee_op.treasury == db->get_treasury_name() );
+      BOOST_REQUIRE( fee_op.fee == fee );
+    }
 
     BOOST_REQUIRE( before_alice_hbd_balance == after_alice_hbd_balance + fee );
     BOOST_REQUIRE( before_bob_hbd_balance == after_bob_hbd_balance );
@@ -1856,14 +1858,6 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     push_transaction( tx, alice_private_key );
     tx.operations.clear();
 
-    {
-      auto recent_ops = get_last_operations( 1 );
-      auto fee_op = recent_ops.back().get< proposal_fee_operation >();
-      BOOST_REQUIRE( fee_op.creator == creator );
-      BOOST_REQUIRE( fee_op.treasury == db->get_treasury_name() );
-      BOOST_REQUIRE( fee_op.fee == fee );
-    }
-
     const auto& after_treasury_account = db->get_treasury();
     const account_object& after_alice_account = db->get_account( creator );
     const account_object& after_bob_account = db->get_account( receiver );
@@ -1871,6 +1865,16 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     auto after_alice_hbd_balance = after_alice_account.get_hbd_balance();
     auto after_bob_hbd_balance = after_bob_account.get_hbd_balance();
     auto after_treasury_balance = after_treasury_account.get_hbd_balance();
+
+    generate_block();
+
+    {
+      auto recent_ops = get_last_operations( 2 );
+      auto fee_op = recent_ops[1].get< proposal_fee_operation >();
+      BOOST_REQUIRE( fee_op.creator == creator );
+      BOOST_REQUIRE( fee_op.treasury == db->get_treasury_name() );
+      BOOST_REQUIRE( fee_op.fee == fee );
+    }
 
     BOOST_REQUIRE( before_alice_hbd_balance == after_alice_hbd_balance + fee );
     BOOST_REQUIRE( before_bob_hbd_balance == after_bob_hbd_balance );
