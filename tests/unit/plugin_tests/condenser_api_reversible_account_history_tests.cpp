@@ -745,21 +745,21 @@ BOOST_AUTO_TEST_CASE( get_account_history_witness_scenario_paged_and_filtered )
     {
       BOOST_TEST_MESSAGE( "Getting reversible operations for all accounts" );
       expected_t expected_alice5ah_history = {
-        R"~([4,{"trx_id":"fa0aaa1470b7f8e1f88b7aaa5d03d127ce1b7541","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"witness_update_operation","value":{"owner":"alice5ah","url":"foo.bar","block_signing_key":"TST5x2Aroso4sW7B7wp191Zvzs4mV7vH12g9yccbb2rV7kVUwTC5D","props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000},"fee":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
-        R"~([5,{"trx_id":"f6f71e45cd341e8521923a53f18f312f1c2d504d","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"feed_publish_operation","value":{"publisher":"alice5ah","exchange_rate":{"base":{"amount":"1000","precision":3,"nai":"@@000000013"},"quote":{"amount":"1000","precision":3,"nai":"@@000000021"}}}},"operation_id":0}])~",
-        R"~([6,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
-        R"~([7,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
-        R"~([8,{"trx_id":"76f2cede1a853b79df1734b78e460b5a8022f9c3","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"witness_set_properties_operation","value":{"owner":"alice5ah","props":[["hbd_interest_rate","00000000"],["key","028bb6e3bfd8633279430bd6026a1178e8e311fe4700902f647856a9f32ae82a8b"]],"extensions":[]}},"operation_id":0}])~",
+        R"~([4,{"trx_id":"fa0aaa1470b7f8e1f88b7aaa5d03d127ce1b7541","block":46,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"witness_update_operation","value":{"owner":"alice5ah","url":"foo.bar","block_signing_key":"TST5x2Aroso4sW7B7wp191Zvzs4mV7vH12g9yccbb2rV7kVUwTC5D","props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000},"fee":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
+        R"~([5,{"trx_id":"f6f71e45cd341e8521923a53f18f312f1c2d504d","block":46,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"feed_publish_operation","value":{"publisher":"alice5ah","exchange_rate":{"base":{"amount":"1000","precision":3,"nai":"@@000000013"},"quote":{"amount":"1000","precision":3,"nai":"@@000000021"}}}},"operation_id":0}])~",
+        R"~([6,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":46,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
+        R"~([7,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":46,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
+        R"~([8,{"trx_id":"76f2cede1a853b79df1734b78e460b5a8022f9c3","block":46,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"witness_set_properties_operation","value":{"owner":"alice5ah","props":[["hbd_interest_rate","00000000"],["key","028bb6e3bfd8633279430bd6026a1178e8e311fe4700902f647856a9f32ae82a8b"]],"extensions":[]}},"operation_id":0}])~",
       };
 
       expected_t expected_ben5ah_history = {
-        R"~([4,{"trx_id":"71725e0a4e04b7646c6f26362ed33773eb820feb","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_proxy_operation","value":{"account":"ben5ah","proxy":"carol5ah"}},"operation_id":0}])~",
+        R"~([4,{"trx_id":"71725e0a4e04b7646c6f26362ed33773eb820feb","block":46,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_proxy_operation","value":{"account":"ben5ah","proxy":"carol5ah"}},"operation_id":0}])~",
       };
 
       expected_t expected_carol5ah_history = {
-        R"~([4,{"trx_id":"71725e0a4e04b7646c6f26362ed33773eb820feb","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_proxy_operation","value":{"account":"ben5ah","proxy":"carol5ah"}},"operation_id":0}])~",
-        R"~([5,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
-        R"~([6,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
+        R"~([4,{"trx_id":"71725e0a4e04b7646c6f26362ed33773eb820feb","block":46,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_proxy_operation","value":{"account":"ben5ah","proxy":"carol5ah"}},"operation_id":0}])~",
+        R"~([5,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":46,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
+        R"~([6,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":46,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
       };
 
       // Filter out usual account_create(d) and transfer to vesting (completed)_operations checked in other tests.
@@ -772,10 +772,10 @@ BOOST_AUTO_TEST_CASE( get_account_history_witness_scenario_paged_and_filtered )
     {
       BOOST_TEST_MESSAGE( "Getting alice5ah's last 4 operations (reversible)" );
       expected_t expected_alice5ah_history = {
-        R"~([5,{"trx_id":"f6f71e45cd341e8521923a53f18f312f1c2d504d","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"feed_publish_operation","value":{"publisher":"alice5ah","exchange_rate":{"base":{"amount":"1000","precision":3,"nai":"@@000000013"},"quote":{"amount":"1000","precision":3,"nai":"@@000000021"}}}},"operation_id":0}])~",
-        R"~([6,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
-        R"~([7,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
-        R"~([8,{"trx_id":"76f2cede1a853b79df1734b78e460b5a8022f9c3","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"witness_set_properties_operation","value":{"owner":"alice5ah","props":[["hbd_interest_rate","00000000"],["key","028bb6e3bfd8633279430bd6026a1178e8e311fe4700902f647856a9f32ae82a8b"]],"extensions":[]}},"operation_id":0}])~",
+        R"~([5,{"trx_id":"f6f71e45cd341e8521923a53f18f312f1c2d504d","block":46,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"feed_publish_operation","value":{"publisher":"alice5ah","exchange_rate":{"base":{"amount":"1000","precision":3,"nai":"@@000000013"},"quote":{"amount":"1000","precision":3,"nai":"@@000000021"}}}},"operation_id":0}])~",
+        R"~([6,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":46,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
+        R"~([7,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":46,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
+        R"~([8,{"trx_id":"76f2cede1a853b79df1734b78e460b5a8022f9c3","block":46,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"witness_set_properties_operation","value":{"owner":"alice5ah","props":[["hbd_interest_rate","00000000"],["key","028bb6e3bfd8633279430bd6026a1178e8e311fe4700902f647856a9f32ae82a8b"]],"extensions":[]}},"operation_id":0}])~",
       };
 
       uint64_t filter_low = -1ull;
@@ -785,8 +785,8 @@ BOOST_AUTO_TEST_CASE( get_account_history_witness_scenario_paged_and_filtered )
     {
       BOOST_TEST_MESSAGE( "Getting alice5ah's account_witness_vote_operation operations (reversible)" );
       expected_t expected_alice5ah_history = {
-        R"~([6,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
-        R"~([7,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
+        R"~([6,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":46,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
+        R"~([7,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":46,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
       };
 
       uint64_t filter_low = GET_LOW_OPERATION( account_witness_vote_operation );
@@ -807,8 +807,8 @@ BOOST_AUTO_TEST_CASE( get_account_history_witness_scenario_paged_and_filtered )
     {
       BOOST_TEST_MESSAGE( "Getting account_witness_vote_operation operations for all accounts (reversible)" );
       expected_t expected_alice5ah_history = {
-        R"~([6,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
-        R"~([7,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
+        R"~([6,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":46,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
+        R"~([7,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":46,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
       };
 
       expected_t expected_ben5ah_history = {
@@ -816,8 +816,8 @@ BOOST_AUTO_TEST_CASE( get_account_history_witness_scenario_paged_and_filtered )
       };
 
       expected_t expected_carol5ah_history = {
-        R"~([5,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
-        R"~([6,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":45,"trx_in_block":4294967295,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
+        R"~([5,{"trx_id":"022f2f5b72e73cee370ba715893dc671cf9126f3","block":46,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":true}},"operation_id":0}])~",
+        R"~([6,{"trx_id":"ee11939b31217a3eee2ac4cbd3ae145dab8da9c1","block":46,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_witness_vote_operation","value":{"account":"carol5ah","witness":"alice5ah","approve":false}},"operation_id":0}])~",
       };
 
       uint64_t filter_low = GET_LOW_OPERATION( account_witness_vote_operation );
