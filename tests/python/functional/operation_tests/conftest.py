@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import pytest
 
 import test_tools as tt
+from hive_local_tools.constants import HIVE_TREASURY_FEE
 from hive_local_tools.functional.python.operation import (
     Account,
     create_transaction_with_any_operation,
@@ -121,6 +122,95 @@ class LimitOrderAccount(Account):
                 expiration=expiration_time,
             ),
         )
+
+
+@dataclass
+class ProposalAccount(Account):
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.update_account_info()
+        self._proposal_parameters = {}
+
+    @property
+    def proposal_parameters(self) -> dict:
+        return self._proposal_parameters
+
+    def assert_hbd_balance_wasnt_changed(self) -> None:
+        old_hbd_balance = self.hbd
+        self.update_account_info()
+        assert old_hbd_balance == self.hbd, "HBD balance was changed after broadcasting transaction while it shouldn't."
+
+    def create_proposal(self, proposal_receiver: str, start_date: str, end_date: str) -> dict:
+        self._proposal_parameters["receiver"] = proposal_receiver
+        for parameter_name, value in zip(
+            ("receiver", "start_date", "end_date", "daily_pay", "subject", "permlink"),
+            (proposal_receiver, start_date, end_date, tt.Asset.Tbd(5), "subject", "comment-permlink"),
+        ):
+            self._proposal_parameters[parameter_name] = value
+
+        return self._wallet.api.create_proposal(
+            self._name,
+            self._proposal_parameters["receiver"],
+            self._proposal_parameters["start_date"],
+            self._proposal_parameters["end_date"],
+            self._proposal_parameters["daily_pay"],
+            self._proposal_parameters["subject"],
+            self._proposal_parameters["permlink"],
+        )
+
+    def update_proposal(
+        self,
+        *,
+        proposal_to_update_details: dict | None = None,
+        daily_pay: tt.Asset.Tbd = None,
+        subject: str | None = None,
+        permlink: str | None = None,
+        end_date: str | None = None,
+    ) -> dict:
+        if self._proposal_parameters == {} and proposal_to_update_details is not None:
+            self._proposal_parameters = proposal_to_update_details
+        new_daily_pay = daily_pay if daily_pay is not None else self._proposal_parameters["daily_pay"]
+        new_subject = subject if subject is not None else self._proposal_parameters["subject"]
+        new_permlink = permlink if permlink is not None else self._proposal_parameters["permlink"]
+        new_end_date = tt.Time.parse(end_date) if end_date is not None else self._proposal_parameters["end_date"]
+        for parameter_name, value in zip(
+            ("end_date", "daily_pay", "subject", "permlink"), (new_end_date, new_daily_pay, new_subject, new_permlink)
+        ):
+            self._proposal_parameters[parameter_name] = value
+        return self._wallet.api.update_proposal(0, self._name, new_daily_pay, new_subject, new_permlink, new_end_date)
+
+    def remove_proposal(self, proposal_to_remove_details: dict | None = None) -> dict:
+        if self._proposal_parameters == {} and proposal_to_remove_details is not None:
+            self._proposal_parameters = proposal_to_remove_details
+        return self._wallet.api.remove_proposal(self._name, [0])
+
+    def check_if_proposal_was_updated(self, changed_parameter: str) -> None:
+        proposal = self._node.api.database.list_proposals(
+            start=[""], limit=100, order="by_creator", order_direction="ascending", status="all"
+        ).proposals[0]
+        assert (
+            proposal[changed_parameter] == self._proposal_parameters[changed_parameter]
+        ), f"Something went wrong after proposal update. {changed_parameter} has wrong value"
+
+    def check_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:
+        self.rc_manabar.assert_rc_current_mana_is_reduced(
+            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
+        )
+
+    def check_if_hive_treasury_fee_was_substracted_from_account(self) -> None:
+        # for each day over 60 days HIVE_PROPOSAL_FEE_INCREASE_AMOUNT (1 HBD) is added to fee
+        additional_fee = 0
+        proposal_duration_days = (
+            tt.Time.parse(self._proposal_parameters["end_date"])
+            - tt.Time.parse(self._proposal_parameters["start_date"])
+        ).days
+        if proposal_duration_days > 60:
+            additional_fee = proposal_duration_days - 60
+        old_balance = self.hbd
+        self.update_account_info()
+        assert old_balance == self.hbd + tt.Asset.Tbd(
+            HIVE_TREASURY_FEE + additional_fee
+        ), "HIVE_TREASURY_FEE wasn't substracted from proposal creator account"
 
 
 @dataclass
