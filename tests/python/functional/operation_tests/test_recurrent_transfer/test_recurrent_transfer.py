@@ -44,7 +44,7 @@ def test_recurrent_transfer_cases_1_and_2(
         else:
             node.wait_for_irreversible_block()
             recurrent_transfer.execute_future_transfer()
-            sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+            sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount)
         receiver.assert_balance_is_increased_by_transfer(amount)
         recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=execution + 1)
@@ -91,7 +91,7 @@ def test_recurrent_transfer_cases_3_and_4(
 
     recurrent_transfer.execute_future_transfer()
 
-    sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+    sender.rc_manabar.assert_current_mana_is_unchanged()
     sender.assert_balance_is_reduced_by_transfer(amount)
     receiver.assert_balance_is_increased_by_transfer(amount)
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
@@ -149,7 +149,7 @@ def test_recurrent_transfer_cases_5_6_7_8(
             sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
         else:
             recurrent_transfer.execute_future_transfer()
-            sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+            sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount_1)
         receiver.assert_balance_is_increased_by_transfer(amount_1)
         recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=execution + 1)
@@ -168,7 +168,7 @@ def test_recurrent_transfer_cases_5_6_7_8(
             recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
         else:
             recurrent_transfer.execute_future_transfer()
-            sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+            sender.rc_manabar.assert_current_mana_is_unchanged()
             sender.assert_balance_is_reduced_by_transfer(amount_2)
             receiver.assert_balance_is_increased_by_transfer(amount_2)
             recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=execution + 2)
@@ -176,8 +176,8 @@ def test_recurrent_transfer_cases_5_6_7_8(
         receiver.update_account_info()
 
     recurrent_transfer.move_after_last_transfer()
-    sender.rc_manabar.assert_rc_current_mana_is_unchanged()
-    receiver.rc_manabar.assert_rc_current_mana_is_unchanged()
+    sender.rc_manabar.assert_current_mana_is_unchanged()
+    receiver.rc_manabar.assert_current_mana_is_unchanged()
 
 
 @pytest.mark.testnet()
@@ -214,7 +214,7 @@ def test_recurrent_transfer_cases_9_and_10(
         if execution == 0:
             sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
         else:
-            sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+            sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount)
         receiver.assert_balance_is_increased_by_transfer(amount)
         recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=execution + 1)
@@ -235,7 +235,7 @@ def test_recurrent_transfer_cases_9_and_10(
                 operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
             )
         else:
-            sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+            sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount)
         receiver.assert_balance_is_increased_by_transfer(amount)
         recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=execution + 1 + 2)
@@ -295,7 +295,7 @@ def test_recurrent_transfer_cases_11_and_12(
     receiver.update_account_info()
 
     recurrent_transfer.execute_future_transfer()
-    sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+    sender.rc_manabar.assert_current_mana_is_unchanged()
     sender.assert_balance_is_reduced_by_transfer(amount)
     receiver.assert_balance_is_increased_by_transfer(amount)
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
@@ -312,7 +312,7 @@ def test_recurrent_transfer_cases_11_and_12(
     recurrent_transfer.execute_future_transfer()
 
     for execution in range(recurrent_transfer.executions):
-        sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+        sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount)
         receiver.assert_balance_is_increased_by_transfer(amount)
         recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=execution + 1 + 2)
@@ -412,7 +412,7 @@ def test_recurrent_transfer_cases_13_14_15_16(
     receiver.update_account_info()
 
     recurrent_transfer.execute_future_transfer()
-    sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+    sender.rc_manabar.assert_current_mana_is_unchanged()
     sender.assert_balance_is_reduced_by_transfer(amount)
     receiver.assert_balance_is_increased_by_transfer(amount)
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
@@ -437,7 +437,7 @@ def test_recurrent_transfer_cases_13_14_15_16(
         recurrent_transfer.execute_future_transfer()
         tt.logger.info(f"DATE : {node.get_head_block_time()}, execution: {execution}")
 
-        sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+        sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount)
         receiver.assert_balance_is_increased_by_transfer(amount)
         recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2 + execution)
@@ -500,7 +500,7 @@ def test_recurrent_transfer_cases_17_and_18(
     receiver.update_account_info()
 
     recurrent_transfer.execute_future_transfer()
-    sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+    sender.rc_manabar.assert_current_mana_is_unchanged()
     sender.assert_balance_is_reduced_by_transfer(amount_1)
     receiver.assert_balance_is_increased_by_transfer(amount_1)
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
@@ -533,7 +533,7 @@ def test_recurrent_transfer_cases_17_and_18(
         recurrent_transfer.execute_future_transfer()
         tt.logger.info(f"DATE : {node.get_head_block_time()}, execution: {execution} of first update")
 
-        sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+        sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount_2)
         receiver.assert_balance_is_increased_by_transfer(amount_2)
         recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2 + execution + 1)
@@ -568,7 +568,7 @@ def test_recurrent_transfer_cases_17_and_18(
         recurrent_transfer.execute_future_transfer()
         tt.logger.info(f"DATE : {node.get_head_block_time()}, execution: {execution} of second update")
 
-        sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+        sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount_3)
         receiver.assert_balance_is_increased_by_transfer(amount_3)
         recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2 + 4 + execution + 1)
@@ -685,7 +685,7 @@ def test_recurrent_transfer_cases_21_and_22(
     recurrent_transfer.assert_failed_recurrent_transfer_operation_was_generated(expected_vop=1)
     sender.assert_hives_and_hbds_are_not_changed()
     receiver.assert_hives_and_hbds_are_not_changed()
-    sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+    sender.rc_manabar.assert_current_mana_is_unchanged()
 
     # User receives a transfer and there is enough funds for the next recurrent transfer.
     wallet.api.transfer("initminer", sender.name, amount, "Top up the account for the third recurrent transfer")
@@ -694,7 +694,7 @@ def test_recurrent_transfer_cases_21_and_22(
 
     recurrent_transfer.execute_future_transfer()
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
-    sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+    sender.rc_manabar.assert_current_mana_is_unchanged()
     receiver.assert_balance_is_increased_by_transfer(amount)
     sender.assert_balance_is_reduced_by_transfer(amount)
 
@@ -703,7 +703,7 @@ def test_recurrent_transfer_cases_21_and_22(
 
     recurrent_transfer.move_after_last_transfer()
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
-    sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+    sender.rc_manabar.assert_current_mana_is_unchanged()
     sender.assert_hives_and_hbds_are_not_changed()
     receiver.assert_hives_and_hbds_are_not_changed()
 
@@ -747,7 +747,7 @@ def test_recurrent_transfer_cases_23_and_24(
         recurrent_transfer.execute_future_transfer()
 
         recurrent_transfer.assert_failed_recurrent_transfer_operation_was_generated(execution + 1)
-        sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+        sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_hives_and_hbds_are_not_changed()
         receiver.assert_hives_and_hbds_are_not_changed()
 
@@ -791,7 +791,7 @@ def test_recurrent_transfer_cases_25_and_26(
         if execution == 0:
             sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
         else:
-            sender.rc_manabar.assert_rc_current_mana_is_unchanged()
+            sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount)
         receiver.assert_balance_is_increased_by_transfer(amount)
         recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=execution + 1)

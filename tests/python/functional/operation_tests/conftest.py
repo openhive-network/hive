@@ -315,7 +315,7 @@ class UpdateAccount(Account):
         )
 
     def assert_if_rc_current_mana_was_unchanged(self):
-        self.rc_manabar.assert_rc_current_mana_is_unchanged()
+        self.rc_manabar.assert_current_mana_is_unchanged()
 
     def generate_new_authority(self) -> dict:
         return {"account_auths": [], "key_auths": [(self.generate_new_key(), 1)], "weight_threshold": 1}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
@@ -169,7 +170,7 @@ class Account:
         self._acc_info.delayed_votes.clear()
 
 
-class _RcManabar:
+class _BaseManabar(ABC):
     def __init__(self, node: tt.InitNode, name: str):
         self._node = node
         self._name = name
@@ -182,7 +183,7 @@ class _RcManabar:
         return self.__manabar
 
     @property
-    def current_rc_mana(self) -> int:
+    def current_mana(self) -> int:
         return self.manabar.current_mana
 
     @property
@@ -190,12 +191,20 @@ class _RcManabar:
         return self.manabar.last_update_time
 
     @property
-    def max_rc(self) -> int:
+    def max_mana(self) -> int:
         return self.manabar.maximum
+
+    @abstractmethod
+    def _get_specific_manabar(self) -> ExtendedManabar:
+        """This method should return current state of derived manabar."""
+
+    @abstractmethod
+    def _get_specific_current_mana(self) -> int:
+        """This method should return current state of derived current mana."""
 
     def __str__(self):
         return (
-            f"max_rc: {self.max_rc}, current_mana: {self.current_rc_mana}, last_update_time:"
+            f"max_mana: {self.max_mana}, current_mana: {self.current_mana}, last_update_time:"
             f" {datetime.fromtimestamp(self.last_update_time)}"
         )
 
@@ -203,19 +212,25 @@ class _RcManabar:
         return int(
             wax.calculate_current_manabar_value(
                 now=int(head_block_time.timestamp()),
-                max_mana=self.max_rc,
-                current_mana=self.current_rc_mana,
+                max_mana=self.max_mana,
+                current_mana=self.current_mana,
                 last_update_time=self.last_update_time,
             ).result
         )
 
     def update(self) -> None:
-        self.__manabar = get_rc_manabar(self._node, self._name)
+        self.__manabar = self._get_specific_manabar()
 
-    def assert_rc_current_mana_is_unchanged(self) -> None:
-        assert (
-            get_rc_current_mana(self._node, self._name) == self.current_rc_mana
-        ), f"The {self._name} account rc_current_mana has been changed."
+
+class _RcManabar(_BaseManabar):
+    def __init__(self, node, name):
+        super().__init__(node, name)
+
+    def _get_specific_manabar(self) -> ExtendedManabar:
+        return get_rc_manabar(self._node, self._name)
+
+    def _get_specific_current_mana(self):
+        return get_rc_current_mana(self._node, self._name)
 
     def assert_rc_current_mana_is_reduced(
         self, operation_rc_cost: int, operation_timestamp: datetime | None = None
@@ -225,18 +240,23 @@ class _RcManabar:
             mana_before_operation = self.calculate_current_value(operation_timestamp - tt.Time.seconds(3))
             assert mana_before_operation == get_rc_current_mana(self._node, self._name) + operation_rc_cost, err
         else:
-            assert get_rc_current_mana(self._node, self._name) + operation_rc_cost == self.current_rc_mana, err
+            assert get_rc_current_mana(self._node, self._name) + operation_rc_cost == self.current_mana, err
 
     def assert_max_rc_mana_state(self, state: Literal["reduced", "unchanged", "increased"]) -> None:
         actual_max_rc_mana = get_rc_max_mana(self._node, self._name)
         error_message = f"The {self._name} account `rc_max_mana` has been not {state}"
         match state:
             case "unchanged":
-                assert actual_max_rc_mana == self.max_rc, error_message
+                assert actual_max_rc_mana == self.max_mana, error_message
             case "reduced":
-                assert actual_max_rc_mana < self.max_rc, error_message
+                assert actual_max_rc_mana < self.max_mana, error_message
             case "increased":
-                assert actual_max_rc_mana > self.max_rc, error_message
+                assert actual_max_rc_mana > self.max_mana, error_message
+
+    def assert_current_mana_is_unchanged(self) -> None:
+        assert (
+            get_rc_current_mana(self._node, self._name) == self.current_mana
+        ), f"The {self._name} account rc_current_mana has been changed."
 
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
