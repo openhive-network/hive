@@ -45,6 +45,7 @@ def test_transaction_status_1500_block_depth(replayed_node: tt.ApiNode) -> None:
     verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, "within_irreversible_block")
 
 
+@pytest.mark.skip(reason="transaction status api was removed")
 @pytest.mark.transaction_status_block_depth("100")
 def test_transaction_status_rebuild_state(replayed_node: tt.ApiNode) -> None:
     transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
