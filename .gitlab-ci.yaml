@@ -13,8 +13,8 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   CI_DEBUG_SERVICES: "true"
   # pin to specific docker images for build repeatability
-  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu22.04-8
-  TEST_IMAGE_TAG: "@sha256:e9f16040010ad24fffeabec66abca109b24baa79d912eba3118da58e8130fb26"
+  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu22.04-9
+  TEST_IMAGE_TAG: "@sha256:8239d04f45f37674d98658667f2cab855d4370d2cc545bdb74388988196b4177"
 
   # Versions of Python packages
   PYTHON_JUNIT_XML_VERSION: "1.9"
@@ -396,19 +396,19 @@ formatting_with_black_check:
 .pytest_based:
   extends: .python_based
   variables:
-    JUNIT_REPORT: "report.xml" # should be ovverided by derived jobs
+    JUNIT_REPORT: "report.xml" # should be overriden by derived jobs
+  after_script:
+    - |
+      shopt -s globstar
+      tar --exclude='**/generated_during_*/**/block_log' --exclude='**/generated_during_*/**/block_log.artifacts' --exclude='**/generated_during_*/**/shared_memory.bin' --exclude='**/generated_during_*/**/*.sst' -cf - **/generated_during_* | 7z a -si generated_during.tar.7z
+      tar -cf - **/generated_by_package_fixtures | 7z a -si generated_by_package_fixtures.tar.7z
   artifacts:
     reports:
       junit: $JUNIT_REPORT
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
-      - "**/generated_during_*"
-      - "**/generated_by_package_fixtures"
-    exclude:
-      - "**/generated_during_*/**/block_log"
-      - "**/generated_during_*/**/block_log.artifacts"
-      - "**/generated_during_*/**/shared_memory.bin"
-      - "**/generated_during_*/**/*.sst"
+      - "generated_during.tar.7z"
+      - "generated_by_package_fixtures.tar.7z"
     when: always
     expire_in: 1 week
 
