@@ -15,6 +15,7 @@ from schemas.fields.compound import Manabar
 from schemas.jsonrpc import get_response_model
 from schemas.operations import (
     CommentOperation,
+    CommentOptionsOperationLegacy,
     DeleteCommentOperation,
 )
 from schemas.operations.representations.legacy_representation import LegacyRepresentation  # noqa: TCH001
@@ -661,6 +662,17 @@ class Comment:
         self.__delete_transaction = create_transaction_with_any_operation(
             self.__wallet,
             DeleteCommentOperation(author=self.author, permlink=self.permlink),
+        )
+
+    def options(self, allow_votes: bool) -> None:
+        self.assert_comment_exists()
+        create_transaction_with_any_operation(
+            self.__wallet,
+            CommentOptionsOperationLegacy(
+                author=self.__author.name,
+                permlink=self.__permlink,
+                allow_votes=allow_votes,
+            ),
         )
 
     def assert_is_rc_mana_decreased_after_comment_delete(self) -> None:
