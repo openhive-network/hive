@@ -32,6 +32,7 @@ from schemas.virtual_operation import (
 
 if TYPE_CHECKING:
     from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
+    from schemas.fields.hive_int import HiveInt
     from schemas.operations import AnyLegacyOperation
 
 
@@ -682,6 +683,13 @@ class Comment:
             assert vote_send is True, "Vote not send. Comment is deleted"
         else:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def get_author_reputation(self) -> HiveInt:
+        reputations = self.__node.api.reputation.get_account_reputations(account_lower_bound="", limit=1000).reputations
+        for account_reputation in reputations:
+            if account_reputation.account == self.__author.name:
+                return account_reputation.reputation
+        raise ValueError
 
 
 class Vote:
