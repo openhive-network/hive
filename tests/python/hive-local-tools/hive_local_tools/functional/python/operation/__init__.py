@@ -480,6 +480,14 @@ class Comment:
         self.__deleted: bool = False
 
     @property
+    def node(self):
+        return self.__node
+
+    @property
+    def wallet(self):
+        return self.__wallet
+
+    @property
     def author_obj(self) -> Account:
         if self.__author is None:
             self.__author = self.__create_comment_account()
@@ -674,3 +682,103 @@ class Comment:
             assert vote_send is True, "Vote not send. Comment is deleted"
         else:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+
+class Vote:
+    account_counter = 0
+
+    def __init__(self, comment_obj: Comment, voter: Literal["random", "same_as_comment"] | Account):
+        self.__comment_obj = comment_obj
+        self.__voter = voter  # PROBLEM
+        self.__vote_transaction: TransactionLegacy | None = None
+        self.__vote_transaction_block_num = None
+        if isinstance(voter, Account):
+            self.__voter_obj = voter
+        else:
+            match voter:
+                case "same_as_comment":
+                    self.__voter_obj = comment_obj.author_obj
+                case "random":
+                    self.__voter_obj = self.__create_voter_account()
+                case _:
+                    raise ValueError
+
+    @property
+    def voter(self) -> str:
+        return self.__voter_obj.name
+
+    def __create_voter_account(self) -> Account:
+        author = f"voter-{Vote.account_counter}"
+        sample_vests_amount = 50
+        self.__comment_obj.wallet.create_account(author, vests=sample_vests_amount)
+        Vote.account_counter += 1
+        return Account(author, self.__comment_obj.node, self.__comment_obj.wallet)
+
+    def assert_vote(self, mode: Literal["occurred", "not_occurred"]) -> None:
+        if mode == "occurred":
+            vote_operation = self.__vote_transaction["operations"][0][1]
+            operation_values = []
+            for i in (1, 2):
+                operations = self.__comment_obj.node.api.account_history.get_ops_in_block(
+                    block_num=self.__vote_transaction["ref_block_num"] + i, include_reversible=True
+                ).ops
+                operation_values = operation_values + [operation.op["value"] for operation in operations]  # PROBLEM
+            assert vote_operation in operation_values, "Vote_operation not generated, but it should have been"
+        elif mode == "not_occurred":
+            assert self.__vote_transaction is None, "Vote_operation generated, but it should have not been"
+        else:
+            raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def assert_rc_mana_after_vote_or_downvote(self, mode: Literal["decrease", "is_unchanged"]) -> None:
+        if mode == "decrease":
+            vote_rc_cost = int(self.__vote_transaction["rc_cost"])
+            vote_timestamp = get_transaction_timestamp(self.__comment_obj.node, self.__vote_transaction)
+            self.__voter_obj.rc_manabar.assert_rc_current_mana_is_reduced(vote_rc_cost, vote_timestamp)
+        elif mode == "is_unchanged":
+            self.__voter_obj.rc_manabar.assert_current_mana_is_unchanged()
+        else:
+            raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def assert_vote_or_downvote_manabar(
+        self, manabar_type: Literal["vote_manabar", "downvote_manabar"], mode: Literal["decrease", "is_unchanged"]
+    ) -> None:
+        assert manabar_type in ("vote_manabar", "downvote_manabar"), "Wrong manabar type"
+        if mode == "decrease":
+            vote_timestamp = get_transaction_timestamp(self.__comment_obj.node, self.__vote_transaction)
+            getattr(self.__voter_obj, manabar_type).assert_current_mana_is_reduced(vote_timestamp)
+        elif mode == "is_unchanged":
+            getattr(self.__voter_obj, manabar_type).assert_current_mana_is_unchanged()
+        else:
+            raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def assert_effective_comment_vote_operation(self, mode: Literal["generated", "not_generated"]) -> None:
+        vops = self.__comment_obj.node.api.account_history.enum_virtual_ops(
+            block_range_begin=self.__vote_transaction_block_num,
+            block_range_end=self.__vote_transaction_block_num + 3,
+            limit=1000,
+            include_reversible=True,
+            filter=0x400000,
+        ).ops
+        if mode == "generated":
+            assert len(vops) == 1, "Effective_comment_vote_operation not generated, but it should have been"
+        elif mode == "not_generated":
+            assert len(vops) == 0, "Effective_comment_vote_operation generated, but it should have not been"
+        else:
+            raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def __update_account_info_and_execute_vote(self, weight: int) -> None:
+        self.__voter_obj.update_account_info()  # Refresh RC mana and Vote mana before vote
+        self.__vote_transaction_block_num = self.__comment_obj.node.get_last_block_number() + 1
+        self.__vote_transaction = self.__comment_obj.wallet.api.vote(
+            self.__voter_obj.name, self.__comment_obj.author, self.__comment_obj.permlink, weight
+        )
+
+    def vote(self, weight: int) -> None:
+        if not 0 <= weight <= 100:
+            raise ValueError(f"Vote with weight {weight} is not allowed. Weight can take (0-100)")
+        self.__update_account_info_and_execute_vote(weight)
+
+    def downvote(self, weight: int) -> None:
+        if not -100 <= weight <= 0:
+            raise ValueError(f"Downvote with weight {weight} is not allowed. Weight can take (0-100)")
+        self.__update_account_info_and_execute_vote(weight)
