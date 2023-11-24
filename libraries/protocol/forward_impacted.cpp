@@ -1116,6 +1116,11 @@ private:
     collect_witness_signing(op, op.owner);
   }
 
+  result_type operator()( const witness_update_operation& op )
+  {
+    collected_keyauths.emplace_back(collected_keyauth_t{op.owner, hive::app::key_t::WITNESS_SIGNING, 0, true, op.block_signing_key, {}, 0});
+  }
+
   template <typename T>
   void operator()(const T& op)
   {
