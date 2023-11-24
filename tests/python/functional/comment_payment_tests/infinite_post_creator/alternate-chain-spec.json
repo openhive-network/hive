@@ -1,0 +1,10 @@
+{
+  "genesis_time": 1700831775,
+  "hardfork_schedule": [
+    {
+      "block_num": 1,
+      "hardfork": 28
+    }
+  ],
+  "min_root_comment_interval": 1
+}
