@@ -56,7 +56,7 @@ install_all_dev_packages() {
   xxd liburing-dev \
   \
   screen python3-pip python3-dateutil tzdata python3-junit.xml python3-venv python3-dateutil \
-  python3-dev \
+  python3-dev p7zip-full \
   && \
   apt-get clean && rm -r /var/lib/apt/lists/* && \
   pip3 install -U secp256k1prp
