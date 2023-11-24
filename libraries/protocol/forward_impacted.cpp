@@ -1017,6 +1017,39 @@ private:
     collected_keyauths.emplace_back(collected_keyauth_t{op.worker_account, hive::app::key_t::MEMO, 0, true, /*key*/ op.work.worker, {}, 0});
   }
 
+
+  struct keyauth_pow2_visitor 
+  {
+      using result_type = account_name_type;
+
+      template <typename T>
+      account_name_type operator()(const T& work) const
+      {
+        return work.input.worker_account;
+      }
+
+  };
+
+  result_type operator()( const pow2_operation& op )
+  {
+    account_name_type worker_account = op.work.visit(keyauth_pow2_visitor());
+
+    if(op.new_owner_key)
+    {
+      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::OWNER, 0, true, *op.new_owner_key, {}, 0});
+      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::ACTIVE, 0, true, *op.new_owner_key, {}, 0});
+      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::POSTING, 0, true, *op.new_owner_key, {}, 0});
+      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::MEMO, 0, true, *op.new_owner_key, {}, 0});
+    }
+
+    vector< authority > authorities;
+    op.get_required_authorities(authorities);
+    for(const auto& authority : authorities)
+    {
+      collect_one(op, authority, hive::app::key_t::WITNESS_SIGNING,  worker_account);
+    }
+  }
+
   result_type operator()( const account_create_operation& op )
   {
     collect_one(op, op.owner,   hive::app::key_t::OWNER,   op.new_account_name);
