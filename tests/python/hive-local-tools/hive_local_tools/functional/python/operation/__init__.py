@@ -68,6 +68,8 @@ class Account:
     def __post_init__(self):
         if self._name:
             self._rc_manabar = _RcManabar(self._node, self._name)
+            self._vote_manabar = _VoteManabar(self._node, self._wallet, self._name)
+            self._downvote_manabar = _DownvoteManabar(self._node, self._wallet, self._name)
 
     @property
     def node(self) -> tt.InitNode:
@@ -88,6 +90,14 @@ class Account:
     @property
     def rc_manabar(self) -> _RcManabar:
         return self._rc_manabar
+
+    @property
+    def vote_manabar(self) -> _VoteManabar:
+        return self._vote_manabar
+
+    @property
+    def downvote_manabar(self) -> _DownvoteManabar:
+        return self._downvote_manabar
 
     @property
     def vest(self) -> tt.Asset.VestsT:
@@ -142,6 +152,8 @@ class Account:
     def update_account_info(self) -> None:
         self._acc_info = _find_account(self._node, self._name)
         self._rc_manabar.update()
+        self._vote_manabar.update()
+        self._downvote_manabar.update()
 
     def top_up(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
         self._wallet.api.transfer("initminer", self._name, amount, "{}")
@@ -229,7 +241,7 @@ class _RcManabar(_BaseManabar):
     def _get_specific_manabar(self) -> ExtendedManabar:
         return get_rc_manabar(self._node, self._name)
 
-    def _get_specific_current_mana(self):
+    def _get_specific_current_mana(self) -> int:
         return get_rc_current_mana(self._node, self._name)
 
     def assert_rc_current_mana_is_reduced(
@@ -257,6 +269,43 @@ class _RcManabar(_BaseManabar):
         assert (
             get_rc_current_mana(self._node, self._name) == self.current_mana
         ), f"The {self._name} account rc_current_mana has been changed."
+
+
+class _VoteManabarBase(_BaseManabar):
+    def __init__(self, node, wallet: tt.Wallet, name, manabar_type: str):
+        self._wallet = wallet
+        self.__manabar_type = manabar_type
+        super().__init__(node, name)
+
+    def _get_specific_manabar(self) -> ExtendedManabar:
+        return get_vote_manabar(self._wallet, self._name, self.__manabar_type)
+
+    def _get_specific_current_mana(self) -> int:
+        return get_vote_current_mana(self._wallet, self._name, self.__manabar_type)
+
+    def assert_current_mana_is_reduced(self, operation_timestamp=None) -> None:
+        err = f"The account {self._name} did not incur the operation cost."
+        vote_current_mana = self._get_specific_current_mana()
+        if operation_timestamp:
+            mana_before_operation = self.calculate_current_value(operation_timestamp - tt.Time.seconds(3))
+            assert vote_current_mana < mana_before_operation, err
+        else:
+            assert vote_current_mana < self.current_mana, err
+
+    def assert_current_mana_is_unchanged(self) -> None:
+        assert (
+            get_vote_current_mana(self._wallet, self._name, self.__manabar_type) == self.current_mana
+        ), f"The {self._name} account {self.__manabar_type} has been changed."
+
+
+class _VoteManabar(_VoteManabarBase):
+    def __init__(self, node, wallet, name):
+        super().__init__(node, wallet, name, "voting_manabar")
+
+
+class _DownvoteManabar(_VoteManabarBase):
+    def __init__(self, node, wallet, name):
+        super().__init__(node, wallet, name, "downvote_manabar")
 
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
@@ -299,6 +348,12 @@ def get_hive_power(node: tt.InitNode, account_name: str) -> tt.Asset.VestsT:
 
 def get_rc_current_mana(node: tt.InitNode, account_name: str) -> int:
     return int(node.api.rc.find_rc_accounts(accounts=[account_name]).rc_accounts[0].rc_manabar.current_mana)
+
+
+def get_vote_current_mana(
+    wallet: tt.Wallet, account_name: str, bar_type: Literal["voting_manabar", "downvote_manabar"]
+) -> int:
+    return int(wallet.api.get_account(account_name)[bar_type]["current_mana"])
 
 
 def get_number_of_fill_order_operations(node: tt.InitNode) -> int:
@@ -417,6 +472,18 @@ def list_votes_for_all_proposals(node):
     return node.api.database.list_proposal_votes(
         start=[""], limit=1000, order="by_voter_proposal", order_direction="ascending", status="all"
     )["proposal_votes"]
+
+
+def get_vote_manabar(
+    wallet: tt.Wallet, account_name: str, bar_type: Literal["voting_manabar", "downvote_manabar"]
+) -> ExtendedManabar:
+    response = wallet.api.get_account(account_name)
+    max_mana = int(tt.Asset.from_legacy(response["post_voting_power"]).amount)
+    return ExtendedManabar(
+        current_mana=int(response[bar_type]["current_mana"]),
+        last_update_time=response[bar_type]["last_update_time"],
+        maximum=max_mana if bar_type == "voting_manabar" else int(0.25 * max_mana),
+    )
 
 
 class Comment:
