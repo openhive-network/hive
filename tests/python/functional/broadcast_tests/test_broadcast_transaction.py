@@ -43,9 +43,9 @@ def test_broadcast_same_transaction_twice(node, wallet):
     node.api.network_broadcast.broadcast_transaction(trx=transaction)
     node.wait_number_of_blocks(1)
 
-    assert transaction != node.api.account_history.get_transaction(
-        id=transaction["transaction_id"], include_reversible=True
-    )
+    accounts = node.api.database.find_accounts(accounts=["alice"]).accounts
+    assert len(accounts) == 1
+    assert accounts[0].name == "alice"
 
     with pytest.raises(tt.exceptions.CommunicationError):
         node.api.network_broadcast.broadcast_transaction(trx=transaction)
