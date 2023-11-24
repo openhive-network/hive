@@ -1005,16 +1005,35 @@ private:
     collect_memo_key(op.memo_key, collected_item);
   }
 
+
+
+  template<typename T>
+  void collect_witness_signing(const T& op, const account_name_type& worker_account_name)
+  {
+    vector< authority > authorities;
+    op.get_required_authorities(authorities);
+    for(const auto& authority : authorities)
+    {
+      collect_one(op, authority, hive::app::key_t::WITNESS_SIGNING,  worker_account_name);
+    }
+  }
+
+
+  void collect_pow(const account_name_type& worker_account_name, const public_key_type& worker_key)
+  {
+    collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::OWNER, 0, true, worker_key, {}, 0});
+    collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::ACTIVE, 0, true, worker_key, {}, 0});
+    collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::POSTING, 0, true, worker_key, {}, 0});
+    collected_keyauths.emplace_back(collected_keyauth_t{worker_account_name, hive::app::key_t::MEMO, 0, true, worker_key, {}, 0});
+  }
+
   public:
 
 
   // ops
   result_type operator()( const pow_operation& op )
   {
-    collected_keyauths.emplace_back(collected_keyauth_t{op.worker_account, hive::app::key_t::OWNER, 0, true, /*key*/ op.work.worker, {}, 0});
-    collected_keyauths.emplace_back(collected_keyauth_t{op.worker_account, hive::app::key_t::ACTIVE, 0, true, /*key*/ op.work.worker, {}, 0});
-    collected_keyauths.emplace_back(collected_keyauth_t{op.worker_account, hive::app::key_t::POSTING, 0, true, /*key*/ op.work.worker, {}, 0});
-    collected_keyauths.emplace_back(collected_keyauth_t{op.worker_account, hive::app::key_t::MEMO, 0, true, /*key*/ op.work.worker, {}, 0});
+    collect_pow(op.worker_account, op.work.worker);
   }
 
 
@@ -1036,18 +1055,10 @@ private:
 
     if(op.new_owner_key)
     {
-      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::OWNER, 0, true, *op.new_owner_key, {}, 0});
-      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::ACTIVE, 0, true, *op.new_owner_key, {}, 0});
-      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::POSTING, 0, true, *op.new_owner_key, {}, 0});
-      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::MEMO, 0, true, *op.new_owner_key, {}, 0});
+      collect_pow(worker_account, *op.new_owner_key);
     }
 
-    vector< authority > authorities;
-    op.get_required_authorities(authorities);
-    for(const auto& authority : authorities)
-    {
-      collect_one(op, authority, hive::app::key_t::WITNESS_SIGNING,  worker_account);
-    }
+    collect_witness_signing(op, worker_account);
   }
 
   result_type operator()( const account_create_operation& op )
@@ -1102,12 +1113,7 @@ private:
 
   result_type operator()( const witness_set_properties_operation& op )
   {
-    vector< authority > authorities;
-    op.get_required_authorities(authorities);
-    for(const auto& authority : authorities)
-    {
-      collect_one(op, authority, hive::app::key_t::WITNESS_SIGNING,  op.owner);
-    }
+    collect_witness_signing(op, op.owner);
   }
 
   template <typename T>
