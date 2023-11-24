@@ -35,7 +35,7 @@ def prepare_blocklog_network():
     architecture.load(CONFIG)
 
     tt.logger.info(architecture)
-    generate_networks(architecture, Path("fortress_network_block_log"))
+    generate_networks(architecture, Path("base_network_block_log"))
 
 
 def prepare_blocklog_with_comments_and_votes():
@@ -51,7 +51,7 @@ def prepare_blocklog_with_comments_and_votes():
     architecture.load(CONFIG)
 
     tt.logger.info(architecture)
-    block_log = Path(__file__).with_name("fortress_network_block_log")
+    block_log = Path(__file__).with_name("base_network_block_log")
     network = prepare_network(architecture, block_log)
 
     init_node = network.networks[0].node("InitNode0")
@@ -70,7 +70,7 @@ def prepare_blocklog_with_comments_and_votes():
                 witness_name,
                 "http://url.html",
                 tt.Account(witness_name).public_key,
-                {"account_creation_fee": tt.Asset.Test(0), "maximum_block_size": 2097152, "hbd_interest_rate": 1000},
+                {"account_creation_fee": tt.Asset.Test(3), "maximum_block_size": 2097152, "hbd_interest_rate": 1000},
             )
     tt.logger.info("Wait 43 blocks...")
     init_node.wait_number_of_blocks(43)  # wait for the block size to change to 2mb
@@ -170,8 +170,12 @@ def __generate_and_broadcast_transaction(
 ) -> None:
     transaction = deepcopy(TRANSACTION_TEMPLATE)
 
-    for name in account_names:
+    for account_number, name in enumerate(account_names):
         if comment_number is not None:
+            if account_number == 0 and comment_number == 0:
+                # The account listed first in the transaction bears the transaction cost. For this reason,
+                # accounts that incur transaction costs have delegated RCs.
+                wallet.api.delegate_rc("initminer", [name], 40_000_000_000)
             transaction["operations"].extend(func(name, creator_number=comment_number))
         else:
             transaction["operations"].extend(func(name))
@@ -182,13 +186,13 @@ def __generate_and_broadcast_transaction(
 
 
 def __create_and_fund_voter(voter: str) -> list:
-    vest_amount = tt.Asset.Test(0.1)
+    vest_amount = tt.Asset.Test(10)
     key = tt.PublicKey("voter")
     return [
         [
             "account_create",
             {
-                "fee": str(tt.Asset.Test(0)),
+                "fee": str(tt.Asset.Test(3)),
                 "creator": "initminer",
                 "new_account_name": voter,
                 "owner": {"weight_threshold": 1, "account_auths": [], "key_auths": [[key, 1]]},
@@ -206,7 +210,7 @@ def __create_and_fund_voter(voter: str) -> list:
 
 
 if __name__ == "__main__":
-    # Step 1 generate network with witnesses
+    # Step 1 generate base network with witnesses
     os.environ["GENERATE_NEW_BLOCK_LOG"] = "1"
     prepare_blocklog_network()
     # Step 2 generate accounts, comments and votes
