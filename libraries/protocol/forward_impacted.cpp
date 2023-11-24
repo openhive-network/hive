@@ -1032,46 +1032,14 @@ private:
 
   result_type operator()( const pow2_operation& op )
   {
+    account_name_type worker_account = op.work.visit(keyauth_pow2_visitor());
 
-    // []()
-    // {
-    //   static volatile bool stop_in = true;
-    //   wlog("operator()( const pow2_operation& op )");
-    //   wlog("pid= ${pid}", ("pid" , getpid() ));
-
-    //   while(stop_in)
-    //   {
-    //     int a = 0;
-    //     a=a;
-    //   }
-    // }();
-
-
-
-    //keyauth_pow2_visitor visitor;
-
-
-    account_name_type worker_account =     op.work.visit(keyauth_pow2_visitor());
-
-    if(worker_account == "dodl01")
-    {
-      int a = 0;
-      a=a;
-    }
-
-    if(worker_account == "dodl11")
-    {
-      int a = 0;
-      a=a;
-    }
-
-    
     if(op.new_owner_key)
     {
-      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::OWNER, 0, true, /*key*/ *op.new_owner_key, {}, 0});
-      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::ACTIVE, 0, true, /*key*/ *op.new_owner_key, {}, 0});
-      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::POSTING, 0, true, /*key*/ *op.new_owner_key, {}, 0});
-      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::MEMO, 0, true, /*key*/ *op.new_owner_key, {}, 0});
+      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::OWNER, 0, true, *op.new_owner_key, {}, 0});
+      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::ACTIVE, 0, true, *op.new_owner_key, {}, 0});
+      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::POSTING, 0, true, *op.new_owner_key, {}, 0});
+      collected_keyauths.emplace_back(collected_keyauth_t{worker_account, hive::app::key_t::MEMO, 0, true, *op.new_owner_key, {}, 0});
     }
 
     vector< authority > authorities;
@@ -1080,13 +1048,6 @@ private:
     {
       collect_one(op, authority, hive::app::key_t::WITNESS_SIGNING,  worker_account);
     }
-
-
-    std::string stored_type_name =  op.work.get_stored_type_name( ) ;
-
-    int a =0;
-    a=a;
-
   }
 
   result_type operator()( const account_create_operation& op )
