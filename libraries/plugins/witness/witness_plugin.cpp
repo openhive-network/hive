@@ -81,7 +81,7 @@ namespace detail {
     boost::asio::deadline_timer                                        _timer;
 
     plugins::chain::chain_plugin& _chain_plugin;
-    chain::full_database&         _db;
+    chain::database&         _db;
     boost::signals2::connection   _post_apply_block_conn;
     boost::signals2::connection   _pre_apply_operation_conn;
     boost::signals2::connection   _finish_push_block_conn;

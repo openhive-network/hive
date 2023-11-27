@@ -16,7 +16,7 @@ public:
 
   DECLARE_API_IMPL( (find_transaction) )
 
-  chain::full_database& _db;
+  chain::database& _db;
   transaction_status::transaction_status_plugin& _tsp;
 };
 

@@ -26,7 +26,7 @@ class market_history_api_impl
       (get_market_history_buckets)
     )
 
-    chain::full_database& _db;
+    chain::database& _db;
 };
 
 DEFINE_API_IMPL( market_history_api_impl, get_ticker )

@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
     auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
     std::shared_ptr<full_block_type> cutoff_block;
     {
-      full_database db;
+      database db;
       witness::block_producer bp( db );
       open_test_database( db, data_dir.path() );
       b = GENERATE_BLOCK( bp, db.get_slot_time(1), db.get_scheduled_witness(1),
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
       db.close();
     }
     {
-      full_database db;
+      database db;
       witness::block_producer bp( db );
       open_test_database( db, data_dir.path() );
 
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE( undo_block )
   try {
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     {
-      full_database db;
+      database db;
       witness::block_producer bp( db );
       open_test_database( db, data_dir.path() );
       fc::time_point_sec now( HIVE_TESTING_GENESIS_TIMESTAMP );
@@ -232,10 +232,10 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
 
     //TODO This test needs 6-7 ish witnesses prior to fork
 
-    full_database db1;
+    database db1;
     witness::block_producer bp1( db1 );
     open_test_database( db1, data_dir1.path() );
-    full_database db2;
+    database db2;
     witness::block_producer bp2( db2 );
     open_test_database( db2, data_dir2.path() );
 
@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
   try {
     fc::temp_directory dir1( hive::utilities::temp_directory_path() ),
                   dir2( hive::utilities::temp_directory_path() );
-    full_database db1,
+    database db1,
           db2;
     witness::block_producer bp1( db1 ),
                     bp2( db2 );
@@ -383,7 +383,7 @@ namespace
   }
 
   __attribute__((unused))
-  void dump_blocks(std::string_view label, const hive::chain::full_database& db)
+  void dump_blocks(std::string_view label, const hive::chain::database& db)
   {
     BOOST_TEST_MESSAGE(label << ": last_irrevresible_block: " << db.get_last_irreversible_block_num());
     for (uint32_t block_num = 1; block_num <= db.head_block_num(); ++block_num)
@@ -422,7 +422,7 @@ BOOST_FIXTURE_TEST_CASE(switch_forks_using_fast_confirm, clean_database_fixture)
     // create a second, empty, database that we will first bring in sync with the
     // fixture's database, then we will trigger a fork and test how it resolves.
     // we'll call the fixture's database "db1"
-    full_database db2;
+    database db2;
     fc::temp_directory dir2(hive::utilities::temp_directory_path());
     open_test_database(db2, dir2.path(), true);
 
@@ -579,7 +579,7 @@ BOOST_FIXTURE_TEST_CASE(fast_confirm_plus_out_of_order_blocks, clean_database_fi
     // create a second, empty, database that we will first bring in sync with the
     // fixture's database, then we will trigger a fork and test how it resolves.
     // we'll call the fixture's database "db1"
-    full_database db2;
+    database db2;
     fc::temp_directory dir2(hive::utilities::temp_directory_path());
     open_test_database(db2, dir2.path(), true);
 
@@ -699,7 +699,7 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
   try {
     fc::temp_directory dir1( hive::utilities::temp_directory_path() ),
                   dir2( hive::utilities::temp_directory_path() );
-    full_database db1,
+    database db1,
           db2;
     witness::block_producer bp1( db1 );
     open_test_database( db1, dir1.path() );
@@ -750,7 +750,7 @@ BOOST_AUTO_TEST_CASE( tapos )
 {
   try {
     fc::temp_directory dir1( hive::utilities::temp_directory_path() );
-    full_database db1;
+    database db1;
     witness::block_producer bp1( db1 );
     open_test_database( db1, dir1.path() );
 
@@ -1267,7 +1267,7 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
     BOOST_REQUIRE( HIVE_MAX_WITNESSES + 1 < HIVE_START_MINER_VOTING_BLOCK );
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    full_database db;
+    database db;
     witness::block_producer bp( db );
     open_test_database( db, data_dir.path() );
 
@@ -1317,7 +1317,7 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
 BOOST_AUTO_TEST_CASE( safe_closing_database )
 {
   try {
-    full_database db;
+    database db;
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     db.wipe( data_dir.path(), data_dir.path(), true );
   }
@@ -1452,7 +1452,7 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_generation, clean_database_fixture )
     BOOST_TEST_MESSAGE( "Testing block flow during generation" );
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    full_database db;
+    database db;
     witness::block_producer bp( db );
     open_test_database( db, data_dir.path() );
 
@@ -1508,17 +1508,17 @@ BOOST_FIXTURE_TEST_CASE( block_flow_control_p2p, clean_database_fixture )
     BOOST_TEST_MESSAGE( "Testing block flow during p2p block push" );
 
     fc::temp_directory data_dir_bp1( hive::utilities::temp_directory_path() );
-    full_database db_bp1;
+    database db_bp1;
     witness::block_producer bp1( db_bp1 );
     open_test_database( db_bp1, data_dir_bp1.path() );
 
     fc::temp_directory data_dir_bp2( hive::utilities::temp_directory_path() );
-    full_database db_bp2;
+    database db_bp2;
     witness::block_producer bp2( db_bp2 );
     open_test_database( db_bp2, data_dir_bp2.path() );
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
-    full_database db;
+    database db;
     db._log_hardforks = false;
     open_test_database( db, data_dir.path() );
 

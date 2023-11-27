@@ -201,7 +201,6 @@ namespace chain {
         * when specific block data needs to be provided. This function is public because it is 
         * used by the load snapshot plugin to inject block data. Takes part in normal open process.
         */
-      virtual void state_dependent_open( const open_args& args ) = 0;
 
     private:
 
@@ -935,10 +934,8 @@ namespace chain {
         *  This signal is emitted when pushing block is completely finished
         */
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
-  };
 
-  class full_database : public database
-  {
+    private:
       block_log _block_log;
 
       /**
@@ -955,7 +952,7 @@ namespace chain {
       boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
 
-      virtual void state_dependent_open( const open_args& args ) override;
+      virtual void state_dependent_open( const open_args& args );
 
     private:
       bool is_included_block_unlocked(const block_id_type& block_id);
@@ -986,7 +983,6 @@ namespace chain {
         * @return the last replayed block number.
         */
       uint32_t reindex( const open_args& args );
-      virtual void close(bool rewind = true) override;
 
       /**
         *  @return true if the block is in our fork DB or saved to disk as
@@ -1003,7 +999,7 @@ namespace chain {
       std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() );
 
     private:
-      virtual void migrate_irreversible_state_perform(uint32_t old_last_irreversible) override;
+      
       void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
 
       void open_block_log(const open_args& args);

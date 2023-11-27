@@ -193,7 +193,7 @@ class chain_plugin_impl
     fc::mutable_variant_object       plugin_state_opts;
     bfs::path                        database_cfg;
 
-    full_database  db;
+    database  db;
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
 
@@ -813,7 +813,7 @@ void chain_plugin_impl_deleter::operator()( chain_plugin_impl* impl ) const
 chain_plugin::chain_plugin(){}
 chain_plugin::~chain_plugin(){}
 
-full_database& chain_plugin::db() { return my->db; }
+database& chain_plugin::db() { return my->db; }
 const hive::chain::database& chain_plugin::db() const { return my->db; }
 
 bfs::path chain_plugin::state_storage_dir() const
