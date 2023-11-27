@@ -287,18 +287,20 @@ namespace fc
         {
            if( in.peek() == ',' )
            {
-              if (ar.empty())
-                FC_THROW_EXCEPTION( parse_error_exception, "Invalid leading comma.");
-              if (expecting_new_element)
-                FC_THROW_EXCEPTION( parse_error_exception, "Found invalid comma instead of new array element.");
-
+              if (full_json_validation)
+              {
+                if (ar.empty())
+                  FC_THROW_EXCEPTION( parse_error_exception, "Invalid leading comma.");
+                if (expecting_new_element)
+                  FC_THROW_EXCEPTION( parse_error_exception, "Found invalid comma instead of new array element.");
+              }
               in.get();
               expecting_new_element = true;
               continue;
            }
            if( skip_white_space( in, depth ) )
               continue;
-          if (!expecting_new_element)
+          if (full_json_validation && !expecting_new_element)
             FC_THROW_EXCEPTION( parse_error_exception, "Missing ',' after object in json array.");
 
            ar.push_back( variant_from_stream<T, parser_type>( in, full_json_validation, depth ) );
