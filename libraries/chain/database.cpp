@@ -5243,6 +5243,7 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
       FC_ASSERT(fork_head->get_block_num() == dpo.head_block_number, "Fork Head Block Number: ${fork_head}, Chain Head Block Number: ${chain_head}",
                 ("fork_head", fork_head->get_block_num())("chain_head", dpo.head_block_number));
 
+    migrate_irreversible_state_to_blocklog(old_last_irreversible);
     migrate_irreversible_state_perform(old_last_irreversible);
   }
   FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
