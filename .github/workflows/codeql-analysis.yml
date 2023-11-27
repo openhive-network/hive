@@ -19,7 +19,7 @@ jobs:
         os: ['ubuntu-22.04']
         language: [ 'cpp' ]
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ['self-hosted','ubuntu-22.04']
     container: ubuntu:22.04
     
     steps:
