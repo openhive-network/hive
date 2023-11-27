@@ -20,6 +20,7 @@ jobs:
         language: [ 'cpp' ]
 
     runs-on: ${{ matrix.os }}
+    container: ubuntu:22.04
     
     steps:
     - name: Checkout repository
