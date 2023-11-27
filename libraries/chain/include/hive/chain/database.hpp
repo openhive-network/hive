@@ -190,6 +190,9 @@ namespace chain {
       void open( const open_args& args );
 
     private:
+
+      uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& full_block );
+
       void state_independent_open( const open_args& args );
 
     public: 
@@ -212,16 +215,42 @@ namespace chain {
       /// Allows to load all data being independent to the persistent storage held in shared memory file.
       void initialize_state_independent_data(const open_args& args);
 
+      bool is_included_block_unlocked(const block_id_type& block_id);
+
       void begin_type_register_process(util::abstract_type_registrar& r);
 
       void verify_match_of_state_objects_definitions_from_shm();
 
-    protected:
+    public:
+      std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
+      std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received);
+      std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
       void load_state_initial_data( const open_args& args, get_block_by_num_function_type get_block_by_num_function );
 
-    public:
+      /**
+        * @brief Check if replaying was finished and all blocks from `block_log` were processed.
+        *
+        * This method is called from a chain plugin, if returns `true` then a synchronization is allowed.
+        * If returns `false`, then opening a node should be forbidden.
+        *
+        * There are output-type arguments: `head_block_num_origin`, `head_block_num_state` for information purposes only.
+        *
+        * @return information if replaying was finished
+        */
+      bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
+
+      /**
+        * @brief Rebuild object graph from block history and open detabase
+        *
+        * This method may be called after or instead of @ref database::open, and will rebuild the object graph by
+        * replaying blockchain history. When this method exits successfully, the database will be open.
+        *
+        * @return the last replayed block number.
+        */
+      uint32_t reindex( const open_args& args );
+
       /**
         * @brief wipe Delete database from disk, and potentially the raw chain as well.
         * @param include_blocks If true, delete the raw chain as well as the database.
@@ -233,10 +262,24 @@ namespace chain {
 
       //////////////////// db_block.cpp ////////////////////
 
+      /**
+        *  @return true if the block is in our fork DB or saved to disk as
+        *  part of the official chain, otherwise return false
+        */
+      bool                       is_known_block( const block_id_type& id )const;
+    private:
+      bool                       is_known_block_unlocked(const block_id_type& id)const;
     public:
       bool                       is_known_transaction( const transaction_id_type& id )const;
       fc::sha256                 get_pow_target()const;
       uint32_t                   get_pow_summary_target()const;
+      block_id_type              find_block_id_for_num( uint32_t block_num )const;
+    public:
+      block_id_type              get_block_id_for_num( uint32_t block_num )const;
+      std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
+      std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
+      std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, 
+                                                                        fc::microseconds wait_for_microseconds = fc::microseconds() );
 
       /// Warning: to correctly process old blocks initially old chain-id should be set.
       chain_id_type hive_chain_id = OLD_CHAIN_ID;
@@ -405,6 +448,8 @@ namespace chain {
       boost::signals2::connection add_fail_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_irreversible_block_handler        ( const irreversible_block_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_switch_fork_handler               ( const switch_fork_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
+      boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
+      boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
       boost::signals2::connection add_finish_push_block_handler          ( const push_block_handler_t&                func, const abstract_plugin& plugin, int32_t group = -1 );
@@ -810,6 +855,8 @@ namespace chain {
     private:
       hardfork_versions             _hardfork_versions;
 
+      block_log                     _block_log;
+
       // this function needs access to _plugin_index_signal
       template< typename MultiIndexType >
       friend void add_plugin_index( database& db );
@@ -897,6 +944,16 @@ namespace chain {
         */
       fc::signal<void(const transaction_notification&)>     _post_apply_transaction_signal;
 
+      /**
+        * Emitted when reindexing starts
+        */
+      fc::signal<void(const reindex_notification&)>         _pre_reindex_signal;
+
+      /**
+        * Emitted when reindexing finishes
+        */
+      fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
+
       fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
 
       /// <summary>
@@ -935,71 +992,11 @@ namespace chain {
         */
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
 
-    private:
-      block_log _block_log;
-
-      /**
-        * Emitted when reindexing starts
-        */
-      fc::signal<void(const reindex_notification&)>         _pre_reindex_signal;
-
-      /**
-        * Emitted when reindexing finishes
-        */
-      fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
-
     public:
-      boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
-
       virtual void state_dependent_open( const open_args& args );
 
     private:
-      bool is_included_block_unlocked(const block_id_type& block_id);
-      uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& start_block );
-    public:
-      std::vector<block_id_type> get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point);
-      std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received); //by is_known_block_unlocked
-      std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
 
-      /**
-        * @brief Check if replaying was finished and all blocks from `block_log` were processed.
-        *
-        * This method is called from a chain plugin, if returns `true` then a synchronization is allowed.
-        * If returns `false`, then opening a node should be forbidden.
-        *
-        * There are output-type arguments: `head_block_num_origin`, `head_block_num_state` for information purposes only.
-        *
-        * @return information if replaying was finished
-        */
-      bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state ) const;
-
-      /**
-        * @brief Rebuild object graph from block history and open detabase
-        *
-        * This method may be called after or instead of @ref database::open, and will rebuild the object graph by
-        * replaying blockchain history. When this method exits successfully, the database will be open.
-        *
-        * @return the last replayed block number.
-        */
-      uint32_t reindex( const open_args& args );
-
-      /**
-        *  @return true if the block is in our fork DB or saved to disk as
-        *  part of the official chain, otherwise return false
-        */
-      bool is_known_block( const block_id_type& id )const;
-    private:
-      bool is_known_block_unlocked(const block_id_type& id)const;
-    public:
-      block_id_type              find_block_id_for_num( uint32_t block_num )const;
-      block_id_type              get_block_id_for_num( uint32_t block_num )const;
-      std::shared_ptr<full_block_type> fetch_block_by_id(const block_id_type& id)const;
-      std::shared_ptr<full_block_type> fetch_block_by_number( uint32_t num, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
-      std::vector<std::shared_ptr<full_block_type>>  fetch_block_range( const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() );
-
-    private:
-      
       void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
 
       void open_block_log(const open_args& args);
