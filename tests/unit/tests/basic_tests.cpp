@@ -875,6 +875,12 @@ BOOST_AUTO_TEST_CASE( create_array_from_fc_json )
     fc::variants array;
     BOOST_CHECK_NO_THROW(array = fc::json::from_string(json).get_array());
     BOOST_CHECK_EQUAL(array.size(), 6);
+    BOOST_CHECK_EQUAL(array[0].as_string(), "object_1");
+    BOOST_CHECK_EQUAL(array[1].as_string(), "object_2");
+    BOOST_CHECK_EQUAL(array[2].as_string(), "object_3");
+    BOOST_CHECK_EQUAL(array[3].as_string(), "object_4");
+    BOOST_CHECK_EQUAL(array[4].as_uint64(), 6);
+    BOOST_CHECK_EQUAL(array[5].as_uint64(), 10);
   }
   {
     const std::string json = "[\"object_1\", \"obj,ect_2\", \"object_3\", \"object_4\"]";
@@ -940,11 +946,7 @@ BOOST_AUTO_TEST_CASE( create_array_from_fc_json )
   }
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\", \"object_4\",]";
-    BOOST_CHECK_NO_THROW(fc::json::from_string(json, false /* strict_validation */).get_array());
-  }
-  {
-    const std::string json = "[\"object_1\", \"object_2\", \"object_3\", \"object_4\",]";
-    BOOST_CHECK_THROW(fc::json::from_string(json /* strict_validation == true */).get_array(), fc::parse_error_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
   }
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\" , \"object_4\"";
@@ -957,6 +959,22 @@ BOOST_AUTO_TEST_CASE( create_array_from_fc_json )
   {
     const std::string json = "[\"object_1\",, \"object_3\" , \"object_4\"]";
     BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
+  }
+  {
+    const std::string json = "[\"object_1\", \"object_2\", \"object_3\", \"object_4\",]";
+    fc::variants array;
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, false /* full_json_validation */).get_array());
+    BOOST_CHECK_EQUAL(array.size(), 4);
+  }
+  {
+    const std::string json = "[\"object_1\" \"object_2\" \"object_3\" \"object_4\"]";
+    fc::variants array;
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, false /* full_json_validation */).get_array());
+    BOOST_CHECK_EQUAL(array.size(), 4);
+    BOOST_CHECK_EQUAL(array[0].as_string(), "object_1");
+    BOOST_CHECK_EQUAL(array[1].as_string(), "object_2");
+    BOOST_CHECK_EQUAL(array[2].as_string(), "object_3");
+    BOOST_CHECK_EQUAL(array[3].as_string(), "object_4");
   }
 }
 
