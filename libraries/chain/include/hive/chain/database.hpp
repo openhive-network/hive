@@ -749,21 +749,6 @@ namespace chain {
       void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction);
       uint32_t update_last_irreversible_block(bool currently_applying_a_block);
       void migrate_irreversible_state(uint32_t old_last_irreversible);
-
-    protected:
-      /**
-       * @brief Handle the proper execution of the irreversible state migration.
-       * 
-       * In derived implementations, this method can be overridden to manage 
-       * updates to external resources during the update irreversible state process. When overriding, 
-       * it's recommended to call the `database::migrate_irreversible_state_perform` 
-       * method to ensure proper base functionality.
-       *
-       * @param old_last_irreversible Represents the previous irreversible point before migration.
-       */
-      virtual void migrate_irreversible_state_perform(uint32_t old_last_irreversible);
-
-    private:
       void clear_expired_transactions();
       void clear_expired_orders();
       void clear_expired_delegations();
@@ -997,7 +982,6 @@ namespace chain {
 
     private:
 
-      void migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible);
 
       void open_block_log(const open_args& args);
   };

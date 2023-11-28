@@ -5523,27 +5523,6 @@ uint32_t database::update_last_irreversible_block(const bool currently_applying_
   return old_last_irreversible;
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::migrate_irreversible_state_perform(uint32_t old_last_irreversible)
-{
-  const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-
-  // This deletes blocks from the fork db
-  //edump((dpo.head_block_number)(get_last_irreversible_block_num()));
-  _fork_db.set_max_size( dpo.head_block_number - get_last_irreversible_block_num() + 1 );
-
-  // This deletes undo state
-  commit( get_last_irreversible_block_num() );
-
-  if (old_last_irreversible < get_last_irreversible_block_num())
-  {
-    //ilog("Updating last irreversible block to: ${b}. Old last irreversible was: ${ob}.",
-    //  ("b", get_last_irreversible_block_num())("ob", old_last_irreversible));
-
-    for (uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i)
-      notify_irreversible_block(i);
-  }
-}
-
 void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 {
   // This method should happen atomically. We cannot prevent unclean shutdown in the middle
@@ -5558,8 +5537,48 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
       FC_ASSERT(fork_head->get_block_num() == dpo.head_block_number, "Fork Head Block Number: ${fork_head}, Chain Head Block Number: ${chain_head}",
                 ("fork_head", fork_head->get_block_num())("chain_head", dpo.head_block_number));
 
-    migrate_irreversible_state_to_blocklog(old_last_irreversible);
-    migrate_irreversible_state_perform(old_last_irreversible);
+    if( !( get_node_skip_flags() & skip_block_log ) )
+    {
+      // output to block log based on new last irreverisible block num
+      std::shared_ptr<full_block_type> tmp_head = _block_log.head();
+      uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
+      vector<item_ptr> blocks_to_write;
+
+      if( blocklog_head_num < get_last_irreversible_block_num() )
+      {
+        // Check for all blocks that we want to write out to the block log but don't write any
+        // unless we are certain they all exist in the fork db
+        while( blocklog_head_num < get_last_irreversible_block_num() )
+        {
+          item_ptr block_ptr = _fork_db.fetch_block_on_main_branch_by_number( blocklog_head_num + 1 );
+          FC_ASSERT( block_ptr, "Current fork in the fork database does not contain the last_irreversible_block" );
+          blocks_to_write.push_back( block_ptr );
+          blocklog_head_num++;
+        }
+
+        for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
+          _block_log.append( block_itr->get()->full_block, _is_at_live_sync );
+
+        _block_log.flush();
+      }
+    }
+
+    // This deletes blocks from the fork db
+    //edump((dpo.head_block_number)(get_last_irreversible_block_num()));
+    _fork_db.set_max_size( dpo.head_block_number - get_last_irreversible_block_num() + 1 );
+
+    // This deletes undo state
+    commit( get_last_irreversible_block_num() );
+
+    if (old_last_irreversible < get_last_irreversible_block_num())
+    {
+      //ilog("Updating last irreversible block to: ${b}. Old last irreversible was: ${ob}.",
+      //  ("b", get_last_irreversible_block_num())("ob", old_last_irreversible));
+
+      for (uint32_t i = old_last_irreversible + 1; i <= get_last_irreversible_block_num(); ++i)
+        notify_irreversible_block(i);
+    }
+
   }
   FC_CAPTURE_CALL_LOG_AND_RETHROW( [](){
                                           elog( "An error occured during migrating an irreversible state. The node will be closed." );
@@ -7326,34 +7345,6 @@ void database::open_block_log(const open_args& args)
 
 
 
-void database::migrate_irreversible_state_to_blocklog(uint32_t old_last_irreversible)
-{
-  if( !( get_node_skip_flags() & skip_block_log ) )
-  {
-    // output to block log based on new last irreverisible block num
-    std::shared_ptr<full_block_type> tmp_head = _block_log.head();
-    uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
-    vector<item_ptr> blocks_to_write;
-
-    if( blocklog_head_num < get_last_irreversible_block_num() )
-    {
-      // Check for all blocks that we want to write out to the block log but don't write any
-      // unless we are certain they all exist in the fork db
-      while( blocklog_head_num < get_last_irreversible_block_num() )
-      {
-        item_ptr block_ptr = _fork_db.fetch_block_on_main_branch_by_number( blocklog_head_num + 1 );
-        FC_ASSERT( block_ptr, "Current fork in the fork database does not contain the last_irreversible_block" );
-        blocks_to_write.push_back( block_ptr );
-        blocklog_head_num++;
-      }
-
-      for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-        _block_log.append( block_itr->get()->full_block, _is_at_live_sync );
-
-      _block_log.flush();
-    }
-  }
-}
 
 //safe to call without chainbase lock
 std::vector<block_id_type> database::get_blockchain_synopsis(const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point)
