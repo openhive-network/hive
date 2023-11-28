@@ -482,6 +482,7 @@ class Comment:
         self.__permlink = permlink or f"main-permlink-{self.author}"
         self.__children: list[Comment] = [child] if child is not None else []
         self.__comment_transaction: CommentTransaction | None = None
+        self.__comment_option_transaction = None
         self.__deleted: bool = False
 
     @property
@@ -559,7 +560,25 @@ class Comment:
     def send(
         self,
         reply_type: Literal["no_reply", "reply_own_comment", "reply_another_comment"],
+        **comment_options,
     ) -> None:
+        """
+        Function for sending a comment.
+
+        Parameters:
+        reply_type (str): The type of reply to a comment. It can take one of the following values:
+            - "no_reply": No reply.
+            - "reply_own_comment": Reply to your own comment.
+            - "reply_another_comment": Reply to another comment.
+
+        **comment_options: Optional parameters related to the comment. It can include the following keys and their corresponding values:
+            - max_accepted_payout (dict): Maximum accepted payout.
+            - percent_hbd (int): The percentage of HBD rewards.
+            - allow_votes (bool): Whether to allow votes.
+            - allow_curation_rewards (bool): Whether to allow curation rewards.
+            - beneficiaries (list): A list of beneficiaries for the comment, where each beneficiary is a dictionary.
+        """
+
         def new_post() -> None:
             if self.__author is None:
                 self.__author = self.__create_comment_account()
@@ -584,9 +603,8 @@ class Comment:
         set_reply[reply_type]()
 
         self.author_obj.update_account_info()  # Refresh RC mana before send
-        self.__comment_transaction = get_response_model(
-            CommentTransaction,
-            **self.__wallet.api.post_comment(
+        with self.__wallet.in_single_transaction() as self.__comment_transaction:
+            self.__wallet.api.post_comment(
                 author=self.author,
                 permlink=self.permlink,
                 parent_author=self.__force_get_parent().author,
@@ -595,8 +613,11 @@ class Comment:
                 body=f"body-{self.permlink}",
                 json="{}",
                 only_result=False,
-            ),
-        ).result
+            )
+            if comment_options != {}:
+                self.__options(**comment_options)
+
+        self.__comment_transaction = CommentTransaction(**self.__comment_transaction.get_response())
 
     def reply(self, reply_type: Literal["reply_own_comment", "reply_another_comment"]) -> Comment:
         self.assert_comment_exists()
@@ -667,16 +688,72 @@ class Comment:
             DeleteCommentOperation(author=self.author, permlink=self.permlink),
         )
 
-    def options(self, allow_votes: bool) -> None:
-        self.assert_comment_exists()
-        create_transaction_with_any_operation(
+    def options(self, **comment_options):
+        """
+        Function for modifying a comment options.
+
+        **comment_options: Optional parameters related to the comment. It can include the following keys and their corresponding values:
+            - max_accepted_payout (dict): Maximum accepted payout.
+            - percent_hbd (int): The percentage of HBD rewards.
+            - allow_votes (bool): Whether to allow votes.
+            - allow_curation_rewards (bool): Whether to allow curation rewards.
+            - beneficiaries (list): A list of beneficiaries for the comment, where each beneficiary is a dictionary.
+        """
+
+        self.__author.update_account_info()  # Refresh RC mana before comment_options_operation
+        self.__comment_option_transaction = self.__options(**comment_options)
+
+    def assert_rc_mana_after_change_comment_options(self, mode: Literal["decrease", "is_unchanged"]):
+        if mode == "decrease":
+            comment_option_rc_cost = int(self.__comment_option_transaction["rc_cost"])
+            comment_option_timestamp = get_transaction_timestamp(self.__node, self.__comment_option_transaction)
+            self.__author.rc_manabar.assert_rc_current_mana_is_reduced(comment_option_rc_cost, comment_option_timestamp)
+        elif mode == "is_unchanged":
+            self.__author.rc_manabar.assert_current_mana_is_unchanged()
+        else:
+            raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def __options(self, **comment_options):
+        """
+        Private function for modifying a comment options.
+
+        **comment_options: Optional parameters related to the comment. It can include the following keys and their corresponding values:
+            - max_accepted_payout (dict): Maximum accepted payout.
+            - percent_hbd (int): The percentage of HBD rewards.
+            - allow_votes (bool): Whether to allow votes.
+            - allow_curation_rewards (bool): Whether to allow curation rewards.
+            - beneficiaries (list): A list of beneficiaries for the comment, where each beneficiary is a dictionary.
+        """
+        self.__comment_options = comment_options
+
+        if "beneficiaries" in comment_options:
+            comment_options["extensions"] = [
+                [
+                    "comment_payout_beneficiaries",
+                    {"beneficiaries": comment_options["beneficiaries"]},
+                ]
+            ]
+            comment_options.pop("beneficiaries")
+
+        return create_transaction_with_any_operation(
             self.__wallet,
             CommentOptionsOperationLegacy(
                 author=self.__author.name,
                 permlink=self.__permlink,
-                allow_votes=allow_votes,
+                **comment_options,
             ),
         )
+
+    def assert_options_are_apply(self):
+        comment_content = self.__node.api.database.find_comments(comments=[[self.author, self.__permlink]]).comments[0]
+
+        for key in ["max_accepted_payout", "percent_hbd", "allow_votes", "allow_curation_rewards", "beneficiaries"]:
+            if key in self.__comment_options and key != "max_accepted_payout":
+                assert self.__comment_options[key] == getattr(comment_content, key), f"{key} is not apply"
+            elif key in self.__comment_options and key == "max_accepted_payout":
+                assert (
+                    tt.Asset.from_legacy(self.__comment_options[key]).amount == getattr(comment_content, key).amount
+                ), f"{key} is not apply"
 
     def assert_is_rc_mana_decreased_after_comment_delete(self) -> None:
         self.assert_comment_exists()
