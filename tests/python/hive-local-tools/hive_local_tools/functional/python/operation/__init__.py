@@ -406,7 +406,9 @@ def get_rc_manabar(node: tt.InitNode, account_name: str) -> ExtendedManabar:
 
 
 class CommentTransaction(TransactionLegacy):
-    operations: list[LegacyRepresentation[CommentOperation]]
+    operations: tuple[LegacyRepresentation[CommentOperation]] | tuple[
+        LegacyRepresentation[CommentOperation], LegacyRepresentation[CommentOptionsOperationLegacy]
+    ]
     rc_cost: int
 
 
