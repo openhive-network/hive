@@ -253,7 +253,7 @@ void database::load_state_initial_data( const open_args& args, get_block_by_num_
 
   if (head_block_num())
   {
-    std::shared_ptr<full_block_type> head_block = get_block_by_num_function(head_block_num());
+    std::shared_ptr<full_block_type> head_block = _block_log.read_block_by_num(head_block_num());
 
     if(head_block)
     {
