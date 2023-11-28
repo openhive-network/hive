@@ -217,7 +217,7 @@ void database::initialize_state_independent_data(const open_args& args)
   init_hardforks();
 }
 
-void database::load_state_initial_data( const open_args& args, get_block_by_num_function_type get_block_by_num_function )
+void database::load_state_initial_data( const open_args& args )
 {
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
@@ -7333,7 +7333,7 @@ void database::public_reset_fork_db()
 void database::state_dependent_open( const open_args& args )
 {
   open_block_log(args);
-  load_state_initial_data(args, [this](int block_num) { return _block_log.read_block_by_num(block_num); });
+  load_state_initial_data(args);
 }
 
 void database::open_block_log(const open_args& args)

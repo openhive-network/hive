@@ -227,7 +227,7 @@ namespace chain {
       std::vector<block_id_type> get_block_ids(const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count, uint32_t limit);
 
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
-      void load_state_initial_data( const open_args& args, get_block_by_num_function_type get_block_by_num_function );
+      void load_state_initial_data(const open_args& args);
 
       /**
         * @brief Check if replaying was finished and all blocks from `block_log` were processed.
