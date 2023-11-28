@@ -158,26 +158,24 @@ database::~database()
   clear_pending();
 }
 
-void database::state_independent_open( const open_args& args )
-{
-  init_schema();
-
-  helpers::environment_extension_resources environment_extension(
-                                              appbase::app().get_version_string(),
-                                              appbase::app().get_plugins_names(),
-                                              []( const std::string& message ){ wlog( message.c_str() ); }
-                                            );
-  const bool wipe_shared_file = args.force_replay || args.load_snapshot;
-  chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, wipe_shared_file );
-  initialize_state_independent_data(args);
-}
 
 void database::open( const open_args& args )
 {
   try
   {
-    state_independent_open(args);
-    state_dependent_open(args);
+    init_schema();
+
+    helpers::environment_extension_resources environment_extension(
+                                                appbase::app().get_version_string(),
+                                                appbase::app().get_plugins_names(),
+                                                []( const std::string& message ){ wlog( message.c_str() ); }
+                                              );
+    const bool wipe_shared_file = args.force_replay || args.load_snapshot;
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, wipe_shared_file );
+    initialize_state_independent_data(args);
+    open_block_log(args);
+    load_state_initial_data(args);
+
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
@@ -7330,11 +7328,6 @@ void database::public_reset_fork_db()
   _fork_db.reset();
 }
 
-void database::state_dependent_open( const open_args& args )
-{
-  open_block_log(args);
-  load_state_initial_data(args);
-}
 
 void database::open_block_log(const open_args& args)
 {

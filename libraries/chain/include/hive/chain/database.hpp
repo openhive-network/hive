@@ -192,21 +192,6 @@ namespace chain {
     private:
 
       uint32_t reindex_internal( const open_args& args, const std::shared_ptr<full_block_type>& full_block );
-
-      void state_independent_open( const open_args& args );
-
-    public: 
-      /**
-        * @brief Opens a state with a block provided externally
-        *
-        * In derived classes, this function provides an interface to supply a block from the outside 
-        * (e.g., from an external system). Essential for initiating the fork database 
-        * when specific block data needs to be provided. This function is public because it is 
-        * used by the load snapshot plugin to inject block data. Takes part in normal open process.
-        */
-
-    private:
-
       void remove_expired_governance_votes();
 
       //Remove proposal votes for accounts that declined voting rights during HF28.
@@ -977,8 +962,6 @@ namespace chain {
         */
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
 
-    public:
-      virtual void state_dependent_open( const open_args& args );
 
     private:
 
