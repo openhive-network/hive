@@ -13,6 +13,7 @@
 #include <hive/chain/hive_object_types.hpp>
 
 #include <fc/int_array.hpp>
+#include <fc/crypto/restartable_sha256.hpp>
 
 namespace hive { namespace chain {
 
@@ -142,6 +143,8 @@ class rc_stats_object : public object< rc_stats_object_type, rc_stats_object >
 
     //starting block for statistics
     uint32_t get_starting_block() const { return block_num; }
+    //rolling hash of payer RC mana values
+    std::string get_stamp() const { return stamp.hexdigest(); }
     //global regeneration rate at starting block
     int64_t get_global_regen() const { return regen; }
     //budget at starting block
@@ -160,6 +163,7 @@ class rc_stats_object : public object< rc_stats_object_type, rc_stats_object >
   private:
     uint32_t block_num = 0;
     int64_t regen = 0;
+    fc::restartable_sha256 stamp;
     resource_count_type budget;
     resource_count_type pool;
     resource_share_type share;
@@ -419,6 +423,7 @@ FC_REFLECT( hive::chain::rc_stats_object,
   (id)
   (block_num)
   (regen)
+  (stamp)
   (budget)
   (pool)
   (share)

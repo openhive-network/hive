@@ -774,12 +774,12 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( rc_resource_param_index::MULTIINDEX_NODE_TYPE ), 400u );
   BOOST_CHECK_EQUAL( sizeof( rc_pool_object ), 176u );
   BOOST_CHECK_EQUAL( sizeof( rc_pool_index::MULTIINDEX_NODE_TYPE ), 208u );
-  BOOST_CHECK_EQUAL( sizeof( rc_stats_object ), 5520u //two objects
+  BOOST_CHECK_EQUAL( sizeof( rc_stats_object ), 5632u //two objects
 #ifdef HIVE_ENABLE_SMT
     + 616u
 #endif
   );
-  BOOST_CHECK_EQUAL( sizeof( rc_stats_index::MULTIINDEX_NODE_TYPE ), 5552u
+  BOOST_CHECK_EQUAL( sizeof( rc_stats_index::MULTIINDEX_NODE_TYPE ), 5664u
 #ifdef HIVE_ENABLE_SMT
     + 616u
 #endif
@@ -1389,11 +1389,11 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_object>(dtds), "2b3524a7e3cae469e96f8d9efccc6c97ac6d3730" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "c2d37e4721f3b90ac5022ab661a08d065117097f" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "2b92270c562e9506292c9ca336f626ff7f3a3be2" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "e8f7efb3092823f37935d3bd8bcae963b0151d7c" );
   #else
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_object>(dtds), "38b356fdf295b2a709ac9d77b94fbe0fcd3c9267" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "3cb44980ad38710ceb0099de520239dd03a0b3ce" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "62c2b2cae6bb2b346632a8ac9d3ba56f41bf1def" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "5ecebd9e709ff9f511dc2600e72c071e022223ca" );
   #endif
 
 }
