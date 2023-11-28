@@ -5,6 +5,8 @@ namespace hive { namespace chain {
 void rc_stats_object::archive_and_reset_stats( rc_stats_object& archive, const rc_pool_object& pool_obj,
   uint32_t _block_num, int64_t _regen )
 {
+  stamp.finish();
+
   //copy all data to archive (but not the id)
   {
     auto _id = archive.id;
@@ -14,6 +16,7 @@ void rc_stats_object::archive_and_reset_stats( rc_stats_object& archive, const r
 
   block_num = _block_num;
   regen = _regen;
+  stamp = fc::restartable_sha256();
   budget = pool_obj.get_last_known_budget();
   pool = pool_obj.get_pool();
   for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
@@ -28,6 +31,8 @@ void rc_stats_object::archive_and_reset_stats( rc_stats_object& archive, const r
 
 void rc_stats_object::add_stats( const rc_transaction_info& tx_info )
 {
+  stamp.update( &tx_info.rc, sizeof( tx_info.rc ) );
+
   int _op_idx = op_stats.size() - 1; //multiop transaction by default
   if( tx_info.op.valid() )
     _op_idx = tx_info.op.value();

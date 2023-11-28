@@ -54,6 +54,7 @@ fc::variant_object resource_credits::get_report( report_type rt, const rc_stats_
   fc::variant_object_builder report;
   report
     ( "block", stats.get_starting_block() )
+    ( "stamp", stats.get_stamp() )
     ( "regen", stats.get_global_regen() )
     ( "budget", stats.get_budget() )
     ( "pool", stats.get_pool() )
