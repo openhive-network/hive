@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import datetime
+
 import pytest
 
 import test_tools as tt
+from hive_local_tools.constants import HIVE_CASHOUT_WINDOW_SECONDS
 from hive_local_tools.functional.python.operation import Comment
 
 
@@ -86,8 +89,10 @@ def test_try_to_delete_comment_after_payout(prepared_node: tt.InitNode, wallet: 
         comment_0.create_parent_comment()
 
     comment_0.send(reply_type=reply_type)
-    # waiting for payout 7 days
-    prepared_node.restart(time_offset="+7d")
+
+    # waiting for cashout 60 minutes
+    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     with pytest.raises(tt.exceptions.CommunicationError) as error:
         comment_0.delete()
