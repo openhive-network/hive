@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import datetime
+
 import pytest
 
 import test_tools as tt
+from hive_local_tools.constants import HIVE_CASHOUT_WINDOW_SECONDS
 from hive_local_tools.functional.python.operation import Comment
 
 
@@ -101,8 +104,9 @@ def test_update_comment_with_replies_votes_and_downvotes(
     author0_comment.update()
     author1_comment.update()
 
-    # waiting for cashout 7 days
-    prepared_node.restart(time_offset="+7d")
+    # waiting for cashout 60 minutes
+    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     reward_hbd_balances = []
     for comment in comments:
@@ -141,8 +145,9 @@ def test_update_comment_with_replies_after_cashout(
     # vote is necessary to cashout
     comment_0.vote()
 
-    # waiting for cashout 7 days
-    prepared_node.restart(time_offset="+7d")
+    # waiting for cashout 60 minutes
+    time_offset = prepared_node.get_head_block_time() + datetime.timedelta(seconds=HIVE_CASHOUT_WINDOW_SECONDS)
+    prepared_node.restart(time_offset=tt.Time.serialize(time_offset, format_=tt.TimeFormats.TIME_OFFSET_FORMAT))
 
     comment_0.update()
     comment_0.assert_is_rc_mana_decreased_after_post_or_update()
