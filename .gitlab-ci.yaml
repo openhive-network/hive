@@ -997,6 +997,7 @@ operation_tests:
                      account_witness_vote_tests,
                      cancel_transfer_from_savings,
                      comment_tests,
+                     convert_tests,
                      limit_order_tests,
                      proposal_tests,
                      test_recurrent_transfer,
