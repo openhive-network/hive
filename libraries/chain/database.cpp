@@ -840,8 +840,6 @@ void database::push_virtual_operation( const operation& op )
   _current_op_in_trx++;
   operation_notification note = create_operation_notification( op );
   notify_pre_apply_operation( note );
-  rc.on_pre_apply_operation( note.op ); //temporary
-  rc.on_post_apply_operation( note.op ); //temporary
   notify_post_apply_operation( note );
 }
 
@@ -851,7 +849,6 @@ void database::pre_push_virtual_operation( const operation& op )
   _current_op_in_trx++;
   operation_notification note = create_operation_notification( op );
   notify_pre_apply_operation( note );
-  rc.on_pre_apply_operation( note.op ); //temporary
 }
 
 void database::post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& op_in_trx )
@@ -859,7 +856,6 @@ void database::post_push_virtual_operation( const operation& op, const fc::optio
   FC_ASSERT( is_virtual_operation( op ) );
   operation_notification note = create_operation_notification( op );
   if(op_in_trx.valid()) note.op_in_trx = *op_in_trx;
-  rc.on_post_apply_operation( note.op ); //temporary
   notify_post_apply_operation( note );
 }
 
