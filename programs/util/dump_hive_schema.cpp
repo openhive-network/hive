@@ -36,7 +36,7 @@ struct schema_info
     }
     std::string str_schema;
     s->get_str_schema( str_schema );
-    schema = fc::json::from_string( str_schema );
+    schema = fc::json::from_string( str_schema, fc::json::format_validation_mode::full );
   }
 
   std::vector< std::string >   deps;

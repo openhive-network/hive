@@ -867,13 +867,13 @@ BOOST_AUTO_TEST_CASE( create_array_from_fc_json )
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\", \"object_4\"]";
     fc::variants array;
-    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json).get_array());
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, fc::json::format_validation_mode::full).get_array());
     BOOST_CHECK_EQUAL(array.size(), 4);
   }
   {
     const std::string json = "[    \n\"object_1\"\t\n\t  ,\t\n    \"object_2\"         ,\n\t\n \"object_3\",\t\t\t\n\n\n \"object_4\"\n\n\n\n\t\t, 6, 10\n\n]";
     fc::variants array;
-    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json).get_array());
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, fc::json::format_validation_mode::full).get_array());
     BOOST_CHECK_EQUAL(array.size(), 6);
     BOOST_CHECK_EQUAL(array[0].as_string(), "object_1");
     BOOST_CHECK_EQUAL(array[1].as_string(), "object_2");
@@ -885,33 +885,33 @@ BOOST_AUTO_TEST_CASE( create_array_from_fc_json )
   {
     const std::string json = "[\"object_1\", \"obj,ect_2\", \"object_3\", \"object_4\"]";
     fc::variants array;
-    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json).get_array());
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, fc::json::format_validation_mode::full).get_array());
     BOOST_CHECK_EQUAL(array.size(), 4);
     BOOST_CHECK_EQUAL(array[1].as_string(), "obj,ect_2");
   }
   {
     const std::string json = "[\"object_1\", {\"k1\":\"v1\", \"k2\":\"v2\"}, \"object_2\", \"object_3\"]";
     fc::variants array;
-    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json).get_array());
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, fc::json::format_validation_mode::full).get_array());
     BOOST_CHECK_EQUAL(array.size(), 4);
   }
   {
     const std::string json = "[]";
     fc::variants array;
-    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json).get_array());
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, fc::json::format_validation_mode::full).get_array());
     BOOST_CHECK(array.empty());
   }
   {
     const std::string json = "[\"\"]";
     fc::variants array;
-    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json).get_array());
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, fc::json::format_validation_mode::full).get_array());
     BOOST_CHECK_EQUAL(array.size(), 1);
     BOOST_CHECK_EQUAL(array[0].as_string(), "");
   }
   {
     const std::string json = "[[1,2,3,\"object_1\"]]";
     fc::variants array;
-    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json).get_array());
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, fc::json::format_validation_mode::full).get_array());
     BOOST_CHECK_EQUAL(array.size(), 1);
     fc::variants array_in_array;
     BOOST_CHECK_NO_THROW(array_in_array = array[0].get_array());
@@ -922,54 +922,54 @@ BOOST_AUTO_TEST_CASE( create_array_from_fc_json )
   }
   {
     const std::string json = "[\"object_1\" \"object_2\" \"object_3\" \"object_4\"]";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json, fc::json::format_validation_mode::full).get_array(), fc::parse_error_exception);
   }
   {
     const std::string json = "[\"object_1\", \"object_2\" \"object_3\" \"object_4\"]";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json, fc::json::format_validation_mode::full).get_array(), fc::parse_error_exception);
   }
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\" \n \"object_4\"]";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json, fc::json::format_validation_mode::full).get_array(), fc::parse_error_exception);
   }
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\" \t \"object_4\"]";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json, fc::json::format_validation_mode::full).get_array(), fc::parse_error_exception);
   }
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\" . \"object_4\"]";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json, fc::json::format_validation_mode::full).get_array(), fc::parse_error_exception);
   }
   {
     const std::string json = "[,\"object_1\", \"object_2\", \"object_3\", \"object_4\"]";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json, fc::json::format_validation_mode::full).get_array(), fc::parse_error_exception);
   }
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\", \"object_4\",]";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json, fc::json::format_validation_mode::full).get_array(), fc::parse_error_exception);
   }
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\" , \"object_4\"";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::eof_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json, fc::json::format_validation_mode::full).get_array(), fc::eof_exception);
   }
   {
     const std::string json = "\"object_1\", \"object_2\", \"object_3\" , \"object_4\"]";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::bad_cast_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json, fc::json::format_validation_mode::full).get_array(), fc::bad_cast_exception);
   }
   {
     const std::string json = "[\"object_1\",, \"object_3\" , \"object_4\"]";
-    BOOST_CHECK_THROW(fc::json::from_string(json).get_array(), fc::parse_error_exception);
+    BOOST_CHECK_THROW(fc::json::from_string(json, fc::json::format_validation_mode::full).get_array(), fc::parse_error_exception);
   }
   {
     const std::string json = "[\"object_1\", \"object_2\", \"object_3\", \"object_4\",]";
     fc::variants array;
-    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, false /* full_json_validation */).get_array());
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, fc::json::format_validation_mode::relaxed /* json_validation_mode */).get_array());
     BOOST_CHECK_EQUAL(array.size(), 4);
   }
   {
     const std::string json = "[\"object_1\" \"object_2\" \"object_3\" \"object_4\"]";
     fc::variants array;
-    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, false /* full_json_validation */).get_array());
+    BOOST_CHECK_NO_THROW(array = fc::json::from_string(json, fc::json::format_validation_mode::relaxed /* json_validation_mode */).get_array());
     BOOST_CHECK_EQUAL(array.size(), 4);
     BOOST_CHECK_EQUAL(array[0].as_string(), "object_1");
     BOOST_CHECK_EQUAL(array[1].as_string(), "object_2");

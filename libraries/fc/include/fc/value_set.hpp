@@ -10,7 +10,7 @@ namespace fc {
 template<typename T>
 T dejsonify(const std::string& s)
 {
-  return fc::json::from_string(s).as<T>();
+  return fc::json::from_string(s, fc::json::format_validation_mode::full).as<T>();
 }
 
 template<typename Expected_Final_Type, typename Type_Options, typename Container_Type>

@@ -97,7 +97,7 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
       std::size_t pos = 0;
       while ((pos = s.find('{', pos)) != std::string::npos)
       {
-        auto appender = fc::json::from_string( s.substr( pos++ ) ).as< appender_args >();
+        auto appender = fc::json::from_string( s.substr( pos++ ), fc::json::format_validation_mode::full ).as< appender_args >();
         appender.validate();
         
         if( appender.stream.length() )
@@ -159,7 +159,7 @@ fc::optional<fc::logging_config> load_logging_config( const boost::program_optio
         std::size_t pos = 0;
         while ((pos = s.find('{', pos)) != std::string::npos)
         {
-          auto logger = fc::json::from_string( s.substr( pos++ ) ).as< logger_args >();
+          auto logger = fc::json::from_string( s.substr( pos++ ), fc::json::format_validation_mode::full ).as< logger_args >();
           logger.validate();
           fc::logger_config logger_config( logger.name );
           logger_config.level = fc::variant( logger.level ).as< fc::log_level >();

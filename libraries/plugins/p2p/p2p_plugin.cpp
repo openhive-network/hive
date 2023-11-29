@@ -469,7 +469,7 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   if( options.count("p2p-parameters") )
   {
-    fc::variant var = fc::json::from_string( options.at("p2p-parameters").as<string>(), fc::json::strict_parser );
+    fc::variant var = fc::json::from_string( options.at("p2p-parameters").as<string>(), fc::json::format_validation_mode::full, fc::json::strict_parser );
     my->config = var.get_object();
   }
 }

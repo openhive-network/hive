@@ -30,7 +30,7 @@ std::string asset_symbol_type::to_string()const
 
 asset_symbol_type asset_symbol_type::from_string( const std::string& str )
 {
-  return fc::json::from_string( str ).as< asset_symbol_type >();
+  return fc::json::from_string( str, fc::json::format_validation_mode::full ).as< asset_symbol_type >();
 }
 
 void asset_symbol_type::to_nai_string( char* buf )const

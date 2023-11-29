@@ -214,7 +214,7 @@ void test_list_find_rc_accounts_result( rc_method_type method_result, unsigned e
   auto json_string = fc::json::to_string( method_result );
   ilog("Result is ${result}", ( "result", json_string ) );
   // Get serialized result as variant which allows json-like access but without deserialization.
-  fc::variant v = fc::json::from_string( json_string );
+  fc::variant v = fc::json::from_string( json_string, fc::json::format_validation_mode::full );
   // The result should be an array ...
   BOOST_REQUIRE( v.is_array() );
   const fc::variants& vs = v.get_array();

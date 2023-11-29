@@ -161,12 +161,12 @@ BOOST_AUTO_TEST_CASE( asset_test )
     BOOST_CHECK_EQUAL( asset().symbol.decimals(), 3 );
     BOOST_CHECK_EQUAL( fc::json::to_string( asset() ), "{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\"}" );
 
-    asset hive =  fc::json::from_string( "{\"amount\":\"123456\",    \"precision\":3, \"nai\":\"@@000000021\"}" ).as< asset >();
-    asset hbd =   fc::json::from_string( "{\"amount\":\"654321\",    \"precision\":3, \"nai\":\"@@000000013\"}" ).as< asset >();
-    asset vests = fc::json::from_string( "{\"amount\":\"123456789\", \"precision\":6, \"nai\":\"@@000000037\"}" ).as< asset >();
-    asset tmp =   fc::json::from_string( "{\"amount\":\"456\",       \"precision\":3, \"nai\":\"@@000000021\"}" ).as< asset >();
+    asset hive =  fc::json::from_string( "{\"amount\":\"123456\",    \"precision\":3, \"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >();
+    asset hbd =   fc::json::from_string( "{\"amount\":\"654321\",    \"precision\":3, \"nai\":\"@@000000013\"}", fc::json::format_validation_mode::full ).as< asset >();
+    asset vests = fc::json::from_string( "{\"amount\":\"123456789\", \"precision\":6, \"nai\":\"@@000000037\"}", fc::json::format_validation_mode::full ).as< asset >();
+    asset tmp =   fc::json::from_string( "{\"amount\":\"456\",       \"precision\":3, \"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >();
     BOOST_CHECK_EQUAL( tmp.amount.value, 456 );
-    tmp = fc::json::from_string( "{\"amount\":\"56\", \"precision\":3, \"nai\":\"@@000000021\"}" ).as< asset >();
+    tmp = fc::json::from_string( "{\"amount\":\"56\", \"precision\":3, \"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >();
     BOOST_CHECK_EQUAL( tmp.amount.value, 56 );
 
     BOOST_CHECK_EQUAL( hive.amount.value, 123456 );
@@ -191,29 +191,29 @@ BOOST_AUTO_TEST_CASE( asset_test )
     BOOST_CHECK_EQUAL( fc::json::to_string( asset( 50000, VESTS_SYMBOL ) ), "{\"amount\":\"50000\",\"precision\":6,\"nai\":\"@@000000037\"}" );
 
     // amount overflow
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"9223372036854775808\",\"precision\":3,\"nai\":\"@@000000021\"}" ).as< asset >(), fc::exception );
+    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"9223372036854775808\",\"precision\":3,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
     // amount underflow
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"-1\",\"precision\":3,\"nai\":\"@@000000021\"}" ).as< asset >(), fc::exception );
+    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"-1\",\"precision\":3,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
 
     // precision overflow
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"10\",\"precision\":256,\"nai\":\"@@000000021\"}" ).as< asset >(), fc::exception );
+    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"10\",\"precision\":256,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
     // precision underflow
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"10\",\"precision\":-1,\"nai\":\"@@000000021\"}" ).as< asset >(), fc::exception );
+    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"10\",\"precision\":-1,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
 
     // Check wrong size tuple
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"0\",3]" ).as< asset >(), fc::exception );
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\",1}" ).as< asset >(), fc::exception );
+    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"0\",3]", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
+    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\",1}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
 
     // Check non-numeric characters in amount
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"foobar\",\"precision\":3,\"nai\":\"@@000000021\"}" ).as< asset >(), fc::exception );
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"10a\",\"precision\":3,\"nai\":\"@@000000021\"}" ).as< asset >(), fc::exception );
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"10a00\",\"precision\":3,\"nai\":\"@@000000021\"}" ).as< asset >(), fc::exception );
+    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"foobar\",\"precision\":3,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
+    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"10a\",\"precision\":3,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
+    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"10a00\",\"precision\":3,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
 
     // Check hex value
-    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"0x8000\",\"precision\":3,\"nai\":\"@@000000021\"}" ).as< asset >(), fc::exception );
+    BOOST_CHECK_THROW( fc::json::from_string( "{\"amount\":\"0x8000\",\"precision\":3,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >(), fc::exception );
 
     // Check octal value
-    BOOST_CHECK_EQUAL( fc::json::from_string( "{\"amount\":\"08000\",\"precision\":3,\"nai\":\"@@000000021\"}" ).as< asset >().amount.value, 8000 );
+    BOOST_CHECK_EQUAL( fc::json::from_string( "{\"amount\":\"08000\",\"precision\":3,\"nai\":\"@@000000021\"}", fc::json::format_validation_mode::full ).as< asset >().amount.value, 8000 );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -352,7 +352,7 @@ BOOST_AUTO_TEST_CASE( asset_raw_test )
 
         // check JSON serialization is symmetric
         std::string json_cur = fc::json::to_string(a);
-        a2 = fc::json::from_string(json_cur).as< asset >();
+        a2 = fc::json::from_string(json_cur, fc::json::format_validation_mode::full).as< asset >();
         BOOST_CHECK( a == a2 );
       }
     }
@@ -471,7 +471,7 @@ namespace
     try
     {
       serialization_mode_controller::mode_guard guard( transaction_serialization );
-      T result = fc::json::from_string( data ).as < T >();
+      T result = fc::json::from_string( data, fc::json::format_validation_mode::full ).as < T >();
       return result;
     } FC_LOG_AND_RETHROW();
   }
@@ -684,7 +684,7 @@ BOOST_AUTO_TEST_CASE( static_variant_json_test )
     BOOST_CHECK_EQUAL( json_str, "{\"type\":\"transfer_operation\",\"value\":{\"from\":\"\",\"to\":\"\",\"amount\":{\"amount\":\"0\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"\"}}" );
 
     json_str = "{\"type\":\"transfer_operation\",\"value\":{\"from\":\"foo\",\"to\":\"bar\",\"amount\":{\"amount\":\"1000\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"\"}}";
-    from_variant( fc::json::from_string( json_str ), op );
+    from_variant( fc::json::from_string( json_str, fc::json::format_validation_mode::full ), op );
     BOOST_CHECK_EQUAL( op.which(), 0 );
 
     transfer_operation t = op.get< transfer_operation >();
@@ -695,7 +695,7 @@ BOOST_AUTO_TEST_CASE( static_variant_json_test )
 
     json_str = "{\"type\":1,\"value\":{\"parent_author\":\"foo\",\"parent_permlink\":\"bar\",\"author\":\"foo1\",\"permlink\":\"bar1\",\"title\":\"\",\"body\":\"\",\"json_metadata\":\"\"}}";
 
-    from_variant( fc::json::from_string( json_str ), op );
+    from_variant( fc::json::from_string( json_str, fc::json::format_validation_mode::full ), op );
     BOOST_CHECK_EQUAL( op.which(), 1 );
 
     comment_operation c = op.get< comment_operation >();
@@ -708,7 +708,7 @@ BOOST_AUTO_TEST_CASE( static_variant_json_test )
     BOOST_CHECK( c.json_metadata == "" );
 
     json_str = "{\"type\":\"not_a_type\",\"value\":{\"from\":\"foo\",\"to\":\"bar\",\"amount\":{\"amount\":\"1000\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"\"}}";
-    HIVE_REQUIRE_THROW( from_variant( fc::json::from_string( json_str ), op ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( from_variant( fc::json::from_string( json_str, fc::json::format_validation_mode::full ), op ), fc::assert_exception );
   }
   FC_LOG_AND_RETHROW();
 }

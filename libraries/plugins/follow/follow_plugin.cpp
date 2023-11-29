@@ -164,7 +164,7 @@ struct post_operation_visitor
 
         try
         {
-          fop = fc::json::from_string( op.json ).as< follow_operation >();
+          fop = fc::json::from_string( op.json, fc::json::format_validation_mode::relaxed ).as< follow_operation >();
         }
         catch( const fc::exception& )
         {

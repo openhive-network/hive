@@ -102,7 +102,7 @@ std::string websocket_api_connection::on_message(
    wdump((message));
    try
    {
-      auto var = fc::json::from_string(message);
+      auto var = fc::json::from_string(message, fc::json::format_validation_mode::full);
       const auto& var_obj = var.get_object();
       if( var_obj.contains( "method" ) )
       {

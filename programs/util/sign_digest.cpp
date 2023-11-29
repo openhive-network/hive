@@ -38,7 +38,7 @@ int main(int argc, char** argv, char** envp)
     if( line == "" )
       continue;
 
-    fc::variant v = fc::json::from_string( line, fc::json::strict_parser );
+    fc::variant v = fc::json::from_string( line, fc::json::format_validation_mode::full, fc::json::strict_parser );
     signing_request sreq;
     fc::from_variant( v, sreq );
     signing_result sres;

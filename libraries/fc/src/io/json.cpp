@@ -19,7 +19,7 @@ namespace fc
 {
   // forward declarations of provided functions
   template <typename T, json::parse_type parser_type>
-  variant variant_from_stream(T &in, const bool full_json_validation, uint32_t depth = 0);
+  variant variant_from_stream(T &in, const json::format_validation_mode json_validation_mode, uint32_t depth = 0);
   template <typename T>
   char parseEscape(T &in, uint32_t depth = 0);
   template <typename T>
@@ -29,9 +29,9 @@ namespace fc
   template <typename T>
   fc::string stringFromToken(T &in, uint32_t depth = 0);
   template <typename T, json::parse_type parser_type>
-  variant_object objectFromStream(T &in, const bool full_json_validation, uint32_t depth = 0);
+  variant_object objectFromStream(T &in, const json::format_validation_mode json_validation_mode, uint32_t depth = 0);
   template <typename T, json::parse_type parser_type>
-  variants arrayFromStream(T &in, const bool full_json_validation, uint32_t depth = 0);
+  variants arrayFromStream(T &in, const json::format_validation_mode json_validation_mode, uint32_t depth = 0);
   template <typename T, json::parse_type parser_type>
   variant number_from_stream(T &in, uint32_t depth = 0);
   template <typename T>
@@ -231,7 +231,7 @@ namespace fc
   }
 
   template <typename T, json::parse_type parser_type>
-  variant_object objectFromStream(T &in, const bool full_json_validation, uint32_t depth)
+  variant_object objectFromStream(T &in, const json::format_validation_mode json_validation_mode, uint32_t depth)
   {
     depth++;
     FC_ASSERT(depth <= JSON_MAX_RECURSION_DEPTH);
@@ -262,7 +262,7 @@ namespace fc
                              ("key", key));
         }
         in.get();
-        auto val = variant_from_stream<T, parser_type>(in, full_json_validation, depth);
+        auto val = variant_from_stream<T, parser_type>(in, json_validation_mode, depth);
 
         obj(std::move(key), std::move(val));
         skip_white_space(in, depth);
@@ -286,7 +286,7 @@ namespace fc
   }
 
   template <typename T, json::parse_type parser_type>
-  variants arrayFromStream(T &in, const bool full_json_validation, uint32_t depth)
+  variants arrayFromStream(T &in, const json::format_validation_mode json_validation_mode, uint32_t depth)
   {
     depth++;
     FC_ASSERT(depth <= JSON_MAX_RECURSION_DEPTH);
@@ -304,7 +304,7 @@ namespace fc
       {
         if (in.peek() == ',')
         {
-          if (full_json_validation)
+          if (json_validation_mode == json::format_validation_mode::full)
           {
             if (ar.empty())
               FC_THROW_EXCEPTION(parse_error_exception, "Invalid leading comma.");
@@ -317,15 +317,15 @@ namespace fc
         }
         if (skip_white_space(in, depth))
           continue;
-        if (full_json_validation && !expecting_new_element)
+        if (json_validation_mode == json::format_validation_mode::full && !expecting_new_element)
           FC_THROW_EXCEPTION(parse_error_exception, "Missing ',' after object in json array.");
 
-        ar.push_back(variant_from_stream<T, parser_type>(in, full_json_validation, depth));
+        ar.push_back(variant_from_stream<T, parser_type>(in, json_validation_mode, depth));
         expecting_new_element = false;
         skip_white_space(in, depth);
       }
 
-      if (full_json_validation && expecting_new_element && !ar.empty())
+      if (json_validation_mode == json::format_validation_mode::full && expecting_new_element && !ar.empty())
         FC_THROW_EXCEPTION(parse_error_exception, "Detected ',' after last array object. Expected ']'");
 
       in.get();
@@ -473,7 +473,7 @@ namespace fc
   }
 
   template <typename T, json::parse_type parser_type>
-  variant variant_from_stream(T &in, const bool full_json_validation, uint32_t depth)
+  variant variant_from_stream(T &in, const json::format_validation_mode json_validation_mode, uint32_t depth)
   {
     depth++;
     FC_ASSERT(depth <= JSON_MAX_RECURSION_DEPTH);
@@ -493,9 +493,9 @@ namespace fc
       case '"':
         return stringFromStream(in, depth);
       case '{':
-        return objectFromStream<T, parser_type>(in, full_json_validation, depth);
+        return objectFromStream<T, parser_type>(in, json_validation_mode, depth);
       case '[':
-        return arrayFromStream<T, parser_type>(in, full_json_validation, depth);
+        return arrayFromStream<T, parser_type>(in, json_validation_mode, depth);
       case '-':
       case '.':
       case '0':
@@ -554,7 +554,7 @@ namespace fc
     }
   }
 
-  variant json::from_string(const std::string &utf8_str, const bool full_json_validation, parse_type ptype, uint32_t depth)
+  variant json::from_string(const std::string &utf8_str, const format_validation_mode json_validation_mode, parse_type ptype, uint32_t depth)
   {
     try
     {
@@ -567,9 +567,9 @@ namespace fc
       switch (ptype)
       {
       case legacy_parser:
-        return variant_from_stream<fc::stringstream, legacy_parser>(in, full_json_validation, depth);
+        return variant_from_stream<fc::stringstream, legacy_parser>(in, json_validation_mode, depth);
       case legacy_parser_with_string_doubles:
-        return variant_from_stream<fc::stringstream, legacy_parser_with_string_doubles>(in, full_json_validation, depth);
+        return variant_from_stream<fc::stringstream, legacy_parser_with_string_doubles>(in, json_validation_mode, depth);
       case strict_parser:
         return json_relaxed::variant_from_stream<fc::stringstream, true>(in, depth);
       case relaxed_parser:
@@ -999,9 +999,9 @@ namespace fc
     switch (ptype)
     {
     case legacy_parser:
-      return variant_from_stream<boost::filesystem::ifstream, legacy_parser>(bi, true /* full_json_validation*/, depth);
+      return variant_from_stream<boost::filesystem::ifstream, legacy_parser>(bi, format_validation_mode::full /* format_validation_mode*/, depth);
     case legacy_parser_with_string_doubles:
-      return variant_from_stream<boost::filesystem::ifstream, legacy_parser_with_string_doubles>(bi, true /* full_json_validation*/, depth);
+      return variant_from_stream<boost::filesystem::ifstream, legacy_parser_with_string_doubles>(bi, format_validation_mode::full /* format_validation_mode*/, depth);
     case strict_parser:
       return json_relaxed::variant_from_stream<boost::filesystem::ifstream, true>(bi, depth);
     case relaxed_parser:
@@ -1017,9 +1017,9 @@ namespace fc
     switch (ptype)
     {
     case legacy_parser:
-      return variant_from_stream<fc::buffered_istream, legacy_parser>(in, true /* full_json_validation*/, depth);
+      return variant_from_stream<fc::buffered_istream, legacy_parser>(in, format_validation_mode::full /* json_validation_mode*/, depth);
     case legacy_parser_with_string_doubles:
-      return variant_from_stream<fc::buffered_istream, legacy_parser_with_string_doubles>(in, true /* full_json_validation*/, depth);
+      return variant_from_stream<fc::buffered_istream, legacy_parser_with_string_doubles>(in, format_validation_mode::full /* json_validation_mode*/, depth);
     case strict_parser:
       return json_relaxed::variant_from_stream<buffered_istream, true>(in, depth);
     case relaxed_parser:
@@ -1045,7 +1045,7 @@ namespace fc
     return out;
   }
 
-  bool json::is_valid(const std::string &utf8_str, const bool full_json_validation, parse_type ptype, uint32_t depth)
+  bool json::is_valid(const std::string &utf8_str, const format_validation_mode json_validation_mode, parse_type ptype, uint32_t depth)
   {
     if (utf8_str.size() == 0)
       return false;
@@ -1053,10 +1053,10 @@ namespace fc
     switch (ptype)
     {
     case legacy_parser:
-      variant_from_stream<fc::stringstream, legacy_parser>(in, full_json_validation, depth);
+      variant_from_stream<fc::stringstream, legacy_parser>(in, json_validation_mode, depth);
       break;
     case legacy_parser_with_string_doubles:
-      variant_from_stream<fc::stringstream, legacy_parser_with_string_doubles>(in, full_json_validation, depth);
+      variant_from_stream<fc::stringstream, legacy_parser_with_string_doubles>(in, json_validation_mode, depth);
       break;
     case strict_parser:
       json_relaxed::variant_from_stream<fc::stringstream, true>(in, depth);
