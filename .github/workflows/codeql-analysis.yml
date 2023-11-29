@@ -57,6 +57,10 @@ jobs:
           free -m
           nproc
 
+      - name: Cleanup
+        run: |
+          rm -rvf build hive
+
       - name: Checkout the code
         run: |
           git clone https://github.com/openhive-network/hive
