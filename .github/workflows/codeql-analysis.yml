@@ -49,17 +49,9 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Get runner info
-        run: |
-          hostname -A
-          id
-          pwd
-          free -m
-          nproc
-
       - name: Cleanup
         run: |
-          rm -rvf build hive
+          rm -rf build hive
 
       - name: Checkout the code
         run: |
@@ -73,13 +65,17 @@ jobs:
 
       - name: Configure the build
         run: |
-          pwd
           mkdir build
           cd build
           cmake -DCMAKE_BUILD_TYPE=Release ../hive
 
       - name: Build
         run: |
-          pwd
           cd build
           time make -j4
+
+      - name: Results
+        run: |
+          ls -lad build/programs/hived/hived build/programs/cli_wallet/cli_wallet
+          chmod 755 build/programs/hived/hived build/programs/cli_wallet/cli_wallet
+          ./build/programs/hived --version
