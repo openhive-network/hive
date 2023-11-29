@@ -70,12 +70,12 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Release ../hive
+          cmake -DCMAKE_BUILD_TYPE=Release -GNinja ../hive
 
       - name: Build
         run: |
           cd build
-          time make -j4
+          time ninja -j4
 
       - name: Results
         run: |
