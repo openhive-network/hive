@@ -11,6 +11,9 @@ from hive_local_tools.constants import (
 )
 from schemas.apis.database_api.fundaments_of_reponses import AccountItemFundament
 from schemas.fields.compound import Manabar
+from schemas.filter import (
+    build_vop_filter,
+)
 from schemas.jsonrpc import get_response_model
 from schemas.operations import (
     CommentOperation,
@@ -22,16 +25,13 @@ from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
     TransferToVestingCompletedOperation,
 )
 from schemas.transaction import TransactionLegacy
-from schemas.virtual_operation import (
-    VirtualOperation as SchemaVirtualOperation,
-)
-from schemas.virtual_operation import (
-    build_vop_filter,
-)
 
 if TYPE_CHECKING:
     from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
     from schemas.operations import AnyLegacyOperation
+    from schemas.virtual_operation import (
+        VirtualOperation as SchemaVirtualOperation,
+    )
 
 
 @dataclass
