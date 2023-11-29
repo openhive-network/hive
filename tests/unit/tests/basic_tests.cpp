@@ -978,6 +978,13 @@ BOOST_AUTO_TEST_CASE( create_array_from_fc_json )
   }
 }
 
+BOOST_AUTO_TEST_CASE( fc_json_is_valid )
+{
+  BOOST_CHECK(fc::json::is_valid("[\"object_1\", \"object_2\", \"object_3\", \"object_4\",]", fc::json::format_validation_mode::relaxed));
+  BOOST_CHECK(!fc::json::is_valid("[\"object_1\", \"object_2\", \"object_3\", \"object_4\",]", fc::json::format_validation_mode::full));
+  BOOST_CHECK(fc::json::is_valid("[\"object_1\" \"object_2\" \"object_3\" \"object_4\"]", fc::json::format_validation_mode::relaxed));
+  BOOST_CHECK(!fc::json::is_valid("[\"object_1\" \"object_2\" \"object_3\" \"object_4\"]", fc::json::format_validation_mode::full));
+}
 
 BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
 {

@@ -1049,32 +1049,51 @@ namespace fc
   {
     if (utf8_str.size() == 0)
       return false;
-    fc::stringstream in(utf8_str);
-    switch (ptype)
-    {
-    case legacy_parser:
-      variant_from_stream<fc::stringstream, legacy_parser>(in, json_validation_mode, depth);
-      break;
-    case legacy_parser_with_string_doubles:
-      variant_from_stream<fc::stringstream, legacy_parser_with_string_doubles>(in, json_validation_mode, depth);
-      break;
-    case strict_parser:
-      json_relaxed::variant_from_stream<fc::stringstream, true>(in, depth);
-      break;
-    case relaxed_parser:
-      json_relaxed::variant_from_stream<fc::stringstream, false>(in, depth);
-      break;
-    default:
-      FC_ASSERT(false, "Unknown JSON parser type {ptype}", ("ptype", ptype));
-    }
     try
     {
-      in.peek();
+      fc::stringstream in(utf8_str);
+      switch (ptype)
+      {
+      case legacy_parser:
+        variant_from_stream<fc::stringstream, legacy_parser>(in, json_validation_mode, depth);
+        break;
+      case legacy_parser_with_string_doubles:
+        variant_from_stream<fc::stringstream, legacy_parser_with_string_doubles>(in, json_validation_mode, depth);
+        break;
+      case strict_parser:
+        json_relaxed::variant_from_stream<fc::stringstream, true>(in, depth);
+        break;
+      case relaxed_parser:
+        json_relaxed::variant_from_stream<fc::stringstream, false>(in, depth);
+        break;
+      default:
+        FC_ASSERT(false, "Unknown JSON parser type {ptype}", ("ptype", ptype));
+      }
+      try
+      {
+        in.peek();
+      }
+      catch (const eof_exception &e)
+      {
+        return true;
+      }
     }
-    catch (const eof_exception &e)
+    catch (const fc::exception& e)
     {
-      return true;
+      elog("FC Error during json validation: ${what}", ("what", e.to_detail_string()));
+      return false;
     }
+    catch (const std::exception& e)
+    {
+      elog("std error during json validation: ${what}", ("what", e.what()));
+      return false;
+    }
+    catch (...)
+    {
+      elog("Unknown error during json validation.");
+      return false;
+    }
+
     return false;
   }
 
