@@ -46,6 +46,8 @@ jobs:
   build:
     name: Build on a self hosted runner
     runs-on: self-hosted
+    env:
+      DEBIAN_FRONTEND: noninteractive
 
     steps:
       - name: Get runner info
