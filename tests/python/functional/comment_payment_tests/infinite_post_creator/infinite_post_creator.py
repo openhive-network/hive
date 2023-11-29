@@ -14,7 +14,13 @@ def infinite_post_creator():
     node.config.plugin.append("rc_api")
     node.config.plugin.append("transaction_status_api")
 
-    node.run(arguments=["--alternate-chain-spec", str(Path(__file__).parent.joinpath(ALTERNATE_CHAIN_JSON_FILENAME))])
+    node.run(
+        arguments=[
+            "--webserver-http-endpoint=0.0.0.0:2500",
+            "--alternate-chain-spec",
+            str(Path(__file__).parent.joinpath(ALTERNATE_CHAIN_JSON_FILENAME)),
+        ]
+    )
 
     config = node.api.database.get_config()
     tt.logger.info(f"HIVE_CHAIN_ID: {config['HIVE_CHAIN_ID']}")
