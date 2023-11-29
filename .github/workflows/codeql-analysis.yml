@@ -69,8 +69,13 @@ jobs:
 
       - name: Configure the build
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release .
+          pwd
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release ../hive
 
       - name: Build
         run: |
+          pwd
+          cd build
           time make -j4
