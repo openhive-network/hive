@@ -77,5 +77,4 @@ jobs:
       - name: Results
         run: |
           ls -lad build/programs/hived/hived build/programs/cli_wallet/cli_wallet
-          chmod 755 build/programs/hived/hived build/programs/cli_wallet/cli_wallet
-          ./build/programs/hived --version
+          ./build/programs/hived/hived --version
