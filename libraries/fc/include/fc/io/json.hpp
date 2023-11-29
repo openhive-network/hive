@@ -47,7 +47,7 @@ namespace fc
     static ostream &to_stream(ostream &out, const variants &v, output_formatting format = stringify_large_ints_and_doubles);
     static ostream &to_stream(ostream &out, const variant_object &v, output_formatting format = stringify_large_ints_and_doubles);
 
-    static variant from_stream(buffered_istream &in, parse_type ptype = legacy_parser, uint32_t depth = 0);
+    static variant from_stream(buffered_istream &in, const format_validation_mode json_validation_mode, parse_type ptype = legacy_parser, uint32_t depth = 0);
 
     static variant from_string(const string &utf8_str, const format_validation_mode json_validation_mode, parse_type ptype = legacy_parser, uint32_t depth = 0);
     static variant fast_from_string(const string &utf8_str);
@@ -65,13 +65,13 @@ namespace fc
     }
 
     static void save_to_file(const variant &v, const fc::path &fi, bool pretty = true, output_formatting format = stringify_large_ints_and_doubles);
-    static variant from_file(const fc::path &p, parse_type ptype = legacy_parser, uint32_t depth = 0);
+    static variant from_file(const fc::path &p, const format_validation_mode json_validation_mode, parse_type ptype = legacy_parser, uint32_t depth = 0);
 
     template <typename T>
-    static T from_file(const fc::path &p, parse_type ptype = legacy_parser, uint32_t depth = 0)
+    static T from_file(const fc::path &p, const format_validation_mode json_validation_mode, parse_type ptype = legacy_parser, uint32_t depth = 0)
     {
       depth++;
-      return json::from_file(p, ptype, depth).as<T>();
+      return json::from_file(p, json_validation_mode, ptype, depth).as<T>();
     }
 
     template <typename T>

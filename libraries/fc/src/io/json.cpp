@@ -990,7 +990,7 @@ namespace fc
       fc::to_stream(o, v, format);
     }
   }
-  variant json::from_file(const fc::path &p, parse_type ptype, uint32_t depth)
+  variant json::from_file(const fc::path &p, const format_validation_mode json_validation_mode, parse_type ptype, uint32_t depth)
   {
     // auto tmp = std::make_shared<fc::ifstream>( p, ifstream::binary );
     // auto tmp = std::make_shared<std::ifstream>( p.generic_string().c_str(), std::ios::binary );
@@ -999,9 +999,9 @@ namespace fc
     switch (ptype)
     {
     case legacy_parser:
-      return variant_from_stream<boost::filesystem::ifstream, legacy_parser>(bi, format_validation_mode::full /* format_validation_mode*/, depth);
+      return variant_from_stream<boost::filesystem::ifstream, legacy_parser>(bi, json_validation_mode, depth);
     case legacy_parser_with_string_doubles:
-      return variant_from_stream<boost::filesystem::ifstream, legacy_parser_with_string_doubles>(bi, format_validation_mode::full /* format_validation_mode*/, depth);
+      return variant_from_stream<boost::filesystem::ifstream, legacy_parser_with_string_doubles>(bi, json_validation_mode, depth);
     case strict_parser:
       return json_relaxed::variant_from_stream<boost::filesystem::ifstream, true>(bi, depth);
     case relaxed_parser:
@@ -1010,16 +1010,16 @@ namespace fc
       FC_ASSERT(false, "Unknown JSON parser type {ptype}", ("ptype", ptype));
     }
   }
-  variant json::from_stream(buffered_istream &in, parse_type ptype, uint32_t depth)
+  variant json::from_stream(buffered_istream &in, const format_validation_mode json_validation_mode, parse_type ptype, uint32_t depth)
   {
     depth++;
     FC_ASSERT(depth <= JSON_MAX_RECURSION_DEPTH);
     switch (ptype)
     {
     case legacy_parser:
-      return variant_from_stream<fc::buffered_istream, legacy_parser>(in, format_validation_mode::full /* json_validation_mode*/, depth);
+      return variant_from_stream<fc::buffered_istream, legacy_parser>(in, json_validation_mode, depth);
     case legacy_parser_with_string_doubles:
-      return variant_from_stream<fc::buffered_istream, legacy_parser_with_string_doubles>(in, format_validation_mode::full /* json_validation_mode*/, depth);
+      return variant_from_stream<fc::buffered_istream, legacy_parser_with_string_doubles>(in, json_validation_mode, depth);
     case strict_parser:
       return json_relaxed::variant_from_stream<buffered_istream, true>(in, depth);
     case relaxed_parser:

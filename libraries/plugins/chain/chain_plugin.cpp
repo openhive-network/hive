@@ -1338,7 +1338,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   {
     using hive::protocol::testnet_blockchain_configuration::hardfork_schedule_item_t;
 
-    fc::variant alternate_chain_spec = fc::json::from_file( options["alternate-chain-spec"].as< string >() );
+    fc::variant alternate_chain_spec = fc::json::from_file( options["alternate-chain-spec"].as< string >(), fc::json::format_validation_mode::full );
 
     idump((alternate_chain_spec));
 

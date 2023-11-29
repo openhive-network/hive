@@ -454,7 +454,7 @@ public:
     if( ! fc::exists( wallet_filename ) )
       return false;
 
-    _wallet = fc::json::from_file( wallet_filename ).as< wallet_data >();
+    _wallet = fc::json::from_file( wallet_filename, fc::json::format_validation_mode::full ).as< wallet_data >();
 
     return true;
   }

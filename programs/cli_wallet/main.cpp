@@ -199,7 +199,7 @@ int main( int argc, char** argv )
     fc::path wallet_file( options.count("wallet-file") ? options.at("wallet-file").as<string>() : "wallet.json");
     if( fc::exists( wallet_file ) )
     {
-      wdata = fc::json::from_file( wallet_file ).as<wallet_data>();
+      wdata = fc::json::from_file( wallet_file, fc::json::format_validation_mode::full ).as<wallet_data>();
     }
     else
     {

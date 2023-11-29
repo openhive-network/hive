@@ -129,7 +129,7 @@ namespace graphene { namespace net {
         try
         {
           _potential_peer_set.clear();
-          std::vector<potential_peer_record> peer_records = fc::json::from_file(_peer_database_filename).as<std::vector<potential_peer_record> >();
+          std::vector<potential_peer_record> peer_records = fc::json::from_file(_peer_database_filename, fc::json::format_validation_mode::full).as<std::vector<potential_peer_record> >();
           std::copy(peer_records.begin(), peer_records.end(), std::inserter(_potential_peer_set, _potential_peer_set.end()));
 
           if (_potential_peer_set.size() > GRAPHENE_NET_MAX_PEERDB_SIZE)

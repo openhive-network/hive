@@ -90,7 +90,7 @@ namespace beekeeper {
   {
     try
     {
-      return fc::json::from_file( file_name.string() );
+      return fc::json::from_file( file_name.string(), fc::json::format_validation_mode::full );
     }
     catch ( const boost::exception& e )
     {

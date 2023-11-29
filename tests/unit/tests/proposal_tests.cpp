@@ -4306,7 +4306,7 @@ int32_t get_time( database& db, const std::string& name )
       "time": 80
     },...
   */
-  auto file = fc::json::from_file( benchmark_file ).as< fc::variant >();
+  auto file = fc::json::from_file( benchmark_file, fc::json::format_validation_mode::full ).as< fc::variant >();
   if( file.is_object() )
   {
     auto vo = file.get_object();

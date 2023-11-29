@@ -207,7 +207,7 @@ namespace fc { namespace rpc {
                   fc::string line;
                   while( !_done.canceled() )
                   {
-                      variant v = json::from_stream(*_in);
+                      variant v = json::from_stream(*_in, fc::json::format_validation_mode::full);
                       ///ilog( "input: ${in}", ("in", v ) );
                       //wlog(  "recv: ${line}", ("line", line) );
                       _handle_message_future = fc::async([=](){ handle_message(v.get_object()); }, "json_connection handle_message");
