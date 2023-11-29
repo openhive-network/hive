@@ -4841,7 +4841,7 @@ namespace graphene { namespace net {
       {
         try
         {
-          _node_configuration = fc::json::from_file( configuration_file_name ).as<node_configuration>();
+          _node_configuration = fc::json::from_file( configuration_file_name, fc::json::format_validation_mode::full ).as<node_configuration>();
           ilog( "Loaded configuration from file ${filename}", ("filename", configuration_file_name ) );
 
           if( _node_configuration.private_key == fc::ecc::private_key() )

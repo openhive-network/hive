@@ -15,7 +15,7 @@ namespace fc {
 
    void configure_logging( const fc::path& lc )
    {
-      configure_logging( fc::json::from_file<logging_config>(lc) );
+      configure_logging( fc::json::from_file<logging_config>(lc, fc::json::format_validation_mode::full) );
    }
    bool configure_logging( const logging_config& cfg )
    {
