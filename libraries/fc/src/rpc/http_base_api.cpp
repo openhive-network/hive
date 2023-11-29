@@ -99,7 +99,7 @@ void http_base_api_connection::on_request( const fc::http::request& req, const f
    {
       resp.add_header( "Content-Type", "application/json" );
       std::string req_body( req.body.begin(), req.body.end() );
-      auto var = fc::json::from_string( req_body );
+      auto var = fc::json::from_string( req_body, fc::json::format_validation_mode::full );
       const auto& var_obj = var.get_object();
 
       if( var_obj.contains( "method" ) )

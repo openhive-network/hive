@@ -79,7 +79,7 @@ int main( int argc, char** argv, char** envp )
       continue;
     try
     {
-      fc::variant v = fc::json::from_string( line, true, fc::json::strict_parser );
+      fc::variant v = fc::json::from_string( line, fc::json::format_validation_mode::full, fc::json::strict_parser );
       witness_properties wprops;
       witness_set_properties_operation op;
       fc::from_variant( v, wprops );

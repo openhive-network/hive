@@ -166,7 +166,7 @@ fc::variant http_api_connection::do_request(
       _body = _http_connection.request( "POST", _url, fc::json::to_string(request) ).body;
    }
 
-   const auto message = fc::json::from_string( std::string{ _body.begin(), _body.end() } );
+   const auto message = fc::json::from_string( std::string{ _body.begin(), _body.end() }, fc::json::format_validation_mode::full );
 
    idump((message));
 

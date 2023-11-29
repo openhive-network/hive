@@ -134,7 +134,7 @@ namespace hive { namespace converter { namespace plugins {
 
       FC_ASSERT( reply.status == fc::http::reply::OK, "HTTP 200 response code (OK) not received when sending request to the endpoint", ("code", reply.status)("reply", str_reply) );
 
-      fc::variant_object var_obj = fc::json::from_string( str_reply ).get_object();
+      fc::variant_object var_obj = fc::json::from_string( str_reply, fc::json::format_validation_mode::full ).get_object();
       if( var_obj.contains( "error" ) )
       {
         const auto msg = var_obj["error"].get_object()["message"].get_string();

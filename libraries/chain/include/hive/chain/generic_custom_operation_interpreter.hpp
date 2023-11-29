@@ -228,7 +228,7 @@ class generic_custom_operation_interpreter
     {
       try
       {
-        fc::variant v = fc::json::from_string( outer_o.json );
+        fc::variant v = fc::json::from_string( outer_o.json, (this->_db.is_in_control() ? fc::json::format_validation_mode::full : fc::json::format_validation_mode::relaxed) );
 
         std::vector< CustomOperationType > custom_operations;
         if( v.is_array() && v.size() > 0 && v.get_array()[0].is_array() )

@@ -184,7 +184,7 @@ void market_history_plugin::plugin_initialize( const boost::program_options::var
     if( options.count( MH_BUCKET_SIZE ) )
     {
       std::string buckets = options[MH_BUCKET_SIZE].as< string >();
-      my->_tracked_buckets = fc::json::from_string( buckets ).as< flat_set< uint32_t > >();
+      my->_tracked_buckets = fc::json::from_string( buckets, fc::json::format_validation_mode::full ).as< flat_set< uint32_t > >();
       state_opts[MH_BUCKET_SIZE] = buckets;
     }
 

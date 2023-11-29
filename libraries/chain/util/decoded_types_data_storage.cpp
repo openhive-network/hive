@@ -68,7 +68,7 @@ decoded_type_data::decoded_type_data(const std::string& json)
 
   try
   {
-    fc::variant v = fc::json::from_string(json);
+    fc::variant v = fc::json::from_string(json, fc::json::format_validation_mode::full);
     fc::variant_object vo = v.get_object();
     if (!vo.contains("reflected"))
       FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with decoded type data misses reflected flag. ${json}", (json));
@@ -125,11 +125,11 @@ decoded_types_data_storage::decoded_types_map_t generate_data_map_from_json(cons
 
   try
   {
-    fc::json::is_valid(decoded_types_data_json);
+    fc::json::is_valid(decoded_types_data_json, fc::json::format_validation_mode::full);
   }
   FC_RETHROW_EXCEPTIONS(error, "Json is invalid: ${decoded_types_data_json}", (decoded_types_data_json))
 
-  const auto json = fc::json::from_string(decoded_types_data_json);
+  const auto json = fc::json::from_string(decoded_types_data_json, fc::json::format_validation_mode::full);
 
   if (!json.is_array())
     FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with decoded types data is not valid. Expecting a an array of objects. ${decoded_types_data_json}", (decoded_types_data_json));

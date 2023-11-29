@@ -36,6 +36,12 @@ namespace fc
       max_positive_value = 0x1fffffffffffff
     };
 
+    enum format_validation_mode : uint8_t
+    {
+      full = 0,
+      relaxed = 1 // allows json formats which could be passed in previous versions of hived
+    };
+
     static ostream &to_stream(ostream &out, const fc::string &);
     static ostream &to_stream(ostream &out, const variant &v, output_formatting format = stringify_large_ints_and_doubles);
     static ostream &to_stream(ostream &out, const variants &v, output_formatting format = stringify_large_ints_and_doubles);
@@ -43,13 +49,13 @@ namespace fc
 
     static variant from_stream(buffered_istream &in, parse_type ptype = legacy_parser, uint32_t depth = 0);
 
-    static variant from_string(const string &utf8_str, const bool full_json_validation = true, parse_type ptype = legacy_parser, uint32_t depth = 0);
+    static variant from_string(const string &utf8_str, const format_validation_mode json_validation_mode, parse_type ptype = legacy_parser, uint32_t depth = 0);
     static variant fast_from_string(const string &utf8_str);
     static variants variants_from_string(const string &utf8_str, parse_type ptype = legacy_parser, uint32_t depth = 0);
     static string to_string(const variant &v, output_formatting format = stringify_large_ints_and_doubles);
     static string to_pretty_string(const variant &v, output_formatting format = stringify_large_ints_and_doubles);
 
-    static bool is_valid(const std::string &json_str, const bool full_json_validation = true, parse_type ptype = legacy_parser, uint32_t depth = 0);
+    static bool is_valid(const std::string &json_str, const format_validation_mode json_validation_mode, parse_type ptype = legacy_parser, uint32_t depth = 0);
     static bool fast_is_valid(const std::string &json_str);
 
     template <typename T>

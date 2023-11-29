@@ -297,7 +297,7 @@ namespace detail
 
       *method_name = api + "." + method;
 
-      func_args = ( v.size() == 3 ) ? v[2] : fc::json::from_string( "{}" );
+      func_args = ( v.size() == 3 ) ? v[2] : fc::json::from_string( "{}", fc::json::format_validation_mode::full );
     }
     else
     {
@@ -310,7 +310,7 @@ namespace detail
 
       *method_name = method;
 
-      func_args = request.contains( "params" ) ? request[ "params" ] : fc::json::from_string( "{}" );
+      func_args = request.contains( "params" ) ? request[ "params" ] : fc::json::from_string( "{}", fc::json::format_validation_mode::full );
     }
 
     return ret;
@@ -569,7 +569,7 @@ string json_rpc_plugin::call( const string& message )
   STATSD_START_TIMER( "jsonrpc", "overhead", "call", 1.0f, get_app() );
   try
   {
-    fc::variant v = fc::json::from_string( message );
+    fc::variant v = fc::json::from_string( message, fc::json::format_validation_mode::full );
 
     if( v.is_array() )
     {

@@ -6080,7 +6080,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
         // Initial values are located at `libraries/jsonball/data/resource_parameters.json`
         std::string resource_params_json = hive::jsonball::get_resource_parameters();
-        fc::variant resource_params_var = fc::json::from_string( resource_params_json, fc::json::strict_parser );
+        fc::variant resource_params_var = fc::json::from_string( resource_params_json, fc::json::format_validation_mode::full, fc::json::strict_parser );
         std::vector< std::pair< fc::variant, std::pair< fc::variant_object, fc::variant_object > > > resource_params_pairs;
         fc::from_variant( resource_params_var, resource_params_pairs );
         fc::time_point_sec now = dgpo.time;

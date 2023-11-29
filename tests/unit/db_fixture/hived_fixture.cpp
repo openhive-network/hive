@@ -232,7 +232,7 @@ json_rpc_database_fixture::~json_rpc_database_fixture() {}
 
 fc::variant json_rpc_database_fixture::get_answer( std::string& request )
 {
-  return fc::json::from_string( rpc_plugin->call( request ) );
+  return fc::json::from_string( rpc_plugin->call( request ), fc::json::format_validation_mode::full );
 }
 
 void check_id_equal( const fc::variant& id_a, const fc::variant& id_b )
@@ -299,7 +299,7 @@ void json_rpc_database_fixture::make_array_request( std::string& request, int64_
   fc::variant answer = get_answer( request );
   BOOST_REQUIRE( answer.is_array() );
 
-  fc::variants request_array = fc::json::from_string( request ).get_array();
+  fc::variants request_array = fc::json::from_string( request, fc::json::format_validation_mode::full ).get_array();
   fc::variants array = answer.get_array();
 
   BOOST_REQUIRE( array.size() == request_array.size() );
@@ -326,7 +326,7 @@ fc::variant json_rpc_database_fixture::make_request( std::string& request, int64
 
   try
   {
-    id = fc::json::from_string( request ).get_object()[ "id" ];
+    id = fc::json::from_string( request, fc::json::format_validation_mode::full ).get_object()[ "id" ];
   }
   catch( ... ) {}
 

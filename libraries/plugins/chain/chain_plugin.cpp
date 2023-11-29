@@ -1292,7 +1292,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     my->loaded_checkpoints.reserve(cps.size());
     for(const auto& cp : cps)
     {
-      auto item = fc::json::from_string(cp).as<std::pair<uint32_t,block_id_type>>();
+      auto item = fc::json::from_string(cp, fc::json::format_validation_mode::full).as<std::pair<uint32_t,block_id_type>>();
       my->loaded_checkpoints[item.first] = item.second;
     }
   }
