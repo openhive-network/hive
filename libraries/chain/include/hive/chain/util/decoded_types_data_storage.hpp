@@ -13,6 +13,8 @@
 #include <hive/protocol/fixed_string.hpp>
 
 #include <map>
+#include <optional>
+#include <type_traits>
 #include <unordered_set>
 
 #include <boost/mpl/vector.hpp>
@@ -577,6 +579,16 @@ namespace decoders
         decoder_A.decode(dtds);
         main_decoder<B> decoder_B;
         decoder_B.decode(dtds);
+      }
+    };
+
+    template<typename T>
+    struct specific_type_decoder<std::optional<T>>
+    {
+      void decode(decoded_types_data_storage& dtds) const
+      {
+        main_decoder<T> decoder;
+        decoder.decode(dtds);
       }
     };
 
