@@ -98,6 +98,7 @@ uint64_t dhf_processor::calculate_votes( uint32_t pid )
     {
       auto sum = _voter.get_governance_vote_power();
       ret += sum.value;
+      ilog("voter ${v} has a ${s}", ("v", _voter.get_name()) ("s", sum.value) );
     }
 
     ++found;
@@ -111,7 +112,9 @@ void dhf_processor::calculate_votes( const t_proposals& proposals )
   for( auto& item : proposals )
   {
     const proposal_object& _item = item;
+    ilog("calculate_votes function ${p}", ("p", _item.creator ));
     auto total_votes = calculate_votes( _item.proposal_id );
+    ilog("calculate_votes/ total_votes: ${tv}", ("tv", total_votes));
 
     db.modify( _item, [&]( auto& proposal )
     {
@@ -159,7 +162,7 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& m
 {
   if( maintenance_budget_limit.amount.value == 0 )
     return;
-
+  ilog("transfer_payments function 0");
   const auto& treasury_account = db.get_treasury();
 
   uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
@@ -167,7 +170,7 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& m
   auto processing = [this, &treasury_account]( const proposal_object& _item, const asset& payment )
   {
     const auto& receiver_account = db.get_account( _item.receiver );
-
+    ilog("transfer_payments/processing function 1");
     operation vop = proposal_pay_operation( _item.proposal_id, _item.receiver, db.get_treasury_name(), payment );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
     db.push_virtual_operation(vop);
@@ -179,7 +182,7 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& m
   for( auto& item : proposals )
   {
     const proposal_object& _item = item;
-
+    ilog("proposal ${po}", ("po", _item.creator));
     //Proposals without any votes shouldn't be treated as active
     if( _item.total_votes == 0 )
       break;
@@ -239,7 +242,7 @@ void dhf_processor::make_payments( const block_notification& note )
   //Check maintenance period
   if( !is_maintenance_period( head_time ) )
     return;
-
+  ilog("make_payments function 1");
   if( db.get_benchmark_dumper().is_enabled() )
     db.get_benchmark_dumper().begin();
 
@@ -250,6 +253,7 @@ void dhf_processor::make_payments( const block_notification& note )
   find_proposals( head_time, active_proposals, no_active_yet_proposals );
   if( active_proposals.empty() )
   {
+    ilog("make_payments function 2");
     calculate_votes( no_active_yet_proposals );
 
     //Set `new maintenance time` and `last budget time`
@@ -259,7 +263,7 @@ void dhf_processor::make_payments( const block_notification& note )
       db.get_benchmark_dumper().end( "block", dhf_processor::calculating_name );
     return;
   }
-
+  ilog("make_payments function 3");
   //Calculate total_votes for every active proposal
   calculate_votes( active_proposals );
 
@@ -271,6 +275,7 @@ void dhf_processor::make_payments( const block_notification& note )
 
   //Calculate budget for given maintenance period
   asset maintenance_budget_limit = calculate_maintenance_budget( head_time );
+  ilog( "maintenance_budget_limit ${b}", ("b", maintenance_budget_limit) );
 
   //Execute transfer for every active proposal
   transfer_payments( head_time, maintenance_budget_limit, active_proposals );
