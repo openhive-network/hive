@@ -918,6 +918,31 @@ class Vote:
             raise ValueError(f"Downvote with weight {weight} is not allowed. Weight can take (0-100)")
         self.__update_account_info_and_execute_vote(weight)
 
+    def assert_curation_reward_virtual_operation(self, mode: Literal["generated", "not_generated"]):
+        curation_reward_operations = get_reward_operations(self.__comment_obj.node, "curation")
+        curator_and_comment_permlink = [
+            (value["curator"], value["comment_permlink"]) for value in curation_reward_operations
+        ]
+        if mode == "generated":
+            assert (
+                self.__voter.name,
+                self.__comment_obj.permlink,
+            ) in curator_and_comment_permlink, "Curation_reward_operation not generated, but it should have been"
+        elif mode == "not_generated":
+            assert (
+                self.__voter.name,
+                self.__comment_obj.permlink,
+            ) not in curator_and_comment_permlink, "Curation_reward_operation generated, but it should have not been"
+        else:
+            raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def get_curation_vesting_reward(self):
+        curation_reward_operations = get_reward_operations(self.__comment_obj.node, "curation")
+        for value in curation_reward_operations:
+            if value["curator"] == self.__voter.name and value["comment_permlink"] == self.__comment_obj.permlink:
+                return value.reward
+        raise ValueError("Vote not have generated curation_reward_operation")
+
 
 class CommentAccount(Account):
     def __init__(self, name, node, wallet):
