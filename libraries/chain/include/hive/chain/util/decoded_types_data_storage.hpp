@@ -134,25 +134,25 @@ namespace decoders
     void analyze_arguments() {}
   };
 
+  struct type_analyzer
+  {
+    type_analyzer(decoded_types_data_storage& _dtds) : dtds(_dtds) {}
+
+    template<typename U> void operator()(U*)
+    {
+      main_decoder<U> decoder;
+      decoder.decode(dtds);
+    }
+
+    private:
+      decoded_types_data_storage& dtds;
+  };
+
   template <template <typename...> typename T, typename... Args>
   struct template_types_detector<T<Args...>> : std::bool_constant<sizeof...(Args) != 0U>
   {
     private:
       decoded_types_data_storage& dtds;
-
-      struct types_vector_analyzer
-      {
-        types_vector_analyzer(decoded_types_data_storage& _dtds) : dtds(_dtds) {}
-
-        template<typename U> void operator()(U*)
-        {
-          main_decoder<U> decoder;
-          decoder.decode(dtds);
-        }
-
-        private:
-          decoded_types_data_storage& dtds;
-      };
 
     public:
       template_types_detector(decoded_types_data_storage& _dtds) : dtds(_dtds) {}
@@ -160,7 +160,7 @@ namespace decoders
       void analyze_arguments()
       {
         typedef boost::mpl::vector<Args...> types_vector;
-        types_vector_analyzer analyzer(dtds);
+        type_analyzer analyzer(dtds);
         boost::mpl::for_each<typename boost::mpl::transform<types_vector, boost::add_pointer<boost::mpl::_1>>::type>(analyzer);
       }
   };
@@ -503,37 +503,28 @@ namespace decoders
       }
     };
 
-    template<typename T>
-    struct specific_type_decoder<fc::static_variant<T>>
+    template<typename... Args>
+    struct specific_type_decoder<fc::static_variant<Args...>>
     {
       void decode(decoded_types_data_storage& dtds) const
       {
         std::stringstream ss;
-        const std::string type_id = typeid(fc::static_variant<T>).name();
+        const std::string type_id = typeid(fc::static_variant<Args...>).name();
         ss << type_id;
-        ss << sizeof(fc::static_variant<T>);
-        ss << alignof(fc::static_variant<T>);
+        ss << sizeof(fc::static_variant<Args...>);
+        ss << alignof(fc::static_variant<Args...>);
 
-        fc::static_variant<T> sv;
-        ss << typeid(sv.which()).name();
+        typedef boost::mpl::vector<Args...> types_vector;
 
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), boost::core::demangle(type_id.c_str()), sizeof(fc::static_variant<T>), alignof(fc::static_variant<T>))));
-        main_decoder<T> decoder;
-        decoder.decode(dtds);
-      }
-    };
+        if (boost::mpl::size<types_vector>::value)
+        {
+          fc::static_variant<Args...> sv;
+          ss << typeid(sv.which()).name();
+          type_analyzer analyzer(dtds);
+          boost::mpl::for_each<typename boost::mpl::transform<types_vector, boost::add_pointer<boost::mpl::_1>>::type>(analyzer);
+        }
 
-    template<>
-    struct specific_type_decoder<fc::static_variant<>>
-    {
-      void decode(decoded_types_data_storage& dtds) const
-      {
-        std::stringstream ss;
-        const std::string type_id = typeid(fc::static_variant<>).name();
-        ss << type_id;
-        ss << sizeof(fc::static_variant<>);
-        ss << alignof(fc::static_variant<>);
-        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), boost::core::demangle(type_id.c_str()), sizeof(fc::static_variant<>), alignof(fc::static_variant<>))));
+        dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), boost::core::demangle(type_id.c_str()), sizeof(fc::static_variant<Args...>), alignof(fc::static_variant<Args...>))));
       }
     };
 
