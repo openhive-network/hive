@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <map>
+#include <optional>
 #include <set>
 #include <vector>
 #include <sstream>
@@ -92,6 +93,13 @@ namespace fc {
       }
   };
 
+  template<typename T> struct get_typename<std::optional<T>>
+  {
+     static const char* name()  {
+         static std::string n = std::string("std::optional<") + get_typename<T>::name() + ">";
+         return n.c_str();
+     }
+  };
    template< typename T, typename... Args >
    struct var_template_args_typename_helper
    {
