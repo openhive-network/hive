@@ -485,7 +485,7 @@ class Comment:
         wallet: tt.Wallet,
         *,
         permlink: str | None = None,
-        author: Account | None = None,
+        author: CommentAccount | None = None,
         child: Comment | None = None,
         parent: Comment | None = None,
     ):
@@ -508,7 +508,7 @@ class Comment:
         return self.__wallet
 
     @property
-    def author_obj(self) -> Account:
+    def author_obj(self) -> CommentAccount:
         if self.__author is None:
             self.__author = self.__create_comment_account()
         return self.__author
@@ -538,7 +538,7 @@ class Comment:
             node=self.__node,
             wallet=self.__wallet,
             permlink="parent-permlink-is-not-empty",
-            author=Account("", self.__node, self.__wallet),
+            author=CommentAccount("", self.__node, self.__wallet),
         )
 
     @property
@@ -552,7 +552,7 @@ class Comment:
         if not self.comment_exists():
             raise ValueError("Comment not exist")
 
-    def __create_comment_account(self) -> Account:
+    def __create_comment_account(self) -> CommentAccount:
         author = f"account-{Comment.account_counter}"
         sample_vests_amount = 10000
         sample_hive_amount = 10000
@@ -562,7 +562,7 @@ class Comment:
             author, hives=sample_hive_amount, hbds=sample_hbds_amount, vests=sample_vests_amount
         )
         Comment.account_counter += 1
-        return Account(author, self.__node, self.__wallet)
+        return CommentAccount(author, self.__node, self.__wallet)
 
     def create_parent_comment(self) -> Comment:
         parent_account = self.__create_comment_account()
@@ -806,7 +806,7 @@ class Comment:
 class Vote:
     account_counter = 0
 
-    def __init__(self, comment_obj: Comment, voter: Literal["random", "same_as_comment"] | Account):
+    def __init__(self, comment_obj: Comment, voter: Literal["random", "same_as_comment"] | CommentAccount):
         self.__comment_obj = comment_obj
         self.__voter = voter
         self.__vote_transaction: TransactionLegacy | None = None
@@ -825,12 +825,12 @@ class Vote:
     def voter(self) -> str:
         return self.__voter_obj.name
 
-    def __create_voter_account(self) -> Account:
+    def __create_voter_account(self) -> CommentAccount:
         author = f"voter-{Vote.account_counter}"
         sample_vests_amount = 50
         self.__comment_obj.wallet.create_account(author, vests=sample_vests_amount)
         Vote.account_counter += 1
-        return Account(author, self.__comment_obj.node, self.__comment_obj.wallet)
+        return CommentAccount(author, self.__comment_obj.node, self.__comment_obj.wallet)
 
     def assert_vote(self, mode: Literal["occurred", "not_occurred"]) -> None:
         if mode == "occurred":
@@ -905,3 +905,77 @@ class Vote:
         if not -100 <= weight <= 0:
             raise ValueError(f"Downvote with weight {weight} is not allowed. Weight can take (0-100)")
         self.__update_account_info_and_execute_vote(weight)
+
+
+class CommentAccount(Account):
+    def __init__(self, name, node, wallet):
+        super().__init__(_name=name, _node=node, _wallet=wallet)
+
+    def __get_rewards_from_reward_operation(
+        self,
+        node,
+        mode: Literal["author", "curation", "comment_benefactor"],
+        reward_type: Literal["vesting_payout", "hbd_payout"],
+    ):
+        reward_operations = get_reward_operations(node, mode)
+        if mode == "author" and reward_type is not None:
+            return [getattr(vop, reward_type) for vop in reward_operations if vop.author == self.name]
+        if mode == "comment_benefactor" and reward_type is not None:
+            return [getattr(vop, reward_type) for vop in reward_operations if vop.benefactor == self.name]
+        if mode == "curation" and reward_type == "vesting_payout":
+            return [vop.reward for vop in reward_operations if vop.curator == self.name]
+        raise ValueError(f"Wrong argument combination: 'mode': '{mode} and 'reward_type': {reward_type}")
+
+    def assert_reward_hbd_balance(self, node):
+        account_reward_hbd_balance = get_reward_hbd_balance(node, self.name)
+
+        account_hbd_rewards_from_author_reward_operation = self.__get_rewards_from_reward_operation(
+            node, "author", "hbd_payout"
+        )
+        if account_hbd_rewards_from_author_reward_operation == []:
+            account_hbd_rewards_from_author_reward_operation.append(tt.Asset.Tbd(0))
+
+        account_hbd_rewards_from_comment_benefactor_reward_operation = self.__get_rewards_from_reward_operation(
+            node, "comment_benefactor", "hbd_payout"
+        )
+        if account_hbd_rewards_from_comment_benefactor_reward_operation == []:
+            account_hbd_rewards_from_comment_benefactor_reward_operation.append(tt.Asset.Tbd(0))
+
+        assert account_reward_hbd_balance == sum(account_hbd_rewards_from_author_reward_operation) + sum(
+            account_hbd_rewards_from_comment_benefactor_reward_operation
+        )
+
+    def assert_reward_vesting_balance(self, node):
+        account_reward_vesting_balance = get_reward_vesting_balance(node, self.name)
+
+        account_vesting_rewards_from_author_reward_operation = self.__get_rewards_from_reward_operation(
+            node, "author", "vesting_payout"
+        )
+        if account_vesting_rewards_from_author_reward_operation == []:
+            account_vesting_rewards_from_author_reward_operation.append(tt.Asset.Vest(0))
+
+        account_vesting_rewards_from_comment_benefactor_reward_operation = self.__get_rewards_from_reward_operation(
+            node, "comment_benefactor", "vesting_payout"
+        )
+        if account_vesting_rewards_from_comment_benefactor_reward_operation == []:
+            account_vesting_rewards_from_comment_benefactor_reward_operation.append(tt.Asset.Vest(0))
+
+        account_vesting_rewards_from_curation_reward_operation = self.__get_rewards_from_reward_operation(
+            node, "curation", "vesting_payout"
+        )
+        if account_vesting_rewards_from_curation_reward_operation == []:
+            account_vesting_rewards_from_curation_reward_operation.append(tt.Asset.Vest(0))
+
+        assert account_reward_vesting_balance == sum(account_vesting_rewards_from_author_reward_operation) + sum(
+            account_vesting_rewards_from_comment_benefactor_reward_operation
+        ) + sum(account_vesting_rewards_from_curation_reward_operation)
+
+    def assert_curation_reward_virtual_operation(self, mode: Literal["generated", "not_generated"]):
+        curation_reward_operations = get_reward_operations(self.node, "curation")
+        curator = [value["curator"] for value in curation_reward_operations]
+        if mode == "generated":
+            assert self.name in curator, "Curation_reward_operation not generated, but it should have been"
+        elif mode == "not_generated":
+            assert self.name not in curator, "Curation_reward_operation generated, but it should have not been"
+        else:
+            raise ValueError(f"Unexpected value for 'mode': '{mode}'")
