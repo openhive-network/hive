@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
@@ -849,21 +850,27 @@ class Comment:
             - allow_curation_rewards (bool): Whether to allow curation rewards.
             - beneficiaries (list): A list of beneficiaries for the comment, where each beneficiary is a dictionary.
         """
-        self.__comment_options = comment_options
+        self.__comment_options = deepcopy(comment_options)
 
-        if "beneficiaries" in comment_options:
-            comment_options["extensions"] = [
+        if "beneficiaries" in self.__comment_options:
+            for beneficiary in self.__comment_options["beneficiaries"]:
+                beneficiary["weight"] = beneficiary["weight"] * 100
+
+            self.__comment_options["extensions"] = [
                 [
                     "comment_payout_beneficiaries",
-                    {"beneficiaries": comment_options["beneficiaries"]},
+                    {"beneficiaries": self.__comment_options["beneficiaries"]},
                 ]
             ]
-            comment_options.pop("beneficiaries")
+            self.__comment_options.pop("beneficiaries")
+
+        if "percent_hbd" in self.__comment_options:
+            self.__comment_options["percent_hbd"] = self.__comment_options["percent_hbd"] * 100
 
         comment_options_operation = CommentOptionsOperationLegacy(
             author=self.__author.name,
             permlink=self.__permlink,
-            **comment_options,
+            **self.__comment_options,
         )
 
         comment_options_operation.max_accepted_payout = self.__convert_from_mainnet_to_testnet_asset(
