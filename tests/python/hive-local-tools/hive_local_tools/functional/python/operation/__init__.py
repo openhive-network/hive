@@ -20,6 +20,7 @@ from schemas.operations import (
 )
 from schemas.operations.representations.legacy_representation import LegacyRepresentation  # noqa: TCH001
 from schemas.operations.virtual.author_reward_operation import AuthorRewardOperation
+from schemas.operations.virtual.comment_benefactor_reward_operation import CommentBenefactorRewardOperation
 from schemas.operations.virtual.curation_reward_operation import CurationRewardOperation
 from schemas.operations.virtual.effective_comment_vote_operation import EffectiveCommentVoteOperation
 from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
@@ -447,11 +448,13 @@ def get_vote_manabar(
     )
 
 
-def get_reward_operations(node, mode: Literal["author", "curation"]):
+def get_reward_operations(node, mode: Literal["author", "curation", "comment_benefactor"]):
     if mode == "author":
         reward_operations = get_virtual_operations(node, AuthorRewardOperation)
     elif mode == "curation":
         reward_operations = get_virtual_operations(node, CurationRewardOperation)
+    elif mode == "comment_benefactor":
+        reward_operations = get_virtual_operations(node, CommentBenefactorRewardOperation)
     else:
         raise ValueError(f"Unexpected value for 'mode': '{mode}'")
     return [vop["op"]["value"] for vop in reward_operations]
@@ -510,6 +513,8 @@ class Comment:
         self.__comment_transaction: CommentTransaction | None = None
         self.__comment_option_transaction = None
         self.__deleted: bool = False
+        self.__beneficiaries: list[dict] = []
+        self.__benefactors: list[str] = []
 
     @property
     def node(self):
@@ -541,6 +546,14 @@ class Comment:
     @property
     def parent(self) -> Comment | None:
         return self.__parent
+
+    @property
+    def benefactors(self) -> list:
+        return self._benefactors
+
+    def append_beneficiares(self, beneficiaries: list, beneficiary_accounts: list) -> None:
+        self._beneficiaries = beneficiaries
+        self._benefactors = beneficiary_accounts
 
     def __force_get_parent(self) -> Comment:
         """
@@ -813,6 +826,95 @@ class Comment:
             if account_reputation.account == self.__author.name:
                 return account_reputation.reputation
         raise ValueError
+
+    def assert_author_reward_virtual_operation(self, mode: Literal["generated", "not_generated"]):
+        author_reward_operations = get_reward_operations(self.__node, "author")
+        author_and_permlink = [(value.author, value.permlink) for value in author_reward_operations]
+        if mode == "generated":
+            assert (
+                self.author,
+                self.permlink,
+            ) in author_and_permlink, "Author_reward_operation not generated, but it should have been"
+        elif mode == "not_generated":
+            assert (
+                self.author,
+                self.permlink,
+            ) not in author_and_permlink, "Author_reward_operation generated, but it should have not been"
+        else:
+            raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def assert_comment_benefactors_reward_virtual_operations(self, mode: Literal["generated", "not_generated"]):
+        comment_benefactors_operations = get_reward_operations(self.__node, "comment_benefactor")
+        for beneficiary in self._beneficiaries:
+            benefactor_and_permlink = [(value.benefactor, value.permlink) for value in comment_benefactors_operations]
+            if mode == "generated":
+                assert (
+                    beneficiary["account"],
+                    self.permlink,
+                ) in benefactor_and_permlink, (
+                    "Comment_benefactor_reward_operation not generated, but it should have been"
+                )
+            elif mode == "not_generated":
+                assert (
+                    beneficiary["account"],
+                    self.permlink,
+                ) not in benefactor_and_permlink, (
+                    "Comment_benefactor_reward_operation generated, but it should have not been"
+                )
+            else:
+                raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def get_author_reward(self, mode: Literal["hbd_payout", "vesting_payout"]):
+        assert mode in ["hbd_payout", "vesting_payout"], f"Unexpected value for 'mode': '{mode}'"
+        author_reward_operations = get_reward_operations(self.__node, "author")
+        for value in author_reward_operations:
+            if value.author == self.author and value.permlink == self.permlink:
+                return getattr(value, mode)
+        raise ValueError("Comment not have generated author_reward_operation")
+
+    def get_comment_benefactor_reward(self, benefactor: str, mode: Literal["hbd_payout", "vesting_payout"]):
+        assert mode in ["hbd_payout", "vesting_payout"], f"Unexpected value for 'mode': '{mode}'"
+        comment_benefactors_reward_operations = get_reward_operations(self.__node, "comment_benefactor")
+        for value in comment_benefactors_reward_operations:
+            if value.benefactor == benefactor and value.permlink == self.permlink:
+                return getattr(value, mode)
+        raise ValueError("Comment not have generated comment_benefactor_reward_operation")
+
+    def __convert_hbd_to_hive(self, hbd: tt.Asset.Hbd) -> tt.Asset.Hive:
+        hbd_to_hive_feed = self.__node.api.database.get_current_price_feed()
+        hbd_to_hive_feed = hbd_to_hive_feed["base"].as_float() / hbd_to_hive_feed["quote"].as_float()
+        return tt.Asset.Hive(hbd.as_float() / 1000 * hbd_to_hive_feed)
+
+    def __convert_vesting_to_hive(self, vesting: tt.Asset.Vest) -> tt.Asset.Hive:
+        gdgp = self.__node.api.database.get_dynamic_global_properties()
+        total_vesting_shares = gdgp.total_vesting_shares
+        total_vesting_fund_hive = gdgp.total_vesting_fund_hive
+        vesting_to_hive_feed = (total_vesting_shares.as_float() / 1000000) / (total_vesting_fund_hive.as_float() / 1000)
+        return tt.Asset.Hive(vesting.as_float() / 1000000 / vesting_to_hive_feed)
+
+    def assert_resource_percentage_in_author_reward(self, hbd_percentage: int, vesting_percentage: int):
+        hbd_reward = self.get_author_reward("hbd_payout")
+        hbd_reward_as_hive = self.__convert_hbd_to_hive(hbd_reward)
+        vesting_payout = self.get_author_reward("vesting_payout")
+        vesting_payout_as_hive = self.__convert_vesting_to_hive(vesting_payout)
+        assert (
+            abs(hbd_reward_as_hive.as_float() * vesting_percentage - vesting_payout_as_hive.as_float() * hbd_percentage)
+            <= 100
+        ), "Resources percentage in reward are incorrect"
+
+    def assert_resource_percentage_in_comment_benefactor_reward(
+        self, hbd_percentage: int, vesting_percentage: int, benefactor: str | None = None
+    ):
+        if benefactor is None:
+            benefactor = self._benefactors[0].name
+        hbd_reward = self.get_comment_benefactor_reward(benefactor, "hbd_payout")
+        hbd_reward_as_hive = self.__convert_hbd_to_hive(hbd_reward)
+        vesting_payout = self.get_comment_benefactor_reward(benefactor, "vesting_payout")
+        vesting_payout_as_hive = self.__convert_vesting_to_hive(vesting_payout)
+        assert (
+            abs(hbd_reward_as_hive.as_float() * vesting_percentage - vesting_payout_as_hive.as_float() * hbd_percentage)
+            <= 100
+        ), "Resources percentage in reward are incorrect"
 
 
 class Vote:
