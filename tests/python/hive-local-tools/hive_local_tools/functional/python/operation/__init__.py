@@ -23,6 +23,9 @@ from schemas.operations import (
     DeleteCommentOperation,
 )
 from schemas.operations.representations.legacy_representation import LegacyRepresentation  # noqa: TCH001
+from schemas.operations.virtual.author_reward_operation import AuthorRewardOperation
+from schemas.operations.virtual.comment_benefactor_reward_operation import CommentBenefactorRewardOperation
+from schemas.operations.virtual.curation_reward_operation import CurationRewardOperation
 from schemas.operations.virtual.effective_comment_vote_operation import EffectiveCommentVoteOperation
 from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
 from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
@@ -512,6 +515,18 @@ def get_vote_manabar(
         last_update_time=response[bar_type]["last_update_time"],
         maximum=max_mana if bar_type == "voting_manabar" else int(0.25 * max_mana),
     )
+
+
+def get_reward_operations(node, mode: Literal["author", "curation", "comment_benefactor"]):
+    if mode == "author":
+        reward_operations = get_virtual_operations(node, AuthorRewardOperation)
+    elif mode == "curation":
+        reward_operations = get_virtual_operations(node, CurationRewardOperation)
+    elif mode == "comment_benefactor":
+        reward_operations = get_virtual_operations(node, CommentBenefactorRewardOperation)
+    else:
+        raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+    return [vop["op"]["value"] for vop in reward_operations]
 
 
 class Comment:
