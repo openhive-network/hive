@@ -771,6 +771,9 @@ class Comment:
         self.__comment_options = comment_options
 
         if "beneficiaries" in comment_options:
+            for beneficiary in comment_options["beneficiaries"]:
+                beneficiary["weight"] = beneficiary["weight"] * 100
+
             comment_options["extensions"] = [
                 [
                     "comment_payout_beneficiaries",
@@ -778,6 +781,9 @@ class Comment:
                 ]
             ]
             comment_options.pop("beneficiaries")
+
+        if "percent_hbd" in comment_options:
+            comment_options["percent_hbd"] = comment_options["percent_hbd"] * 100
 
         return create_transaction_with_any_operation(
             self.__wallet,
