@@ -1151,12 +1151,16 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 ); // decoded types map size shouldn't change.
 
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<>>());
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 29 );
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<int>>());
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 30 );
-
+  BOOST_CHECK_NO_THROW((dtds.register_new_type<fc::static_variant<fc::erpair<fc::sha256, long>, fc::erpair<double, long double>, fc::erpair<float, long>>>()));
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 35 );
+  BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::sha256>());
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 35 );
   {
     BOOST_CHECK_NO_THROW(dtds.register_new_type<hive::void_t>());
-    BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 31 );
+    BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 36 );
     const hive::chain::util::decoded_type_data& decoded_hive_void_t =dtds.get_decoded_type_data<hive::void_t>();
     BOOST_CHECK( decoded_hive_void_t.reflected );
     BOOST_CHECK( !decoded_hive_void_t.enum_values );
