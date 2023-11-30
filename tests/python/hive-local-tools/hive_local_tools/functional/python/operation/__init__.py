@@ -116,6 +116,12 @@ class Account:
     def get_hbd_balance(self) -> tt.Asset.TbdT:
         return get_hbd_balance(self._node, self._name)
 
+    def get_reward_hbd_balance(self) -> tt.Asset.TbdT:
+        return get_reward_hbd_balance(self._node, self._name)
+
+    def get_reward_vesting_balance(self) -> tt.Asset.VestsT:
+        return get_reward_vesting_balance(self._node, self._name)
+
     def get_hive_balance(self) -> tt.Asset.TestT:
         return get_hive_balance(self._node, self._name)
 
@@ -289,6 +295,14 @@ def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_na
 
 def get_hbd_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TbdT:
     return _find_account(node, account_name).hbd_balance
+
+
+def get_reward_hbd_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TbdT:
+    return _find_account(node, account_name).reward_hbd_balance
+
+
+def get_reward_vesting_balance(node: tt.InitNode, account_name: str) -> tt.Asset.VestsT:
+    return _find_account(node, account_name).reward_vesting_balance
 
 
 def get_hbd_savings_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TbdT:
