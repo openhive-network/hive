@@ -6,7 +6,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.constants import HIVE_CASHOUT_WINDOW_SECONDS
-from hive_local_tools.functional.python.operation import Comment, Vote
+from hive_local_tools.functional.python.operation.comment import Comment, Vote
 from test_tools.__private.exceptions import CommunicationError
 
 

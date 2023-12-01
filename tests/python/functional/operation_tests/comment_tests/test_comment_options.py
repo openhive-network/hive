@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
-from hive_local_tools.functional.python.operation import Comment
+from hive_local_tools.functional.python.operation.comment import Comment
 
 UPDATED_COMMENT_OPTIONS = {
     "max_accepted_payout": tt.Asset.Tbd(100).as_legacy(),

@@ -6,7 +6,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.constants import HIVE_CASHOUT_WINDOW_SECONDS
-from hive_local_tools.functional.python.operation import Comment
+from hive_local_tools.functional.python.operation.comment import Comment
 
 
 def test_if_comment_exist(prepared_node: tt.InitNode, wallet: tt.Wallet) -> None:
