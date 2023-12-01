@@ -4,12 +4,14 @@
 
 namespace hive { namespace chain {
 
+  class database;
+  class fork_database;
   class recent_block_i;
 
   class pruned_block_reader : public block_read_i
   {
   public:
-    pruned_block_reader( const recent_block_i& );
+    pruned_block_reader( database& db, const fork_database& fork_db, const recent_block_i& );
     virtual ~pruned_block_reader() = default;
 
     virtual uint32_t head_block_num( 
@@ -47,7 +49,13 @@ namespace hive { namespace chain {
       uint32_t& remaining_item_count,
       uint32_t limit) const override;
 
+  private:  
+    void store_full_block( const std::shared_ptr<full_block_type> full_block );
+    std::shared_ptr<full_block_type> retrieve_full_block( uint16_t recent_block_num );
+
   private:
+    database& _db;
+    const fork_database& _fork_db;
     const recent_block_i& _recent_blocks;
   };
 
