@@ -329,18 +329,20 @@ def get_virtual_operations(
     *vops: type[SchemaVirtualOperation],
     skip_price_stabilization: bool = True,
     start_block: int | None = None,
+    end_block: int = 2000,
 ) -> list:
     """
     :param vop: name of the virtual operation,
     :param skip_price_stabilization: by default, removes from the list operations confirming vesting-stabilizing,
     :param start_block: block from which virtual operations will be given,
+    :param end_block: block to which virtual operations will be given,
     :return: a list of virtual operations of the type specified in the `vop` argument.
     """
     result: EnumVirtualOps = node.api.account_history.enum_virtual_ops(
         filter=build_vop_filter(*vops),
         include_reversible=True,
         block_range_begin=start_block,
-        block_range_end=2000,
+        block_range_end=end_block,
     )
 
     if skip_price_stabilization:
