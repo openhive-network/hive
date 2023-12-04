@@ -1,5 +1,6 @@
 #pragma once
 
+#include <hive/chain/block_write_interface.hpp>
 #include <hive/chain/block_read_interface.hpp>
 
 namespace hive { namespace chain {
@@ -8,12 +9,25 @@ namespace hive { namespace chain {
   class fork_database;
   class recent_block_i;
 
-  class pruned_block_writer : public block_read_i
+  class pruned_block_writer : public block_write_i, public block_read_i
   {
   public:
     pruned_block_writer( database& db, const fork_database& fork_db, const recent_block_i& );
     virtual ~pruned_block_writer() = default;
 
+    // ### block_write_i overrides ###
+    virtual block_read_i& get_block_reader() override { return *this; };
+    virtual void store_block( uint32_t current_irreversible_block_num,
+                              uint32_t state_head_block_number ) override;
+    virtual void pop_block() override { FC_ASSERT(false, "Not implemented yet!"); }
+    virtual std::optional<new_last_irreversible_block_t> find_new_last_irreversible_block(
+      const std::vector<const witness_object*>& scheduled_witness_objects,
+      const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
+      const unsigned witnesses_required_for_irreversiblity,
+      const uint32_t old_last_irreversible ) const override
+      { FC_ASSERT(false, "Not implemented yet!"); }
+
+    // ### block_read_i overrides ###
     virtual uint32_t head_block_num( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
     virtual block_id_type head_block_id( 
