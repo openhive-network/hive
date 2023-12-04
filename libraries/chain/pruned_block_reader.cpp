@@ -6,10 +6,14 @@
 
 namespace hive { namespace chain {
 
+void initialize_pruning_indexes( database& db );
+
 pruned_block_reader::pruned_block_reader( database& db,
   const fork_database& fork_db, const recent_block_i& recent_blocks )
   : _db( db ), _fork_db( fork_db ), _recent_blocks( recent_blocks )
-{}
+{
+  initialize_pruning_indexes( _db );
+}
 
 uint32_t pruned_block_reader::head_block_num( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
