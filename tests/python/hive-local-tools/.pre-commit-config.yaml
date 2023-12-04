@@ -1,7 +1,7 @@
 # this configuration should be used for linting and formatting a python tests-related code
 files: ^tests/python
 
-define: &excluded_files_regex
+exclude_pattern_files_regex: &exclude_pattern_files_regex
   "\
   ^tests/python/api_tests/pattern_tests/tavern|\
   ^tests/python/api_tests/python_patterns_tests/cli_wallet_tests/response_pattern_tests/response_patterns|\
@@ -11,11 +11,25 @@ define: &excluded_files_regex
   timestamp\
   "
 
+exclude_large_files_regex: &exclude_large_files_regex
+  "\
+  .*\\.orig\\.json$|\
+  .*\\.pat\\.json$|\
+  tests/python/functional/comment_cashout_tests/block_log/block_log|\
+  tests/python/functional/datagen_tests/recalculation_proposal_vote_tests/block_log/block_log|\
+  tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers/block_log|\
+  tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone/block_log|\
+  tests/python/functional/datagen_tests/transaction_status_api_tests/block_log/block_log|\
+  tests/python/functional/hived/block_log/block_log\
+  "
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
       - id: check-added-large-files
+        args: [ "--enforce-all" ]
+        exclude: *exclude_large_files_regex
       - id: check-merge-conflict
       - id: check-yaml
         args: [ "--unsafe" ]
@@ -23,11 +37,11 @@ repos:
         exclude: ^tests/python/api_tests/pattern_tests/tavern/
       - id: pretty-format-json
         args: [ "--autofix" ]
-        exclude: *excluded_files_regex
+        exclude: *exclude_pattern_files_regex
       - id: trailing-whitespace
-        exclude: *excluded_files_regex
+        exclude: *exclude_pattern_files_regex
       - id: end-of-file-fixer
-        exclude: *excluded_files_regex
+        exclude: *exclude_pattern_files_regex
   - repo: https://github.com/python-poetry/poetry
     rev: 1.6.1
     hooks:
