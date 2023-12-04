@@ -18,19 +18,13 @@ pruned_block_writer::pruned_block_writer( database& db,
 uint32_t pruned_block_writer::head_block_num( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
-  auto head = _fork_db.head();
-  return head ? 
-    head->get_block_num() : 
-    _recent_blocks.head_block_num();
+  FC_ASSERT(false, "Not implemented yet!");
 }
 
 block_id_type pruned_block_writer::head_block_id( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
-  auto head = _fork_db.head();
-  return head ? 
-    head->get_block_id() : 
-    _recent_blocks.head_block_id();
+  FC_ASSERT(false, "Not implemented yet!");
 }
 
 std::shared_ptr<full_block_type> pruned_block_writer::read_block_by_num( uint32_t block_num ) const
