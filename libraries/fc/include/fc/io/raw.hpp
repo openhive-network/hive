@@ -14,7 +14,6 @@
 #include <fc/safe.hpp>
 #include <fc/io/raw_fwd.hpp>
 #include <map>
-#include <optional>
 #include <deque>
 
 namespace fc {
@@ -252,7 +251,7 @@ namespace fc {
     }
 
     template<typename Stream, typename T>
-    void unpack( Stream& s, fc::optional<T>& v, uint32_t depth )
+    inline void  unpack( Stream& s, fc::optional<T>& v, uint32_t depth )
     { try {
       depth++;
       FC_ASSERT( depth <= MAX_RECURSION_DEPTH );
@@ -262,7 +261,7 @@ namespace fc {
 
     // std::optional
     template<typename Stream, typename T>
-    void pack( Stream& s, const std::optional<T>& v ) {
+    inline void pack( Stream& s, const std::optional<T>& v ) {
       fc::raw::pack( s, bool(!!v) );
       if( !!v ) fc::raw::pack( s, *v );
     }
