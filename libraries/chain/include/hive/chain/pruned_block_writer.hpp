@@ -8,11 +8,11 @@ namespace hive { namespace chain {
   class fork_database;
   class recent_block_i;
 
-  class pruned_block_reader : public block_read_i
+  class pruned_block_writer : public block_read_i
   {
   public:
-    pruned_block_reader( database& db, const fork_database& fork_db, const recent_block_i& );
-    virtual ~pruned_block_reader() = default;
+    pruned_block_writer( database& db, const fork_database& fork_db, const recent_block_i& );
+    virtual ~pruned_block_writer() = default;
 
     virtual uint32_t head_block_num( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
