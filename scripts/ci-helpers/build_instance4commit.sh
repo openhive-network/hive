@@ -1,10 +1,10 @@
 #! /bin/bash
 
-SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit 1; pwd -P )"
 SCRIPTSDIR="$SCRIPTPATH/.."
-SRCROOTDIR="$SCRIPTSDIR/.."
 
-LOG_FILE=build_instance4commit.log
+export LOG_FILE=build_instance4commit.log
+# shellcheck source=../common.sh
 source "$SCRIPTSDIR/common.sh"
 
 COMMIT=""
@@ -15,16 +15,19 @@ BRANCH="master"
 
 NETWORK_TYPE_ARG=""
 EXPORT_BINARIES_ARG=""
+BUILD_IMAGE_TAG=""
 
 print_help () {
-    echo "Usage: $0 <commit> <registry_url> [OPTION[=VALUE]]..."
-    echo
-    echo "Allows to build docker image containing Hived installation built from pointed COMMIT"
-    echo "OPTIONS:"
-    echo "  --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet"
-    echo "  --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image."
-    echo "  --help                    Display this help screen and exit"
-    echo
+cat <<-EOF
+  Usage: $0 <commit> <registry_url> [OPTION[=VALUE]]...
+
+  Builds Docker image containing Hived installation built from specified COMMIT
+  OPTIONS:
+    --network-type=TYPE       Type of blockchain network supported by the built hived binary. Allowed values: mainnet, testnet, mirrornet.
+    --export-binaries=PATH    Path where binaries shall be exported from the built image.
+    --image-tag=TAG           Image tag. Defaults to short commit hash
+    --help,-h,-?              Displays this help screen and exits
+EOF
 }
 
 while [ $# -gt 0 ]; do
@@ -36,6 +39,13 @@ while [ $# -gt 0 ]; do
     --export-binaries=*)
         export_path="${1#*=}"
         EXPORT_BINARIES_ARG="--export-binaries=${export_path}"
+        ;;
+    --image-tag=*)
+        BUILD_IMAGE_TAG="${1#*=}"
+        ;;
+    --help|-h|-?)
+        print_help
+        exit 0
         ;;
     -*)
         echo "ERROR: '$1' is not a valid option"
@@ -59,13 +69,15 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-TST_COMMIT=${COMMIT:?"Missing arg #1 to specify a COMMIT"}
-TST_REGISTRY=${REGISTRY:?"Missing arg #2 to specify target container registry"}
-
-BUILD_IMAGE_TAG=$COMMIT
+_TST_COMMIT=${COMMIT:?"Missing arg #1 to specify a COMMIT"}
+_TST_REGISTRY=${REGISTRY:?"Missing arg #2 to specify target container registry"}
 
 do_clone "$BRANCH" "./hive-${COMMIT}" https://gitlab.syncad.com/hive/hive.git "$COMMIT"
 
-"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "./hive-${COMMIT}" "${REGISTRY}" ${NETWORK_TYPE_ARG} ${EXPORT_BINARIES_ARG}
+if [[ -z "$BUILD_IMAGE_TAG" ]]; then
+  pushd "./hive-${COMMIT}" || exit 1
+  BUILD_IMAGE_TAG=$(git rev-parse --short "$COMMIT")
+  popd || exit 1  
+fi
 
-
+"$SCRIPTSDIR/ci-helpers/build_instance.sh" "${BUILD_IMAGE_TAG}" "./hive-${COMMIT}" "${REGISTRY}" "${NETWORK_TYPE_ARG}" "${EXPORT_BINARIES_ARG}"

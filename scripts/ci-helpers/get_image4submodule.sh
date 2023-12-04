@@ -95,16 +95,20 @@ echo "Attempting to get commit for: $submodule_path"
 commit=$( "$SCRIPTPATH/retrieve_last_commit.sh" "${submodule_path}" )
 echo "commit with last source code changes is $commit"
 
-img=$( build_image_name $IMGNAME "$commit" "$REGISTRY" )
-img_path=$( build_image_registry_path $IMGNAME "$commit" "$REGISTRY" )
-img_tag=$( build_image_registry_tag $IMGNAME "$commit" "$REGISTRY" )
+pushd "${submodule_path}"
+short_commit=$(git rev-parse --short "$commit")
+popd
 
-img_instance=$( build_image_name $IMGNAME_INSTANCE $commit $REGISTRY )
+img=$( build_image_name $IMGNAME "$short_commit" "$REGISTRY" )
+img_path=$( build_image_registry_path $IMGNAME "$short_commit" "$REGISTRY" )
+img_tag=$( build_image_registry_tag $IMGNAME "$short_commit" "$REGISTRY" )
+
+img_instance=$( build_image_name $IMGNAME_INSTANCE "$short_commit" "$REGISTRY" )
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 image_exists=0
 
-docker_image_exists $IMGNAME "$commit" "$REGISTRY" image_exists
+docker_image_exists $IMGNAME "$short_commit" "$REGISTRY" image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
@@ -114,7 +118,7 @@ else
   # Here continue an image build.
   echo "${img} image is missing. Building it..."
   
-  "$SCRIPTPATH/build_instance4commit.sh" "$commit" "$REGISTRY" --export-binaries="${BINARY_CACHE_PATH}" --network-type="$NETWORK_TYPE"
+  "$SCRIPTPATH/build_instance4commit.sh" "$commit" "$REGISTRY" --export-binaries="${BINARY_CACHE_PATH}" --network-type="$NETWORK_TYPE" --image-tag="$short_commit"
   time docker push "$img"
   time docker push "$img_instance"
 fi
