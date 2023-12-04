@@ -15,7 +15,6 @@ void initialize_core_indexes_10( database& db );
 void initialize_core_indexes_11( database& db );
 void initialize_core_indexes_12( database& db );
 void initialize_core_indexes_13( database& db );
-void initialize_core_indexes_14( database& db );
 
 void initialize_core_indexes( database& db )
 {
@@ -32,7 +31,6 @@ void initialize_core_indexes( database& db )
   initialize_core_indexes_11( db );
   initialize_core_indexes_12( db );
   initialize_core_indexes_13( db );
-  initialize_core_indexes_14( db );
 }
 
 index_info::index_info() {}

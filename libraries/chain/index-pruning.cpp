@@ -6,7 +6,7 @@
 
 namespace hive { namespace chain {
 
-void initialize_core_indexes_14( database& db )
+void initialize_pruning_indexes( database& db )
 {
   HIVE_ADD_NON_REVERTABLE_CORE_INDEX( db, full_block_index );
 }
