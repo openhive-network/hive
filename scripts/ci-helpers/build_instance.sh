@@ -4,7 +4,8 @@ set -euo pipefail
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTPATH/.."
 
-LOG_FILE=build_instance.log
+export LOG_FILE=build_instance.log
+# shellcheck source=../common.sh
 source "$SCRIPTSDIR/common.sh"
 
 BUILD_IMAGE_TAG=""
@@ -85,9 +86,9 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-TST_IMGTAG=${BUILD_IMAGE_TAG:?"Missing arg #1 to specify built image tag"}
-TST_SRCDIR=${SRCROOTDIR:?"Missing arg #2 to specify source directory"}
-TST_REGISTRY=${REGISTRY:?"Missing arg #3 to specify target container registry"}
+_TST_IMGTAG=${BUILD_IMAGE_TAG:?"Missing arg #1 to specify built image tag"}
+_TST_SRCDIR=${SRCROOTDIR:?"Missing arg #2 to specify source directory"}
+_TST_REGISTRY=${REGISTRY:?"Missing arg #3 to specify target container registry"}
 
 # Supplement a registry path by trailing slash (if needed)
 [[ "${REGISTRY}" != */ ]] && REGISTRY="${REGISTRY}/"
@@ -100,24 +101,26 @@ pushd "$SRCROOTDIR"
 export DOCKER_BUILDKIT=1
 
 docker build --target=base_instance \
-  --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
+  --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
-  -t ${REGISTRY}base_instance:base_instance-${BUILD_IMAGE_TAG} \
-  -t ${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${IMAGE_TAG_PREFIX}base_instance-${BUILD_IMAGE_TAG} \
-  -f Dockerfile .
+  --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
+  --tag "${REGISTRY}base_instance:base_instance-${BUILD_IMAGE_TAG}" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${IMAGE_TAG_PREFIX}base_instance-${BUILD_IMAGE_TAG}" \
+  --file Dockerfile .
 
 docker build --target=instance \
-  --build-arg CI_REGISTRY_IMAGE=$REGISTRY \
+  --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-  --build-arg BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG -t ${REGISTRY}${IMAGE_TAG_PREFIX}instance:${IMAGE_TAG_PREFIX}instance-${BUILD_IMAGE_TAG} -f Dockerfile .
+  --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:${IMAGE_TAG_PREFIX}instance-${BUILD_IMAGE_TAG}" \
+  --file Dockerfile .
 
 popd
 
-if [ ! -z "${EXPORT_PATH}" ];
+if [ -n "${EXPORT_PATH}" ];
 then
-  "$SCRIPTPATH/export-binaries.sh" ${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${IMAGE_TAG_PREFIX}base_instance-${BUILD_IMAGE_TAG} "${EXPORT_PATH}"
+  "$SCRIPTPATH/export-binaries.sh" "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${IMAGE_TAG_PREFIX}base_instance-${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
 fi
 
