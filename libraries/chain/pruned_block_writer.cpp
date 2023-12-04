@@ -1,4 +1,4 @@
-#include <hive/chain/pruned_block_reader.hpp>
+#include <hive/chain/pruned_block_writer.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/fork_database.hpp>
@@ -8,81 +8,94 @@ namespace hive { namespace chain {
 
 void initialize_pruning_indexes( database& db );
 
-pruned_block_reader::pruned_block_reader( database& db,
+pruned_block_writer::pruned_block_writer( database& db,
   const fork_database& fork_db, const recent_block_i& recent_blocks )
   : _db( db ), _fork_db( fork_db ), _recent_blocks( recent_blocks )
 {
   initialize_pruning_indexes( _db );
 }
 
-uint32_t pruned_block_reader::head_block_num( 
+uint32_t pruned_block_writer::head_block_num( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
-  FC_ASSERT(false, "Not implemented yet!");
+  auto head = _fork_db.head();
+  return head ? 
+    head->get_block_num() : 
+    _recent_blocks.head_block_num();
 }
 
-block_id_type pruned_block_reader::head_block_id( 
+block_id_type pruned_block_writer::head_block_id( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
-  FC_ASSERT(false, "Not implemented yet!");
+  auto head = _fork_db.head();
+  return head ? 
+    head->get_block_id() : 
+    _recent_blocks.head_block_id();
 }
 
-std::shared_ptr<full_block_type> pruned_block_reader::read_block_by_num( uint32_t block_num ) const
+std::shared_ptr<full_block_type> pruned_block_writer::read_block_by_num( uint32_t block_num ) const
 {
   FC_ASSERT(false, "Not implemented yet!");
 }
 
-void pruned_block_reader::process_blocks(uint32_t starting_block_number, uint32_t ending_block_number,
+void pruned_block_writer::process_blocks(uint32_t starting_block_number, uint32_t ending_block_number,
   block_processor_t processor, hive::chain::blockchain_worker_thread_pool& thread_pool) const
 {
   FC_ASSERT(false, "Not implemented yet!");
 }
 
-std::shared_ptr<full_block_type> pruned_block_reader::fetch_block_by_number( uint32_t block_num,
+std::shared_ptr<full_block_type> pruned_block_writer::fetch_block_by_number( uint32_t block_num,
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 { 
   FC_ASSERT(false, "Not implemented yet!");
 }
 
-std::shared_ptr<full_block_type> pruned_block_reader::fetch_block_by_id( 
+std::shared_ptr<full_block_type> pruned_block_writer::fetch_block_by_id( 
   const block_id_type& id ) const
 {
   FC_ASSERT(false, "Not implemented yet!");
 }
 
-bool pruned_block_reader::is_known_block(const block_id_type& id) const
+bool pruned_block_writer::is_known_block(const block_id_type& id) const
 {
-  std::optional<uint16_t> block_num = _recent_blocks.find_recent_block_num( id );
-  return block_num.has_value();
+  try {
+    // Check among reversible blocks in fork db.
+    if( _fork_db.fetch_block( id ) )
+      return true;
+
+    // Then check among recent blocks in state.
+    std::optional<uint16_t> block_num = _recent_blocks.find_recent_block_num( id );
+    return block_num.has_value();
+  } FC_CAPTURE_AND_RETHROW()
 }
 
-std::deque<block_id_type>::const_iterator pruned_block_reader::find_first_item_not_in_blockchain(
+std::deque<block_id_type>::const_iterator pruned_block_writer::find_first_item_not_in_blockchain(
   const std::deque<block_id_type>& item_hashes_received ) const
 {
   FC_ASSERT(false, "Not implemented yet!");
 }
 
-std::vector<std::shared_ptr<full_block_type>> pruned_block_reader::fetch_block_range( 
+std::vector<std::shared_ptr<full_block_type>> pruned_block_writer::fetch_block_range( 
   const uint32_t starting_block_num, const uint32_t count, 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 { 
   FC_ASSERT(false, "Not implemented yet!");
 }
 
-std::vector<block_id_type> pruned_block_reader::get_blockchain_synopsis( 
+std::vector<block_id_type> pruned_block_writer::get_blockchain_synopsis( 
   const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
 {
   FC_ASSERT(false, "Not implemented yet!");
 }
 
-std::vector<block_id_type> pruned_block_reader::get_block_ids(
+std::vector<block_id_type> pruned_block_writer::get_block_ids(
   const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
   uint32_t limit) const
 {
   FC_ASSERT(false, "Not implemented yet!");
 }
 
-void pruned_block_reader::store_full_block( const std::shared_ptr<full_block_type> full_block )
+void pruned_block_writer::store_full_block( const std::shared_ptr<full_block_type> full_block )
 {
   try
   {
@@ -99,7 +112,7 @@ void pruned_block_reader::store_full_block( const std::shared_ptr<full_block_typ
   FC_CAPTURE_AND_RETHROW()
 }
 
-std::shared_ptr<full_block_type> pruned_block_reader::retrieve_full_block( uint16_t recent_block_num )
+std::shared_ptr<full_block_type> pruned_block_writer::retrieve_full_block( uint16_t recent_block_num )
 {
   try
   {
