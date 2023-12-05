@@ -66,7 +66,7 @@ namespace hive { namespace chain {
 
   private:  
     void store_full_block( const std::shared_ptr<full_block_type> full_block );
-    std::shared_ptr<full_block_type> retrieve_full_block( uint16_t recent_block_num );
+    std::shared_ptr<full_block_type> retrieve_full_block( uint32_t recent_block_num ) const;
 
   private:
     uint16_t _stored_block_number;
