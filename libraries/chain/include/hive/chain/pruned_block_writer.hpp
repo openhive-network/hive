@@ -12,7 +12,8 @@ namespace hive { namespace chain {
   class pruned_block_writer : public block_write_i, public block_read_i
   {
   public:
-    pruned_block_writer( database& db, const fork_database& fork_db, const recent_block_i& );
+    pruned_block_writer( uint16_t stored_block_number, 
+      database& db, const fork_database& fork_db, const recent_block_i& );
     virtual ~pruned_block_writer() = default;
 
     // ### block_write_i overrides ###
@@ -68,6 +69,7 @@ namespace hive { namespace chain {
     std::shared_ptr<full_block_type> retrieve_full_block( uint16_t recent_block_num );
 
   private:
+    uint16_t _stored_block_number;
     database& _db;
     const fork_database& _fork_db;
     const recent_block_i& _recent_blocks;
