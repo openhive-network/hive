@@ -8,11 +8,17 @@ namespace hive { namespace chain {
 
 void initialize_pruning_indexes( database& db );
 
-pruned_block_writer::pruned_block_writer( database& db,
-  const fork_database& fork_db, const recent_block_i& recent_blocks )
-  : _db( db ), _fork_db( fork_db ), _recent_blocks( recent_blocks )
+pruned_block_writer::pruned_block_writer( uint16_t stored_block_number, 
+  database& db, const fork_database& fork_db, const recent_block_i& recent_blocks )
+  : _stored_block_number(stored_block_number), _db( db ), _fork_db( fork_db ),
+    _recent_blocks( recent_blocks )
 {
+  FC_ASSERT( stored_block_number > 0, "At least one full block must be stored!" );
+
   initialize_pruning_indexes( _db );
+
+  for( uint16_t i = 0; i < stored_block_number; ++i )
+    _db.create< full_block_object >();
 }
 
 uint32_t pruned_block_writer::head_block_num( 
@@ -93,15 +99,17 @@ void pruned_block_writer::store_full_block( const std::shared_ptr<full_block_typ
 {
   try
   {
-    const compressed_block_data& cbd = full_block->get_compressed_block();
+    full_block_object::id_type fbid( full_block->get_block_num() % _stored_block_number );
+    _db.modify( _db.get< full_block_object >( fbid ), [&](full_block_object& fbo) {
+      const compressed_block_data& cbd = full_block->get_compressed_block();
+      size_t byte_size = cbd.compressed_size;
+      const char* bytes = cbd.compressed_bytes.get();
 
-    const block_attributes_t& attributes = cbd.compression_attributes;
-    size_t byte_size = cbd.compressed_size;
-    const char* bytes = cbd.compressed_bytes.get();
-
-    const block_id_type& block_id = full_block->get_block_id();
-
-    _db.create< full_block_object >( attributes, byte_size, bytes, block_id );
+      fbo.compression_attributes = cbd.compression_attributes;
+      fbo.byte_size = byte_size;
+      fbo.block_bytes.assign( bytes, bytes+byte_size );
+      fbo.block_id = full_block->get_block_id();
+    });
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -110,9 +118,13 @@ std::shared_ptr<full_block_type> pruned_block_writer::retrieve_full_block( uint1
 {
   try
   {
-    full_block_object::id_type bsid( recent_block_num );
-    const full_block_object* fbo = _db.find<full_block_object, by_id>( bsid );
+    full_block_object::id_type fbid( recent_block_num % _stored_block_number );
+    const full_block_object* fbo = _db.find<full_block_object, by_id>( fbid );
     if( fbo == nullptr )
+      return std::shared_ptr<full_block_type>();
+
+    uint32_t actual_block_num = block_header::num_from_id( fbo->block_id );
+    if( actual_block_num != recent_block_num )
       return std::shared_ptr<full_block_type>();
 
     size_t raw_block_size = fbo->byte_size;
