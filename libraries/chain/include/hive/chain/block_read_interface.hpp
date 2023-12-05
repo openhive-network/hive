@@ -74,15 +74,5 @@ class replay_block_read_i : public block_read_i
     virtual std::shared_ptr<full_block_type> head_block() const = 0;
   };
 
-class recent_block_i
-  {
-  protected:
-    virtual ~recent_block_i() = default;
-
-  public:
-    virtual std::optional<block_id_type> find_recent_block_id( uint16_t recent_block_num ) const = 0;
-    virtual std::optional<uint16_t> find_recent_block_num( const block_id_type& recent_block_hash ) const = 0;
-  };
-
 } }
 
