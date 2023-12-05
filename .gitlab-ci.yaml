@@ -1013,7 +1013,6 @@ comment_cashout_tests:
   script:
     - cd tests/python/functional/comment_cashout_tests
     - *run-pytest
-  allow_failure: true
   tags:
     - public-runner-docker
 
