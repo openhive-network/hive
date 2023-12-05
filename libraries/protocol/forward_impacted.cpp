@@ -966,8 +966,11 @@ private:
 
   void collect_memo_key(public_key_type memo_key, collected_keyauth_t& collected_item) 
   {
+    if( memo_key != public_key_type() )
+    {
       collected_item.key_auth = memo_key;
       collected_keyauths.emplace_back(collected_item);
+    }
   }
 
 
