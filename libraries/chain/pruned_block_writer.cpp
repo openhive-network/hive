@@ -35,7 +35,7 @@ block_id_type pruned_block_writer::head_block_id(
 
 std::shared_ptr<full_block_type> pruned_block_writer::read_block_by_num( uint32_t block_num ) const
 {
-  FC_ASSERT(false, "Not implemented yet!");
+  return retrieve_full_block( block_num );
 }
 
 void pruned_block_writer::process_blocks(uint32_t starting_block_number, uint32_t ending_block_number,
@@ -47,13 +47,31 @@ void pruned_block_writer::process_blocks(uint32_t starting_block_number, uint32_
 std::shared_ptr<full_block_type> pruned_block_writer::fetch_block_by_number( uint32_t block_num,
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 { 
-  FC_ASSERT(false, "Not implemented yet!");
+  try {
+    shared_ptr<fork_item> forkdb_item = 
+      _fork_db.fetch_block_on_main_branch_by_number(block_num, wait_for_microseconds);
+    if (forkdb_item)
+      return forkdb_item->full_block;
+
+    return read_block_by_num(block_num);
+  } FC_LOG_AND_RETHROW()
 }
 
 std::shared_ptr<full_block_type> pruned_block_writer::fetch_block_by_id( 
   const block_id_type& id ) const
 {
-  FC_ASSERT(false, "Not implemented yet!");
+  try {
+    shared_ptr<fork_item> fork_item = _fork_db.fetch_block( id );
+    if (fork_item)
+      return fork_item->full_block;
+
+    std::shared_ptr<full_block_type> block = 
+      read_block_by_num( protocol::block_header::num_from_id( id ) );
+    if( block && block->get_block_id() == id )
+      return block;
+      
+    return std::shared_ptr<full_block_type>();
+  } FC_CAPTURE_AND_RETHROW()
 }
 
 bool pruned_block_writer::is_known_block(const block_id_type& id) const
@@ -114,7 +132,7 @@ void pruned_block_writer::store_full_block( const std::shared_ptr<full_block_typ
   FC_CAPTURE_AND_RETHROW()
 }
 
-std::shared_ptr<full_block_type> pruned_block_writer::retrieve_full_block( uint16_t recent_block_num )
+std::shared_ptr<full_block_type> pruned_block_writer::retrieve_full_block( uint32_t recent_block_num ) const
 {
   try
   {
