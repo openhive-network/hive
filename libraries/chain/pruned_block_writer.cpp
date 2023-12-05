@@ -9,9 +9,8 @@ namespace hive { namespace chain {
 void initialize_pruning_indexes( database& db );
 
 pruned_block_writer::pruned_block_writer( uint16_t stored_block_number, 
-  database& db, const fork_database& fork_db, const recent_block_i& recent_blocks )
-  : _stored_block_number(stored_block_number), _db( db ), _fork_db( fork_db ),
-    _recent_blocks( recent_blocks )
+  database& db, const fork_database& fork_db )
+  : _stored_block_number(stored_block_number), _db( db ), _fork_db( fork_db )
 {
   FC_ASSERT( stored_block_number > 0, "At least one full block must be stored!" );
 
@@ -24,13 +23,19 @@ pruned_block_writer::pruned_block_writer( uint16_t stored_block_number,
 uint32_t pruned_block_writer::head_block_num( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
-  FC_ASSERT(false, "Not implemented yet!");
+  auto head = _fork_db.head();
+  return head ? 
+    head->get_block_num() : 
+    _db.head_block_num();
 }
 
 block_id_type pruned_block_writer::head_block_id( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
-  FC_ASSERT(false, "Not implemented yet!");
+  auto head = _fork_db.head();
+  return head ? 
+    head->get_block_id() : 
+    _db.head_block_id();
 }
 
 std::shared_ptr<full_block_type> pruned_block_writer::read_block_by_num( uint32_t block_num ) const
@@ -82,8 +87,8 @@ bool pruned_block_writer::is_known_block(const block_id_type& id) const
       return true;
 
     // Then check among recent blocks in state.
-    std::optional<uint16_t> block_num = _recent_blocks.find_recent_block_num( id );
-    return block_num.has_value();
+    //std::optional<uint16_t> block_num = _db.find_recent_block_num( id );
+    return false;//block_num.has_value();
   } FC_CAPTURE_AND_RETHROW()
 }
 
