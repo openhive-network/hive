@@ -22,13 +22,9 @@ class full_block_object : public object< full_block_object_type, full_block_obje
     using t_block_bytes = t_vector< char >;
 
     template< typename Allocator >
-    full_block_object( allocator< Allocator > a, uint64_t _id, const block_attributes_t& ba,
-      size_t _byte_size, const char* _bytes, const block_id_type& _block_id )
-    : id( _id ), compression_attributes( ba ), byte_size( _byte_size ), block_bytes( a ),
-      block_id( _block_id )
-    {
-      block_bytes.assign( _bytes, _bytes+byte_size );
-    }
+    full_block_object( allocator< Allocator > a, uint64_t _id )
+    : id( _id ), block_bytes( a )
+    {}
 
     block_attributes_t  compression_attributes;
     size_t              byte_size = 0;
