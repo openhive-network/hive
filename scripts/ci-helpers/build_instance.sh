@@ -25,11 +25,14 @@ print_help () {
     echo "OPTIONS:"
     echo "  --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet"
     echo "  --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image."
+    echo "  --hive-subdir=PATH        Specifies the hive submodule directory path (can be either relative or absolute) in order to use this script in other repositories where hive is a submodule"
     echo "  --help                    Display this help screen and exit"
     echo
 }
 
 EXPORT_PATH=""
+HIVE_SUBDIR="."
+SOURCE_DIR="."
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -56,6 +59,11 @@ while [ $# -gt 0 ]; do
             echo
             exit 3
         esac
+        ;;
+    --hive-subdir=*)
+        arg="${1#*=}"
+        HIVE_SUBDIR=$(realpath --relative-to="$(pwd)" "$arg")
+        SOURCE_DIR=$(realpath --relative-to="$(realpath $arg)" "$(pwd)")
         ;;
     --export-binaries=*)
         arg="${1#*=}"
@@ -107,7 +115,8 @@ docker build --target=base_instance \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
   --tag "${REGISTRY}base_instance:${BUILD_IMAGE_TAG}" \
   --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG}" \
-  --file Dockerfile .
+  --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
+  -f Dockerfile "$SOURCE_DIR"
 
 docker build --target=instance \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
@@ -115,7 +124,8 @@ docker build --target=instance \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
   --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:${BUILD_IMAGE_TAG}" \
-  --file Dockerfile .
+  --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
+  -f Dockerfile "$SOURCE_DIR"
 
 popd
 
