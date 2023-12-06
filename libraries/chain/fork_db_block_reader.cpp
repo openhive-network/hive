@@ -161,8 +161,8 @@ std::vector<block_id_type> fork_db_block_reader::get_blockchain_synopsis(
 }
 
 std::vector<block_id_type> fork_db_block_reader::get_block_ids(
-  const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
-  uint32_t limit) const
+  const fork_database& fork_db, const std::vector<block_id_type>& blockchain_synopsis,
+  uint32_t& remaining_item_count, uint32_t limit, get_block_id_for_num_t get_block_id_for_num)
 {
   uint32_t first_block_num_in_reply;
   uint32_t last_block_num_in_reply;
@@ -173,9 +173,9 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
 
   // get and hold a fork database lock so a fork switch can't happen while we're in the middle of creating
   // this list of block ids
-  _fork_db.with_read_lock([&]() {
+  fork_db.with_read_lock([&]() {
     remaining_item_count = 0;
-    head = _fork_db.head_unlocked();
+    head = fork_db.head_unlocked();
     if (!head)
       return;
     head_block_num = head->get_block_num();
@@ -191,6 +191,21 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
     }
     else
     {
+      auto is_included_block_unlocked = [&](const block_id_type& block_id) -> bool {
+        uint32_t block_num = block_header::num_from_id(block_id);
+        if (block_num == 0)
+          return block_id == block_id_type();
+
+        // See if fork DB has the item
+        shared_ptr<fork_item> fitem = fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
+        if (fitem)
+          return block_id == fitem->get_block_id();
+
+
+        // Next we check if block_log has it. Irreversible blocks are here.
+        auto read_block_id = get_block_id_for_num(block_num);
+        return block_id == read_block_id;
+      };
       bool found_a_block_in_synopsis = false;
       for (const block_id_type& block_id_in_synopsis : boost::adaptors::reverse(blockchain_synopsis))
         if (block_id_in_synopsis == block_id_type() || is_included_block_unlocked(block_id_in_synopsis))
@@ -215,7 +230,7 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
 
     result.resize(result_size);
 
-    uint32_t oldest_block_num_in_forkdb = _fork_db.get_oldest_block_num_unlocked();
+    uint32_t oldest_block_num_in_forkdb = fork_db.get_oldest_block_num_unlocked();
     last_block_from_block_log_in_reply = std::min(oldest_block_num_in_forkdb - 1, last_block_num_in_reply);
 
     uint32_t first_block_num_from_fork_db_in_reply = std::max(oldest_block_num_in_forkdb, first_block_num_in_reply);
@@ -225,7 +240,7 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
          block_num <= last_block_num_in_reply;
          ++block_num)
     {
-      shared_ptr<fork_item> item_from_forkdb = _fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
+      shared_ptr<fork_item> item_from_forkdb = fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
       assert(item_from_forkdb);
       uint32_t index_in_result = block_num - first_block_num_in_reply;
       result[index_in_result] = item_from_forkdb->get_block_id();
@@ -254,24 +269,13 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
   return result;
 }
 
-// requires forkdb read lock, does not require chainbase lock
-bool fork_db_block_reader::is_included_block_unlocked(const block_id_type& block_id) const
-{ 
-  try {
-    uint32_t block_num = block_header::num_from_id(block_id);
-    if (block_num == 0)
-      return block_id == block_id_type();
-
-    // See if fork DB has the item
-    shared_ptr<fork_item> fitem = _fork_db.fetch_block_on_main_branch_by_number_unlocked(block_num);
-    if (fitem)
-      return block_id == fitem->get_block_id();
-
-
-    // Next we check if block_log has it. Irreversible blocks are here.
-    auto read_block_id = get_block_id_for_num(block_num);
-    return block_id == read_block_id;
-  } FC_CAPTURE_AND_RETHROW()
+std::vector<block_id_type> fork_db_block_reader::get_block_ids(
+  const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
+  uint32_t limit) const
+{
+  return fork_db_block_reader::get_block_ids( _fork_db, blockchain_synopsis,
+    remaining_item_count, limit, [&](uint32_t block_num)->block_id_type {
+      return this->get_block_id_for_num(block_num);} );
 }
 
 block_id_type fork_db_block_reader::get_block_id_for_num( uint32_t block_num ) const

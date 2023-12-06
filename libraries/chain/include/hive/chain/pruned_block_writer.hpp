@@ -7,6 +7,7 @@ namespace hive { namespace chain {
 
   class database;
   class fork_database;
+  class full_block_object;
 
   class pruned_block_writer : public block_write_i, public block_read_i
   {
@@ -66,6 +67,7 @@ namespace hive { namespace chain {
   private:  
     void store_full_block( const std::shared_ptr<full_block_type> full_block );
     std::shared_ptr<full_block_type> retrieve_full_block( uint32_t recent_block_num ) const;
+    const full_block_object* find_full_block( uint32_t recent_block_num ) const;
 
   private:
     uint16_t _stored_block_number;
