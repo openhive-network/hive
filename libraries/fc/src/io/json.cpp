@@ -1080,7 +1080,7 @@ namespace fc
     }
     catch (const fc::exception& e)
     {
-      elog("FC Error during json validation: ${what}", ("what", e.to_detail_string()));
+      dlog("FC Error during json validation: ${what}", ("what", e.to_detail_string()));
       return false;
     }
     catch (const std::exception& e)
