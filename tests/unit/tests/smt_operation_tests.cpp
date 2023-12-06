@@ -269,13 +269,14 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     tx.operations.clear();
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
+    generate_block();
 
     bob_smt_balance -= asset (7500, alice_symbol );
     alice_smt_balance += asset (7500, alice_symbol );
     bob_balance += ASSET( "5.000 TESTS" );
 
-    auto recent_ops = get_last_operations( 1 );
-    auto fill_order_op = recent_ops[0].get< fill_order_operation >();
+    auto recent_ops = get_last_operations( 2 );
+    auto fill_order_op = recent_ops[1].get< fill_order_operation >();
 
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", 1 ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
@@ -700,13 +701,14 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     tx.operations.clear();
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
+    generate_block();
 
     bob_smt_balance -= asset (7500, alice_symbol );
     alice_smt_balance += asset (7500, alice_symbol );
     bob_balance += ASSET( "5.000 TESTS" );
 
-    auto recent_ops = get_last_operations( 1 );
-    auto fill_order_op = recent_ops[0].get< fill_order_operation >();
+    auto recent_ops = get_last_operations( 2 );
+    auto fill_order_op = recent_ops[1].get< fill_order_operation >();
 
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", 1 ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
