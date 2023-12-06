@@ -96,10 +96,12 @@ function(git_describe _var)
 	get_git_head_revision(refspec hash)
 	if(NOT GIT_FOUND)
 		set(${_var} "GIT-NOTFOUND" PARENT_SCOPE)
+		message(FATAL_ERROR "Git not found")
 		return()
 	endif()
 	if(NOT hash)
 		set(${_var} "HEAD-HASH-NOTFOUND" PARENT_SCOPE)
+		message(FATAL_ERROR "Git HEAD file not found")
 		return()
 	endif()
 
@@ -124,10 +126,12 @@ function(git_describe _var)
 		res
 		OUTPUT_VARIABLE
 		out
-		ERROR_QUIET
+		ERROR_VARIABLE
+		err
 		OUTPUT_STRIP_TRAILING_WHITESPACE)
 	if(NOT res EQUAL 0)
 		set(out "${out}-${res}-NOTFOUND")
+		message(FATAL_ERROR "Git command execution failed: ${err}")
 	endif()
 
 	set(${_var} "${out}" PARENT_SCOPE)
@@ -140,10 +144,12 @@ function(get_git_unix_timestamp _var)
 	get_git_head_revision(refspec hash)
 	if(NOT GIT_FOUND)
 		set(${_var} "GIT-NOTFOUND" PARENT_SCOPE)
+		message(FATAL_ERROR "Git not found")
 		return()
 	endif()
 	if(NOT hash)
 		set(${_var} "HEAD-HASH-NOTFOUND" PARENT_SCOPE)
+		message(FATAL_ERROR "Git HEAD file not found")
 		return()
 	endif()
 
@@ -170,10 +176,12 @@ function(get_git_unix_timestamp _var)
 		res
 		OUTPUT_VARIABLE
 		out
-		ERROR_QUIET
+		ERROR_VARIABLE
+		err
 		OUTPUT_STRIP_TRAILING_WHITESPACE)
 	if(NOT res EQUAL 0)
 		set(out "${out}-${res}-NOTFOUND")
+		message(FATAL_ERROR "Git command execution failed: ${err}")
 	endif()
 
 	set(${_var} "${out}" PARENT_SCOPE)
