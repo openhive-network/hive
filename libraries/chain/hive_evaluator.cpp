@@ -2945,9 +2945,16 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
   auto* delegation = _db.find< vesting_delegation_object, by_delegation >( boost::make_tuple( delegator.get_id(), delegatee.get_id() ) );
 
   const auto& gpo = _db.get_dynamic_global_properties();
+  auto now = gpo.time;
 
   asset available_shares;
   asset available_downvote_shares;
+
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  {
+    _db.rc.regenerate_rc_mana( delegator, now );
+    _db.rc.regenerate_rc_mana( delegatee, now );
+  }
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
   {
@@ -2956,7 +2963,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     _db.modify( delegator, [&]( account_object& a )
     {
       util::update_manabar( gpo, a );
-    });
+    } );
 
     available_shares = asset( delegator.voting_manabar.current_mana, VESTS_SYMBOL );
     if( gpo.downvote_pool_percent )
@@ -3025,7 +3032,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       ("acc", op.delegator)("r", op.vesting_shares)("a", available_downvote_shares) );
     FC_ASSERT( op.vesting_shares >= min_delegation, "Account must delegate a minimum of ${v}", ("v", min_delegation) );
 
-    _db.create< vesting_delegation_object >( delegator, delegatee, op.vesting_shares, _db.head_block_time() );
+    _db.create< vesting_delegation_object >( delegator, delegatee, op.vesting_shares, now );
 
     _db.modify( delegator, [&]( account_object& a )
     {
@@ -3044,7 +3051,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
           a.downvote_manabar.use_mana( op.vesting_shares.amount.value );
         }
       }
-    });
+    } );
 
     _db.modify( delegatee, [&]( account_object& a )
     {
@@ -3054,7 +3061,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       }
 
       a.received_vesting_shares += op.vesting_shares;
-    });
+    } );
   }
   // Else if the delegation is increasing
   else if( op.vesting_shares >= delegation->get_vesting() )
@@ -3086,7 +3093,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
           a.downvote_manabar.use_mana( delta.amount.value );
         }
       }
-    });
+    } );
 
     _db.modify( delegatee, [&]( account_object& a )
     {
@@ -3096,12 +3103,12 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       }
 
       a.received_vesting_shares += delta;
-    });
+    } );
 
     _db.modify( *delegation, [&]( vesting_delegation_object& obj )
     {
       obj.set_vesting( op.vesting_shares );
-    });
+    } );
   }
   // Else the delegation is decreasing
   else
@@ -3119,7 +3126,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     }
 
     _db.create< vesting_delegation_expiration_object >( delegator, delta,
-      std::max( _db.head_block_time() + gpo.delegation_return_period, delegation->get_min_delegation_time() ) );
+      std::max( now + gpo.delegation_return_period, delegation->get_min_delegation_time() ) );
 
     _db.modify( delegatee, [&]( account_object& a )
     {
@@ -3146,19 +3153,25 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
           }
         }
       }
-    });
+    } );
 
     if( op.vesting_shares.amount > 0 )
     {
       _db.modify( *delegation, [&]( vesting_delegation_object& obj )
       {
         obj.set_vesting( op.vesting_shares );
-      });
+      } );
     }
     else
     {
       _db.remove( *delegation );
     }
+  }
+
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  {
+    _db.rc.update_account_after_vest_change( delegator, now, true, true );
+    _db.rc.update_account_after_vest_change( delegatee, now, true, true );
   }
 }
 
