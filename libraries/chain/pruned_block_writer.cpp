@@ -2,6 +2,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/fork_database.hpp>
+#include <hive/chain/fork_db_block_reader.hpp>
 #include <hive/chain/full_block_object.hpp>
 
 namespace hive { namespace chain {
@@ -115,7 +116,14 @@ std::vector<block_id_type> pruned_block_writer::get_block_ids(
   const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
   uint32_t limit) const
 {
-  FC_ASSERT(false, "Not implemented yet!");
+  return fork_db_block_reader::get_block_ids( _fork_db, blockchain_synopsis,
+    remaining_item_count, limit, [&](uint32_t block_num)->block_id_type {
+      const full_block_object* fbo = this->find_full_block( block_num );
+      if( fbo != nullptr )
+        return fbo->block_id;
+      else
+        return block_id_type();
+    });
 }
 
 void pruned_block_writer::store_full_block( const std::shared_ptr<full_block_type> full_block )
@@ -137,17 +145,30 @@ void pruned_block_writer::store_full_block( const std::shared_ptr<full_block_typ
   FC_CAPTURE_AND_RETHROW()
 }
 
-std::shared_ptr<full_block_type> pruned_block_writer::retrieve_full_block( uint32_t recent_block_num ) const
+const full_block_object* pruned_block_writer::find_full_block( uint32_t recent_block_num ) const
 {
   try
   {
     full_block_object::id_type fbid( recent_block_num % _stored_block_number );
     const full_block_object* fbo = _db.find<full_block_object, by_id>( fbid );
-    if( fbo == nullptr )
-      return std::shared_ptr<full_block_type>();
+    if( fbo != nullptr )
+    {
+      uint32_t actual_block_num = block_header::num_from_id( fbo->block_id );
+      if( actual_block_num != recent_block_num )
+        return nullptr;
+    }
 
-    uint32_t actual_block_num = block_header::num_from_id( fbo->block_id );
-    if( actual_block_num != recent_block_num )
+    return fbo;
+  }
+  FC_CAPTURE_AND_RETHROW()
+}
+
+std::shared_ptr<full_block_type> pruned_block_writer::retrieve_full_block( uint32_t recent_block_num ) const
+{
+  try
+  {
+    const full_block_object* fbo = find_full_block( recent_block_num );
+    if( fbo == nullptr )
       return std::shared_ptr<full_block_type>();
 
     size_t raw_block_size = fbo->byte_size;
