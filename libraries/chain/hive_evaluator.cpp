@@ -2871,10 +2871,13 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
         FC_ASSERT( a != nullptr, "Could NOT find account ${a}", ("a", op.account) );
       }
 
-      if( token.symbol == VESTS_SYMBOL)
+      if( token.symbol == VESTS_SYMBOL )
       {
         FC_ASSERT( token <= a->get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
-          ("c", token)("a", a->get_vest_rewards() ) );
+          ( "c", token )( "a", a->get_vest_rewards() ) );
+
+        const auto& dgpo = _db.get_dynamic_global_properties();
+        auto now = dgpo.time;
 
         asset reward_vesting_hive_to_move = asset( 0, HIVE_SYMBOL );
         if( token == a->get_vest_rewards() )
@@ -2883,30 +2886,32 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
           reward_vesting_hive_to_move = asset( fc::uint128_to_uint64( ( uint128_t( token.amount.value ) * uint128_t( a->get_vest_rewards_as_hive().amount.value ) )
             / uint128_t( a->get_vest_rewards().amount.value ) ), HIVE_SYMBOL );
 
+        _db.rc.regenerate_rc_mana( *a, now );
         _db.modify( *a, [&]( account_object& a )
         {
           a.vesting_shares += token;
           a.reward_vesting_balance -= token;
           a.reward_vesting_hive -= reward_vesting_hive_to_move;
-        });
+        } );
+        _db.rc.update_account_after_vest_change( *a, now );
 
-        _db.modify( _db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+        _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
         {
           gpo.total_vesting_shares += token;
           gpo.total_vesting_fund_hive += reward_vesting_hive_to_move;
 
           gpo.pending_rewarded_vesting_shares -= token;
           gpo.pending_rewarded_vesting_hive -= reward_vesting_hive_to_move;
-        });
+        } );
 
         _db.adjust_proxied_witness_votes( *a, token.amount );
       }
       else if( token.symbol == HIVE_SYMBOL || token.symbol == HBD_SYMBOL )
       {
         FC_ASSERT( is_asset_type( token, HIVE_SYMBOL ) == false || token <= a->get_rewards(),
-                "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}", ("c", token)("a", a->get_rewards() ) );
+          "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}", ( "c", token )( "a", a->get_rewards() ) );
         FC_ASSERT( is_asset_type( token, HBD_SYMBOL ) == false || token <= a->get_hbd_rewards(),
-                "Cannot claim that much HBD. Claim: ${c} Actual: ${a}", ("c", token)("a", a->get_hbd_rewards()) );
+          "Cannot claim that much HBD. Claim: ${c} Actual: ${a}", ( "c", token )( "a", a->get_hbd_rewards() ) );
         _db.adjust_reward_balance( *a, -token );
         _db.adjust_balance( *a, token );
       }
