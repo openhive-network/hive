@@ -2803,6 +2803,8 @@ void set_reset_account_evaluator::do_apply( const set_reset_account_operation& o
 void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operation& op )
 {
   const auto& acnt = _db.get_account( op.account );
+  const auto& dgpo = _db.get_dynamic_global_properties();
+  auto now = dgpo.time;
 
   FC_ASSERT( op.reward_hive <= acnt.get_rewards(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
     ("c", op.reward_hive)("a", acnt.get_rewards() ) );
@@ -2825,24 +2827,27 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 
   _db.modify( acnt, [&]( account_object& a )
   {
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     {
-      util::update_manabar( _db.get_dynamic_global_properties(), a, op.reward_vests.amount.value );
+      util::update_manabar( dgpo, a, op.reward_vests.amount.value );
+      _db.rc.regenerate_rc_mana( a, now );
     }
 
     a.vesting_shares += op.reward_vests;
     a.reward_vesting_balance -= op.reward_vests;
     a.reward_vesting_hive -= reward_vesting_hive_to_move;
-  });
+  } );
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    _db.rc.update_account_after_vest_change( acnt, now );
 
-  _db.modify( _db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+  _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
   {
     gpo.total_vesting_shares += op.reward_vests;
     gpo.total_vesting_fund_hive += reward_vesting_hive_to_move;
 
     gpo.pending_rewarded_vesting_shares -= op.reward_vests;
     gpo.pending_rewarded_vesting_hive -= reward_vesting_hive_to_move;
-  });
+  } );
 
   _db.adjust_proxied_witness_votes( acnt, op.reward_vests.amount );
 }

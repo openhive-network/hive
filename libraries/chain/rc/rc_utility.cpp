@@ -778,11 +778,6 @@ struct pre_apply_operation_visitor
     regenerate( op.delegatee );
   }
 
-  void operator()( const claim_reward_balance_operation& op )const
-  {
-    regenerate( op.account );
-  }
-
   template< typename Op >
   void operator()( const Op& op )const {}
 };
@@ -842,11 +837,6 @@ struct post_apply_operation_visitor
   {
     update_after_vest_change( op.delegator, true, true );
     update_after_vest_change( op.delegatee, true, true );
-  }
-
-  void operator()( const claim_reward_balance_operation& op )const
-  {
-    update_after_vest_change( op.account );
   }
 
   template< typename Op >
