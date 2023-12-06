@@ -1196,6 +1196,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 {
   const auto& account = _db.get_account( o.account );
+  auto now = _db.head_block_time();
 
   if( o.vesting_shares.amount < 0 )
   {
@@ -1208,6 +1209,8 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   FC_ASSERT( account.get_vesting() >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Hive Power for withdraw." );
   FC_ASSERT( static_cast<asset>(account.get_vesting()) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
 
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    _db.rc.regenerate_rc_mana( account, now );
   if( o.vesting_shares.amount == 0 )
   {
     //TODO: fix after HF28 along with problem in perform_vesting_share_split()
@@ -1219,12 +1222,13 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     else if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
       FC_ASSERT( account.vesting_withdraw_rate.amount != 0, "This operation would not change the vesting withdraw rate." );
 
-    _db.modify( account, [&]( account_object& a ) {
+    _db.modify( account, [&]( account_object& a )
+    {
       a.vesting_withdraw_rate = asset( 0, VESTS_SYMBOL );
       a.next_vesting_withdrawal = time_point_sec::maximum();
       a.to_withdraw.amount = 0;
       a.withdrawn.amount = 0;
-    });
+    } );
   }
   else
   {
@@ -1254,11 +1258,13 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
         FC_ASSERT( account.vesting_withdraw_rate != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
 
       a.vesting_withdraw_rate = new_vesting_withdraw_rate;
-      a.next_vesting_withdrawal = _db.head_block_time() + fc::seconds(HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS);
+      a.next_vesting_withdrawal = now + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
       a.to_withdraw.amount = o.vesting_shares.amount;
       a.withdrawn.amount = 0;
-    });
+    } );
   }
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    _db.rc.update_account_after_vest_change( account, now, false, true );
 }
 
 void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_route_operation& o )
