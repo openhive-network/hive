@@ -131,7 +131,7 @@ EXPOSE ${HTTP_PORT}
 
 ENTRYPOINT [ "/home/hived_admin/docker_entrypoint.sh" ]
 
-FROM ${CI_REGISTRY_IMAGE}base_instance:base_instance-${BUILD_IMAGE_TAG} as instance
+FROM ${CI_REGISTRY_IMAGE}base_instance:${BUILD_IMAGE_TAG} as instance
 
 #p2p service
 EXPOSE ${P2P_PORT}

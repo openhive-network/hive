@@ -105,8 +105,8 @@ docker build --target=base_instance \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
-  --tag "${REGISTRY}base_instance:base_instance-${BUILD_IMAGE_TAG}" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${IMAGE_TAG_PREFIX}base_instance-${BUILD_IMAGE_TAG}" \
+  --tag "${REGISTRY}base_instance:${BUILD_IMAGE_TAG}" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG}" \
   --file Dockerfile .
 
 docker build --target=instance \
@@ -114,13 +114,13 @@ docker build --target=instance \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
-  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:${IMAGE_TAG_PREFIX}instance-${BUILD_IMAGE_TAG}" \
+  --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:${BUILD_IMAGE_TAG}" \
   --file Dockerfile .
 
 popd
 
 if [ -n "${EXPORT_PATH}" ];
 then
-  "$SCRIPTPATH/export-binaries.sh" "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${IMAGE_TAG_PREFIX}base_instance-${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
+  "$SCRIPTPATH/export-binaries.sh" "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
 fi
 
