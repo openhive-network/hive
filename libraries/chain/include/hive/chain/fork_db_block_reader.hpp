@@ -43,12 +43,13 @@ namespace hive { namespace chain {
       uint32_t& remaining_item_count,
       uint32_t limit) const override;
 
+    using get_block_id_for_num_t = std::function< block_id_type ( uint32_t block_num ) >;
+    static std::vector<block_id_type> get_block_ids( const fork_database& fork_db,
+      const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
+      uint32_t limit, get_block_id_for_num_t get_block_id_for_num );
+
   private:
     bool is_known_block_unlocked( const block_id_type& id ) const;
-  	/** Needed by p2p plugin only.
-     *  Check among reversible blocks on main branch then among irreversible.
-    */
-    bool is_included_block_unlocked( const block_id_type& block_id ) const;
     /// Searches block log only, returns empty when not found there
     block_id_type get_block_id_for_num( uint32_t block_num ) const;
 
