@@ -783,13 +783,6 @@ struct pre_apply_operation_visitor
     regenerate( op.account );
   }
 
-#ifdef HIVE_ENABLE_SMT
-  void operator()( const claim_reward_balance2_operation& op )const
-  {
-    regenerate( op.account );
-  }
-#endif
-
   template< typename Op >
   void operator()( const Op& op )const {}
 };
@@ -855,13 +848,6 @@ struct post_apply_operation_visitor
   {
     update_after_vest_change( op.account );
   }
-
-#ifdef HIVE_ENABLE_SMT
-  void operator()( const claim_reward_balance2_operation& op )const
-  {
-    update_after_vest_change( op.account );
-  }
-#endif
 
   template< typename Op >
   void operator()( const Op& op )const {}
