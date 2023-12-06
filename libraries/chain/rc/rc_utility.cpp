@@ -767,11 +767,6 @@ struct pre_apply_operation_visitor
     _db.rc.regenerate_rc_mana( account, _current_time );
   }
 
-  void operator()( const withdraw_vesting_operation& op )const
-  {
-    regenerate( op.account );
-  }
-
   void operator()( const delegate_vesting_shares_operation& op )const
   {
     regenerate( op.delegator );
@@ -826,11 +821,6 @@ struct post_apply_operation_visitor
     const account_object& account = _db.get_account( account_name );
     _db.rc.update_account_after_vest_change( account, _current_time, _fill_new_mana,
       _check_for_rc_delegation_overflow );
-  }
-
-  void operator()( const withdraw_vesting_operation& op )const
-  {
-    update_after_vest_change( op.account, false, true );
   }
 
   void operator()( const delegate_vesting_shares_operation& op )const
