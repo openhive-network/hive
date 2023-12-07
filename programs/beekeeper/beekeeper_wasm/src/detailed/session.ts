@@ -36,6 +36,9 @@ export class BeekeeperSession implements IBeekeeperSession {
     for(const value of result.wallets) {
       const wallet = this.openWallet(value.name);
 
+      if(!value.unlocked)
+        (wallet as BeekeeperLockedWallet).unlocked = undefined;
+
       wallets.push(wallet);
     }
 
