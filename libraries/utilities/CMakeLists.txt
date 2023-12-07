@@ -1,4 +1,4 @@
-list( APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/libraries/fc/GitVersionGen" )
+list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../fc/GitVersionGen" )
 include( GetGitRevisionDescription )
 
 get_git_head_revision_dir("${CMAKE_CURRENT_SOURCE_DIR}" ROOT_GIT_REFSPEC ROOT_GIT_REVISION_SHA)
