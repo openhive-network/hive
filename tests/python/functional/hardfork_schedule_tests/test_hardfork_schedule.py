@@ -9,7 +9,7 @@ from hive_local_tools import create_alternate_chain_spec_file
 from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 
 
-def test_simply_hardfork_schedule():
+def test_simply_hardfork_schedule() -> None:
     """
     Hardfork schedule depends on time. Therefore, possible is situation the hard works will be applying in other
     blocks in different runs. Slight delays are caused by a.o. using in this test faketime to increase speed of test,
@@ -94,7 +94,7 @@ def test_simply_hardfork_schedule():
         ),
     ],
 )
-def test_incorrect_hardfork_schedules(hardfork_schedule):
+def test_incorrect_hardfork_schedules(hardfork_schedule: list[dict]) -> None:
     create_alternate_chain_spec_file(
         genesis_time=int(tt.Time.now(serialize=False).timestamp()),
         hardfork_schedule=hardfork_schedule,
@@ -117,7 +117,7 @@ def test_incorrect_hardfork_schedules(hardfork_schedule):
         ["genesis_time"],
     ],
 )
-def test_alternate_chain_spec_necessary_keys(keys_to_drop):
+def test_alternate_chain_spec_necessary_keys(keys_to_drop: list[str]) -> None:
     alternate_chain_spec = {
         "genesis_time": int(tt.Time.now(serialize=False).timestamp()),
         "hardfork_schedule": [{"hardfork": 2, "block_num": 0}],
@@ -147,7 +147,7 @@ def test_alternate_chain_spec_necessary_keys(keys_to_drop):
         ["hbd_init_supply"],
     ],
 )
-def test_alternate_chain_spec_optional_keys(keys_to_drop):
+def test_alternate_chain_spec_optional_keys(keys_to_drop: list[str]) -> None:
     alternate_chain_spec = {
         "genesis_time": int(tt.Time.now(serialize=False).timestamp()),
         "hardfork_schedule": [{"hardfork": 2, "block_num": 0}],
@@ -174,7 +174,7 @@ def test_alternate_chain_spec_optional_keys(keys_to_drop):
         ["a", "ab"],
     ],
 )
-def test_invalid_witness_names(witnesses):
+def test_invalid_witness_names(witnesses: list[int | str]) -> None:
     alternate_chain_spec = {
         "genesis_time": int(tt.Time.now(serialize=False).timestamp()),
         "hardfork_schedule": [{"hardfork": 2, "block_num": 0}],
