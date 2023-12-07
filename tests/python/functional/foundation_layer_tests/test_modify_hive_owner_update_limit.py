@@ -9,7 +9,7 @@ from hive_local_tools.constants import ALTERNATE_CHAIN_JSON_FILENAME
 
 @pytest.mark.testnet()
 @pytest.mark.parametrize("limit", [6, 15, 30, 45, 90, 180, 360, 720])
-def test_modify_hive_owner_update_limit(limit):
+def test_modify_hive_owner_update_limit(limit: int) -> None:
     node = tt.InitNode()
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
@@ -24,7 +24,7 @@ def test_modify_hive_owner_update_limit(limit):
         arguments=["--alternate-chain-spec", str(tt.context.get_current_directory() / ALTERNATE_CHAIN_JSON_FILENAME)]
     )
 
-    limit_in_microseconds = node.api.database.get_config()["HIVE_OWNER_UPDATE_LIMIT"]
+    limit_in_microseconds = node.api.database.get_config().HIVE_OWNER_UPDATE_LIMIT
     assert limit_in_microseconds / 1_000_000 == limit, "The `HIVE_OWNER_UPDATE_LIMIT` was not updated correctly."
 
 
@@ -36,7 +36,7 @@ def test_modify_hive_owner_update_limit(limit):
         7,  # the limit must be divisible by 3,
     ],
 )
-def test_invalid_hive_owner_update_limit_modification(limit):
+def test_invalid_hive_owner_update_limit_modification(limit: int) -> None:
     node = tt.InitNode()
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
 
