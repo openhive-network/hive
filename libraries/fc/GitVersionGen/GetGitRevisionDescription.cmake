@@ -80,8 +80,8 @@ function(get_git_head_revision_dir start_dir _refspecvar _hashvar)
 	set(${_hashvar} "${HEAD_HASH}" PARENT_SCOPE)
 endfunction()
 
-function(get_git_head_revision _refspecvar _hashvar)
-  get_git_head_revision_dir("${CMAKE_CURRENT_SOURCE_DIR}" _local_refspecvar _local_hashvar)
+function(get_git_head_revision _dir _refspecvar _hashvar)
+  get_git_head_revision_dir("${_dir}" _local_refspecvar _local_hashvar)
 
 	set(${_refspecvar} "${_local_refspecvar}" PARENT_SCOPE)
 	set(${_hashvar} "${_local_hashvar}" PARENT_SCOPE)
@@ -89,11 +89,11 @@ function(get_git_head_revision _refspecvar _hashvar)
 endfunction()
 
 
-function(git_describe _var)
+function(git_describe _dir _var)
 	if(NOT GIT_FOUND)
 		find_package(Git QUIET)
 	endif()
-	get_git_head_revision(refspec hash)
+	get_git_head_revision("${_dir}" refspec hash)
 	if(NOT GIT_FOUND)
 		set(${_var} "GIT-NOTFOUND" PARENT_SCOPE)
 		message(FATAL_ERROR "Git not found")
@@ -117,11 +117,37 @@ function(git_describe _var)
 
 	execute_process(COMMAND
 		"${GIT_EXECUTABLE}"
+		tag
+		-l
+		WORKING_DIRECTORY
+		"${_dir}"
+		RESULT_VARIABLE
+		res
+		OUTPUT_VARIABLE
+		out
+		ERROR_VARIABLE
+		err
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if(NOT res EQUAL 0)
+		set(out "${out}-${res}-NOTFOUND")
+		message(FATAL_ERROR "Git command execution failed: ${err}")
+	endif()
+
+	string(LENGTH "${out}" GIT_TAG_LENGTH)
+	if(${GIT_TAG_LENGTH} EQUAL 0)
+		message(WARNING "Git history does not contain any tag. It could be a shallow clone")
+		set(${_var} "unknown" PARENT_SCOPE)
+
+		return()
+	endif()
+
+	execute_process(COMMAND
+		"${GIT_EXECUTABLE}"
 		describe
 		${hash}
 		${ARGN}
 		WORKING_DIRECTORY
-		"${CMAKE_SOURCE_DIR}"
+		"${_dir}"
 		RESULT_VARIABLE
 		res
 		OUTPUT_VARIABLE
@@ -137,11 +163,11 @@ function(git_describe _var)
 	set(${_var} "${out}" PARENT_SCOPE)
 endfunction()
 
-function(get_git_unix_timestamp _var)
+function(get_git_unix_timestamp _dir _var)
 	if(NOT GIT_FOUND)
 		find_package(Git QUIET)
 	endif()
-	get_git_head_revision(refspec hash)
+	get_git_head_revision("${_dir}" refspec hash)
 	if(NOT GIT_FOUND)
 		set(${_var} "GIT-NOTFOUND" PARENT_SCOPE)
 		message(FATAL_ERROR "Git not found")
@@ -171,7 +197,7 @@ function(get_git_unix_timestamp _var)
 		${hash}
 		${ARGN}
 		WORKING_DIRECTORY
-		"${CMAKE_CURRENT_SOURCE_DIR}"
+		"${_dir}"
 		RESULT_VARIABLE
 		res
 		OUTPUT_VARIABLE
@@ -187,7 +213,7 @@ function(get_git_unix_timestamp _var)
 	set(${_var} "${out}" PARENT_SCOPE)
 endfunction()
 
-function(git_get_exact_tag _var)
-	git_describe(out --exact-match ${ARGN})
+function(git_get_exact_tag _dir _var)
+	git_describe("${_dir}" out --exact-match ${ARGN})
 	set(${_var} "${out}" PARENT_SCOPE)
 endfunction()

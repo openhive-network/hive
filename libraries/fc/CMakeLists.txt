@@ -16,8 +16,8 @@ INCLUDE( VersionMacros )
 INCLUDE( SetupTargetMacros )
 INCLUDE(GetGitRevisionDescription)
 
-get_git_head_revision(GIT_REFSPEC FC_GIT_REVISION_SHA)
-get_git_unix_timestamp(FC_GIT_REVISION_UNIX_TIMESTAMP)
+get_git_head_revision("${CMAKE_CURRENT_SOURCE_DIR}" GIT_REFSPEC FC_GIT_REVISION_SHA)
+get_git_unix_timestamp("${CMAKE_CURRENT_SOURCE_DIR}" FC_GIT_REVISION_UNIX_TIMESTAMP)
 
 SET( DEFAULT_HEADER_INSTALL_DIR include/\${target} )
 SET( DEFAULT_LIBRARY_INSTALL_DIR lib/ )
