@@ -5,11 +5,13 @@ from typing import TYPE_CHECKING
 from hive_local_tools.functional.python.operation import Operation, get_transaction_timestamp
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     import test_tools as tt
 
 
 class AccountWitnessProxy(Operation):
-    def __init__(self, node: tt.InitNode, wallet: tt.Wallet, account_to_modify, proxy) -> None:
+    def __init__(self, node: tt.InitNode, wallet: tt.Wallet, account_to_modify: str, proxy: str) -> None:
         super().__init__(node, wallet)
         self._proxy: str = proxy
         self._account_to_modify: str = account_to_modify
@@ -17,5 +19,5 @@ class AccountWitnessProxy(Operation):
         self._rc_cost: int = self._transaction["rc_cost"]
 
     @property
-    def timestamp(self):
+    def timestamp(self) -> datetime:
         return get_transaction_timestamp(self._node, self._transaction)

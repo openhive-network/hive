@@ -93,7 +93,7 @@ class Account:
         return self._acc_info.vesting_shares
 
     @property
-    def proxy(self):
+    def proxy(self) -> str:
         return self._acc_info.proxy
 
     def get_governance_vote_power(self) -> tt.Asset.Vest:
@@ -348,7 +348,7 @@ def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
     return int(node.api.rc.find_rc_accounts(accounts=[account_name])["rc_accounts"][0]["max_rc"])
 
 
-def get_transaction_timestamp(node: tt.InitNode, transaction):
+def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
     return tt.Time.parse(node.api.block.get_block(block_num=transaction["block_num"])["block"]["timestamp"])
 
 
@@ -640,7 +640,7 @@ class Comment:
 
 
 class Proposal:
-    def __init__(self, node, proposal_id):
+    def __init__(self, node: tt.InitNode, proposal_id: int) -> None:
         self._node = node
         self._proposal_info = node.api.database.list_proposals(
             start=[""],
