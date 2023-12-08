@@ -26,6 +26,8 @@ class full_block_object : public object< full_block_object_type, full_block_obje
     : id( _id ), block_bytes( a )
     {}
 
+    block_id_type get_hash() const { return block_id; }
+
     block_attributes_t  compression_attributes;
     size_t              byte_size = 0;
     t_block_bytes       block_bytes;
@@ -39,9 +41,13 @@ typedef multi_index_container<
   full_block_object,
   indexed_by<
     ordered_unique< tag< by_id >,
-      const_mem_fun< full_block_object, full_block_object::id_type, &full_block_object::get_id > >/*,
+      const_mem_fun< full_block_object, full_block_object::id_type, &full_block_object::get_id > >,
     ordered_unique< tag< by_hash >,
-      const_mem_fun< full_block_object, block_id_type, &full_block_object::get_hash > >*/
+      composite_key< full_block_object,
+        const_mem_fun< full_block_object, block_id_type, &full_block_object::get_hash >,
+        const_mem_fun< full_block_object, full_block_object::id_type, &full_block_object::get_id >
+      >
+    >
   >,
   allocator< full_block_object >
 > full_block_index;
