@@ -191,6 +191,12 @@ void resource_credits::handle_differential_usage< operation >( const operation& 
 template
 void resource_credits::handle_differential_usage< rc_custom_operation >( const rc_custom_operation& op ) const;
 
+const resource_count_type& resource_credits::get_differential_usage() const
+{
+  const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
+  return pending_data.get_differential_usage();
+}
+
 struct count_operation_visitor
 {
   typedef void result_type;

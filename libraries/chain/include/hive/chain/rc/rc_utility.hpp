@@ -85,6 +85,8 @@ class resource_credits
     // prepares and stores (negative) differential usage data for given operation (must be called before operation is executed)
     template< typename OpType >
     void handle_differential_usage( const OpType& op ) const;
+    // returns current state of differential usage (for testing/logging purposes)
+    const resource_count_type& get_differential_usage() const;
 
     // calculates cost of resource given curve params, current pool level, how much was used and regen rate
     static int64_t compute_cost(

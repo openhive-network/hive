@@ -716,7 +716,7 @@ void resource_credits::on_post_apply_transaction_impl( const full_transaction_ty
 
   rc_transaction_info tx_info;
   // Initialize with (negative) usage for state that was updated by transaction
-  tx_info.usage = pending_data.get_differential_usage();
+  tx_info.usage = get_differential_usage();
 
   // How many resources does the transaction use?
   count_resources( tx, full_tx.get_transaction_size(), tx_info.usage, db.head_block_time() );
