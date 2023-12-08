@@ -257,7 +257,7 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
     }
     else if( acc.rc_manabar.last_update_time != now.sec_since_epoch() )
     {
-      //most likely cause: there is no regenerate() call in corresponding pre_apply_operation_visitor handler
+      //most likely cause: there is no regenerate_rc_mana() call before operation changing vests
       wlog( "NOTIFYALERT! Account ${a} not regenerated prior to RC change, noticed on block ${b}",
         ( "a", acc.get_name() )( "b", db.head_block_num() ) );
     }
@@ -275,7 +275,7 @@ void resource_credits::update_account_after_vest_change( const account_object& a
 {
   if( account.rc_manabar.last_update_time != now.sec_since_epoch() )
   {
-    //most likely cause: there is no regenerate() call in corresponding pre_apply_operation_visitor handler
+    //most likely cause: there is no regenerate_rc_mana() call before operation changing vests
     wlog( "NOTIFYALERT! Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
       ( "a", account.get_name() )( "b", db.head_block_num() ) );
   }
@@ -781,14 +781,7 @@ void resource_credits::on_pre_apply_operation_impl( const hive::protocol::operat
   pre_apply_operation_visitor vtor( db );
   op.visit( vtor );
 
-  count_resources_result differential_usage;
-  if( prepare_differential_usage( op, differential_usage ) )
-  {
-    db.modify( db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
-    {
-      data.add_differential_usage( differential_usage );
-    } );
-  }
+  handle_differential_usage< operation >( op );
 } FC_CAPTURE_AND_RETHROW( ( op ) ) }
 
 void resource_credits::on_post_apply_operation( const hive::protocol::operation& op ) const

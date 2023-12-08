@@ -67,12 +67,14 @@ class resource_credits
       count_resources_result& result,
       const fc::time_point_sec now );
 
-    // scans single nonstandard operation for used resource (implemented for rc_custom_operation)
+    // scans single nonstandard operation for used extra resources (implemented for rc_custom_operation)
     template< typename OpType >
     static void count_resources(
       const OpType& op,
       count_resources_result& result,
       const fc::time_point_sec now );
+    // collects and stores extra resources used by nonstandard operation as (positive) differential usage (must be called before transaction usage is collected)
+    void handle_custom_op_usage( const rc_custom_operation& op, const fc::time_point_sec now ) const;
 
     /** scans database for state related to given operation (implemented for operation and rc_custom_operation)
       * see comment in definition for more details
@@ -80,6 +82,9 @@ class resource_credits
       */
     template< typename OpType >
     bool prepare_differential_usage( const OpType& op, count_resources_result& result ) const;
+    // prepares and stores (negative) differential usage data for given operation (must be called before operation is executed)
+    template< typename OpType >
+    void handle_differential_usage( const OpType& op ) const;
 
     // calculates cost of resource given curve params, current pool level, how much was used and regen rate
     static int64_t compute_cost(
