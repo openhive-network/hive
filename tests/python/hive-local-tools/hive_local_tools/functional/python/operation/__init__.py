@@ -729,14 +729,22 @@ class Comment:
 
     def options(self, allow_votes: bool) -> None:
         self.assert_comment_exists()
+        comment_options_operation = CommentOptionsOperationLegacy(
+            author=self.__author.name,
+            permlink=self.__permlink,
+            allow_votes=allow_votes,
+        )
+        comment_options_operation.max_accepted_payout = self.__convert_from_mainnet_to_testnet_asset(
+            comment_options_operation.max_accepted_payout
+        )
         create_transaction_with_any_operation(
             self.__wallet,
-            CommentOptionsOperationLegacy(
-                author=self.__author.name,
-                permlink=self.__permlink,
-                allow_votes=allow_votes,
-            ),
+            comment_options_operation,
         )
+
+    def __convert_from_mainnet_to_testnet_asset(self, asset: tt.Asset.AnyT) -> tt.Asset.AnyT:
+        asset = asset.as_nai()
+        return tt.Asset.from_nai(asset).as_legacy()
 
     def assert_is_rc_mana_decreased_after_comment_delete(self) -> None:
         self.assert_comment_exists()
