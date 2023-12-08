@@ -939,7 +939,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     generate_block(); //empty block that clears pending_data left from previous block
     check_direction( pending_data.get_pending_usage(), empty );
     check_direction( pending_data.get_pending_cost(), empty );
-    check_direction( pending_data.get_differential_usage(), empty ); //it is empty only because last tx was a transfer
+    check_direction( db->rc.get_differential_usage(), empty ); //it is empty only because last tx was a transfer
 
     BOOST_TEST_MESSAGE( "Update active key to generate some usage" );
     account_update_operation update;
@@ -948,7 +948,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     push_transaction( update, alice_private_key );
     auto first_pending_usage = pending_data.get_pending_usage();
     auto first_pending_cost = pending_data.get_pending_cost();
-    auto first_diff_usage = pending_data.get_differential_usage();
+    auto first_diff_usage = db->rc.get_differential_usage();
     check_direction( first_pending_usage, { 1, 0, 0, 1, 1 } );
     check_direction( first_pending_cost, { 1, 0, 0, 1, 1 } );
     check_direction( first_diff_usage, { 0, 0, 0, -1, 0 } );
@@ -961,7 +961,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     push_transaction( transfer, alice_private_key );
     auto second_pending_usage = pending_data.get_pending_usage();
     auto second_pending_cost = pending_data.get_pending_cost();
-    auto second_diff_usage = pending_data.get_differential_usage();
+    auto second_diff_usage = db->rc.get_differential_usage();
     check_direction( second_pending_usage, { 1, 0, 1, 1, 1 } );
     check_direction( second_pending_cost, { 1, 0, 1, 1, 1 } );
     check_direction( second_diff_usage, empty ); //differential usage is per transaction so it was reset
@@ -973,7 +973,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     push_transaction( update, alice_private_key );
     auto third_pending_usage = pending_data.get_pending_usage();
     auto third_pending_cost = pending_data.get_pending_cost();
-    auto third_diff_usage = pending_data.get_differential_usage();
+    auto third_diff_usage = db->rc.get_differential_usage();
     check_direction( third_pending_usage, { 1, 0, 1, 1, 1 } ); //market bytes usage from transfer remains
     check_direction( third_pending_cost, { 1, 0, 1, 1, 1 } ); //same with cost
     check_direction( third_diff_usage, { 0, 0, 0, -1, 0 } ); //differential usage reset again and only contains data on last tx
@@ -986,7 +986,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     HIVE_REQUIRE_ASSERT( push_transaction( update, alice_private_key ), "a != nullptr" );
     check_compare( third_pending_usage, pending_data.get_pending_usage(), empty );
     check_compare( third_pending_cost, pending_data.get_pending_cost(), empty );
-    check_compare( third_diff_usage, pending_data.get_differential_usage(), empty );
+    check_compare( third_diff_usage, db->rc.get_differential_usage(), empty );
 
     BOOST_TEST_MESSAGE( "Finalize block and move to new one - pending data and cost are reset (but not differential usage)" );
     generate_block();
@@ -1001,7 +1001,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     generate_block();
     check_direction( pending_data.get_pending_usage(), empty );
     check_direction( pending_data.get_pending_cost(), empty );
-    check_compare( pending_data.get_differential_usage(), third_diff_usage, empty );
+    check_compare( db->rc.get_differential_usage(), third_diff_usage, empty );
 
     validate_database();
   }
@@ -1061,34 +1061,34 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     update.owner = authority( 1, alice_owner_key.get_public_key(), 1 );
     push_transaction( update, alice_private_key );
     update.owner.reset();
-    check( pending_data.get_differential_usage() );
+    check( db->rc.get_differential_usage() );
     clean();
 
     BOOST_TEST_MESSAGE( "Update active key with account_update_operation" );
     update.active = authority( 1, generate_private_key( "alice_active" ).get_public_key(), 1 );
     push_transaction( update, alice_owner_key );
-    check( pending_data.get_differential_usage() );
+    check( db->rc.get_differential_usage() );
     update.active.reset();
     clean();
 
     BOOST_TEST_MESSAGE( "Update posting key with account_update_operation" );
     update.posting = authority( 1, generate_private_key( "alice_posting" ).get_public_key(), 1 );
     push_transaction( update, alice_owner_key );
-    check( pending_data.get_differential_usage() );
+    check( db->rc.get_differential_usage() );
     update.posting.reset();
     clean();
 
     BOOST_TEST_MESSAGE( "Update memo key with account_update_operation" );
     update.memo_key = generate_private_key( "alice_memo" ).get_public_key();
     push_transaction( update, alice_owner_key );
-    check( pending_data.get_differential_usage(), true ); //memo key does not allocate new state
+    check( db->rc.get_differential_usage(), true ); //memo key does not allocate new state
     update.memo_key = public_key_type();
     clean();
 
     BOOST_TEST_MESSAGE( "Update metadata with account_update_operation" );
     update.json_metadata = "{\"profile_image\":\"https://somewhere.com/myself.png\"}";
     push_transaction( update, alice_owner_key );
-    check( pending_data.get_differential_usage(), true ); //while metadata allocates state it is
+    check( db->rc.get_differential_usage(), true ); //while metadata allocates state it is
       //optionally stored which means nodes that don't store it would not be able to calculate
       //differential usage; that's why metadata is not subject to differential usage calculation
     update.json_metadata = "";
@@ -1100,27 +1100,27 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     update2.owner = authority( 1, bob_owner_key.get_public_key(), 1 );
     push_transaction( update2, bob_private_key );
     update2.owner.reset();
-    check( pending_data.get_differential_usage() );
+    check( db->rc.get_differential_usage() );
     clean();
 
     BOOST_TEST_MESSAGE( "Update active key with account_update2_operation" );
     update2.active = authority( 1, generate_private_key( "bob_active" ).get_public_key(), 1 );
     push_transaction( update2, bob_owner_key );
-    check( pending_data.get_differential_usage() );
+    check( db->rc.get_differential_usage() );
     update2.active.reset();
     clean();
 
     BOOST_TEST_MESSAGE( "Update posting key with account_update2_operation" );
     update2.posting = authority( 1, generate_private_key( "bob_posting" ).get_public_key(), 1 );
     push_transaction( update2, bob_owner_key );
-    check( pending_data.get_differential_usage() );
+    check( db->rc.get_differential_usage() );
     update2.posting.reset();
     clean();
 
     BOOST_TEST_MESSAGE( "Update memo key with account_update2_operation" );
     update2.memo_key = generate_private_key( "bob_memo" ).get_public_key();
     push_transaction( update2, bob_owner_key );
-    check( pending_data.get_differential_usage(), true ); //memo key does not allocate new state
+    check( db->rc.get_differential_usage(), true ); //memo key does not allocate new state
     update2.memo_key = public_key_type();
     clean();
 
@@ -1128,7 +1128,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     update2.json_metadata = "{\"profile_image\":\"https://somewhere.com/superman.png\"}";
     update2.posting_json_metadata = "{\"description\":\"I'm here just for test.\"}";
     push_transaction( update2, bob_owner_key );
-    check( pending_data.get_differential_usage(), true ); //same as in case of account_update_operation
+    check( db->rc.get_differential_usage(), true ); //same as in case of account_update_operation
     update2.json_metadata = "";
     update2.posting_json_metadata = "";
     clean();
@@ -1143,13 +1143,13 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     witness.props.hbd_interest_rate = 0;
     witness.fee = asset( 0, HIVE_SYMBOL );
     push_transaction( witness, alice_owner_key );
-    check( pending_data.get_differential_usage(), true ); //when witness is created differential usage is empty
+    check( db->rc.get_differential_usage(), true ); //when witness is created differential usage is empty
     clean();
 
     BOOST_TEST_MESSAGE( "Update witness with witness_update_operation" );
     witness.url = "https://alice.wonder.land/my.cat";
     push_transaction( witness, alice_owner_key );
-    check( pending_data.get_differential_usage() ); //when witness is updated differential usage kicks in
+    check( db->rc.get_differential_usage() ); //when witness is updated differential usage kicks in
     clean();
 
     auto alice_new_owner_key = generate_private_key( "alice_new_owner" );
@@ -1169,7 +1169,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     request.recovery_account = "initminer";
     request.new_owner_authority = authority( 1, alice_new_owner_key.get_public_key(), 1 );
     push_transaction( request, init_account_priv_key );
-    check( pending_data.get_differential_usage(), true ); //no differential usage
+    check( db->rc.get_differential_usage(), true ); //no differential usage
     generate_block();
     generate_block();
 
@@ -1184,7 +1184,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     push_transaction( tx, {alice_owner_key, alice_new_owner_key} );
     tx.clear();
     alice_owner_key = alice_new_owner_key;
-    check( pending_data.get_differential_usage() ); //differential usage does not depend on whether operation will be subsidized or not
+    check( db->rc.get_differential_usage() ); //differential usage does not depend on whether operation will be subsidized or not
     check( pending_data.get_pending_usage(), true ); //this is subsidized
     clean();
 
@@ -1197,7 +1197,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     request.account_to_recover = "bob";
     request.new_owner_authority = authority( 1, bob_new_owner_key.get_public_key(), 1, generate_private_key( "bob_new_owner2" ).get_public_key(), 1 );
     push_transaction( request, init_account_priv_key );
-    check( pending_data.get_differential_usage(), true ); //no differential usage
+    check( db->rc.get_differential_usage(), true ); //no differential usage
     generate_block();
     generate_block();
 
@@ -1210,7 +1210,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     push_transaction( tx, {bob_owner_key, bob_new_owner_key} );
     tx.clear();
     bob_owner_key = bob_new_owner_key;
-    check( pending_data.get_differential_usage() ); //differential usage does not depend on whether operation will be subsidized or not
+    check( db->rc.get_differential_usage() ); //differential usage does not depend on whether operation will be subsidized or not
     //this is fully paid:
     BOOST_REQUIRE_GT( pending_data.get_pending_usage()[ resource_history_bytes ], 0 );
     BOOST_REQUIRE_GT( pending_data.get_pending_usage()[ resource_state_bytes ], 0 );
@@ -1235,7 +1235,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     custom_json.id = HIVE_RC_CUSTOM_OPERATION_ID;
     custom_json.json = fc::json::to_string( rc_custom_operation( rc_delegation ) );
     push_transaction( custom_json, alice_owner_key );
-    auto first_delegation_extra_usage = pending_data.get_differential_usage();
+    auto first_delegation_extra_usage = db->rc.get_differential_usage();
     BOOST_REQUIRE_EQUAL( first_delegation_extra_usage[ resource_history_bytes ], 0 );
     BOOST_REQUIRE_EQUAL( first_delegation_extra_usage[ resource_new_accounts ], 0 );
     BOOST_REQUIRE_EQUAL( first_delegation_extra_usage[ resource_market_bytes ], 0 );
@@ -1252,7 +1252,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     rc_delegation.max_rc = 5000000;
     custom_json.json = fc::json::to_string( rc_custom_operation( rc_delegation ) );
     push_transaction( custom_json, alice_owner_key );
-    auto second_delegation_extra_usage = pending_data.get_differential_usage();
+    auto second_delegation_extra_usage = db->rc.get_differential_usage();
     for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i ) //just one new delegation like in first case
       BOOST_REQUIRE_EQUAL( first_delegation_extra_usage[i], second_delegation_extra_usage[i] );
     auto second_delegation_cost = calculate_cost( pending_data.get_pending_cost() );
@@ -1264,7 +1264,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     rc_delegation.max_rc = 7500000;
     custom_json.json = fc::json::to_string( rc_custom_operation( rc_delegation ) );
     push_transaction( custom_json, alice_owner_key );
-    auto third_delegation_extra_usage = pending_data.get_differential_usage();
+    auto third_delegation_extra_usage = db->rc.get_differential_usage();
     BOOST_REQUIRE_EQUAL( third_delegation_extra_usage[ resource_history_bytes ], 0 );
     BOOST_REQUIRE_EQUAL( third_delegation_extra_usage[ resource_new_accounts ], 0 );
     BOOST_REQUIRE_EQUAL( third_delegation_extra_usage[ resource_market_bytes ], 0 );
@@ -1279,7 +1279,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     BOOST_TEST_MESSAGE( "Fake RC delegation update with delegate_rc_operation under dummy tag" );
     custom_json.id = "dummy";
     push_transaction( custom_json, alice_owner_key );
-    check( pending_data.get_differential_usage(), true ); //no differential usage
+    check( db->rc.get_differential_usage(), true ); //no differential usage
     auto dummy_delegation_cost = calculate_cost( pending_data.get_pending_cost() );
     //cost should be even lower than that for third actual delegation
     BOOST_REQUIRE_LT( dummy_delegation_cost, third_delegation_cost );
@@ -1378,7 +1378,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     update.account = "alice";
     update.active = authority( 1, generate_private_key( "alice_active" ).get_public_key(), 1 );
     push_transaction( update, alice_private_key );
-    auto alice_diff_usage = pending_data.get_differential_usage();
+    auto alice_diff_usage = db->rc.get_differential_usage();
     BOOST_REQUIRE_EQUAL( alice_diff_usage[ resource_history_bytes ], 0 );
     BOOST_REQUIRE_EQUAL( alice_diff_usage[ resource_new_accounts ], 0 );
     BOOST_REQUIRE_EQUAL( alice_diff_usage[ resource_market_bytes ], 0 );
@@ -1393,7 +1393,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     update.account = "carol";
     update.active = authority( 1, generate_private_key( "carol_active" ).get_public_key(), 1 );
     push_transaction( update, carol_private_key );
-    auto carol_diff_usage = pending_data.get_differential_usage();
+    auto carol_diff_usage = db->rc.get_differential_usage();
     BOOST_REQUIRE_EQUAL( carol_diff_usage[ resource_history_bytes ], 0 );
     BOOST_REQUIRE_EQUAL( carol_diff_usage[ resource_new_accounts ], 0 );
     BOOST_REQUIRE_EQUAL( carol_diff_usage[ resource_market_bytes ], 0 );
@@ -1408,7 +1408,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     update.account = "diana";
     update.active = authority( 1, generate_private_key( "diana_active" ).get_public_key(), 1 );
     push_transaction( update, diana_private_key );
-    auto diana_diff_usage = pending_data.get_differential_usage();
+    auto diana_diff_usage = db->rc.get_differential_usage();
     BOOST_REQUIRE_EQUAL( diana_diff_usage[ resource_history_bytes ], 0 );
     BOOST_REQUIRE_EQUAL( diana_diff_usage[ resource_new_accounts ], 0 );
     BOOST_REQUIRE_EQUAL( diana_diff_usage[ resource_market_bytes ], 0 );
@@ -1454,7 +1454,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     //tx.operations.push_back( delegation );
     push_transaction( tx, barry_private_key );
     tx.clear();
-    auto barry_diff_usage = pending_data.get_differential_usage();
+    auto barry_diff_usage = db->rc.get_differential_usage();
     BOOST_REQUIRE_EQUAL( barry_diff_usage[ resource_history_bytes ], 0 );
     BOOST_REQUIRE_EQUAL( barry_diff_usage[ resource_new_accounts ], 0 );
     BOOST_REQUIRE_EQUAL( barry_diff_usage[ resource_market_bytes ], 0 );
