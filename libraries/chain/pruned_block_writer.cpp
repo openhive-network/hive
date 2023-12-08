@@ -87,9 +87,10 @@ bool pruned_block_writer::is_known_block(const block_id_type& id) const
     if( _fork_db.fetch_block( id ) )
       return true;
 
-    // Then check among recent blocks in state.
-    //std::optional<uint16_t> block_num = _db.find_recent_block_num( id );
-    return false;//block_num.has_value();
+    // Then check among stored full blocks.
+    const auto& idx = _db.get_index< full_block_index, by_hash >();
+    auto itr = idx.find( id );
+    return itr != idx.end();
   } FC_CAPTURE_AND_RETHROW()
 }
 
