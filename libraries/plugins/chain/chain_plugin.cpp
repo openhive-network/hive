@@ -130,7 +130,7 @@ class chain_plugin_impl
       theApp.get_plugin<hive::plugins::json_rpc::json_rpc_plugin>().add_serialization_status( [this](){ return db.has_hardfork( HIVE_HARDFORK_1_26 ); } );
     }
 
-    ~chain_plugin_impl() 
+    ~chain_plugin_impl()
     {
       stop_write_processing();
 
@@ -257,7 +257,7 @@ class chain_plugin_impl
     bool _push_block( const block_flow_control& block_ctrl );
 
     uint32_t reindex( const open_args& args, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
-    uint32_t reindex_internal( const open_args& args, 
+    uint32_t reindex_internal( const open_args& args,
       const std::shared_ptr<full_block_type>& start_block, const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
     /**
       * @brief Check if replaying was finished and all blocks from `block_reader` were processed.
@@ -270,7 +270,7 @@ class chain_plugin_impl
       * @return information if replaying was finished
       */
     bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state,
-                              const block_read_i& block_reader ) const;  
+                              const block_read_i& block_reader ) const;
 };
 
 struct chain_plugin_impl::write_request_visitor
@@ -309,7 +309,7 @@ struct chain_plugin_impl::write_request_visitor
       STATSD_START_TIMER("chain", "write_time", "push_block", 1.0f, cp.theApp)
       on_block( p2p_block_ctrl.get() );
       fc::time_point time_before_pushing_block = fc::time_point::now();
-      BOOST_SCOPE_EXIT(this_, time_before_pushing_block, &statsd_timer) { 
+      BOOST_SCOPE_EXIT(this_, time_before_pushing_block, &statsd_timer) {
         this_->cp.cumulative_time_processing_blocks += fc::time_point::now() - time_before_pushing_block;
         STATSD_STOP_TIMER("chain", "write_time", "push_block")
       } BOOST_SCOPE_EXIT_END
@@ -557,11 +557,11 @@ void chain_plugin_impl::start_write_processing()
           float percent_unknown = (time_since_last_report - total_recorded_times).count() / (float)time_since_last_report.count() * 100.f;
 
           std::ostringstream report;
-          report << std::setprecision(2) << std::fixed 
+          report << std::setprecision(2) << std::fixed
                  << "waiting for work: " << percent_waiting_for_work
-                 << "%, waiting for locks: " << percent_waiting_for_locks 
-                 << "%, processing transactions: " << percent_processing_transactions 
-                 << "%, processing blocks: " << percent_processing_blocks 
+                 << "%, waiting for locks: " << percent_waiting_for_locks
+                 << "%, processing transactions: " << percent_processing_transactions
+                 << "%, processing blocks: " << percent_processing_blocks
                  << "%, unknown: " << percent_unknown << "%";
           wlog("${report}", ("report", report.str()));
 
@@ -616,7 +616,7 @@ bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_
   BOOST_SCOPE_EXIT(this_) {
     this_->db.set_block_writer( &( this_->default_block_writer ) );
   } BOOST_SCOPE_EXIT_END
-  
+
   theApp.notify_status("replaying");
   bool replay_is_last_operation = replay_blockchain( default_block_writer.get_block_reader(), thread_pool );
   theApp.notify_status("finished replaying");
@@ -712,7 +712,7 @@ bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader
   uint64_t head_block_num_origin = 0;
   uint64_t head_block_num_state = 0;
 
-  auto _is_reindex_complete = 
+  auto _is_reindex_complete =
     is_reindex_complete( &head_block_num_origin, &head_block_num_state, block_reader );
 
   if( !_is_reindex_complete )
@@ -764,7 +764,7 @@ void chain_plugin_impl::open()
     wlog( "Error opening database. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
     wlog( " Error: ${e}", ("e", e) );
     theApp.notify_status("exitting with open database error");
-    
+
     /// this exit shall be eliminated and exception caught inside application::startup, then force app exit with given code (but without calling exit function).
     exit(EXIT_FAILURE);
   }
@@ -854,7 +854,7 @@ bool chain_plugin_impl::_push_block(const block_flow_control& block_ctrl)
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
   const uint32_t skip = db.get_node_skip_flags();
 
-  return default_block_writer.push_block( 
+  return default_block_writer.push_block(
     full_block,
     block_ctrl,
     db.head_block_num(),
@@ -1037,7 +1037,7 @@ bool chain_plugin_impl::is_reindex_complete( uint64_t* head_block_num_in_blocklo
   std::shared_ptr<full_block_type> head = block_reader.head_block();
   uint32_t head_block_num_origin = head ? head->get_block_num() : 0;
   uint32_t head_block_num_state = db.head_block_num();
-  ilog( "head_block_num_origin: ${o}, head_block_num_state: ${s}", 
+  ilog( "head_block_num_origin: ${o}, head_block_num_state: ${s}",
         ( "o", head_block_num_origin )( "s", head_block_num_state ) );
 
   if( head_block_num_in_blocklog ) //if head block number requested
@@ -1119,7 +1119,7 @@ void chain_plugin_impl::work( synchronization_type& on_sync )
   }else ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
 
   on_sync();
-
+  this->theApp.notify_status("chain API ready");
   start_write_processing();
 }
 
@@ -1153,7 +1153,7 @@ void chain_plugin_impl_deleter::operator()( chain_plugin_impl* impl ) const
 {
   delete impl;
 }
-  
+
 } // detail
 
 
@@ -1163,8 +1163,8 @@ chain_plugin::~chain_plugin(){}
 database& chain_plugin::db() { return my->db; }
 const hive::chain::database& chain_plugin::db() const { return my->db; }
 
-const block_read_i& chain_plugin::block_reader() const 
-{ 
+const block_read_i& chain_plugin::block_reader() const
+{
   // When other plugins are able to call this method, replay is complete (if required)
   // and default syncing block writer is being used.
   return my->default_block_writer.get_block_reader();
@@ -1645,7 +1645,7 @@ void chain_plugin::accept_transaction( const std::shared_ptr<full_transaction_ty
     --call_count;
     fc_dlog(fc::logger::get("chainlock"), "<-- accept_transaction_calls_in_progress: ${call_count}", (call_count));
   } BOOST_SCOPE_EXIT_END
-  
+
   if (lock == lock_type::boost)
   {
     fc_dlog(fc::logger::get("chainlock"), "--> boost accept_transaction_calls_in_progress: ${call_count}", (call_count));

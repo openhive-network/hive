@@ -41,7 +41,7 @@ using std::cout;
 
 class application_impl {
   public:
-    application_impl() : 
+    application_impl() :
       _app_options("Application Options"),
       _logging_thread("logging_thread")
     {}
@@ -88,7 +88,7 @@ fc::optional< fc::logging_config > application::load_logging_config()
   my->_logging_thread.async( [this, args, &logging_config]{
     try
     {
-      logging_config = 
+      logging_config =
         hive::utilities::load_logging_config( args, data_dir() );
       if( logging_config )
         fc::configure_logging( *logging_config );
@@ -189,7 +189,7 @@ void application::set_plugin_options(
   }
 }
 
-initialization_result application::initialize_impl( int argc, char** argv, 
+initialization_result application::initialize_impl( int argc, char** argv,
   vector<abstract_plugin*> autostart_plugins, const bpo::variables_map& arg_overrides )
 {
   std::lock_guard<std::mutex> guard( app_mtx );
@@ -447,7 +447,7 @@ void application::write_default_config(const bfs::path& cfg_file)
       {
         // The string is formatted "arg (=<interesting part>)"
         size_t space_pos = example.find(' ');
-        if (space_pos != std::string::npos && 
+        if (space_pos != std::string::npos &&
             example.length() >= space_pos + 4)
         {
           example.erase(0, space_pos + 3);
@@ -482,7 +482,7 @@ void application::generate_completions()
     // call format_name() which will return a combined short + long "-h [ --help ]"
     // string, then parse the short option out
     std::string formatted = od->format_name();
-    if (formatted.length() > 2 && 
+    if (formatted.length() > 2 &&
         formatted[0] == '-' &&
         formatted[1] != '-')
       this_parameter_variations.push_back(formatted.substr(0, 2));
@@ -495,7 +495,7 @@ void application::generate_completions()
 
     std::copy(this_parameter_variations.begin(), this_parameter_variations.end(), std::back_inserter(all_options));
 
-    // we don't have a direct way to get the value_name, so parse it from the 
+    // we don't have a direct way to get the value_name, so parse it from the
     // format_parameter() output
     std::string formatted_parameter = od->format_parameter();
     size_t space_pos = formatted_parameter.find(' ');
@@ -516,7 +516,7 @@ void application::generate_completions()
   }
 
   std::cout << "_hived()\n"
-            << "{\n" 
+            << "{\n"
             << "  local hived=$1 cur=$2 prev=$3 words=(\"${COMP_WORDS[@]}\")\n"
             << "  case \"${prev}\" in\n";
   if (!args_that_take_plugin_names.empty())
@@ -580,7 +580,7 @@ void application::add_logging_program_options()
   hive::utilities::options_description_ex options;
   hive::utilities::set_logging_program_options( options );
   hive::utilities::notifications::add_program_options(options);
-  
+
   add_program_options( hive::utilities::options_description_ex(), options );
 }
 
