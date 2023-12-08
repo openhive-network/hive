@@ -4392,7 +4392,6 @@ void database::apply_operation(const operation& op)
   applied_operation_info_controller ctrlr(&_current_applied_operation_info, note);
 
   notify_pre_apply_operation( note );
-  rc.on_pre_apply_operation( note.op ); //temporary
 
   std::string name;
   if( _benchmark_dumper.is_enabled() )
@@ -4401,12 +4400,14 @@ void database::apply_operation(const operation& op)
     _benchmark_dumper.begin();
   }
 
+  if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+    rc.handle_differential_usage< operation >( op );
+
   _my->_evaluator_registry.get_evaluator( op ).apply( op );
 
   if( _benchmark_dumper.is_enabled() )
     _benchmark_dumper.end( name );
 
-  rc.on_post_apply_operation( note.op ); //temporary
   notify_post_apply_operation( note );
 }
 
