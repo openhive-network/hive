@@ -35,15 +35,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     return;
   }
 
-  const auto& pending_data = _db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-  count_resources_result differential_usage;
-  if( _db.rc.prepare_differential_usage< rc_custom_operation >( op, differential_usage ) )
-  {
-    _db.modify( pending_data, [&]( rc_pending_data& data )
-    {
-      data.add_differential_usage( differential_usage );
-    } );
-  }
+  _db.rc.handle_differential_usage< rc_custom_operation >( op );
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   if( op.max_rc != 0 && _db.is_in_control() )
@@ -118,15 +110,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     acc.last_max_rc = acc.get_maximum_rc();
   } );
 
-  count_resources_result extra_usage;
-  resource_credits::count_resources< rc_custom_operation >( op, extra_usage, gpo.time );
-  _db.modify( pending_data, [&]( rc_pending_data& data )
-  {
-    //the extra cost is stored on the same counters as differential usage (but as positive values);
-    //we have to handle it here because later we'd have to reinterpret json into concrete custom op
-    //just to collect correct cost
-    data.add_custom_op_usage( extra_usage );
-  } );
+  _db.rc.handle_custom_op_usage( op, gpo.time ); //we have to handle it here because later we'd have to reinterpret json into concrete custom op
 }
 
 } } // hive::chain

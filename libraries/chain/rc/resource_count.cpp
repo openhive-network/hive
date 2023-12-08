@@ -173,6 +173,24 @@ bool resource_credits::prepare_differential_usage< operation >( const operation&
 template
 bool resource_credits::prepare_differential_usage< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result ) const;
 
+template< typename OpType >
+void resource_credits::handle_differential_usage( const OpType& op ) const
+{
+  count_resources_result differential_usage;
+  if( prepare_differential_usage< OpType >( op, differential_usage ) )
+  {
+    const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
+    db.modify( pending_data, [&]( rc_pending_data& data )
+    {
+      data.add_differential_usage( differential_usage );
+    } );
+  }
+}
+template
+void resource_credits::handle_differential_usage< operation >( const operation& op ) const;
+template
+void resource_credits::handle_differential_usage< rc_custom_operation >( const rc_custom_operation& op ) const;
+
 struct count_operation_visitor
 {
   typedef void result_type;
@@ -732,5 +750,17 @@ void count_resources< rc_custom_operation >( const rc_custom_operation& op, coun
 
 template
 void resource_credits::count_resources< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
+
+void resource_credits::handle_custom_op_usage( const rc_custom_operation& op, const fc::time_point_sec now ) const
+{
+  count_resources_result extra_usage;
+  resource_credits::count_resources( op, extra_usage, now );
+  const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
+  db.modify( pending_data, [&]( rc_pending_data& data )
+  {
+    //the extra cost is stored on the same counters as differential usage (but as positive values)
+    data.add_custom_op_usage( extra_usage );
+  } );
+}
 
 } } // hive::chain

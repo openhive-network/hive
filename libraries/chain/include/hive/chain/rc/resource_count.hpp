@@ -50,7 +50,7 @@ void count_resources(
   count_resources_result& result,
   const fc::time_point_sec now );
 
-// scans single nonstandard operation for used resource (implemented for rc_custom_operation)
+// scans single nonstandard operation for used extra resources (implemented for rc_custom_operation)
 template< typename OpType >
 void count_resources(
   const OpType& op,
