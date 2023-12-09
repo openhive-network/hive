@@ -144,6 +144,7 @@ function(git_describe _dir _var)
 	execute_process(COMMAND
 		"${GIT_EXECUTABLE}"
 		describe
+		--always
 		${hash}
 		${ARGN}
 		WORKING_DIRECTORY
