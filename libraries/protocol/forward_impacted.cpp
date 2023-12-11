@@ -952,10 +952,12 @@ private:
 
   void collect_account_auths(const authority& _authority, std::string _account_name, key_t _key_kind, uint32_t _weight_threshold)
   {
-    for(const auto& [account, weight]: _authority.account_auths)
-    {
-      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, _weight_threshold, false, {}, account, weight});
-    }
+    // If empty, add an entry to 'collected_keyauths' for overriding the former entry in PostgreSQL table.
+    if(_authority.account_auths.empty())
+      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, _weight_threshold, false, {}, "", 0});
+    else
+      for(const auto& [account, weight]: _authority.account_auths)
+        collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, _weight_threshold, false, {}, account, weight});
   }
 
   void collect_account_auths(const optional<authority>& _authority, std::string _account_name, key_t _key_kind, uint32_t _weight_threshold)
@@ -1221,6 +1223,66 @@ collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::oper
   op.visit(collector);
 
   return std::move(collector.collected_keyauths);
+}
+
+collected_keyauth_collection_t operation_get_genesis_keyauths()
+{
+  keyauth_collector collector;
+
+  {
+    const char* STEEM_ACCOUNT_NAME = "steem";
+    auto STEEM_PUBLIC_KEY = public_key_type( HIVE_ADDRESS_PREFIX"65wH1LZ7BfSHcK69SShnqCAH5xdoSZpGkUjmzHJ5GCuxEK9V5G" );
+    collected_keyauth_t collected_item {STEEM_ACCOUNT_NAME, key_t::OWNER, 0, true, STEEM_PUBLIC_KEY, {}, 0};
+
+    collected_item.key_kind = key_t::OWNER;
+    collector.collected_keyauths.emplace_back(collected_item);
+    
+    collected_item.key_kind = key_t::ACTIVE;
+    collector.collected_keyauths.emplace_back(collected_item);
+
+    collected_item.key_kind = key_t::POSTING;
+    collector.collected_keyauths.emplace_back(collected_item);
+
+    collected_item.key_kind = key_t::MEMO;
+    collector.collected_keyauths.emplace_back(collected_item);
+  }
+
+  {
+
+    auto INITMINER_KEY = public_key_type( HIVE_ADDRESS_PREFIX"8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX" );
+    collected_keyauth_t collected_item {"initminer", key_t::OWNER, 0, true, INITMINER_KEY, {}, 0};
+
+    collected_item.key_kind = key_t::OWNER;
+    collector.collected_keyauths.emplace_back(collected_item);
+    
+    collected_item.key_kind = key_t::ACTIVE;
+    collector.collected_keyauths.emplace_back(collected_item);
+
+    collected_item.key_kind = key_t::POSTING;
+    collector.collected_keyauths.emplace_back(collected_item);
+
+    collected_item.key_kind = key_t::MEMO;
+    collector.collected_keyauths.emplace_back(collected_item);
+  }
+
+
+  {
+    collected_keyauth_t collected_item {HIVE_MINER_ACCOUNT, key_t::MEMO, 0, true};
+    collector.collected_keyauths.emplace_back(collected_item);
+  }
+
+  {
+    collected_keyauth_t collected_item {HIVE_NULL_ACCOUNT, key_t::MEMO, 0, true};
+    collector.collected_keyauths.emplace_back(collected_item);
+  }
+
+  {
+    collected_keyauth_t collected_item {HIVE_TEMP_ACCOUNT, key_t::MEMO, 0, true};
+    collector.collected_keyauths.emplace_back(collected_item);
+  }
+
+
+  return collector.collected_keyauths;
 }
 
 stringset get_operations_used_in_get_keyauths()
