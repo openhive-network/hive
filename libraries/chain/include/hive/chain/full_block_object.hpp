@@ -28,6 +28,9 @@ class full_block_object : public object< full_block_object_type, full_block_obje
 
     block_id_type get_hash() const { return block_id; }
 
+    std::shared_ptr<full_block_type> create_full_block() const;
+
+  public:
     block_attributes_t  compression_attributes;
     size_t              byte_size = 0;
     t_block_bytes       block_bytes;
