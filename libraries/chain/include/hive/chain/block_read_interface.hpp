@@ -38,7 +38,7 @@ namespace hive { namespace chain {
       uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
     
     /// Check among reversible blocks on main branch. Supplement with irreversible blocks when needed.
-    virtual std::vector<std::shared_ptr<full_block_type>> fetch_block_range( 
+    virtual full_block_vector_t fetch_block_range( 
       const uint32_t starting_block_num, const uint32_t count, 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
 
