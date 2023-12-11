@@ -31,6 +31,12 @@ print_help () {
 
 EXPORT_PATH=""
 
+# Extract relative HIVE_SUBDIR and absolute root SOURCE_DIR containing gitdir data automatically
+hive_root=$(realpath "${SCRIPTSDIR}/..")
+
+SOURCE_DIR=$(git rev-parse --show-superproject-working-tree --show-toplevel | head -1)
+HIVE_SUBDIR=$(realpath --relative-base="$SOURCE_DIR" "$hive_root")
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --network-type=*)
@@ -107,7 +113,9 @@ docker build --target=base_instance \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
   --tag "${REGISTRY}base_instance:${BUILD_IMAGE_TAG}" \
   --tag "${REGISTRY}${IMAGE_TAG_PREFIX}base_instance:${BUILD_IMAGE_TAG}" \
-  --file Dockerfile .
+  --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
+  -f Dockerfile "$SOURCE_DIR"
+
 
 docker build --target=instance \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY" \
@@ -115,7 +123,8 @@ docker build --target=instance \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
   --tag "${REGISTRY}${IMAGE_TAG_PREFIX}instance:${BUILD_IMAGE_TAG}" \
-  --file Dockerfile .
+  --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
+  -f Dockerfile "$SOURCE_DIR"
 
 popd
 
