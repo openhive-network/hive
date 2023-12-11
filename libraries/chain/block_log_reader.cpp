@@ -94,7 +94,7 @@ block_id_type block_log_reader::find_block_id_for_num( uint32_t block_num )const
   return result;
 }
 
-std::vector<std::shared_ptr<full_block_type>> block_log_reader::fetch_block_range( 
+full_block_vector_t block_log_reader::fetch_block_range( 
   const uint32_t starting_block_num, const uint32_t count, 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 { 
@@ -104,7 +104,7 @@ std::vector<std::shared_ptr<full_block_type>> block_log_reader::fetch_block_rang
     FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
     idump((starting_block_num)(count));
 
-    std::vector<std::shared_ptr<full_block_type>> result;
+    full_block_vector_t result;
     result = _block_log.read_block_range_by_num(starting_block_num, count);
 
     idump((result.size()));

@@ -68,7 +68,7 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
   apply_block_t apply_block_extended,
   pop_block_t pop_block_extended )
 {
-  std::vector<std::shared_ptr<full_block_type>> blocks;
+  full_block_vector_t blocks;
 
   if (true) //if fork checking enabled
   {
