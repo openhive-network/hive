@@ -35,7 +35,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     return;
   }
 
-  _db.rc.handle_differential_usage< rc_custom_operation >( op );
+  _db.rc.handle_operation_discount< rc_custom_operation >( op );
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   if( op.max_rc != 0 && _db.is_in_control() )

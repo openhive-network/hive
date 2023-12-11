@@ -133,7 +133,7 @@ struct count_differential_operation_visitor
 };
 
 template< typename OpType >
-bool resource_credits::prepare_differential_usage( const OpType& op, count_resources_result& result ) const
+void resource_credits::handle_operation_discount( const OpType& op ) const
 {
   //call before each operation is applied to state to compute resource usage prior to change;
   //the idea is that RC usage for some operations can't be properly evaluated from the operation alone,
@@ -161,35 +161,21 @@ bool resource_credits::prepare_differential_usage( const OpType& op, count_resou
 
   static const state_object_size_info size_info;
   count_differential_operation_visitor vtor( size_info, db );
-
-  bool nonempty = op.visit( vtor );
-  if( nonempty )
-    result[ resource_state_bytes ] += vtor.state_bytes_count;
-  return nonempty;
-}
-
-template
-bool resource_credits::prepare_differential_usage< operation >( const operation& op, count_resources_result& result ) const;
-template
-bool resource_credits::prepare_differential_usage< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result ) const;
-
-template< typename OpType >
-void resource_credits::handle_differential_usage( const OpType& op ) const
-{
-  count_resources_result differential_usage;
-  if( prepare_differential_usage< OpType >( op, differential_usage ) )
+  if( op.visit( vtor ) )
   {
     const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
     db.modify( pending_data, [&]( rc_pending_data& data )
     {
+      count_resources_result differential_usage;
+      differential_usage[ resource_state_bytes ] += vtor.state_bytes_count;
       data.add_differential_usage( differential_usage );
     } );
   }
 }
 template
-void resource_credits::handle_differential_usage< operation >( const operation& op ) const;
+void resource_credits::handle_operation_discount< operation >( const operation& op ) const;
 template
-void resource_credits::handle_differential_usage< rc_custom_operation >( const rc_custom_operation& op ) const;
+void resource_credits::handle_operation_discount< rc_custom_operation >( const rc_custom_operation& op ) const;
 
 const resource_count_type& resource_credits::get_differential_usage() const
 {

@@ -4401,7 +4401,7 @@ void database::apply_operation(const operation& op)
   }
 
   if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-    rc.handle_differential_usage< operation >( op );
+    rc.handle_operation_discount< operation >( op );
 
   _my->_evaluator_registry.get_evaluator( op ).apply( op );
 
