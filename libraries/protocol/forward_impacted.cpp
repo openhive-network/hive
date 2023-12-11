@@ -952,10 +952,12 @@ private:
 
   void collect_account_auths(const authority& _authority, std::string _account_name, key_t _key_kind, uint32_t _weight_threshold)
   {
-    for(const auto& [account, weight]: _authority.account_auths)
-    {
-      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, _weight_threshold, false, {}, account, weight});
-    }
+    // If empty, add an entry to 'collected_keyauths' for overriding the former entry in PostgreSQL table.
+    if(_authority.account_auths.empty())
+      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, _weight_threshold, false, {}, "", 0});
+    else
+      for(const auto& [account, weight]: _authority.account_auths)
+        collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, _weight_threshold, false, {}, account, weight});
   }
 
   void collect_account_auths(const optional<authority>& _authority, std::string _account_name, key_t _key_kind, uint32_t _weight_threshold)
