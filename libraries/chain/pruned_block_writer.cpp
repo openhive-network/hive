@@ -154,6 +154,9 @@ const full_block_object* pruned_block_writer::find_full_block( uint32_t recent_b
     const full_block_object* fbo = _db.find<full_block_object, by_id>( fbid );
     if( fbo != nullptr )
     {
+      if( fbo->byte_size == 0 )
+        return nullptr;
+        
       uint32_t actual_block_num = block_header::num_from_id( fbo->block_id );
       if( actual_block_num != recent_block_num )
         return nullptr;
@@ -172,18 +175,7 @@ std::shared_ptr<full_block_type> pruned_block_writer::retrieve_full_block( uint3
     if( fbo == nullptr )
       return std::shared_ptr<full_block_type>();
 
-    size_t raw_block_size = fbo->byte_size;
-    std::unique_ptr<char[]> compressed_block_data(new char[raw_block_size]);
-    memcpy(compressed_block_data.get(), fbo->block_bytes.data(), raw_block_size);
-    const block_attributes_t& attributes = fbo->compression_attributes;
-    std::optional< block_id_type > block_id( fbo->block_id );
-
-    return full_block_type::create_from_compressed_block_data(
-      std::move( compressed_block_data ),
-      raw_block_size,
-      attributes,
-      block_id
-    );
+    return fbo->create_full_block();
   }
   FC_CAPTURE_AND_RETHROW()
 }
