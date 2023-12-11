@@ -142,4 +142,6 @@ class full_block_type
     const checksum_type& get_merkle_root() const;
 };
 
+typedef std::vector<std::shared_ptr<full_block_type>> full_block_vector_t;
+
 } } // end namespace hive::chain
