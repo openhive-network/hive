@@ -76,15 +76,13 @@ class resource_credits
     // collects and stores extra resources used by nonstandard operation as (positive) differential usage (must be called before transaction usage is collected)
     void handle_custom_op_usage( const rc_custom_operation& op, const fc::time_point_sec now ) const;
 
-    /** scans database for state related to given operation (implemented for operation and rc_custom_operation)
+    /** scans database for state related to given operation and remembers it as a discount (implemented for operation and rc_custom_operation)
+      * must be called before operation is executed
       * see comment in definition for more details
-      * Note: only selected operations consuming significant state handle differential usage
+      * Note: only selected operations consuming significant state get a discount for the related state already present
       */
     template< typename OpType >
-    bool prepare_differential_usage( const OpType& op, count_resources_result& result ) const;
-    // prepares and stores (negative) differential usage data for given operation (must be called before operation is executed)
-    template< typename OpType >
-    void handle_differential_usage( const OpType& op ) const;
+    void handle_operation_discount( const OpType& op ) const;
     // returns current state of differential usage (for testing/logging purposes)
     const resource_count_type& get_differential_usage() const;
 
