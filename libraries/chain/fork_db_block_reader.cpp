@@ -87,7 +87,7 @@ std::deque<block_id_type>::const_iterator fork_db_block_reader::find_first_item_
   });
 }
 
-std::vector<std::shared_ptr<full_block_type>> fork_db_block_reader::fetch_block_range( 
+full_block_vector_t fork_db_block_reader::fetch_block_range( 
   const uint32_t starting_block_num, const uint32_t count, 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 { 
@@ -109,7 +109,7 @@ std::vector<std::shared_ptr<full_block_type>> fork_db_block_reader::fetch_block_
     // - any block before the first block it returned should be in the block log
     uint32_t remaining_count = fork_items.empty() ? count : fork_items.front().get_block_num() - starting_block_num;
     idump((remaining_count));
-    std::vector<std::shared_ptr<full_block_type>> result;
+    full_block_vector_t result;
 
     if (remaining_count)
       result = block_log_reader::fetch_block_range(starting_block_num, remaining_count, wait_for_microseconds);
