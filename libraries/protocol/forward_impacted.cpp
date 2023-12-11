@@ -964,6 +964,8 @@ private:
   {
     if(_authority)
       collect_account_auths(*_authority, _account_name, _key_kind, _weight_threshold);
+    else
+      collected_keyauths.emplace_back(collected_keyauth_t{_account_name, _key_kind, _weight_threshold, false, {}, "", 0});
   }
 
   void collect_memo_key(public_key_type memo_key, collected_keyauth_t& collected_item) 
