@@ -1241,6 +1241,9 @@ collected_keyauth_collection_t operation_get_genesis_keyauths()
   collected_item.key_kind = key_t::POSTING;
   collector.collected_keyauths.emplace_back(collected_item);
 
+  collected_item.key_kind = key_t::MEMO;
+  collector.collected_keyauths.emplace_back(collected_item);
+
   return collector.collected_keyauths;
 }
 
