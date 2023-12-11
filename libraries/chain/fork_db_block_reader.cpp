@@ -90,6 +90,23 @@ std::deque<block_id_type>::const_iterator fork_db_block_reader::find_first_item_
 full_block_vector_t fork_db_block_reader::fetch_block_range( 
   const uint32_t starting_block_num, const uint32_t count, 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{
+  return fetch_block_range( 
+    _fork_db, 
+    [&](const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds)
+      ->full_block_vector_t {
+        return block_log_reader::fetch_block_range(starting_block_num, count, wait_for_microseconds);
+    },
+    starting_block_num,
+    count,
+    wait_for_microseconds );
+}
+
+full_block_vector_t fork_db_block_reader::fetch_block_range( 
+  const fork_database& fork_db,
+  fetch_irreversible_block_range_t fetch_irreversible_block_range,
+  const uint32_t starting_block_num, const uint32_t count, 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ )
 { 
   try {
     // for debugging, put the head block back so it should straddle the last irreversible
@@ -99,7 +116,7 @@ full_block_vector_t fork_db_block_reader::fetch_block_range(
     FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
     idump((starting_block_num)(count));
 
-    vector<fork_item> fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count, wait_for_microseconds );
+    vector<fork_item> fork_items = fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count, wait_for_microseconds );
     idump((fork_items.size()));
     if (!fork_items.empty())
       idump((fork_items.front().get_block_num()));
@@ -112,7 +129,7 @@ full_block_vector_t fork_db_block_reader::fetch_block_range(
     full_block_vector_t result;
 
     if (remaining_count)
-      result = block_log_reader::fetch_block_range(starting_block_num, remaining_count, wait_for_microseconds);
+      result = fetch_irreversible_block_range( starting_block_num, remaining_count, wait_for_microseconds );
 
     result.reserve(result.size() + fork_items.size());
     for (fork_item& item : fork_items)

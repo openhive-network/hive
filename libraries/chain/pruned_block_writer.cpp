@@ -104,7 +104,38 @@ full_block_vector_t pruned_block_writer::fetch_block_range(
   const uint32_t starting_block_num, const uint32_t count, 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 { 
-  FC_ASSERT(false, "Not implemented yet!");
+  return fork_db_block_reader::fetch_block_range( 
+    _fork_db, 
+    [&](const uint32_t starting_block_num, const uint32_t count, fc::microseconds wait_for_microseconds)
+      ->full_block_vector_t {
+        return get_block_range( starting_block_num, count );
+    },
+    starting_block_num,
+    count,
+    wait_for_microseconds );
+}
+
+full_block_vector_t pruned_block_writer::get_block_range( 
+  uint32_t starting_block_num, uint32_t count ) const
+{ 
+  std::vector<const full_block_object*> objects;
+  for( ; count > 0; --count, ++starting_block_num )
+  {
+    const full_block_object* fbo = pruned_block_writer::find_full_block( starting_block_num );
+    if( fbo == nullptr )
+      break;
+
+    objects.push_back( fbo );
+  }
+
+  full_block_vector_t result;
+  result.reserve( objects.size() );
+  for( const full_block_object* fbo : objects )
+  {
+    result.push_back( fbo->create_full_block() );
+  }  
+
+  return result;
 }
 
 std::vector<block_id_type> pruned_block_writer::get_blockchain_synopsis( 
