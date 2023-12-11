@@ -54,16 +54,19 @@ ENV HIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}
 ARG HIVE_LINT=OFF
 ENV HIVE_LINT=${HIVE_LINT}
 
+ARG HIVE_SUBDIR=.
+ENV HIVE_SUBDIR=${HIVE_SUBDIR}
+
 USER hived_admin
 WORKDIR /home/hived_admin
 SHELL ["/bin/bash", "-c"]
 
 # Get everything from cwd as sources to be built.
-COPY --chown=hived_admin:users . /home/hived_admin/hive
+COPY --chown=hived_admin:users . /home/hived_admin/source
 
 RUN \
   mkdir -p ./build/tests/unit/ \
-  && ./hive/scripts/build.sh --source-dir="./hive" --binary-dir="./build" \
+  && ./source/${HIVE_SUBDIR}/scripts/build.sh --source-dir="./source/${HIVE_SUBDIR}" --binary-dir="./build" \
   --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
   --cmake-arg="-DENABLE_SMT_SUPPORT=${ENABLE_SMT_SUPPORT}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
@@ -89,6 +92,9 @@ ENV HTTP_PORT=${HTTP_PORT}
 ARG CLI_WALLET_PORT=8093
 ENV CLI_WALLET_PORT=${CLI_WALLET_PORT}
 
+ARG HIVE_SUBDIR=.
+ENV HIVE_SUBDIR=${HIVE_SUBDIR}
+
 SHELL ["/bin/bash", "-c"]
 
 USER hived
@@ -107,14 +113,14 @@ COPY --from=build --chown=hived:users \
   /home/hived_admin/build/programs/blockchain_converter/blockchain_converter* \
   /home/hived_admin/build/tests/unit/* /home/hived/bin/
 
-COPY --from=build --chown=hived:users /home/hived_admin/hive/doc/example_config.ini /home/hived/datadir/example_config.ini
+COPY --from=build --chown=hived:users /home/hived_admin/source/${HIVE_SUBDIR}/doc/example_config.ini /home/hived/datadir/example_config.ini
 
 USER hived_admin
 WORKDIR /home/hived_admin
 
-COPY --from=build --chown=hived_admin:users /home/hived_admin/hive/scripts ./scripts
+COPY --from=build --chown=hived_admin:users /home/hived_admin/source/${HIVE_SUBDIR}/scripts ./scripts
 
-COPY --chown=hived_admin:users ./docker/docker_entrypoint.sh .
+COPY --chown=hived_admin:users ./${HIVE_SUBDIR}/docker/docker_entrypoint.sh .
 
 VOLUME [ "/home/hived/datadir", "/home/hived/shm_dir" ]
 
