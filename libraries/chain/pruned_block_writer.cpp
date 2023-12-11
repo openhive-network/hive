@@ -100,7 +100,7 @@ std::deque<block_id_type>::const_iterator pruned_block_writer::find_first_item_n
   FC_ASSERT(false, "Not implemented yet!");
 }
 
-std::vector<std::shared_ptr<full_block_type>> pruned_block_writer::fetch_block_range( 
+full_block_vector_t pruned_block_writer::fetch_block_range( 
   const uint32_t starting_block_num, const uint32_t count, 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 { 
