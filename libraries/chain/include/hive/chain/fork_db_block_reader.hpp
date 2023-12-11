@@ -48,6 +48,16 @@ namespace hive { namespace chain {
       const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
       uint32_t limit, get_block_id_for_num_t get_block_id_for_num );
 
+    using fetch_irreversible_block_range_t = std::function< 
+      full_block_vector_t (
+        const uint32_t starting_block_num, const uint32_t count, 
+        fc::microseconds wait_for_microseconds ) >;
+    static full_block_vector_t fetch_block_range( 
+      const fork_database& fork_db,
+      fetch_irreversible_block_range_t fetch_irreversible_block_range,
+      const uint32_t starting_block_num, const uint32_t count, 
+      fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ );
+
   private:
     bool is_known_block_unlocked( const block_id_type& id ) const;
     /// Searches block log only, returns empty when not found there
