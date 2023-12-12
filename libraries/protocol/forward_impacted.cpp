@@ -1285,6 +1285,33 @@ collected_keyauth_collection_t operation_get_genesis_keyauths()
   return collector.collected_keyauths;
 }
 
+collected_keyauth_collection_t operation_get_hf09_keyauths()
+{
+  keyauth_collector collector;
+
+  for( const std::string& ACCOUNT_NAME : hardfork9::get_compromised_accounts() )
+  {
+
+    {
+      
+      auto PUBLIC_KEY = public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR);
+      collected_keyauth_t collected_item {ACCOUNT_NAME, key_t::OWNER, 0, true, PUBLIC_KEY, {}, 0};
+
+      collected_item.key_kind = key_t::OWNER;
+      collector.collected_keyauths.emplace_back(collected_item);
+      
+      collected_item.key_kind = key_t::ACTIVE;
+      collector.collected_keyauths.emplace_back(collected_item);
+
+      collected_item.key_kind = key_t::POSTING;
+      collector.collected_keyauths.emplace_back(collected_item);
+    }
+
+  }
+
+  return collector.collected_keyauths;
+}
+
 stringset get_operations_used_in_get_keyauths()
 {
   keyauth_collector collector;
