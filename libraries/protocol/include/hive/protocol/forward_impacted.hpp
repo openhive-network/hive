@@ -40,6 +40,7 @@ typedef std::set<std::string> stringset;
 typedef std::vector<collected_keyauth_t> collected_keyauth_collection_t;
 collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::operation& op);
 collected_keyauth_collection_t operation_get_genesis_keyauths();
+collected_keyauth_collection_t operation_get_hf09_keyauths();
 stringset get_operations_used_in_get_keyauths();
 
 
