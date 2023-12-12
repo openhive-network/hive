@@ -34,8 +34,13 @@ EXPORT_PATH=""
 # Extract relative HIVE_SUBDIR and absolute root SOURCE_DIR containing gitdir data automatically
 hive_root=$(realpath "${SCRIPTSDIR}/..")
 
+# Be sure we're inside source tree (in case of out of source build)
+pushd "${hive_root}"
 SOURCE_DIR=$(git rev-parse --show-superproject-working-tree --show-toplevel | head -1)
+popd
+
 HIVE_SUBDIR=$(realpath --relative-base="$SOURCE_DIR" "$hive_root")
+
 
 while [ $# -gt 0 ]; do
   case "$1" in
