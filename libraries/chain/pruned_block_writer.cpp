@@ -47,7 +47,16 @@ std::shared_ptr<full_block_type> pruned_block_writer::read_block_by_num( uint32_
 void pruned_block_writer::process_blocks(uint32_t starting_block_number, uint32_t ending_block_number,
   block_processor_t processor, hive::chain::blockchain_worker_thread_pool& thread_pool) const
 {
-  FC_ASSERT(false, "Not implemented yet!");
+  if( starting_block_number > ending_block_number )
+    return;
+
+  uint32_t count = ending_block_number - starting_block_number + 1;
+  full_block_vector_t blocks = get_block_range( starting_block_number, count );
+  for( const auto& full_block : blocks )
+  {
+    if( not processor( full_block ) )
+      break;
+  }
 }
 
 std::shared_ptr<full_block_type> pruned_block_writer::fetch_block_by_number( uint32_t block_num,
