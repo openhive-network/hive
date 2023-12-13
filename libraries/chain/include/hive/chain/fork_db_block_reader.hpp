@@ -62,8 +62,14 @@ namespace hive { namespace chain {
       const uint32_t starting_block_num, const uint32_t count, 
       fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ );
 
+    using is_known_irreversible_block_t = std::function< bool ( const block_id_type& id ) >;
+    static std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(
+      const fork_database& fork_db, const std::deque<block_id_type>& item_hashes_received,
+      is_known_irreversible_block_t is_known_irreversible_block );
+
   private:
-    bool is_known_block_unlocked( const block_id_type& id ) const;
+    static bool is_known_block_unlocked( const fork_database& fork_db, const block_id_type& id,
+      is_known_irreversible_block_t is_known_irreversible_block );
     /// Searches block log only, returns empty when not found there
     block_id_type get_block_id_for_num( uint32_t block_num ) const;
 
