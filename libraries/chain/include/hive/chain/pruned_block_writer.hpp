@@ -69,7 +69,7 @@ namespace hive { namespace chain {
     std::shared_ptr<full_block_type> retrieve_full_block( uint32_t recent_block_num ) const;
     const full_block_object* find_full_block( uint32_t recent_block_num ) const;
     full_block_vector_t get_block_range( uint32_t starting_block_num, uint32_t count ) const;
-
+    block_id_type get_block_id_for_num( uint32_t block_num ) const;
 
   private:
     uint16_t _stored_block_number;
