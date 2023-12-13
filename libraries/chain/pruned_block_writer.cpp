@@ -106,7 +106,8 @@ bool pruned_block_writer::is_known_block(const block_id_type& id) const
 std::deque<block_id_type>::const_iterator pruned_block_writer::find_first_item_not_in_blockchain(
   const std::deque<block_id_type>& item_hashes_received ) const
 {
-  FC_ASSERT(false, "Not implemented yet!");
+  return fork_db_block_reader::find_first_item_not_in_blockchain( _fork_db, item_hashes_received, 
+    [&](const block_id_type& id){ return this->is_known_block( id ); } );
 }
 
 full_block_vector_t pruned_block_writer::fetch_block_range( 
