@@ -43,6 +43,7 @@ SET( SOURCES testnet_blockchain_configuration.cpp
    version.cpp
    misc_utilities.cpp
    forward_impacted.cpp
+   forward_keyauths.cpp
    fixed_string.cpp
    ${GET_CONFIG_CPP}
    ${HEADERS}
