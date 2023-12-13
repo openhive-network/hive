@@ -784,8 +784,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
     + 616u
 #endif
   );
-  BOOST_CHECK_EQUAL( sizeof( rc_pending_data ), 128u );
-  BOOST_CHECK_EQUAL( sizeof( rc_pending_data_index::MULTIINDEX_NODE_TYPE ), 160u );
+  BOOST_CHECK_EQUAL( sizeof( rc_pending_data ), 88u );
+  BOOST_CHECK_EQUAL( sizeof( rc_pending_data_index::MULTIINDEX_NODE_TYPE ), 120u );
   BOOST_CHECK_EQUAL( sizeof( rc_usage_bucket_object ), 48u ); //always HIVE_RC_WINDOW_BUCKET_COUNT objects
   BOOST_CHECK_EQUAL( sizeof( rc_usage_bucket_index::MULTIINDEX_NODE_TYPE ), 112u );
 
@@ -1403,7 +1403,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_resource_param_object>(dtds), "2b3f6a9591921bd096abd944cbd69a4bb651031f" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_pool_object>(dtds), "4c8c3f7ac723bbc93053bbbc56cca22e6b4febad" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_pending_data>(dtds), "12cd39a44a28899533c0a183ab42dba67a0489a3" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_pending_data>(dtds), "c997ececc4b62da17580e1c52d1a3617b12a2952" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_direct_delegation_object>(dtds), "f0d4bea1fb7a0120c38300e47487328c301aec50" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_usage_bucket_object>(dtds), "64fed99b3018ca29394f48592aec3a0a2a04ff28" );
 

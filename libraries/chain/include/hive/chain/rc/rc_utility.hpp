@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/rc/rc_export_objects.hpp>
 #include <hive/chain/rc/rc_operations.hpp>
 #include <hive/chain/rc/resource_count.hpp>
 
@@ -23,7 +24,6 @@ class generic_custom_operation_interpreter;
 class remove_guard;
 class witness_schedule_object;
 struct full_transaction_type;
-struct rc_transaction_info;
 
 struct rc_price_curve_params
 {
@@ -73,8 +73,8 @@ class resource_credits
       const OpType& op,
       count_resources_result& result,
       const fc::time_point_sec now );
-    // collects and stores extra resources used by nonstandard operation as (positive) differential usage (must be called before transaction usage is collected)
-    void handle_custom_op_usage( const rc_custom_operation& op, const fc::time_point_sec now ) const;
+    // collects and stores extra resources used by nonstandard operation (must be called before transaction usage is collected)
+    void handle_custom_op_usage( const rc_custom_operation& op, const fc::time_point_sec now );
 
     /** scans database for state related to given operation and remembers it as a discount (implemented for operation and rc_custom_operation)
       * must be called before operation is executed
@@ -82,9 +82,7 @@ class resource_credits
       * Note: only selected operations consuming significant state get a discount for the related state already present
       */
     template< typename OpType >
-    void handle_operation_discount( const OpType& op ) const;
-    // returns current state of differential usage (for testing/logging purposes)
-    const resource_count_type& get_differential_usage() const;
+    void handle_operation_discount( const OpType& op );
 
     // calculates cost of resource given curve params, current pool level, how much was used and regen rate
     static int64_t compute_cost(
@@ -129,6 +127,11 @@ class resource_credits
     // resource_new_accounts pool is controlled by witnesses - this should be called after every change in witness schedule
     void set_pool_params( const witness_schedule_object& wso ) const;
 
+    // resets information for new transaction - should be called at the start of each transaction (fills payer and op)
+    void reset_tx_info( const protocol::signed_transaction& tx );
+    // returns information collected for current transaction
+    const rc_transaction_info& get_tx_info() const { return tx_info; }
+
   private:
     // processes excess RC delegations of single delegator according to limits set by guard
     void remove_delegations(
@@ -144,6 +147,9 @@ class resource_credits
     database& db;
     friend class database;
 
+    // information collected for current transaction
+    rc_transaction_info tx_info;
+
     void initialize_evaluators();
 
     //temporary
@@ -153,13 +159,10 @@ class resource_credits
     void on_post_apply_block() const;
     void on_post_apply_block_impl() const;
     //temporary
-    void on_pre_apply_transaction() const;
-    void on_pre_apply_transaction_impl() const;
-    //temporary
-    void on_post_apply_transaction( const full_transaction_type& full_tx ) const;
+    void on_post_apply_transaction( const full_transaction_type& full_tx );
     void on_post_apply_transaction_impl(
       const full_transaction_type& full_tx,
-      const protocol::signed_transaction& tx ) const;
+      const protocol::signed_transaction& tx );
 
     std::shared_ptr< generic_custom_operation_interpreter< rc_custom_operation > > _custom_operation_interpreter;
 
