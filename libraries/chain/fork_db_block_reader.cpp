@@ -67,22 +67,31 @@ bool fork_db_block_reader::is_known_block( const block_id_type& id ) const
   } FC_CAPTURE_AND_RETHROW()
 }
 
-bool fork_db_block_reader::is_known_block_unlocked( const block_id_type& id ) const
+bool fork_db_block_reader::is_known_block_unlocked( const fork_database& fork_db, 
+  const block_id_type& id, is_known_irreversible_block_t is_known_irreversible_block )
 { 
   try {
-    if (_fork_db.fetch_block_unlocked(id, true /* only search linked blocks */))
+    if (fork_db.fetch_block_unlocked(id, true /* only search linked blocks */))
       return true;
 
-    return block_log_reader::is_known_block( id );
+    return is_known_irreversible_block( id );
   } FC_CAPTURE_AND_RETHROW()
 }
 
 std::deque<block_id_type>::const_iterator fork_db_block_reader::find_first_item_not_in_blockchain(
   const std::deque<block_id_type>& item_hashes_received ) const
 {
-  return _fork_db.with_read_lock([&](){
+  return find_first_item_not_in_blockchain( _fork_db, item_hashes_received, 
+    [&](const block_id_type& id){ return block_log_reader::is_known_block( id ); } );
+}
+
+std::deque<block_id_type>::const_iterator fork_db_block_reader::find_first_item_not_in_blockchain(
+  const fork_database& fork_db, const std::deque<block_id_type>& item_hashes_received,
+  is_known_irreversible_block_t is_known_irreversible_block )
+{
+  return fork_db.with_read_lock([&](){
     return std::partition_point(item_hashes_received.begin(), item_hashes_received.end(), [&](const block_id_type& block_id) {
-      return is_known_block_unlocked(block_id);
+      return is_known_block_unlocked( fork_db, block_id, is_known_irreversible_block );
     });
   });
 }
