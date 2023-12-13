@@ -3565,7 +3565,7 @@ void database::init_genesis()
     // https://hiveblocks.com/tx/46ddcba847f2297d13e32be07d72d15c530a7271
     {
       const char* STEEM_ACCOUNT_NAME = "steem";
-      auto STEEM_PUBLIC_KEY = public_key_type( HIVE_ADDRESS_PREFIX"65wH1LZ7BfSHcK69SShnqCAH5xdoSZpGkUjmzHJ5GCuxEK9V5G" );
+      auto STEEM_PUBLIC_KEY = public_key_type( HIVE_ADDRESS_PREFIX HIVE_STEEM_PUBLIC_KEY_BODY );
       create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, true, nullptr, true, asset( 0, VESTS_SYMBOL ) );
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
