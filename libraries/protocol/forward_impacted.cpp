@@ -1231,12 +1231,12 @@ collected_keyauth_collection_t operation_get_genesis_keyauths()
 
   {
     const char* STEEM_ACCOUNT_NAME = "steem";
-    auto STEEM_PUBLIC_KEY = public_key_type( HIVE_ADDRESS_PREFIX"65wH1LZ7BfSHcK69SShnqCAH5xdoSZpGkUjmzHJ5GCuxEK9V5G" );
-    collected_keyauth_t collected_item {STEEM_ACCOUNT_NAME, key_t::OWNER, 0, true, STEEM_PUBLIC_KEY, {}, 0};
+    auto STEEM_PUBLIC_KEY = public_key_type( HIVE_ADDRESS_PREFIX  HIVE_STEEM_PUBLIC_KEY_BODY );
+    collected_keyauth_t collected_item {STEEM_ACCOUNT_NAME, key_t::OWNER, 1, true, STEEM_PUBLIC_KEY, {}, 1};
 
     collected_item.key_kind = key_t::OWNER;
     collector.collected_keyauths.emplace_back(collected_item);
-    
+
     collected_item.key_kind = key_t::ACTIVE;
     collector.collected_keyauths.emplace_back(collected_item);
 
@@ -1249,7 +1249,7 @@ collected_keyauth_collection_t operation_get_genesis_keyauths()
 
   {
 
-    auto INITMINER_KEY = public_key_type( HIVE_ADDRESS_PREFIX"8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX" );
+    auto INITMINER_KEY = public_key_type( HIVE_INIT_PUBLIC_KEY_STR );
     collected_keyauth_t collected_item {"initminer", key_t::OWNER, 0, true, INITMINER_KEY, {}, 0};
 
     collected_item.key_kind = key_t::OWNER;
