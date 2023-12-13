@@ -133,7 +133,7 @@ struct count_differential_operation_visitor
 };
 
 template< typename OpType >
-void resource_credits::handle_operation_discount( const OpType& op ) const
+void resource_credits::handle_operation_discount( const OpType& op )
 {
   //call before each operation is applied to state to compute resource usage prior to change;
   //the idea is that RC usage for some operations can't be properly evaluated from the operation alone,
@@ -142,8 +142,7 @@ void resource_credits::handle_operation_discount( const OpType& op ) const
   //persistent; that cost is unreasonable since in most cases users just swap one key for another
   //which does not actually allocate more state; therefore in such cases we first calculate how much
   //state that is going to change is used before operation and pass such value as negative initial
-  //usage (value becomes negative when accumulated with call to rc_pending_data::add_differential_usage),
-  //so when new usage is calculated, it actually calculates differential usage;
+  //usage, so when new usage is calculated, it actually calculates differential usage;
   //there needs to be a safety check to prevent final usage from becoming negative, however it is
   //ok when usage for one operation goes negative and it "subsidizes" another operation (f.e. when
   //account_update_operation reduces state usage into negative and as a result vest delegation
@@ -162,26 +161,12 @@ void resource_credits::handle_operation_discount( const OpType& op ) const
   static const state_object_size_info size_info;
   count_differential_operation_visitor vtor( size_info, db );
   if( op.visit( vtor ) )
-  {
-    const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-    db.modify( pending_data, [&]( rc_pending_data& data )
-    {
-      count_resources_result differential_usage;
-      differential_usage[ resource_state_bytes ] += vtor.state_bytes_count;
-      data.add_differential_usage( differential_usage );
-    } );
-  }
+    tx_info.usage[ resource_state_bytes ] -= vtor.state_bytes_count;
 }
 template
-void resource_credits::handle_operation_discount< operation >( const operation& op ) const;
+void resource_credits::handle_operation_discount< operation >( const operation& op );
 template
-void resource_credits::handle_operation_discount< rc_custom_operation >( const rc_custom_operation& op ) const;
-
-const resource_count_type& resource_credits::get_differential_usage() const
-{
-  const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-  return pending_data.get_differential_usage();
-}
+void resource_credits::handle_operation_discount< rc_custom_operation >( const rc_custom_operation& op );
 
 struct count_operation_visitor
 {
@@ -743,16 +728,12 @@ void count_resources< rc_custom_operation >( const rc_custom_operation& op, coun
 template
 void resource_credits::count_resources< rc_custom_operation >( const rc_custom_operation& op, count_resources_result& result, const fc::time_point_sec now );
 
-void resource_credits::handle_custom_op_usage( const rc_custom_operation& op, const fc::time_point_sec now ) const
+void resource_credits::handle_custom_op_usage( const rc_custom_operation& op, const fc::time_point_sec now )
 {
   count_resources_result extra_usage;
   resource_credits::count_resources( op, extra_usage, now );
-  const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-  db.modify( pending_data, [&]( rc_pending_data& data )
-  {
-    //the extra cost is stored on the same counters as differential usage (but as positive values)
-    data.add_custom_op_usage( extra_usage );
-  } );
+  for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+    tx_info.usage[i] += extra_usage[i];
 }
 
 } } // hive::chain

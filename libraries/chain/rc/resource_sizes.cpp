@@ -148,7 +148,7 @@ state_object_size_info::state_object_size_info()
 
   // update proposal votes
   update_proposal_votes_member_size(
-    SIZE( proposal_vote_index::MULTIINDEX_NODE_TYPE, 128 ) * TEMPORARY_STATE_BYTE * 365 * 24), //HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
+    SIZE( proposal_vote_index::MULTIINDEX_NODE_TYPE, 128 ) * TEMPORARY_STATE_BYTE * 365 * 24 ), //HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
 
   // recurrent transfer
   recurrent_transfer_base_size(
@@ -240,8 +240,8 @@ operation_exec_info::operation_exec_info()
     386 + //tapos check
     3415 ), //post->rc::transaction
 
-  //not used but included since we have measurements
   recover_account_time( 727 + 17934 + 149 + 145 ),
+  //not used but included since we have measurements
   pow_time( 177321 + 23458 + 165 + 57 ),
   pow2_time( 86349 + 17226 + 160 + 92 )
 

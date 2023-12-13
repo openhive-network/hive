@@ -691,37 +691,18 @@ void resource_credits::on_post_apply_block_impl() const
   } );
 } FC_LOG_AND_RETHROW() }
 
-void resource_credits::on_pre_apply_transaction() const
-{
-  ISOLATE_RC_CALL( "pre->rc", "transaction", on_pre_apply_transaction_impl, );
-}
-
-void resource_credits::on_pre_apply_transaction_impl() const
-{
-  db.modify( db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
-  {
-    data.reset_differential_usage();
-  } );
-}
-
-void resource_credits::on_post_apply_transaction( const full_transaction_type& full_tx ) const
+void resource_credits::on_post_apply_transaction( const full_transaction_type& full_tx )
 {
   ISOLATE_RC_CALL( "post->rc", "transaction", on_post_apply_transaction_impl, full_tx, full_tx.get_transaction() );
 }
 
 void resource_credits::on_post_apply_transaction_impl( const full_transaction_type& full_tx,
-  const signed_transaction& tx ) const
+  const signed_transaction& tx )
 { try {
   const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
 
-  rc_transaction_info tx_info;
-  // Initialize with (negative) usage for state that was updated by transaction
-  tx_info.usage = get_differential_usage();
-
   // How many resources does the transaction use?
   count_resources( tx, full_tx.get_transaction_size(), tx_info.usage, db.head_block_time() );
-  if( tx.operations.size() == 1 )
-    tx_info.op = tx.operations.front().which();
 
   // How many RC does this transaction cost?
   int64_t total_cost = compute_cost( &tx_info );
@@ -732,8 +713,6 @@ void resource_credits::on_post_apply_transaction_impl( const full_transaction_ty
     data.add_pending_usage( tx_info.usage, tx_info.cost );
   } );
 
-  // Who pays the cost?
-  tx_info.payer = get_resource_user( tx );
   use_account_rcs( &tx_info, total_cost );
 
   const rc_stats_object* rc_stats = nullptr;
@@ -766,6 +745,14 @@ void resource_credits::set_pool_params( const witness_schedule_object& wso ) con
         rc_curve_gen_params() );
     } );
   }
+}
+
+void resource_credits::reset_tx_info( const protocol::signed_transaction& tx )
+{
+  tx_info = rc_transaction_info{};
+  tx_info.payer = get_resource_user( tx );
+  if( tx.operations.size() == 1 )
+    tx_info.op = tx.operations.front().which();
 }
 
 } }

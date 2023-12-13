@@ -4352,7 +4352,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
   }
 
   notify_pre_apply_transaction( note );
-  rc.on_pre_apply_transaction(); //temporary
+  rc.reset_tx_info( trx );
 
   //Finally process the operations
   _current_op_in_trx = 0;
