@@ -183,6 +183,7 @@ class chain_plugin_impl
     bool                             benchmark_is_enabled = false;
     bool                             statsd_on_replay = false;
     uint32_t                         stop_replay_at = 0;
+    uint32_t                         stop_at_block = 0;
     bool                             exit_after_replay = false;
     bool                             exit_before_sync = false;
     bool                             force_replay = false;
@@ -389,6 +390,17 @@ struct chain_plugin_impl::write_request_visitor
   }
 };
 
+struct block_num_visitor {
+  typedef uint32_t result_type;
+
+  uint32_t operator()(std::shared_ptr<p2p_block_flow_control> p2p_block_ctrl) const
+  {
+    return p2p_block_ctrl->get_full_block()->get_block_num();
+  }
+  uint32_t operator()(transaction_flow_control* ) const {return 0;}
+  uint32_t operator()(std::shared_ptr<generate_block_flow_control> ) const {return 0;}
+};
+
 bool chain_plugin_impl::is_running() const
 {
   return running && !theApp.is_interrupt_request();
@@ -485,10 +497,18 @@ void chain_plugin_impl::start_write_processing()
           STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f, theApp )
           while (true)
           {
+            const uint32_t last_block_number = cxt->req_ptr.visit(block_num_visitor{});
+
             req_visitor.cxt = cxt;
             cxt->req_ptr.visit( req_visitor );
 
             ++write_queue_items_processed;
+
+            if( stop_at_block > 0 && stop_at_block == last_block_number )
+            {
+              ilog("Stopped ${mode} on user request. Last applied block number: ${n}.", ("n", last_block_number)("mode", is_syncing ? "syncing" : "live mode"));
+              theApp.generate_interrupt_request();
+            }
 
             if (!is_syncing) //if not syncing, we shouldn't take more than 500ms to process everything in the write queue
             {
@@ -1272,7 +1292,8 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
   cli.add_options()
       ("replay-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and replay all blocks" )
       ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
-      ("stop-replay-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
+      ("stop-replay-at-block", bpo::value<uint32_t>(), "[ DEPRECATED ] Stop replay after reaching given block number")
+      ("stop-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
       ("exit-after-replay", bpo::bool_switch()->default_value(false), "[ DEPRECATED ] Exit after reaching given block number")
       ("exit-before-sync", bpo::bool_switch()->default_value(false), "Exits before starting sync, handy for dumping snapshot without starting replay")
       ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files. If specifed, `--replay-blockchain` flag is implied")
@@ -1320,6 +1341,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->replay              = options.at( "replay-blockchain").as<bool>() || my->force_replay;
   my->resync              = options.at( "resync-blockchain").as<bool>();
   my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
+  my->stop_at_block       = options.count( "stop-at-block" ) ? options.at( "stop-at-block" ).as<uint32_t>() : 0;
   my->exit_before_sync    = options.count( "exit-before-sync" ) ? options.at( "exit-before-sync" ).as<bool>() : false;
   my->benchmark_interval  =
     options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
