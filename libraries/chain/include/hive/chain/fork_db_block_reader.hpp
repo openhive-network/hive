@@ -47,6 +47,10 @@ namespace hive { namespace chain {
     static std::vector<block_id_type> get_block_ids( const fork_database& fork_db,
       const std::vector<block_id_type>& blockchain_synopsis, uint32_t& remaining_item_count,
       uint32_t limit, get_block_id_for_num_t get_block_id_for_num );
+    static std::vector<block_id_type> get_blockchain_synopsis( 
+      const fork_database& fork_db, const block_id_type& reference_point,
+      uint32_t number_of_blocks_after_reference_point, 
+      get_block_id_for_num_t get_block_id_for_num );
 
     using fetch_irreversible_block_range_t = std::function< 
       full_block_vector_t (

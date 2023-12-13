@@ -147,10 +147,23 @@ full_block_vector_t pruned_block_writer::get_block_range(
   return result;
 }
 
+block_id_type pruned_block_writer::get_block_id_for_num( uint32_t block_num ) const
+{
+  const full_block_object* fbo = this->find_full_block( block_num );
+  if( fbo != nullptr )
+    return fbo->block_id;
+  else
+    return block_id_type();
+}
+
 std::vector<block_id_type> pruned_block_writer::get_blockchain_synopsis( 
   const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
 {
-  FC_ASSERT(false, "Not implemented yet!");
+  return fork_db_block_reader::get_blockchain_synopsis( _fork_db, reference_point,
+     number_of_blocks_after_reference_point,
+    [&](uint32_t block_num)->block_id_type {
+      return this->get_block_id_for_num( block_num );
+    });
 }
 
 std::vector<block_id_type> pruned_block_writer::get_block_ids(
@@ -159,11 +172,7 @@ std::vector<block_id_type> pruned_block_writer::get_block_ids(
 {
   return fork_db_block_reader::get_block_ids( _fork_db, blockchain_synopsis,
     remaining_item_count, limit, [&](uint32_t block_num)->block_id_type {
-      const full_block_object* fbo = this->find_full_block( block_num );
-      if( fbo != nullptr )
-        return fbo->block_id;
-      else
-        return block_id_type();
+      return this->get_block_id_for_num( block_num );
     });
 }
 
