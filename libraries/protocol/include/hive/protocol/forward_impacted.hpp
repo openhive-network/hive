@@ -41,7 +41,6 @@ typedef std::vector<collected_keyauth_t> collected_keyauth_collection_t;
 collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::operation& op);
 collected_keyauth_collection_t operation_get_genesis_keyauths();
 collected_keyauth_collection_t operation_get_hf09_keyauths();
-stringset get_operations_used_in_get_keyauths();
 
 
 struct collected_metadata_t
@@ -53,8 +52,6 @@ struct collected_metadata_t
 
 typedef std::vector<collected_metadata_t> collected_metadata_collection_t;
 collected_metadata_collection_t operation_get_metadata(const hive::protocol::operation& op);
-stringset get_operations_used_in_get_metadata();
-
 
 
 typedef std::vector<std::pair<protocol::account_name_type, protocol::asset>> impacted_balance_data;
@@ -67,5 +64,11 @@ void transaction_get_impacted_accounts(
   const hive::protocol::transaction& tx,
   fc::flat_set<protocol::account_name_type>& result
   );
+
+template <typename T>
+void exclude_from_used_operations(hive::app::stringset& used_operations)
+{
+  used_operations.erase(fc::get_typename<T>::name());
+}
 
 } } // hive::app
