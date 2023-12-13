@@ -114,6 +114,25 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path,
     assert node.is_running()  # Make sure, that node didn't crash.
 
 
+def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
+    """
+    This place have to be removed after solving issue https://gitlab.syncad.com/hive/test-tools/-/issues/10
+    """
+    second_node.config.p2p_seed_node = first_node.p2p_endpoint.as_string()
+
+
+def test_stop_live_sync_at_given_block(block_log: Path, block_log_length: int) -> None:
+    network = tt.Network()
+    init_node = tt.InitNode(network=network)
+    api_node = tt.ApiNode(network=network)
+    init_node.run()
+    init_node.wait_number_of_blocks(10)
+    connect_nodes(init_node, api_node)
+    api_node.run(stop_at_block=5)
+
+    assert api_node.get_last_block_number() == 5
+
+
 def test_hived_get_version() -> None:
     node = tt.RawNode()
     version_json = node.get_version()
