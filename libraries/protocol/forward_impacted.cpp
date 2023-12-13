@@ -1225,91 +1225,62 @@ collected_keyauth_collection_t operation_get_keyauths(const hive::protocol::oper
   return std::move(collector.collected_keyauths);
 }
 
-collected_keyauth_collection_t operation_get_genesis_keyauths()
+
+
+// Helper function to add key authorizations for different key types
+void add_key_authorizations(keyauth_collector& collector, 
+                            collected_keyauth_t collected_item, 
+                            const std::vector<key_t>& key_types) 
 {
-  keyauth_collector collector;
+    for (auto& key_type : key_types) {
+        collected_item.key_kind = key_type;
+        collector.collected_keyauths.emplace_back(collected_item);
+    }
+}
 
-  {
-    const char* STEEM_ACCOUNT_NAME = "steem";
-    auto STEEM_PUBLIC_KEY = public_key_type( HIVE_ADDRESS_PREFIX"65wH1LZ7BfSHcK69SShnqCAH5xdoSZpGkUjmzHJ5GCuxEK9V5G" );
-    collected_keyauth_t collected_item {STEEM_ACCOUNT_NAME, key_t::OWNER, 0, true, STEEM_PUBLIC_KEY, {}, 0};
+collected_keyauth_collection_t operation_get_genesis_keyauths() 
+{
+    keyauth_collector collector;
 
-    collected_item.key_kind = key_t::OWNER;
-    collector.collected_keyauths.emplace_back(collected_item);
-    
-    collected_item.key_kind = key_t::ACTIVE;
-    collector.collected_keyauths.emplace_back(collected_item);
+    // Common key types for genesis accounts
+    std::vector<key_t> genesis_key_types = {key_t::OWNER, key_t::ACTIVE, key_t::POSTING, key_t::MEMO};
 
-    collected_item.key_kind = key_t::POSTING;
-    collector.collected_keyauths.emplace_back(collected_item);
+    // 'steem' account
+    auto STEEM_PUBLIC_KEY = public_key_type(HIVE_ADDRESS_PREFIX HIVE_STEEM_PUBLIC_KEY_BODY);
+    collected_keyauth_t steem_item {"steem", key_t::OWNER, 1, true, STEEM_PUBLIC_KEY, {}, 1};
+    add_key_authorizations(collector, steem_item, genesis_key_types);
 
-    collected_item.key_kind = key_t::MEMO;
-    collector.collected_keyauths.emplace_back(collected_item);
-  }
+    // 'initminer' account
+    auto INITMINER_KEY = public_key_type(HIVE_INIT_PUBLIC_KEY_STR);
+    collected_keyauth_t initminer_item {"initminer", key_t::OWNER, 0, true, INITMINER_KEY, {}, 0};
+    add_key_authorizations(collector, initminer_item, genesis_key_types);
 
-  {
+    // Other genesis accounts - only MEMO
+    std::vector<std::string> other_accounts = {HIVE_MINER_ACCOUNT, HIVE_NULL_ACCOUNT, HIVE_TEMP_ACCOUNT};
+    for (const auto& account_name : other_accounts)
+    {
+        collected_keyauth_t default_item {account_name, key_t::MEMO, 0, true, public_key_type(), {}, 0};
+        add_key_authorizations(collector, default_item, {key_t::MEMO});
+    }
 
-    auto INITMINER_KEY = public_key_type( HIVE_ADDRESS_PREFIX"8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX" );
-    collected_keyauth_t collected_item {"initminer", key_t::OWNER, 0, true, INITMINER_KEY, {}, 0};
-
-    collected_item.key_kind = key_t::OWNER;
-    collector.collected_keyauths.emplace_back(collected_item);
-    
-    collected_item.key_kind = key_t::ACTIVE;
-    collector.collected_keyauths.emplace_back(collected_item);
-
-    collected_item.key_kind = key_t::POSTING;
-    collector.collected_keyauths.emplace_back(collected_item);
-
-    collected_item.key_kind = key_t::MEMO;
-    collector.collected_keyauths.emplace_back(collected_item);
-  }
-
-
-  {
-    collected_keyauth_t collected_item {HIVE_MINER_ACCOUNT, key_t::MEMO, 0, true};
-    collector.collected_keyauths.emplace_back(collected_item);
-  }
-
-  {
-    collected_keyauth_t collected_item {HIVE_NULL_ACCOUNT, key_t::MEMO, 0, true};
-    collector.collected_keyauths.emplace_back(collected_item);
-  }
-
-  {
-    collected_keyauth_t collected_item {HIVE_TEMP_ACCOUNT, key_t::MEMO, 0, true};
-    collector.collected_keyauths.emplace_back(collected_item);
-  }
-
-
-  return collector.collected_keyauths;
+    return collector.collected_keyauths;
 }
 
 collected_keyauth_collection_t operation_get_hf09_keyauths()
 {
-  keyauth_collector collector;
+    keyauth_collector collector;
 
-  for( const std::string& ACCOUNT_NAME : hardfork9::get_compromised_accounts() )
-  {
+    // Key types for HF09 accounts (no MEMO)
+    std::vector<key_t> hf09_key_types = {key_t::OWNER, key_t::ACTIVE, key_t::POSTING};
 
+    auto PUBLIC_KEY = public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR);
+    for (const std::string& ACCOUNT_NAME : hardfork9::get_compromised_accounts()) 
     {
-      
-      auto PUBLIC_KEY = public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR);
-      collected_keyauth_t collected_item {ACCOUNT_NAME, key_t::OWNER, 0, true, PUBLIC_KEY, {}, 0};
-
-      collected_item.key_kind = key_t::OWNER;
-      collector.collected_keyauths.emplace_back(collected_item);
-      
-      collected_item.key_kind = key_t::ACTIVE;
-      collector.collected_keyauths.emplace_back(collected_item);
-
-      collected_item.key_kind = key_t::POSTING;
-      collector.collected_keyauths.emplace_back(collected_item);
+        collected_keyauth_t hf09_item {ACCOUNT_NAME, key_t::OWNER, 1, true, PUBLIC_KEY, {}, 1};
+        add_key_authorizations(collector, hf09_item, hf09_key_types);
     }
 
-  }
-
-  return collector.collected_keyauths;
+    return collector.collected_keyauths;
 }
 
 stringset get_operations_used_in_get_keyauths()
