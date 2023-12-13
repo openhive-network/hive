@@ -3,6 +3,7 @@
 #include <boost/any.hpp>
 #include <iostream>
 #include <fc/log/logger.hpp>
+#include <fc/io/json.hpp>
 
 namespace chainbase {
 
@@ -92,42 +93,95 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         return res;
       }
 
-      void test_set_plugins( const helpers::environment_extension_resources& environment_extension )
+      void test_version( const helpers::environment_extension_resources& environment_extension )
+      {
+        if( created_storage )
+          version_info = environment_extension.version_info.c_str();
+        else
+        {
+          const std::string loaded_version_str(version_info.c_str());
+          const std::string current_version_str(environment_extension.version_info.c_str());
+
+          if( loaded_version_str !=  current_version_str)
+          {
+            const fc::variant loaded_version_v = fc::json::from_string(loaded_version_str, fc::json::full);
+            const fc::variant current_version_v = fc::json::from_string(current_version_str, fc::json::full);
+            assert(loaded_version_v.is_object());
+            assert(current_version_v.is_object());
+            const fc::variant_object loaded_version = loaded_version_v.get_object()["version"].get_object();
+            const fc::variant_object current_version = current_version_v.get_object()["version"].get_object();
+
+            if (loaded_version["node_type"].as_string() != current_version["node_type"].as_string())
+              BOOST_THROW_EXCEPTION( std::runtime_error( "Loaded node type: " + loaded_version["node_type"].as_string() + " is different then current node type: " + current_version["node_type"].as_string()));
+
+            else if (loaded_version["blockchain_version"].as_string() != current_version["blockchain_version"].as_string() ||
+                     loaded_version["hive_revision"].as_string() != current_version["hive_revision"].as_string() ||
+                     loaded_version["fc_revision"].as_string() != current_version["fc_revision"].as_string())
+            {
+              std::string message = "Persistent storage was created according to the version: " + loaded_version_str;
+              message += " but current node has the version: " + current_version_str;
+              environment_extension.logger( message );
+            }
+
+            else
+            {
+              std::string message = "Difference found between loaded version data: " + loaded_version_str;
+              message += " and current version data: " + current_version_str;
+              message += " but error not handled.";
+              BOOST_THROW_EXCEPTION(std::runtime_error(message));
+            }
+          }
+        }
+      }
+
+      bool test_set_plugins(const helpers::environment_extension_resources* environment_extension )
       {
         if( created_storage )
         {
-          version_info = environment_extension.version_info.c_str();
-
-          for( auto& item : environment_extension.plugins )
-            plugins.insert( shared_string( item.c_str(), version_info.get_allocator() ) );
+          for( auto& item : environment_extension->plugins )
+            plugins.insert( shared_string( item.c_str(), version_info.get_allocator()));
         }
         else
         {
-          bool result = strcmp( version_info.c_str(), environment_extension.version_info.c_str() ) == 0;
-          if( !result )
-          {
-            std::string message = "Persistent storage was created according to the version: " + std::string( version_info.c_str() );
-            message += " but current node has the version: " + environment_extension.version_info;
+          std::set<std::string> current_plugins_editable = environment_extension->plugins;
+          bool less_current_plugins_than_plugins_in_db = false;
 
-            environment_extension.logger( message );
+          for (const auto& plugin : plugins)
+          {
+            const std::string plugin_name(plugin.c_str());
+            if (current_plugins_editable.count(plugin_name))
+              current_plugins_editable.erase(plugin_name);
+            else
+              less_current_plugins_than_plugins_in_db = true;
           }
 
-          result = std::equal( plugins.begin(), plugins.end(), environment_extension.plugins.begin(), environment_extension.plugins.end(), []( const shared_string& s1, const std::string& s2 )
+          if (!current_plugins_editable.empty())
           {
-            return strcmp( s1.c_str(), s2.c_str() ) == 0;
-          });
+            const std::string loaded_plugins = dump(plugins);
+            const std::string all_current_plugins = dump(environment_extension->plugins);
+            const std::string missing_plugins = dump(current_plugins_editable);
 
-          if( !result )
+            const std::string error_message = "Database misses plugins: " + missing_plugins + " which are requested"
+                                              ".\n Enabled plugins: " + all_current_plugins +
+                                              "\n Plugins in database: " + loaded_plugins;
+
+            environment_extension->logger(error_message);
+            return true;
+          }
+
+          else if (less_current_plugins_than_plugins_in_db)
           {
-            std::string dump_plugins = dump( plugins );
-            std::string dump_current_plugins = dump( environment_extension.plugins );
+            const std::string loaded_plugins = dump(plugins);
+            const std::string all_current_plugins = dump(environment_extension->plugins);
+            const std::string warning_message = "Not all plugins from database were requested to load."
+                                                "\n Enabled plugins: " + all_current_plugins +
+                                                "\n Plugins in database: " + loaded_plugins;
 
-            std::string message = "Persistent storage was created using plugins: " + dump_plugins;
-            message += " but current node has following plugins: " + dump_current_plugins;
-
-            environment_extension.logger( message );
+            environment_extension->logger(warning_message);
+            return false;
           }
         }
+        return true;
       }
 
       shared_string                 version_info;
@@ -170,7 +224,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                       ) );
 
       auto env = _segment->find< environment_check >( "environment" );
-
       environment_check eCheck( allocator< environment_check >( _segment->get_segment_manager() ) );
       if( !env.first || !( *env.first == eCheck) ) {
         if(!env.first)
@@ -195,7 +248,8 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     auto env = _segment->find< environment_check >( "environment" );
     if( environment_extension )
-      env.first->test_set_plugins( *environment_extension );
+      env.first->test_version(*environment_extension);
+
 
     _flock = bip::file_lock( abs_path.generic_string().c_str() );
     if( !_flock.try_lock() )
@@ -203,6 +257,13 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 #endif
 
     _is_open = true;
+  }
+
+  bool database::check_plugins(const helpers::environment_extension_resources* environment_extension)
+  {
+    auto env = _segment->find< environment_check >( "environment" );
+    assert(env.first);
+    return env.first->test_set_plugins(environment_extension);
   }
 
   void database::flush() {
