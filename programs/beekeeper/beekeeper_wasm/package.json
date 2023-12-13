@@ -2,12 +2,13 @@
   "name": "@hive/beekeeper",
   "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
   "description": "Hive Beekeeper functionality exposed to TypeScript/JavaScript environments",
-  "main": "dist/index.js",
+  "main": "dist/bundle/index.js",
   "type": "module",
   "private": false,
   "scripts": {
     "prebuild": "cd ../../.. && husky install programs/beekeeper/beekeeper_wasm/.husky",
     "build": "tsc",
+    "postbuild": "rollup -c",
     "pretest": "playwright install",
     "test": "unset CI && playwright test --workers 1 --max-failures 1 --project=beekeeper_testsuite",
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
@@ -17,23 +18,25 @@
     "LICENSE.md",
     "README.md",
     "api.md",
-    "build/beekeeper_wasm.js",
-    "build/beekeeper_wasm.d.ts",
-    "dist/**/*.d.ts",
-    "dist/**/*.js"
+    "dist/bundle"
   ],
   "devDependencies": {
     "@playwright/test": "^1.39.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
     "@types/node": "^20.7.1",
     "concat-md": "^0.5.1",
     "http-server": "^14.1.1",
     "husky": "8.0.3",
     "playwright": "^1.39.0",
+    "rollup": "^4.9.0",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "tslib": "^2.6.2",
     "typedoc": "0.25.3",
     "typedoc-plugin-markdown": "3.17.1",
     "typescript": "5.2.2"
   },
-  "types": "dist/index.d.ts",
+  "types": "dist/bundle/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://gitlab.syncad.com/hive/hive.git"
