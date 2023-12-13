@@ -53,7 +53,6 @@
 #include <deque>
 #include <fstream>
 #include <functional>
-
 #include <stdlib.h>
 
 long next_hf_time()
@@ -174,14 +173,15 @@ void database::open( const open_args& args )
                                               );
     const bool wipe_shared_file = args.force_replay || args.load_snapshot;
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, wipe_shared_file );
-    initialize_state_independent_data(args);
+    const bool throw_an_error_on_state_definitions_mismatch = chainbase::database::check_plugins(&environment_extension);
+    initialize_state_independent_data(args, throw_an_error_on_state_definitions_mismatch);
     load_state_initial_data(args);
 
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
-void database::initialize_state_independent_data(const open_args& args)
+void database::initialize_state_independent_data(const open_args& args, const bool throw_an_error_on_state_definitions_mismatch)
 {
   _my->create_new_decoded_types_data_storage();
   _my->_decoded_types_data_storage->register_new_type<irreversible_object_type>();
@@ -189,7 +189,7 @@ void database::initialize_state_independent_data(const open_args& args)
   initialize_indexes();
 
   if (!args.load_snapshot)
-    verify_match_of_state_objects_definitions_from_shm();
+    verify_match_of_state_objects_definitions_from_shm(throw_an_error_on_state_definitions_mismatch);
 
   initialize_evaluators();
   initialize_irreversible_storage();
@@ -3363,7 +3363,7 @@ void database::initialize_irreversible_storage()
   irreversible_object = s->find_or_construct<irreversible_object_type>( "irreversible" )();
 }
 
-void database::verify_match_of_state_objects_definitions_from_shm()
+void database::verify_match_of_state_objects_definitions_from_shm(const bool throw_an_error_on_state_definitions_mismatch)
 {
   FC_ASSERT(_my->_decoded_types_data_storage);
   const std::string decoded_state_objects_data = get_decoded_state_objects_data_from_shm();
@@ -3392,10 +3392,15 @@ void database::verify_match_of_state_objects_definitions_from_shm()
       current_decoded_types_details.flush();
       current_decoded_types_details.close();
 
-      FC_THROW_EXCEPTION(shm_state_definitions_mismatch_exception,
-                         "Details:\n ${details}"
-                         "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
-                         ("details", result.second)(current_data_filename)(loaded_data_filename));
+      if (throw_an_error_on_state_definitions_mismatch)
+        FC_THROW_EXCEPTION(shm_state_definitions_mismatch_exception,
+                           "Details:\n ${details}"
+                           "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
+                           ("details", result.second)(current_data_filename)(loaded_data_filename));
+      else
+        wlog("Mismatch between current and loaded state definitions. Details:\n ${details}"
+             "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
+             ("details", result.second)(current_data_filename)(loaded_data_filename));
     }
   }
 
