@@ -552,12 +552,6 @@ struct get_static_variant_name_with_prefix
 };
 
 
-template <typename T>
-void exclude_from_used_operations(hive::app::stringset& used_operations)
-{
-  used_operations.erase(fc::get_typename<T>::name());
-}
-
 template<typename Collector>
 hive::app::stringset run_all_visitor_overloads(Collector& k)
 {

@@ -1,7 +1,11 @@
+#include <hive/protocol/forward_keyauths.hpp>
+
 #include <hive/protocol/authority.hpp>
 #include <hive/protocol/forward_impacted.hpp>
 
-namespace hive { namespace app {
+
+namespace hive::app
+{
 
 using namespace fc;
 using namespace hive::protocol;
@@ -307,4 +311,5 @@ collected_keyauth_collection_t operation_get_hf09_keyauths()
     return collector.collected_keyauths;
 }
 
-}}
+} // namespace hive::app
+
