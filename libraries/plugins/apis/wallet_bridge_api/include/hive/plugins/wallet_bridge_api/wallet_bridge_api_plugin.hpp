@@ -26,8 +26,6 @@ class wallet_bridge_api_plugin : public plugin< wallet_bridge_api_plugin >
       (json_rpc::json_rpc_plugin)
       (database_api::database_api_plugin)
       (block_api::block_api_plugin)
-      (account_by_key::account_by_key_api_plugin)
-      (market_history::market_history_api_plugin)
       (network_broadcast_api::network_broadcast_api_plugin)
       (rc::rc_api_plugin)
     )
