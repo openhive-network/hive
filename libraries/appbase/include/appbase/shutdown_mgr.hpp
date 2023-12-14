@@ -107,7 +107,7 @@ namespace hive {
               ilog( "attempt: ${attempt}/${total}, reason: ${s}, future status(internal): ${fs} ...", ("attempt", cnt + 1)("total", time_maximum)("s", fStatus( res ) )("fs", std::to_string( state->is_future_valid() ) ) );
               ilog( "Details: Wait for: ${name}. Currently ${number} of '${name}' items are processed...\n", ("name", state->get_name())("number", state->get_activity())("name", state->get_name()) );
             }
-            FC_ASSERT( ++cnt <= time_maximum, "Closing the ${name} is terminated", ( "name", name ) );
+            FC_ASSERT( ++cnt < time_maximum, "Closing the ${name} is terminated", ( "name", name ) );
           }
           else
           {
