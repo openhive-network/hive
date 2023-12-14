@@ -24,6 +24,7 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load() -> None:
     """
 
     init_node = tt.InitNode()
+    init_node.config.plugin.append("market_history_api")
     init_node.run()
     wallet = tt.Wallet(attach_to=init_node)
 

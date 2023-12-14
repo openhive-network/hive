@@ -4,7 +4,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 
-@run_for("testnet", "mainnet_5m", "live_mainnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["market_history_api"])
 def test_get_recent_trades(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     preparation_for_testnet_node(node, should_prepare)
 
@@ -12,7 +12,7 @@ def test_get_recent_trades(node: tt.InitNode | tt.RemoteNode, should_prepare: bo
     assert len(trades) != 0
 
 
-@run_for("testnet", "mainnet_5m", "live_mainnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["market_history_api"])
 def test_get_recent_trades_with_default_argument(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     preparation_for_testnet_node(node, should_prepare)
 

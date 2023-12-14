@@ -27,7 +27,7 @@ def test_exceed_time_range(node: tt.InitNode) -> None:
         (85, 30),
     ],
 )
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_trade_history_with_different_values(node: tt.InitNode, tests_amount: int, tbds_amount: int) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
@@ -44,7 +44,7 @@ def test_trade_history_with_different_values(node: tt.InitNode, tests_amount: in
     assert response[0].open_pays == tt.Asset.Hive(tests_amount)
 
 
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_get_empty_trade_history(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
@@ -62,7 +62,7 @@ def test_get_empty_trade_history(node: tt.InitNode) -> None:
 
 
 @pytest.mark.parametrize("limit", [1, 2])
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_trade_history_limit(node: tt.InitNode, limit: int) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(500), vests=tt.Asset.Test(100))

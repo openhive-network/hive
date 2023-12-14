@@ -35,7 +35,7 @@ from hive_local_tools import run_for
         ),
     ],
 )
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_recent_trades_output_parameters(node: tt.InitNode, limit_orders: dict) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(600), vests=tt.Asset.Test(100))
@@ -67,7 +67,7 @@ def test_recent_trades_output_parameters(node: tt.InitNode, limit_orders: dict) 
 
 
 @pytest.mark.parametrize("limit", [1, 2])
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_limit(node: tt.InitNode, limit: int) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(600), vests=tt.Asset.Test(300))

@@ -8,6 +8,6 @@ if TYPE_CHECKING:
     import test_tools as tt
 
 
-@run_for("testnet", "mainnet_5m", "live_mainnet")
+@run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["market_history_api"])
 def test_get_volume(node: tt.InitNode | tt.RemoteNode) -> None:
     node.api.condenser.get_volume()

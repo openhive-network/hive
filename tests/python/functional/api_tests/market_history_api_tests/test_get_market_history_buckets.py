@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     import test_tools as tt
 
 
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_change_bucket_size_in_node_config(node: tt.InitNode) -> None:
     node.close()
     new_bucket_sizes = [1, 2, 3, 4, 5]
