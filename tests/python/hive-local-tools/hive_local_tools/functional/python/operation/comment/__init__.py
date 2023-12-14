@@ -7,13 +7,20 @@ import test_tools as tt
 from hive_local_tools.functional.python.operation import (
     Account,
     create_transaction_with_any_operation,
+    get_rc_current_mana,
     get_reward_hbd_balance,
     get_reward_vesting_balance,
     get_transaction_timestamp,
     get_virtual_operations,
 )
 from schemas.jsonrpc import get_response_model
-from schemas.operations import CommentOperation, CommentOptionsOperationLegacy, DeleteCommentOperation, VoteOperation
+from schemas.operations import (
+    ClaimRewardBalanceOperationLegacy,
+    CommentOperation,
+    CommentOptionsOperationLegacy,
+    DeleteCommentOperation,
+    VoteOperation,
+)
 from schemas.operations.representations.legacy_representation import LegacyRepresentation  # noqa: TCH001
 from schemas.operations.virtual.author_reward_operation import AuthorRewardOperation
 from schemas.operations.virtual.comment_benefactor_reward_operation import CommentBenefactorRewardOperation
@@ -23,6 +30,11 @@ from schemas.transaction import TransactionLegacy
 
 if TYPE_CHECKING:
     from schemas.fields.hive_int import HiveInt
+
+
+class ClaimRewardBalanceTransaction(TransactionLegacy):
+    operations: list[LegacyRepresentation[ClaimRewardBalanceOperationLegacy]]
+    rc_cost: int
 
 
 class CommentTransaction(TransactionLegacy):
@@ -675,6 +687,10 @@ class CommentAccount(Account):
     def __init__(self, name: str, node: tt.AnyNode, wallet: tt.Wallet) -> None:
         super().__init__(_name=name, _node=node, _wallet=wallet)
 
+    @property
+    def claim_reward_balance_trx(self) -> ClaimRewardBalanceTransaction:
+        return self.__claim_reward_transaction
+
     def __get_rewards_from_reward_operation(
         self,
         node: tt.AnyNode,
@@ -735,3 +751,84 @@ class CommentAccount(Account):
             assert self.name not in curator, "Curation_reward_operation generated, but it should have not been"
         else:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")
+
+    def claim_reward_balance(
+        self,
+        reward_hive: tt.Asset.HiveT | Literal["all"] = tt.Asset.Test(0),  # noqa: B008
+        reward_hbd: tt.Asset.HbdT | Literal["all"] = tt.Asset.Tbd(0),  # noqa: B008
+        reward_vests: tt.Asset.VestT | Literal["all"] = tt.Asset.Vest(0),  # noqa: B008
+    ) -> None:
+        self.update_account_info()
+        self.__claim_reward_transaction = get_response_model(
+            ClaimRewardBalanceTransaction,
+            **self._wallet.api.claim_reward_balance(
+                account=self.name,
+                reward_hive=(
+                    convert_from_mainnet_to_testnet_asset(self.get_reward_balance(mode="reward_hive"))
+                    if reward_hive == "all"
+                    else reward_hive
+                ),
+                reward_hbd=(
+                    convert_from_mainnet_to_testnet_asset(self.get_reward_balance(mode="reward_hbd"))
+                    if reward_hbd == "all"
+                    else reward_hbd
+                ),
+                reward_vests=(
+                    convert_from_mainnet_to_testnet_asset(self.get_reward_balance(mode="reward_vests"))
+                    if reward_vests == "all"
+                    else reward_vests
+                ),
+                only_result=False,
+            ),
+        ).result
+
+    def assert_is_rc_mana_decreased_after_claiming_available_rewards(self) -> None:
+        claim_reward_rc_cost = self.__claim_reward_transaction["rc_cost"]
+        claim_reward_timestamp = get_transaction_timestamp(self._node, self.__claim_reward_transaction)
+        incoming_rc = self.__claim_reward_transaction.operations[0].value.reward_vests.as_nai()
+        err = f"The account {self._name} did not incur the operation cost."
+        mana_before_operation = self.rc_manabar.calculate_current_value(claim_reward_timestamp - tt.Time.seconds(3))
+        assert mana_before_operation == get_rc_current_mana(self._node, self._name) + claim_reward_rc_cost - int(
+            incoming_rc["amount"]
+        ), err
+
+    def get_reward_balance(self, mode: Literal["reward_hbd", "reward_hive", "reward_vests"]) -> tt.Asset.AnyT:
+        if mode == "reward_hbd":
+            return self.get_reward_hbd_balance()
+        if mode == "reward_hive":
+            return self.get_reward_hive_balance()
+        if mode == "reward_vests":
+            return self.get_reward_vesting_balance()
+        raise ValueError(f"Unexpected value for 'type': '{type}'")
+
+    def _get_balance(self, mode: Literal["hbd", "hive", "vest"]) -> tt.Asset.AnyT:
+        if mode == "hbd":
+            return self.get_hbd_balance()
+        if mode == "hive":
+            return self.get_hive_balance()
+        if mode == "vest":
+            return self.get_vesting_shares()
+        raise ValueError(f"Unexpected value for 'type': '{type}'")
+
+    def assert_balance_after_claiming_available_rewards(self) -> None:
+        for asset, reward_asset in ("hbd", "reward_hbd"), ("hive", "reward_hive"), ("vest", "reward_vests"):
+            reward_asset = getattr(self.__claim_reward_transaction.operations[0].value, reward_asset)
+            assert getattr(self, asset) + reward_asset.as_nai() == self._get_balance(
+                asset
+            ), f"{asset} balance have incorrect value after claim balance"
+
+    def assert_reward_balance_after_claiming_available_rewards(self) -> None:
+        for asset, reward_asset in (
+            ("reward_hbd", "reward_hbd"),
+            ("reward_hive", "reward_hive"),
+            ("reward_vests", "reward_vests"),
+        ):
+            reward_asset = getattr(self.__claim_reward_transaction.operations[0].value, reward_asset)
+            assert (
+                getattr(self, asset) == self.get_reward_balance(asset) + reward_asset.as_nai()
+            ), f"{asset} balance have incorrect value after claim balance"
+
+    def assert_governance_vote_power_increase_after_claiming_available_rewards(self) -> None:
+        assert self.get_governance_vote_power() < self.get_governance_vote_power(
+            current=True
+        ), "Governance vote power not increase after claim balance"
