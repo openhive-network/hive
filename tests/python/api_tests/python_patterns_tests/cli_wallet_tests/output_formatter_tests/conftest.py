@@ -11,6 +11,7 @@ import test_tools as tt
 def node(request):
     if request.node.get_closest_marker("replayed_node") is None:
         node = tt.InitNode()
+        node.config.plugin.append("market_history_api")
         node.run()
         return node
     api_node = tt.FullApiNode()

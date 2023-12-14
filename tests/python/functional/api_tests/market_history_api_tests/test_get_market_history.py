@@ -35,7 +35,7 @@ def test_get_market_history_with_wrong_bucket_seconds_value(node: tt.InitNode | 
         )
 
 
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_create_better_offer_and_cancel_it(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(100))
@@ -55,7 +55,7 @@ def test_create_better_offer_and_cancel_it(node: tt.InitNode) -> None:
     assert buckets[0]["non_hive"]["low"] != 20000
 
 
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_get_empty_market_history(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(500), vests=tt.Asset.Test(100))
@@ -80,7 +80,7 @@ def test_get_empty_market_history(node: tt.InitNode) -> None:
         (60, 22),
     ],
 )
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_get_two_buckets(node: tt.InitNode, bucket_seconds: int, blocks_to_wait: int) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(500), vests=tt.Asset.Test(100))
@@ -105,7 +105,7 @@ def test_get_two_buckets(node: tt.InitNode, bucket_seconds: int, blocks_to_wait:
         (8, 300_000, 40_000, 200_000, 8_000, 58_000),
     ],
 )
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_bucket_output_parameters(
     node: tt.InitNode,
     tbds: int,

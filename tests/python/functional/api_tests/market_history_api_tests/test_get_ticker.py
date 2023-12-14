@@ -41,7 +41,7 @@ HIVE_AND_HBD_AMOUNTS = (
         ),
     ],
 )
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_ticker_output_parameters(node: tt.InitNode, limit_orders: dict) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(600), vests=tt.Asset.Test(100))
@@ -80,7 +80,7 @@ def test_ticker_output_parameters(node: tt.InitNode, limit_orders: dict) -> None
 
 
 @pytest.mark.parametrize(("hive_amount", "hbd_amount"), HIVE_AND_HBD_AMOUNTS)
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_lowest_ask_in_ticker(node: tt.InitNode, hive_amount: list, hbd_amount: list) -> None:
     wallet = tt.Wallet(attach_to=node)
 
@@ -92,7 +92,7 @@ def test_lowest_ask_in_ticker(node: tt.InitNode, hive_amount: list, hbd_amount: 
 
 
 @pytest.mark.parametrize(("hive_amount", "hbd_amount"), HIVE_AND_HBD_AMOUNTS)
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_highest_bid_in_ticker(node: tt.InitNode, hive_amount: list, hbd_amount: list) -> None:
     wallet = tt.Wallet(attach_to=node)
 

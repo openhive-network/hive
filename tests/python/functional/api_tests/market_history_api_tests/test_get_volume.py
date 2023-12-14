@@ -14,7 +14,7 @@ from hive_local_tools import run_for
         (3, 600, 100),
     ],
 )
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_check_if_get_volume_returns_correct_values(node, number_of_transactions, tests_volume, tbds_volume):
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(100))
@@ -42,7 +42,7 @@ def test_check_if_get_volume_returns_correct_values(node, number_of_transactions
         ("nothing", "empty value", "empty value"),
     ],
 )
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_get_zero_volume(node, operations, first_order, second_order):
     if operations != "nothing":
         wallet = tt.Wallet(attach_to=node)

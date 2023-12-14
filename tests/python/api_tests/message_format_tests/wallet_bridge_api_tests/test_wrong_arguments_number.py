@@ -75,7 +75,7 @@ def test_run_command_without_arguments_where_arguments_are_required(
         ("get_hardfork_version", ()),
     ],
 )
-@run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
+@run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api", "market_history_api"])
 def test_run_command_with_additional_argument(
     node: tt.InitNode | tt.RemoteNode, should_prepare: bool, wallet_bridge_api_command: str, arguments: tuple
 ) -> None:

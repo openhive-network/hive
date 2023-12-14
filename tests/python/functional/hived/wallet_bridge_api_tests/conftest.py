@@ -17,5 +17,7 @@ def node(request: pytest.FixtureRequest) -> tt.InitNode:
     if enabled_plugins:
         init_node.config.plugin = list(enabled_plugins.args)
 
+    init_node.config.plugin.append("market_history_api")
+    init_node.config.plugin.append("account_by_key_api")
     init_node.run()
     return init_node

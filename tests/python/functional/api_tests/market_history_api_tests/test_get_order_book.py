@@ -9,7 +9,7 @@ from hive_local_tools import run_for
 @pytest.mark.parametrize(
     ("ask_hbd_amount", "ask_hive_amount", "bid_hbd_amount", "bid_hive_amount"), [(50, 300, 30, 200), (25, 250, 20, 300)]
 )
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_get_order_book_with_different_values(
     node: tt.InitNode, ask_hbd_amount: int, ask_hive_amount: int, bid_hbd_amount: int, bid_hive_amount: int
 ) -> None:
@@ -32,7 +32,7 @@ def test_get_order_book_with_different_values(
     assert float(response.bids[0].real_price) == bid_hbd_amount / bid_hive_amount
 
 
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_get_order_book_after_successful_transaction_finishing_all_orders(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(500), vests=tt.Asset.Test(100))
@@ -52,7 +52,7 @@ def test_exceed_limit_parameter(node):
 
 
 @pytest.mark.parametrize("limit", [1, 2])
-@run_for("testnet")
+@run_for("testnet", enable_plugins=["market_history_api"])
 def test_limit(node: tt.InitNode, limit: int) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(600), vests=tt.Asset.Test(300))
