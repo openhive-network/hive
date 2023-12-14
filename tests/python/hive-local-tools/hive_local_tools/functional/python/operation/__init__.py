@@ -130,11 +130,17 @@ class Account:
     def get_reward_hbd_balance(self) -> tt.Asset.TbdT:
         return get_reward_hbd_balance(self._node, self._name)
 
+    def get_vesting_shares(self) -> tt.Asset.VestsT:
+        return get_vesting_shares(self._node, self._name)
+
     def get_reward_vesting_balance(self) -> tt.Asset.VestsT:
         return get_reward_vesting_balance(self._node, self._name)
 
     def get_hive_balance(self) -> tt.Asset.TestT:
         return get_hive_balance(self._node, self._name)
+
+    def get_reward_hive_balance(self) -> tt.Asset.TestT:
+        return get_reward_hive_balance(self._node, self._name)
 
     def get_hive_power(self) -> tt.Asset.VestsT:
         return get_hive_power(self._node, self._name)
@@ -339,6 +345,10 @@ def get_reward_hbd_balance(node: tt.InitNode, account_name: str) -> tt.Asset.Tbd
     return _find_account(node, account_name).reward_hbd_balance
 
 
+def get_vesting_shares(node: tt.InitNode, account_name: str) -> tt.Asset.VestsT:
+    return _find_account(node, account_name).vesting_shares
+
+
 def get_reward_vesting_balance(node: tt.InitNode, account_name: str) -> tt.Asset.VestsT:
     return _find_account(node, account_name).reward_vesting_balance
 
@@ -349,6 +359,10 @@ def get_hbd_savings_balance(node: tt.InitNode, account_name: str) -> tt.Asset.Tb
 
 def get_hive_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TestT:
     return _find_account(node, account_name).balance
+
+
+def get_reward_hive_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TestT:
+    return _find_account(node, account_name).reward_hive_balance
 
 
 def get_hive_power(node: tt.InitNode, account_name: str) -> tt.Asset.VestsT:
