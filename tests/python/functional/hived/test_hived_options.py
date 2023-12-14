@@ -121,7 +121,7 @@ def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
     second_node.config.p2p_seed_node = first_node.p2p_endpoint.as_string()
 
 
-def test_stop_live_sync_at_given_block(block_log: Path, block_log_length: int) -> None:
+def test_stop_sync_mode_at_given_block() -> None:
     network = tt.Network()
     init_node = tt.InitNode(network=network)
     api_node = tt.ApiNode(network=network)
@@ -131,6 +131,18 @@ def test_stop_live_sync_at_given_block(block_log: Path, block_log_length: int) -
     api_node.run(stop_at_block=5)
 
     assert api_node.get_last_block_number() == 5
+
+
+def test_stop_live_mode_at_given_block() -> None:
+    network = tt.Network()
+    init_node = tt.InitNode(network=network)
+    api_node = tt.ApiNode(network=network)
+    init_node.run()
+    connect_nodes(init_node, api_node)
+    api_node.run(stop_at_block=15)
+    init_node.wait_number_of_blocks(30)
+
+    assert api_node.get_last_block_number() == 15
 
 
 def test_hived_get_version() -> None:
