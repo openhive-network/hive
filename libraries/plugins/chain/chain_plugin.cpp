@@ -1352,6 +1352,16 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->enable_block_log_auto_fixing = options.at( "enable-block-log-auto-fixing" ).as<bool>();
   my->block_log_compression_level = options.at( "block-log-compression-level" ).as<int>();
 
+  FC_ASSERT(!(my->stop_replay_at && my->stop_at_block), "--stop-replay-at and --stop-at-block cannot be used together" );
+  if (my->stop_replay_at)
+  {
+    wlog("flag `--stop-replay-at` is deprecated, please use `--stop-at-block` instead");
+  }
+  if (my->stop_at_block)
+  {
+    my->stop_replay_at = my->stop_at_block;
+  }
+
   if (options.count("load-snapshot"))
     my->load_snapshot = true;
 
