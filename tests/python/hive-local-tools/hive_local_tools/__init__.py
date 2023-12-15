@@ -60,6 +60,7 @@ def create_alternate_chain_spec_file(
     initial_vesting: dict[int, int] | None = None,
     init_witnesses: list | None = None,
     hive_owner_update_limit: int | None = None,
+    path_to_save: Path | None = None,
 ) -> None:
     try:
         genesis_time = int(genesis_time)
@@ -84,7 +85,7 @@ def create_alternate_chain_spec_file(
         **({"hive_owner_update_limit": hive_owner_update_limit} if hive_owner_update_limit else {}),
     }
 
-    directory = tt.context.get_current_directory()
+    directory = path_to_save if path_to_save else tt.context.get_current_directory()
     directory.mkdir(parents=True, exist_ok=True)
     with open(directory / ALTERNATE_CHAIN_JSON_FILENAME, "w") as json_file:
         json.dump(alternate_chain_spec_content, json_file)
