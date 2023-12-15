@@ -22,7 +22,9 @@ void block_flow_control::set_auto_report( const std::string& _option_type, const
   else
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown block stats report type" );
 
-  if( _option_output == "NOTIFY" )
+  if( _option_output == "LOG_NOTIFY" || _option_output == "BOTH" )
+    auto_report_output = report_output::BOTH;
+  else if( _option_output == "NOTIFY" )
     auto_report_output = report_output::NOTIFY;
   else if( _option_output == "ILOG" )
     auto_report_output = report_output::ILOG;
@@ -88,24 +90,30 @@ void block_flow_control::on_worker_done( appbase::application& app ) const
   if( auto_report_type == report_type::NONE )
     return;
 
-  fc::variant_object report = get_report(auto_report_type);
-  switch (auto_report_output)
+  fc::variant_object report = get_report( auto_report_type );
+  switch( auto_report_output )
   {
+  case report_output::BOTH:
   case report_output::NOTIFY:
-    app.notify("Block stats", "block_stats", report);
-    break;
+    app.notify( "Block stats", "block_stats", report );
+    if( auto_report_output != report_output::BOTH )
+      break;
+    //else
+    //  continue to ILOG
   case report_output::ILOG:
-    ilog("Block stats:${report}", (report));
+    ilog( "Block stats:${report}", ( report ) );
     break;
   default:
-    dlog("Block stats:${report}", (report));
-    if (fc::logger::get("default").is_enabled(fc::log_level::info))
-      fc::logger::get("default").log(fc::log_message(FC_LOG_CONTEXT(info), 
-                                                     "#${num} lib:${lib} ${type} ${bp} txs:${txs} size:${size} offset:${offset} "
-                                                     "before:{inc:${inc} ok:${ok}} "
-                                                     "after:{exp:${exp} fail:${fail} appl:${appl} post:${post}} "
-                                                     "exec:{offset:${offset} pre:${pre} work:${work} post:${post} all:${all}} "
-                                                     "id:${id} ts:${ts}", report));
+    dlog( "Block stats:${report}", ( report ) );
+    if( fc::logger::get("default").is_enabled( fc::log_level::info ) )
+    {
+      fc::logger::get( "default" ).log( fc::log_message( FC_LOG_CONTEXT( info ),
+        "#${num} lib:${lib} ${type} ${bp} txs:${txs} size:${size} offset:${offset} "
+        "before:{inc:${inc} ok:${ok}} "
+        "after:{exp:${exp} fail:${fail} appl:${appl} post:${post}} "
+        "exec:{offset:${offset} pre:${pre} work:${work} post:${post} all:${all}} "
+        "id:${id} ts:${ts}", report ) );
+    }
     break;
   };
 }

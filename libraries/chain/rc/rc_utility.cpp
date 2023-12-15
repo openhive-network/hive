@@ -34,7 +34,9 @@ void resource_credits::set_auto_report( const std::string& _option_type, const s
   else
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report type" );
 
-  if( _option_output == "NOTIFY" )
+  if( _option_output == "LOG_NOTIFY" || _option_output == "BOTH" )
+    ro = report_output::BOTH;
+  else if( _option_output == "NOTIFY" )
     ro = report_output::NOTIFY;
   else if( _option_output == "ILOG" )
     ro = report_output::ILOG;
@@ -524,9 +526,13 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
     fc::variant_object report = get_report( auto_report_type, new_stats_obj );
     switch( auto_report_output )
     {
+    case report_output::BOTH:
     case report_output::NOTIFY:
       db.get_app().notify( "RC stats", "rc_stats", report );
-      break;
+      if( auto_report_output != report_output::BOTH )
+        break;
+      //else
+      //  continue to ILOG
     case report_output::ILOG:
       ilog( "RC stats:${report}", ( report ) );
       break;
