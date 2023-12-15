@@ -20,7 +20,10 @@ exclude_large_files_regex: &exclude_large_files_regex
   tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_containing_many_to_one_recurrent_transfers/block_log|\
   tests/python/functional/datagen_tests/recurrent_transfer_tests/block_logs/block_log_recurrent_transfer_everyone_to_everyone/block_log|\
   tests/python/functional/datagen_tests/transaction_status_api_tests/block_log/block_log|\
-  tests/python/functional/hived/block_log/block_log\
+  tests/python/functional/hived/block_log/block_log|\
+  tests/python/functional/datagen_tests/haf_filling_machine/block_log_multi_sign/block_log|\
+  tests/python/functional/datagen_tests/haf_filling_machine/block_log_open_sign/block_log|\
+  tests/python/functional/datagen_tests/haf_filling_machine/block_log_single_sign/block_log\
   "
 
 repos:
