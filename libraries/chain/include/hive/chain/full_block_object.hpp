@@ -27,6 +27,7 @@ class full_block_object : public object< full_block_object_type, full_block_obje
     {}
 
     block_id_type get_hash() const { return block_id; }
+    uint32_t get_num() const { return block_header::num_from_id( block_id ); }
 
     std::shared_ptr<full_block_type> create_full_block() const;
 
@@ -40,6 +41,7 @@ class full_block_object : public object< full_block_object_type, full_block_obje
 };
 
 struct by_hash;
+struct by_num;
 typedef multi_index_container<
   full_block_object,
   indexed_by<
@@ -48,6 +50,12 @@ typedef multi_index_container<
     ordered_unique< tag< by_hash >,
       composite_key< full_block_object,
         const_mem_fun< full_block_object, block_id_type, &full_block_object::get_hash >,
+        const_mem_fun< full_block_object, full_block_object::id_type, &full_block_object::get_id >
+      >
+    >,
+    ordered_unique< tag< by_num >,
+      composite_key< full_block_object,
+        const_mem_fun< full_block_object, uint32_t, &full_block_object::get_num >,
         const_mem_fun< full_block_object, full_block_object::id_type, &full_block_object::get_id >
       >
     >
