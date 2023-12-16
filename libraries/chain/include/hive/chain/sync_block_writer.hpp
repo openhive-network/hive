@@ -32,6 +32,14 @@ namespace hive { namespace chain {
       const unsigned witnesses_required_for_irreversiblity,
       const uint32_t old_last_irreversible ) const override;
 
+    using irreversible_block_flush_t = std::function< void () >;
+    using irreversible_block_append_t = std::function< void (
+       const std::shared_ptr<full_block_type>& full_block ) >;
+    static void store_block( fork_database& fork_db, uint32_t current_irreversible_block_num,
+      uint32_t state_head_block_number, uint32_t irreversible_head_num,
+      irreversible_block_append_t irreversible_block_append,
+      irreversible_block_flush_t irreversible_block_flush );
+
     void set_is_at_live_sync() { _is_at_live_sync = true; }
     void on_reindex_start();
     void on_reindex_end( const std::shared_ptr<full_block_type>& end_block );
