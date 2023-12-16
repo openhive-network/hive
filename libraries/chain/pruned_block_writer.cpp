@@ -4,13 +4,14 @@
 #include <hive/chain/fork_database.hpp>
 #include <hive/chain/fork_db_block_reader.hpp>
 #include <hive/chain/full_block_object.hpp>
+#include <hive/chain/sync_block_writer.hpp>
 
 namespace hive { namespace chain {
 
 void initialize_pruning_indexes( database& db );
 
 pruned_block_writer::pruned_block_writer( uint16_t stored_block_number, 
-  database& db, const fork_database& fork_db )
+  database& db, fork_database& fork_db )
   : _stored_block_number(stored_block_number), _db( db ), _fork_db( fork_db )
 {
   FC_ASSERT( stored_block_number > 0, "At least one full block must be stored!" );
@@ -19,6 +20,22 @@ pruned_block_writer::pruned_block_writer( uint16_t stored_block_number,
 
   for( uint16_t i = 0; i < stored_block_number; ++i )
     _db.create< full_block_object >();
+}
+
+void pruned_block_writer::store_block( uint32_t current_irreversible_block_num,
+  uint32_t state_head_block_number )
+{
+  const auto& idx = _db.get_index< full_block_index, by_num >();
+  const full_block_object& head_block = *( idx.rbegin() );
+  uint32_t irreversible_head_num = head_block.get_num();
+
+  return sync_block_writer::store_block(
+    _fork_db,
+    current_irreversible_block_num,
+    state_head_block_number,
+    irreversible_head_num,
+    [&]( const std::shared_ptr<full_block_type>& full_block ) { store_full_block( full_block ); },
+    [&](){} );
 }
 
 uint32_t pruned_block_writer::head_block_num( 
