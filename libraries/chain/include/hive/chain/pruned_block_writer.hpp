@@ -13,7 +13,7 @@ namespace hive { namespace chain {
   {
   public:
     pruned_block_writer( uint16_t stored_block_number, 
-      database& db, const fork_database& fork_db );
+      database& db, fork_database& fork_db );
     virtual ~pruned_block_writer() = default;
 
     // ### block_write_i overrides ###
@@ -74,7 +74,7 @@ namespace hive { namespace chain {
   private:
     uint16_t _stored_block_number;
     database& _db;
-    const fork_database& _fork_db;
+    fork_database& _fork_db;
   };
 
 } }

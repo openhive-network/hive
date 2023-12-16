@@ -22,37 +22,54 @@ block_read_i& sync_block_writer::get_block_reader()
 void sync_block_writer::store_block( uint32_t current_irreversible_block_num,
   uint32_t state_head_block_number )
 {
-  const auto fork_head = _fork_db.head();
+  std::shared_ptr<full_block_type> tmp_head = _block_log.head();
+  uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
+
+  return store_block(
+    _fork_db,
+    current_irreversible_block_num,
+    state_head_block_number,
+    blocklog_head_num,
+    [&]( const std::shared_ptr<full_block_type>& full_block )
+      { _block_log.append( full_block, _is_at_live_sync ); },
+    [&](){ _block_log.flush(); } );
+}
+
+void sync_block_writer::store_block( fork_database& fork_db,
+  uint32_t current_irreversible_block_num, uint32_t state_head_block_number,
+  uint32_t irreversible_head_num,
+  irreversible_block_append_t irreversible_block_append,
+  irreversible_block_flush_t irreversible_block_flush )
+{
+  const auto fork_head = fork_db.head();
   if (fork_head)
     FC_ASSERT(fork_head->get_block_num() == state_head_block_number,
               "Fork Head Block Number: ${fork_head}, Chain Head Block Number: ${chain_head}",
               ("fork_head", fork_head->get_block_num())("chain_head", state_head_block_number));
 
   // output to block log based on new last irreverisible block num
-  std::shared_ptr<full_block_type> tmp_head = _block_log.head();
-  uint32_t blocklog_head_num = tmp_head ? tmp_head->get_block_num() : 0;
   vector<item_ptr> blocks_to_write;
 
-  if( blocklog_head_num < current_irreversible_block_num )
+  if( irreversible_head_num < current_irreversible_block_num )
   {
     // Check for all blocks that we want to write out to the block log but don't write any
     // unless we are certain they all exist in the fork db
-    while( blocklog_head_num < current_irreversible_block_num )
+    while( irreversible_head_num < current_irreversible_block_num )
     {
-      item_ptr block_ptr = _fork_db.fetch_block_on_main_branch_by_number( blocklog_head_num + 1 );
+      item_ptr block_ptr = fork_db.fetch_block_on_main_branch_by_number( irreversible_head_num + 1 );
       FC_ASSERT( block_ptr, "Current fork in the fork database does not contain the last_irreversible_block" );
       blocks_to_write.push_back( block_ptr );
-      blocklog_head_num++;
+      irreversible_head_num++;
     }
 
     for( auto block_itr = blocks_to_write.begin(); block_itr != blocks_to_write.end(); ++block_itr )
-      _block_log.append( block_itr->get()->full_block, _is_at_live_sync );
+      irreversible_block_append( block_itr->get()->full_block );
 
-    _block_log.flush();
+    irreversible_block_flush();
   }
 
   // This deletes blocks from the fork db
-  _fork_db.set_max_size( state_head_block_number - current_irreversible_block_num + 1 );
+  fork_db.set_max_size( state_head_block_number - current_irreversible_block_num + 1 );
 }
 
 void sync_block_writer::pop_block()
