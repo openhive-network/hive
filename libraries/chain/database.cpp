@@ -35,6 +35,7 @@
 
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/rc/resource_count.hpp>
+#include <hive/chain/signal_wrapper.hpp>
 
 #include <hive/jsonball/jsonball.hpp>
 
@@ -160,6 +161,7 @@ database::~database()
   clear_pending();
 }
 
+
 void database::open( const open_args& args )
 {
   try
@@ -175,6 +177,7 @@ void database::open( const open_args& args )
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, wipe_shared_file );
     const bool throw_an_error_on_state_definitions_mismatch = chainbase::database::check_plugins(&environment_extension);
     initialize_state_independent_data(args, throw_an_error_on_state_definitions_mismatch);
+    open_block_log(args);
     load_state_initial_data(args);
 
   }
@@ -216,7 +219,7 @@ void database::initialize_state_independent_data(const open_args& args, const bo
   init_hardforks();
 }
 
-void database::load_state_initial_data(const open_args& args)
+void database::load_state_initial_data( const open_args& args )
 {
   uint32_t hb = head_block_num();
   uint32_t last_irreversible_block = get_last_irreversible_block_num();
@@ -758,7 +761,9 @@ void database::pop_block()
     std::shared_ptr<full_block_type> full_head_block;
     try
     {
-      full_head_block = _block_writer->get_block_reader().fetch_block_by_id(head_id);
+      shared_ptr<fork_item> fork_item = _fork_db.fetch_block( head_id );
+      if(fork_item)
+          full_head_block =  fork_item->full_block;
     }
     FC_CAPTURE_AND_RETHROW()
 
@@ -4410,81 +4415,6 @@ void database::apply_operation(const operation& op)
     _benchmark_dumper.end( name );
 
   notify_post_apply_operation( note );
-}
-
-template <typename TFunction> struct fcall {};
-
-template <typename TResult, typename... TArgs>
-struct fcall<TResult(TArgs...)>
-{
-  using TNotification = std::function<TResult(TArgs...)>;
-
-  fcall() = default;
-  fcall(const TNotification& func, util::advanced_benchmark_dumper& dumper,
-    const abstract_plugin& plugin, const std::string& context, const std::string& item_name)
-    : _func(func), _benchmark_dumper(dumper), _context(context), _name(item_name) {}
-
-  void operator () (TArgs&&... args)
-  {
-    if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.begin();
-
-    _func(std::forward<TArgs>(args)...);
-
-    if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.end( _context, _name );
-  }
-
-private:
-  TNotification                    _func;
-  util::advanced_benchmark_dumper& _benchmark_dumper;
-  std::string                      _context;
-  std::string                      _name;
-};
-
-template <typename TResult, typename... TArgs>
-struct fcall<std::function<TResult(TArgs...)>>
-  : public fcall<TResult(TArgs...)>
-{
-  typedef fcall<TResult(TArgs...)> TBase;
-  using TBase::TBase;
-};
-
-template <bool IS_PRE_OPERATION, typename TSignal, typename TNotification>
-boost::signals2::connection database::connect_impl( TSignal& signal, const TNotification& func,
-  const abstract_plugin& plugin, int32_t group, const std::string& item_name )
-{
-  fcall<TNotification> fcall_wrapper( func, _benchmark_dumper, plugin,
-    util::advanced_benchmark_dumper::generate_context_desc<IS_PRE_OPERATION>( plugin.get_name() ), item_name );
-
-  return signal.connect(group, fcall_wrapper);
-}
-
-template< bool IS_PRE_OPERATION >
-boost::signals2::connection database::any_apply_operation_handler_impl( const apply_operation_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
-{
-  std::string context = util::advanced_benchmark_dumper::generate_context_desc< IS_PRE_OPERATION >( plugin.get_name() );
-  auto complex_func = [this, func, &plugin, context]( const operation_notification& o )
-  {
-    std::string name;
-
-    if (_benchmark_dumper.is_enabled())
-    {
-      name = o.op.get_stored_type_name();
-      _benchmark_dumper.begin();
-    }
-
-    func( o );
-
-    if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.end( context, name );
-  };
-
-  if( IS_PRE_OPERATION )
-    return _pre_apply_operation_signal.connect(group, complex_func);
-  else
-    return _post_apply_operation_signal.connect(group, complex_func);
 }
 
 boost::signals2::connection database::add_pre_apply_operation_handler( const apply_operation_handler_t& func,

@@ -49,6 +49,7 @@ namespace chain {
   using hive::protocol::asset_symbol_type;
   using hive::protocol::price;
   using abstract_plugin = appbase::abstract_plugin;
+  using get_block_by_num_function_type = std::function<std::shared_ptr<full_block_type>(int block_num)>;
 
   struct prepare_snapshot_supplement_notification;
   struct load_snapshot_supplement_notification;
@@ -334,6 +335,8 @@ namespace chain {
       void pre_push_virtual_operation( const operation& op );
       void post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& op_in_trx = fc::optional<uint64_t>() );
 
+      void public_reset_fork_db();
+
       /**
         *  This method is used to track applied operations during the evaluation of a block, these
         *  operations should include any operation actually included in a transaction as well
@@ -372,12 +375,13 @@ namespace chain {
       void notify_comment_reward(const comment_reward_notification& note);
       void notify_end_of_syncing();
 
-    private:
+    protected:
       template < bool IS_PRE_OPERATION, typename TSignal,
                  typename TNotification = std::function<typename TSignal::signature_type> >
       boost::signals2::connection connect_impl( TSignal& signal, const TNotification& func,
         const abstract_plugin& plugin, int32_t group, const std::string& item_name = "" );
 
+    private:
       template< bool IS_PRE_OPERATION >
       boost::signals2::connection any_apply_operation_handler_impl( const apply_operation_handler_t& func,
         const abstract_plugin& plugin, int32_t group );
@@ -795,7 +799,9 @@ namespace chain {
 
       optional< block_id_type >     _currently_processing_block_id;
 
+    protected:
       node_property_object              _node_property_object;
+    private:
 
       uint32_t                      _flush_blocks = 0;
       uint32_t                      _next_flush_block = 0;
@@ -918,7 +924,14 @@ namespace chain {
       {
         return theApp;
       }
+
+
+    private:
+
+
+      void open_block_log(const open_args& args);
   };
+
 
   struct reindex_notification
   {

@@ -30,7 +30,7 @@ class debug_node_plugin_impl
     virtual ~debug_node_plugin_impl();
 
     plugins::chain::chain_plugin&             _chain_plugin;
-    chain::database&                          _db;
+    chain::database&                     _db;
 
     typedef std::vector< std::pair< protocol::transaction_id_type, bool> > current_debug_update_transactions;
     current_debug_update_transactions         _current_debug_update_txs;
