@@ -699,31 +699,34 @@ void resource_credits::on_post_apply_transaction( const full_transaction_type& f
 void resource_credits::on_post_apply_transaction_impl( const full_transaction_type& full_tx,
   const signed_transaction& tx )
 { try {
-  const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-
   // How many resources does the transaction use?
+  // note: tx_info.usage might already contain state discount for selected operations and extra usage for custom ops
   count_resources( tx, full_tx.get_transaction_size(), tx_info.usage, db.head_block_time() );
 
   // How many RC does this transaction cost?
   int64_t total_cost = compute_cost( &tx_info );
   full_tx.set_rc_cost( total_cost );
 
-  db.modify( pending_data, [&]( rc_pending_data& data )
-  {
-    data.add_pending_usage( tx_info.usage, tx_info.cost );
-  } );
-
   use_account_rcs( &tx_info, total_cost );
 
-  const rc_stats_object* rc_stats = nullptr;
-  if( ( db.is_validating_block() || db.is_replaying_block() ) &&
-    ( rc_stats = db.find< rc_stats_object >( RC_PENDING_STATS_ID ) ) != nullptr )
+  if( db.is_validating_block() || db.is_replaying_block() )
   {
-    db.modify( *rc_stats, [&]( rc_stats_object& stats_obj )
+    const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
+    db.modify( pending_data, [&]( rc_pending_data& data )
     {
-      stats_obj.add_stats( tx_info );
+      data.add_pending_usage( tx_info.usage, tx_info.cost );
     } );
+
+    const auto* rc_stats = db.find< rc_stats_object >( RC_PENDING_STATS_ID );
+    if( rc_stats != nullptr )
+    {
+      db.modify( *rc_stats, [&]( rc_stats_object& stats_obj )
+      {
+        stats_obj.add_stats( tx_info );
+      } );
+    }
   }
+
   // note that we are skipping logging for not_enough_rc_exception
 } catch( not_enough_rc_exception& ex ) { throw; } FC_CAPTURE_AND_RETHROW( (tx) ) }
 
