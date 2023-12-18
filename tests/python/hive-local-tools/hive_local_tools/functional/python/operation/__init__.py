@@ -97,6 +97,18 @@ class Account:
         return self._acc_info.vesting_shares
 
     @property
+    def reward_hive(self) -> tt.Asset.TestT:
+        return self._acc_info.reward_hive_balance
+
+    @property
+    def reward_hbd(self) -> tt.Asset.TbdT:
+        return self._acc_info.reward_hbd_balance
+
+    @property
+    def reward_vests(self) -> tt.Asset.VestsT:
+        return self._acc_info.reward_vesting_balance
+
+    @property
     def proxy(self) -> str:
         return self._acc_info.proxy
 
