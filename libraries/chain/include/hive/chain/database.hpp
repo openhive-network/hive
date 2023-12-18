@@ -662,9 +662,7 @@ namespace chain {
     private:
       optional< chainbase::database::session > _pending_tx_session;
 
-    protected:
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, const block_flow_control* block_ctrl = nullptr );
-    private:
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
       void apply_operation( const operation& op );
