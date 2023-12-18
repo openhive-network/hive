@@ -335,7 +335,6 @@ namespace chain {
       void pre_push_virtual_operation( const operation& op );
       void post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& op_in_trx = fc::optional<uint64_t>() );
 
-      void public_reset_fork_db();
 
       /**
         *  This method is used to track applied operations during the evaluation of a block, these
@@ -663,7 +662,9 @@ namespace chain {
     private:
       optional< chainbase::database::session > _pending_tx_session;
 
+    protected:
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, const block_flow_control* block_ctrl = nullptr );
+    private:
       void validate_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip);
       void _apply_transaction( const std::shared_ptr<full_transaction_type>& trx );
       void apply_operation( const operation& op );

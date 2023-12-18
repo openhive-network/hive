@@ -83,9 +83,17 @@ namespace hive { namespace chain {
       apply_block_t apply_block_extended, pop_block_t pop_block_extended );
 
   private:
-    block_log             _block_log;
+
+  protected: 
+    block_log             _block_log; 
+  private:
+
     fork_db_block_reader  _reader;
+
+  protected:
     fork_database         _fork_db;
+  private:
+
     bool                  _is_at_live_sync = false;
     database&             _db; /// Needed only for notification purposes.
     application&          _app; /// Needed only for notification purposes.

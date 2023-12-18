@@ -231,7 +231,6 @@ void database::load_state_initial_data( const open_args& args )
   // Rewind all undo state. This should return us to the state at the last irreversible block.
   with_write_lock([&]() {
     ilog("Attempting to rewind all undo state...");
-
     undo_all();
 
     ilog("Rewind undo state done.");
@@ -761,9 +760,7 @@ void database::pop_block()
     std::shared_ptr<full_block_type> full_head_block;
     try
     {
-      shared_ptr<fork_item> fork_item = _fork_db.fetch_block( head_id );
-      if(fork_item)
-          full_head_block =  fork_item->full_block;
+      full_head_block = _block_writer->get_block_reader().fetch_block_by_id(head_id);
     }
     FC_CAPTURE_AND_RETHROW()
 
