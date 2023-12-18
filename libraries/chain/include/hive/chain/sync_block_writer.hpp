@@ -31,6 +31,14 @@ namespace hive { namespace chain {
       const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
       const unsigned witnesses_required_for_irreversiblity,
       const uint32_t old_last_irreversible ) const override;
+      
+    std::optional<block_write_i::new_last_irreversible_block_t> 
+    static find_new_last_irreversible_block(
+      const fork_database& fork_db,
+      const std::vector<const witness_object*>& scheduled_witness_objects,
+      const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
+      const unsigned witnesses_required_for_irreversiblity,
+      const uint32_t old_last_irreversible );
 
     using irreversible_block_flush_t = std::function< void () >;
     using irreversible_block_append_t = std::function< void (
