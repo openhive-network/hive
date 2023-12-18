@@ -100,17 +100,16 @@ class Account:
     def proxy(self) -> str:
         return self._acc_info.proxy
 
-    def get_governance_vote_power(self) -> tt.Asset.Vest:
-        return self.get_direct_governance_vote_power() + tt.Asset.Vest(
+    def get_governance_vote_power(self, current: bool = False) -> tt.Asset.Vest:
+        return self.get_direct_governance_vote_power(current) + tt.Asset.Vest(
             sum(self._acc_info.proxied_vsf_votes) / 1_000_000
         )
 
-    def get_direct_governance_vote_power(self) -> tt.Asset.Vest:
+    def get_direct_governance_vote_power(self, current: bool) -> tt.Asset.Vest:
+        acc_info = _find_account(self.node, self._name) if current else self._acc_info
         return tt.Asset.from_nai(
             {
-                "amount": str(
-                    int(self._acc_info.vesting_shares.amount) - sum([vote.val for vote in self._acc_info.delayed_votes])
-                ),
+                "amount": str(int(acc_info.vesting_shares.amount) - sum([vote.val for vote in acc_info.delayed_votes])),
                 "precision": 6,
                 "nai": "@@000000037",
             }
