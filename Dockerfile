@@ -2,7 +2,7 @@
 # Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_images.sh and run it. Then push images to registry
 # To be started from cloned haf source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=:ubuntu22.04-9
+ARG CI_IMAGE_TAG=ubuntu22.04-9
 ARG BUILD_IMAGE_TAG
 
 FROM phusion/baseimage:jammy-1.0.1 AS runtime
@@ -21,7 +21,7 @@ RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hi
 USER hived_admin
 WORKDIR /home/hived_admin
 
-FROM ${CI_REGISTRY_IMAGE}runtime$CI_IMAGE_TAG AS ci-base-image
+FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG AS ci-base-image
 
 ENV LANG=en_US.UTF-8
 ENV PATH="/home/hived_admin/.local/bin:$PATH"
@@ -40,7 +40,7 @@ WORKDIR /home/hived_admin
 # Install additionally packages located in user directory
 RUN /usr/local/src/scripts/setup_ubuntu.sh --user
 
-FROM ${CI_REGISTRY_IMAGE}ci-base-image$CI_IMAGE_TAG AS build
+FROM ${CI_REGISTRY_IMAGE}ci-base-image:$CI_IMAGE_TAG AS build
 
 ARG BUILD_HIVE_TESTNET=OFF
 ENV BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}
@@ -76,7 +76,7 @@ RUN \
   find . -name *.o  -type f -delete && \
   find . -name *.a  -type f -delete
 
-FROM ${CI_REGISTRY_IMAGE}runtime$CI_IMAGE_TAG as base_instance
+FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG as base_instance
 
 ENV BUILD_IMAGE_TAG=${BUILD_IMAGE_TAG}
 
