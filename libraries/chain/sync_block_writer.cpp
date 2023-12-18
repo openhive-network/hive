@@ -284,6 +284,19 @@ sync_block_writer::find_new_last_irreversible_block(
   const unsigned witnesses_required_for_irreversiblity,
   const uint32_t old_last_irreversible ) const
 {
+  return find_new_last_irreversible_block( _fork_db, scheduled_witness_objects,
+    last_fast_approved_block_by_witness, witnesses_required_for_irreversiblity,
+    old_last_irreversible );
+}
+
+std::optional<block_write_i::new_last_irreversible_block_t> 
+sync_block_writer::find_new_last_irreversible_block(
+  const fork_database& fork_db,
+  const std::vector<const witness_object*>& scheduled_witness_objects,
+  const std::map<account_name_type, block_id_type>& last_fast_approved_block_by_witness,
+  const unsigned witnesses_required_for_irreversiblity,
+  const uint32_t old_last_irreversible )
+{
   new_last_irreversible_block_t result;
   // during our search for a new irreversible block, if we find a
   // candidate better than the current last_irreversible_block,
@@ -301,7 +314,7 @@ sync_block_writer::find_new_last_irreversible_block(
   // to the number of witnesses directly voting for it
   // start with the fast-confirms broadcast by each witness
   const std::map<account_name_type, block_id_type> last_block_generated_by_witness = 
-    _fork_db.get_last_block_generated_by_each_witness();
+    fork_db.get_last_block_generated_by_each_witness();
   std::map<block_id_type, uint32_t> number_of_approvals_by_block_id;
   for (const witness_object* witness_obj : scheduled_witness_objects)
   {
@@ -323,7 +336,7 @@ sync_block_writer::find_new_last_irreversible_block(
   }
 
   // walk over each fork in the forkdb
-  std::vector<item_ptr> heads = _fork_db.fetch_heads();
+  std::vector<item_ptr> heads = fork_db.fetch_heads();
   for (const item_ptr& possible_head : heads)
   {
     // dlog("Considering possible head ${block_id}", ("block_id", possible_head->get_block_id()));
@@ -373,7 +386,7 @@ sync_block_writer::find_new_last_irreversible_block(
 
   // dlog("Found a new last irreversible block: ${new_last_irreversible_block_num}", ("new_last_irreversible_block_num", new_last_irreversible_block->get_block_num()));
   const item_ptr main_branch_block = 
-    _fork_db.fetch_block_on_main_branch_by_number(new_last_irreversible_block->get_block_num());
+    fork_db.fetch_block_on_main_branch_by_number(new_last_irreversible_block->get_block_num());
 
   result.found_on_another_fork = ( new_last_irreversible_block != main_branch_block );
 
