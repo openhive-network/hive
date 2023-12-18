@@ -1,0 +1,41 @@
+{
+  "genesis_time": 1702652267,
+  "hardfork_schedule": [
+    {
+      "block_num": 0,
+      "hardfork": 18
+    },
+    {
+      "block_num": 200,
+      "hardfork": 28
+    }
+  ],
+  "hbd_init_supply": 30000000000,
+  "init_supply": 400000000000,
+  "init_witnesses": [
+    "witness-0",
+    "witness-1",
+    "witness-2",
+    "witness-3",
+    "witness-4",
+    "witness-5",
+    "witness-6",
+    "witness-7",
+    "witness-8",
+    "witness-9",
+    "witness-10",
+    "witness-11",
+    "witness-12",
+    "witness-13",
+    "witness-14",
+    "witness-15",
+    "witness-16",
+    "witness-17",
+    "witness-18",
+    "witness-19"
+  ],
+  "initial_vesting": {
+    "hive_amount": 50000000000,
+    "vests_per_hive": 1800
+  }
+}
