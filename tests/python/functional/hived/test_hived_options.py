@@ -100,6 +100,19 @@ def test_stop_replay_at_given_block(way_to_stop, block_log: Path, block_log_leng
     assert node.get_last_block_number() == final_block
 
 
+def test_exit_replay_at_given_block(block_log: Path, block_log_length: int) -> None:
+    final_block: Final[int] = block_log_length // 2
+
+    node = tt.ApiNode()
+    node.run(replay_from=block_log, exit_at_block=final_block)
+    time.sleep(1)
+    assert not node.is_running()
+    with open(node.directory / "stderr.txt") as file:
+        stderr = file.read()
+        warning = f"Stopped blockchain replaying on user request. Last applied block number: {final_block}."
+        assert warning in stderr
+
+
 @pytest.mark.parametrize(
     "way_to_stop",
     [
@@ -149,6 +162,22 @@ def test_stop_sync_mode_at_given_block() -> None:
     assert api_node.get_last_block_number() == 5
 
 
+def test_exit_sync_mode_at_given_block() -> None:
+    network = tt.Network()
+    init_node = tt.InitNode(network=network)
+    api_node = tt.ApiNode(network=network)
+    init_node.run()
+    init_node.wait_number_of_blocks(10)
+    connect_nodes(init_node, api_node)
+    api_node.run(exit_at_block=5)
+    time.sleep(1)
+    assert not api_node.is_running()
+    with open(api_node.directory / "stderr.txt") as file:
+        stderr = file.read()
+        warning = "Stopped syncing on user request. Last applied block number: 5."
+        assert warning in stderr
+
+
 def test_stop_live_mode_at_given_block() -> None:
     network = tt.Network()
     init_node = tt.InitNode(network=network)
@@ -159,6 +188,22 @@ def test_stop_live_mode_at_given_block() -> None:
     init_node.wait_number_of_blocks(30)
 
     assert api_node.get_last_block_number() == 15
+
+
+def test_exit_live_mode_at_given_block() -> None:
+    network = tt.Network()
+    init_node = tt.InitNode(network=network)
+    api_node = tt.ApiNode(network=network)
+    init_node.run()
+    connect_nodes(init_node, api_node)
+    api_node.run(exit_at_block=15)
+    init_node.wait_number_of_blocks(30)
+    time.sleep(1)
+    assert not api_node.is_running()
+    with open(api_node.directory / "stderr.txt") as file:
+        stderr = file.read()
+        warning = "Stopped live mode on user request. Last applied block number: 15."
+        assert warning in stderr
 
 
 def test_hived_get_version() -> None:
