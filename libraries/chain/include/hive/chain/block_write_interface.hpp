@@ -6,7 +6,6 @@
 
 namespace hive { namespace chain {
 
-  class block_flow_control;
   class witness_object;
 
   using hive::protocol::account_name_type;
