@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
     Account,
+    convert_from_mainnet_to_testnet_asset,
     create_transaction_with_any_operation,
     get_rc_current_mana,
     get_reward_hbd_balance,
@@ -408,7 +409,7 @@ class Comment:
             **self.__comment_options,
         )
 
-        comment_options_operation.max_accepted_payout = self.__convert_from_mainnet_to_testnet_asset(
+        comment_options_operation.max_accepted_payout = convert_from_mainnet_to_testnet_asset(
             comment_options_operation.max_accepted_payout
         )
 
@@ -432,10 +433,6 @@ class Comment:
                     assert (
                         tt.Asset.from_legacy(self.__comment_options[key]).amount == getattr(comment_content, key).amount
                     )
-
-    def __convert_from_mainnet_to_testnet_asset(self, asset: tt.Asset.AnyT) -> tt.Asset.AnyT:
-        asset = asset.as_nai()
-        return tt.Asset.from_nai(asset).as_legacy()
 
     def assert_is_rc_mana_decreased_after_comment_delete(self) -> None:
         self.assert_comment_exists()

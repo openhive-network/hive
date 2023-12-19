@@ -560,3 +560,8 @@ def publish_feeds_with_confirmation(node: tt.InitNode, wallet: tt.Wallet, base: 
         if node.api.wallet_bridge.get_feed_history().current_median_history != old_feed_current_median_history:
             return
     raise TimeoutError("Current median history not change on time")
+
+
+def convert_from_mainnet_to_testnet_asset(asset: tt.Asset.AnyT) -> tt.Asset.AnyT:
+    asset = asset.as_nai()
+    return tt.Asset.from_nai(asset).as_legacy()
