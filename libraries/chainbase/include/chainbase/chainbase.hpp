@@ -1406,6 +1406,7 @@ namespace chainbase {
       void set_blockchain_config(const std::string& json);
 
       std::string get_plugins_from_shm() const;
+      std::string get_environment_details() const;
 
     protected:
       bool get_is_open() const

@@ -448,6 +448,13 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     fc::to_variant(db_plugins, db_plugins_v);
     return std::string(fc::json::to_string(db_plugins_v));
   }
+
+  std::string database::get_environment_details() const
+  {
+    assert(_is_open);
+    const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    return env->dump();
+  }
 }  // namespace chainbase
 
 
