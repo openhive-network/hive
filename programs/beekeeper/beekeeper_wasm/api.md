@@ -38,23 +38,25 @@ src/interfaces.ts:2
 
 ### default
 
-▸ **default**(`options?`): `Promise`<[`IBeekeeperInstance`](#interfacesibeekeeperinstancemd)\>
+▸ **default**(`options?`): `Promise`\<[`IBeekeeperInstance`](#interfacesibeekeeperinstancemd)\>
 
 Creates a Beekeeper instance able to own sessions and wallets
-
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `options` | `Partial`<[`IBeekeeperOptions`](#interfacesibeekeeperoptionsmd)\> | options passed to the WASM Beekeeper |
+| `options` | `Partial`\<[`IBeekeeperOptions`](#interfacesibeekeeperoptionsmd)\> | options passed to the WASM Beekeeper |
 
 #### Returns
 
-`Promise`<[`IBeekeeperInstance`](#interfacesibeekeeperinstancemd)\>
+`Promise`\<[`IBeekeeperInstance`](#interfacesibeekeeperinstancemd)\>
 
 Beekeeper API Instance
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
@@ -102,11 +104,9 @@ src/interfaces.ts:40
 
 ### createSession
 
-▸ **createSession**(`salt`): `Promise`<[`IBeekeeperSession`](#interfacesibeekeepersessionmd)\>
+▸ **createSession**(`salt`): [`IBeekeeperSession`](#interfacesibeekeepersessionmd)
 
 Creation of a session
-
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Parameters
 
@@ -116,31 +116,37 @@ Creation of a session
 
 #### Returns
 
-`Promise`<[`IBeekeeperSession`](#interfacesibeekeepersessionmd)\>
+[`IBeekeeperSession`](#interfacesibeekeepersessionmd)
 
 a beekeeper session created explicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
 
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+
 #### Defined in
 
-src/interfaces.ts:220
+src/interfaces.ts:231
 
 ___
 
 ### delete
 
-▸ **delete**(): `Promise`<`void`\>
+▸ **delete**(): `Promise`\<`void`\>
 
 Locks all of the unlocked wallets, closes them, closes opened sessions and deletes the current Beekeeper API instance making it unusable
 
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
-
 #### Returns
 
-`Promise`<`void`\>
+`Promise`\<`void`\>
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
-src/interfaces.ts:227
+src/interfaces.ts:238
 
 
 <a name="interfacesibeekeeperoptionsmd"></a>
@@ -155,7 +161,11 @@ src/interfaces.ts:227
 
 Whether logs can be written. By default logs are enabled
 
-**`default`** true
+**`Default`**
+
+```ts
+true
+```
 
 #### Defined in
 
@@ -169,7 +179,11 @@ ___
 
 The path of the wallet files (absolute path or relative to application data dir). Parent of the `.beekeeper` directory
 
-**`default`** "/storage_root"
+**`Default`**
+
+```ts
+"/storage_root"
+```
 
 #### Defined in
 
@@ -185,7 +199,11 @@ Timeout for unlocked wallet in seconds (default 900 - 15 minutes).
 Wallets will automatically lock after specified number of seconds of inactivity.
 Activity is defined as any wallet command e.g. list-wallets
 
-**`default`** 900
+**`Default`**
+
+```ts
+900
+```
 
 #### Defined in
 
@@ -200,31 +218,31 @@ src/interfaces.ts:67
 
 ### close
 
-▸ **close**(): `Promise`<[`IBeekeeperInstance`](#interfacesibeekeeperinstancemd)\>
+▸ **close**(): [`IBeekeeperInstance`](#interfacesibeekeeperinstancemd)
 
 Locks all of the unlocked wallets, closes them, closes this session and makes it unusable
 
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
-
 #### Returns
 
-`Promise`<[`IBeekeeperInstance`](#interfacesibeekeeperinstancemd)\>
+[`IBeekeeperInstance`](#interfacesibeekeeperinstancemd)
 
 Beekeeper instance owning the closed session
 
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+
 #### Defined in
 
-src/interfaces.ts:207
+src/interfaces.ts:218
 
 ___
 
 ### createWallet
 
-▸ **createWallet**(`name`, `password?`): `Promise`<[`IWalletCreated`](#interfacesiwalletcreatedmd)\>
+▸ **createWallet**(`name`, `password?`): `Promise`\<[`IWalletCreated`](#interfacesiwalletcreatedmd)\>
 
 Creates a new Beekeeper wallet object owned by this session
-
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Parameters
 
@@ -235,9 +253,13 @@ Creates a new Beekeeper wallet object owned by this session
 
 #### Returns
 
-`Promise`<[`IWalletCreated`](#interfacesiwalletcreatedmd)\>
+`Promise`\<[`IWalletCreated`](#interfacesiwalletcreatedmd)\>
 
 the created unlocked Beekeeper wallet object
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
@@ -247,17 +269,19 @@ ___
 
 ### getInfo
 
-▸ **getInfo**(): `Promise`<[`IBeekeeperInfo`](#interfacesibeekeeperinfomd)\>
+▸ **getInfo**(): [`IBeekeeperInfo`](#interfacesibeekeeperinfomd)
 
 Retrieves the current session info
 
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
-
 #### Returns
 
-`Promise`<[`IBeekeeperInfo`](#interfacesibeekeeperinfomd)\>
+[`IBeekeeperInfo`](#interfacesibeekeeperinfomd)
 
 Current session information
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
@@ -267,17 +291,19 @@ ___
 
 ### listWallets
 
-▸ **listWallets**(): `Promise`<[`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)[]\>
+▸ **listWallets**(): [`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)[]
 
 Lists all of the opened wallets
 
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
-
 #### Returns
 
-`Promise`<[`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)[]\>
+[`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)[]
 
 array of opened Beekeeper wallets (either unlocked or locked)
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
@@ -287,21 +313,51 @@ ___
 
 ### lockAll
 
-▸ **lockAll**(): `Promise`<[`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)[]\>
+▸ **lockAll**(): [`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)[]
 
 Locks all of the unlocked wallets owned by this session
 
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
-
 #### Returns
 
-`Promise`<[`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)[]\>
+[`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)[]
 
 array of the locked Beekeeper wallets
 
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+
 #### Defined in
 
-src/interfaces.ts:198
+src/interfaces.ts:209
+
+___
+
+### openWallet
+
+▸ **openWallet**(`name`): [`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)
+
+Opens Beekeeper wallet object owned by this session
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `name` | `string` | name of wallet |
+
+#### Returns
+
+[`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)
+
+the opened Beekeeper wallet object (may be unlocked if it has been previously unlocked)
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+
+#### Defined in
+
+src/interfaces.ts:200
 
 
 <a name="interfacesibeekeeperunlockedwalletmd"></a>
@@ -322,8 +378,6 @@ src/interfaces.ts:198
 
 Name of this wallet
 
-**`readonly`**
-
 #### Inherited from
 
 [IWallet](#interfacesiwalletmd).[name](#name)
@@ -336,17 +390,19 @@ src/interfaces.ts:20
 
 ### close
 
-▸ **close**(): `Promise`<[`IBeekeeperSession`](#interfacesibeekeepersessionmd)\>
+▸ **close**(): [`IBeekeeperSession`](#interfacesibeekeepersessionmd)
 
 Ensures that this wallet is locked, then closes it
 
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
-
 #### Returns
 
-`Promise`<[`IBeekeeperSession`](#interfacesibeekeepersessionmd)\>
+[`IBeekeeperSession`](#interfacesibeekeepersessionmd)
 
 Beekeeper session owning the closed wallet
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Inherited from
 
@@ -360,17 +416,19 @@ ___
 
 ### getPublicKeys
 
-▸ **getPublicKeys**(): `Promise`<`string`[]\>
+▸ **getPublicKeys**(): `string`[]
 
 Lists all of the public keys
 
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
-
 #### Returns
 
-`Promise`<`string`[]\>
+`string`[]
 
 a set of all keys for all unlocked wallets
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
@@ -380,11 +438,9 @@ ___
 
 ### importKey
 
-▸ **importKey**(`wifKey`): `Promise`<`string`\>
+▸ **importKey**(`wifKey`): `Promise`\<`string`\>
 
 Imports given private key to this wallet
-
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Parameters
 
@@ -394,9 +450,13 @@ Imports given private key to this wallet
 
 #### Returns
 
-`Promise`<`string`\>
+`Promise`\<`string`\>
 
 Public key generated from the imported private key
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
@@ -406,17 +466,19 @@ ___
 
 ### lock
 
-▸ **lock**(): `Promise`<[`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)\>
+▸ **lock**(): [`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)
 
 Locks the current wallet
 
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
-
 #### Returns
 
-`Promise`<[`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)\>
+[`IBeekeeperWallet`](#interfacesibeekeeperwalletmd)
 
 Locked beekeeper wallet
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
@@ -426,11 +488,9 @@ ___
 
 ### removeKey
 
-▸ **removeKey**(`password`, `publicKey`): `Promise`<`void`\>
+▸ **removeKey**(`password`, `publicKey`): `Promise`\<`void`\>
 
 Removes given key from this wallet
-
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Parameters
 
@@ -441,7 +501,11 @@ Removes given key from this wallet
 
 #### Returns
 
-`Promise`<`void`\>
+`Promise`\<`void`\>
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
@@ -451,11 +515,9 @@ ___
 
 ### signDigest
 
-▸ **signDigest**(`publicKey`, `sigDigest`): `Promise`<`string`\>
+▸ **signDigest**(`publicKey`, `sigDigest`): `string`
 
 Signs a transaction by signing a digest of the transaction
-
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Parameters
 
@@ -466,9 +528,13 @@ Signs a transaction by signing a digest of the transaction
 
 #### Returns
 
-`Promise`<`string`\>
+`string`
 
 signed data in hex format
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
@@ -493,8 +559,6 @@ src/interfaces.ts:111
 
 Name of this wallet
 
-**`readonly`**
-
 #### Inherited from
 
 [IWallet](#interfacesiwalletmd).[name](#name)
@@ -511,8 +575,6 @@ ___
 
 Indicates if the wallet is unlocked. If the wallet is locked, this property will be undefined. IBeekeeperUnlockedWallet type otherwise
 
-**`readonly`**
-
 #### Defined in
 
 src/interfaces.ts:141
@@ -521,17 +583,19 @@ src/interfaces.ts:141
 
 ### close
 
-▸ **close**(): `Promise`<[`IBeekeeperSession`](#interfacesibeekeepersessionmd)\>
+▸ **close**(): [`IBeekeeperSession`](#interfacesibeekeepersessionmd)
 
 Ensures that this wallet is locked, then closes it
 
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
-
 #### Returns
 
-`Promise`<[`IBeekeeperSession`](#interfacesibeekeepersessionmd)\>
+[`IBeekeeperSession`](#interfacesibeekeepersessionmd)
 
 Beekeeper session owning the closed wallet
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Inherited from
 
@@ -545,11 +609,9 @@ ___
 
 ### unlock
 
-▸ **unlock**(`password`): `Promise`<[`IBeekeeperUnlockedWallet`](#interfacesibeekeeperunlockedwalletmd)\>
+▸ **unlock**(`password`): [`IBeekeeperUnlockedWallet`](#interfacesibeekeeperunlockedwalletmd)
 
 Unlocks this wallet
-
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Parameters
 
@@ -559,9 +621,13 @@ Unlocks this wallet
 
 #### Returns
 
-`Promise`<[`IBeekeeperUnlockedWallet`](#interfacesibeekeeperunlockedwalletmd)\>
+[`IBeekeeperUnlockedWallet`](#interfacesibeekeeperunlockedwalletmd)
 
 Unlocked Beekeeper wallet
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 
@@ -588,8 +654,6 @@ src/interfaces.ts:133
 
 Name of this wallet
 
-**`readonly`**
-
 #### Defined in
 
 src/interfaces.ts:20
@@ -598,17 +662,19 @@ src/interfaces.ts:20
 
 ### close
 
-▸ **close**(): `Promise`<[`IBeekeeperSession`](#interfacesibeekeepersessionmd)\>
+▸ **close**(): [`IBeekeeperSession`](#interfacesibeekeepersessionmd)
 
 Ensures that this wallet is locked, then closes it
 
-**`throws`** {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
-
 #### Returns
 
-`Promise`<[`IBeekeeperSession`](#interfacesibeekeepersessionmd)\>
+[`IBeekeeperSession`](#interfacesibeekeepersessionmd)
 
 Beekeeper session owning the closed wallet
+
+**`Throws`**
+
+on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
 
 #### Defined in
 

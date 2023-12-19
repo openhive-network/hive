@@ -5,8 +5,8 @@ set -e
 UNSTAGED_FILES=($(git diff --name-only))
 STAGED_FILES=($(git diff --name-only --cached))
 
-if   [[ " ${UNSTAGED_FILES[*]} " =~ " programs/beekeeper/beekeeper_wasm/src/detailed/interfaces.ts " ]] \
-  || [[ " ${STAGED_FILES[*]} "   =~ " programs/beekeeper/beekeeper_wasm/src/detailed/interfaces.ts " ]];
+if   [[ " ${UNSTAGED_FILES[*]} " =~ " programs/beekeeper/beekeeper_wasm/src/interfaces.ts " ]] \
+  || [[ " ${STAGED_FILES[*]} "   =~ " programs/beekeeper/beekeeper_wasm/src/interfaces.ts " ]];
 then
 echo "Beekeeper interfaces.ts file changes detected. Generating documentation"
 

@@ -189,6 +189,17 @@ export interface IBeekeeperSession {
   createWallet(name: string, password?: string): Promise<IWalletCreated>;
 
   /**
+   * Opens Beekeeper wallet object owned by this session
+   *
+   * @param {string} name name of wallet
+   *
+   * @returns {IBeekeeperWallet} the opened Beekeeper wallet object (may be unlocked if it has been previously unlocked)
+   *
+   * @throws {import("../errors").BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+   */
+  openWallet(name: string): IBeekeeperWallet;
+
+  /**
    * Locks all of the unlocked wallets owned by this session
    *
    * @returns {Array<IBeekeeperWallet>} array of the locked Beekeeper wallets

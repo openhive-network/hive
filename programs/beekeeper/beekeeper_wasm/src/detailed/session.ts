@@ -68,7 +68,7 @@ export class BeekeeperSession implements IBeekeeperSession {
 
   public openWallet(name: string): IBeekeeperWallet {
     if(this.wallets.has(name))
-      return this.wallets.get(name) as BeekeeperLockedWallet;
+      return this.wallets.get(name) as IBeekeeperWallet;
 
     this.api.extract(this.api.api.open(this.token, name) as string);
     const wallet = new BeekeeperLockedWallet(this.api, this, name);
