@@ -176,54 +176,6 @@ class rc_stats_object : public object< rc_stats_object_type, rc_stats_object >
 const rc_stats_id_type RC_PENDING_STATS_ID( oid< rc_stats_object >(0) );
 const rc_stats_id_type RC_ARCHIVE_STATS_ID( oid< rc_stats_object >(1) );
 
-/**
-  * Represents temporary data on pending transactions (singleton).
-  * Stored as chain object to utilize undo mechanism.
-  */
-class rc_pending_data : public object< rc_pending_data_type, rc_pending_data >
-{
-  CHAINBASE_OBJECT( rc_pending_data );
-  public:
-    template< typename Allocator >
-    rc_pending_data( allocator< Allocator > a, uint64_t _id )
-      : id( _id ) {}
-
-    //resets pending usage and cost counters - should be called in pre-apply block
-    void reset_pending_usage()
-    {
-      tx_count = 0;
-      pending_usage = {};
-      pending_cost = {};
-    }
-    //accumulates RC usage and cost of pending transaction
-    void add_pending_usage( const resource_count_type& usage, const resource_cost_type& cost )
-    {
-      ++tx_count;
-      for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
-      {
-        pending_usage[i] += usage[i];
-        pending_cost[i] += cost[i];
-      }
-    }
-
-    //number of transactions/automated actions included in pending usage/cost
-    uint32_t get_tx_count() const { return tx_count; }
-    //usage counters since last reset
-    const resource_count_type& get_pending_usage() const { return pending_usage; }
-    //cost counters since last reset
-    const resource_cost_type& get_pending_cost() const { return pending_cost; }
-
-  private:
-    //number of transactions since last reset in pre-apply block (paired with pending_usage/pending_cost)
-    uint32_t tx_count = 0;
-    //resources consumed by last transactions
-    resource_count_type pending_usage;
-    //cost of resources accumulated in pending_usage (for logging purposes)
-    resource_cost_type pending_cost;
-
-  CHAINBASE_UNPACK_CONSTRUCTOR( rc_pending_data );
-};
-
 class rc_direct_delegation_object : public object< rc_direct_delegation_object_type, rc_direct_delegation_object >
 {
   CHAINBASE_OBJECT( rc_direct_delegation_object );
@@ -330,15 +282,6 @@ typedef multi_index_container<
   allocator< rc_stats_object >
 > rc_stats_index;
 
-typedef multi_index_container<
-  rc_pending_data,
-  indexed_by<
-    ordered_unique< tag< by_id >,
-      const_mem_fun< rc_pending_data, rc_pending_data::id_type, &rc_pending_data::get_id > >
-  >,
-  allocator< rc_pending_data >
-> rc_pending_data_index;
-
 struct by_from_to;
 
 typedef multi_index_container<
@@ -408,14 +351,6 @@ FC_REFLECT( hive::chain::rc_stats_object,
   (average_cost)
 )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_stats_object, hive::chain::rc_stats_index )
-
-FC_REFLECT( hive::chain::rc_pending_data,
-  (id)
-  (tx_count)
-  (pending_usage)
-  (pending_cost)
-)
-CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_pending_data, hive::chain::rc_pending_data_index )
 
 FC_REFLECT( hive::chain::rc_direct_delegation_object,
   (id)

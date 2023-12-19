@@ -590,19 +590,6 @@ void resource_credits::initialize_evaluators()
     benchmark.end( _context, name );                     \
 }
 
-void resource_credits::on_pre_apply_block() const
-{
-  ISOLATE_RC_CALL( "pre->rc", "block", on_pre_apply_block_impl, );
-}
-
-void resource_credits::on_pre_apply_block_impl() const
-{
-  db.modify( db.get< rc_pending_data, by_id >( rc_pending_data_id_type() ), [&]( rc_pending_data& data )
-  {
-    data.reset_pending_usage();
-  } );
-}
-
 void resource_credits::on_post_apply_block() const
 {
   ISOLATE_RC_CALL( "post->rc", "block", on_post_apply_block_impl, );
@@ -625,10 +612,8 @@ void resource_credits::on_post_apply_block_impl() const
     handle_expired_delegations();
   }
 
-  const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
   const auto& params_obj = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
 
-  rc_block_info block_info;
   int64_t regen = ( dgpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
 
   const auto& bucket_idx = db.get_index< rc_usage_bucket_index, by_timestamp >();
@@ -646,8 +631,6 @@ void resource_credits::on_post_apply_block_impl() const
       int64_t pool = pool_obj.get_pool(i);
 
       pool_obj.set_budget( i, params.budget_per_time_unit );
-      block_info.usage[i] = pending_data.get_pending_usage()[i];
-      block_info.cost[i] = pending_data.get_pending_cost()[i];
       int64_t decay = rd_compute_pool_decay( params.decay_params, pool - block_info.usage[i], 1 );
 
       // update global usage statistics
@@ -704,11 +687,7 @@ void resource_credits::on_post_apply_transaction_impl( const full_transaction_ty
 
   if( db.is_validating_block() || db.is_replaying_block() )
   {
-    const auto& pending_data = db.get< rc_pending_data, by_id >( rc_pending_data_id_type() );
-    db.modify( pending_data, [&]( rc_pending_data& data )
-    {
-      data.add_pending_usage( tx_info.usage, tx_info.cost );
-    } );
+    block_info.add( tx_info );
 
     const auto* rc_stats = db.find< rc_stats_object >( RC_PENDING_STATS_ID );
     if( rc_stats != nullptr )
@@ -749,6 +728,11 @@ void resource_credits::reset_tx_info( const protocol::signed_transaction& tx )
   tx_info.payer = get_resource_user( tx );
   if( tx.operations.size() == 1 )
     tx_info.op = tx.operations.front().which();
+}
+
+void resource_credits::reset_block_info()
+{
+  block_info = rc_block_info{};
 }
 
 } }

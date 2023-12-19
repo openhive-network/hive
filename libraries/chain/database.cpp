@@ -3806,7 +3806,7 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
 
   try {
   notify_pre_apply_block( note );
-  rc.on_pre_apply_block(); //temporary - TODO: call right before transactions
+  rc.reset_block_info();
 
   BOOST_SCOPE_EXIT( this_ )
   {
@@ -6088,7 +6088,6 @@ void database::apply_hardfork( uint32_t hardfork )
         create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
         create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
 #endif
-        create< rc_pending_data >();
 
         const auto& idx = get_index< account_index, by_id >();
         for( auto it = idx.begin(); it != idx.end(); ++it )

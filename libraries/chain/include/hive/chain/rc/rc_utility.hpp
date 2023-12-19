@@ -132,6 +132,11 @@ class resource_credits
     // returns information collected for current transaction
     const rc_transaction_info& get_tx_info() const { return tx_info; }
 
+    // resets information for new block - should be called at the start of each block
+    void reset_block_info();
+    // returns information collected for current block
+    const rc_block_info& get_block_info() const { return block_info; }
+
   private:
     // processes excess RC delegations of single delegator according to limits set by guard
     void remove_delegations(
@@ -149,12 +154,11 @@ class resource_credits
 
     // information collected for current transaction
     rc_transaction_info tx_info;
+    // information collected for current block
+    rc_block_info block_info;
 
     void initialize_evaluators();
 
-    //temporary
-    void on_pre_apply_block() const;
-    void on_pre_apply_block_impl() const;
     //temporary
     void on_post_apply_block() const;
     void on_post_apply_block_impl() const;

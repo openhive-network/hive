@@ -888,7 +888,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing if rc_pending_data resets properly" );
+    BOOST_TEST_MESSAGE( "Testing if block info (formely rc_pending_data) resets properly" );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
@@ -898,9 +898,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     fund( "alice", ASSET( "1000.000 TESTS" ) );
     generate_block();
 
-    const auto& pending_data = db->get< rc_pending_data >();
-
-    auto check_direction = []( const resource_count_type& values, const std::array< int, HIVE_RC_NUM_RESOURCE_TYPES >& sign )
+    auto check_direction = []( const resource_cost_type& values, const std::array< int, HIVE_RC_NUM_RESOURCE_TYPES >& sign )
     {
       for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
       {
@@ -921,99 +919,90 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
         }
       }
     };
-    auto check_compare = [&]( const resource_count_type& v1, const resource_count_type& v2,
-      const std::array< int, HIVE_RC_NUM_RESOURCE_TYPES >& sign )
-    {
-      resource_count_type diff;
-      for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
-        diff[i] = v1[i] - v2[i];
-      check_direction( diff, sign );
-    };
     auto compare = [&]( const resource_count_type& v1, const resource_count_type& v2 )
     {
       for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
         BOOST_REQUIRE_EQUAL( v1[i], v2[i] );
     };
-    std::array< int, HIVE_RC_NUM_RESOURCE_TYPES > empty = { 0, 0, 0, 0, 0 };
+    auto add = [&]( resource_count_type* v1, const resource_count_type& v2 )
+    {
+      for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+        (*v1)[i] += v2[i];
+    };
+    resource_count_type empty;
+    resource_count_type pending_usage;
 
     BOOST_TEST_MESSAGE( "Pending usage and pending cost are all zero at the start of block" );
       //ABW: above comment is true, but only when applying block; when checking after nonempty
       //block, we'll still have values from that block (in our case data from funding 'alice')
-    generate_block(); //empty block that clears pending_data left from previous block
-    check_direction( pending_data.get_pending_usage(), empty );
-    check_direction( pending_data.get_pending_cost(), empty );
+    generate_block(); //empty block that clears block info left from previous block
+    compare( db->rc.get_block_info().usage, empty );
+    compare( db->rc.get_block_info().cost, empty );
     //ABW: since we no longer keep differential usage as separate data piece, we can only check full
     //actual usage after the end of transaction (the values will stay until next transaction is processed);
     //the values won't change all that frequently (unlike RC cost) so it should be ok to do full comparison
     auto tx_usage = db->rc.get_tx_info().usage;
     //last tx was a transfer
     compare( tx_usage, { 112, 0, 1120, 128, 94165 + 6622 + 5999 } );
+    //not adding transfer to pending usage since it is already part of block before current head
 
     BOOST_TEST_MESSAGE( "Update active key to generate some usage" );
     account_update_operation update;
     update.account = "alice";
     update.active = authority( 1, generate_private_key( "alice_active" ).get_public_key(), 1 );
     push_transaction( update, alice_private_key );
-    auto first_pending_usage = pending_data.get_pending_usage();
-    auto first_pending_cost = pending_data.get_pending_cost();
-    check_direction( first_pending_usage, { 1, 0, 0, 1, 1 } );
-    check_direction( first_pending_cost, { 1, 0, 0, 1, 1 } );
+    //transaction info for pending transactions in no longer added to block info
+    compare( db->rc.get_block_info().usage, empty );
+    compare( db->rc.get_block_info().cost, empty );
     tx_usage = db->rc.get_tx_info().usage;
     //account update gets discount for authorities already present, so their state consumptions cancel out
     compare( tx_usage, { 163, 0, 0, 128 - 1576800 + 1576800, 94165 + 6622 + 13322 } );
+    add( &pending_usage, tx_usage );
 
-    BOOST_TEST_MESSAGE( "Make a transfer - differential usage should reset, but pending should not" );
+    BOOST_TEST_MESSAGE( "Make a transfer - differential usage should reset" );
     transfer_operation transfer;
     transfer.from = "alice";
     transfer.to = "bob";
     transfer.amount = ASSET( "10.000 TESTS" );
     push_transaction( transfer, alice_private_key );
-    auto second_pending_usage = pending_data.get_pending_usage();
-    auto second_pending_cost = pending_data.get_pending_cost();
-    check_direction( second_pending_usage, { 1, 0, 1, 1, 1 } );
-    check_direction( second_pending_cost, { 1, 0, 1, 1, 1 } );
     tx_usage = db->rc.get_tx_info().usage;
     //another transfer (differences are just due to sizes of account names)
     compare( tx_usage, { 106, 0, 1060, 128, 94165 + 6622 + 5999 } );
-    check_compare( first_pending_usage, second_pending_usage, { -1, 0, -1, -1, -1 } );
-    check_compare( first_pending_cost, second_pending_cost, { -1, 0, -1, -1, -1 } );
+    add( &pending_usage, tx_usage );
 
     BOOST_TEST_MESSAGE( "Update active key for second time - differential usage resets again to the same value" );
     update.active = authority( 1, generate_private_key( "alice_active_2" ).get_public_key(), 1 );
     push_transaction( update, alice_private_key );
-    auto third_pending_usage = pending_data.get_pending_usage();
-    auto third_pending_cost = pending_data.get_pending_cost();
-    check_direction( third_pending_usage, { 1, 0, 1, 1, 1 } ); //market bytes usage from transfer remains
-    check_direction( third_pending_cost, { 1, 0, 1, 1, 1 } ); //same with cost
     tx_usage = db->rc.get_tx_info().usage;
     //same as with previous account update
     compare( tx_usage, { 163, 0, 0, 128 - 1576800 + 1576800, 94165 + 6622 + 13322 } );
     auto last_valid_tx_usage = tx_usage;
-    check_compare( second_pending_usage, third_pending_usage, { -1, 0, 0, -1, -1 } );
-    check_compare( second_pending_cost, third_pending_cost, { -1, 0, 0, -1, -1 } );
+    add( &pending_usage, tx_usage );
 
     BOOST_TEST_MESSAGE( "Attempt to update active key for third time but fail - all values but tx info revert to previous" );
     update.active = authority( 1, "nonexistent", 1 );
     HIVE_REQUIRE_ASSERT( push_transaction( update, alice_private_key ), "a != nullptr" );
-    check_compare( third_pending_usage, pending_data.get_pending_usage(), empty );
-    check_compare( third_pending_cost, pending_data.get_pending_cost(), empty );
     tx_usage = db->rc.get_tx_info().usage;
     //since transaction was stopped mid way, usage only contains part filled prior to failure (that is, a discount on state)
     compare( tx_usage, { 0, 0, 0, -1576800, 0 } );
+    //not adding failed transaction usage to future block usage since it didn't become pending transaction
 
     BOOST_TEST_MESSAGE( "Finalize block and move to new one - pending data and cost are reset (but not differential usage)" );
     generate_block();
+    compare( db->rc.get_block_info().usage, pending_usage );
+    check_direction( db->rc.get_block_info().cost, { 1, 0, 1, 1, 1 } );
     //Why two generate_block calls? To understand that we need to understand what generate_block actually
     //does. When transaction is pushed, it becomes pending (as if it was passed through API or P2P).
-    //generate_block rewinds the state, then it opens (pre-apply block) and produces block out of pending
-    //transactions (assuming they actually fit, because we might've pushed too many for max size of block),
-    //closes the block (post-apply block), tries to reapply pending transactions on top of it (the ones
-    //that became part of recent block will be dropped from list as "known") and finishes. The code after
-    //generate_block call will see the state after reapplication of transactions and not freshly after
-    //reset. To emulate fresh reset we need to actually produce empty block.
+    //generate_block rewinds the state, then it produces block out of pending transactions (assuming
+    //they actually fit, because we might've pushed too many for max size of block), rewinds state again
+    //and reapplies it as a whole opening it (pre-apply block), applying all transactions from fresh
+    //block and closing the block (post-apply block); tries to reapply pending transactions on top of it
+    //(the ones that became part of recent block will be dropped from list as "known") and finishes.
+    //The code after generate_block call will see the state after reapplication of transactions and
+    //not freshly after reset. To emulate fresh reset we need to actually produce empty block.
     generate_block();
-    check_direction( pending_data.get_pending_usage(), empty );
-    check_direction( pending_data.get_pending_cost(), empty );
+    compare( db->rc.get_block_info().usage, empty );
+    compare( db->rc.get_block_info().cost, empty );
     //since last transaction that was applied during block generations above is last successful account
     //update, that is what we are seing now in tx info
     tx_usage = db->rc.get_tx_info().usage;
@@ -1034,7 +1023,6 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     configuration_data.allow_not_enough_rc = false;
 
     generate_block();
-    const auto& pending_data = db->get< rc_pending_data >();
 
     ACTORS( (alice)(bob)(sam) )
     generate_block();
@@ -1064,6 +1052,9 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
       generate_block();
       auto tx_usage = db->rc.get_tx_info().usage;
       compare( tx_usage, { 106, 0, 1060, 128, 106786 } );
+      const auto& block_info = db->rc.get_block_info();
+      compare( block_info.usage, { 0, 0, 0, 0, 0 } );
+      compare( block_info.cost, { 0, 0, 0, 0, 0 } );
     };
 
     BOOST_TEST_MESSAGE( "Update owner key with account_update_operation" );
@@ -1266,7 +1257,8 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     push_transaction( custom_json, alice_owner_key );
     tx_usage = db->rc.get_tx_info().usage;
     compare( tx_usage, { 203, 0, 0, 128 + 1927200, 94165 + 6622 + 1509 + 75000 } );
-    auto first_delegation_cost = calculate_cost( pending_data.get_pending_cost() );
+    generate_block(); //block generation is needed so the pending transaction cost is added to actual block cost
+    auto first_delegation_cost = calculate_cost( db->rc.get_block_info().cost );
     clean();
 
     const auto diff_limit = ( first_delegation_cost + 99 ) / 100; //rounded up 1% of first delegation cost
@@ -1279,7 +1271,8 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     tx_usage = db->rc.get_tx_info().usage;
     //just one new delegation like in first case
     compare( tx_usage, { 208, 0, 0, 128 - 1927200 + 1927200 * 2, 94165 + 6622 + 1509 + 75000 } );
-    auto second_delegation_cost = calculate_cost( pending_data.get_pending_cost() );
+    generate_block();
+    auto second_delegation_cost = calculate_cost( db->rc.get_block_info().cost );
     //cost of first and second should be almost the same (allowing small difference)
     BOOST_REQUIRE_LT( abs( first_delegation_cost - second_delegation_cost ), diff_limit );
     clean();
@@ -1291,7 +1284,8 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     tx_usage = db->rc.get_tx_info().usage;
     //no extra state - all delegations are updates
     compare( tx_usage, { 208, 0, 0, 128 - 1927200 * 2 + 1927200 * 2, 94165 + 6622 + 1509 + 75000 } );
-    auto third_delegation_cost = calculate_cost( pending_data.get_pending_cost() );
+    generate_block();
+    auto third_delegation_cost = calculate_cost( db->rc.get_block_info().cost );
     //cost of third should be minuscule (allowing small value)
     BOOST_REQUIRE_LT( third_delegation_cost, diff_limit );
     clean();
@@ -1302,7 +1296,8 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
     push_transaction( custom_json, alice_owner_key );
     tx_usage = db->rc.get_tx_info().usage;
     compare( tx_usage, { 211, 0, 0, 128, 94165 + 6622 + 1509 } ); //no differential usage
-    auto dummy_delegation_cost = calculate_cost( pending_data.get_pending_cost() );
+    generate_block();
+    auto dummy_delegation_cost = calculate_cost( db->rc.get_block_info().cost );
     //cost should be even lower than that for third actual delegation
     BOOST_REQUIRE_LT( dummy_delegation_cost, third_delegation_cost );
     clean();
@@ -1322,7 +1317,6 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     configuration_data.allow_not_enough_rc = false;
 
     generate_block();
-    const auto& pending_data = db->get< rc_pending_data >();
 
     PREP_ACTOR( alice )
       //alice will initially use HIVE_MAX_AUTHORITY_MEMBERSHIP of keys with the same full authority;
@@ -1500,8 +1494,6 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
     //important for this test to always use just one transaction and fully reset before next one
     generate_block();
 
-    const auto& pending_data = db->get< rc_pending_data >();
-
     BOOST_TEST_MESSAGE( "Testing when related witness does not exist before transaction" );
     signed_transaction tx;
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -1518,7 +1510,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
     tx.operations.push_back( witness );
     push_transaction( tx, alice_private_key );
     tx.clear();
-    auto alice_state_usage = pending_data.get_pending_usage()[ resource_state_bytes ];
+    auto alice_state_usage = db->rc.get_block_info().usage[ resource_state_bytes ];
     generate_block();
     generate_block();
 
@@ -1530,7 +1522,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
     witness.props.hbd_interest_rate = 30 * HIVE_1_PERCENT;
     witness.fee = asset( 100, HIVE_SYMBOL );
     push_transaction( witness, carol_private_key );
-    auto carol_state_usage = pending_data.get_pending_usage()[ resource_state_bytes ];
+    auto carol_state_usage = db->rc.get_block_info().usage[ resource_state_bytes ];
     generate_block();
     generate_block();
 
