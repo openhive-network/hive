@@ -188,3 +188,14 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
+
+add_executable( shared_memory_file_util shared_memory_file_util.cpp )
+target_link_libraries( shared_memory_file_util
+                       PRIVATE hive_chain hive_plugins fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+install( TARGETS
+   shared_memory_file_util
+
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+)
