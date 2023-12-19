@@ -276,7 +276,7 @@ collected_keyauth_collection_t operation_get_genesis_keyauths()
     // 'steem' account
     // Consider moving this hardcoded key definition to a header - perhaps to : libraries/protocol/include/hive/protocol/config.hpp
     // So that here and init_genesis use the same code
-    auto STEEM_PUBLIC_KEY = public_key_type(HIVE_ADDRESS_PREFIX "65wH1LZ7BfSHcK69SShnqCAH5xdoSZpGkUjmzHJ5GCuxEK9V5G");
+    auto STEEM_PUBLIC_KEY = public_key_type(HIVE_ADDRESS_PREFIX HIVE_STEEM_PUBLIC_KEY_BODY );
     collected_keyauth_t steem_item {"steem", key_t::OWNER, 1, true, STEEM_PUBLIC_KEY, {}, 1};
     add_key_authorizations(collector, steem_item, genesis_key_types);
 
