@@ -7,6 +7,7 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/irreversible_block_writer.hpp>
+#include <hive/chain/pruned_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
@@ -124,6 +125,7 @@ class chain_plugin_impl
       thread_pool( app ),
       db( app ),
       default_block_writer( db, app ),
+      current_block_writer( &default_block_writer ),
       webserver( app.get_plugin<hive::plugins::webserver::webserver_plugin>() ),
       theApp( app )
     {
@@ -224,6 +226,7 @@ class chain_plugin_impl
 
     database                         db;
     sync_block_writer                default_block_writer;
+    block_write_chain_i*             current_block_writer;
 
     std::string block_generator_registrant;
     std::shared_ptr< abstract_block_producer > block_generator;
@@ -566,7 +569,7 @@ void chain_plugin_impl::start_write_processing()
         {
           is_syncing = false;
           db.notify_end_of_syncing();
-          default_block_writer.set_is_at_live_sync();
+          current_block_writer->set_is_at_live_sync();
           theApp.notify_status("entering live mode");
           wlog("entering live mode");
         }
@@ -645,7 +648,7 @@ bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_
   db.set_block_writer( &reindex_block_writer );
 
   BOOST_SCOPE_EXIT(this_) {
-    this_->db.set_block_writer( &( this_->default_block_writer ) );
+    this_->db.set_block_writer( this_->current_block_writer );
   } BOOST_SCOPE_EXIT_END
 
   theApp.notify_status("replaying");
@@ -679,7 +682,7 @@ bool chain_plugin_impl::start_replay_processing( hive::chain::blockchain_worker_
 
 void chain_plugin_impl::initial_settings()
 {
-  db.set_block_writer( &( default_block_writer ) );
+  db.set_block_writer( current_block_writer );
 
   if( statsd_on_replay )
   {
@@ -824,7 +827,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
               uint32_t new_head_block_num = new_head_block->get_block_num();
 
               uint32_t skip = db.get_node_skip_flags();
-              default_block_writer.switch_forks( 
+              current_block_writer->switch_forks( 
                 new_head_block_id,
                 new_head_block_num,
                 skip,
@@ -942,7 +945,7 @@ bool chain_plugin_impl::_push_block(const block_flow_control& block_ctrl)
   const std::shared_ptr<full_block_type>& full_block = block_ctrl.get_full_block();
   const uint32_t skip = db.get_node_skip_flags();
 
-  return default_block_writer.push_block(
+  return current_block_writer->push_block(
     full_block,
     block_ctrl,
     db.head_block_num(),
@@ -992,7 +995,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args,
 
     HIVE_TRY_NOTIFY(db._pre_reindex_signal, note);
 
-    default_block_writer.on_reindex_start();
+    current_block_writer->on_reindex_start();
 
     auto start_time = fc::time_point::now();
     HIVE_ASSERT( _head, block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
@@ -1043,7 +1046,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args,
     });
 
     FC_ASSERT( replay_block_reader.head_block()->get_block_num(), "this should never happen" );
-    default_block_writer.on_reindex_end( replay_block_reader.head_block() );
+    current_block_writer->on_reindex_end( replay_block_reader.head_block() );
 
     auto end_time = fc::time_point::now();
     ilog("Done reindexing, elapsed time: ${elapsed_time} sec",
@@ -1263,7 +1266,7 @@ const block_read_i& chain_plugin::block_reader() const
 {
   // When other plugins are able to call this method, replay is complete (if required)
   // and default syncing block writer is being used.
-  return my->default_block_writer.get_block_reader();
+  return my->current_block_writer->get_block_reader();
 }
 
 fc::microseconds chain_plugin::get_time_gap_to_live_sync( const fc::time_point_sec& head_block_time )
@@ -1635,7 +1638,7 @@ void chain_plugin::plugin_startup()
   else
   {
     ilog("Consistency data checking...");
-    if( my->check_data_consistency( my->default_block_writer.get_block_reader() ) )
+    if( my->check_data_consistency( my->current_block_writer->get_block_reader() ) )
     {
       if( my->db.get_snapshot_loaded() )
       {
