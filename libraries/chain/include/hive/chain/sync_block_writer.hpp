@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/chain/block_write_interface.hpp>
+#include <hive/chain/block_write_chain_interface.hpp>
 
 #include <hive/chain/fork_db_block_reader.hpp>
 
@@ -13,7 +13,7 @@ namespace hive { namespace chain {
   class fork_database;
   using appbase::application;
 
-  class sync_block_writer : public block_write_i
+  class sync_block_writer : public block_write_chain_i
   {
   public:
     sync_block_writer( database& db, application& app );
@@ -48,14 +48,9 @@ namespace hive { namespace chain {
       irreversible_block_append_t irreversible_block_append,
       irreversible_block_flush_t irreversible_block_flush );
 
-    void set_is_at_live_sync() { _is_at_live_sync = true; }
-    void on_reindex_start();
-    void on_reindex_end( const std::shared_ptr<full_block_type>& end_block );
-    void open(  const fc::path& file, bool enable_compression,
-                int compression_level, bool enable_block_log_auto_fixing,
-                hive::chain::blockchain_worker_thread_pool& thread_pool );
-    void close();
-    const block_log& get_block_log() const { return _block_log; }
+    virtual void set_is_at_live_sync() override { _is_at_live_sync = true; }
+    virtual void on_reindex_start() override;
+    virtual void on_reindex_end( const std::shared_ptr<full_block_type>& end_block ) override;
 
     using apply_block_t = std::function<
       void ( const std::shared_ptr< full_block_type >& full_block,
@@ -76,10 +71,10 @@ namespace hive { namespace chain {
      * @param pop_block_extended call when trying to rewind a fork
      * @return true if the forks have been switched as a result of this push.
      */
-    bool push_block(const std::shared_ptr<full_block_type>& full_block,
+    virtual bool push_block(const std::shared_ptr<full_block_type>& full_block,
       const block_flow_control& block_ctrl, uint32_t state_head_block_num,
       block_id_type state_head_block_id, const uint32_t skip, apply_block_t apply_block_extended,
-      pop_block_t pop_block_extended );
+      pop_block_t pop_block_extended ) override;
 
     /**
      * @brief Used during transaction fast confirmation.
@@ -93,11 +88,17 @@ namespace hive { namespace chain {
      * @param apply_block_extended call when trying to build a fork
      * @param pop_block_extended call when trying to rewind a fork
      */
-    void switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
+    virtual void switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
       uint32_t skip, const block_flow_control* pushed_block_ctrl,
       const block_id_type original_head_block_id, const uint32_t original_head_block_number,
-      apply_block_t apply_block_extended, pop_block_t pop_block_extended );
+      apply_block_t apply_block_extended, pop_block_t pop_block_extended ) override;
 
+    void open(  const fc::path& file, bool enable_compression,
+                int compression_level, bool enable_block_log_auto_fixing,
+                hive::chain::blockchain_worker_thread_pool& thread_pool );
+    void close();
+    const block_log& get_block_log() const { return _block_log; }
+    fork_database& get_fork_db() { return _fork_db; };
   private:
     block_log             _block_log;
     fork_db_block_reader  _reader;
