@@ -36,11 +36,12 @@ else
 fi
 
 # Check if package with given version has been already published
-npm install "${NAME}@${TAG}" --tag="$NEW_VERSION" --dry-run --no-fund --omit=optional --omit=dev --no-audit --no-package-lock
+npm view "${NAME}@${TAG}" version
 
 if [ $? -eq 0 ]; then
   echo "Package already published"
 else
   echo "Publishing ${NAME}@${TAG} to tag ${NEW_VERSION}"
+  # We are going to repack the tarball as there are registry-dependent data in each job for package.json
   npm publish --access=public --tag "${NEW_VERSION}"
 fi
