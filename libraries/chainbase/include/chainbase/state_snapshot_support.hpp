@@ -8,6 +8,7 @@
 
 #include <fc/io/datastream.hpp>
 #include <fc/io/raw_fwd.hpp>
+#include <fc/io/json.hpp>
 
 #include <functional>
 #include <string>
@@ -279,6 +280,61 @@ private:
         worker->flush_converted_data(serializedCache);
 
       ilog("Finished dumping items <${b}, ${e}> from ${s}", ("b", _startId)("e", _endId)("s", _indexDescription));
+    }
+
+    void doConversionToJson(snapshot_writer::worker* worker) const
+    {
+      if(_start == _end)
+        {
+        ilog("No items present for range <${b}, ${e}> for index `${i}", ("b", _startId)("e", _endId)("i", _indexDescription));
+        return;
+        }
+
+      const auto& byIdIdx = _data_source.template get<by_id>();
+
+      size_t firstObjectId = _start->get_id();
+      if(_end != byIdIdx.end())
+        {
+        size_t endObjectId = _end->get_id();
+        ilog("Writing items <${f}, ${l}) found for range <${b}, ${e}) from index ${s}", ("b", _startId)
+          ("e", _endId)("s", _indexDescription)("f", firstObjectId)("l", endObjectId));
+        }
+      else
+        {
+        ilog("Writing items <${f}, container-end) found for range <${b}, ${e}) from index ${s}", ("b", _startId)
+          ("e", _endId)("s", _indexDescription)("f", firstObjectId));
+        }
+
+      snapshot_writer::worker::serialized_object_cache serializedCache;
+      uint8_t i = 0;
+
+      for(auto indexIt = _start; indexIt != _end; ++indexIt)
+      {
+        const auto& object = *indexIt;
+
+        size_t id = object.get_id();
+
+        FC_ASSERT(id >= _startId && id <= _endId, "Processing object-id: ${i} from different id-range: <${l},${r})",
+          ("i", id)("l", _startId)("r", _endId));
+
+        serializedCache.emplace_back(id, std::vector<char>());
+        const std::string json = fc::json::to_pretty_string(object);
+        serializedCache.back().second = std::vector<char>(json.begin(), json.end());
+
+        if(i > 100)
+        {
+          worker->flush_converted_data(serializedCache);
+          serializedCache.clear();
+          i = 0;
+        }
+        ++i;
+      }
+
+      if(serializedCache.empty() == false)
+        worker->flush_converted_data(serializedCache);
+
+      ilog("Finished dumping items <${b}, ${e}> from ${s}", ("b", _startId)("e", _endId)("s", _indexDescription));
+
     }
 
   private:
