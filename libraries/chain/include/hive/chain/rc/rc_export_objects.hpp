@@ -24,16 +24,9 @@ struct rc_transaction_info
 
 struct rc_block_info
 {
-  resource_count_type       decay;
-  optional< resource_count_type >
-                            budget; //aside from pool of new accounts this is constant
   resource_count_type       usage;
-  resource_count_type       pool;
   resource_cost_type        cost;
-  fc::int_array< uint16_t, HIVE_RC_NUM_RESOURCE_TYPES >
-                            share;
-  int64_t                   regen = 0;
-  optional< int64_t >       new_accounts_adjustment;
+  uint32_t                  tx_count = 0; //number of transactions that accumulated usage/cost (grows as block is processed)
 };
 
 } } // hive::chain
@@ -48,12 +41,7 @@ FC_REFLECT( hive::chain::rc_transaction_info,
 )
 
 FC_REFLECT( hive::chain::rc_block_info,
-  (decay)
-  (budget)
   (usage)
-  (pool)
   (cost)
-  (share)
-  (regen)
-  (new_accounts_adjustment)
+  (tx_count)
 )
