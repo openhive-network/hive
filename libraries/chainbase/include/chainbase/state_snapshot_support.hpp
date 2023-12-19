@@ -106,6 +106,14 @@ public:
     chainbase::snapshot_writer& _controller;
   };
 
+  enum conversion_t : uint8_t
+  {
+    convert_to_bytes = 0,
+    convert_to_json = 1
+  };
+
+  conversion_t get_conversion_type() const { return conversion_type; }
+
   using snapshot_converter_t = std::function <void(worker*)>;
 
   typedef std::vector<worker*> workers;
@@ -115,6 +123,7 @@ public:
 
 protected:
   virtual ~snapshot_writer() {}
+  conversion_t conversion_type = conversion_t::convert_to_bytes;
 };
 
 class snapshot_reader : public snapshot_base_serializer
@@ -355,12 +364,16 @@ private:
     typedef dumper_data< MultiIndexType> dumper_t;
 
     std::string indexName = this->template get_index_name<MultiIndexType>();
+    const snapshot_writer::conversion_t conversion_type = _writer.get_conversion_type();
 
-    auto converter = [](snapshot_writer::worker* w) -> void
+    auto converter = [conversion_type](snapshot_writer::worker* w) -> void
       {
       snapshot_writer::worker_data& associatedData = w->get_associated_data();
       dumper_t* actualData = static_cast<dumper_t*>(&associatedData);
-      actualData->doConversion(w);
+      if (conversion_type == snapshot_writer::conversion_t::convert_to_bytes)
+        actualData->doConversion(w);
+      else
+        actualData->doConversionToJson(w);
       };
 
     size_t firstId = 0;
