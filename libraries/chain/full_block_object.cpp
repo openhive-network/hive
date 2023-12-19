@@ -1,4 +1,4 @@
-#include <hive/chain/transaction_object.hpp>
+#include <hive/chain/full_block_object.hpp>
 
 namespace hive { namespace chain {
 
