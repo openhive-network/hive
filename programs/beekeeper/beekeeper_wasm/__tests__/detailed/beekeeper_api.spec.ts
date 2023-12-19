@@ -152,833 +152,770 @@ test.describe('WASM beekeeper_api tests', () => {
     });
   });
 
-  test('Legacy tests', async () => {
+  test('Basic tests which execute all endpoints', async () => {
     await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      api.create(api.implicitSessionToken, walletNames[0]);
+
+      api.importKey(api.implicitSessionToken, walletNames[0], keys[0][0]);
+
       {
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
+        const sessionToken = api.createSession('pear');
+        api.closeSession(sessionToken);
+      }
 
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Basic tests which execute all endpoints");
-        console.log("**************************************************************************************");
+      {
+        const sessionToken = api.createSession('pear');
 
-        api.create(api.implicitSessionToken, walletNames[0]);
+        api.create_with_password(sessionToken, walletNames[1], 'cherry');
 
-        api.importKey(api.implicitSessionToken, walletNames[0], keys[0][0]);
+        api.create(sessionToken, walletNames[2]);
+
+        api.importKey(sessionToken, walletNames[1], keys[1][0]);
+        api.importKey(sessionToken, walletNames[1], keys[2][0]);
+        api.importKey(sessionToken, walletNames[1], keys[3][0]);
 
         {
-          const sessionToken = api.createSession('pear');
-          api.closeSession(sessionToken);
+          console.log('********* TESTCASE 1 ********* ');
+          const wallets = api.listWallets(sessionToken);
+          requireWalletsIn(wallets, 3, 1, true, 2, true);
+
+          const publicKeys = api.getPublicKeys(sessionToken);
+          requireKeysIn(publicKeys, 1, 2, 3);
         }
 
         {
-          const sessionToken = api.createSession('pear');
+          console.log('********* TESTCASE 2 ********* ');
+          api.close(sessionToken, walletNames[2]);
 
-          api.create_with_password(sessionToken, walletNames[1], 'cherry');
-
-          api.create(sessionToken, walletNames[2]);
-
-          api.importKey(sessionToken, walletNames[1], keys[1][0]);
-          api.importKey(sessionToken, walletNames[1], keys[2][0]);
-          api.importKey(sessionToken, walletNames[1], keys[3][0]);
-
-          {
-            console.log('********* TESTCASE 1 ********* ');
-            const wallets = api.listWallets(sessionToken);
-            requireWalletsIn(wallets, 3, 1, true, 2, true);
-
-            const publicKeys = api.getPublicKeys(sessionToken);
-            requireKeysIn(publicKeys, 1, 2, 3);
-          }
-
-          {
-            console.log('********* TESTCASE 2 ********* ');
-            api.close(sessionToken, walletNames[2]);
-
-            const wallets = api.listWallets(sessionToken);
-            requireWalletsIn(wallets, 3, 1, true, 2, false);
-          }
-
-          {
-            console.log('********* TESTCASE 3 ********* ');
-            api.open(sessionToken, walletNames[2]);
-
-            const wallets = api.listWallets(sessionToken);
-            requireWalletsIn(wallets, 3, 1, true, 2, false);
-          }
-
-          {
-            console.log('********* TESTCASE 4 ********* ');
-            api.unlock(sessionToken, walletNames[2]);
-
-            const wallets = api.listWallets(sessionToken);
-            requireWalletsIn(wallets, 3, 1, true, 2, true);
-          }
-
-          {
-            console.log('********* TESTCASE 5 ********* ');
-            api.lock(sessionToken, walletNames[2]);
-
-            const wallets = api.listWallets(sessionToken);
-            requireWalletsIn(wallets, 3, 1, true, 2, false);
-          }
-
-          {
-            console.log('********* TESTCASE 6 ********* ');
-            api.lockAll(sessionToken);
-
-            const wallets = api.listWallets(sessionToken);
-            requireWalletsIn(wallets, 3, 1, false, 2, false);
-          }
-
-          {
-            console.log('********* TESTCASE 7 ********* ');
-            api.unlock(sessionToken, walletNames[1]);
-
-            const wallets = api.listWallets(sessionToken);
-            requireWalletsIn(wallets, 3, 1, true, 2, false);
-
-            api.removeKey(sessionToken, walletNames[1], keys[2][1], null);
-
-            const publicKeys = api.getPublicKeys(sessionToken);
-            requireKeysIn(publicKeys, 1, 3);
-          }
-
-          const walletInfo = api.getInfo(sessionToken);
-          const now = new Date(walletInfo.now);
-          const timeoutTime = new Date(walletInfo.timeout_time);
-          assert.ok(!Number.isNaN(now.getTime()));
-          assert.ok(!Number.isNaN(timeoutTime.getTime()));
-
-          signDigest(api, sessionToken, 0);
-          signDigest(api, sessionToken, 1);
-
-          await performWalletAutolockTest(api, sessionToken);
-
-          api.deleteInstance();
+          const wallets = api.listWallets(sessionToken);
+          requireWalletsIn(wallets, 3, 1, true, 2, false);
         }
+
+        {
+          console.log('********* TESTCASE 3 ********* ');
+          api.open(sessionToken, walletNames[2]);
+
+          const wallets = api.listWallets(sessionToken);
+          requireWalletsIn(wallets, 3, 1, true, 2, false);
+        }
+
+        {
+          console.log('********* TESTCASE 4 ********* ');
+          api.unlock(sessionToken, walletNames[2]);
+
+          const wallets = api.listWallets(sessionToken);
+          requireWalletsIn(wallets, 3, 1, true, 2, true);
+        }
+
+        {
+          console.log('********* TESTCASE 5 ********* ');
+          api.lock(sessionToken, walletNames[2]);
+
+          const wallets = api.listWallets(sessionToken);
+          requireWalletsIn(wallets, 3, 1, true, 2, false);
+        }
+
+        {
+          console.log('********* TESTCASE 6 ********* ');
+          api.lockAll(sessionToken);
+
+          const wallets = api.listWallets(sessionToken);
+          requireWalletsIn(wallets, 3, 1, false, 2, false);
+        }
+
+        {
+          console.log('********* TESTCASE 7 ********* ');
+          api.unlock(sessionToken, walletNames[1]);
+
+          const wallets = api.listWallets(sessionToken);
+          requireWalletsIn(wallets, 3, 1, true, 2, false);
+
+          api.removeKey(sessionToken, walletNames[1], keys[2][1], null);
+
+          const publicKeys = api.getPublicKeys(sessionToken);
+          requireKeysIn(publicKeys, 1, 3);
+        }
+
+        const walletInfo = api.getInfo(sessionToken);
+        const now = new Date(walletInfo.now);
+        const timeoutTime = new Date(walletInfo.timeout_time);
+        assert.ok(!Number.isNaN(now.getTime()));
+        assert.ok(!Number.isNaN(timeoutTime.getTime()));
+
+        signDigest(api, sessionToken, 0);
+        signDigest(api, sessionToken, 1);
+
+        await performWalletAutolockTest(api, sessionToken);
+
+        api.deleteInstance();
+      }
+    }, WALLET_OPTIONS);
+  });
+
+  test('Trying to open beekeeper instance again so as to find out if data created in previous test is permamently saved', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      api.create(api.implicitSessionToken, walletNames[3]);
+      api.unlock(api.implicitSessionToken, walletNames[1]);
+      api.importKey(api.implicitSessionToken, walletNames[3], keys[9][0]);
+
+      const publicKeys = api.getPublicKeys(api.implicitSessionToken);
+      requireKeysIn(publicKeys, 1, 3, 9);
+    }, WALLET_OPTIONS);
+  });
+
+  test('Create 3 wallets and add to every wallet 3 the same keys. Every key should be displayed only once', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      api.create(api.implicitSessionToken, walletNames[4]);
+      api.create(api.implicitSessionToken, walletNames[5]);
+      api.create(api.implicitSessionToken, walletNames[6]);
+
+      // Import keys 7-9 to wallets 4-6
+      for(let walletNo = 4; walletNo <= 6; ++walletNo)
+        for(let keyNo = 7; keyNo <= 9; ++keyNo)
+          api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][0]);
+
+      const publicKeys = api.getPublicKeys(api.implicitSessionToken);
+      requireKeysIn(publicKeys, 7, 8, 9);
+    }, WALLET_OPTIONS);
+  });
+
+  test('Remove all keys from 3 wallets created in previous step. As a result all keys are removed in mentioned wallets', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      api.unlock(api.implicitSessionToken, walletNames[4]);
+      api.unlock(api.implicitSessionToken, walletNames[5]);
+      api.unlock(api.implicitSessionToken, walletNames[6]);
+
+      // Remove keys 7-9 to wallets 4-6
+      for(let walletNo = 4; walletNo <= 6; ++walletNo)
+        for(let keyNo = 7; keyNo <= 9; ++keyNo)
+          api.removeKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][1]);
+
+      const publicKeys = api.getPublicKeys(api.implicitSessionToken);
+      requireKeysIn(publicKeys);
+    }, WALLET_OPTIONS);
+  });
+
+  test('Close implicitly created session. Create 3 new sessions. Every session has a 1 wallet. Every wallet has unique 1 key. As a result there are 3 keys', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      api.closeSession(api.implicitSessionToken);
+
+      const sessions = [
+        { keyNo: 4, session: api.createSession('avocado') },
+        { keyNo: 5, session: api.createSession('avocado') },
+        { keyNo: 6, session: api.createSession('avocado') }
+      ];
+
+      let walletNo = 7;
+      for(const { session, keyNo } of sessions) {
+        api.create(session, walletNames[walletNo]);
+        api.importKey(session, walletNames[walletNo], keys[keyNo][0]);
+        ++walletNo;
       }
 
-      {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Trying to open beekeeper instance again so as to find out if data created in previous test is permamently saved");
-        console.log("**************************************************************************************");
-
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
-
-        api.create(api.implicitSessionToken, walletNames[3]);
-        api.unlock(api.implicitSessionToken, walletNames[1]);
-        api.importKey(api.implicitSessionToken, walletNames[3], keys[9][0]);
-
-        const publicKeys = api.getPublicKeys(api.implicitSessionToken);
-        requireKeysIn(publicKeys, 1, 3, 9);
+      for(const { session, keyNo } of sessions) {
+        const publicKeys = api.getPublicKeys(session);
+        requireKeysIn(publicKeys, keyNo);
       }
+    }, WALLET_OPTIONS);
+  });
+
+  test('Unlock 10 wallets. From every wallet remove every key', async () => {
+    await page.evaluate(async (args) => {
+      // Removing is done by passing always all public keys from `keys` set. Sometimes `remove` operation passes, sometimes (mostly) fails
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      for(const name of walletNames)
+        api.unlock(api.implicitSessionToken, name);
+
+      let publicKeys = api.getPublicKeys(api.implicitSessionToken);
+      requireKeysIn(publicKeys, 0, 1, 3, 4, 5, 6, 9);
+
+      /*
+        api.removeKey(api.implicitSessionToken, walletNames[0], keys[0][1]);
+        api.removeKey(api.implicitSessionToken, walletNames[1], keys[1][1]);
+        api.removeKey(api.implicitSessionToken, walletNames[1], keys[3][1]);
+        api.removeKey(api.implicitSessionToken, walletNames[7], keys[4][1]);
+        api.removeKey(api.implicitSessionToken, walletNames[8], keys[5][1]);
+        api.removeKey(api.implicitSessionToken, walletNames[9], keys[6][1]);
+        api.removeKey(api.implicitSessionToken, walletNames[3], keys[9][1]);
+      */
+
+      let keysRemoved = 0;
+      for(const name of walletNames)
+        for(const [ , key ] of keys)
+          try {
+            api.removeKey(api.implicitSessionToken, name, key);
+            ++keysRemoved;
+          } catch {
+            console.info('Key could not be removed, because it does not belong to this wallet. You can ignore this error.');
+          }
+
+      assert.equal(keysRemoved, 7);
 
       {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Create 3 wallets and add to every wallet 3 the same keys. Every key should be displayed only once");
-        console.log("**************************************************************************************");
-
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
-
-        api.create(api.implicitSessionToken, walletNames[4]);
-        api.create(api.implicitSessionToken, walletNames[5]);
-        api.create(api.implicitSessionToken, walletNames[6]);
-
-        // Import keys 7-9 to wallets 4-6
-        for(let walletNo = 4; walletNo <= 6; ++walletNo)
-          for(let keyNo = 7; keyNo <= 9; ++keyNo)
-            api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][0]);
-
-        const publicKeys = api.getPublicKeys(api.implicitSessionToken);
-        requireKeysIn(publicKeys, 7, 8, 9);
-      }
-
-      {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Remove all keys from 3 wallets created in previous step. As a result all keys are removed in mentioned wallets.");
-        console.log("**************************************************************************************");
-
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
-
-        api.unlock(api.implicitSessionToken, walletNames[4]);
-        api.unlock(api.implicitSessionToken, walletNames[5]);
-        api.unlock(api.implicitSessionToken, walletNames[6]);
-
-        // Remove keys 7-9 to wallets 4-6
-        for(let walletNo = 4; walletNo <= 6; ++walletNo)
-          for(let keyNo = 7; keyNo <= 9; ++keyNo)
-            api.removeKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][1]);
-
         const publicKeys = api.getPublicKeys(api.implicitSessionToken);
         requireKeysIn(publicKeys);
       }
+    }, WALLET_OPTIONS);
+  });
 
-      {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Close implicitly created session. Create 3 new sessions. Every session has a 1 wallet. Every wallet has unique 1 key. As a result there are 3 keys.");
-        console.log("**************************************************************************************");
+  test('Close implicitly created session. Create 4 new sessions. All sessions open the same wallet', async () => {
+    await page.evaluate(async (args) => {
+      // Sessions{0,2} import a key, sessions{1,3} try to remove a key (here is an exception ('Key not in wallet')). As a result only sessions{0,2} have a key
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
 
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
+      api.closeSession(api.implicitSessionToken);
 
-        api.closeSession(api.implicitSessionToken);
+      const sessions = [
+        api.createSession('avocado'),
+        api.createSession('avocado'),
+        api.createSession('avocado'),
+        api.createSession('avocado')
+      ];
 
-        const sessions = [
-          { keyNo: 4, session: api.createSession('avocado') },
-          { keyNo: 5, session: api.createSession('avocado') },
-          { keyNo: 6, session: api.createSession('avocado') }
-        ];
+      sessions.forEach((session, index) => {
+        api.unlock(session, walletNames[0]);
 
-        let walletNo = 7;
-        for(const { session, keyNo } of sessions) {
-          api.create(session, walletNames[walletNo]);
-          api.importKey(session, walletNames[walletNo], keys[keyNo][0]);
-          ++walletNo;
-        }
+        const keysToCheck: number[] = [];
 
-        for(const { session, keyNo } of sessions) {
-          const publicKeys = api.getPublicKeys(session);
-          requireKeysIn(publicKeys, keyNo);
-        }
-      }
+        if(index % 2 === 0) {
+          api.importKey(session, walletNames[0], keys[0][0]);
+          keysToCheck.push(0);
+        } else
+          api.removeKey(session, walletNames[0], keys[0][1]);
 
-      {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Unlock 10 wallets. From every wallet remove every key.");
-        console.log("Removing is done by passing always all public keys from `keys` set. Sometimes `remove` operation passes, sometimes (mostly) fails.");
-        console.log("**************************************************************************************");
+        requireKeysIn(api.getPublicKeys(session), ...keysToCheck);
+      });
+    }, WALLET_OPTIONS);
+  });
 
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
+  test('False tests for every API endpoint', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
 
-        for(const name of walletNames)
-          api.unlock(api.implicitSessionToken, name);
+      testThrow(api, 'closeSession');
+      testThrow(api, 'close', 1);
+      testThrow(api, 'open', 1);
+      testThrow(api, 'unlock', 2);
+      testThrow(api, 'create', 2);
+      testThrow(api, 'setTimeout', 1);
+      testThrow(api, 'lockAll');
+      testThrow(api, 'lock', 1);
+      testThrow(api, 'importKey', 2);
+      testThrow(api, 'removeKey', 3);
+      testThrow(api, 'listWallets');
+      testThrow(api, 'getPublicKeys');
+      testThrow(
+        api,
+        'signDigest',
+        '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
+        '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+        '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+      );
+      testThrow(
+        api,
+        'signDigest',
+        '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
+        'this is not public key',
+        '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+      );
+      testThrow(
+        api,
+        'signDigest',
+        'this is not digest of transaction',
+        '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
+        '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
+      );
+    }, WALLET_OPTIONS);
+  });
 
-        let publicKeys = api.getPublicKeys(api.implicitSessionToken);
-        requireKeysIn(publicKeys, 0, 1, 3, 4, 5, 6, 9);
+  test('Try to create new sessions, but due to the limit creating the last one fails', async () => {
+    await page.evaluate(async (args) => {
+      const noSessions = 63; //63 because at the beginning we have implicitly created session
 
-        /*
-          api.removeKey(api.implicitSessionToken, walletNames[0], keys[0][1]);
-          api.removeKey(api.implicitSessionToken, walletNames[1], keys[1][1]);
-          api.removeKey(api.implicitSessionToken, walletNames[1], keys[3][1]);
-          api.removeKey(api.implicitSessionToken, walletNames[7], keys[4][1]);
-          api.removeKey(api.implicitSessionToken, walletNames[8], keys[5][1]);
-          api.removeKey(api.implicitSessionToken, walletNames[9], keys[6][1]);
-          api.removeKey(api.implicitSessionToken, walletNames[3], keys[9][1]);
-        */
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
 
-        let keysRemoved = 0;
-        for(const name of walletNames)
-          for(const [ , key ] of keys)
-            try {
-              api.removeKey(api.implicitSessionToken, name, key);
-              ++keysRemoved;
-            } catch {
-              console.info('Key could not be removed, because it does not belong to this wallet. You can ignore this error.');
-            }
+      for(let i = 0; i < noSessions; ++i)
+        api.createSession('xyz');
 
-        assert.equal(keysRemoved, 7);
+      assert.throws(() => {
+        api.createSession('xyz');
+      }, ExtractError);
+    }, WALLET_OPTIONS);
+  });
 
-        {
-          const publicKeys = api.getPublicKeys(api.implicitSessionToken);
-          requireKeysIn(publicKeys);
-        }
-      }
+  test('Close implicitly created session. Create new sessions, unlock 10 wallets, add 10 keys to every wallet and then remove them', async () => {
+    await page.evaluate(async (args) => {
+      const noSessions = 63; //63 because at the beginning we have implicitly created session
 
-      {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Close implicitly created session. Create 4 new sessions. All sessions open the same wallet.");
-        console.log("Sessions{0,2} import a key, sessions{1,3} try to remove a key (here is an exception ('Key not in wallet')).");
-        console.log("As a result only sessions{0,2} have a key.");
-        console.log("**************************************************************************************");
+      // Destroy beekeeper without sessions' closing
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
 
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
+      api.closeSession(api.implicitSessionToken);
 
-        api.closeSession(api.implicitSessionToken);
+      const noWallets = Math.min(10, walletNames.length);
+      const noKeys = Math.max(10, keys.length);
 
-        const sessions = [
-          api.createSession('avocado'),
-          api.createSession('avocado'),
-          api.createSession('avocado'),
-          api.createSession('avocado')
-        ];
+      let sessionToken;
 
-        sessions.forEach((session, index) => {
-          api.unlock(session, walletNames[0]);
-
-          const keysToCheck: number[] = [];
-
-          if(index % 2 === 0) {
-            api.importKey(session, walletNames[0], keys[0][0]);
-            keysToCheck.push(0);
-          } else
-            api.removeKey(session, walletNames[0], keys[0][1]);
-
-          requireKeysIn(api.getPublicKeys(session), ...keysToCheck);
-        });
-      }
-
-      {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("False tests for every API endpoint.");
-        console.log("**************************************************************************************");
-
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
-
-        testThrow(api, 'closeSession');
-        testThrow(api, 'close', 1);
-        testThrow(api, 'open', 1);
-        testThrow(api, 'unlock', 2);
-        testThrow(api, 'create', 2);
-        testThrow(api, 'setTimeout', 1);
-        testThrow(api, 'lockAll');
-        testThrow(api, 'lock', 1);
-        testThrow(api, 'importKey', 2);
-        testThrow(api, 'removeKey', 3);
-        testThrow(api, 'listWallets');
-        testThrow(api, 'getPublicKeys');
-        testThrow(
-          api,
-          'signDigest',
-          '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
-          '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
-          '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
-        );
-        testThrow(
-          api,
-          'signDigest',
-          '390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542',
-          'this is not public key',
-          '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
-        );
-        testThrow(
-          api,
-          'signDigest',
-          'this is not digest of transaction',
-          '6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4',
-          '1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21'
-        );
-      }
-
-      {
-        const noSessions = 63; //63 because at the beginning we have implicitly created session
-        console.log();
-        console.log("**************************************************************************************");
-        console.log(`Try to create ${noSessions + 2} new sessions, but due to the limit creating the last one fails.`);
-        console.log("**************************************************************************************");
-
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
-
-        for(let i = 0; i < noSessions; ++i)
-          api.createSession('xyz');
-
-        assert.throws(() => {
-          api.createSession('xyz');
-        }, ExtractError);
-      }
-      {
-        const noSessions = 63;
-        console.log();
-        console.log("**************************************************************************************");
-        console.log(`Close implicitly created session. Create ${noSessions} new sessions, unlock 10 wallets, add 10 keys to every wallet and then remove them.`);
-        console.log("Destroy beekeeper without sessions' closing.");
-        console.log("**************************************************************************************");
-
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
-
-        api.closeSession(api.implicitSessionToken);
-
-        const noWallets = Math.min(10, walletNames.length);
-        const noKeys = Math.max(10, keys.length);
-
-        let sessionToken;
-
-        for(let i = 0; i < noSessions; ++i) {
-          sessionToken = api.createSession(i.toString());
-          for(let j = 0; j < noWallets; ++j) {
-            api.unlock(sessionToken, walletNames[j]);
-            for(let k = 0; k < noKeys; ++k) {
-              api.importKey(sessionToken, walletNames[j], keys[k][0]);
-              api.removeKey(sessionToken, walletNames[j], keys[k][1]);
-            }
+      for(let i = 0; i < noSessions; ++i) {
+        sessionToken = api.createSession(i.toString());
+        for(let j = 0; j < noWallets; ++j) {
+          api.unlock(sessionToken, walletNames[j]);
+          for(let k = 0; k < noKeys; ++k) {
+            api.importKey(sessionToken, walletNames[j], keys[k][0]);
+            api.removeKey(sessionToken, walletNames[j], keys[k][1]);
           }
         }
-
-        requireKeysIn(api.getPublicKeys(sessionToken));
-
-        api.deleteInstance();
       }
-      {
-        const noSessions = 64;
-        console.log();
-        console.log("**************************************************************************************");
-        console.log(`Create ${noSessions - 1} new sessions, close them + implicitly created session. Create again ${noSessions} and close them.`);
-        console.log("**************************************************************************************");
 
+      requireKeysIn(api.getPublicKeys(sessionToken));
+
+      api.deleteInstance();
+    }, WALLET_OPTIONS);
+  });
+
+  test('Create new sessions, close them + implicitly created session. Create again sessions and close them', async () => {
+    await page.evaluate(async (args) => {
+      const noSessions = 64;
+
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      const sessionTokens = [ api.implicitSessionToken ];
+
+      for(let i = 0; i < noSessions - 1; ++i)
+        sessionTokens.push(api.createSession(i.toString()));
+
+      for(let i = 0; i < noSessions; ++i)
+        api.closeSession(sessionTokens.pop());
+
+      for(let i = 0; i < noSessions; ++i)
+        sessionTokens.push(api.createSession(i.toString()));
+
+      for(let i = 0; i < noSessions; ++i)
+        api.closeSession(sessionTokens.pop());
+    }, WALLET_OPTIONS);
+  });
+
+  test('Try to sign transactions, but they fail. Unlock wallet. Import key. Sign transactions. Delete instance. Create instance again', async () => {
+    await page.evaluate(async (args) => {
+      // Unlock wallet. Sign transactions. Remove key. Try to sign transactions again, but they fail.
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      testThrow(() => { signDigest(api, api.implicitSessionToken, 0); });
+      testThrow(() => { signDigest(api, api.implicitSessionToken, 1); });
+
+      const walletNo = 7;
+      const keyNo = 3;
+
+      api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+      api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][0]);
+
+      // This should not throw now:
+      signDigest(api, api.implicitSessionToken, 0);
+      signDigest(api, api.implicitSessionToken, 1);
+
+      api.deleteInstance();
+
+      {
         /** @type {BeekeeperInstanceHelper} */
         const api = new beekeper(args);
-
-        const sessionTokens = [ api.implicitSessionToken ];
-
-        for(let i = 0; i < noSessions - 1; ++i)
-          sessionTokens.push(api.createSession(i.toString()));
-
-        for(let i = 0; i < noSessions; ++i)
-          api.closeSession(sessionTokens.pop());
-
-        for(let i = 0; i < noSessions; ++i)
-          sessionTokens.push(api.createSession(i.toString()));
-
-        for(let i = 0; i < noSessions; ++i)
-          api.closeSession(sessionTokens.pop());
-      }
-      {
-        console.log();
-        console.log("**************************************************************************************")
-        console.log(`Try to sign transactions, but they fail. Unlock wallet. Import key. Sign transactions.`);
-        console.log(`Delete instance. Create instance again.`);
-        console.log(`Unlock wallet. Sign transactions. Remove key. Try to sign transactions again, but they fail.`);
-        console.log("**************************************************************************************");
-
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
-
-        testThrow(() => { signDigest(api, api.implicitSessionToken, 0); });
-        testThrow(() => { signDigest(api, api.implicitSessionToken, 1); });
-
-        const walletNo = 7;
-        const keyNo = 3;
 
         api.unlock(api.implicitSessionToken, walletNames[walletNo]);
-        api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][0]);
 
-        // This should not throw now:
         signDigest(api, api.implicitSessionToken, 0);
         signDigest(api, api.implicitSessionToken, 1);
 
-        api.deleteInstance();
+        api.removeKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][1]);
 
-        {
-          /** @type {BeekeeperInstanceHelper} */
-          const api = new beekeper(args);
-
-          api.unlock(api.implicitSessionToken, walletNames[walletNo]);
-
-          signDigest(api, api.implicitSessionToken, 0);
-          signDigest(api, api.implicitSessionToken, 1);
-
-          api.removeKey(api.implicitSessionToken, walletNames[walletNo], keys[keyNo][1]);
-
-          // Now this should throw
-          testThrow(() => { signDigest(api, api.implicitSessionToken, 0); });
-          testThrow(() => { signDigest(api, api.implicitSessionToken, 1); });
-        }
+        // Now this should throw
+        testThrow(() => { signDigest(api, api.implicitSessionToken, 0); });
+        testThrow(() => { signDigest(api, api.implicitSessionToken, 1); });
       }
-      {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log(`Unlock 10 wallets. Every wallet has own session. Import the same key into every wallet. Sign transactions using the key from every wallet.`);
-        console.log(`Lock even wallets. Sign transactions using the key from: every odd wallet (passes), every even wallet (fails).`);
-        console.log(`Lock odd wallets. Sign transactions using the key from every wallet (always fails).`);
-        console.log("**************************************************************************************");
+    }, WALLET_OPTIONS);
+  });
 
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
+  test('Unlock 10 wallets. Every wallet has own session. Import the same key into every wallet. Sign transactions using the key from every wallet', async () => {
+    await page.evaluate(async (args) => {
+      // Lock even wallets. Sign transactions using the key from: every odd wallet (passes), every even wallet (fails).
+      // Lock odd wallets. Sign transactions using the key from every wallet (always fails).
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
 
-        const noWallets = 10;
-        const keyNo = 3;
+      const noWallets = 10;
+      const keyNo = 3;
 
-        const sessionTokens: string[] = []
+      const sessionTokens: string[] = []
 
-        for(let i = 0; i < noWallets; ++i) {
-          sessionTokens.push(api.createSession(i.toString()));
+      for(let i = 0; i < noWallets; ++i) {
+        sessionTokens.push(api.createSession(i.toString()));
 
-          api.unlock(sessionTokens[i], walletNames[i]);
-          api.importKey(sessionTokens[i], walletNames[i], keys[keyNo][0]);
+        api.unlock(sessionTokens[i], walletNames[i]);
+        api.importKey(sessionTokens[i], walletNames[i], keys[keyNo][0]);
 
+        signDigest(api, sessionTokens[i], 1);
+      }
+
+      for(let i = 0; i < noWallets; i += 2)
+        api.lock(sessionTokens[i], walletNames[i]);
+
+      for(let i = 0; i < noWallets; ++i)
+        if(i % 2 == 0)
+          testThrow(() => { signDigest(api, sessionTokens[i], 1) });
+        else {
           signDigest(api, sessionTokens[i], 1);
+          api.lock(sessionTokens[i], walletNames[i]); // For the next stage
         }
 
-        for(let i = 0; i < noWallets; i += 2)
-          api.lock(sessionTokens[i], walletNames[i]);
+      for(let i = 0; i < noWallets; ++i)
+        testThrow(() => { signDigest(api, sessionTokens[i], 1); });
+    }, WALLET_OPTIONS);
+  });
 
-        for(let i = 0; i < noWallets; ++i)
-          if(i % 2 == 0)
-            testThrow(() => { signDigest(api, sessionTokens[i], 1) });
-          else {
-            signDigest(api, sessionTokens[i], 1);
-            api.lock(sessionTokens[i], walletNames[i]); // For the next stage
-          }
+  test('Check endpoints related to timeout: "set_timeout", "get_info"', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
 
-        for(let i = 0; i < noWallets; ++i)
-          testThrow(() => { signDigest(api, sessionTokens[i], 1); });
-      }
+      api.setTimeout(api.implicitSessionToken, 3600);
+      const walletInfo = api.getInfo(api.implicitSessionToken);
+      const now = new Date(walletInfo.now);
+      const timeoutTime = new Date(walletInfo.timeout_time);
+
+      assert.equal(timeoutTime.getTime() - now.getTime(), 3600 * 1000);
+
       {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log(`Check endpoints related to timeout: "set_timeout", "get_info",`);
-        console.log("**************************************************************************************");
+        api.setTimeout(api.implicitSessionToken, 0);
+        api.setTimeout(api.implicitSessionToken, 'This is not a number of seconds'); // XXX: This should throw
 
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
-
-        api.setTimeout(api.implicitSessionToken, 3600);
         const walletInfo = api.getInfo(api.implicitSessionToken);
         const now = new Date(walletInfo.now);
         const timeoutTime = new Date(walletInfo.timeout_time);
 
-        assert.equal(timeoutTime.getTime() - now.getTime(), 3600 * 1000);
+        assert.equal(timeoutTime.getTime() - now.getTime(), 0);
+      }
+    }, WALLET_OPTIONS);
+  });
 
-        {
-          api.setTimeout(api.implicitSessionToken, 0);
-          api.setTimeout(api.implicitSessionToken, 'This is not a number of seconds'); // XXX: This should throw
+  test('Different false tests for sign* endpoints', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
 
-          const walletInfo = api.getInfo(api.implicitSessionToken);
-          const now = new Date(walletInfo.now);
-          const timeoutTime = new Date(walletInfo.timeout_time);
+      const walletNo = 9;
+      api.unlock(api.implicitSessionToken, walletNames[walletNo]);
 
-          assert.equal(timeoutTime.getTime() - now.getTime(), 0);
-        }
+      {
+        const length = 1e7; // 10M
+        const longStr = 'a'.repeat(length);
+        // This should not throw as it is used only for signing (does not deserialize data)
+        api.signDigest(api.implicitSessionToken, longStr, signData[1].public_key, signData[1].expected_signature);
+      }
+    }, WALLET_OPTIONS);
+  });
+
+  test('Check if an instance of beekeeper has a version', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+      console.log(api.version);
+      assert.equal(api.version.length > 0, true);
+    }, WALLET_OPTIONS);
+  });
+
+  test('Analyze error messages', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      {
+        api.setAcceptError = true;
+
+        let error_message = api.open(api.implicitSessionToken, "");
+        console.log(error_message);
+        assert.equal(error_message.includes("Name of wallet is incorrect. Is empty."), true);
+
+        error_message = api.open(api.implicitSessionToken, "%$%$");
+        console.log(error_message);
+        assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
+
+        error_message = api.open(api.implicitSessionToken, "abc");
+        console.log(error_message);
+        assert.equal(error_message.includes("Unable to open file: "), true);
+        assert.equal(error_message.includes("abc.wallet"), true);
       }
       {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Different false tests for 'sign*' endpoints.");
-        console.log("**************************************************************************************");
+        api.setAcceptError = true;
 
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
+        let error_message = api.create_with_password(api.implicitSessionToken, "", "cherry-password");
+        console.log(error_message);
+        assert.equal(error_message.includes("Name of wallet is incorrect. Is empty."), true);
+
+        error_message = api.create_with_password(api.implicitSessionToken, "%$%$", "cherry-password");
+        console.log(error_message);
+        assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
 
         const walletNo = 9;
+        error_message = api.create_with_password(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
+        console.log(error_message);
+        assert.equal(error_message.includes("Wallet with name: 'w9' already exists at"), true);
+
+        error_message = api.create_with_password(api.implicitSessionToken, "new.wallet", "");
+        console.log(error_message);
+        assert.equal(error_message.includes("password.size() > 0"), true);
+
+        /*
+          Without a password limit (`wallet_manager_impl::create`), we get:
+
+          Aborted(OOM)
+          RuntimeError: Aborted(OOM). Build with -sASSERTIONS for more info.
+          at abort (file:///src/build_wasm/beekeeper_wasm.mjs:8:5768)
+          at abortOnCannotGrowMemory (file:///src/build_wasm/beekeeper_wasm.mjs:8:108604)
+          at _emscripten_resize_heap (file:///src/build_wasm/beekeeper_wasm.mjs:8:108707)
+        */
+        const length = 1e7; // 10M
+        const longStr = 'a'.repeat(length);
+        error_message = api.create_with_password(api.implicitSessionToken, "new.wallet", longStr);
+        console.log(error_message);
+        assert.equal(error_message.includes("!password || password->size() < max_password_length"), true);
+      }
+      {
+        api.setAcceptError = true;
+
+        const error_message = api.close(api.implicitSessionToken, "abc");
+        console.log(error_message);
+        assert.equal(error_message.includes("Wallet not found: abc"), true);
+      }
+      {
+        api.setAcceptError = true;
+
+        let error_message = api.getPublicKeys(api.implicitSessionToken);
+        console.log(error_message);
+        assert.equal(error_message.includes("You don't have any wallet"), true);
+
+        api.setAcceptError = false;
+
+        const walletNo_9 = 9;
+        api.open(api.implicitSessionToken, walletNames[walletNo_9]);
+
+        api.setAcceptError = true;
+
+        error_message = api.getPublicKeys(api.implicitSessionToken);
+        console.log(error_message);
+        assert.equal(error_message.includes("You don't have any unlocked wallet"), true);
+
+        api.setAcceptError = false;
+
+        console.log("NEGATIVE TESTCASE 1");
+
+        const walletNo_4 = 4;
+        api.open(api.implicitSessionToken, walletNames[walletNo_4]);
+        let wallets = api.listWallets(api.implicitSessionToken);
+        requireWalletsIn(wallets, 10, 4, false, 9, false);
+        console.log(wallets);
+
+        console.log("NEGATIVE TESTCASE 2");
+
+        api.unlock(api.implicitSessionToken, walletNames[walletNo_4]);
+        wallets = api.listWallets(api.implicitSessionToken);
+        requireWalletsIn(wallets, 10, 4, true, 9, false);
+        console.log(wallets);
+
+        api.setAcceptError = false;
+
+        error_message = api.getPublicKeys(api.implicitSessionToken);
+        console.log(error_message);
+      }
+      {
+        const walletNo = 8;
+
+        api.setAcceptError = true;
+
+        let error_message = api.lock(api.implicitSessionToken, "nonexisting-wallet");
+        console.log(`Gathered error message: \`${error_message}\``);
+        assert.equal(error_message.includes("Wallet not found: nonexisting-wallet"), true, "NEGATIVE TESTCASE 3 FAILED");
+
+        console.log("NEGATIVE TESTCASE 3A");
+        api.setAcceptError = false;
+
+        error_message = api.open(api.implicitSessionToken, walletNames[walletNo]);
+        console.log(error_message);
+
+        api.setAcceptError = true;
+
+        error_message = api.lock(api.implicitSessionToken, walletNames[walletNo]);
+        console.log(error_message);
+        assert.equal(error_message.includes("Unable to lock a locked wallet"), true, "NEGATIVE TESTCASE 3A FAILED");
+      }
+      {
+        const walletNo = 2;
+
+        api.setAcceptError = true;
+
+        let error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo], "");
+        console.log(error_message);
+        assert.equal(error_message.includes("password.size() > 0"), true, "NEGATIVE TESTCASE 4A FAILED");
+
+        error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo], "strawberry");
+        console.log(error_message);
+        assert.equal(error_message.includes("Invalid password for wallet"), true, "NEGATIVE TESTCASE 4B FAILED");
+
+        error_message = api.unlock(api.implicitSessionToken, "this_not_wallet", "strawberry");
+        console.log(error_message);
+        assert.equal(error_message.includes("Unable to open file"), true, "NEGATIVE TESTCASE 4C FAILED");
+
+        api.setAcceptError = false;
+
+        error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+        console.log(error_message);
+
+        api.setAcceptError = true;
+
+        error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+        console.log(error_message);
+        assert.equal(error_message.includes("Wallet is already unlocked: w2"), true, "NEGATIVE TESTCASE 4D FAILED");
+      }
+      {
+        api.setAcceptError = true;
+        let error_message = api.importKey(api.implicitSessionToken, "pear", "key");
+        console.log(error_message);
+        assert.equal(error_message.includes("Wallet not found: pear"), true, "NEGATIVE TESTCASE 5 FAILED");
+
+        api.setAcceptError = false;
+        const walletNo = 0;
+        api.open(api.implicitSessionToken, walletNames[walletNo]);
+
+        api.setAcceptError = true;
+        error_message = api.importKey(api.implicitSessionToken, walletNames[walletNo], "key");
+        console.log(error_message);
+        assert.equal(error_message.includes("Wallet is locked: w0"), true, "NEGATIVE TESTCASE 5A FAILED");
+
+        api.setAcceptError = false;
         api.unlock(api.implicitSessionToken, walletNames[walletNo]);
 
-        {
-          const length = 1e7; // 10M
-          const longStr = 'a'.repeat(length);
-          // This should not throw as it is used only for signing (does not deserialize data)
-          api.signDigest(api.implicitSessionToken, longStr, signData[1].public_key, signData[1].expected_signature);
-        }
-      }
+        api.setAcceptError = true;
+        error_message = api.importKey(api.implicitSessionToken, walletNames[walletNo], "peach");
+        console.log(error_message);
+        assert.equal(error_message.includes("Key can't be constructed"), true, "NEGATIVE TESTCASE 5B FAILED");
 
-      {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Check if an instance of beekeeper has a version.");
-        console.log("**************************************************************************************");
-
-        {
-          /** @type {BeekeeperInstanceHelper} */
-          const api = new beekeper(args);
-          console.log(api.version);
-          assert.equal(api.version.length > 0, true);
-        }
-      }
-
-      {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Analyze error messages.");
-        console.log("**************************************************************************************");
-
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
-
-        {
-          api.setAcceptError = true;
-
-          let error_message = api.open(api.implicitSessionToken, "");
-          console.log(error_message);
-          assert.equal(error_message.includes("Name of wallet is incorrect. Is empty."), true);
-
-          error_message = api.open(api.implicitSessionToken, "%$%$");
-          console.log(error_message);
-          assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
-
-          error_message = api.open(api.implicitSessionToken, "abc");
-          console.log(error_message);
-          assert.equal(error_message.includes("Unable to open file: "), true);
-          assert.equal(error_message.includes("abc.wallet"), true);
-        }
-        {
-          api.setAcceptError = true;
-
-          let error_message = api.create_with_password(api.implicitSessionToken, "", "cherry-password");
-          console.log(error_message);
-          assert.equal(error_message.includes("Name of wallet is incorrect. Is empty."), true);
-
-          error_message = api.create_with_password(api.implicitSessionToken, "%$%$", "cherry-password");
-          console.log(error_message);
-          assert.equal(error_message.includes("Name of wallet is incorrect. Name: %$%$. Only alphanumeric and '._-' chars are allowed"), true);
-
-          const walletNo = 9;
-          error_message = api.create_with_password(api.implicitSessionToken, walletNames[walletNo], "redberry-password");
-          console.log(error_message);
-          assert.equal(error_message.includes("Wallet with name: 'w9' already exists at"), true);
-
-          error_message = api.create_with_password(api.implicitSessionToken, "new.wallet", "");
-          console.log(error_message);
-          assert.equal(error_message.includes("password.size() > 0"), true);
-
-          /*
-            Without a password limit (`wallet_manager_impl::create`), we get:
-
-            Aborted(OOM)
-            RuntimeError: Aborted(OOM). Build with -sASSERTIONS for more info.
-            at abort (file:///src/build_wasm/beekeeper_wasm.mjs:8:5768)
-            at abortOnCannotGrowMemory (file:///src/build_wasm/beekeeper_wasm.mjs:8:108604)
-            at _emscripten_resize_heap (file:///src/build_wasm/beekeeper_wasm.mjs:8:108707)
-          */
-          const length = 1e7; // 10M
-          const longStr = 'a'.repeat(length);
-          error_message = api.create_with_password(api.implicitSessionToken, "new.wallet", longStr);
-          console.log(error_message);
-          assert.equal(error_message.includes("!password || password->size() < max_password_length"), true);
-        }
-        {
-          api.setAcceptError = true;
-
-          const error_message = api.close(api.implicitSessionToken, "abc");
-          console.log(error_message);
-          assert.equal(error_message.includes("Wallet not found: abc"), true);
-        }
-        {
-          api.setAcceptError = true;
-
-          let error_message = api.getPublicKeys(api.implicitSessionToken);
-          console.log(error_message);
-          assert.equal(error_message.includes("You don't have any wallet"), true);
-
-          api.setAcceptError = false;
-
-          const walletNo_9 = 9;
-          api.open(api.implicitSessionToken, walletNames[walletNo_9]);
-
-          api.setAcceptError = true;
-
-          error_message = api.getPublicKeys(api.implicitSessionToken);
-          console.log(error_message);
-          assert.equal(error_message.includes("You don't have any unlocked wallet"), true);
-
-          api.setAcceptError = false;
-
-          console.log("NEGATIVE TESTCASE 1");
-
-          const walletNo_4 = 4;
-          api.open(api.implicitSessionToken, walletNames[walletNo_4]);
-          let wallets = api.listWallets(api.implicitSessionToken);
-          requireWalletsIn(wallets, 10, 4, false, 9, false);
-          console.log(wallets);
-
-          console.log("NEGATIVE TESTCASE 2");
-
-          api.unlock(api.implicitSessionToken, walletNames[walletNo_4]);
-          wallets = api.listWallets(api.implicitSessionToken);
-          requireWalletsIn(wallets, 10, 4, true, 9, false);
-          console.log(wallets);
-
-          api.setAcceptError = false;
-
-          error_message = api.getPublicKeys(api.implicitSessionToken);
-          console.log(error_message);
-        }
-        {
-          const walletNo = 8;
-
-          api.setAcceptError = true;
-
-          let error_message = api.lock(api.implicitSessionToken, "nonexisting-wallet");
-          console.log(`Gathered error message: \`${error_message}\``);
-          assert.equal(error_message.includes("Wallet not found: nonexisting-wallet"), true, "NEGATIVE TESTCASE 3 FAILED");
-
-          console.log("NEGATIVE TESTCASE 3A");
-          api.setAcceptError = false;
-
-          error_message = api.open(api.implicitSessionToken, walletNames[walletNo]);
-          console.log(error_message);
-
-          api.setAcceptError = true;
-
-          error_message = api.lock(api.implicitSessionToken, walletNames[walletNo]);
-          console.log(error_message);
-          assert.equal(error_message.includes("Unable to lock a locked wallet"), true, "NEGATIVE TESTCASE 3A FAILED");
-        }
-        {
-          const walletNo = 2;
-
-          api.setAcceptError = true;
-
-          let error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo], "");
-          console.log(error_message);
-          assert.equal(error_message.includes("password.size() > 0"), true, "NEGATIVE TESTCASE 4A FAILED");
-
-          error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo], "strawberry");
-          console.log(error_message);
-          assert.equal(error_message.includes("Invalid password for wallet"), true, "NEGATIVE TESTCASE 4B FAILED");
-
-          error_message = api.unlock(api.implicitSessionToken, "this_not_wallet", "strawberry");
-          console.log(error_message);
-          assert.equal(error_message.includes("Unable to open file"), true, "NEGATIVE TESTCASE 4C FAILED");
-
-          api.setAcceptError = false;
-
-          error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
-          console.log(error_message);
-
-          api.setAcceptError = true;
-
-          error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
-          console.log(error_message);
-          assert.equal(error_message.includes("Wallet is already unlocked: w2"), true, "NEGATIVE TESTCASE 4D FAILED");
-        }
-        {
-          api.setAcceptError = true;
-          let error_message = api.importKey(api.implicitSessionToken, "pear", "key");
-          console.log(error_message);
-          assert.equal(error_message.includes("Wallet not found: pear"), true, "NEGATIVE TESTCASE 5 FAILED");
-
-          api.setAcceptError = false;
-          const walletNo = 0;
-          api.open(api.implicitSessionToken, walletNames[walletNo]);
-
-          api.setAcceptError = true;
-          error_message = api.importKey(api.implicitSessionToken, walletNames[walletNo], "key");
-          console.log(error_message);
-          assert.equal(error_message.includes("Wallet is locked: w0"), true, "NEGATIVE TESTCASE 5A FAILED");
-
-          api.setAcceptError = false;
-          api.unlock(api.implicitSessionToken, walletNames[walletNo]);
-
-          api.setAcceptError = true;
-          error_message = api.importKey(api.implicitSessionToken, walletNames[walletNo], "peach");
-          console.log(error_message);
-          assert.equal(error_message.includes("Key can't be constructed"), true, "NEGATIVE TESTCASE 5B FAILED");
-
-          api.setAcceptError = false;
-          api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
-          api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);//Importing a key that already exists in a wallet doesn't raise an exception
-        }
-        {
-          const walletNo = 1;
-
-          api.setAcceptError = true;
-          let error_message = api.removeKey(api.implicitSessionToken, "nonexsiting-wallet", "", "");
-          console.log(error_message);
-          assert.equal(error_message.includes("Wallet not found: nonexsiting-wallet"), true, "NEGATIVE TESTCASE 6 FAILED");
-
-          api.setAcceptError = false;
-          error_message = api.open(api.implicitSessionToken, walletNames[walletNo]);
-
-          api.setAcceptError = true;
-          error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "", "");
-          console.log(error_message);
-          assert.equal(error_message.includes("Wallet is locked: w1"), true, "NEGATIVE TESTCASE 6a FAILED");
-
-          api.setAcceptError = false;
-          error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
-
-          api.setAcceptError = true;
-          error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "", "");
-          console.log(error_message);
-          assert.equal(error_message.includes("password.size() > 0"), true, "NEGATIVE TESTCASE 6b FAILED");
-
-          error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "", "xxxxx");
-          console.log(error_message);
-          assert.equal(error_message.includes("Invalid password for wallet:"), true, "NEGATIVE TESTCASE 6c FAILED");
-
-          error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "");
-          console.log(error_message);
-          assert.equal(error_message.includes("public_key.size() > 0"), true);
-
-          error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "currant");
-          console.log(error_message);
-          assert.equal(error_message.includes("s == sizeof(data)"), true, "NEGATIVE TESTCASE 6d FAILED");
-
-          error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
-          console.log(error_message);
-          assert.equal(error_message.includes("Key not in wallet"), true, "NEGATIVE TESTCASE 6e FAILED");
-        }
-        {
-          api.setAcceptError = true;
-
-          let error_message = api.signDigest(api.implicitSessionToken, "#", "lemon");
-          console.log(error_message);
-          assert.equal(error_message.includes("Invalid hex character '#'"), true);
-
-          error_message = api.signDigest(api.implicitSessionToken, "abCDe", "lemon");
-          console.log(error_message);
-          assert.equal(error_message.includes("public_key_size == public_key.size()"), true);
-
-          error_message = api.signDigest(api.implicitSessionToken, "abCDe", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
-          console.log(error_message);
-          assert.equal(error_message.includes("Public key 6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm not found in unlocked wallets"), true);
-        }
+        api.setAcceptError = false;
+        api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
+        api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);//Importing a key that already exists in a wallet doesn't raise an exception
       }
       {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("An incorrect initialization should block all API calls.");
-        console.log("**************************************************************************************");
+        const walletNo = 1;
 
-        {
-          const params = new provider.StringList();
-          params.push_back("--invalid-param");
-          params.push_back("true");
-          params.push_back("--something-else");
-          params.push_back("667");
+        api.setAcceptError = true;
+        let error_message = api.removeKey(api.implicitSessionToken, "nonexsiting-wallet", "", "");
+        console.log(error_message);
+        assert.equal(error_message.includes("Wallet not found: nonexsiting-wallet"), true, "NEGATIVE TESTCASE 6 FAILED");
 
-          let instance = new provider.beekeeper_api(params)
+        api.setAcceptError = false;
+        error_message = api.open(api.implicitSessionToken, walletNames[walletNo]);
 
-          let error_message = instance.init() as string;
-          console.log(error_message)
-          assert.equal(error_message.includes("unrecognised option"), true);
-          assert.equal(error_message.includes("--invalid-param"), true);
-          assert.equal(error_message.includes("true"), true);
-          assert.equal(error_message.includes("--something-else"), true);
-          assert.equal(error_message.includes("667"), true);
+        api.setAcceptError = true;
+        error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "", "");
+        console.log(error_message);
+        assert.equal(error_message.includes("Wallet is locked: w1"), true, "NEGATIVE TESTCASE 6a FAILED");
 
-          error_message = instance.create_session('xyz') as string;
-          console.log(error_message)
-          assert.equal(error_message.includes("Initialization failed. API call aborted."), true);
-        }
+        api.setAcceptError = false;
+        error_message = api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+
+        api.setAcceptError = true;
+        error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "", "");
+        console.log(error_message);
+        assert.equal(error_message.includes("password.size() > 0"), true, "NEGATIVE TESTCASE 6b FAILED");
+
+        error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "", "xxxxx");
+        console.log(error_message);
+        assert.equal(error_message.includes("Invalid password for wallet:"), true, "NEGATIVE TESTCASE 6c FAILED");
+
+        error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "");
+        console.log(error_message);
+        assert.equal(error_message.includes("public_key.size() > 0"), true);
+
+        error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "currant");
+        console.log(error_message);
+        assert.equal(error_message.includes("s == sizeof(data)"), true, "NEGATIVE TESTCASE 6d FAILED");
+
+        error_message = api.removeKey(api.implicitSessionToken, walletNames[walletNo], "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+        console.log(error_message);
+        assert.equal(error_message.includes("Key not in wallet"), true, "NEGATIVE TESTCASE 6e FAILED");
       }
-
       {
-        console.log();
-        console.log("**************************************************************************************");
-        console.log("Check `has_matching_private_key` endpoint.");
-        console.log("**************************************************************************************");
+        api.setAcceptError = true;
 
-        /** @type {BeekeeperInstanceHelper} */
-        const api = new beekeper(args);
+        let error_message = api.signDigest(api.implicitSessionToken, "#", "lemon");
+        console.log(error_message);
+        assert.equal(error_message.includes("Invalid hex character '#'"), true);
 
-        {
-          const walletNo = 1;
-          api.unlock(api.implicitSessionToken, walletNames[walletNo]);
-          assert.equal(api.hasMatchingPrivateKey(api.implicitSessionToken, walletNames[walletNo], keys[0][1]), false);
-          api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
-          assert.equal(api.hasMatchingPrivateKey(api.implicitSessionToken, walletNames[walletNo], keys[0][1]), true);
-        }
+        error_message = api.signDigest(api.implicitSessionToken, "abCDe", "lemon");
+        console.log(error_message);
+        assert.equal(error_message.includes("public_key_size == public_key.size()"), true);
+
+        error_message = api.signDigest(api.implicitSessionToken, "abCDe", "6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm");
+        console.log(error_message);
+        assert.equal(error_message.includes("Public key 6Pg5jd1w8rXgGoqvpZXy1tHPdz43itPW6L2AGJuw8kgSAbtsxm not found in unlocked wallets"), true);
       }
+    }, WALLET_OPTIONS);
+  });
 
-      console.log('##########################################################################################');
-      console.log('##                             ALL TESTS PASSED                                         ##');
-      console.log('##########################################################################################');
+  test('An incorrect initialization should block all API calls', async () => {
+    await page.evaluate(async () => {
+      const params = new provider.StringList();
+      params.push_back("--invalid-param");
+      params.push_back("true");
+      params.push_back("--something-else");
+      params.push_back("667");
+
+      let instance = new provider.beekeeper_api(params)
+
+      let error_message = instance.init() as string;
+      console.log(error_message)
+      assert.equal(error_message.includes("unrecognised option"), true);
+      assert.equal(error_message.includes("--invalid-param"), true);
+      assert.equal(error_message.includes("true"), true);
+      assert.equal(error_message.includes("--something-else"), true);
+      assert.equal(error_message.includes("667"), true);
+
+      error_message = instance.create_session('xyz') as string;
+      console.log(error_message)
+      assert.equal(error_message.includes("Initialization failed. API call aborted."), true);
+    }, WALLET_OPTIONS);
+  });
+
+  test('Check `has_matching_private_key` endpoint', async () => {
+    await page.evaluate(async (args) => {
+      /** @type {BeekeeperInstanceHelper} */
+      const api = new beekeper(args);
+
+      const walletNo = 1;
+      api.unlock(api.implicitSessionToken, walletNames[walletNo]);
+      assert.equal(api.hasMatchingPrivateKey(api.implicitSessionToken, walletNames[walletNo], keys[0][1]), false);
+      api.importKey(api.implicitSessionToken, walletNames[walletNo], keys[0][0]);
+      assert.equal(api.hasMatchingPrivateKey(api.implicitSessionToken, walletNames[walletNo], keys[0][1]), true);
     }, WALLET_OPTIONS);
   });
 
