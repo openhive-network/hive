@@ -1,33 +1,37 @@
-import { ChromiumBrowser, ConsoleMessage, chromium } from 'playwright';
+import { ChromiumBrowser, ConsoleMessage, Page, chromium } from 'playwright';
 import { test } from '@playwright/test';
 
 import { WALLET_OPTIONS } from '../assets/data';
 
-let browser!: ChromiumBrowser;
+let browser: ChromiumBrowser;
+let page: Page;
+
+const handlePageLoad = async(page: Page) => {
+  page.on('console', (msg: ConsoleMessage) => {
+    console.log('>>', msg.type(), msg.text())
+  });
+
+  await page.goto(`http://localhost:8080/__tests__/assets/test.html`, { waitUntil: 'load' });
+}
 
 test.describe('WASM beekeeper_api tests', () => {
   test.beforeAll(async () => {
     browser = await chromium.launch({
       headless: true
     });
-  });
 
-  test.beforeEach(async({ page }) => {
-    page.on('console', (msg: ConsoleMessage) => {
-      console.log('>>', msg.type(), msg.text())
-    });
+    const context = await browser.newContext();
 
-    await page.goto(`http://localhost:8080/__tests__/assets/test.html`);
-    await page.waitForURL('**/test.html', { waitUntil: 'load' });
-  });
+    page = await context.newPage();
+    await handlePageLoad(page);
 
-  test('Legacy tests', async ({ page }) => {
-    await page.evaluate(async (args) => {
-      const walletNames = ["w0","w1","w2","w3","w4","w5","w6","w7","w8","w9"];
+    // Define helper data for the tests
+    await page.evaluate(async () => {
+      window.walletNames = ["w0","w1","w2","w3","w4","w5","w6","w7","w8","w9"];
 
       // const limitDisplay = (str, max) => str.length > max ? (str.slice(0, max - 3) + '...') : str;
 
-      const keys =
+      window.keys =
       [
         ['5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT', '5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh'],
         ['5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5TeJAg9SkjUeQV78', '6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa'],
@@ -41,7 +45,7 @@ test.describe('WASM beekeeper_api tests', () => {
         ['5KKvoNaCPtN9vUEU1Zq9epSAVsEPEtocbJsp7pjZndt9Rn4dNRg', '8mmxXz5BfQc2NJfqhiPkbgcyJm4EvWEr2UAUdr56gEWSN9ZnA5']
       ];
 
-      const signData =
+      window.signData =
       [
         {
           'public_key': keys[3][1],
@@ -64,7 +68,7 @@ test.describe('WASM beekeeper_api tests', () => {
        * @param {string} sessionToken
        * @param {number} signDataIndex
        */
-      const signDigest = (beekeeperInstance, sessionToken, signDataIndex) => {
+      window.signDigest = (beekeeperInstance, sessionToken, signDataIndex) => {
         const data = signData[signDataIndex];
         const expected = data.expected_signature;
 
@@ -73,7 +77,7 @@ test.describe('WASM beekeeper_api tests', () => {
       };
 
       let testThrowId = 0;
-      const testThrow = (api, what?: string, ...explicitArgsOrArgsNum) => {
+      window.testThrow = (api, what?: string, ...explicitArgsOrArgsNum) => {
         if(typeof api === 'function') {
           assert.throws(() => {
             api();
@@ -101,14 +105,14 @@ test.describe('WASM beekeeper_api tests', () => {
         console.info(`Call to \`api.${what}('${token}', ...);\` successfully failed`);
       };
 
-      const requireKeysIn = (keysResult, ...indexes) => {
+      window.requireKeysIn = (keysResult, ...indexes) => {
         assert.equal(keysResult.keys.length, indexes.length, "Invalid number of keys in result");
         indexes.map(index => keys[index][1]).forEach(key => {
           assert.ok(keysResult.keys.find(value => value.public_key === key), "Key does not exist in wallet");
         });
       };
 
-      const requireWalletsIn = (walletsResult, expectedLength, ...indexes) => {
+      window.requireWalletsIn = (walletsResult, expectedLength, ...indexes) => {
         try {
         assert.equal(walletsResult.wallets.length, expectedLength, "Invalid number of wallets in result");
         for(let i = 0; i < indexes.length; i += 2) {
@@ -126,7 +130,7 @@ test.describe('WASM beekeeper_api tests', () => {
       }
       };
 
-      const performWalletAutolockTest = async(beekeeperInstance, sessionToken) => {
+      window.performWalletAutolockTest = async(beekeeperInstance, sessionToken) => {
         beekeeperInstance.setTimeout(sessionToken, 1);
 
         const start = Date.now();
@@ -142,12 +146,14 @@ test.describe('WASM beekeeper_api tests', () => {
         requireWalletsIn(wallets, 3, 1, false, 2, false);
       };
 
-      const chainId = '18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e';
+      window.provider = await beekeeper();
 
-      const provider = await beekeeper();
+      window.beekeper = BeekeeperInstanceHelper.for(provider);
+    });
+  });
 
-      const beekeper = BeekeeperInstanceHelper.for(provider);
-
+  test('Legacy tests', async () => {
+    await page.evaluate(async (args) => {
       {
         /** @type {BeekeeperInstanceHelper} */
         const api = new beekeper(args);
