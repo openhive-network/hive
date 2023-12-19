@@ -629,7 +629,7 @@ void resource_credits::on_post_apply_block_impl() const
   const auto& params_obj = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
 
   rc_block_info block_info;
-  block_info.regen = ( dgpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
+  int64_t regen = ( dgpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
 
   const auto& bucket_idx = db.get_index< rc_usage_bucket_index, by_timestamp >();
   const auto* active_bucket = &( *bucket_idx.rbegin() );
@@ -640,35 +640,30 @@ void resource_credits::on_post_apply_block_impl() const
   const auto& rc_pool = db.get< rc_pool_object, by_id >( rc_pool_id_type() );
   db.modify( rc_pool, [&]( rc_pool_object& pool_obj )
   {
-    bool budget_adjustment = false;
     for( size_t i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
     {
       const rd_dynamics_params& params = params_obj.resource_param_array[i].resource_dynamics_params;
       int64_t pool = pool_obj.get_pool(i);
 
-      block_info.pool[i] = pool;
-      block_info.share[i] = pool_obj.count_share(i);
-      if( pool_obj.set_budget( i, params.budget_per_time_unit ) )
-        budget_adjustment = true;
+      pool_obj.set_budget( i, params.budget_per_time_unit );
       block_info.usage[i] = pending_data.get_pending_usage()[i];
       block_info.cost[i] = pending_data.get_pending_cost()[i];
-      block_info.decay[i] = rd_compute_pool_decay( params.decay_params, pool - block_info.usage[i], 1 );
+      int64_t decay = rd_compute_pool_decay( params.decay_params, pool - block_info.usage[i], 1 );
 
       // update global usage statistics
       if( reset_bucket )
         pool_obj.add_usage( i, -active_bucket->get_usage(i) );
       pool_obj.add_usage( i, block_info.usage[i] );
 
-      int64_t new_pool = pool - block_info.decay[i] + params.budget_per_time_unit - block_info.usage[i];
+      int64_t new_pool = pool - decay + params.budget_per_time_unit - block_info.usage[i];
 
       if( i == resource_new_accounts )
       {
         int64_t new_consensus_pool = dgpo.available_account_subsidies;
         if( new_consensus_pool != new_pool )
         {
-          block_info.new_accounts_adjustment = new_consensus_pool - new_pool;
           ilog( "resource_new_accounts adjustment on block ${b}: ${a}",
-            ( "a", block_info.new_accounts_adjustment )( "b", block_num ) );
+            ( "a", new_consensus_pool - new_pool )( "b", block_num ) );
           new_pool = new_consensus_pool;
         }
       }
@@ -676,11 +671,9 @@ void resource_credits::on_post_apply_block_impl() const
       pool_obj.set_pool( i, new_pool );
     }
     pool_obj.recalculate_resource_weights( params_obj );
-    if( budget_adjustment )
-      block_info.budget = pool_obj.get_last_known_budget();
   } );
 
-  handle_auto_report( block_num, block_info.regen, rc_pool );
+  handle_auto_report( block_num, regen, rc_pool );
 
   db.modify( *active_bucket, [&]( rc_usage_bucket_object& bucket )
   {
