@@ -57,9 +57,10 @@ add_library( hive_chain
              block_compression_dictionaries.cpp
              block_log_reader.cpp
              fork_db_block_reader.cpp
-             pruned_block_writer.cpp
              irreversible_block_writer.cpp
              sync_block_writer.cpp
+             pruned_block_writer.cpp
+             full_block_object.cpp
 
              generic_custom_operation_interpreter.cpp
 
