@@ -73,7 +73,6 @@ void do_job()
     dtds.register_new_type<hive::chain::rc_resource_param_object>();
     dtds.register_new_type<hive::chain::rc_pool_object>();
     dtds.register_new_type<hive::chain::rc_stats_object>();
-    dtds.register_new_type<hive::chain::rc_pending_data>();
     dtds.register_new_type<hive::chain::rc_direct_delegation_object>();
     dtds.register_new_type<hive::chain::rc_usage_bucket_object>();
     dtds.register_new_type<hive::plugins::account_by_key::key_lookup_object>();

@@ -83,7 +83,6 @@ enum object_type
   rc_pool_object_type,
   rc_direct_delegation_object_type,
   rc_usage_bucket_object_type,
-  rc_pending_data_type,
   rc_stats_object_type,
   rc_expired_delegation_object_type,
 
@@ -137,7 +136,6 @@ class rc_resource_param_object;
 class rc_pool_object;
 class rc_direct_delegation_object;
 class rc_usage_bucket_object;
-class rc_pending_data;
 class rc_stats_object;
 class rc_expired_delegation_object;
 
@@ -190,7 +188,6 @@ typedef oid_ref< rc_resource_param_object               > rc_resource_param_id_t
 typedef oid_ref< rc_pool_object                         > rc_pool_id_type;
 typedef oid_ref< rc_direct_delegation_object            > rc_direct_delegtion_id_type;
 typedef oid_ref< rc_usage_bucket_object                 > rc_cost_bucket_id_type;
-typedef oid_ref< rc_pending_data                        > rc_pending_data_id_type;
 typedef oid_ref< rc_stats_object                        > rc_stats_id_type;
 typedef oid_ref< rc_expired_delegation_object           > rc_expired_delegtion_id_type;
 
@@ -357,7 +354,6 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (rc_pool_object_type)
             (rc_direct_delegation_object_type)
             (rc_usage_bucket_object_type)
-            (rc_pending_data_type)
             (rc_stats_object_type)
             (rc_expired_delegation_object_type)
 

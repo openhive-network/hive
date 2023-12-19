@@ -27,6 +27,16 @@ struct rc_block_info
   resource_count_type       usage;
   resource_cost_type        cost;
   uint32_t                  tx_count = 0; //number of transactions that accumulated usage/cost (grows as block is processed)
+
+  void add( const rc_transaction_info& tx_info )
+  {
+    ++tx_count;
+    for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+    {
+      usage[i] += tx_info.usage[i];
+      cost[i] += tx_info.cost[i];
+    }
+  }
 };
 
 } } // hive::chain
