@@ -4,7 +4,7 @@ import { BeekeeperApi } from "./api.js";
 import { IBeekeeperInstance, IBeekeeperOptions } from "../interfaces.js";
 
 export const DEFAULT_BEEKEEPER_OPTIONS: IBeekeeperOptions = {
-  storageRoot: ".",
+  storageRoot: "./storage_root-node",
   enableLogs: true,
   unlockTimeout: 900
 };
