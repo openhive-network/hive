@@ -4654,6 +4654,7 @@ void database::update_global_dynamic_data( const signed_block& b )
               push_virtual_operation( shutdown_witness_operation( w.owner ) );
             }
           }
+          idump((i)(w.owner));
           push_virtual_operation( producer_missed_operation( w.owner ) );
         } );
       }
