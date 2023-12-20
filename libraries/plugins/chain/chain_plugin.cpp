@@ -184,6 +184,7 @@ class chain_plugin_impl
     bool                             statsd_on_replay = false;
     uint32_t                         stop_replay_at = 0;
     uint32_t                         stop_at_block = 0;
+    uint32_t                         exit_at_block = 0;
     bool                             exit_after_replay = false;
     bool                             exit_before_sync = false;
     bool                             force_replay = false;
@@ -279,6 +280,7 @@ struct chain_plugin_impl::write_request_visitor
 {
   write_request_visitor( chain_plugin_impl& _chain_plugin ) : cp( _chain_plugin ) {}
 
+  uint32_t         last_block_number = 0;
   //cumulative data on transactions since last block
   uint32_t         count_tx_pushed = 0;
   uint32_t         count_tx_applied = 0;
@@ -288,7 +290,7 @@ struct chain_plugin_impl::write_request_visitor
   chain_plugin_impl& cp;
   write_context* cxt = nullptr;
 
-  typedef void result_type;
+  using result_type = uint32_t;
 
   void on_block( const block_flow_control* block_ctrl )
   {
@@ -299,7 +301,7 @@ struct chain_plugin_impl::write_request_visitor
     count_tx_failed_no_rc = 0;
   }
 
-  void operator()( std::shared_ptr< p2p_block_flow_control > p2p_block_ctrl )
+  uint32_t operator()( std::shared_ptr< p2p_block_flow_control > p2p_block_ctrl )
   {
     try
     {
@@ -316,6 +318,7 @@ struct chain_plugin_impl::write_request_visitor
         STATSD_STOP_TIMER("chain", "write_time", "push_block")
       } BOOST_SCOPE_EXIT_END
       cp.push_block( *p2p_block_ctrl.get(), p2p_block_ctrl->get_skip_flags() );
+      last_block_number = p2p_block_ctrl->get_full_block()->get_block_num();
     }
     catch( const fc::exception& e )
     {
@@ -327,9 +330,10 @@ struct chain_plugin_impl::write_request_visitor
         "Unexpected exception while pushing block." ), std::current_exception() ) );
     }
     p2p_block_ctrl->on_worker_done( cp.theApp );
+    return last_block_number;
   }
 
-  void operator()( transaction_flow_control* tx_ctrl )
+  uint32_t operator()( transaction_flow_control* tx_ctrl )
   {
     try
     {
@@ -363,9 +367,10 @@ struct chain_plugin_impl::write_request_visitor
         "Unexpected exception while pushing transaction." ), std::current_exception() ) );
     }
     tx_ctrl->on_worker_done( cp.theApp );
+    return last_block_number;
   }
 
-  void operator()( std::shared_ptr< generate_block_flow_control > generate_block_ctrl )
+  uint32_t operator()( std::shared_ptr< generate_block_flow_control > generate_block_ctrl )
   {
     try
     {
@@ -387,18 +392,8 @@ struct chain_plugin_impl::write_request_visitor
         "Unexpected exception while generating block."), std::current_exception() ) );
     }
     generate_block_ctrl->on_worker_done( cp.theApp );
+    return last_block_number;
   }
-};
-
-struct block_num_visitor {
-  typedef uint32_t result_type;
-
-  uint32_t operator()(std::shared_ptr<p2p_block_flow_control> p2p_block_ctrl) const
-  {
-    return p2p_block_ctrl->get_full_block()->get_block_num();
-  }
-  uint32_t operator()(transaction_flow_control* ) const {return 0;}
-  uint32_t operator()(std::shared_ptr<generate_block_flow_control> ) const {return 0;}
 };
 
 bool chain_plugin_impl::is_running() const
@@ -412,6 +407,7 @@ void chain_plugin_impl::start_write_processing()
   {
     try
     {
+      uint32_t last_block_number = 0;
       theApp.notify_status("syncing");
       ilog("Write processing thread started.");
       fc::set_thread_name("write_queue");
@@ -497,10 +493,8 @@ void chain_plugin_impl::start_write_processing()
           STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f, theApp )
           while (true)
           {
-            const uint32_t last_block_number = cxt->req_ptr.visit(block_num_visitor{});
-
             req_visitor.cxt = cxt;
-            cxt->req_ptr.visit( req_visitor );
+            last_block_number = cxt->req_ptr.visit( req_visitor );
 
             ++write_queue_items_processed;
 
@@ -595,6 +589,10 @@ void chain_plugin_impl::start_write_processing()
         }
       } // while running
       ilog("Write processing thread finished.");
+      if( exit_at_block > 0 && exit_at_block == last_block_number )
+      {
+        theApp.kill();
+      }
     }
     catch (const fc::exception& e)
     {
@@ -1189,7 +1187,8 @@ void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_syn
 void chain_plugin_impl::work( synchronization_type& on_sync )
 {
   ilog( "Started on blockchain with ${n} blocks, LIB: ${lb}", ("n", db.head_block_num())("lb", db.get_last_irreversible_block_num()) );
-  if(this->exit_before_sync)
+  const bool exit_at_block_reached = exit_at_block > 0 && exit_at_block == db.head_block_num();
+  if (this->exit_before_sync || exit_at_block_reached)
   {
     ilog("Shutting down node without performing any action on user request");
     theApp.kill();
@@ -1294,6 +1293,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("resync-blockchain", bpo::bool_switch()->default_value(false), "clear chain database and block log" )
       ("stop-replay-at-block", bpo::value<uint32_t>(), "[ DEPRECATED ] Stop replay after reaching given block number")
       ("stop-at-block", bpo::value<uint32_t>(), "Stop after reaching given block number")
+      ("exit-at-block", bpo::value<uint32_t>(), "Same as --stop-at-block, but also exit the application")
       ("exit-after-replay", bpo::bool_switch()->default_value(false), "[ DEPRECATED ] Exit after reaching given block number")
       ("exit-before-sync", bpo::bool_switch()->default_value(false), "Exits before starting sync, handy for dumping snapshot without starting replay")
       ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files. If specifed, `--replay-blockchain` flag is implied")
@@ -1342,6 +1342,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->resync              = options.at( "resync-blockchain").as<bool>();
   my->stop_replay_at      = options.count( "stop-replay-at-block" ) ? options.at( "stop-replay-at-block" ).as<uint32_t>() : 0;
   my->stop_at_block       = options.count( "stop-at-block" ) ? options.at( "stop-at-block" ).as<uint32_t>() : 0;
+  my->exit_at_block       = options.count( "exit-at-block" ) ? options.at( "exit-at-block" ).as<uint32_t>() : 0;
   my->exit_before_sync    = options.count( "exit-before-sync" ) ? options.at( "exit-before-sync" ).as<bool>() : false;
   my->benchmark_interval  =
     options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
@@ -1353,9 +1354,14 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->block_log_compression_level = options.at( "block-log-compression-level" ).as<int>();
 
   FC_ASSERT(!(my->stop_replay_at && my->stop_at_block), "--stop-replay-at and --stop-at-block cannot be used together" );
+  FC_ASSERT(!(my->exit_at_block && my->stop_at_block), "--exit-at-block and --stop-at-block cannot be used together" );
   if (my->stop_replay_at)
   {
     wlog("flag `--stop-replay-at` is deprecated, please use `--stop-at-block` instead");
+  }
+  if (my->exit_at_block)
+  {
+    my->stop_at_block = my->exit_at_block;
   }
   if (my->stop_at_block)
   {
