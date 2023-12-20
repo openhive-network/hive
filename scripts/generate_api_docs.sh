@@ -17,7 +17,7 @@ PROJECT_DIR="${SCRIPTPATH}/../programs/beekeeper/beekeeper_wasm"
 # https://typedoc.org/guides/installation/#requirements
 pushd "${PROJECT_DIR}"
 mkdir -vp build
-pnpm exec typedoc --plugin typedoc-plugin-markdown --theme markdown --excludeInternal --hideBreadcrumbs --hideInPageTOC --out build/docs src/index.ts
+pnpm exec typedoc --plugin typedoc-plugin-markdown --theme markdown --excludeInternal --hideBreadcrumbs --hideInPageTOC --out build/docs src/web.ts
 mv build/docs/modules.md build/docs/_modules.md
 rm build/docs/README.md
 pnpm exec concat-md --decrease-title-levels build/docs > api.md
