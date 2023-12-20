@@ -85,16 +85,29 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
   apply_block_t apply_block_extended,
   pop_block_t pop_block_extended )
 {
+  return push_block( _fork_db, _db, _app, full_block, block_ctrl, state_head_block_num, 
+    state_head_block_id, skip, apply_block_extended, pop_block_extended );
+}
+
+bool sync_block_writer::push_block( fork_database& fork_db, database& db, application& app, 
+  const std::shared_ptr<full_block_type>& full_block, 
+  const block_flow_control& block_ctrl,
+  uint32_t state_head_block_num,
+  block_id_type state_head_block_id,
+  const uint32_t skip,
+  apply_block_t apply_block_extended,
+  pop_block_t pop_block_extended )
+{
   full_block_vector_t blocks;
 
   if (true) //if fork checking enabled
   {
-    const item_ptr new_head = _fork_db.push_block(full_block);
+    const item_ptr new_head = fork_db.push_block(full_block);
     block_ctrl.on_fork_db_insert();
     // Inlined here former _maybe_warn_multiple_production( new_head->get_block_num() );
     {
       uint32_t height = new_head->get_block_num();
-      const auto blocks = _fork_db.fetch_block_by_number(height);
+      const auto blocks = fork_db.fetch_block_by_number(height);
       if (blocks.size() > 1)
       {
         vector<std::pair<account_name_type, fc::time_point_sec>> witness_time_pairs;
@@ -129,10 +142,10 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
     {
       block_ctrl.on_fork_apply();
       ilog("calling switch_forks() from push_block()");
-      switch_forks( new_head->get_block_id(), new_head->get_block_num(),
+      switch_forks( fork_db, db, new_head->get_block_id(), new_head->get_block_num(),
                     skip, &block_ctrl, state_head_block_id, state_head_block_num,
                     apply_block_extended, pop_block_extended );
-      _app.notify( "switching forks", "id", 
+      app.notify( "switching forks", "id", 
                    new_head->get_block_id().str(), "num", new_head->get_block_num() );
       return true;
     }
@@ -152,7 +165,7 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
     {
       bool is_pushed_block = (*iter)->get_block_id() == block_ctrl.get_full_block()->get_block_id();
       if( blocks.size() > 1 )
-        _fork_db.set_head( _fork_db.fetch_block((*iter)->get_block_id(), true) );
+        fork_db.set_head( fork_db.fetch_block((*iter)->get_block_id(), true) );
       apply_block_extended( 
         // if we've linked in a chain of multiple blocks, we need to keep the fork_db's head block in sync
         // with what we're applying.  If we're only appending a single block, the forkdb's head block
@@ -166,7 +179,7 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
       elog("Failed to push new block:\n${e}", ("e", e.to_detail_string()));
       // remove failed block, and all blocks on the fork after it, from the fork database
       for (; iter != blocks.crend(); ++iter)
-        _fork_db.remove((*iter)->get_block_id());
+        fork_db.remove((*iter)->get_block_id());
       throw;
     }
   }
@@ -178,10 +191,21 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
   const block_id_type original_head_block_id, const uint32_t original_head_block_number,
   apply_block_t apply_block_extended, pop_block_t pop_block_extended )
 {
+  switch_forks( _fork_db, _db, new_head_block_id, new_head_block_num, skip, pushed_block_ctrl, 
+                original_head_block_id, original_head_block_number, apply_block_extended,
+                pop_block_extended );
+}
+
+void sync_block_writer::switch_forks( fork_database& fork_db, database& db, 
+  const block_id_type& new_head_block_id, uint32_t new_head_block_num,
+  uint32_t skip, const block_flow_control* pushed_block_ctrl,
+  const block_id_type original_head_block_id, const uint32_t original_head_block_number,
+  apply_block_t apply_block_extended, pop_block_t pop_block_extended )
+{
   BOOST_SCOPE_EXIT(void) { ilog("Done fork switch"); } BOOST_SCOPE_EXIT_END
   ilog("Switching to fork: ${id}", ("id", new_head_block_id));
   ilog("Before switching, head_block_id is ${original_head_block_id} head_block_number ${original_head_block_number}", (original_head_block_id)(original_head_block_number));
-  const auto [new_branch, old_branch] = _fork_db.fetch_branch_from(new_head_block_id, original_head_block_id);
+  const auto [new_branch, old_branch] = fork_db.fetch_branch_from(new_head_block_id, original_head_block_id);
 
   ilog("Destination branch block ids:");
   std::for_each(new_branch.begin(), new_branch.end(), [](const item_ptr& item) {
@@ -205,7 +229,7 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
     ilog("Done popping blocks");
   }
 
-  _db.notify_switch_fork( current_head_block_num );
+  db.notify_switch_fork( current_head_block_num );
 
   // push all blocks on the new fork
   for (auto ritr = new_branch.crbegin(); ritr != new_branch.crend(); ++ritr)
@@ -219,7 +243,7 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
       // fork switch (the block was good after all)
       bool is_pushed_block = ( pushed_block_ctrl != nullptr ) && ( ( *ritr )->full_block->get_block_id() == pushed_block_ctrl->get_full_block()->get_block_id() );
       if( *ritr )
-        _fork_db.set_head( *ritr );
+        fork_db.set_head( *ritr );
       apply_block_extended( ( *ritr )->full_block,
                             skip,
                             is_pushed_block ? pushed_block_ctrl : nullptr );
@@ -235,7 +259,7 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
       // remove the rest of new_branch from the fork_db, those blocks are invalid
       while (ritr != new_branch.rend())
       {
-        _fork_db.remove((*ritr)->get_block_id());
+        fork_db.remove((*ritr)->get_block_id());
         ++ritr;
       }
 
@@ -247,13 +271,13 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
       // Note: database method calls to get_last_irreversible_block_num & head_block_num have been replaced by
       //       the ones from fork_db below:
       //if (get_last_irreversible_block_num() < common_block_number && head_block_num() < original_head_block_number)
-      if( _fork_db.get_last_irreversible_block_num() < common_block_number &&
-          _fork_db.get_head()->get_block_num() < original_head_block_number )
+      if( fork_db.get_last_irreversible_block_num() < common_block_number &&
+          fork_db.get_head()->get_block_num() < original_head_block_number )
       {
         // pop all blocks from the bad fork
         uint32_t new_head_block_num = pop_block_extended( common_block_id );
         ilog(" - reverting to previous chain, done popping blocks");
-        _db.notify_switch_fork( new_head_block_num );
+        db.notify_switch_fork( new_head_block_num );
 
         // restore any popped blocks from the good fork
         if (old_branch.size())
@@ -263,7 +287,7 @@ void sync_block_writer::switch_forks( const block_id_type& new_head_block_id, ui
           {
             ilog(" - restoring block ${id}", ("id", (*ritr)->get_block_id()));
             if( *ritr )
-              _fork_db.set_head( *ritr );
+              fork_db.set_head( *ritr );
             apply_block_extended( (*ritr)->full_block,
                                   skip,
                                   nullptr );
