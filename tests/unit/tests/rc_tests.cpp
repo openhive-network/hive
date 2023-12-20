@@ -1536,14 +1536,14 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
   FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
+BOOST_AUTO_TEST_CASE( rc_exception_during_modify )
 {
   bool expected_exception_found = false;
 
   try
   {
-    BOOST_TEST_MESSAGE("Testing exception throw during rc_account modify");
-    inject_hardfork(HIVE_BLOCKCHAIN_VERSION.minor_v());
+    BOOST_TEST_MESSAGE( "Testing exception throw during rc_account modify" );
+    inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
 
     ACTORS((dave))
@@ -1555,8 +1555,8 @@ BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
 
     const auto& dave_rc = db->get_account( "dave" );
 
-    BOOST_TEST_MESSAGE("Clear RC on dave");
-    clear_mana(db_plugin, dave_rc);
+    BOOST_TEST_MESSAGE( "Clear RC on dave" );
+    clear_mana( db_plugin, dave_rc );
 
     transfer_operation transfer;
     transfer.from = "dave";
@@ -1565,26 +1565,26 @@ BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
     transfer.memo = "test";
 
     signed_transaction tx;
-    tx.set_expiration(db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION);
-    tx.operations.push_back(transfer);
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( transfer );
 
     try
     {
-      BOOST_TEST_MESSAGE("Attempting to push transaction");
-      push_transaction(tx, dave_private_key);
+      BOOST_TEST_MESSAGE( "Attempting to push transaction" );
+      push_transaction( tx, dave_private_key );
     }
-    catch(const hive::chain::not_enough_rc_exception& e)
+    catch( const hive::chain::not_enough_rc_exception& e )
     {
-      BOOST_TEST_MESSAGE("Caught exception...");
+      BOOST_TEST_MESSAGE( "Caught exception..." );
       const auto& saved_log = e.get_log();
 
-      for(const auto& msg : saved_log)
+      for( const auto& msg : saved_log )
       {
         fc::variant_object data = msg.get_data();
-        if(data.contains("*tx_info"))
+        if( data.contains( "tx_info" ) )
         {
-          expected_exception_found =  true;
-          const fc::variant_object& tx_info_data = data["*tx_info"].get_object();
+          expected_exception_found = true;
+          const fc::variant_object& tx_info_data = data[ "tx_info" ].get_object();
           BOOST_REQUIRE_EQUAL( tx_info_data[ "payer" ].as_string(), "dave" );
           break;
         }
@@ -1592,12 +1592,12 @@ BOOST_AUTO_TEST_CASE(rc_exception_during_modify)
     }
 
     /// Find dave RC account once again and verify pointers to chain object (they should match)
-    const auto* dave_rc2 = db->find_account("dave");
-    BOOST_REQUIRE_EQUAL(&dave_rc, dave_rc2);
+    const auto* dave_rc2 = db->find_account( "dave" );
+    BOOST_REQUIRE_EQUAL( &dave_rc, dave_rc2 );
   }
   FC_LOG_AND_RETHROW()
-  
-  BOOST_REQUIRE_EQUAL(expected_exception_found, true);
+
+  BOOST_REQUIRE_EQUAL( expected_exception_found, true );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

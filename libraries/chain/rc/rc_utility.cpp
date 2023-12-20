@@ -355,9 +355,9 @@ void resource_credits::update_rc_for_custom_action( std::function<void()>&& call
   update_account_after_vest_change( account, now );
 }
 
-void resource_credits::use_account_rcs( rc_transaction_info* tx_info, int64_t rc ) const
+void resource_credits::use_account_rcs( int64_t rc )
 {
-  const account_name_type& account_name = tx_info->payer;
+  const account_name_type& account_name = tx_info.payer;
   if( account_name == account_name_type() )
   {
     if( db.is_in_control() )
@@ -371,8 +371,8 @@ void resource_credits::use_account_rcs( rc_transaction_info* tx_info, int64_t rc
   util::manabar_params mbparams;
   auto max_mana = account.get_maximum_rc().value;
   mbparams.max_mana = max_mana;
-  tx_info->max = max_mana;
-  tx_info->rc = account.rc_manabar.current_mana; // initialize before regen in case of exception
+  tx_info.max = max_mana;
+  tx_info.rc = account.rc_manabar.current_mana; // initialize before regen in case of exception
   mbparams.regen_time = HIVE_RC_REGEN_TIME;
 
   try
@@ -381,20 +381,22 @@ void resource_credits::use_account_rcs( rc_transaction_info* tx_info, int64_t rc
     db.modify( account, [&]( account_object& acc )
     {
       acc.rc_manabar.regenerate_mana< true >( mbparams, dgpo.time.sec_since_epoch() );
-      tx_info->rc = acc.rc_manabar.current_mana; // update after regeneration
+      tx_info.rc = acc.rc_manabar.current_mana; // update after regeneration
       bool has_mana = acc.rc_manabar.has_mana( rc );
 
 #ifdef USE_ALTERNATE_CHAIN_ID
       if( configuration_data.allow_not_enough_rc == false )
 #endif
       {
+        FC_TODO( "Add || db.has_hardfork( X ) to make RC part of consensus since X" );
+          //we should also replace all NOTIFYALERT warnings in RC with assertions, since they can't ever happen
         if( db.is_in_control() )
         {
           HIVE_ASSERT( has_mana, not_enough_rc_exception,
             "Account: ${account} has ${rc_current} RC, needs ${rc_needed} RC. Please wait to transact, or power up HIVE.",
             ( "account", account_name )
             ( "rc_needed", rc )
-            ( "rc_current", tx_info->rc )
+            ( "rc_current", tx_info.rc )
           );
         }
         else
@@ -412,7 +414,7 @@ void resource_credits::use_account_rcs( rc_transaction_info* tx_info, int64_t rc
             ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
               ( "account", account_name )
               ( "rc_needed", rc )
-              ( "rc_current", tx_info->rc )
+              ( "rc_current", tx_info.rc )
               ( "b", dgpo.head_block_number )
               ( "w", dgpo.current_witness )
             );
@@ -421,9 +423,9 @@ void resource_credits::use_account_rcs( rc_transaction_info* tx_info, int64_t rc
       }
 
       acc.rc_manabar.use_mana( rc );
-      tx_info->rc = acc.rc_manabar.current_mana;
+      tx_info.rc = acc.rc_manabar.current_mana;
     } );
-  } FC_CAPTURE_AND_RETHROW( (*tx_info) )
+  } FC_CAPTURE_AND_RETHROW( (tx_info) )
 }
 
 bool resource_credits::has_expired_delegation( const account_object& account ) const
@@ -665,13 +667,17 @@ void resource_credits::finalize_transaction( const full_transaction_type& full_t
 
   // How many resources does the transaction use?
   // note: tx_info.usage might already contain state discount for selected operations and extra usage for custom ops
+  // note: while we could calculate most of used resources before transaction is executed, doing so for
+  // custom operations would be troublesome
   count_resources( tx, full_tx.get_transaction_size(), tx_info.usage, db.head_block_time() );
 
   // How many RC does this transaction cost?
   int64_t total_cost = compute_cost( &tx_info );
   full_tx.set_rc_cost( total_cost );
 
-  use_account_rcs( &tx_info, total_cost );
+  // note: since transaction can influence amount of RC the payer has, we can't check if the payer has
+  // enough RC mana prior to actual execution of transaction
+  use_account_rcs( total_cost );
 
   if( db.is_validating_block() || db.is_replaying_block() )
   {
