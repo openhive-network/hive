@@ -3976,7 +3976,8 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
 
   process_recurrent_transfers();
 
-  rc.on_post_apply_block(); //temporary - TODO: split into different actions, one should be called right after transactions
+  rc.handle_expired_delegations();
+  rc.finalize_block();
 
   process_hardforks();
 
@@ -4362,7 +4363,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
     ++_current_op_in_trx;
   } FC_CAPTURE_AND_RETHROW( (op) ) }
 
-  rc.on_post_apply_transaction( *full_transaction.get() ); //temporary
+  rc.finalize_transaction( *full_transaction.get() );
   notify_post_apply_transaction( note );
 
 } FC_CAPTURE_AND_RETHROW( (full_transaction->get_transaction()) ) }

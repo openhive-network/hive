@@ -145,6 +145,14 @@ class resource_credits
       const fc::time_point_sec now,
       remove_guard& obj_perf ) const;
 
+    /** Calculates resources used (on top of potential discount and extra costs of custom ops),
+      * their cost and consumes RC from transaction payer.
+      * Throws exception when payer does not have enough mana (only when is_in_control() for now).
+      */
+    void finalize_transaction( const full_transaction_type& full_tx );
+    // adjusts pools, rotates buckets and RC stats
+    void finalize_block() const;
+
     // generates RC stats report and rotates data
     void handle_auto_report( uint32_t block_num, int64_t global_regen, const rc_pool_object& rc_pool ) const;
 
@@ -158,15 +166,6 @@ class resource_credits
     rc_block_info block_info;
 
     void initialize_evaluators();
-
-    //temporary
-    void on_post_apply_block() const;
-    void on_post_apply_block_impl() const;
-    //temporary
-    void on_post_apply_transaction( const full_transaction_type& full_tx );
-    void on_post_apply_transaction_impl(
-      const full_transaction_type& full_tx,
-      const protocol::signed_transaction& tx );
 
     std::shared_ptr< generic_custom_operation_interpreter< rc_custom_operation > > _custom_operation_interpreter;
 
