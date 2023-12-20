@@ -116,13 +116,8 @@ class resource_credits
     // updates RC mana and other related data before and after custom code - used by debug plugin
     void update_rc_for_custom_action( std::function<void()>&& callback, const account_object& account ) const;
 
-    // consumes RC mana from payer account (or throws exception if not enough), supplements buffer with payer RC mana
-    void use_account_rcs( rc_transaction_info* tx_info, int64_t rc ) const;
-
     // checks if account had excess RC delegations that failed to remove in single block and are still being removed
     bool has_expired_delegation( const account_object& account ) const;
-    // processes all excess RC delegations for current block
-    void handle_expired_delegations() const;
 
     // resource_new_accounts pool is controlled by witnesses - this should be called after every change in witness schedule
     void set_pool_params( const witness_schedule_object& wso ) const;
@@ -138,6 +133,14 @@ class resource_credits
     const rc_block_info& get_block_info() const { return block_info; }
 
   private:
+    // consumes RC mana from payer account (or throws exception if not enough), supplements buffer with payer RC mana
+    void use_account_rcs( rc_transaction_info* tx_info, int64_t rc ) const;
+
+    // registers evaluator for custom rc operations
+    void initialize_evaluators();
+
+    // processes all excess RC delegations for current block
+    void handle_expired_delegations() const;
     // processes excess RC delegations of single delegator according to limits set by guard
     void remove_delegations(
       int64_t& delegation_overflow,
@@ -164,8 +167,6 @@ class resource_credits
     rc_transaction_info tx_info;
     // information collected for current block
     rc_block_info block_info;
-
-    void initialize_evaluators();
 
     std::shared_ptr< generic_custom_operation_interpreter< rc_custom_operation > > _custom_operation_interpreter;
 
