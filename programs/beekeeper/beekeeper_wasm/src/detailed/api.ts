@@ -1,4 +1,6 @@
-import type { BeekeeperModule, beekeeper_api } from "../beekeeper.js";
+import type { BeekeeperModule, beekeeper_api } from "../beekeeper.web.js";
+import type { BeekeeperModule as BeekeeperModuleNode } from "../beekeeper.node.js";
+
 import { BeekeeperError } from "../errors.js";
 import { BeekeeperFileSystem } from "./fs.js";
 import { IBeekeeperInstance, IBeekeeperOptions, IBeekeeperSession } from "../interfaces.js";
@@ -12,7 +14,7 @@ export class BeekeeperApi implements IBeekeeperInstance {
   public readonly sessions: Map<string, BeekeeperSession> = new Map();
 
   public constructor(
-    private readonly provider: BeekeeperModule
+    private readonly provider: BeekeeperModule | BeekeeperModuleNode
   ) {
     this.fs = new BeekeeperFileSystem(this.provider.FS);
   }

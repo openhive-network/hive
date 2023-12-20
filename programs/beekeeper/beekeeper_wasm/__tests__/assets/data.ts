@@ -1,15 +1,13 @@
-import type BeekeeperModule from '../../build/beekeeper_wasm';
-import type { MainModule } from '../../build/beekeeper_wasm';
-import type BeekeeperFactory from '../../dist';
-
-import type { BeekeeperInstanceHelper, ExtractError } from './run_node_helper.js';
+import type BeekeeperModule from '../../build/beekeeper_wasm.web';
+import type { MainModule } from '../../build/beekeeper_wasm.web';
+import type BeekeeperFactory from '../../dist/web';
 
 declare global {
   var beekeeper: typeof BeekeeperModule;
   var provider: MainModule;
   var factory: typeof BeekeeperFactory;
-  var BeekeeperInstanceHelper: BeekeeperInstanceHelper;
-  var ExtractError: ExtractError;
+  var BeekeeperInstanceHelper: object;
+  var ExtractError: Error;
 
   var assert: {
     equal(lhs: any, rhs: any, msg?: string): void;

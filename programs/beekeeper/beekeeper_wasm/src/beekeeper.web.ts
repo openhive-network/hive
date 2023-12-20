@@ -1,7 +1,7 @@
-export { MainModule, StringList, beekeeper_api } from '../build/beekeeper_wasm.js';
-import type { MainModule } from '../build/beekeeper_wasm.js';
+export { MainModule, StringList, beekeeper_api } from '../build/beekeeper_wasm.web.js';
+import type { MainModule } from '../build/beekeeper_wasm.web.js';
 
-import beekeeper from '../build/beekeeper_wasm.js';
+import beekeeper from '../build/beekeeper_wasm.web.js';
 
 export interface FileSystemType {
   MEMFS: {};

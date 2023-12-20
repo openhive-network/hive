@@ -1,4 +1,5 @@
-import Beekeeper from "../beekeeper.js";
+import Beekeeper from "../beekeeper.node.js";
+
 import { BeekeeperApi } from "./api.js";
 import { IBeekeeperInstance, IBeekeeperOptions } from "../interfaces.js";
 
