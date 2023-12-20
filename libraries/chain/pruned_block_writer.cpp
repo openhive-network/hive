@@ -11,8 +11,8 @@ namespace hive { namespace chain {
 void initialize_pruning_indexes( database& db );
 
 pruned_block_writer::pruned_block_writer( uint16_t stored_block_number, 
-  database& db, fork_database& fork_db )
-  : _stored_block_number(stored_block_number), _db( db ), _fork_db( fork_db )
+  database& db, application& app, fork_database& fork_db )
+  : _stored_block_number(stored_block_number), _fork_db( fork_db ), _db( db ), _app( app )
 {
   FC_ASSERT( stored_block_number > 0, "At least one full block must be stored!" );
 
@@ -20,6 +20,38 @@ pruned_block_writer::pruned_block_writer( uint16_t stored_block_number,
 
   for( uint16_t i = 0; i < stored_block_number; ++i )
     _db.create< full_block_object >();
+}
+
+void pruned_block_writer::on_reindex_start()
+{
+  _fork_db.reset(); // override effect of fork_db.start_block() call in open()
+}
+
+void pruned_block_writer::on_reindex_end( const std::shared_ptr<full_block_type>& end_block )
+{
+  _fork_db.start_block( end_block );
+}
+
+bool pruned_block_writer::push_block(const std::shared_ptr<full_block_type>& full_block, 
+  const block_flow_control& block_ctrl,
+  uint32_t state_head_block_num,
+  block_id_type state_head_block_id,
+  const uint32_t skip,
+  apply_block_t apply_block_extended,
+  pop_block_t pop_block_extended )
+{
+  return sync_block_writer::push_block( _fork_db, _db, _app, full_block, block_ctrl,
+    state_head_block_num, state_head_block_id, skip, apply_block_extended, pop_block_extended );
+}
+
+void pruned_block_writer::switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
+  uint32_t skip, const block_flow_control* pushed_block_ctrl,
+  const block_id_type original_head_block_id, const uint32_t original_head_block_number,
+  apply_block_t apply_block_extended, pop_block_t pop_block_extended )
+{
+  sync_block_writer::switch_forks( _fork_db, _db, new_head_block_id, new_head_block_num, skip,
+    pushed_block_ctrl, original_head_block_id, original_head_block_number, apply_block_extended,
+    pop_block_extended );
 }
 
 void pruned_block_writer::store_block( uint32_t current_irreversible_block_num,
