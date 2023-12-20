@@ -1,20 +1,33 @@
 import typescript from 'rollup-plugin-typescript2';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import replace from '@rollup/plugin-replace';
 
-export default {
-  input: 'dist/index.js',
+const commonConfiguration = (env, merge = {}) => ({
+  input: `dist/${env}.js`,
   output: {
-    dir: 'dist/bundle',
     format: 'es',
-    name: 'beekeeper'
+    name: 'beekeeper',
+    ...(merge.output || {})
   },
   plugins: [
-    nodeResolve({ preferBuiltins: false, browser: true }),
+    replace({
+      'process.env.ROLLUP_TARGET_ENV': `"${env}"`,
+      preventAssignment: true
+    }),
+    nodeResolve({ preferBuiltins: env !== "web", browser: env === "web" }),
+    commonjs(),
+    ...(merge.plugins || [])
+  ]
+});
+
+export default [
+  commonConfiguration('node', { output: { file: 'dist/bundle/node.js' } }),
+  commonConfiguration('web', { output: { dir: 'dist/bundle' }, plugins: [
     typescript({
       rollupCommonJSResolveHack: false,
       clean: true
-    }),
-    commonjs()
-  ]
-};
+    }) // We only need one typescript documentation, as it is the same as for node
+    ]
+  })
+];

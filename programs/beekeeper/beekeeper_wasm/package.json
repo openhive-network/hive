@@ -2,7 +2,7 @@
   "name": "@hive/beekeeper",
   "version": "0.0.1-LastGitTagPlaceholder.GitHashPlaceholder",
   "description": "Hive Beekeeper functionality exposed to TypeScript/JavaScript environments",
-  "main": "dist/bundle/index.js",
+  "main": "dist/bundle/web.js",
   "type": "module",
   "private": false,
   "scripts": {
@@ -14,6 +14,11 @@
     "prepack": "cp ../../../LICENSE.md ./LICENSE.md"
   },
   "license": "SEE LICENSE IN LICENSE.md",
+  "exports": {
+    ".": "./dist/bundle/web.js",
+    "./web": "./dist/bundle/web.js",
+    "./node": "./dist/bundle/node.js"
+  },
   "files": [
     "LICENSE.md",
     "README.md",
@@ -24,6 +29,7 @@
     "@playwright/test": "^1.39.0",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-replace": "^5.0.5",
     "@types/node": "^20.7.1",
     "concat-md": "^0.5.1",
     "http-server": "^14.1.1",
@@ -36,7 +42,7 @@
     "typedoc-plugin-markdown": "3.17.1",
     "typescript": "5.2.2"
   },
-  "types": "dist/bundle/index.d.ts",
+  "types": "dist/bundle/web.d.ts",
   "repository": {
     "type": "git",
     "url": "https://gitlab.syncad.com/hive/hive.git"

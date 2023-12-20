@@ -1,4 +1,4 @@
-import { BeekeeperModule } from "../beekeeper.js";
+import type { BeekeeperModule } from "../beekeeper.web.js";
 
 export class BeekeeperFileSystem {
   public constructor(
@@ -17,7 +17,9 @@ export class BeekeeperFileSystem {
 
   public init(walletDir: string): Promise<void> {
     this.fs.mkdir(walletDir);
-    this.fs.mount(this.fs.filesystems.IDBFS, {}, walletDir);
+
+    const fsType = process.env.ROLLUP_TARGET_ENV === "web" ? 'IDBFS' : 'NODEFS';
+    this.fs.mount(this.fs.filesystems[fsType], {}, walletDir);
 
     return new Promise((resolve, reject) => {
       this.fs.syncfs(true, (err?: unknown) => {
