@@ -1,4 +1,4 @@
-class ExtractError extends Error {
+export class ExtractError extends Error {
   constructor(parsed) {
     super("Response resulted with error");
     this.name = 'ExtractError';
@@ -6,7 +6,7 @@ class ExtractError extends Error {
   }
 }
 
-class BeekeeperInstanceHelper {
+export class BeekeeperInstanceHelper {
   // Private properties:
 
   #instance = undefined;

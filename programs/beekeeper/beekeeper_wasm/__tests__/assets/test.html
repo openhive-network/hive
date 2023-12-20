@@ -10,16 +10,27 @@
     {
       "imports": {
         "@hive/beekeeper": "/build/beekeeper_wasm.web.js",
-        "@hive/beekeeperfactory": "/dist/bundle/web.js"
+        "@hive/beekeeperfactory": "/dist/bundle/web.js",
+        "helper": "/__tests__/assets/run_node_helper.js"
       }
     }
   </script>
-  <script src="/__tests__/assets/run_node_helper.js"></script>
   <script type="module">
     import BeekeeperModule from '@hive/beekeeper';
     import beekeeperFactory from '@hive/beekeeperfactory';
+    import { ExtractError, BeekeeperInstanceHelper } from 'helper';
 
     Object.defineProperties(window, {
+      ExtractError: {
+        get() {
+          return ExtractError;
+        }
+      },
+      BeekeeperInstanceHelper: {
+        get() {
+          return BeekeeperInstanceHelper;
+        }
+      },
       beekeeper: {
         get() {
           return BeekeeperModule;

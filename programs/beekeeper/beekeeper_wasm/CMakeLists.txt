@@ -53,7 +53,9 @@ function( DEFINE_BEEKEEPER_TARGET_FOR env )
       target_link_libraries( ${exec_wasm_name} PUBLIC embind beekeeper_core )
       # add -sASSERTIONS to `target_link_options` if you want more information
       # INITIAL_MEMORY by default = 16777216
-      target_link_options( ${exec_wasm_name} PUBLIC -fexceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 -sENVIRONMENT="${env}" -sSINGLE_FILE=1 )
+      target_link_options( ${exec_wasm_name} PUBLIC -fexceptions -sEXPORTED_RUNTIME_METHODS=["FS"] -sMODULARIZE=1 -sSINGLE_FILE=1
+                                                    -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 -sENVIRONMENT="${env}"
+                         )
       set_target_properties( ${exec_wasm_name} PROPERTIES OUTPUT_NAME "beekeeper_wasm.${env}.js" )
 
       # Helper target, just to perform TypeScript wrapper generation
@@ -70,8 +72,10 @@ endfunction()
 DEFINE_BEEKEEPER_TARGET_FOR(node)
 DEFINE_BEEKEEPER_TARGET_FOR(web)
 
-target_link_options( beekeeper_wasm_node PUBLIC -sUSE_ES6_IMPORT_META=1 )
+target_link_options( beekeeper_wasm_node PUBLIC -sUSE_ES6_IMPORT_META=1 -sNODERAWFS=1 )
+target_link_libraries( beekeeper_wasm_node PUBLIC nodefs.js )
+target_link_libraries( beekeeper_ts_gen_node PUBLIC nodefs.js )
 
-target_link_options( beekeeper_wasm_web PUBLIC -sEXPORTED_RUNTIME_METHODS=["FS"] -sUSE_ES6_IMPORT_META=0 )
+target_link_options( beekeeper_wasm_web PUBLIC -sUSE_ES6_IMPORT_META=0 )
 target_link_libraries( beekeeper_wasm_web PUBLIC idbfs.js )
 target_link_libraries( beekeeper_ts_gen_web PUBLIC idbfs.js )

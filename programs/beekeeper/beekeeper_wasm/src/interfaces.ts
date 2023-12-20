@@ -44,8 +44,9 @@ export interface IBeekeeperOptions {
   /**
    * The path of the wallet files (absolute path or relative to application data dir). Parent of the `.beekeeper` directory
    *
+   * Defaults to "/storage_root" for web and "." for web
+   *
    * @type {string}
-   * @default "/storage_root"
    */
   storageRoot: string;
 

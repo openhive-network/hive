@@ -79,7 +79,7 @@ test.describe('WASM Base tests', () => {
 
   test('Should be able to create instance of beekeeper factory', async ({ page }) => {
     await page.evaluate(async () => {
-      factory();
+      await factory();
     });
   });
 

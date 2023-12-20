@@ -18,8 +18,8 @@ export class BeekeeperFileSystem {
   public init(walletDir: string): Promise<void> {
     this.fs.mkdir(walletDir);
 
-    const fsType = process.env.ROLLUP_TARGET_ENV === "web" ? 'IDBFS' : 'NODEFS';
-    this.fs.mount(this.fs.filesystems[fsType], {}, walletDir);
+    if(process.env.ROLLUP_TARGET_ENV === "web")
+      this.fs.mount(this.fs.filesystems.IDBFS, {}, walletDir);
 
     return new Promise((resolve, reject) => {
       this.fs.syncfs(true, (err?: unknown) => {
