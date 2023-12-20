@@ -434,6 +434,9 @@ bool resource_credits::has_expired_delegation( const account_object& account ) c
 
 void resource_credits::handle_expired_delegations() const
 {
+  if( !db.has_hardfork( HIVE_HARDFORK_1_26 ) )
+    return;
+
   // clear as many delegations as possible within limit starting from oldest ones (smallest id)
   const auto& expired_idx = db.get_index<rc_expired_delegation_index, by_id>();
   auto expired_it = expired_idx.begin();
@@ -590,31 +593,17 @@ void resource_credits::initialize_evaluators()
     benchmark.end( _context, name );                     \
 }
 
-void resource_credits::on_post_apply_block() const
+void resource_credits::finalize_block() const
 {
-  ISOLATE_RC_CALL( "post->rc", "block", on_post_apply_block_impl, );
-}
-
-void resource_credits::on_post_apply_block_impl() const
-{ try {
-  const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
-  if( dgpo.total_vesting_shares.amount <= 0 )
+  if( !db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     return;
 
+  const auto& dgpo = db.get_dynamic_global_properties();
   auto now = dgpo.time;
   auto block_num = dgpo.head_block_number;
-
-  if( db.has_hardfork( HIVE_HARDFORK_1_26 ) )
-  {
-    // delegations were introduced in HF26, so there is no point in checking them earlier;
-    // also we are doing it in post apply block and not in pre, because otherwise transactions run
-    // during block production would have different environment than when the block was applied
-    handle_expired_delegations();
-  }
+  int64_t regen = ( dgpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
 
   const auto& params_obj = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
-
-  int64_t regen = ( dgpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
 
   const auto& bucket_idx = db.get_index< rc_usage_bucket_index, by_timestamp >();
   const auto* active_bucket = &( *bucket_idx.rbegin() );
@@ -665,16 +654,15 @@ void resource_credits::on_post_apply_block_impl() const
     for( int i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
       bucket.add_usage( i, block_info.usage[i] );
   } );
-} FC_LOG_AND_RETHROW() }
-
-void resource_credits::on_post_apply_transaction( const full_transaction_type& full_tx )
-{
-  ISOLATE_RC_CALL( "post->rc", "transaction", on_post_apply_transaction_impl, full_tx, full_tx.get_transaction() );
 }
 
-void resource_credits::on_post_apply_transaction_impl( const full_transaction_type& full_tx,
-  const signed_transaction& tx )
-{ try {
+void resource_credits::finalize_transaction( const full_transaction_type& full_tx )
+{
+  if( !db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    return;
+
+  const signed_transaction& tx = full_tx.get_transaction();
+
   // How many resources does the transaction use?
   // note: tx_info.usage might already contain state discount for selected operations and extra usage for custom ops
   count_resources( tx, full_tx.get_transaction_size(), tx_info.usage, db.head_block_time() );
@@ -698,9 +686,7 @@ void resource_credits::on_post_apply_transaction_impl( const full_transaction_ty
       } );
     }
   }
-
-  // note that we are skipping logging for not_enough_rc_exception
-} catch( not_enough_rc_exception& ex ) { throw; } FC_CAPTURE_AND_RETHROW( (tx) ) }
+}
 
 void resource_credits::set_pool_params( const witness_schedule_object& wso ) const
 {
