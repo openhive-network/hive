@@ -93,12 +93,28 @@ namespace hive { namespace chain {
       const block_id_type original_head_block_id, const uint32_t original_head_block_number,
       apply_block_t apply_block_extended, pop_block_t pop_block_extended ) override;
 
+    static bool push_block( fork_database& fork_db, database& db, application& app, 
+      const std::shared_ptr<full_block_type>& full_block, 
+      const block_flow_control& block_ctrl,
+      uint32_t state_head_block_num,
+      block_id_type state_head_block_id,
+      const uint32_t skip,
+      apply_block_t apply_block_extended,
+      pop_block_t pop_block_extended );
+
+    static void switch_forks( fork_database& fork_db, database& db, 
+      const block_id_type& new_head_block_id, uint32_t new_head_block_num,
+      uint32_t skip, const block_flow_control* pushed_block_ctrl,
+      const block_id_type original_head_block_id, const uint32_t original_head_block_number,
+      apply_block_t apply_block_extended, pop_block_t pop_block_extended );
+
     void open(  const fc::path& file, bool enable_compression,
                 int compression_level, bool enable_block_log_auto_fixing,
                 hive::chain::blockchain_worker_thread_pool& thread_pool );
     void close();
     const block_log& get_block_log() const { return _block_log; }
     fork_database& get_fork_db() { return _fork_db; };
+    
   private:
     block_log             _block_log;
     fork_db_block_reader  _reader;

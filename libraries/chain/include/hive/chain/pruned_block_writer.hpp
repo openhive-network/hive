@@ -1,20 +1,36 @@
 #pragma once
 
-#include <hive/chain/block_write_interface.hpp>
+#include <hive/chain/block_write_chain_interface.hpp>
 #include <hive/chain/block_read_interface.hpp>
+
+#include <appbase/application.hpp>
 
 namespace hive { namespace chain {
 
   class database;
   class fork_database;
   class full_block_object;
+  using appbase::application;
 
-  class pruned_block_writer : public block_write_i, public block_read_i
+  class pruned_block_writer : public block_write_chain_i, public block_read_i
   {
   public:
     pruned_block_writer( uint16_t stored_block_number, 
-      database& db, fork_database& fork_db );
+      database& db, application& app, fork_database& fork_db );
     virtual ~pruned_block_writer() = default;
+
+    // ### block_write_chain_i overrides ###
+    virtual void set_is_at_live_sync() override {}
+    virtual void on_reindex_start() override;
+    virtual void on_reindex_end( const std::shared_ptr<full_block_type>& end_block ) override;
+    virtual bool push_block(const std::shared_ptr<full_block_type>& full_block,
+      const block_flow_control& block_ctrl, uint32_t state_head_block_num,
+      block_id_type state_head_block_id, const uint32_t skip, apply_block_t apply_block_extended,
+      pop_block_t pop_block_extended ) override;
+    virtual void switch_forks( const block_id_type& new_head_block_id, uint32_t new_head_block_num,
+      uint32_t skip, const block_flow_control* pushed_block_ctrl,
+      const block_id_type original_head_block_id, const uint32_t original_head_block_number,
+      apply_block_t apply_block_extended, pop_block_t pop_block_extended ) override;
 
     // ### block_write_i overrides ###
     virtual block_read_i& get_block_reader() override { return *this; };
@@ -71,9 +87,10 @@ namespace hive { namespace chain {
     block_id_type get_block_id_for_num( uint32_t block_num ) const;
 
   private:
-    uint16_t _stored_block_number;
-    database& _db;
-    fork_database& _fork_db;
+    uint16_t        _stored_block_number;
+    fork_database&  _fork_db;
+    database&       _db;
+    application&    _app; /// Needed only for notification purposes.
   };
 
 } }
