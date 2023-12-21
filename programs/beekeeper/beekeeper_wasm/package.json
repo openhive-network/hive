@@ -15,9 +15,32 @@
   },
   "license": "SEE LICENSE IN LICENSE.md",
   "exports": {
-    ".": "./dist/bundle/web.js",
-    "./web": "./dist/bundle/web.js",
-    "./node": "./dist/bundle/node.js"
+    ".": {
+      "node": {
+        "import": {
+          "types": "./dist/bundle/node.d.ts",
+          "default": "./dist/bundle/node.js"
+        }
+      },
+      "default": {
+        "import": {
+          "types": "./dist/bundle/web.d.ts",
+          "default": "./dist/bundle/web.js"
+        }
+      }
+    },
+    "./web": {
+      "import": {
+        "types": "./dist/bundle/web.d.ts",
+        "default": "./dist/bundle/web.js"
+      }
+    },
+    "./node": {
+      "import": {
+        "types": "./dist/bundle/node.d.ts",
+        "default": "./dist/bundle/node.js"
+      }
+    }
   },
   "files": [
     "LICENSE.md",
