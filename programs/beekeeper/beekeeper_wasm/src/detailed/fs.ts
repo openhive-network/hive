@@ -16,7 +16,8 @@ export class BeekeeperFileSystem {
   }
 
   public init(walletDir: string): Promise<void> {
-    this.fs.mkdir(walletDir);
+    if(!this.fs.analyzePath(walletDir).exists)
+      this.fs.mkdir(walletDir);
 
     if(process.env.ROLLUP_TARGET_ENV === "web")
       this.fs.mount(this.fs.filesystems.IDBFS, {}, walletDir);
