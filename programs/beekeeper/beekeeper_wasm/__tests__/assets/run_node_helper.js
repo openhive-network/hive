@@ -169,6 +169,12 @@ export class BeekeeperInstanceHelper {
     }
   };
 
+  /**
+   * @param {string} sessionToken
+   * @param {string} walletName
+   * @param {string} key
+   * @param {null|string} explicitPassword
+   */
   removeKey(sessionToken, walletName, key, explicitPassword = null) {
     const pass = ( explicitPassword == null ) ? BeekeeperInstanceHelper.#getPassword(walletName) : explicitPassword;
     const returnedValue = this.instance.remove_key(sessionToken, walletName, pass, key);
@@ -221,6 +227,11 @@ export class BeekeeperInstanceHelper {
     return this.#extract(returnedValue);
   }
 
+  /**
+   * @param {string} sessionToken
+   * @param {string} walletName
+   * @param {string | null} explicitPassword
+   */
   unlock(sessionToken, walletName, explicitPassword = null) {
     const pass = ( explicitPassword == null ) ? BeekeeperInstanceHelper.#getPassword(walletName) : explicitPassword;
     const returnedValue = this.instance.unlock(sessionToken, walletName, pass);
