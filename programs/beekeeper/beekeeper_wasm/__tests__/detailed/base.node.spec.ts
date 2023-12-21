@@ -5,7 +5,7 @@ import BeekeeperModule from '../../build/beekeeper_wasm.node.js';
 import beekeeperFactory from '../../dist/bundle/node.js';
 import { ExtractError, BeekeeperInstanceHelper } from '../assets/run_node_helper.js';
 
-import { WALLET_OPTIONS_NODE, STORAGE_ROOT_NODE } from '../assets/data.js';
+import { WALLET_OPTIONS_NODE } from '../assets/data.js';
 
 test.describe('WASM Base tests for Node.js', () => {
   test('Should have global module', async () => {
