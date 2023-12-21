@@ -1128,8 +1128,9 @@ namespace chainbase {
       template<typename MultiIndexType>
       void add_index()
       {
-        _index_types.push_back( unique_ptr< abstract_index_type >( new index_type_impl< MultiIndexType >() ) );
-        _index_types.back()->add_index( *this );
+        auto new_index = unique_ptr< abstract_index_type >( new index_type_impl< MultiIndexType >());
+        new_index->add_index( *this );
+        _index_types.push_back( std::move(new_index) );
       }
 
 #pragma GCC diagnostic push
@@ -1425,34 +1426,25 @@ namespace chainbase {
           CHAINBASE_THROW_EXCEPTION( std::logic_error( type_name + "::type_id is already in use" ) );
         }
         index_type* idx_ptr =  nullptr;
-        bool _is_index_new = false;
-#ifdef ENABLE_STD_ALLOCATOR
-        idx_ptr = new index_type( index_alloc() );
-#else
+#ifndef ENABLE_STD_ALLOCATOR
         auto _found = _segment->find< index_type >( type_name.c_str() );
         if( !_found.first )
         {
-          _is_index_new = true;
+          _at_least_one_index_is_created_now = true;
+          if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
+            CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is created, but other indexes are found in `shared_memory_file` file. A replay is needed. Problem with: " + type_name ) );
           idx_ptr = _segment->construct< index_type >( type_name.c_str() )( index_alloc( _segment->get_segment_manager() ) );
         }
         else
         {
           idx_ptr = _found.first;
-        }
-#endif
-
-        if( _is_index_new )
-          _at_least_one_index_is_created_now = true;
-        else
           _at_least_one_index_was_created_earlier = true;
-
-        if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
-        {
-          if( _is_index_new )
-            CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is created, but other indexes are found in `shared_memory_file` file. A replay is needed. Problem with: " + type_name ) );
-          else
+          if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
             CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is found in `shared_memory_file` file, but other indexes are created. A replay is needed. Problem with: " + type_name ) );
         }
+#else
+        idx_ptr = new index_type( index_alloc() );
+#endif
 
         if( type_id >= _index_map.size() )
           _index_map.resize( type_id + 1 );
