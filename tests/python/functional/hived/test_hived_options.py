@@ -105,7 +105,6 @@ def test_exit_replay_at_given_block(block_log: Path, block_log_length: int) -> N
 
     node = tt.ApiNode()
     node.run(replay_from=block_log, exit_at_block=final_block)
-    time.sleep(1)
     assert not node.is_running()
     with open(node.directory / "stderr.txt") as file:
         stderr = file.read()
@@ -170,7 +169,6 @@ def test_exit_sync_mode_at_given_block() -> None:
     init_node.wait_number_of_blocks(10)
     connect_nodes(init_node, api_node)
     api_node.run(exit_at_block=5)
-    time.sleep(1)
     assert not api_node.is_running()
     with open(api_node.directory / "stderr.txt") as file:
         stderr = file.read()
@@ -198,7 +196,6 @@ def test_exit_live_mode_at_given_block() -> None:
     connect_nodes(init_node, api_node)
     api_node.run(exit_at_block=15)
     init_node.wait_number_of_blocks(30)
-    time.sleep(1)
     assert not api_node.is_running()
     with open(api_node.directory / "stderr.txt") as file:
         stderr = file.read()
