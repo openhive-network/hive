@@ -591,6 +591,7 @@ void chain_plugin_impl::start_write_processing()
       ilog("Write processing thread finished.");
       if( exit_at_block > 0 && exit_at_block == last_block_number )
       {
+        ilog("Exiting application on user request, because requested block ${exit_at_block} reached (--exit-at-block).", (exit_at_block));
         theApp.kill();
       }
     }
