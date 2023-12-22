@@ -165,6 +165,11 @@ blockchain_worker_thread_pool::blockchain_worker_thread_pool( appbase::applicati
 {
 }
 
+blockchain_worker_thread_pool::~blockchain_worker_thread_pool()
+{
+  shutdown();
+}
+
 void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_block_type>& full_block_weak_ptr, data_source_type data_source)
 {
   try
