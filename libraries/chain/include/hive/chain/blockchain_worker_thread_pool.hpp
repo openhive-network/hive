@@ -41,6 +41,7 @@ private:
 public:
 
   blockchain_worker_thread_pool( appbase::application& app );
+  ~blockchain_worker_thread_pool();
 
   // when we process a block/transaction, we need to know where it came from in
   // order to know what processing it needs.  e.g., transactions that arrived
