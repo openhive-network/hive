@@ -125,10 +125,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
             else
             {
-              std::string message = "Difference found between loaded version data: " + loaded_version_str;
-              message += " and current version data: " + current_version_str;
-              message += " but error not handled.";
-              BOOST_THROW_EXCEPTION(std::runtime_error(message));
+              wlog("Other differences (specific to plugin configuration) found between loaded version data: ${lv} and current version data: ${cv}.", ("lv", loaded_version_str)("cv", current_version_str));
             }
           }
         }
