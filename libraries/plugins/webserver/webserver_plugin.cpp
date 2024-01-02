@@ -157,8 +157,13 @@ struct tls_server
 {
   typedef websocketpp::lib::shared_ptr<boost::asio::ssl::context> context_ptr;
 
+  bool initialization_stage     = true;
+  appbase::application* theApp  = nullptr;
+
   std::string server_certificate_file_name;
   std::string server_key_file_name;
+
+  tls_server( appbase::application& app );
 
   context_ptr on_tls_init( websocketpp::connection_hdl hdl );
 
@@ -169,10 +174,14 @@ struct tls_server
   void set_tls_handlers( websocket_server_type& server );
 };
 
+tls_server::tls_server( appbase::application& app ): theApp( &app ) {}
+
 tls_server::context_ptr tls_server::on_tls_init( websocketpp::connection_hdl hdl )
 {
-  dlog("TLS initialization.");
+  dlog("TLS initialization started");
   context_ptr ctx(new boost::asio::ssl::context(boost::asio::ssl::context::sslv23));
+
+  bool status = true;
 
   try
   {
@@ -185,16 +194,30 @@ tls_server::context_ptr tls_server::on_tls_init( websocketpp::connection_hdl hdl
   }
   catch ( const boost::exception& e )
   {
+    status = false;
     elog( boost::diagnostic_information(e) );
   }
   catch(std::exception& e )
   {
+    status = false;
     elog( e.what() );
   }
   catch(...)
   {
-    elog( "Unexpected error. TLS initialization failed..." );
+    status = false;
+    elog( "Unexpected error. TLS initialization failed" );
   }
+
+  dlog("TLS initialization ${status}", ("status", status ? "passed" : "failed") );
+
+  if( initialization_stage && !status )
+  {
+    FC_ASSERT( theApp );
+    theApp->kill();
+  }
+
+  initialization_stage = false;
+
   return ctx;
 }
 
@@ -206,7 +229,7 @@ void tls_server::on_fail( websocket_server_type& server, websocketpp::connection
   if( _ec )
     ilog( "TLS connection failed: '${message}'. Error code: '${code}'", ( "message", _con->get_ec().message() )( "code", _ec.message() ) );
   else
-    ilog( "TLS connection failed: '${message}'.", ( "message", _con->get_ec().message() ) );
+    ilog( "TLS connection failed: '${message}'", ( "message", _con->get_ec().message() ) );
 }
 
 template<typename websocket_server_type>
@@ -694,7 +717,7 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
     else
       my.reset( new detail::webserver_plugin_impl<detail::websocket_tls_server_type_nondeflate>( thread_pool_size, get_app() ) );
 
-    my->tls = detail::tls_server();
+    my->tls = detail::tls_server( get_app() );
     my->tls->server_certificate_file_name = options.at( "webserver-https-certificate-file-name" ).as< string >();
     my->tls->server_key_file_name = options.at( "webserver-https-key-file-name" ).as< string >();
   }
