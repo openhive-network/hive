@@ -9,6 +9,7 @@ import test_tools as tt
 import wax
 from hive_local_tools.constants import (
     HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS,
+    get_hf26_transaction_model,
     get_transaction_model,
 )
 from schemas.apis.database_api.fundaments_of_reponses import AccountItemFundament
@@ -22,6 +23,7 @@ from schemas.operations import (
     CommentOptionsOperationLegacy,
     DeleteCommentOperation,
 )
+from schemas.operations.representations.hf26_representation import HF26Representation
 from schemas.operations.representations.legacy_representation import LegacyRepresentation  # noqa: TCH001
 from schemas.operations.virtual.effective_comment_vote_operation import EffectiveCommentVoteOperation
 from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
@@ -320,8 +322,12 @@ def create_transaction_with_any_operation(
     wallet: tt.Wallet, *operations: AnyLegacyOperation, only_result: bool = True
 ) -> dict[str, Any]:
     # function creates transaction manually because some operations are not added to wallet
-    transaction = get_transaction_model()
-    transaction.operations = [(op.get_name(), op) for op in operations]
+    if wallet.transaction_serialization == "hf26":
+        transaction = get_hf26_transaction_model()
+        transaction.operations = [HF26Representation(type=op.get_name_with_suffix(), value=op) for op in operations]
+    else:
+        transaction = get_transaction_model()
+        transaction.operations = [(op.get_name(), op) for op in operations]
     return wallet.api.sign_transaction(transaction, only_result=only_result)
 
 
