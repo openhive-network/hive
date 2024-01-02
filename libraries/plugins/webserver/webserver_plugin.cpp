@@ -665,8 +665,8 @@ void webserver_plugin::set_program_options( options_description&, options_descri
     ("rpc-endpoint", bpo::value< string >(), "Local http and websocket endpoint for webserver requests. Deprecated in favor of webserver-http-endpoint and webserver-ws-endpoint" )
     ("webserver-thread-pool-size", bpo::value<thread_pool_size_t>()->default_value(32),
       "Number of threads used to handle queries. Default: 32.")
-    ("webserver-https-certificate-file-name", bpo::value< string >()->default_value( "server.crt" ), "File name with a server's certificate. Default `server.cert`." )
-    ("webserver-https-key-file-name", bpo::value< string >()->default_value( "server.key" ), "File name with a server's private key. Default `server.key`." );
+    ("webserver-https-certificate-file-name", bpo::value< string >(), "File name with a server's certificate." )
+    ("webserver-https-key-file-name", bpo::value< string >(), "File name with a server's private key." );
     ;
 }
 
@@ -682,6 +682,9 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
 
   if( options.count( "webserver-https-endpoint" ) )
   {
+    FC_ASSERT(options.count( "webserver-https-certificate-file-name" ), "Option `webserver-https-certificate-file-name` is required");
+    FC_ASSERT(options.count( "webserver-https-key-file-name" ), "Option `webserver-https-key-file-name` is required");
+
     if( _ws_deflate_enabled )
       my.reset( new detail::webserver_plugin_impl<detail::websocket_tls_server_type_deflate>( thread_pool_size, get_app() ) );
     else
@@ -693,6 +696,12 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
   }
   else
   {
+    if( options.count( "webserver-https-certificate-file-name" ) )
+      ilog( "Option `webserver-https-certificate-file-name` is avoided. It's used only for https connection." );
+
+    if( options.count( "webserver-https-key-file-name" ) )
+      ilog( "Option `webserver-https-key-file-name` is avoided. It's used only for https connection." );
+
     if( _ws_deflate_enabled )
       my.reset( new detail::webserver_plugin_impl<detail::websocket_server_type_deflate>( thread_pool_size, get_app() ) );
     else
