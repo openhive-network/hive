@@ -201,8 +201,12 @@ tls_server::context_ptr tls_server::on_tls_init( websocketpp::connection_hdl hdl
 template<typename websocket_server_type>
 void tls_server::on_fail( websocket_server_type& server, websocketpp::connection_hdl hdl )
 {
-  typename websocket_server_type::connection_ptr con = server.get_con_from_hdl(hdl);
-  ilog( "TLS failed connection: '${message}'. Error code: '${code}'",("message", con->get_ec().message())("code", websocketpp::lib::error_code().message()) );
+  websocketpp::lib::error_code _ec;
+  typename websocket_server_type::connection_ptr _con = server.get_con_from_hdl( hdl, _ec );
+  if( _ec )
+    ilog( "TLS connection failed: '${message}'. Error code: '${code}'", ( "message", _con->get_ec().message() )( "code", _ec.message() ) );
+  else
+    ilog( "TLS connection failed: '${message}'.", ( "message", _con->get_ec().message() ) );
 }
 
 template<typename websocket_server_type>
