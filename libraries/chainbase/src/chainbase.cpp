@@ -111,12 +111,22 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
             const fc::variant_object loaded_version = loaded_version_v.get_object()["version"].get_object();
             const fc::variant_object current_version = current_version_v.get_object()["version"].get_object();
 
-            if (loaded_version["node_type"].as_string() != current_version["node_type"].as_string())
-              BOOST_THROW_EXCEPTION( std::runtime_error( "Loaded node type: " + loaded_version["node_type"].as_string() + " is different then current node type: " + current_version["node_type"].as_string()));
+            constexpr char BLOCKCHAIN_VERSION[] = "blockchain_version";
+            constexpr char HIVE_REVISION[] = "hive_revision";
+            constexpr char FC_REVISION[] = "fc_revision";
+            constexpr char NODE_TYPE[] = "node_type";
 
-            else if (loaded_version["blockchain_version"].as_string() != current_version["blockchain_version"].as_string() ||
-                     loaded_version["hive_revision"].as_string() != current_version["hive_revision"].as_string() ||
-                     loaded_version["fc_revision"].as_string() != current_version["fc_revision"].as_string())
+            if (!loaded_version.contains(NODE_TYPE))
+              BOOST_THROW_EXCEPTION( std::runtime_error( "Loaded version does not contains field " + std::string(NODE_TYPE) + ". Full loaded version string: " + loaded_version_str ));
+            else if (!current_version.contains(NODE_TYPE))
+              BOOST_THROW_EXCEPTION( std::runtime_error( "Current version does not contains field " + std::string(NODE_TYPE) + ". Full current version string: " + current_version_str ));
+
+            else if (loaded_version[NODE_TYPE].as_string() != current_version[NODE_TYPE].as_string())
+              BOOST_THROW_EXCEPTION( std::runtime_error( "Loaded node type: \'" + loaded_version[NODE_TYPE].as_string() + "\' is different then current node type: \'" + current_version[NODE_TYPE].as_string() + "\'"));
+
+            else if (loaded_version[BLOCKCHAIN_VERSION].as_string() != current_version[BLOCKCHAIN_VERSION].as_string() ||
+                     loaded_version[HIVE_REVISION].as_string() != current_version[HIVE_REVISION].as_string() ||
+                     loaded_version[FC_REVISION].as_string() != current_version[FC_REVISION].as_string())
             {
               std::string message = "Persistent storage was created according to the version: " + loaded_version_str;
               message += " but current node has the version: " + current_version_str;
@@ -124,9 +134,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
             }
 
             else
-            {
               wlog("Other differences (specific to plugin configuration) found between loaded version data: ${lv} and current version data: ${cv}.", ("lv", loaded_version_str)("cv", current_version_str));
-            }
           }
         }
       }
