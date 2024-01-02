@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from schemas.transaction import TransactionLegacy
+from schemas.transaction import Transaction, TransactionLegacy
 
 TRANSACTION_TEMPLATE: Final[dict] = {
     "ref_block_num": 0,
@@ -31,6 +31,14 @@ TRANSACTION_TEMPLATE: Final[dict] = {
 
 def get_transaction_model() -> TransactionLegacy:
     return TransactionLegacy(**TRANSACTION_TEMPLATE)
+
+
+def get_hf26_transaction_model() -> Transaction:
+    transaction_copy = TRANSACTION_TEMPLATE.copy()
+    keys_to_remove = ["block_num", "transaction_id", "transaction_num"]
+    for key in keys_to_remove:
+        transaction_copy.pop(key)
+    return Transaction(**transaction_copy)
 
 
 BASE_ACCOUNTS: Final[list] = ["hive.fund", "initminer", "miners", "null", "steem", "steem.dao", "temp"]
