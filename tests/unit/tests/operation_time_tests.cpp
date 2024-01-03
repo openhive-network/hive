@@ -1021,8 +1021,8 @@ OOST_AUTO_TEST_CASE( nested_comments )
     cur_vop = ops[4].get< curate_reward_operation >();
     BOOST_REQUIRE( cur_vop.curator == "bob" );
     BOOST_REQUIRE( cur_vop.reward.amount.value == bob_vote_dave_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.comment_author == "dave" );
-    BOOST_REQUIRE( cur_vop.comment_permlink == "test" );
+    BOOST_REQUIRE( cur_vop.author == "dave" );
+    BOOST_REQUIRE( cur_vop.permlink == "test" );
 
     com_vop = ops[5].get< comment_reward_operation >();
     BOOST_REQUIRE( com_vop.author == "alice" );
@@ -1043,20 +1043,20 @@ OOST_AUTO_TEST_CASE( nested_comments )
     cur_vop = ops[7].get< curate_reward_operation >();
     BOOST_REQUIRE( cur_vop.curator == "sam" );
     BOOST_REQUIRE( cur_vop.reward.amount.value == sam_vote_bob_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.comment_author == "bob" );
-    BOOST_REQUIRE( cur_vop.comment_permlink == "test" );
+    BOOST_REQUIRE( cur_vop.author == "bob" );
+    BOOST_REQUIRE( cur_vop.permlink == "test" );
 
     cur_vop = ops[8].get< curate_reward_operation >();
     BOOST_REQUIRE( cur_vop.curator == "bob" );
     BOOST_REQUIRE( cur_vop.reward.amount.value == bob_vote_bob_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.comment_author == "bob" );
-    BOOST_REQUIRE( cur_vop.comment_permlink == "test" );
+    BOOST_REQUIRE( cur_vop.author == "bob" );
+    BOOST_REQUIRE( cur_vop.permlink == "test" );
 
     cur_vop = ops[9].get< curate_reward_operation >();
     BOOST_REQUIRE( cur_vop.curator == "alice" );
     BOOST_REQUIRE( cur_vop.reward.amount.value == alice_vote_bob_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.comment_author == "bob" );
-    BOOST_REQUIRE( cur_vop.comment_permlink == "test" );
+    BOOST_REQUIRE( cur_vop.author == "bob" );
+    BOOST_REQUIRE( cur_vop.permlink == "test" );
 
     com_vop = ops[10].get< comment_reward_operation >();
     BOOST_REQUIRE( com_vop.author == "alice" );
@@ -1069,14 +1069,14 @@ OOST_AUTO_TEST_CASE( nested_comments )
     cur_vop = ops[11].get< curate_reward_operation >();
     BOOST_REQUIRE( cur_vop.curator == "bob" );
     BOOST_REQUIRE( cur_vop.reward.amount.value == bob_vote_alice_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.comment_author == "alice" );
-    BOOST_REQUIRE( cur_vop.comment_permlink == "test" );
+    BOOST_REQUIRE( cur_vop.author == "alice" );
+    BOOST_REQUIRE( cur_vop.permlink == "test" );
 
     cur_vop = ops[12].get< curate_reward_operation >();
     BOOST_REQUIRE( cur_vop.curator == "alice" );
     BOOST_REQUIRE( cur_vop.reward.amount.value == alice_vote_alice_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.comment_author == "alice" );
-    BOOST_REQUIRE( cur_vop.comment_permlink == "test" );
+    BOOST_REQUIRE( cur_vop.author == "alice" );
+    BOOST_REQUIRE( cur_vop.permlink == "test" );
 
     BOOST_TEST_MESSAGE( "Checking account balances" );
 
