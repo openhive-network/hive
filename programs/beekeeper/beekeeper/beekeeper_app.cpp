@@ -191,6 +191,9 @@ void beekeeper_app::start()
   _webserver_plugin.start_webserver();
 
   app.startup();
+
+  app.notify_status( "beekeeper is ready" );
+
   app.wait();
   ilog("exited cleanly");
 }
