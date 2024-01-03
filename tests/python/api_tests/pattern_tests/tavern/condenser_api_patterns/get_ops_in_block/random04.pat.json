@@ -59,8 +59,8 @@
     "op": [
       "curation_reward",
       {
-        "comment_author": "cryptos",
-        "comment_permlink": "what-i-m-already-writing-about-and-will-be-writing-about-in-the-future",
+        "author": "cryptos",
+        "permlink": "what-i-m-already-writing-about-and-will-be-writing-about-in-the-future",
         "curator": "rimantas",
         "payout_must_be_claimed": false,
         "reward": "7.096675 VESTS"

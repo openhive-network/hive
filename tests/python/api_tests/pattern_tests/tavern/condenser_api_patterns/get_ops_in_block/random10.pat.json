@@ -79,8 +79,8 @@
     "op": [
       "curation_reward",
       {
-        "comment_author": "teego",
-        "comment_permlink": "steem-docker-images-roadmap",
+        "author": "teego",
+        "permlink": "steem-docker-images-roadmap",
         "curator": "steempower",
         "payout_must_be_claimed": false,
         "reward": "655.141675 VESTS"
@@ -97,8 +97,8 @@
     "op": [
       "curation_reward",
       {
-        "comment_author": "teego",
-        "comment_permlink": "steem-docker-images-roadmap",
+        "author": "teego",
+        "permlink": "steem-docker-images-roadmap",
         "curator": "drinkzya",
         "payout_must_be_claimed": false,
         "reward": "7.239134 VESTS"
