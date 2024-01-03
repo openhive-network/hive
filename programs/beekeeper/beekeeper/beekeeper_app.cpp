@@ -35,18 +35,14 @@ void beekeeper_app::set_program_options()
   beekeeper_app_base::set_program_options();
 }
 
-std::string beekeeper_app::get_notifications_endpoint( const boost::program_options::variables_map& args )
+void beekeeper_app::process_notifications( const boost::program_options::variables_map& args )
 {
-  std::string _notification;
-
   if( args.count("notifications-endpoint") )
   {
     auto _notifications = args.at("notifications-endpoint").as<std::vector<std::string>>();
     if( !_notifications.empty() )
-      _notification = *_notifications.begin();
+      notifications_endpoint = *_notifications.begin();
   }
-
-  return _notification;
 }
 
 std::string beekeeper_app::check_version()
@@ -212,13 +208,12 @@ bfs::path beekeeper_app::get_data_dir() const
 void beekeeper_app::setup_notifications( const boost::program_options::variables_map& args )
 {
   app.setup_notifications( args );
+  process_notifications( args );
 }
 
 init_data beekeeper_app::save_keys( const boost::program_options::variables_map& args )
 {
   bool _result = true;
-
-  std::string _notification = get_notifications_endpoint( args );
 
   using _strings_pair_type = std::pair< string, string >;
   fc::flat_map< string, string > _items;
@@ -226,7 +221,7 @@ init_data beekeeper_app::save_keys( const boost::program_options::variables_map&
 
   for( auto& item : _items )
   {
-    _result = save_keys( _notification, item.first, item.second );
+    _result = save_keys( notifications_endpoint, item.first, item.second );
     if( !_result )
       break;
   }
