@@ -27,8 +27,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "spam",
+          "author": "abit",
+          "permlink": "spam",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -103,8 +103,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pie",
-          "comment_permlink": "bue-witness-post",
+          "author": "pie",
+          "permlink": "bue-witness-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -179,8 +179,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "witness-category",
+          "author": "abit",
+          "permlink": "witness-category",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -287,8 +287,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemit",
-          "comment_permlink": "firstpost",
+          "author": "steemit",
+          "permlink": "firstpost",
           "curator": "mr11acdee",
           "payout_must_be_claimed": false,
           "reward": {
@@ -310,8 +310,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemit",
-          "comment_permlink": "firstpost",
+          "author": "steemit",
+          "permlink": "firstpost",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -333,8 +333,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemit",
-          "comment_permlink": "firstpost",
+          "author": "steemit",
+          "permlink": "firstpost",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -356,8 +356,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemit",
-          "comment_permlink": "firstpost",
+          "author": "steemit",
+          "permlink": "firstpost",
           "curator": "liondani",
           "payout_must_be_claimed": false,
           "reward": {
@@ -379,8 +379,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemit",
-          "comment_permlink": "firstpost",
+          "author": "steemit",
+          "permlink": "firstpost",
           "curator": "steemit78",
           "payout_must_be_claimed": false,
           "reward": {
@@ -402,8 +402,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemit",
-          "comment_permlink": "firstpost",
+          "author": "steemit",
+          "permlink": "firstpost",
           "curator": "hello",
           "payout_must_be_claimed": false,
           "reward": {
@@ -425,8 +425,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemit",
-          "comment_permlink": "firstpost",
+          "author": "steemit",
+          "permlink": "firstpost",
           "curator": "world",
           "payout_must_be_claimed": false,
           "reward": {
@@ -517,8 +517,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "proskynneo",
-          "comment_permlink": "steemit-firstpost-1",
+          "author": "proskynneo",
+          "permlink": "steemit-firstpost-1",
           "curator": "proskynneo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -540,8 +540,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "proskynneo",
-          "comment_permlink": "steemit-firstpost-1",
+          "author": "proskynneo",
+          "permlink": "steemit-firstpost-1",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -563,8 +563,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "proskynneo",
-          "comment_permlink": "steemit-firstpost-1",
+          "author": "proskynneo",
+          "permlink": "steemit-firstpost-1",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -639,8 +639,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "red",
-          "comment_permlink": "steemit-firstpost-2",
+          "author": "red",
+          "permlink": "steemit-firstpost-2",
           "curator": "mr11acdee",
           "payout_must_be_claimed": false,
           "reward": {
@@ -731,8 +731,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steem-id",
-          "comment_permlink": "steem-id-first-post",
+          "author": "steem-id",
+          "permlink": "steem-id-first-post",
           "curator": "penambang",
           "payout_must_be_claimed": false,
           "reward": {
@@ -823,8 +823,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "hello",
-          "comment_permlink": "world",
+          "author": "hello",
+          "permlink": "world",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -846,8 +846,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "hello",
-          "comment_permlink": "world",
+          "author": "hello",
+          "permlink": "world",
           "curator": "hello",
           "payout_must_be_claimed": false,
           "reward": {
@@ -869,8 +869,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "hello",
-          "comment_permlink": "world",
+          "author": "hello",
+          "permlink": "world",
           "curator": "world",
           "payout_must_be_claimed": false,
           "reward": {
@@ -945,8 +945,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steem-id",
-          "comment_permlink": "shapeshift-claims-hack-inside-job",
+          "author": "steem-id",
+          "permlink": "shapeshift-claims-hack-inside-job",
           "curator": "berkah",
           "payout_must_be_claimed": false,
           "reward": {
@@ -968,8 +968,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steem-id",
-          "comment_permlink": "shapeshift-claims-hack-inside-job",
+          "author": "steem-id",
+          "permlink": "shapeshift-claims-hack-inside-job",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1044,8 +1044,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steem-id",
-          "comment_permlink": "re-steem-id-shapeshift-claims-hack-inside-job",
+          "author": "steem-id",
+          "permlink": "re-steem-id-shapeshift-claims-hack-inside-job",
           "curator": "berkah",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1136,8 +1136,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-blockchain-data-structure",
+          "author": "xeroc",
+          "permlink": "steem-blockchain-data-structure",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1159,8 +1159,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-blockchain-data-structure",
+          "author": "xeroc",
+          "permlink": "steem-blockchain-data-structure",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1182,8 +1182,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-blockchain-data-structure",
+          "author": "xeroc",
+          "permlink": "steem-blockchain-data-structure",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1205,8 +1205,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-blockchain-data-structure",
+          "author": "xeroc",
+          "permlink": "steem-blockchain-data-structure",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1228,8 +1228,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-blockchain-data-structure",
+          "author": "xeroc",
+          "permlink": "steem-blockchain-data-structure",
           "curator": "cyrano",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1251,8 +1251,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-blockchain-data-structure",
+          "author": "xeroc",
+          "permlink": "steem-blockchain-data-structure",
           "curator": "hello",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1274,8 +1274,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-blockchain-data-structure",
+          "author": "xeroc",
+          "permlink": "steem-blockchain-data-structure",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1297,8 +1297,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-blockchain-data-structure",
+          "author": "xeroc",
+          "permlink": "steem-blockchain-data-structure",
           "curator": "world",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1320,8 +1320,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-blockchain-data-structure",
+          "author": "xeroc",
+          "permlink": "steem-blockchain-data-structure",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1396,8 +1396,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-api",
+          "author": "xeroc",
+          "permlink": "steem-api",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1419,8 +1419,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-api",
+          "author": "xeroc",
+          "permlink": "steem-api",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1442,8 +1442,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-api",
+          "author": "xeroc",
+          "permlink": "steem-api",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1465,8 +1465,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-api",
+          "author": "xeroc",
+          "permlink": "steem-api",
           "curator": "cyrano",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1488,8 +1488,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-api",
+          "author": "xeroc",
+          "permlink": "steem-api",
           "curator": "hello",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1511,8 +1511,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "steem-api",
+          "author": "xeroc",
+          "permlink": "steem-api",
           "curator": "world",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1603,8 +1603,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "red",
-          "comment_permlink": "laughable",
+          "author": "red",
+          "permlink": "laughable",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1743,8 +1743,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "penambang",
-          "comment_permlink": "steem-paper-wallet",
+          "author": "penambang",
+          "permlink": "steem-paper-wallet",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1766,8 +1766,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "penambang",
-          "comment_permlink": "steem-paper-wallet",
+          "author": "penambang",
+          "permlink": "steem-paper-wallet",
           "curator": "berkah",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1789,8 +1789,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "penambang",
-          "comment_permlink": "steem-paper-wallet",
+          "author": "penambang",
+          "permlink": "steem-paper-wallet",
           "curator": "steem-id",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1897,8 +1897,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "kanyewest",
-          "comment_permlink": "do-you-like-fishsticks",
+          "author": "kanyewest",
+          "permlink": "do-you-like-fishsticks",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1920,8 +1920,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "kanyewest",
-          "comment_permlink": "do-you-like-fishsticks",
+          "author": "kanyewest",
+          "permlink": "do-you-like-fishsticks",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1943,8 +1943,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "kanyewest",
-          "comment_permlink": "do-you-like-fishsticks",
+          "author": "kanyewest",
+          "permlink": "do-you-like-fishsticks",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2035,8 +2035,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "mileycyrus",
-          "comment_permlink": "miley-liam",
+          "author": "mileycyrus",
+          "permlink": "miley-liam",
           "curator": "fminerten",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2058,8 +2058,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "mileycyrus",
-          "comment_permlink": "miley-liam",
+          "author": "mileycyrus",
+          "permlink": "miley-liam",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2081,8 +2081,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "mileycyrus",
-          "comment_permlink": "miley-liam",
+          "author": "mileycyrus",
+          "permlink": "miley-liam",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2104,8 +2104,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "mileycyrus",
-          "comment_permlink": "miley-liam",
+          "author": "mileycyrus",
+          "permlink": "miley-liam",
           "curator": "fmooo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2196,8 +2196,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "mileycyrus",
-          "comment_permlink": "miley-the-voice",
+          "author": "mileycyrus",
+          "permlink": "miley-the-voice",
           "curator": "fminerten",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2219,8 +2219,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "mileycyrus",
-          "comment_permlink": "miley-the-voice",
+          "author": "mileycyrus",
+          "permlink": "miley-the-voice",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2242,8 +2242,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "mileycyrus",
-          "comment_permlink": "miley-the-voice",
+          "author": "mileycyrus",
+          "permlink": "miley-the-voice",
           "curator": "fmooo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2318,8 +2318,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "jimmorrison",
-          "comment_permlink": "re-mileycyrus-miley-the-voice",
+          "author": "jimmorrison",
+          "permlink": "re-mileycyrus-miley-the-voice",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2341,8 +2341,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "jimmorrison",
-          "comment_permlink": "re-mileycyrus-miley-the-voice",
+          "author": "jimmorrison",
+          "permlink": "re-mileycyrus-miley-the-voice",
           "curator": "fminerten",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2364,8 +2364,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "jimmorrison",
-          "comment_permlink": "re-mileycyrus-miley-the-voice",
+          "author": "jimmorrison",
+          "permlink": "re-mileycyrus-miley-the-voice",
           "curator": "fmooo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2472,8 +2472,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "mileycyrus",
-          "comment_permlink": "miley-girls-lunch",
+          "author": "mileycyrus",
+          "permlink": "miley-girls-lunch",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2548,8 +2548,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "mileycyrus",
-          "comment_permlink": "miley-mystery-man",
+          "author": "mileycyrus",
+          "permlink": "miley-mystery-man",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2624,8 +2624,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "taylorswift",
-          "comment_permlink": "taylor-swift-danced-at-coachella-and-attended-a-friends-wedding-1200-miles-away-in-one",
+          "author": "taylorswift",
+          "permlink": "taylor-swift-danced-at-coachella-and-attended-a-friends-wedding-1200-miles-away-in-one",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2647,8 +2647,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "taylorswift",
-          "comment_permlink": "taylor-swift-danced-at-coachella-and-attended-a-friends-wedding-1200-miles-away-in-one",
+          "author": "taylorswift",
+          "permlink": "taylor-swift-danced-at-coachella-and-attended-a-friends-wedding-1200-miles-away-in-one",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2723,8 +2723,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemed",
-          "comment_permlink": "steem-witnesses",
+          "author": "steemed",
+          "permlink": "steem-witnesses",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2815,8 +2815,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "puppies",
-          "comment_permlink": "re-hopeless-sbd-20160418t202318847z",
+          "author": "puppies",
+          "permlink": "re-hopeless-sbd-20160418t202318847z",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2907,8 +2907,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-hopeless-sbd-20160418t204433661z",
+          "author": "dantheman",
+          "permlink": "re-hopeless-sbd-20160418t204433661z",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2930,8 +2930,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-hopeless-sbd-20160418t204433661z",
+          "author": "dantheman",
+          "permlink": "re-hopeless-sbd-20160418t204433661z",
           "curator": "puppies",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3134,8 +3134,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "red",
-          "comment_permlink": "red-dailydecrypt-1",
+          "author": "red",
+          "permlink": "red-dailydecrypt-1",
           "curator": "mr11acdee",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3157,8 +3157,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "red",
-          "comment_permlink": "red-dailydecrypt-1",
+          "author": "red",
+          "permlink": "red-dailydecrypt-1",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3180,8 +3180,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "red",
-          "comment_permlink": "red-dailydecrypt-1",
+          "author": "red",
+          "permlink": "red-dailydecrypt-1",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3203,8 +3203,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "red",
-          "comment_permlink": "red-dailydecrypt-1",
+          "author": "red",
+          "permlink": "red-dailydecrypt-1",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3279,8 +3279,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cyrano",
-          "comment_permlink": "cyrano-halving-post-1",
+          "author": "cyrano",
+          "permlink": "cyrano-halving-post-1",
           "curator": "cyrano",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3302,8 +3302,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cyrano",
-          "comment_permlink": "cyrano-halving-post-1",
+          "author": "cyrano",
+          "permlink": "cyrano-halving-post-1",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3618,8 +3618,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "noticed-some-updates-to-steemit",
+          "author": "nextgencrypto",
+          "permlink": "noticed-some-updates-to-steemit",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3641,8 +3641,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "noticed-some-updates-to-steemit",
+          "author": "nextgencrypto",
+          "permlink": "noticed-some-updates-to-steemit",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3664,8 +3664,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "noticed-some-updates-to-steemit",
+          "author": "nextgencrypto",
+          "permlink": "noticed-some-updates-to-steemit",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3772,8 +3772,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-first-post",
+          "author": "abit",
+          "permlink": "abit-first-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3795,8 +3795,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-first-post",
+          "author": "abit",
+          "permlink": "abit-first-post",
           "curator": "adm",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3818,8 +3818,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-first-post",
+          "author": "abit",
+          "permlink": "abit-first-post",
           "curator": "abit",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3894,8 +3894,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post",
+          "author": "abit",
+          "permlink": "abit-witness-post",
           "curator": "dan",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3917,8 +3917,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post",
+          "author": "abit",
+          "permlink": "abit-witness-post",
           "curator": "wackou",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3940,8 +3940,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post",
+          "author": "abit",
+          "permlink": "abit-witness-post",
           "curator": "adm",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3963,8 +3963,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post",
+          "author": "abit",
+          "permlink": "abit-witness-post",
           "curator": "puppies",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3986,8 +3986,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post",
+          "author": "abit",
+          "permlink": "abit-witness-post",
           "curator": "ihashfury",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4009,8 +4009,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post",
+          "author": "abit",
+          "permlink": "abit-witness-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4032,8 +4032,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post",
+          "author": "abit",
+          "permlink": "abit-witness-post",
           "curator": "datasecuritynode",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4055,8 +4055,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post",
+          "author": "abit",
+          "permlink": "abit-witness-post",
           "curator": "cyrano",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4078,8 +4078,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post",
+          "author": "abit",
+          "permlink": "abit-witness-post",
           "curator": "abit",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4101,8 +4101,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post",
+          "author": "abit",
+          "permlink": "abit-witness-post",
           "curator": "gilead",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4177,8 +4177,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post-re3",
+          "author": "abit",
+          "permlink": "abit-witness-post-re3",
           "curator": "wackou",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4200,8 +4200,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post-re3",
+          "author": "abit",
+          "permlink": "abit-witness-post-re3",
           "curator": "adm",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4223,8 +4223,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post-re3",
+          "author": "abit",
+          "permlink": "abit-witness-post-re3",
           "curator": "abit",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4299,8 +4299,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "abit-witness-post-re3-re1",
+          "author": "abit",
+          "permlink": "abit-witness-post-re3-re1",
           "curator": "adm",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4695,8 +4695,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-roadscape-re-red-broadcasted-20160414t144014018z",
+          "author": "dantheman",
+          "permlink": "re-roadscape-re-red-broadcasted-20160414t144014018z",
           "curator": "red",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4915,8 +4915,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "come-on-miners",
+          "author": "abit",
+          "permlink": "come-on-miners",
           "curator": "adm",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4938,8 +4938,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "come-on-miners",
+          "author": "abit",
+          "permlink": "come-on-miners",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -4961,8 +4961,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "come-on-miners",
+          "author": "abit",
+          "permlink": "come-on-miners",
           "curator": "abit",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5037,8 +5037,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cyrano.witness",
-          "comment_permlink": "cyrano-witness-post",
+          "author": "cyrano.witness",
+          "permlink": "cyrano-witness-post",
           "curator": "summon",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5060,8 +5060,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cyrano.witness",
-          "comment_permlink": "cyrano-witness-post",
+          "author": "cyrano.witness",
+          "permlink": "cyrano-witness-post",
           "curator": "wackou",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5083,8 +5083,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cyrano.witness",
-          "comment_permlink": "cyrano-witness-post",
+          "author": "cyrano.witness",
+          "permlink": "cyrano-witness-post",
           "curator": "coldstorage1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5106,8 +5106,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cyrano.witness",
-          "comment_permlink": "cyrano-witness-post",
+          "author": "cyrano.witness",
+          "permlink": "cyrano-witness-post",
           "curator": "cyrano",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5129,8 +5129,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cyrano.witness",
-          "comment_permlink": "cyrano-witness-post",
+          "author": "cyrano.witness",
+          "permlink": "cyrano-witness-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5152,8 +5152,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cyrano.witness",
-          "comment_permlink": "cyrano-witness-post",
+          "author": "cyrano.witness",
+          "permlink": "cyrano-witness-post",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5228,8 +5228,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cyrano.witness",
-          "comment_permlink": "re-cyranowitness-cyrano-witness-post-20160515t135228071z",
+          "author": "cyrano.witness",
+          "permlink": "re-cyranowitness-cyrano-witness-post-20160515t135228071z",
           "curator": "cyrano.witness",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5304,8 +5304,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "datasecuritynode",
-          "comment_permlink": "datasecuritynode-witness-post",
+          "author": "datasecuritynode",
+          "permlink": "datasecuritynode-witness-post",
           "curator": "dan",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5327,8 +5327,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "datasecuritynode",
-          "comment_permlink": "datasecuritynode-witness-post",
+          "author": "datasecuritynode",
+          "permlink": "datasecuritynode-witness-post",
           "curator": "wackou",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5350,8 +5350,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "datasecuritynode",
-          "comment_permlink": "datasecuritynode-witness-post",
+          "author": "datasecuritynode",
+          "permlink": "datasecuritynode-witness-post",
           "curator": "coldstorage1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5373,8 +5373,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "datasecuritynode",
-          "comment_permlink": "datasecuritynode-witness-post",
+          "author": "datasecuritynode",
+          "permlink": "datasecuritynode-witness-post",
           "curator": "puppies",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5396,8 +5396,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "datasecuritynode",
-          "comment_permlink": "datasecuritynode-witness-post",
+          "author": "datasecuritynode",
+          "permlink": "datasecuritynode-witness-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5419,8 +5419,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "datasecuritynode",
-          "comment_permlink": "datasecuritynode-witness-post",
+          "author": "datasecuritynode",
+          "permlink": "datasecuritynode-witness-post",
           "curator": "gilead",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5442,8 +5442,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "datasecuritynode",
-          "comment_permlink": "datasecuritynode-witness-post",
+          "author": "datasecuritynode",
+          "permlink": "datasecuritynode-witness-post",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5465,8 +5465,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "datasecuritynode",
-          "comment_permlink": "datasecuritynode-witness-post",
+          "author": "datasecuritynode",
+          "permlink": "datasecuritynode-witness-post",
           "curator": "red",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5488,8 +5488,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "datasecuritynode",
-          "comment_permlink": "datasecuritynode-witness-post",
+          "author": "datasecuritynode",
+          "permlink": "datasecuritynode-witness-post",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5580,8 +5580,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5603,8 +5603,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "coldstorage1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5626,8 +5626,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "cyrano",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5649,8 +5649,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5672,8 +5672,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "wackou",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5695,8 +5695,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5718,8 +5718,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5741,8 +5741,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5764,8 +5764,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5787,8 +5787,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5810,8 +5810,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "nextgenwitness",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5833,8 +5833,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "wackou",
-          "comment_permlink": "wackou-witness-post",
+          "author": "wackou",
+          "permlink": "wackou-witness-post",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5909,8 +5909,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dele-puppy",
-          "comment_permlink": "dele-puppy-witness-post",
+          "author": "dele-puppy",
+          "permlink": "dele-puppy-witness-post",
           "curator": "dan",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5932,8 +5932,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dele-puppy",
-          "comment_permlink": "dele-puppy-witness-post",
+          "author": "dele-puppy",
+          "permlink": "dele-puppy-witness-post",
           "curator": "tombstone",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5955,8 +5955,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dele-puppy",
-          "comment_permlink": "dele-puppy-witness-post",
+          "author": "dele-puppy",
+          "permlink": "dele-puppy-witness-post",
           "curator": "puppies",
           "payout_must_be_claimed": false,
           "reward": {
@@ -5978,8 +5978,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dele-puppy",
-          "comment_permlink": "dele-puppy-witness-post",
+          "author": "dele-puppy",
+          "permlink": "dele-puppy-witness-post",
           "curator": "gilead",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6001,8 +6001,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dele-puppy",
-          "comment_permlink": "dele-puppy-witness-post",
+          "author": "dele-puppy",
+          "permlink": "dele-puppy-witness-post",
           "curator": "wackou",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6024,8 +6024,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dele-puppy",
-          "comment_permlink": "dele-puppy-witness-post",
+          "author": "dele-puppy",
+          "permlink": "dele-puppy-witness-post",
           "curator": "coldstorage1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6047,8 +6047,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dele-puppy",
-          "comment_permlink": "dele-puppy-witness-post",
+          "author": "dele-puppy",
+          "permlink": "dele-puppy-witness-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6070,8 +6070,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dele-puppy",
-          "comment_permlink": "dele-puppy-witness-post",
+          "author": "dele-puppy",
+          "permlink": "dele-puppy-witness-post",
           "curator": "datasecuritynode",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6093,8 +6093,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dele-puppy",
-          "comment_permlink": "dele-puppy-witness-post",
+          "author": "dele-puppy",
+          "permlink": "dele-puppy-witness-post",
           "curator": "kitten",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6116,8 +6116,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dele-puppy",
-          "comment_permlink": "dele-puppy-witness-post",
+          "author": "dele-puppy",
+          "permlink": "dele-puppy-witness-post",
           "curator": "cyrano",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6192,8 +6192,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeldal",
-          "comment_permlink": "xeldal-witness-post",
+          "author": "xeldal",
+          "permlink": "xeldal-witness-post",
           "curator": "dan",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6215,8 +6215,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeldal",
-          "comment_permlink": "xeldal-witness-post",
+          "author": "xeldal",
+          "permlink": "xeldal-witness-post",
           "curator": "wackou",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6238,8 +6238,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeldal",
-          "comment_permlink": "xeldal-witness-post",
+          "author": "xeldal",
+          "permlink": "xeldal-witness-post",
           "curator": "coldstorage1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6261,8 +6261,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeldal",
-          "comment_permlink": "xeldal-witness-post",
+          "author": "xeldal",
+          "permlink": "xeldal-witness-post",
           "curator": "enki",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6284,8 +6284,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeldal",
-          "comment_permlink": "xeldal-witness-post",
+          "author": "xeldal",
+          "permlink": "xeldal-witness-post",
           "curator": "datasecuritynode",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6307,8 +6307,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeldal",
-          "comment_permlink": "xeldal-witness-post",
+          "author": "xeldal",
+          "permlink": "xeldal-witness-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6330,8 +6330,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeldal",
-          "comment_permlink": "xeldal-witness-post",
+          "author": "xeldal",
+          "permlink": "xeldal-witness-post",
           "curator": "cyrano",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6353,8 +6353,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeldal",
-          "comment_permlink": "xeldal-witness-post",
+          "author": "xeldal",
+          "permlink": "xeldal-witness-post",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6445,8 +6445,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "lafona",
-          "comment_permlink": "lafona-witness-post",
+          "author": "lafona",
+          "permlink": "lafona-witness-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6468,8 +6468,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "lafona",
-          "comment_permlink": "lafona-witness-post",
+          "author": "lafona",
+          "permlink": "lafona-witness-post",
           "curator": "lafona-miner",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6491,8 +6491,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "lafona",
-          "comment_permlink": "lafona-witness-post",
+          "author": "lafona",
+          "permlink": "lafona-witness-post",
           "curator": "wackou",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6514,8 +6514,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "lafona",
-          "comment_permlink": "lafona-witness-post",
+          "author": "lafona",
+          "permlink": "lafona-witness-post",
           "curator": "lafona5",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6537,8 +6537,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "lafona",
-          "comment_permlink": "lafona-witness-post",
+          "author": "lafona",
+          "permlink": "lafona-witness-post",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6560,8 +6560,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "lafona",
-          "comment_permlink": "lafona-witness-post",
+          "author": "lafona",
+          "permlink": "lafona-witness-post",
           "curator": "lafona-miner2",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6583,8 +6583,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "lafona",
-          "comment_permlink": "lafona-witness-post",
+          "author": "lafona",
+          "permlink": "lafona-witness-post",
           "curator": "lafona",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6659,8 +6659,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "ned",
-          "comment_permlink": "re-lafona-lafona-witness-post-20160416t173622565z",
+          "author": "ned",
+          "permlink": "re-lafona-lafona-witness-post-20160416t173622565z",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6735,8 +6735,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "miner-category",
+          "author": "abit",
+          "permlink": "miner-category",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6827,8 +6827,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bue-witness",
-          "comment_permlink": "bue-witness-post",
+          "author": "bue-witness",
+          "permlink": "bue-witness-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6850,8 +6850,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bue-witness",
-          "comment_permlink": "bue-witness-post",
+          "author": "bue-witness",
+          "permlink": "bue-witness-post",
           "curator": "bue",
           "payout_must_be_claimed": false,
           "reward": {
@@ -6926,8 +6926,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "boy",
-          "comment_permlink": "bue-witness-post",
+          "author": "boy",
+          "permlink": "bue-witness-post",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7098,8 +7098,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "tombstone",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7121,8 +7121,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "puppies",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7144,8 +7144,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "steemit200",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7167,8 +7167,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7190,8 +7190,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7213,8 +7213,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "fminerten",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7236,8 +7236,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "gilead",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7259,8 +7259,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "badassmother",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7282,8 +7282,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7305,8 +7305,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "au1nethyb1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7328,8 +7328,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7351,8 +7351,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7374,8 +7374,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "fmooo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7397,8 +7397,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "hello",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7420,8 +7420,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-0-1",
+          "author": "xeroc",
+          "permlink": "python-steem-0-1",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7560,8 +7560,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "hello-world",
+          "author": "roadscape",
+          "permlink": "hello-world",
           "curator": "puppies",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7583,8 +7583,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "hello-world",
+          "author": "roadscape",
+          "permlink": "hello-world",
           "curator": "gilead",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7675,8 +7675,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bastiat",
-          "comment_permlink": "bastiat-quote-government",
+          "author": "bastiat",
+          "permlink": "bastiat-quote-government",
           "curator": "tombstone",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7698,8 +7698,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bastiat",
-          "comment_permlink": "bastiat-quote-government",
+          "author": "bastiat",
+          "permlink": "bastiat-quote-government",
           "curator": "puppies",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7721,8 +7721,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bastiat",
-          "comment_permlink": "bastiat-quote-government",
+          "author": "bastiat",
+          "permlink": "bastiat-quote-government",
           "curator": "gilead",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7744,8 +7744,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bastiat",
-          "comment_permlink": "bastiat-quote-government",
+          "author": "bastiat",
+          "permlink": "bastiat-quote-government",
           "curator": "bastiat",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7820,8 +7820,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "masteryoda",
-          "comment_permlink": "masteryoda-witness",
+          "author": "masteryoda",
+          "permlink": "masteryoda-witness",
           "curator": "joseph",
           "payout_must_be_claimed": false,
           "reward": {
@@ -7928,8 +7928,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "will",
-          "comment_permlink": "re-red-way-too-disturbing-to-be-real-20160422t215004780z",
+          "author": "will",
+          "permlink": "re-red-way-too-disturbing-to-be-real-20160422t215004780z",
           "curator": "red",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8036,8 +8036,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "fmooo",
-          "comment_permlink": "steemd-docker",
+          "author": "fmooo",
+          "permlink": "steemd-docker",
           "curator": "dan",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8059,8 +8059,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "fmooo",
-          "comment_permlink": "steemd-docker",
+          "author": "fmooo",
+          "permlink": "steemd-docker",
           "curator": "fminerten",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8082,8 +8082,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "fmooo",
-          "comment_permlink": "steemd-docker",
+          "author": "fmooo",
+          "permlink": "steemd-docker",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8105,8 +8105,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "fmooo",
-          "comment_permlink": "steemd-docker",
+          "author": "fmooo",
+          "permlink": "steemd-docker",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8128,8 +8128,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "fmooo",
-          "comment_permlink": "steemd-docker",
+          "author": "fmooo",
+          "permlink": "steemd-docker",
           "curator": "red",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8151,8 +8151,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "fmooo",
-          "comment_permlink": "steemd-docker",
+          "author": "fmooo",
+          "permlink": "steemd-docker",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8174,8 +8174,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "fmooo",
-          "comment_permlink": "steemd-docker",
+          "author": "fmooo",
+          "permlink": "steemd-docker",
           "curator": "fmooo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8250,8 +8250,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "fmooo",
-          "comment_permlink": "re-fmooo-steemd-docker",
+          "author": "fmooo",
+          "permlink": "re-fmooo-steemd-docker",
           "curator": "fminerten",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8273,8 +8273,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "fmooo",
-          "comment_permlink": "re-fmooo-steemd-docker",
+          "author": "fmooo",
+          "permlink": "re-fmooo-steemd-docker",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8296,8 +8296,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "fmooo",
-          "comment_permlink": "re-fmooo-steemd-docker",
+          "author": "fmooo",
+          "permlink": "re-fmooo-steemd-docker",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8372,8 +8372,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steem-explorer",
+          "author": "roadscape",
+          "permlink": "steem-explorer",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8395,8 +8395,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steem-explorer",
+          "author": "roadscape",
+          "permlink": "steem-explorer",
           "curator": "lafona5",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8418,8 +8418,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steem-explorer",
+          "author": "roadscape",
+          "permlink": "steem-explorer",
           "curator": "lafona",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8441,8 +8441,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steem-explorer",
+          "author": "roadscape",
+          "permlink": "steem-explorer",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8549,8 +8549,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "boy",
-          "comment_permlink": "news",
+          "author": "boy",
+          "permlink": "news",
           "curator": "bue",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8572,8 +8572,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "boy",
-          "comment_permlink": "news",
+          "author": "boy",
+          "permlink": "news",
           "curator": "bue-witness",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8664,8 +8664,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "steem-has-several-challenges-that-traditional-forum-dont-have",
+          "author": "dantheman",
+          "permlink": "steem-has-several-challenges-that-traditional-forum-dont-have",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8687,8 +8687,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "steem-has-several-challenges-that-traditional-forum-dont-have",
+          "author": "dantheman",
+          "permlink": "steem-has-several-challenges-that-traditional-forum-dont-have",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8763,8 +8763,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "piston-0-0-1",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8786,8 +8786,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "piston-0-0-1",
           "curator": "enki",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8809,8 +8809,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "piston-0-0-1",
           "curator": "fminerten",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8832,8 +8832,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "piston-0-0-1",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8855,8 +8855,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "piston-0-0-1",
           "curator": "au1nethyb1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8878,8 +8878,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "piston-0-0-1",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8901,8 +8901,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "piston-0-0-1",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -8924,8 +8924,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "piston-0-0-1",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9000,8 +9000,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "re-piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "re-piston-0-0-1",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9023,8 +9023,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "re-piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "re-piston-0-0-1",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9046,8 +9046,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "re-piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "re-piston-0-0-1",
           "curator": "jabbasteem",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9069,8 +9069,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "re-piston-0-0-1",
+          "author": "xeroc",
+          "permlink": "re-piston-0-0-1",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9145,8 +9145,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bitcube",
-          "comment_permlink": "re-xeroc-piston-0-0-1-20160425t160126083z",
+          "author": "bitcube",
+          "permlink": "re-xeroc-piston-0-0-1-20160425t160126083z",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9221,8 +9221,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pharesim",
-          "comment_permlink": "re-bitcube-re-xeroc-piston-0-0-1-20160425t160126083z-20160425t161602555z",
+          "author": "pharesim",
+          "permlink": "re-bitcube-re-xeroc-piston-0-0-1-20160425t160126083z-20160425t161602555z",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9244,8 +9244,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pharesim",
-          "comment_permlink": "re-bitcube-re-xeroc-piston-0-0-1-20160425t160126083z-20160425t161602555z",
+          "author": "pharesim",
+          "permlink": "re-bitcube-re-xeroc-piston-0-0-1-20160425t160126083z-20160425t161602555z",
           "curator": "jabbasteem",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9320,8 +9320,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "re-re-xeroc-piston-0-0-1-20160425t160126083z",
+          "author": "xeroc",
+          "permlink": "re-re-xeroc-piston-0-0-1-20160425t160126083z",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9396,8 +9396,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempty",
-          "comment_permlink": "docker-witness-node",
+          "author": "steempty",
+          "permlink": "docker-witness-node",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9419,8 +9419,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempty",
-          "comment_permlink": "docker-witness-node",
+          "author": "steempty",
+          "permlink": "docker-witness-node",
           "curator": "au1nethyb1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9495,8 +9495,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bue",
-          "comment_permlink": "bue-witness-post",
+          "author": "bue",
+          "permlink": "bue-witness-post",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9518,8 +9518,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bue",
-          "comment_permlink": "bue-witness-post",
+          "author": "bue",
+          "permlink": "bue-witness-post",
           "curator": "bue",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9610,8 +9610,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "rnglab",
-          "comment_permlink": "bitshares2-faq",
+          "author": "rnglab",
+          "permlink": "bitshares2-faq",
           "curator": "blackjack",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9633,8 +9633,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "rnglab",
-          "comment_permlink": "bitshares2-faq",
+          "author": "rnglab",
+          "permlink": "bitshares2-faq",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9656,8 +9656,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "rnglab",
-          "comment_permlink": "bitshares2-faq",
+          "author": "rnglab",
+          "permlink": "bitshares2-faq",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9828,8 +9828,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "how-to-monitor-an-account-on-steem",
+          "author": "xeroc",
+          "permlink": "how-to-monitor-an-account-on-steem",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9851,8 +9851,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "how-to-monitor-an-account-on-steem",
+          "author": "xeroc",
+          "permlink": "how-to-monitor-an-account-on-steem",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9874,8 +9874,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "how-to-monitor-an-account-on-steem",
+          "author": "xeroc",
+          "permlink": "how-to-monitor-an-account-on-steem",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9897,8 +9897,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "how-to-monitor-an-account-on-steem",
+          "author": "xeroc",
+          "permlink": "how-to-monitor-an-account-on-steem",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9920,8 +9920,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "how-to-monitor-an-account-on-steem",
+          "author": "xeroc",
+          "permlink": "how-to-monitor-an-account-on-steem",
           "curator": "abit",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9943,8 +9943,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "how-to-monitor-an-account-on-steem",
+          "author": "xeroc",
+          "permlink": "how-to-monitor-an-account-on-steem",
           "curator": "hello",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9966,8 +9966,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "how-to-monitor-an-account-on-steem",
+          "author": "xeroc",
+          "permlink": "how-to-monitor-an-account-on-steem",
           "curator": "steemychicken1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -9989,8 +9989,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "how-to-monitor-an-account-on-steem",
+          "author": "xeroc",
+          "permlink": "how-to-monitor-an-account-on-steem",
           "curator": "world",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10225,8 +10225,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "category-for-cannabis-connoisseurs-",
+          "author": "danknugs",
+          "permlink": "category-for-cannabis-connoisseurs-",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10248,8 +10248,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "category-for-cannabis-connoisseurs-",
+          "author": "danknugs",
+          "permlink": "category-for-cannabis-connoisseurs-",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10271,8 +10271,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "category-for-cannabis-connoisseurs-",
+          "author": "danknugs",
+          "permlink": "category-for-cannabis-connoisseurs-",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10294,8 +10294,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "category-for-cannabis-connoisseurs-",
+          "author": "danknugs",
+          "permlink": "category-for-cannabis-connoisseurs-",
           "curator": "donalddrumpf",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10317,8 +10317,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "category-for-cannabis-connoisseurs-",
+          "author": "danknugs",
+          "permlink": "category-for-cannabis-connoisseurs-",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10340,8 +10340,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "category-for-cannabis-connoisseurs-",
+          "author": "danknugs",
+          "permlink": "category-for-cannabis-connoisseurs-",
           "curator": "danknugs",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10363,8 +10363,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "category-for-cannabis-connoisseurs-",
+          "author": "danknugs",
+          "permlink": "category-for-cannabis-connoisseurs-",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10487,8 +10487,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bonapartist",
-          "comment_permlink": "how-did-our-cofounders-meet",
+          "author": "bonapartist",
+          "permlink": "how-did-our-cofounders-meet",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10510,8 +10510,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bonapartist",
-          "comment_permlink": "how-did-our-cofounders-meet",
+          "author": "bonapartist",
+          "permlink": "how-did-our-cofounders-meet",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10533,8 +10533,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bonapartist",
-          "comment_permlink": "how-did-our-cofounders-meet",
+          "author": "bonapartist",
+          "permlink": "how-did-our-cofounders-meet",
           "curator": "jabbasteem",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10556,8 +10556,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bonapartist",
-          "comment_permlink": "how-did-our-cofounders-meet",
+          "author": "bonapartist",
+          "permlink": "how-did-our-cofounders-meet",
           "curator": "au1nethyb1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10579,8 +10579,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bonapartist",
-          "comment_permlink": "how-did-our-cofounders-meet",
+          "author": "bonapartist",
+          "permlink": "how-did-our-cofounders-meet",
           "curator": "onceuponatime",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10655,8 +10655,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "blackjack",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10678,8 +10678,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10701,8 +10701,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10724,8 +10724,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10747,8 +10747,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "jabbasteem",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10770,8 +10770,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "bonapartist",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10793,8 +10793,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10816,8 +10816,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10839,8 +10839,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10862,8 +10862,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "arhag",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10885,8 +10885,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -10908,8 +10908,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
+          "author": "dantheman",
+          "permlink": "re-bonapartist-how-did-our-cofounders-meet-20160425t213431753z",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11000,8 +11000,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-v0-1-1",
+          "author": "xeroc",
+          "permlink": "python-steem-v0-1-1",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11023,8 +11023,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-v0-1-1",
+          "author": "xeroc",
+          "permlink": "python-steem-v0-1-1",
           "curator": "enki",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11046,8 +11046,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-v0-1-1",
+          "author": "xeroc",
+          "permlink": "python-steem-v0-1-1",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11069,8 +11069,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-v0-1-1",
+          "author": "xeroc",
+          "permlink": "python-steem-v0-1-1",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11092,8 +11092,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-v0-1-1",
+          "author": "xeroc",
+          "permlink": "python-steem-v0-1-1",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11115,8 +11115,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-v0-1-1",
+          "author": "xeroc",
+          "permlink": "python-steem-v0-1-1",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11138,8 +11138,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "python-steem-v0-1-1",
+          "author": "xeroc",
+          "permlink": "python-steem-v0-1-1",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11246,8 +11246,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "cadillac-purple--indica",
+          "author": "danknugs",
+          "permlink": "cadillac-purple--indica",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11269,8 +11269,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "cadillac-purple--indica",
+          "author": "danknugs",
+          "permlink": "cadillac-purple--indica",
           "curator": "nextgenwitness",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11292,8 +11292,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "cadillac-purple--indica",
+          "author": "danknugs",
+          "permlink": "cadillac-purple--indica",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11315,8 +11315,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "cadillac-purple--indica",
+          "author": "danknugs",
+          "permlink": "cadillac-purple--indica",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11338,8 +11338,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "danknugs",
-          "comment_permlink": "cadillac-purple--indica",
+          "author": "danknugs",
+          "permlink": "cadillac-purple--indica",
           "curator": "danknugs",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11414,8 +11414,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "berniesanders",
-          "comment_permlink": "re-danknugs-cadillac-purple--indica-20160427t022143956z",
+          "author": "berniesanders",
+          "permlink": "re-danknugs-cadillac-purple--indica-20160427t022143956z",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11437,8 +11437,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "berniesanders",
-          "comment_permlink": "re-danknugs-cadillac-purple--indica-20160427t022143956z",
+          "author": "berniesanders",
+          "permlink": "re-danknugs-cadillac-purple--indica-20160427t022143956z",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11460,8 +11460,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "berniesanders",
-          "comment_permlink": "re-danknugs-cadillac-purple--indica-20160427t022143956z",
+          "author": "berniesanders",
+          "permlink": "re-danknugs-cadillac-purple--indica-20160427t022143956z",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11552,8 +11552,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "jabbasteem",
-          "comment_permlink": "re-danknugs-cadillac-purple--indica-20160427t223916325z",
+          "author": "jabbasteem",
+          "permlink": "re-danknugs-cadillac-purple--indica-20160427t223916325z",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11575,8 +11575,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "jabbasteem",
-          "comment_permlink": "re-danknugs-cadillac-purple--indica-20160427t223916325z",
+          "author": "jabbasteem",
+          "permlink": "re-danknugs-cadillac-purple--indica-20160427t223916325z",
           "curator": "jabbasteem",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11683,8 +11683,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-changelog-0-0-3",
+          "author": "xeroc",
+          "permlink": "piston-changelog-0-0-3",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11706,8 +11706,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-changelog-0-0-3",
+          "author": "xeroc",
+          "permlink": "piston-changelog-0-0-3",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11729,8 +11729,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-changelog-0-0-3",
+          "author": "xeroc",
+          "permlink": "piston-changelog-0-0-3",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11805,8 +11805,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cass",
-          "comment_permlink": "re-xeroc-piston-changelog-0-0-3-20160427t120147571z",
+          "author": "cass",
+          "permlink": "re-xeroc-piston-changelog-0-0-3-20160427t120147571z",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11881,8 +11881,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-changelog-",
+          "author": "xeroc",
+          "permlink": "piston-changelog-",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11904,8 +11904,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-changelog-",
+          "author": "xeroc",
+          "permlink": "piston-changelog-",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -11996,8 +11996,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "markopaasila",
-          "comment_permlink": "question-why-will-people-buy-steem",
+          "author": "markopaasila",
+          "permlink": "question-why-will-people-buy-steem",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12019,8 +12019,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "markopaasila",
-          "comment_permlink": "question-why-will-people-buy-steem",
+          "author": "markopaasila",
+          "permlink": "question-why-will-people-buy-steem",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12042,8 +12042,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "markopaasila",
-          "comment_permlink": "question-why-will-people-buy-steem",
+          "author": "markopaasila",
+          "permlink": "question-why-will-people-buy-steem",
           "curator": "enki",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12065,8 +12065,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "markopaasila",
-          "comment_permlink": "question-why-will-people-buy-steem",
+          "author": "markopaasila",
+          "permlink": "question-why-will-people-buy-steem",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12088,8 +12088,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "markopaasila",
-          "comment_permlink": "question-why-will-people-buy-steem",
+          "author": "markopaasila",
+          "permlink": "question-why-will-people-buy-steem",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12111,8 +12111,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "markopaasila",
-          "comment_permlink": "question-why-will-people-buy-steem",
+          "author": "markopaasila",
+          "permlink": "question-why-will-people-buy-steem",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12187,8 +12187,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "rainman",
-          "comment_permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t110341155z",
+          "author": "rainman",
+          "permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t110341155z",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12210,8 +12210,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "rainman",
-          "comment_permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t110341155z",
+          "author": "rainman",
+          "permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t110341155z",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12233,8 +12233,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "rainman",
-          "comment_permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t110341155z",
+          "author": "rainman",
+          "permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t110341155z",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12256,8 +12256,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "rainman",
-          "comment_permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t110341155z",
+          "author": "rainman",
+          "permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t110341155z",
           "curator": "markopaasila",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12279,8 +12279,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "rainman",
-          "comment_permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t110341155z",
+          "author": "rainman",
+          "permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t110341155z",
           "curator": "au1nethyb1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12467,8 +12467,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t201954505z",
+          "author": "dantheman",
+          "permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t201954505z",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12490,8 +12490,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t201954505z",
+          "author": "dantheman",
+          "permlink": "re-markopaasila-question-why-will-people-buy-steem-20160425t201954505z",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12582,8 +12582,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "sean0010",
-          "comment_permlink": "cant-seem-to-remember-your-name",
+          "author": "sean0010",
+          "permlink": "cant-seem-to-remember-your-name",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12658,8 +12658,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "rnglab",
-          "comment_permlink": "faq",
+          "author": "rnglab",
+          "permlink": "faq",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12734,8 +12734,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "rnglab",
-          "comment_permlink": "faq-index",
+          "author": "rnglab",
+          "permlink": "faq-index",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12826,8 +12826,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "dan-larimer-on-insurance-via-mutual-aid-societies",
+          "author": "tuck-fheman",
+          "permlink": "dan-larimer-on-insurance-via-mutual-aid-societies",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12849,8 +12849,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "dan-larimer-on-insurance-via-mutual-aid-societies",
+          "author": "tuck-fheman",
+          "permlink": "dan-larimer-on-insurance-via-mutual-aid-societies",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12957,8 +12957,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pharesim",
-          "comment_permlink": "python-script-to-get-witness-ranking",
+          "author": "pharesim",
+          "permlink": "python-script-to-get-witness-ranking",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
           "reward": {
@@ -12980,8 +12980,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pharesim",
-          "comment_permlink": "python-script-to-get-witness-ranking",
+          "author": "pharesim",
+          "permlink": "python-script-to-get-witness-ranking",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13003,8 +13003,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pharesim",
-          "comment_permlink": "python-script-to-get-witness-ranking",
+          "author": "pharesim",
+          "permlink": "python-script-to-get-witness-ranking",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13026,8 +13026,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pharesim",
-          "comment_permlink": "python-script-to-get-witness-ranking",
+          "author": "pharesim",
+          "permlink": "python-script-to-get-witness-ranking",
           "curator": "fmooo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13049,8 +13049,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pharesim",
-          "comment_permlink": "python-script-to-get-witness-ranking",
+          "author": "pharesim",
+          "permlink": "python-script-to-get-witness-ranking",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13125,8 +13125,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pharesim",
-          "comment_permlink": "re-pharesim-python-script-to-get-witness-ranking-20160425t091344305z",
+          "author": "pharesim",
+          "permlink": "re-pharesim-python-script-to-get-witness-ranking-20160425t091344305z",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13148,8 +13148,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pharesim",
-          "comment_permlink": "re-pharesim-python-script-to-get-witness-ranking-20160425t091344305z",
+          "author": "pharesim",
+          "permlink": "re-pharesim-python-script-to-get-witness-ranking-20160425t091344305z",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13240,8 +13240,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "we-shall-be-known-as-steemians",
+          "author": "nextgencrypto",
+          "permlink": "we-shall-be-known-as-steemians",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13263,8 +13263,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "we-shall-be-known-as-steemians",
+          "author": "nextgencrypto",
+          "permlink": "we-shall-be-known-as-steemians",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13286,8 +13286,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "we-shall-be-known-as-steemians",
+          "author": "nextgencrypto",
+          "permlink": "we-shall-be-known-as-steemians",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13309,8 +13309,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "we-shall-be-known-as-steemians",
+          "author": "nextgencrypto",
+          "permlink": "we-shall-be-known-as-steemians",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13332,8 +13332,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "we-shall-be-known-as-steemians",
+          "author": "nextgencrypto",
+          "permlink": "we-shall-be-known-as-steemians",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13355,8 +13355,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "we-shall-be-known-as-steemians",
+          "author": "nextgencrypto",
+          "permlink": "we-shall-be-known-as-steemians",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13378,8 +13378,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "we-shall-be-known-as-steemians",
+          "author": "nextgencrypto",
+          "permlink": "we-shall-be-known-as-steemians",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13401,8 +13401,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "we-shall-be-known-as-steemians",
+          "author": "nextgencrypto",
+          "permlink": "we-shall-be-known-as-steemians",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13424,8 +13424,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "we-shall-be-known-as-steemians",
+          "author": "nextgencrypto",
+          "permlink": "we-shall-be-known-as-steemians",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13447,8 +13447,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "we-shall-be-known-as-steemians",
+          "author": "nextgencrypto",
+          "permlink": "we-shall-be-known-as-steemians",
           "curator": "abit",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13523,8 +13523,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemian",
-          "comment_permlink": "re-nextgencrypto-we-shall-be-known-as-steemians",
+          "author": "steemian",
+          "permlink": "re-nextgencrypto-we-shall-be-known-as-steemians",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13546,8 +13546,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemian",
-          "comment_permlink": "re-nextgencrypto-we-shall-be-known-as-steemians",
+          "author": "steemian",
+          "permlink": "re-nextgencrypto-we-shall-be-known-as-steemians",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13654,8 +13654,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "lafona",
-          "comment_permlink": "re-nextgencrypto-we-shall-be-known-as-steemians-20160428t221024849z",
+          "author": "lafona",
+          "permlink": "re-nextgencrypto-we-shall-be-known-as-steemians-20160428t221024849z",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13730,8 +13730,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-nextgencrypto-we-shall-be-known-as-steemians-20160429t192940760z",
+          "author": "dantheman",
+          "permlink": "re-nextgencrypto-we-shall-be-known-as-steemians-20160429t192940760z",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -13870,8 +13870,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "an-in-depth-guide-into-how-the-bitcoin-mempool-works",
+          "author": "pfunk",
+          "permlink": "an-in-depth-guide-into-how-the-bitcoin-mempool-works",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14106,8 +14106,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steem-id",
-          "comment_permlink": "steem-introduction",
+          "author": "steem-id",
+          "permlink": "steem-introduction",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14129,8 +14129,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steem-id",
-          "comment_permlink": "steem-introduction",
+          "author": "steem-id",
+          "permlink": "steem-introduction",
           "curator": "berkah",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14152,8 +14152,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steem-id",
-          "comment_permlink": "steem-introduction",
+          "author": "steem-id",
+          "permlink": "steem-introduction",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14244,8 +14244,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "web-applications-on-a-blockchain-structure--dan-larimer",
+          "author": "tuck-fheman",
+          "permlink": "web-applications-on-a-blockchain-structure--dan-larimer",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14267,8 +14267,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "web-applications-on-a-blockchain-structure--dan-larimer",
+          "author": "tuck-fheman",
+          "permlink": "web-applications-on-a-blockchain-structure--dan-larimer",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14343,8 +14343,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "re-tuck-fheman-web-applications-on-a-blockchain-structure--dan-larimer-20160427t235658266z",
+          "author": "tuck-fheman",
+          "permlink": "re-tuck-fheman-web-applications-on-a-blockchain-structure--dan-larimer-20160427t235658266z",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14419,8 +14419,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "cia-backed-artificial-intelligence-firm-to-spy-on-wall-street-traders",
+          "author": "tuck-fheman",
+          "permlink": "cia-backed-artificial-intelligence-firm-to-spy-on-wall-street-traders",
           "curator": "kai",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14442,8 +14442,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "cia-backed-artificial-intelligence-firm-to-spy-on-wall-street-traders",
+          "author": "tuck-fheman",
+          "permlink": "cia-backed-artificial-intelligence-firm-to-spy-on-wall-street-traders",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14465,8 +14465,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "cia-backed-artificial-intelligence-firm-to-spy-on-wall-street-traders",
+          "author": "tuck-fheman",
+          "permlink": "cia-backed-artificial-intelligence-firm-to-spy-on-wall-street-traders",
           "curator": "fminerten1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14557,8 +14557,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "bitshares-dex-and-nasdaq--dan-larimer",
+          "author": "tuck-fheman",
+          "permlink": "bitshares-dex-and-nasdaq--dan-larimer",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14580,8 +14580,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "bitshares-dex-and-nasdaq--dan-larimer",
+          "author": "tuck-fheman",
+          "permlink": "bitshares-dex-and-nasdaq--dan-larimer",
           "curator": "kai",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14656,8 +14656,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "steemit",
+          "author": "tuck-fheman",
+          "permlink": "steemit",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14796,8 +14796,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "steem-steemit",
+          "author": "tuck-fheman",
+          "permlink": "steem-steemit",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14888,8 +14888,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "sean0010",
-          "comment_permlink": "austin-power",
+          "author": "sean0010",
+          "permlink": "austin-power",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -14964,8 +14964,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "steemit-ideas-topic",
+          "author": "tuck-fheman",
+          "permlink": "steemit-ideas-topic",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15040,8 +15040,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "markopaasila",
-          "comment_permlink": "re-tuck-fheman-steemit-ideas-topic-20160428t062637696z",
+          "author": "markopaasila",
+          "permlink": "re-tuck-fheman-steemit-ideas-topic-20160428t062637696z",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15132,8 +15132,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "markopaasila",
-          "comment_permlink": "re-tuck-fheman-re-markopaasila-re-tuck-fheman-steemit-ideas-topic-20160428t062637696z-20160428t071820180z-20160428t073757126z",
+          "author": "markopaasila",
+          "permlink": "re-tuck-fheman-re-markopaasila-re-tuck-fheman-steemit-ideas-topic-20160428t062637696z-20160428t071820180z-20160428t073757126z",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15224,8 +15224,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "arhag",
-          "comment_permlink": "proposal-to-change-reward-processing-and-voting-logic",
+          "author": "arhag",
+          "permlink": "proposal-to-change-reward-processing-and-voting-logic",
           "curator": "enki",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15247,8 +15247,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "arhag",
-          "comment_permlink": "proposal-to-change-reward-processing-and-voting-logic",
+          "author": "arhag",
+          "permlink": "proposal-to-change-reward-processing-and-voting-logic",
           "curator": "recursive",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15270,8 +15270,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "arhag",
-          "comment_permlink": "proposal-to-change-reward-processing-and-voting-logic",
+          "author": "arhag",
+          "permlink": "proposal-to-change-reward-processing-and-voting-logic",
           "curator": "wackou",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15293,8 +15293,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "arhag",
-          "comment_permlink": "proposal-to-change-reward-processing-and-voting-logic",
+          "author": "arhag",
+          "permlink": "proposal-to-change-reward-processing-and-voting-logic",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15316,8 +15316,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "arhag",
-          "comment_permlink": "proposal-to-change-reward-processing-and-voting-logic",
+          "author": "arhag",
+          "permlink": "proposal-to-change-reward-processing-and-voting-logic",
           "curator": "adol",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15339,8 +15339,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "arhag",
-          "comment_permlink": "proposal-to-change-reward-processing-and-voting-logic",
+          "author": "arhag",
+          "permlink": "proposal-to-change-reward-processing-and-voting-logic",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15362,8 +15362,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "arhag",
-          "comment_permlink": "proposal-to-change-reward-processing-and-voting-logic",
+          "author": "arhag",
+          "permlink": "proposal-to-change-reward-processing-and-voting-logic",
           "curator": "nextgenwitness",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15518,8 +15518,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempower",
-          "comment_permlink": "massive-bitcoin-delays--network-congested--avoid-sending-btc",
+          "author": "steempower",
+          "permlink": "massive-bitcoin-delays--network-congested--avoid-sending-btc",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15541,8 +15541,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempower",
-          "comment_permlink": "massive-bitcoin-delays--network-congested--avoid-sending-btc",
+          "author": "steempower",
+          "permlink": "massive-bitcoin-delays--network-congested--avoid-sending-btc",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15564,8 +15564,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempower",
-          "comment_permlink": "massive-bitcoin-delays--network-congested--avoid-sending-btc",
+          "author": "steempower",
+          "permlink": "massive-bitcoin-delays--network-congested--avoid-sending-btc",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15640,8 +15640,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "re-steempower-massive-bitcoin-delays--network-congested--avoid-sending-btc-20160428t030157778z",
+          "author": "pfunk",
+          "permlink": "re-steempower-massive-bitcoin-delays--network-congested--avoid-sending-btc-20160428t030157778z",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15663,8 +15663,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "re-steempower-massive-bitcoin-delays--network-congested--avoid-sending-btc-20160428t030157778z",
+          "author": "pfunk",
+          "permlink": "re-steempower-massive-bitcoin-delays--network-congested--avoid-sending-btc-20160428t030157778z",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15739,8 +15739,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempower",
-          "comment_permlink": "re-pfunk-re-steempower-massive-bitcoin-delays--network-congested--avoid-sending-btc-20160428t030157778z-20160428t031409148z",
+          "author": "steempower",
+          "permlink": "re-pfunk-re-steempower-massive-bitcoin-delays--network-congested--avoid-sending-btc-20160428t030157778z-20160428t031409148z",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15762,8 +15762,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempower",
-          "comment_permlink": "re-pfunk-re-steempower-massive-bitcoin-delays--network-congested--avoid-sending-btc-20160428t030157778z-20160428t031409148z",
+          "author": "steempower",
+          "permlink": "re-pfunk-re-steempower-massive-bitcoin-delays--network-congested--avoid-sending-btc-20160428t030157778z-20160428t031409148z",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15854,8 +15854,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "ethereum-price-discussion",
+          "author": "tuck-fheman",
+          "permlink": "ethereum-price-discussion",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15877,8 +15877,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "ethereum-price-discussion",
+          "author": "tuck-fheman",
+          "permlink": "ethereum-price-discussion",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15900,8 +15900,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "ethereum-price-discussion",
+          "author": "tuck-fheman",
+          "permlink": "ethereum-price-discussion",
           "curator": "nextgenwitness",
           "payout_must_be_claimed": false,
           "reward": {
@@ -15992,8 +15992,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "larimer",
+          "author": "tuck-fheman",
+          "permlink": "larimer",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16015,8 +16015,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "larimer",
+          "author": "tuck-fheman",
+          "permlink": "larimer",
           "curator": "pfunk",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16107,8 +16107,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "slam-poetry-in-60-seconds",
+          "author": "tuck-fheman",
+          "permlink": "slam-poetry-in-60-seconds",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16199,8 +16199,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "post-your-prose",
+          "author": "tuck-fheman",
+          "permlink": "post-your-prose",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16275,8 +16275,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "post-your-poetry-or-your-favorite-poetry",
+          "author": "tuck-fheman",
+          "permlink": "post-your-poetry-or-your-favorite-poetry",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16351,8 +16351,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "steem-steemit-ideas-issues-topics",
+          "author": "tuck-fheman",
+          "permlink": "steem-steemit-ideas-issues-topics",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16443,8 +16443,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "peaceful-alternatives--dan-larimer",
+          "author": "tuck-fheman",
+          "permlink": "peaceful-alternatives--dan-larimer",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16519,8 +16519,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "its-a-yard-knock-life",
+          "author": "tuck-fheman",
+          "permlink": "its-a-yard-knock-life",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16595,8 +16595,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
+          "author": "pfunk",
+          "permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16618,8 +16618,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
+          "author": "pfunk",
+          "permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
           "curator": "au1nethyb1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16641,8 +16641,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
+          "author": "pfunk",
+          "permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
           "curator": "pfunk",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16664,8 +16664,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
+          "author": "pfunk",
+          "permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16687,8 +16687,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
+          "author": "pfunk",
+          "permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16710,8 +16710,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
+          "author": "pfunk",
+          "permlink": "new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16786,8 +16786,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "re-pfunk-new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners-20160427t093128501z",
+          "author": "pfunk",
+          "permlink": "re-pfunk-new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners-20160427t093128501z",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16809,8 +16809,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "re-pfunk-new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners-20160427t093128501z",
+          "author": "pfunk",
+          "permlink": "re-pfunk-new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners-20160427t093128501z",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16832,8 +16832,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "re-pfunk-new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners-20160427t093128501z",
+          "author": "pfunk",
+          "permlink": "re-pfunk-new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners-20160427t093128501z",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16855,8 +16855,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "re-pfunk-new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners-20160427t093128501z",
+          "author": "pfunk",
+          "permlink": "re-pfunk-new-round-of-stellar-token-now-called-lumens-giveaway-this-summer-to-bitcoin-owners-20160427t093128501z",
           "curator": "esteem",
           "payout_must_be_claimed": false,
           "reward": {
@@ -16947,8 +16947,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "re-xeroc-vanteem-config-20160427t182426746z",
+          "author": "xeroc",
+          "permlink": "re-xeroc-vanteem-config-20160427t182426746z",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17055,8 +17055,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "kicking-off-the-games-category",
+          "author": "pfunk",
+          "permlink": "kicking-off-the-games-category",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17078,8 +17078,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "kicking-off-the-games-category",
+          "author": "pfunk",
+          "permlink": "kicking-off-the-games-category",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17101,8 +17101,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "kicking-off-the-games-category",
+          "author": "pfunk",
+          "permlink": "kicking-off-the-games-category",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17124,8 +17124,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "kicking-off-the-games-category",
+          "author": "pfunk",
+          "permlink": "kicking-off-the-games-category",
           "curator": "nextgenwitness",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17200,8 +17200,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "re-pfunk-kicking-off-the-games-category-20160427t062501128z",
+          "author": "tuck-fheman",
+          "permlink": "re-pfunk-kicking-off-the-games-category-20160427t062501128z",
           "curator": "pfunk",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17292,8 +17292,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "benchmarksims",
-          "comment_permlink": "re-pfunk-kicking-off-the-games-category-20160503t174524829z",
+          "author": "benchmarksims",
+          "permlink": "re-pfunk-kicking-off-the-games-category-20160503t174524829z",
           "curator": "pfunk",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17384,8 +17384,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nenad-ristic",
-          "comment_permlink": "re-pfunk-kicking-off-the-games-category-20160511t143419001z",
+          "author": "nenad-ristic",
+          "permlink": "re-pfunk-kicking-off-the-games-category-20160511t143419001z",
           "curator": "pfunk",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17460,8 +17460,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bitswift",
-          "comment_permlink": "re-pfunk-kicking-off-the-games-category-20160530t031315835z",
+          "author": "bitswift",
+          "permlink": "re-pfunk-kicking-off-the-games-category-20160530t031315835z",
           "curator": "pfunk",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17536,8 +17536,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tshering-tamang",
-          "comment_permlink": "re-pfunk-kicking-off-the-games-category-20160628t055415746z",
+          "author": "tshering-tamang",
+          "permlink": "re-pfunk-kicking-off-the-games-category-20160628t055415746z",
           "curator": "pfunk",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17612,8 +17612,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempty",
-          "comment_permlink": "steempty-witness-post",
+          "author": "steempty",
+          "permlink": "steempty-witness-post",
           "curator": "fminerten",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17635,8 +17635,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempty",
-          "comment_permlink": "steempty-witness-post",
+          "author": "steempty",
+          "permlink": "steempty-witness-post",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17658,8 +17658,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempty",
-          "comment_permlink": "steempty-witness-post",
+          "author": "steempty",
+          "permlink": "steempty-witness-post",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17734,8 +17734,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "bitcube",
-          "comment_permlink": "marketing-effect-change-the-name-of-cliwallet-and-vest",
+          "author": "bitcube",
+          "permlink": "marketing-effect-change-the-name-of-cliwallet-and-vest",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17810,8 +17810,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "clayop",
-          "comment_permlink": "re-bitcube-marketing-effect-change-the-name-of-cliwallet-and-vest-20160424t033238580z",
+          "author": "clayop",
+          "permlink": "re-bitcube-marketing-effect-change-the-name-of-cliwallet-and-vest-20160424t033238580z",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17886,8 +17886,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "sockpuppet",
-          "comment_permlink": "rip-price",
+          "author": "sockpuppet",
+          "permlink": "rip-price",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -17909,8 +17909,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "sockpuppet",
-          "comment_permlink": "rip-price",
+          "author": "sockpuppet",
+          "permlink": "rip-price",
           "curator": "nextgenwitness",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18017,8 +18017,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "steem-ideas-topic",
+          "author": "tuck-fheman",
+          "permlink": "steem-ideas-topic",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18157,8 +18157,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "piston-changelog-0-1-2",
+          "author": "xeroc",
+          "permlink": "piston-changelog-0-1-2",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18425,8 +18425,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "add-a-link-to-the-topic-someone-replied-to-in-a-users-post-list",
+          "author": "tuck-fheman",
+          "permlink": "add-a-link-to-the-topic-someone-replied-to-in-a-users-post-list",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18448,8 +18448,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "add-a-link-to-the-topic-someone-replied-to-in-a-users-post-list",
+          "author": "tuck-fheman",
+          "permlink": "add-a-link-to-the-topic-someone-replied-to-in-a-users-post-list",
           "curator": "markopaasila",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18524,8 +18524,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "pending-payouts-on-users-blog-page-is-not-showing-amounts",
+          "author": "tuck-fheman",
+          "permlink": "pending-payouts-on-users-blog-page-is-not-showing-amounts",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18600,8 +18600,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "vanteem-readme",
+          "author": "xeroc",
+          "permlink": "vanteem-readme",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18623,8 +18623,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeroc",
-          "comment_permlink": "vanteem-readme",
+          "author": "xeroc",
+          "permlink": "vanteem-readme",
           "curator": "hello",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18699,8 +18699,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "snowden--official-trailer",
+          "author": "pfunk",
+          "permlink": "snowden--official-trailer",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18823,8 +18823,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "kushed",
-          "comment_permlink": "steem-steemit",
+          "author": "kushed",
+          "permlink": "steem-steemit",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18846,8 +18846,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "kushed",
-          "comment_permlink": "steem-steemit",
+          "author": "kushed",
+          "permlink": "steem-steemit",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18869,8 +18869,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "kushed",
-          "comment_permlink": "steem-steemit",
+          "author": "kushed",
+          "permlink": "steem-steemit",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18892,8 +18892,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "kushed",
-          "comment_permlink": "steem-steemit",
+          "author": "kushed",
+          "permlink": "steem-steemit",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18915,8 +18915,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "kushed",
-          "comment_permlink": "steem-steemit",
+          "author": "kushed",
+          "permlink": "steem-steemit",
           "curator": "kushed",
           "payout_must_be_claimed": false,
           "reward": {
@@ -18938,8 +18938,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "kushed",
-          "comment_permlink": "steem-steemit",
+          "author": "kushed",
+          "permlink": "steem-steemit",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19030,8 +19030,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "coin",
-          "comment_permlink": "the-biggest-chemical-attack-on-american-citizens-by-their-own-government",
+          "author": "coin",
+          "permlink": "the-biggest-chemical-attack-on-american-citizens-by-their-own-government",
           "curator": "coin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19122,8 +19122,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "the-story-of-the-accidental-137k-bitcoin-payment-just-got-very-strange",
+          "author": "pfunk",
+          "permlink": "the-story-of-the-accidental-137k-bitcoin-payment-just-got-very-strange",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19145,8 +19145,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pfunk",
-          "comment_permlink": "the-story-of-the-accidental-137k-bitcoin-payment-just-got-very-strange",
+          "author": "pfunk",
+          "permlink": "the-story-of-the-accidental-137k-bitcoin-payment-just-got-very-strange",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19285,8 +19285,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "add-embedded-video-ability-to-markdown",
+          "author": "tuck-fheman",
+          "permlink": "add-embedded-video-ability-to-markdown",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19308,8 +19308,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "add-embedded-video-ability-to-markdown",
+          "author": "tuck-fheman",
+          "permlink": "add-embedded-video-ability-to-markdown",
           "curator": "markopaasila",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19384,8 +19384,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-tuck-fheman-add-embedded-video-ability-to-markdown-20160428t221441862z",
+          "author": "dantheman",
+          "permlink": "re-tuck-fheman-add-embedded-video-ability-to-markdown-20160428t221441862z",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19524,8 +19524,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "signalandnoise",
-          "comment_permlink": "re-clayop-the-first-meme-20160422t052631789z",
+          "author": "signalandnoise",
+          "permlink": "re-clayop-the-first-meme-20160422t052631789z",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19648,8 +19648,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "how-is-voting-power-determined-in-steem",
+          "author": "tuck-fheman",
+          "permlink": "how-is-voting-power-determined-in-steem",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19671,8 +19671,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "how-is-voting-power-determined-in-steem",
+          "author": "tuck-fheman",
+          "permlink": "how-is-voting-power-determined-in-steem",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19694,8 +19694,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "how-is-voting-power-determined-in-steem",
+          "author": "tuck-fheman",
+          "permlink": "how-is-voting-power-determined-in-steem",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19717,8 +19717,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "how-is-voting-power-determined-in-steem",
+          "author": "tuck-fheman",
+          "permlink": "how-is-voting-power-determined-in-steem",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19740,8 +19740,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "how-is-voting-power-determined-in-steem",
+          "author": "tuck-fheman",
+          "permlink": "how-is-voting-power-determined-in-steem",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19763,8 +19763,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "how-is-voting-power-determined-in-steem",
+          "author": "tuck-fheman",
+          "permlink": "how-is-voting-power-determined-in-steem",
           "curator": "joseph",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19839,8 +19839,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-tuck-fheman-how-is-voting-power-determined-in-steem-20160428t213727572z",
+          "author": "dantheman",
+          "permlink": "re-tuck-fheman-how-is-voting-power-determined-in-steem-20160428t213727572z",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19862,8 +19862,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-tuck-fheman-how-is-voting-power-determined-in-steem-20160428t213727572z",
+          "author": "dantheman",
+          "permlink": "re-tuck-fheman-how-is-voting-power-determined-in-steem-20160428t213727572z",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19885,8 +19885,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-tuck-fheman-how-is-voting-power-determined-in-steem-20160428t213727572z",
+          "author": "dantheman",
+          "permlink": "re-tuck-fheman-how-is-voting-power-determined-in-steem-20160428t213727572z",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19908,8 +19908,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-tuck-fheman-how-is-voting-power-determined-in-steem-20160428t213727572z",
+          "author": "dantheman",
+          "permlink": "re-tuck-fheman-how-is-voting-power-determined-in-steem-20160428t213727572z",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -19931,8 +19931,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-tuck-fheman-how-is-voting-power-determined-in-steem-20160428t213727572z",
+          "author": "dantheman",
+          "permlink": "re-tuck-fheman-how-is-voting-power-determined-in-steem-20160428t213727572z",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20151,8 +20151,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "jabbasteem2",
-          "comment_permlink": "4fu02f",
+          "author": "jabbasteem2",
+          "permlink": "4fu02f",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20174,8 +20174,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "jabbasteem2",
-          "comment_permlink": "4fu02f",
+          "author": "jabbasteem2",
+          "permlink": "4fu02f",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20410,8 +20410,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "cass",
-          "comment_permlink": "re-tuck-fheman-avicii-ft-audra-mae--feeling-good-low-version-20160429t010040014z",
+          "author": "cass",
+          "permlink": "re-tuck-fheman-avicii-ft-audra-mae--feeling-good-low-version-20160429t010040014z",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20758,8 +20758,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20781,8 +20781,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "enki",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20804,8 +20804,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20827,8 +20827,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20850,8 +20850,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "justin",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20873,8 +20873,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20896,8 +20896,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20919,8 +20919,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "fminerten",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20942,8 +20942,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20965,8 +20965,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -20988,8 +20988,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21011,8 +21011,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "adol",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21034,8 +21034,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21057,8 +21057,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "bhuz",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21080,8 +21080,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "joseph",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21103,8 +21103,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "roadscape",
-          "comment_permlink": "steemd",
+          "author": "roadscape",
+          "permlink": "steemd",
           "curator": "abit",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21259,8 +21259,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "re-pairmike-trade-stocks-20160429t053416684z",
+          "author": "nextgencrypto",
+          "permlink": "re-pairmike-trade-stocks-20160429t053416684z",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21415,8 +21415,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steemit-news",
-          "comment_permlink": "vitalik-buterin-pitches-hyperledger-project-on-ethereum-integration",
+          "author": "steemit-news",
+          "permlink": "vitalik-buterin-pitches-hyperledger-project-on-ethereum-integration",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21555,8 +21555,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "lafona",
-          "comment_permlink": "does-steem-have-a-referral-program",
+          "author": "lafona",
+          "permlink": "does-steem-have-a-referral-program",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21578,8 +21578,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "lafona",
-          "comment_permlink": "does-steem-have-a-referral-program",
+          "author": "lafona",
+          "permlink": "does-steem-have-a-referral-program",
           "curator": "pfunk",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21686,8 +21686,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "ice",
-          "comment_permlink": "taiwan",
+          "author": "ice",
+          "permlink": "taiwan",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21709,8 +21709,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "ice",
-          "comment_permlink": "taiwan",
+          "author": "ice",
+          "permlink": "taiwan",
           "curator": "bue",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21732,8 +21732,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "ice",
-          "comment_permlink": "taiwan",
+          "author": "ice",
+          "permlink": "taiwan",
           "curator": "tuck-fheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21808,8 +21808,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempower",
-          "comment_permlink": "bitshares-community-meetup-hosted-by-beyondbitcoin-starts-in-5-minutes",
+          "author": "steempower",
+          "permlink": "bitshares-community-meetup-hosted-by-beyondbitcoin-starts-in-5-minutes",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21831,8 +21831,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempower",
-          "comment_permlink": "bitshares-community-meetup-hosted-by-beyondbitcoin-starts-in-5-minutes",
+          "author": "steempower",
+          "permlink": "bitshares-community-meetup-hosted-by-beyondbitcoin-starts-in-5-minutes",
           "curator": "jabbasteem",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21854,8 +21854,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempower",
-          "comment_permlink": "bitshares-community-meetup-hosted-by-beyondbitcoin-starts-in-5-minutes",
+          "author": "steempower",
+          "permlink": "bitshares-community-meetup-hosted-by-beyondbitcoin-starts-in-5-minutes",
           "curator": "steempower",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21877,8 +21877,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "steempower",
-          "comment_permlink": "bitshares-community-meetup-hosted-by-beyondbitcoin-starts-in-5-minutes",
+          "author": "steempower",
+          "permlink": "bitshares-community-meetup-hosted-by-beyondbitcoin-starts-in-5-minutes",
           "curator": "berkah",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21969,8 +21969,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "einstein-gets-it",
+          "author": "tuck-fheman",
+          "permlink": "einstein-gets-it",
           "curator": "enki",
           "payout_must_be_claimed": false,
           "reward": {
@@ -21992,8 +21992,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "einstein-gets-it",
+          "author": "tuck-fheman",
+          "permlink": "einstein-gets-it",
           "curator": "xeroc",
           "payout_must_be_claimed": false,
           "reward": {
@@ -22015,8 +22015,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "einstein-gets-it",
+          "author": "tuck-fheman",
+          "permlink": "einstein-gets-it",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -22038,8 +22038,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "einstein-gets-it",
+          "author": "tuck-fheman",
+          "permlink": "einstein-gets-it",
           "curator": "au1nethyb1",
           "payout_must_be_claimed": false,
           "reward": {
@@ -22061,8 +22061,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "tuck-fheman",
-          "comment_permlink": "einstein-gets-it",
+          "author": "tuck-fheman",
+          "permlink": "einstein-gets-it",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -22169,8 +22169,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "nextgencrypto",
-          "comment_permlink": "basic-mining-instructions--ubuntu-15",
+          "author": "nextgencrypto",
+          "permlink": "basic-mining-instructions--ubuntu-15",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {

@@ -55,8 +55,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dana-edwards",
-          "comment_permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t201558870z",
+          "author": "dana-edwards",
+          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t201558870z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
           "reward": {
@@ -184,8 +184,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dana-edwards",
-          "comment_permlink": "re-dana-edwards-re-innuendo-re-dana-edwards-re-cryptogee-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t203252454z",
+          "author": "dana-edwards",
+          "permlink": "re-dana-edwards-re-innuendo-re-dana-edwards-re-cryptogee-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t203252454z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
           "reward": {
@@ -297,8 +297,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dana-edwards",
-          "comment_permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t215859325z",
+          "author": "dana-edwards",
+          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t215859325z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
           "reward": {
@@ -554,8 +554,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "andrarchy",
-          "comment_permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
+          "author": "andrarchy",
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -577,8 +577,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "andrarchy",
-          "comment_permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
+          "author": "andrarchy",
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "berniesanders",
           "payout_must_be_claimed": false,
           "reward": {
@@ -600,8 +600,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "andrarchy",
-          "comment_permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
+          "author": "andrarchy",
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "skywalker",
           "payout_must_be_claimed": false,
           "reward": {
@@ -623,8 +623,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "andrarchy",
-          "comment_permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
+          "author": "andrarchy",
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "rainman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -646,8 +646,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "andrarchy",
-          "comment_permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
+          "author": "andrarchy",
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "wang",
           "payout_must_be_claimed": false,
           "reward": {
@@ -669,8 +669,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "andrarchy",
-          "comment_permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
+          "author": "andrarchy",
+          "permlink": "trade-log-why-i-just-bought-tsla-at-202-25",
           "curator": "taoteh1221",
           "payout_must_be_claimed": false,
           "reward": {
@@ -798,8 +798,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "anwenbaumeister",
-          "comment_permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
+          "author": "anwenbaumeister",
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -821,8 +821,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "anwenbaumeister",
-          "comment_permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
+          "author": "anwenbaumeister",
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "lafona-miner",
           "payout_must_be_claimed": false,
           "reward": {
@@ -844,8 +844,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "anwenbaumeister",
-          "comment_permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
+          "author": "anwenbaumeister",
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "complexring",
           "payout_must_be_claimed": false,
           "reward": {
@@ -867,8 +867,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "anwenbaumeister",
-          "comment_permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
+          "author": "anwenbaumeister",
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "enki",
           "payout_must_be_claimed": false,
           "reward": {
@@ -890,8 +890,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "anwenbaumeister",
-          "comment_permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
+          "author": "anwenbaumeister",
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -913,8 +913,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "anwenbaumeister",
-          "comment_permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
+          "author": "anwenbaumeister",
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "pharesim",
           "payout_must_be_claimed": false,
           "reward": {
@@ -936,8 +936,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "anwenbaumeister",
-          "comment_permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
+          "author": "anwenbaumeister",
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "lafona",
           "payout_must_be_claimed": false,
           "reward": {
@@ -959,8 +959,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "anwenbaumeister",
-          "comment_permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
+          "author": "anwenbaumeister",
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -982,8 +982,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "anwenbaumeister",
-          "comment_permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
+          "author": "anwenbaumeister",
+          "permlink": "if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would",
           "curator": "joseph",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1111,8 +1111,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "xeldal",
-          "comment_permlink": "re-anwenbaumeister-if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would-20160619t002029691z",
+          "author": "xeldal",
+          "permlink": "re-anwenbaumeister-if-you-could-create-one-thing-and-destroy-one-thing-in-the-world-what-would-20160619t002029691z",
           "curator": "complexring",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1368,8 +1368,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "wang",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1391,8 +1391,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "abit",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1414,8 +1414,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1437,8 +1437,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "onceuponatime",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1460,8 +1460,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "lafona-miner",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1483,8 +1483,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "stan",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1506,8 +1506,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1529,8 +1529,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "lafona",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1552,8 +1552,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "ajvest",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1575,8 +1575,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "james-show",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1598,8 +1598,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stan",
-          "comment_permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
+          "author": "stan",
+          "permlink": "sittin-up-with-the-dead-blog--post-005--quintuple-entendre",
           "curator": "chryspano",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1727,8 +1727,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stellabelle",
-          "comment_permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
+          "author": "stellabelle",
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "wang",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1750,8 +1750,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stellabelle",
-          "comment_permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
+          "author": "stellabelle",
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "skywalker",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1773,8 +1773,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stellabelle",
-          "comment_permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
+          "author": "stellabelle",
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "tombstone",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1796,8 +1796,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stellabelle",
-          "comment_permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
+          "author": "stellabelle",
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "excalibur",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1819,8 +1819,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stellabelle",
-          "comment_permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
+          "author": "stellabelle",
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1842,8 +1842,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stellabelle",
-          "comment_permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
+          "author": "stellabelle",
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1865,8 +1865,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stellabelle",
-          "comment_permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
+          "author": "stellabelle",
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "kushed",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1888,8 +1888,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stellabelle",
-          "comment_permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
+          "author": "stellabelle",
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "complexring",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1911,8 +1911,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stellabelle",
-          "comment_permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
+          "author": "stellabelle",
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "joseph",
           "payout_must_be_claimed": false,
           "reward": {
@@ -1934,8 +1934,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "stellabelle",
-          "comment_permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
+          "author": "stellabelle",
+          "permlink": "un-crap-your-life-chapter-7-my-vicious-cycle-of-bad-jobs",
           "curator": "ajvest",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2063,8 +2063,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "publicworker",
-          "comment_permlink": "where-steemit-data-is-stored",
+          "author": "publicworker",
+          "permlink": "where-steemit-data-is-stored",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2086,8 +2086,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "publicworker",
-          "comment_permlink": "where-steemit-data-is-stored",
+          "author": "publicworker",
+          "permlink": "where-steemit-data-is-stored",
           "curator": "rimantas",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2231,8 +2231,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
+          "author": "dantheman",
+          "permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
           "curator": "sean-king",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2254,8 +2254,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dantheman",
-          "comment_permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
+          "author": "dantheman",
+          "permlink": "re-publicworker-where-steemit-data-is-stored-20160622t173808802z",
           "curator": "proctologic",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2463,8 +2463,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "ash",
-          "comment_permlink": "re-fuzzyvest-re-publicworker-re-dantheman-re-publicworker-where-steemit-data-is-stored-20160622t200720693z",
+          "author": "ash",
+          "permlink": "re-fuzzyvest-re-publicworker-re-dantheman-re-publicworker-where-steemit-data-is-stored-20160622t200720693z",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2576,8 +2576,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pheonike",
-          "comment_permlink": "re-ash-re-fuzzyvest-re-publicworker-re-dantheman-re-publicworker-where-steemit-data-is-stored-20160622t202700023z",
+          "author": "pheonike",
+          "permlink": "re-ash-re-fuzzyvest-re-publicworker-re-dantheman-re-publicworker-where-steemit-data-is-stored-20160622t202700023z",
           "curator": "fuzzyvest",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2721,8 +2721,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "ned",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2744,8 +2744,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "complexring",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2767,8 +2767,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "enki",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2790,8 +2790,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "dantheman",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2813,8 +2813,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "tombstone",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2836,8 +2836,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "xeldal",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2859,8 +2859,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "summon",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2882,8 +2882,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "wang",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2905,8 +2905,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "roadscape",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2928,8 +2928,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "steempty",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2951,8 +2951,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "clayop",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2974,8 +2974,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "nextgencrypto",
           "payout_must_be_claimed": false,
           "reward": {
@@ -2997,8 +2997,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "lafona-miner",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3020,8 +3020,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "lafona",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3043,8 +3043,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "benjojo",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3066,8 +3066,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "stino-san",
           "payout_must_be_claimed": false,
           "reward": {
@@ -3089,8 +3089,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "pinky-jangra",
-          "comment_permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
+          "author": "pinky-jangra",
+          "permlink": "hello-steemians-steemish-steemies--by-pinky-and-her-brain",
           "curator": "joseph",
           "payout_must_be_claimed": false,
           "reward": {
