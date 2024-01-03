@@ -39,8 +39,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "dana-edwards",
-          "comment_permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t201558870z",
+          "author": "dana-edwards",
+          "permlink": "re-smooth-re-dana-edwards-re-innuendo-re-dantheman-re-dana-edwards-my-rational-basis-for-being-pro-fork-is-that-to-be-never-fork-or-anti-fork-has-20160623t201558870z",
           "curator": "eeks",
           "payout_must_be_claimed": false,
           "reward": {

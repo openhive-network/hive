@@ -47,8 +47,8 @@
       "op": {
         "type": "curation_reward_operation",
         "value": {
-          "comment_author": "abit",
-          "comment_permlink": "spam",
+          "author": "abit",
+          "permlink": "spam",
           "curator": "anonymous",
           "payout_must_be_claimed": false,
           "reward": {
